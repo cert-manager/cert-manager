@@ -146,7 +146,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -182,7 +182,7 @@ func Test_SecretsManager(t *testing.T) {
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -227,7 +227,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -277,7 +277,7 @@ func Test_SecretsManager(t *testing.T) {
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -324,7 +324,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -368,7 +368,7 @@ func Test_SecretsManager(t *testing.T) {
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -405,7 +405,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -442,7 +442,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -480,7 +480,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -533,7 +533,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeOpaque)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -587,7 +587,7 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeOpaque)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
 					return nil, nil
@@ -641,32 +641,9 @@ func Test_SecretsManager(t *testing.T) {
 						WithType(corev1.SecretTypeOpaque)
 					assert.Equal(t, expCnf, gotCnf)
 
-					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test", Force: true}
 					assert.Equal(t, expOpts, gotOpts)
 
-					return nil, nil
-				}
-			},
-			expectedErr: false,
-		},
-		"if apply conflicts, expect a secret Apply call": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
-			certificate:        baseCertWithSecretTemplate,
-			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
-				call := 0
-				t.Cleanup(func() {
-					assert.Equal(t, 2, call, "expect apply call to execute twice")
-				})
-				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
-					defer func() {
-						call++
-					}()
-
-					if call == 0 {
-						return nil, apierrors.NewConflict(corev1.Resource("secret"), "conflict on field", errors.New("test"))
-					}
 					return nil, nil
 				}
 			},

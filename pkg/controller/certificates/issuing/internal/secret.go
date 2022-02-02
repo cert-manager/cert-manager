@@ -99,7 +99,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	}
 
 	// Build Secret apply configuration and options.
-	applyOpts := metav1.ApplyOptions{FieldManager: s.fieldManager}
+	applyOpts := metav1.ApplyOptions{FieldManager: s.fieldManager, Force: true}
 	applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
 		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
 		WithData(secret.Data).WithType(secret.Type)
@@ -118,20 +118,12 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 
 	log.V(logf.DebugLevel).Info("applying secret")
 
-	// Apply secret resource. Don't force apply first, so we can catch the error
-	// and log it.
 	_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
-	if apierrors.IsConflict(err) {
-		log.Error(err, "forcing apply due to field management conflict")
-		applyOpts.Force = true
-		_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
-	}
-
 	if err != nil {
 		return fmt.Errorf("failed to apply secret %s/%s: %w", secret.Namespace, secret.Name, err)
 	}
 
-	return err
+	return nil
 }
 
 // setValues will update the Secret resource 'secret' with the data contained
