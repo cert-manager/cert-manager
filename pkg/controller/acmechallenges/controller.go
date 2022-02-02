@@ -21,6 +21,14 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
+
 	"github.com/cert-manager/cert-manager/internal/ingress"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -32,13 +40,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 )
 
 type controller struct {
