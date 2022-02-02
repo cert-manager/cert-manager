@@ -17,7 +17,7 @@ go_library(
         "//internal/apis/certmanager:go_default_library",
         "//internal/apis/certmanager/validation/util:go_default_library",
         "//internal/apis/meta:go_default_library",
-        "//internal/controller/feature:go_default_library",
+        "//internal/webhook/feature:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/acme:go_default_library",
         "//pkg/apis/certmanager:go_default_library",
@@ -31,6 +31,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/api/validation:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/validation:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/sets:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
     ],
 )
@@ -49,7 +50,9 @@ go_test(
         "//internal/apis/acme:go_default_library",
         "//internal/apis/certmanager:go_default_library",
         "//internal/apis/meta:go_default_library",
+        "//internal/webhook/feature:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
@@ -57,6 +60,7 @@ go_test(
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
+        "@io_k8s_component_base//featuregate/testing:go_default_library",
     ],
 )
 

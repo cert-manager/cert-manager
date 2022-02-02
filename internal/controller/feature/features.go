@@ -41,6 +41,7 @@ const (
 	// the Gateway API to the HTTP-01 challenge solver.
 	ExperimentalGatewayAPISupport featuregate.Feature = "ExperimentalGatewayAPISupport"
 
+	// Owner: @joshvanl
 	// alpha: v1.7.0
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
