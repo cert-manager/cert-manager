@@ -125,6 +125,9 @@ join_by() {
   fi
 }
 
+# registered_feature_gates_for returns the subset of supported of feature gates
+# from the given enabled features. Supported features is the first argument,
+# features that are enabled is second.
 registered_feature_gates_for() {
   declare -a FEATURE_GATES_SUPPORTED=($1)
   FEATURE_GATES="$2"
