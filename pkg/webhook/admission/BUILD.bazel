@@ -9,7 +9,7 @@ go_library(
         "plugins.go",
         "request_handler.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/admission",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/admission",
     visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/webhook/handlers:go_default_library",

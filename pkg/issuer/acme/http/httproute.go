@@ -27,8 +27,8 @@ import (
 	"k8s.io/utils/pointer"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // ensureGatewayHTTPRoute ensures that the HTTPRoutes needed to solve a challenge exist.

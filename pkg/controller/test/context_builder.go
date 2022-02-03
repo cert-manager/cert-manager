@@ -38,14 +38,14 @@ import (
 	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
-	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
+	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
 func init() {

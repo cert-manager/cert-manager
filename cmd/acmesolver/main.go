@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jetstack/cert-manager/cmd/acmesolver/app"
-	"github.com/jetstack/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/cmd/acmesolver/app"
+	"github.com/cert-manager/cert-manager/cmd/util"
 )
 
 // acmesolver solves ACME http-01 challenges. This is intended to run as a pod

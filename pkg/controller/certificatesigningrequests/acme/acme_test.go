@@ -35,15 +35,15 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var (

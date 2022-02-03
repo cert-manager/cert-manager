@@ -42,7 +42,7 @@ var v1TestIngress = &networkingv1.Ingress{
 		},
 	},
 	Spec: networkingv1.IngressSpec{
-		// As discussed in https://github.com/jetstack/cert-manager/issues/4537
+		// As discussed in https://github.com/cert-manager/cert-manager/issues/4537
 		// the IngressClassName field is not directly equivalent to the
 		// kubernetes.io/ingress.class annotation. According to the Ingress graduation KEP:
 		// https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/758-ingress-api-group/README.md

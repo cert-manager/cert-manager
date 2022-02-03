@@ -67,6 +67,6 @@ manifest_urls=${manifest_urls#","}
 #  -f: fail if non success code
 #  -L: follow redirects
 #  -o: output to "#1.yaml" 
-curl --compressed -sfLo "#1.yaml" "https://github.com/jetstack/cert-manager/releases/download/{$manifest_urls}/cert-manager.yaml"
+curl --compressed -sfLo "#1.yaml" "https://github.com/cert-manager/cert-manager/releases/download/{$manifest_urls}/cert-manager.yaml"
 
 tar -cvf "$test_manifests_tar" *.yaml

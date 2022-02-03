@@ -35,17 +35,17 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/pkg/util/predicate"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
 
 const (

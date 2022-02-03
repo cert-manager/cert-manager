@@ -20,9 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/clock"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // Clock is defined as a package var so it can be stubbed out during tests.

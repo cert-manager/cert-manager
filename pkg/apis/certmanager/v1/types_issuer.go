@@ -19,8 +19,8 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // +genclient

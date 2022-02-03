@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/pointer"
 
-	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
+	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 )
 
 type testValue string

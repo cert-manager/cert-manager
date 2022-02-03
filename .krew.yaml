@@ -4,7 +4,7 @@ metadata:
   name: cert-manager
 spec:
   version: {{ .TagName }}
-  homepage: https://github.com/jetstack/cert-manager
+  homepage: https://github.com/cert-manager/cert-manager
   shortDescription: Manage cert-manager resources inside your cluster
   description: |
     The official plugin accompanying cert-manger, a Kubernetes add-on to
@@ -16,35 +16,35 @@ spec:
       matchLabels:
         os: darwin
         arch: amd64
-    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-darwin-amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/cert-manager/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-darwin-amd64.tar.gz" .TagName }}
     bin: kubectl-cert_manager
   - selector:
       matchLabels:
         os: darwin
         arch: arm64
-    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-darwin-arm64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/cert-manager/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-darwin-arm64.tar.gz" .TagName }}
     bin: kubectl-cert_manager
   - selector:
       matchLabels:
         os: linux
         arch: amd64
-    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/cert-manager/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-amd64.tar.gz" .TagName }}
     bin: kubectl-cert_manager
   - selector:
       matchLabels:
         os: linux
         arch: arm
-    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-arm.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/cert-manager/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-arm.tar.gz" .TagName }}
     bin: kubectl-cert_manager
   - selector:
       matchLabels:
         os: linux
         arch: arm64
-    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-arm64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/cert-manager/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-arm64.tar.gz" .TagName }}
     bin: kubectl-cert_manager
   - selector:
       matchLabels:
         os: windows
         arch: amd64
-    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-windows-amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/cert-manager/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-windows-amd64.tar.gz" .TagName }}
     bin: kubectl-cert_manager

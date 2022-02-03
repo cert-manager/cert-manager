@@ -23,10 +23,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/jetstack/cert-manager/internal/controller/certificates/policies"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // ensureTemporaryCertificate will create a temporary certificate and store it

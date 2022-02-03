@@ -146,7 +146,7 @@ echo "Testing cert-manager upgrade from ${LATEST_RELEASE} to commit ${KUBE_GIT_C
 
 echo "Install cert-manager ${LATEST_RELEASE} using static manifests.."
 kubectl apply \
-	-f "https://github.com/jetstack/cert-manager/releases/download/${LATEST_RELEASE}/cert-manager.yaml" \
+	-f "https://github.com/cert-manager/cert-manager/releases/download/${LATEST_RELEASE}/cert-manager.yaml" \
 	--wait
 
 kubectl wait \

@@ -38,10 +38,10 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	ciphers "k8s.io/component-base/cli/flag"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/profiling"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	servertls "github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
 )
 
 var (

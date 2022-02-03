@@ -17,7 +17,7 @@ limitations under the License.
 package util
 
 import (
-	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 )
 
 func GetCertificateRequestCondition(conds []cmapi.CertificateRequestCondition, conditionType cmapi.CertificateRequestConditionType) *cmapi.CertificateRequestCondition {

@@ -22,8 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/jetstack/cert-manager/internal/apis/config/webhook"
-	"github.com/jetstack/cert-manager/internal/apis/config/webhook/v1alpha1"
+	"github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/v1alpha1"
 )
 
 // Install registers the API group and adds types to a scheme

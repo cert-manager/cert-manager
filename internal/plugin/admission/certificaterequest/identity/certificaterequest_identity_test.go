@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 )
 
 var correctRequestResource = &metav1.GroupVersionResource{

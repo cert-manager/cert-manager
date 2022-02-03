@@ -1,4 +1,4 @@
 {
-  "GoPrefix": "github.com/jetstack/cert-manager",
+  "GoPrefix": "github.com/cert-manager/cert-manager",
   "AddSourcesRules": true
 }

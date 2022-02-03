@@ -22,7 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 

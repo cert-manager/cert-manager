@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +k8s:conversion-gen=github.com/jetstack/cert-manager/internal/apis/config/webhook
-// +k8s:conversion-gen-external-types=github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1
+// +k8s:conversion-gen=github.com/cert-manager/cert-manager/internal/apis/config/webhook
+// +k8s:conversion-gen-external-types=github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1
 // +k8s:defaulter-gen=TypeMeta
-// +k8s:defaulter-gen-input=github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1
+// +k8s:defaulter-gen-input=github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1
 
 // +groupName=webhook.config.cert-manager.io
 package v1alpha1

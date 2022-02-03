@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -29,8 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kclient "k8s.io/client-go/kubernetes"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
 var ingressGVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")

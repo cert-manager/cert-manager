@@ -34,11 +34,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/jetstack/cert-manager/pkg/acme"
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/acme"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (
@@ -200,7 +200,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	// been finalized, but the ACME server has not yet updated the ACME Order's
 	// status to valid. This is not an expected behaviour from an ACME server
 	// https://tools.ietf.org/html/rfc8555#section-7.1.6
-	// https://github.com/jetstack/cert-manager/issues/2868
+	// https://github.com/cert-manager/cert-manager/issues/2868
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges) && acmeOrder.Status == acmeapi.StatusPending:
 		log.V(logf.InfoLevel).Info("All challenges in a final state, waiting for ACME server to update the status of the order...")
 		// This is probably not needed as at this point the Order's status

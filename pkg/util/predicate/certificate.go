@@ -19,7 +19,7 @@ package predicate
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // CertificateSecretName returns a predicate that used to filter Certificates

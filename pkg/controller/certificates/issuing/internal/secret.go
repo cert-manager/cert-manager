@@ -31,13 +31,13 @@ import (
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/jetstack/cert-manager/internal/controller/certificates"
-	"github.com/jetstack/cert-manager/internal/controller/feature"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/internal/controller/certificates"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var (

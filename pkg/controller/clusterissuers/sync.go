@@ -25,8 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

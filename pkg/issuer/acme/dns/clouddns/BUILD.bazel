@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["clouddns.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns",
+    importpath = "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",

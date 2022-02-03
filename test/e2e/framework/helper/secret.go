@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/log"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
 )
 
 // WaitForSecretCertificateData waits for the certificate data to be ready

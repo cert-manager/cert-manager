@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"net/http"
 
-	acmev1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

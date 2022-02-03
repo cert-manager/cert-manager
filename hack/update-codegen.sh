@@ -30,7 +30,7 @@ else
   exit 0
 fi
 
-module_name="github.com/jetstack/cert-manager"
+module_name="github.com/cert-manager/cert-manager"
 
 # Generate deepcopy functions for all internal and external APIs
 deepcopy_inputs=(
@@ -209,9 +209,9 @@ gen-conversions() {
   echo "Generating conversion functions..." >&2
 
   CONVERSION_EXTRA_PEER_PKGS=(
-    github.com/jetstack/cert-manager/internal/apis/meta \
-    github.com/jetstack/cert-manager/internal/apis/meta/v1 \
-    github.com/jetstack/cert-manager/pkg/apis/meta/v1
+    github.com/cert-manager/cert-manager/internal/apis/meta \
+    github.com/cert-manager/cert-manager/internal/apis/meta/v1 \
+    github.com/cert-manager/cert-manager/pkg/apis/meta/v1
   )
   CONVERSION_PKGS=( "${conversion_inputs[@]/#/$module_name/}" )
 

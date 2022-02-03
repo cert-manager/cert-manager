@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/internal/controller/feature"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,14 +38,14 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/pointer"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
-	testcoreclients "github.com/jetstack/cert-manager/test/unit/coreclients"
-	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
-	"github.com/jetstack/cert-manager/test/unit/gen"
-	testcorelisters "github.com/jetstack/cert-manager/test/unit/listers"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
+	testcoreclients "github.com/cert-manager/cert-manager/test/unit/coreclients"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
+	testcorelisters "github.com/cert-manager/cert-manager/test/unit/listers"
 )
 
 var (

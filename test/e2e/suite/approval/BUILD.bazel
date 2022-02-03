@@ -6,7 +6,7 @@ go_library(
         "approval.go",
         "userinfo.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/approval",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/approval",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

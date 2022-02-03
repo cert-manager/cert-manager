@@ -25,11 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clocktesting "k8s.io/utils/clock/testing"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var (

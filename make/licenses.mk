@@ -14,7 +14,7 @@ bin/scratch/license.yaml: hack/boilerplate/boilerplate.sh.txt | bin/scratch
 # which presumably nobody will ever read or care about. Instead, just add a little footnote pointing
 # to the cert-manager repo in case anybody actually decides that they care.
 bin/scratch/license-footnote.yaml: | bin/scratch
-	@echo -e "# To view licenses for cert-manager dependencies, see the LICENSES file in the\n# cert-manager repo: https://github.com/jetstack/cert-manager/blob/$(GITCOMMIT)/LICENSES" > $@
+	@echo -e "# To view licenses for cert-manager dependencies, see the LICENSES file in the\n# cert-manager repo: https://github.com/cert-manager/cert-manager/blob/$(GITCOMMIT)/LICENSES" > $@
 
 bin/scratch/cert-manager.license: bin/scratch/license.yaml bin/scratch/license-footnote.yaml | bin/scratch
 	cat $^ > $@

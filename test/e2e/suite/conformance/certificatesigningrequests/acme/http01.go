@@ -24,10 +24,10 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
 )
 
 func (a *acme) createHTTP01Issuer(f *framework.Framework) string {

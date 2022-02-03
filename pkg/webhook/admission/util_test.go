@@ -22,7 +22,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
 type handles bool

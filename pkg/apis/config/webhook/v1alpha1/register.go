@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/jetstack/cert-manager/pkg/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook"
 )
 
 // SchemeGroupVersion is group version used to register these objects

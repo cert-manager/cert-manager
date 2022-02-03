@@ -17,7 +17,7 @@ go_library(
         "zz_generated.deepcopy.go",
         "zz_generated.defaults.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha2",
+    importpath = "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1alpha2",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/apis/acme:go_default_library",

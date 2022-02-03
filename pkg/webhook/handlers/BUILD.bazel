@@ -6,7 +6,7 @@ go_library(
         "conversion.go",
         "interfaces.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/handlers",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/logs:go_default_library",

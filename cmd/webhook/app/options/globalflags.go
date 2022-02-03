@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func AddGlobalFlags(fs *pflag.FlagSet) {

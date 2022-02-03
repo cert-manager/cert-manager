@@ -21,7 +21,7 @@ import (
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/utils/pointer"
 
-	"github.com/jetstack/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 )
 
 // Funcs returns the fuzzer functions for the webhook config api group.

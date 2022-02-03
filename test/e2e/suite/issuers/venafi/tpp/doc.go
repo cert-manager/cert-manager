@@ -18,7 +18,7 @@ limitations under the License.
 package tpp
 
 import (
-	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
 )
 
 func TPPDescribe(name string, body func()) bool {

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 

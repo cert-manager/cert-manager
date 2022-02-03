@@ -24,7 +24,7 @@ import (
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 

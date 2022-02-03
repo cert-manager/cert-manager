@@ -19,7 +19,7 @@ package app
 import (
 	"testing"
 
-	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
+	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
 )
 
 // Test to ensure flags take precedence over config options.

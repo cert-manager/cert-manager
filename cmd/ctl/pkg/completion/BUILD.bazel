@@ -9,7 +9,7 @@ go_library(
         "powershell.go",
         "zsh.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/completion",
+    importpath = "github.com/cert-manager/cert-manager/cmd/ctl/pkg/completion",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/ctl/pkg/build:go_default_library",

@@ -40,13 +40,13 @@ import (
 	"sigs.k8s.io/gateway-api/apis/v1alpha1"
 	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/e2e/framework/log"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
 )
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {

@@ -24,12 +24,12 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/venafi"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
-	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
-	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificatesigningrequests"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/addon/venafi"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/util/errors"
+	"github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificatesigningrequests"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {

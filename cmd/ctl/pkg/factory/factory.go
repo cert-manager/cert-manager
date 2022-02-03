@@ -28,7 +28,7 @@ import (
 	// Load all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
 var (

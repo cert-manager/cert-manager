@@ -21,9 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
-	acmefuzzer "github.com/jetstack/cert-manager/internal/apis/acme/fuzzer"
-	"github.com/jetstack/cert-manager/internal/apis/certmanager"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	acmefuzzer "github.com/cert-manager/cert-manager/internal/apis/acme/fuzzer"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // Funcs returns the fuzzer functions for the apps api group.

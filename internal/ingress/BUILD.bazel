@@ -8,7 +8,7 @@ go_library(
         "v1.go",
         "v1beta1.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/ingress",
+    importpath = "github.com/cert-manager/cert-manager/internal/ingress",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/controller:go_default_library",

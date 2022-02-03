@@ -24,8 +24,8 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	webhook "github.com/jetstack/cert-manager/internal/apis/config/webhook"
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	webhook "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

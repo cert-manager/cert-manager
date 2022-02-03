@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
@@ -289,7 +289,7 @@ func TestParseSingleCertificateChain(t *testing.T) {
 			expErr:       false,
 		},
 		"if certificate chain has two certs with the same CN, shouldn't affect output": {
-			// see https://github.com/jetstack/cert-manager/issues/4142
+			// see https://github.com/cert-manager/cert-manager/issues/4142
 			inputBundle:  joinPEM(leafInterCN.pem, intA1.pem, intA2.pem, root.pem),
 			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leafInterCN.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,

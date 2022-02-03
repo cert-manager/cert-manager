@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["fuzzer.go"],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/acme/fuzzer",
+    importpath = "github.com/cert-manager/cert-manager/internal/apis/acme/fuzzer",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/apis/acme:go_default_library",

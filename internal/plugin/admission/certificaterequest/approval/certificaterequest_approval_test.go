@@ -28,9 +28,9 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/client-go/discovery"
 
-	"github.com/jetstack/cert-manager/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/internal/apis/meta"
-	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/internal/apis/meta"
+	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
 var (

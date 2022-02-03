@@ -23,10 +23,10 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/acme"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/acme"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // Scheduler implements an ACME challenge scheduler that applies heuristics

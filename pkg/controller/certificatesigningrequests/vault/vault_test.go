@@ -34,17 +34,17 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	internalvault "github.com/jetstack/cert-manager/internal/vault"
-	fakevault "github.com/jetstack/cert-manager/internal/vault/fake"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
-	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	internalvault "github.com/cert-manager/cert-manager/internal/vault"
+	fakevault "github.com/cert-manager/cert-manager/internal/vault/fake"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var (

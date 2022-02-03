@@ -22,12 +22,12 @@ import (
 
 	logtesting "github.com/go-logr/logr/testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/test/acme/dns"
-	testserver "github.com/jetstack/cert-manager/test/acme/dns/server"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/test/acme/dns"
+	testserver "github.com/cert-manager/cert-manager/test/acme/dns/server"
 )
 
 func TestRunSuiteWithTSIG(t *testing.T) {

@@ -21,7 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/clock"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type Input struct {

@@ -22,10 +22,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestGetGenericIssuer(t *testing.T) {

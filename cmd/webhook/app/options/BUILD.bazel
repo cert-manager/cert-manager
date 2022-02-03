@@ -6,7 +6,7 @@ go_library(
         "globalflags.go",
         "options.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/webhook/app/options",
+    importpath = "github.com/cert-manager/cert-manager/cmd/webhook/app/options",
     visibility = ["//visibility:public"],
     deps = [
         "//internal/apis/config/webhook:go_default_library",

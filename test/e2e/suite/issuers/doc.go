@@ -17,9 +17,9 @@ limitations under the License.
 package suite
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/ca"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/selfsigned"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/acme"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/ca"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/selfsigned"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/vault"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/venafi"
 )

@@ -26,14 +26,14 @@ import (
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
 
-	cmdutil "github.com/jetstack/cert-manager/cmd/util"
-	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
-	cmwebhook "github.com/jetstack/cert-manager/internal/webhook"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
-	"github.com/jetstack/cert-manager/pkg/webhook/configfile"
+	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/pkg/webhook/configfile"
 )
 
 const componentWebhook = "webhook"

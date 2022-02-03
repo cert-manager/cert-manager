@@ -6,7 +6,7 @@ go_library(
         "conditions.go",
         "nameserver.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util",
+    importpath = "github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util",
     visibility = ["//visibility:public"],
     deps = ["//internal/apis/certmanager:go_default_library"],
 )

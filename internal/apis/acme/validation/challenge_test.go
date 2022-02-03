@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
+	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 )
 
 func TestValidateChallengeUpdate(t *testing.T) {

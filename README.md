@@ -3,8 +3,8 @@
 <!-- prow build badge, godoc, and go report card-->
 <img alt="Build Status" src="https://prow.build-infra.jetstack.net/badge.svg?jobs=ci-cert-manager-bazel">
 </a>
-<a href="https://godoc.org/github.com/jetstack/cert-manager"><img src="https://godoc.org/github.com/jetstack/cert-manager?status.svg"></a>
-<a href="https://goreportcard.com/report/github.com/jetstack/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/jetstack/cert-manager" /></a>
+<a href="https://godoc.org/github.com/cert-manager/cert-manager"><img src="https://godoc.org/github.com/cert-manager/cert-manager?status.svg"></a>
+<a href="https://goreportcard.com/report/github.com/cert-manager/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cert-manager/cert-manager" /></a>
 <br />
 <a href="https://artifacthub.io/packages/search?repo=cert-manager"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cert-manager" /></a>
 </p>
@@ -52,7 +52,7 @@ on the [Kubernetes Slack](http://slack.kubernetes.io/).
 There are a lot of community members in this channel, and you can often get an answer
 to your question straight away!
 
-You can also try [searching for an existing issue](https://github.com/jetstack/cert-manager/issues).
+You can also try [searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
 Properly searching for an existing issue will help reduce the number of duplicates,
 and help you find the answer you are looking for quicker.
 
@@ -61,7 +61,7 @@ before opening an issue. You can also search the documentation using the search 
 top left of the page.
 
 If you believe you have encountered a bug, and cannot find an existing issue similar to your
-own, you may [open a new issue](https://github.com/jetstack/cert-manager/issues).
+own, you may [open a new issue](https://github.com/cert-manager/cert-manager/issues).
 Please be sure to include as much information as possible about your environment.
 
 ## Community
@@ -89,7 +89,7 @@ We welcome pull requests with open arms! There's a lot of work to do here, and
 we're especially concerned with ensuring the longevity and reliability of the
 project.
 
-Please take a look at our [issue tracker](https://github.com/jetstack/cert-manager/issues)
+Please take a look at our [issue tracker](https://github.com/cert-manager/cert-manager/issues)
 if you are unsure where to start with getting involved!
 
 We also use the #cert-manager and #cert-manager-dev channels on [Kubernetes Slack](https://kubernetes.slack.com)
@@ -121,7 +121,7 @@ vulnerability to the team.
 
 ## Changelog
 
-The [list of releases](https://github.com/jetstack/cert-manager/releases)
+The [list of releases](https://github.com/cert-manager/cert-manager/releases)
 is the best place to look for information on changes between releases.
 
 <sub><sup>Logo design by [Zoe Paterson](https://zoepatersonmedia.com)</sup></sub>

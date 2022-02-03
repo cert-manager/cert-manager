@@ -25,10 +25,10 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
 func TestProcessItem(t *testing.T) {

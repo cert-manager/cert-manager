@@ -22,7 +22,7 @@ limitations under the License.
 package v1alpha3
 
 import (
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	v1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

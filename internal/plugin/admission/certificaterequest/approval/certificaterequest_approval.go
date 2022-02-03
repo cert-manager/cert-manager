@@ -40,10 +40,10 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/jetstack/cert-manager/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
-	"github.com/jetstack/cert-manager/pkg/webhook/admission/initializer"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
 )
 
 const PluginName = "CertificateRequestApproval"

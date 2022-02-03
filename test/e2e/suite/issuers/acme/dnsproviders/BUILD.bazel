@@ -7,7 +7,7 @@ go_library(
         "dnsproviders.go",
         "rfc2136.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/acme/dnsproviders",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

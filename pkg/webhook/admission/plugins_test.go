@@ -25,8 +25,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
-	"github.com/jetstack/cert-manager/pkg/webhook/admission/initializer"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
 )
 
 func TestPlugins_InitializesNamedOnly(t *testing.T) {

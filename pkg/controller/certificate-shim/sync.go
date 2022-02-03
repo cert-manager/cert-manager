@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -32,19 +33,18 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/record"
-
-	"github.com/go-logr/logr"
-	ingress "github.com/jetstack/cert-manager/internal/ingress"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/client-go/tools/record"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
+
+	ingress "github.com/cert-manager/cert-manager/internal/ingress"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

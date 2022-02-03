@@ -28,12 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
-	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
-	"github.com/jetstack/cert-manager/pkg/apis/acme"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/pkg/apis/acme"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}

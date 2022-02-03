@@ -22,10 +22,10 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func (c *Controller) handleGenericIssuer(obj interface{}) {

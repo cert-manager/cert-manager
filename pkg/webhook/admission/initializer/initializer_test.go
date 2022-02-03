@@ -34,8 +34,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/component-base/featuregate"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
-	"github.com/jetstack/cert-manager/pkg/webhook/admission/initializer"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
 )
 
 // TestWantsFeature ensures that the feature gates are injected

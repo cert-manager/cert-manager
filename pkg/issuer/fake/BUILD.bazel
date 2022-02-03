@@ -7,7 +7,7 @@ go_library(
         "helper.go",
         "issuer.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/issuer/fake",
+    importpath = "github.com/cert-manager/cert-manager/pkg/issuer/fake",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",

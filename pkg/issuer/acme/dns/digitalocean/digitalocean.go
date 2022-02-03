@@ -25,8 +25,9 @@ import (
 	"strings"
 
 	"github.com/digitalocean/godo"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"golang.org/x/oauth2"
+
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface

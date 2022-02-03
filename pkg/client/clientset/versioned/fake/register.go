@@ -19,8 +19,8 @@ limitations under the License.
 package fake
 
 import (
-	acmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

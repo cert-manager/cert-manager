@@ -23,9 +23,9 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/apis/acme"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/apis/acme"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
 const PluginName = "APIDeprecation"

@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller"
 )
 
 // keep an internal cache of known API types so calls to the discovery API are kept to a minimum

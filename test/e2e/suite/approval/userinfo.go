@@ -29,12 +29,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	testutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	testutil "github.com/cert-manager/cert-manager/test/e2e/framework/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // Check that the UserInfo fields on CertificateRequests are populated

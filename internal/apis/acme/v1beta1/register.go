@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/jetstack/cert-manager/pkg/apis/acme"
+	"github.com/cert-manager/cert-manager/pkg/apis/acme"
 )
 
 // SchemeGroupVersion is group version used to register these objects

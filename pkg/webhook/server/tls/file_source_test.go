@@ -31,8 +31,8 @@ import (
 	logtesting "github.com/go-logr/logr/testing"
 	"golang.org/x/sync/errgroup"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func TestFileSource_ReadsFile(t *testing.T) {

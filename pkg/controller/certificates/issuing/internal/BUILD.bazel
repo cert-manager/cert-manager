@@ -6,7 +6,7 @@ go_library(
         "keystore.go",
         "secret.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal",
     visibility = ["//pkg/controller/certificates:__subpackages__"],
     deps = [
         "//internal/controller/certificates:go_default_library",

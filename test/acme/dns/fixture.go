@@ -27,8 +27,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/jetstack/cert-manager/pkg/acme/webhook"
-	"github.com/jetstack/cert-manager/test/internal/apiserver"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
+	"github.com/cert-manager/cert-manager/test/internal/apiserver"
 )
 
 func init() {

@@ -24,11 +24,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/internal/controller/certificates/policies"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
 func Test_ensureSecretData(t *testing.T) {

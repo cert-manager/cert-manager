@@ -6,7 +6,7 @@ go_library(
         "scheme.go",
         "webhook.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/webhook",
+    importpath = "github.com/cert-manager/cert-manager/internal/webhook",
     visibility = ["//:__subpackages__"],
     deps = [
         "//cmd/webhook/app/options:go_default_library",

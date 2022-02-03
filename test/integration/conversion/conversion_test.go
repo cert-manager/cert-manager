@@ -30,11 +30,11 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	testapi "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
-	testv1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	testv2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
-	"github.com/jetstack/cert-manager/test/integration/framework"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	testapi "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
+	testv1 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	testv2 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 func TestConversion(t *testing.T) {

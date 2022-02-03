@@ -6,7 +6,7 @@ go_library(
         "factory.go",
         "validargs.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/factory",
+    importpath = "github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/client/clientset/versioned:go_default_library",

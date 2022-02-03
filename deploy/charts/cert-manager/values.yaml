@@ -434,7 +434,7 @@ cainjector:
 # sidecar proxies into cert-manager pods, you probably want to ensure that they
 # are not injected into this Job's pod. Otherwise the installation may time out
 # due to the Job never being completed because the sidecar proxy does not exit.
-# See https://github.com/jetstack/cert-manager/pull/4414 for context.
+# See https://github.com/cert-manager/cert-manager/pull/4414 for context.
 startupapicheck:
   enabled: true
 

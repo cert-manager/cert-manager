@@ -29,16 +29,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/integration/framework"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // TestIssuingController performs a basic test to ensure that the issuing

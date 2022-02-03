@@ -29,11 +29,11 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	e2eutil "github.com/cert-manager/cert-manager/test/e2e/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 

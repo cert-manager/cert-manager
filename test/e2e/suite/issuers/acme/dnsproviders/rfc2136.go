@@ -17,8 +17,8 @@ limitations under the License.
 package dnsproviders
 
 import (
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/config"
 )
 
 type RFC2136 struct {

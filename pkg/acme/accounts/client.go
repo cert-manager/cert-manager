@@ -25,11 +25,11 @@ import (
 
 	acmeapi "golang.org/x/crypto/acme"
 
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	"github.com/jetstack/cert-manager/pkg/acme/client/middleware"
-	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/metrics"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	"github.com/cert-manager/cert-manager/pkg/acme/client/middleware"
+	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 // NewClientFunc is a function type for building a new ACME client.

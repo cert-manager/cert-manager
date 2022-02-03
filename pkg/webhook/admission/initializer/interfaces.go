@@ -28,7 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/component-base/featuregate"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
 // WantsExternalKubeClientSet defines a function which sets external ClientSet for admission plugins that need it

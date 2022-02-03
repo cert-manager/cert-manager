@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/jetstack/cert-manager/test/internal/apiserver"
+	"github.com/cert-manager/cert-manager/test/internal/apiserver"
 )
 
 type TestInstallApiServer struct {

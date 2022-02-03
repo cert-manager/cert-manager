@@ -19,8 +19,8 @@ package v1
 import (
 	"k8s.io/apimachinery/pkg/conversion"
 
-	"github.com/jetstack/cert-manager/internal/apis/acme"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/internal/apis/acme"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 // Convert_acme_ACMEIssuer_To_v1_ACMEIssuer is explicitly defined to avoid issues in conversion-gen

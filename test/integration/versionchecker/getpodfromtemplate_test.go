@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
+	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // Based on https://github.com/kubernetes/kubernetes/blob/ca643a4d1f7bfe34773c74f79527be4afd95bf39/pkg/controller/controller_utils.go#L542

@@ -23,9 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/util/workqueue"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 func handleGenericIssuerFunc(

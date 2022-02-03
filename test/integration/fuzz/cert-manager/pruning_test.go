@@ -21,9 +21,9 @@ import (
 
 	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 
-	cmfuzzer "github.com/jetstack/cert-manager/internal/apis/certmanager/fuzzer"
-	apitesting "github.com/jetstack/cert-manager/internal/test/paths"
-	"github.com/jetstack/cert-manager/pkg/api"
+	cmfuzzer "github.com/cert-manager/cert-manager/internal/apis/certmanager/fuzzer"
+	apitesting "github.com/cert-manager/cert-manager/internal/test/paths"
+	"github.com/cert-manager/cert-manager/pkg/api"
 )
 
 func TestPruneTypes(t *testing.T) {

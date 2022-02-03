@@ -58,7 +58,7 @@ filegroup(
 go_library(
     name = "go_default_library",
     srcs = ["ctl_install.go"],
-    importpath = "github.com/jetstack/cert-manager/test/integration/ctl",
+    importpath = "github.com/cert-manager/cert-manager/test/integration/ctl",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/ctl/cmd:go_default_library",

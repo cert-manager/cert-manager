@@ -25,7 +25,7 @@ PLATFORM := @io_bazel_rules_go//go/toolchain:linux_amd64
 # OPTIONS YOU PROBABLY DON'T NEED TO MODIFY UNLESS DOING SOMETHING VERY SPECIFIC.
 ###############
 
-# Set an alternative base image https://github.com/jetstack/cert-manager/blob/master/build/BUILD.bazel#L42
+# Set an alternative base image https://github.com/cert-manager/cert-manager/blob/master/build/BUILD.bazel#L42
 BASE_IMAGE := static
 BAZEL_IMAGES_FLAGS := --define image_type=$(BASE_IMAGE)
 # Ensure non cgo by default

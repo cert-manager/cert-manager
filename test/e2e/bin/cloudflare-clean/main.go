@@ -24,7 +24,7 @@ import (
 
 	cf "github.com/cloudflare/cloudflare-go"
 
-	"github.com/jetstack/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/cmd/util"
 )
 
 var (

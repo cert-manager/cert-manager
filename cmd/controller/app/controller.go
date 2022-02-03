@@ -34,17 +34,17 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
 
-	"github.com/jetstack/cert-manager/cmd/controller/app/options"
-	cmdutil "github.com/jetstack/cert-manager/cmd/util"
-	"github.com/jetstack/cert-manager/internal/controller/feature"
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
-	"github.com/jetstack/cert-manager/pkg/util/profiling"
+	"github.com/cert-manager/cert-manager/cmd/controller/app/options"
+	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
+	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {

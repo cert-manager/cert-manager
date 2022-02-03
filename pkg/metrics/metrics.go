@@ -34,7 +34,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 const (
@@ -81,7 +81,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		// The clockTimeSeconds metric was first added, however this was
 		// erroneously made a "counter" metric type. Time can in fact go backwards,
 		// see:
-		// - https://github.com/jetstack/cert-manager/issues/4560
+		// - https://github.com/cert-manager/cert-manager/issues/4560
 		// - https://www.robustperception.io/are-increasing-timestamps-counters-or-gauges
 		// In order to not break users relying on the `clock_time_seconds` metric,
 		// a new `clock_time_seconds_gauge` metric of type gauge is added which

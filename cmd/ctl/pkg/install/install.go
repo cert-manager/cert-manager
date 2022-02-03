@@ -35,8 +35,8 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/install/helm"
 )
 
 type InstallOptions struct {

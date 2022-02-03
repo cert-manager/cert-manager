@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type fakeErrorClient struct {

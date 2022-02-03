@@ -23,7 +23,7 @@ import (
 	runtimejson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 
-	cmscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 )
 
 func (h *Helper) describeKubeObject(object runtime.Object) error {

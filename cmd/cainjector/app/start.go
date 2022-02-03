@@ -31,12 +31,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	cmdutil "github.com/jetstack/cert-manager/cmd/util"
-	"github.com/jetstack/cert-manager/pkg/api"
-	"github.com/jetstack/cert-manager/pkg/controller/cainjector"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/profiling"
+	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/pkg/api"
+	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
 // InjectorControllerOptions is a struct having injector controller options values
