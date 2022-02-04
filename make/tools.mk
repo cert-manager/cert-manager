@@ -2,6 +2,8 @@ GO=go
 CGO_ENABLED ?= 0
 GOBUILD=CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
 
+GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./bin/tools/gotestsum
+
 CTR=docker
 
 WORKDIR=$(shell pwd)
@@ -17,6 +19,7 @@ COSIGN_VERSION=1.3.1
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
+GOTESTSUM_VERSION=1.7.0
 YTT_VERSION=0.36.0
 YQ_VERSION=4.11.2
 
@@ -29,7 +32,7 @@ bin/scratch/tools:
 	@mkdir -p $@
 
 .PHONY: tools
-tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/ytt bin/tools/yq
+tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/gotestsum bin/tools/ytt bin/tools/yq
 
 .PHONY: integration-test-tools
 integration-test-tools: bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
@@ -129,6 +132,13 @@ bin/tools/release-notes: | bin/tools
 
 bin/tools/goimports: | bin/tools
 	GOBIN=$(shell pwd)/$(dir $@) go install golang.org/x/tools/cmd/goimports@v$(GOIMPORTS_VERSION)
+
+#############
+# gotestsum #
+#############
+
+bin/tools/gotestsum : | bin/tools
+	GOBIN=$(shell pwd)/$(dir $@) go install gotest.tools/gotestsum@v$(GOTESTSUM_VERSION)
 
 #######
 # ytt #
