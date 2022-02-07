@@ -77,6 +77,7 @@ func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: *crt.ObjectMeta.DeepCopy(),
 		Spec:       *crt.Spec.DeepCopy(),
+		Status:     cmapi.CertificateStatus{},
 	}
 	crtData, err := json.Marshal(crt)
 	if err != nil {

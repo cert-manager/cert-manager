@@ -107,6 +107,11 @@ func Test_serializeApplyStatus(t *testing.T) {
 					assert.NoError(t, err)
 					assert.Equal(t, expEmpty, string(crtData))
 
+					// Test round trip serializing Certificate preserved the status.
+					var rtCrt cmapi.Certificate
+					assert.NoError(t, json.Unmarshal(crtData, &rtCrt))
+					assert.Equal(t, rtCrt.Status, crt.Status)
+
 					wg.Done()
 				})
 			}

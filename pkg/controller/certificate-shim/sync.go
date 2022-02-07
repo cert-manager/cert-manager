@@ -125,7 +125,7 @@ func SyncFnFor(
 		}
 
 		for _, crt := range newCrts {
-			_, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{})
+			_, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{FieldManager: fieldManager})
 			if err != nil {
 				return err
 			}
