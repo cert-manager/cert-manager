@@ -69,7 +69,7 @@ func Test_Apply(t *testing.T) {
 	req.Annotations = nil
 
 	t.Log("creating CertificateRequest")
-	_, err = cmClient.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	_, err = cmClient.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{FieldManager: "cert-manager-test"})
 	assert.NoError(t, err)
 
 	t.Log("ensuring apply will can set annotations and labels")

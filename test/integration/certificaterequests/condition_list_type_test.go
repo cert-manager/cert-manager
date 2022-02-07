@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2022 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ func Test_ConditionsListType(t *testing.T) {
 	req.Name = name
 
 	t.Log("creating CertificateRequest")
-	_, err = aliceCMClient.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	_, err = aliceCMClient.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{FieldManager: "cert-manager-test"})
 	assert.NoError(t, err)
 
 	t.Log("ensuring alice can set Ready condition")
