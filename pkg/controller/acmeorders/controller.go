@@ -157,6 +157,7 @@ func NewController(
 		recorder:            recorder,
 		cmClient:            cmClient,
 		accountRegistry:     accountRegistry,
+		fieldManager:        fieldManager,
 	}, queue, mustSync
 
 }
