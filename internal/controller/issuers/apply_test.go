@@ -17,6 +17,7 @@ limitations under the License.
 package issuers
 
 import (
+	"encoding/json"
 	"strconv"
 	"sync"
 	"testing"
@@ -51,6 +52,11 @@ func Test_serializeApplyIssuerStatus(t *testing.T) {
 					issuerData, err := serializeApplyIssuerStatus(&issuer)
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(issuerData))
+
+					// Test round trip preserves the status.
+					var rtIssuer cmapi.Issuer
+					assert.NoError(t, json.Unmarshal(issuerData, &rtIssuer))
+					assert.Equal(t, issuer.Status, rtIssuer.Status)
 
 					// String match on empty status.
 					issuer.Status = cmapi.IssuerStatus{}
@@ -94,6 +100,11 @@ func Test_serializeApplyClusterIssuerStatus(t *testing.T) {
 					issuerData, err := serializeApplyClusterIssuerStatus(&issuer)
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(issuerData))
+
+					// Test round trip preserves the status.
+					var rtIssuer cmapi.ClusterIssuer
+					assert.NoError(t, json.Unmarshal(issuerData, &rtIssuer))
+					assert.Equal(t, issuer.Status, rtIssuer.Status)
 
 					// String match on empty status.
 					issuer.Status = cmapi.IssuerStatus{}
