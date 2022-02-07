@@ -24,8 +24,8 @@ import (
 	certificatesapply "k8s.io/client-go/applyconfigurations/certificates/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 
-	"github.com/jetstack/cert-manager/internal/controller/feature"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // UpdateOrApplyStatus will update a CertificateSigningRequest's status, or
