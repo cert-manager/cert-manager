@@ -24,7 +24,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // This test ensures that when a Certificate object is serialized in

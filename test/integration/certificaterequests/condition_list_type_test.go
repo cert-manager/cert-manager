@@ -26,12 +26,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	internalcertificaterequests "github.com/jetstack/cert-manager/internal/controller/certificaterequests"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/test/integration/framework"
-	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
 
 // Test_ConditionsListType ensures that the CertificateRequest's Conditions API
