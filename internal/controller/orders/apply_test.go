@@ -17,6 +17,7 @@ limitations under the License.
 package orders
 
 import (
+	"encoding/json"
 	"strconv"
 	"sync"
 	"testing"
@@ -51,6 +52,11 @@ func Test_serializeApplyStatus(t *testing.T) {
 					orderData, err := serializeApplyStatus(&order)
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(orderData))
+
+					// Test round trip preserves the status.
+					var rtOrder cmacme.Order
+					assert.NoError(t, json.Unmarshal(orderData, &rtOrder))
+					assert.Equal(t, order.Status, rtOrder.Status)
 
 					// String match on empty status.
 					order.Status = cmacme.OrderStatus{}
