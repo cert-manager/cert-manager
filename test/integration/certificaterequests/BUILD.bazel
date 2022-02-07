@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
 go_test(
     name = "go_default_test",
-    srcs = ["condition_list_type_test.go"],
+    srcs = [
+        "apply_test.go",
+        "condition_list_type_test.go",
+    ],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",

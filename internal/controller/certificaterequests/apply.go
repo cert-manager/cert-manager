@@ -36,7 +36,7 @@ import (
 // the Apply call.
 // Always sets Force Apply to true.
 func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, req *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
-	reqData, err := serializeApplyStatus(req)
+	reqData, err := serializeApply(req)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +96,7 @@ func serializeApplyStatus(req *cmapi.CertificateRequest) ([]byte, error) {
 	req = &cmapi.CertificateRequest{
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: req.Namespace, Name: req.Name},
+		Spec:       cmapi.CertificateRequestSpec{},
 		Status:     *req.Status.DeepCopy(),
 	}
 	reqData, err := json.Marshal(req)
