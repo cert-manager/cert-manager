@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2022 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ limitations under the License.
 package certificaterequests
 
 import (
+	"encoding/json"
 	"strconv"
 	"sync"
 	"testing"
@@ -55,6 +56,11 @@ func Test_serializeApply(t *testing.T) {
 					reqData, err := serializeApply(&req)
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(reqData))
+
+					// Test round trip preserves the spec and object meta.
+					var rtReq cmapi.CertificateRequest
+					assert.NoError(t, json.Unmarshal(reqData, &rtReq))
+					assert.Equal(t, req.Spec, rtReq.Spec)
 
 					// String match on empty spec.
 					req.Spec = cmapi.CertificateRequestSpec{}
