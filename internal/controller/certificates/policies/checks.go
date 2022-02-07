@@ -373,7 +373,7 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 // AdditionalOutputFormats against the given Secret. It ensures that for each
 // additional output format defined, the corresponding data key and correct
 // value is present in the Secret Data.
-// Returns true when there is a violation when an AdditionalOutputFormat is
+// Returns true if there is a violation when an AdditionalOutputFormat is
 // defined, but either the key is missing, or the value at the key in the
 // Secret data contains the wrong value.
 func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, bool) {
@@ -403,9 +403,10 @@ func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, boo
 // SecretAdditionalOutputFormatsOwnerMismatch inspects the given Certificate's
 // AdditionalOutputFormats against the given Secret. It ensures that additional
 // output formats present on the Secret, whose fields are managed by the field
-// manager, are only and must be present if defined on the Certificate.
+// manager, must be present if defined on the Certificate, and no other keys
+// are present.
 //
-// Returns true when there is a violation by- an additional output format is
+// Returns true if there is a violation by; an additional output format is
 // defined on the Certificate but not present or managed by the field manager
 // on the Secret, or an additional output format that is managed by the field
 // manager is present on the Secret but not defined on the Certificate.
