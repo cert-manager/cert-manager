@@ -65,6 +65,9 @@ type ACME struct {
 	recorder record.EventRecorder
 
 	copiedAnnotationPrefixes []string
+
+	// fieldManager is the manager name used for Create and Apply operations.
+	fieldManager string
 }
 
 func init() {
@@ -139,7 +142,7 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 
 	order, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
 	if apierrors.IsNotFound(err) {
-		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{})
+		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{FieldManager: a.fieldManager})
 		if err != nil {
 			// Failing to create the order here is most likely network related. We
 			// should backoff and keep trying.
