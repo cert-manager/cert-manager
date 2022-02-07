@@ -57,7 +57,7 @@ func Test_serializeApply(t *testing.T) {
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(reqData))
 
-					// Test round trip preserves the spec and object meta.
+					// Test round trip preserves the spec.
 					var rtReq cmapi.CertificateRequest
 					assert.NoError(t, json.Unmarshal(reqData, &rtReq))
 					assert.Equal(t, req.Spec, rtReq.Spec)
@@ -113,6 +113,11 @@ func Test_serializeApplyStatus(t *testing.T) {
 					reqData, err := serializeApplyStatus(&req)
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(reqData))
+
+					// Test round trip preserves the status.
+					var rtReq cmapi.CertificateRequest
+					assert.NoError(t, json.Unmarshal(reqData, &rtReq))
+					assert.Equal(t, req.Status, rtReq.Status)
 
 					// String match on empty status.
 					req.Status = cmapi.CertificateRequestStatus{}

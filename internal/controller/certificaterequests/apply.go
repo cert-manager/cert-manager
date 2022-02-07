@@ -32,8 +32,7 @@ import (
 // Apply will make an Apply API call with the given client to the
 // CertificateRequest's resource endpoint. All status data in the given
 // CertificateRequest object is dropped.
-// The given fieldManager is will be used as the FieldManager in
-// the Apply call.
+// The given fieldManager will be used as the FieldManager in the Apply call.
 // Always sets Force Apply to true.
 func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, req *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
 	reqData, err := serializeApply(req)
@@ -50,8 +49,7 @@ func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, req 
 // CertificateRequests's status sub-resource endpoint. All data in the given
 // CertificateRequest object is dropped; expect for the name, namespace, and
 // status object.
-// The given fieldManager is will be used as the FieldManager in the Apply
-// call.
+// The given fieldManager will be used as the FieldManager in the Apply call.
 // Always sets Force Apply to true.
 func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string, req *cmapi.CertificateRequest) error {
 	reqData, err := serializeApplyStatus(req)
@@ -71,6 +69,8 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 // The status object is unset.
 // TypeMeta will be populated with the Kind "CertificateRequest" and API
 // Version "cert-manager.io/v1" respectively.
+// Manually marshalling the object into JSON is required when using the Patch
+// API call for the cert-manager client.
 func serializeApply(req *cmapi.CertificateRequest) ([]byte, error) {
 	req = &cmapi.CertificateRequest{
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
@@ -90,8 +90,11 @@ func serializeApply(req *cmapi.CertificateRequest) ([]byte, error) {
 // serializeApplyStatus converts the given CertificateRequest object to JSON.
 // Only the name, namespace, and status field values will be copied and encoded
 // into the serialized slice. All other fields will be left at their zero
-// value.  TypeMeta will be populated with the Kind "CertificateRequest" and
-// API Version "cert-manager.io/v1" respectively.
+// value.
+// TypeMeta will be populated with the Kind "CertificateRequest" and API
+// Version "cert-manager.io/v1" respectively.
+// Manually marshalling the object into JSON is required when using the Patch
+// API call for the cert-manager client.
 func serializeApplyStatus(req *cmapi.CertificateRequest) ([]byte, error) {
 	req = &cmapi.CertificateRequest{
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
