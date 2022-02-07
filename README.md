@@ -108,8 +108,15 @@ of the cert-manager website. Please try to follow those guidelines if you're sub
 **most code under `pkg/` is subject to change in a breaking way**, even between minor or patch releases and even if
 the code is currently publicly exported.
 
-This lack of a Go module compatibility guarantee does not affect API version guarantees
+The lack of a Go module compatibility guarantee does not affect API version guarantees
 under the [Kubernetes Deprecation Policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/).
+
+For more details see [Importing cert-manager in Go](https://cert-manager.io/docs/contributing/importing/) on the
+cert-manager website.
+
+The import path for cert-manager versions 1.8 and later is `github.com/cert-manager/cert-manager`.
+
+For all versions of cert-manager before 1.8, including minor and patch releases, the import path is `github.com/jetstack/cert-manager`.
 
 ## Security Reporting
 
