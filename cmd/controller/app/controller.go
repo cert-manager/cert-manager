@@ -283,9 +283,10 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
 			HTTP01SolverNameservers: opts.ACMEHTTP01SolverNameservers,
 
-			DNS01Nameservers:        nameservers,
-			DNS01CheckRetryPeriod:   opts.DNS01CheckRetryPeriod,
-			DNS01CheckAuthoritative: !opts.DNS01RecursiveNameserversOnly,
+			DNS01Nameservers:         nameservers,
+			DNS01CheckRetryPeriod:    opts.DNS01CheckRetryPeriod,
+			DNS01CheckRecreatePeriod: opts.DNS01CheckRecreatePeriod,
+			DNS01CheckAuthoritative:  !opts.DNS01RecursiveNameserversOnly,
 
 			AccountRegistry: acmeAccountRegistry,
 		},

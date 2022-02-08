@@ -110,7 +110,8 @@ type ControllerOptions struct {
 	// EnablePprof determines whether pprof should be enabled.
 	EnablePprof bool
 
-	DNS01CheckRetryPeriod time.Duration
+	DNS01CheckRetryPeriod    time.Duration
+	DNS01CheckRecreatePeriod time.Duration
 
 	// Annotations copied Certificate -> CertificateRequest,
 	// CertificateRequest -> Order. Slice of string literals that are
@@ -141,7 +142,8 @@ const (
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
-	defaultDNS01CheckRetryPeriod = 10 * time.Second
+	defaultDNS01CheckRetryPeriod    = 10 * time.Second
+	defaultDNS01CheckRecreatePeriod = 0 * time.Second // 0 means never recreate
 )
 
 var (
@@ -240,6 +242,7 @@ func NewControllerOptions() *ControllerOptions {
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
+		DNS01CheckRecreatePeriod:          defaultDNS01CheckRecreatePeriod,
 		EnablePprof:                       cmdutil.DefaultEnableProfiling,
 		PprofAddress:                      cmdutil.DefaultProfilerAddr,
 	}
@@ -348,6 +351,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
 		"The duration the controller should wait between checking if a ACME dns entry exists."+
 		"This should be a valid duration string, for example 180s or 1h")
+	fs.DurationVar(&s.DNS01CheckRecreatePeriod, "dns01-check-recreate-period", defaultDNS01CheckRecreatePeriod, ""+
+		"The minimum duration to wait before assuming a pending DNS01 challenge failed and recreating it. "+
+		"When this flag is set, all DNS-01 challenges in pending state and are older than this period will be deleted for recreation on next reconciliation. "+
+		"Should be a valid Go duration string, e.g. 180s or 1h. Defaults to 0, meaning 'never recreate'")
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")

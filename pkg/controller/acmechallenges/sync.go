@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +32,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -70,6 +72,19 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 
 	if ch.DeletionTimestamp != nil {
 		return c.handleFinalizer(ctx, ch)
+	}
+
+	// if dns01-check-recreate-period is enabled and the pending challenge's creation time
+	// is more than DNS01CheckRecreatePeriod ealier from now delete the stale challenge so it can be recreated
+	rp := c.DNS01CheckRecreatePeriod
+	if rp > 0 && ch.Spec.Type == v1.ACMEChallengeTypeDNS01 && ch.Status.State == v1.Pending &&
+		ch.CreationTimestamp.Add(rp).Before(time.Now()) {
+		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(ctx, ch.Name, metav1.DeleteOptions{}); err != nil {
+			log.Error(err, fmt.Sprintf("error deleting stale challenge %s/%s", ch.Namespace, ch.Name))
+			return err
+		}
+		log.Info(fmt.Sprintf("deleted challenge which lasted longer than the re-create period %s/%s", ch.Namespace, ch.Name))
+		return nil
 	}
 
 	defer func() {

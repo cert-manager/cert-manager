@@ -20,8 +20,10 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
@@ -30,6 +32,7 @@ import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	ctrl "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -458,6 +461,33 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
 						))),
+				},
+			},
+		},
+		"delete the pending challenge if it passes recreation deadline": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeCreationTime(metav1.Date(2001, 1, 1, 1, 1, 1, 1, time.UTC)),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+			),
+			builder: &testpkg.Builder{
+				Context: &ctrl.Context{
+					RootContext: context.Background(),
+					ContextOptions: ctrl.ContextOptions{
+						ACMEOptions: ctrl.ACMEOptions{
+							DNS01CheckRecreatePeriod: 1 * time.Minute,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeCreationTime(metav1.Date(2001, 1, 1, 1, 1, 1, 1, time.UTC)),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewDeleteAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						gen.DefaultTestNamespace,
+						"testchal")),
 				},
 			},
 		},

@@ -17,6 +17,8 @@ limitations under the License.
 package gen
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -44,6 +46,12 @@ func ChallengeFrom(ch *cmacme.Challenge, mods ...ChallengeModifier) *cmacme.Chal
 func SetChallengeNamespace(ns string) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Namespace = ns
+	}
+}
+
+func SetChallengeCreationTime(ct metav1.Time) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.CreationTimestamp = ct
 	}
 }
 
