@@ -231,7 +231,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	secretName := "example"
 	certName := "testcrt"
 
-	issuanceAttempts := 7
+	failedIssuanceAttempts := 7
 	backoffPeriod := time.Hour * 32
 
 	// Create namespace
@@ -282,7 +282,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		t.Fatal(err)
 	}
 	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "", "")
-	cert.Status.IssuanceAttempts = &issuanceAttempts
+	cert.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
 	cert.Status.LastFailureTime = &metaNow
 	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
 	if err != nil {

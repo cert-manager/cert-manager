@@ -167,7 +167,7 @@ func SetCertificateLastFailureTime(p metav1.Time) CertificateModifier {
 }
 func SetCertificateIssuanceAttempts(ia *int) CertificateModifier {
 	return func(crt *v1.Certificate) {
-		crt.Status.IssuanceAttempts = ia
+		crt.Status.FailedIssuanceAttempts = ia
 	}
 }
 

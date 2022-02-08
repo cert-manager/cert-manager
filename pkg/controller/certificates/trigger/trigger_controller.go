@@ -230,9 +230,9 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 
 // shouldBackOffReissuingOnFailure returns true if an issuance needs to be
 // delayed and the required delay after calculating the exponential backoff.
-// The backoff periods are 1h, 2h, 4h, 8h, 16h, 32h counting from when the
+// The backoff periods are 1h, 2h, 4h, 8h, 16h and 32h counting from when the last
 // failure occured,
-// so the returned delay will be backoff_period - (current_time - failure_time)
+// so the returned delay will be backoff_period - (current_time - last_failure_time)
 //
 // Notably, it returns no back-off when the certificate doesn't
 // match the "next" certificate (since a mismatch means that this certificate
@@ -274,21 +274,21 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 
 	initialDelay := time.Hour
 	delay := initialDelay
-	issuanceAttempts := 0
+	failedIssuanceAttempts := 0
 	// It is possible that crt.Status.LastFailureTime != nil &&
-	// crt.Status.IssuanceAttempts == nil (in case of the Certificate having
+	// crt.Status.FailedIssuanceAttempts == nil (in case of the Certificate having
 	// failed for an installation of cert-manager before the issuance
 	// attempts were introduced). In such case delay = initialDelay.
-	if crt.Status.IssuanceAttempts != nil {
-		issuanceAttempts = *crt.Status.IssuanceAttempts
-		delay = time.Hour * time.Duration(math.Pow(2, float64(issuanceAttempts-1)))
+	if crt.Status.FailedIssuanceAttempts != nil {
+		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts
+		delay = time.Hour * time.Duration(math.Pow(2, float64(failedIssuanceAttempts-1)))
 	}
 
 	// Ensure that maximum returned delay is 32 hours
 	// delay cannot be calculated for large issuance numbers, so we
 	// cannot reliably check if delay > maxDelay directly
 	// (see i.e the result of time.Duration(math.Pow(2, 99)))
-	if issuanceAttempts > stopIncreaseBackoff {
+	if failedIssuanceAttempts > stopIncreaseBackoff {
 		delay = maxDelay
 	}
 
