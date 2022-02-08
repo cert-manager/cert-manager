@@ -51,7 +51,13 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
 
-const ControllerName = "certificates-trigger"
+const (
+	ControllerName = "certificates-trigger"
+	// stopIncreaseBackoff is the number of issuance attempts after which the backoff period should stop to increase
+	stopIncreaseBackoff = 6 // 2 ^ (6 - 1) = 32 = maxDelay
+	// maxDelay is the maximum backoff period
+	maxDelay = 32 * time.Hour
+)
 
 // This controller observes the state of the certificate's currently
 // issued `spec.secretName` and the rest of the `certificate.spec` fields to
@@ -279,11 +285,9 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 	}
 
 	// Ensure that maximum returned delay is 32 hours
-	maxDelay := 32 * time.Hour
 	// delay cannot be calculated for large issuance numbers, so we
 	// cannot reliably check if delay > maxDelay directly
 	// (see i.e the result of time.Duration(math.Pow(2, 99)))
-	stopIncreaseBackoff := 6 // 2 ^ (6 - 1) = 32 = maxDelay
 	if issuanceAttempts > stopIncreaseBackoff {
 		delay = maxDelay
 	}

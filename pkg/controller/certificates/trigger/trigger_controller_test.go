@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -167,7 +168,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-59*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			wantDataForCertificateCalled: true,
 			mockDataForCertificateReturn: policies.Input{
@@ -186,7 +187,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example-that-was-updated-by-user.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-59*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			wantDataForCertificateCalled: true,
 			mockDataForCertificateReturn: policies.Input{
@@ -216,8 +217,8 @@ func Test_controller_ProcessItem(t *testing.T) {
 			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateGeneration(42),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-61*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			wantDataForCertificateCalled: true,
 			mockDataForCertificateReturn: policies.Input{},
@@ -364,7 +365,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-59*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -380,7 +381,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -396,7 +397,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-61*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -411,7 +412,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(2)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(2)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -427,7 +428,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-121*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(2)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(2)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -442,7 +443,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(3)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(3)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -458,7 +459,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-245*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(3)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(3)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -473,7 +474,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(4)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(4)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -489,7 +490,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-10*time.Hour))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(4)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(4)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -504,7 +505,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(5)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(5)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -520,7 +521,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-1021*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(5)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(5)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -535,7 +536,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(6)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(6)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -551,7 +552,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-32*time.Hour))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(6)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(6)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -566,7 +567,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(100)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(100)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -582,7 +583,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-32*time.Hour))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(100)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(100)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -644,7 +645,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example-was-changed-by-user.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -659,7 +660,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 				gen.SetCertificateRevision(1),
 				gen.SetCertificateDNSNames("example-was-updated-by-user.com"),
 				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-1*time.Minute))),
-				gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+				gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 			),
 			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
@@ -677,8 +678,4 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 		})
 
 	}
-}
-
-func pointerToInt(i int) *int {
-	return &i
 }

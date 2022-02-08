@@ -30,6 +30,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -290,7 +291,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 						),
 					)),
 				},
@@ -304,7 +305,7 @@ func TestIssuingController(t *testing.T) {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
-					gen.CertificateFrom(issuingCert, gen.SetCertificateIssuanceAttempts(pointerToInt(4))),
+					gen.CertificateFrom(issuingCert, gen.SetCertificateIssuanceAttempts(pointer.Int(4))),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
@@ -342,7 +343,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(pointerToInt(5)),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(5)),
 						),
 					)),
 				},
@@ -624,7 +625,7 @@ func TestIssuingController(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert, gen.SetCertificateLastFailureTime(metaFixedClockStart),
-						gen.SetCertificateIssuanceAttempts(pointerToInt(4))),
+						gen.SetCertificateIssuanceAttempts(pointer.Int(4))),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
@@ -999,7 +1000,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 						),
 					)),
 				},
@@ -1051,7 +1052,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
 						),
 					)),
 				},
@@ -1105,8 +1106,4 @@ func TestIssuingController(t *testing.T) {
 			test.builder.CheckAndFinish(err)
 		})
 	}
-}
-
-func pointerToInt(i int) *int {
-	return &i
 }

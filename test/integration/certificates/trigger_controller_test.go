@@ -18,15 +18,18 @@ package certificates
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/segmentio/encoding/json"
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -94,7 +97,7 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, cert.Name)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, cert.Name)
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
@@ -189,7 +192,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Wait for 2s, polling every 200ms to ensure that the controller does not set
 	// the condition.
 	t.Log("Ensuring Certificate does not have Issuing condition for 2s...")
-	ensureCertificateDoesNotHaveIssuingCondition(ctx, t, cmCl, namespace, certName)
+	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmCl, namespace, certName)
 
 	// 2. Test that a Certificate does get the Issuing status condition set to
 	// True when the X.509 cert is nearing expiry.
@@ -200,15 +203,9 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	renewalTime := notAfter.Add(renewBefore.Duration * -1)
 	fakeClock.SetTime(renewalTime.Add(time.Millisecond * 2))
 
-	// Certificate's status.RenewalTime does not determine renewal, but we need to
-	// update some field to trigger a reconcile.
-	someRenewalTime := metav1.NewTime(now)
-	cert.Status.RenewalTime = &someRenewalTime
-	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
+	// apply a random condition to cert to ensure the reconciler gets triggered
+	applyTestCondition(t, ctx, cert, cmCl)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
 }
 
 func TestTriggerController_ExpBackoff(t *testing.T) {
@@ -255,7 +252,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue)
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue, "cert-manger-certificates-trigger-test")
 	c := controllerpkg.NewController(
 		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
@@ -276,7 +273,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 
 	// 1. Test that Issuing condition gets set to True
 	t.Log("Ensuring Certificate does get the Issuing condition set to true initially...")
-	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
 
 	// Simulate issuance having failed
 	t.Log("Simulate issuance having failed for 7th time in a row")
@@ -296,43 +293,24 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// modify some cert field to ensure a reconcile gets triggered
 	t.Log("Advance clock to slightly before the end of the backoff period")
 	fakeClock.SetTime(now.Add(backoffPeriod - time.Minute))
-	someRenewalTime := metav1.NewTime(time.Now())
-	cert.Status.RenewalTime = &someRenewalTime
-	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// apply a random condition to cert to ensure the reconciler gets triggered
+	applyTestCondition(t, ctx, cert, cmCl)
+
 	t.Log("Ensuring Certificate does not have Issuing condition set to true for 2s...")
-	ensureCertificateDoesNotHaveIssuingCondition(ctx, t, cmCl, namespace, certName)
+	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmCl, namespace, certName)
 
 	// 3. Test that issuance gets retried once the backoff period is over
 	t.Log("Advance clock to just after the backoff period")
 	fakeClock.SetTime(now.Add(backoffPeriod + time.Second))
-	// We need to update some field to trigger a reconcile (as advancing the
-	// clock does not cause the cert, that was set to be reconciled after the
-	// backoff period, to be reconciled now)
-	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, certName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	someRenewalTime = metav1.NewTime(time.Now())
-	cert.Status.RenewalTime = &someRenewalTime
-	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
-	if err != nil {
-		// This is hacky, but it appears that sometimes the trigger
-		// controller gets triggered before renewal time is updated (but
-		// after the backoff time was set to have passed) and the
-		// issuing condition is already applied so this update will
-		// fail. This can be removed once we have server side apply.
-		t.Log("Ensuring Certificate does get the Issuing condition set to true after the backoff period")
-		ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
-	}
+	// apply a random condition to cert to ensure the reconciler gets triggered
+	applyTestCondition(t, ctx, cert, cmCl)
 
 	t.Log("Ensuring Certificate does get the Issuing condition set to true after the backoff period")
-	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
 }
 
-func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testing.T, cmCl cmclient.Interface, namespace, name string) {
+func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
+	t.Helper()
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*2)
 	defer cancel()
 
@@ -363,7 +341,8 @@ func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testin
 		t.Fatal(err)
 	}
 }
-func ensureCertificateHasIssuingCondition(ctx context.Context, t *testing.T, cmCl cmclient.Interface, namespace, name string) {
+func ensureCertificateHasIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
+	t.Helper()
 
 	err := wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
 		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -384,6 +363,7 @@ func ensureCertificateHasIssuingCondition(ctx context.Context, t *testing.T, cmC
 }
 
 func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cmapi.Certificate, notBefore, notAfter time.Time) []byte {
+	t.Helper()
 	pk, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
 		t.Fatal(err)
@@ -403,4 +383,38 @@ func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cm
 		t.Fatal(err)
 	}
 	return certData
+}
+
+// applyTestCondition applies a 'random' test condition to the given
+// certificate. This can be used to force a run of a reconciler that is
+// triggered on certificate events.
+func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certificate, client cmclient.Interface) {
+	t.Helper()
+	testCond := cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionType("Test"),
+		Reason:  "TestTwo",
+		Message: fmt.Sprintf("Test-%s", time.Now().Truncate(time.Second).String()),
+		Status:  cmmeta.ConditionUnknown,
+	}
+	// Patch instead of update as there might be conflicts here due to
+	// trigger controller picking up the cert and adding Issuing condition
+	// in between.
+	statusUpdate := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Name: cert.Name, Namespace: cert.Namespace},
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		Status: cmapi.CertificateStatus{
+			Conditions: []cmapi.CertificateCondition{testCond},
+		},
+	}
+	statusUpdateJson, err := json.Marshal(statusUpdate)
+	if err != nil {
+		t.Errorf("failed to marshal cert data: %v", err)
+	}
+	_, err = client.CertmanagerV1().Certificates(cert.Namespace).Patch(
+		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: pointer.Bool(true)},
+		"status",
+	)
+	if err != nil {
+		t.Fatalf("Failed to apply test condition: %v", err)
+	}
 }
