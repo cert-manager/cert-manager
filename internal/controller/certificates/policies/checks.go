@@ -369,13 +369,12 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 	}
 }
 
-// SecretAdditionalOutputFormatsDataMissmatch inspects the given Certificate's
-// AdditionalOutputFormats against the given Secret. It ensures that for each
-// additional output format defined, the corresponding data key and correct
-// value is present in the Secret Data.
-// Returns true if there is a violation when an AdditionalOutputFormat is
-// defined, but either the key is missing, or the value at the key in the
-// Secret data contains the wrong value.
+// SecretAdditionalOutputFormatsDataMismatch validates that the Secret has the
+// expected Certificate AdditionalOutputFormats.
+// Returns true (violation) if AdditionalOutputFormat(s) are present and any of
+// the following:
+//   * Secret key is missing
+//   * Secret value is incorrect
 func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, bool) {
 	const message = "Certificate's AdditionalOutputFormats doesn't match Secret Data"
 	for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
@@ -400,20 +399,11 @@ func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, boo
 	return "", "", false
 }
 
-// SecretAdditionalOutputFormatsOwnerMismatch inspects the given Certificate's
-// AdditionalOutputFormats against the given Secret. It ensures that additional
-// output formats present on the Secret, whose fields are managed by the field
-// manager, must be present if defined on the Certificate, and no other keys
-// are present.
-//
-// Returns true if there is a violation by; an additional output format is
-// defined on the Certificate but not present or managed by the field manager
-// on the Secret, or an additional output format that is managed by the field
-// manager is present on the Secret but not defined on the Certificate.
-//
-// Also returns true with a ManagedFieldsParseError reason if the managed
-// fields of the Secret were not able to be decoded, however should be
-// considered a non re-triable error.
+// SecretAdditionalOutputFormatsOwnerMismatch validates that the field manager
+// owns the correct Certificate's AdditionalOutputFormats in the Secret.
+// Returns true (violation) if:
+//   * missing AdditionalOutputFormat key owned by the field manager
+//   * AdditionalOutputFormat key owned by the field manager shouldn't exist
 func SecretAdditionalOutputFormatsOwnerMismatch(fieldManager string) Func {
 	const message = "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields"
 	return func(input Input) (string, string, bool) {
