@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"encoding/base64"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -357,6 +358,13 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								Labels: labels,
+								ParentRefs: []gwapi.ParentRef{
+									{
+										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace("projectcontour"); return &n }(),
+										Name:        "acmesolver",
+										SectionName: nil,
+									},
+								},
 							},
 						},
 					},

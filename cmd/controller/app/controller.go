@@ -25,6 +25,15 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/api/resource"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/clock"
+
 	"github.com/cert-manager/cert-manager/cmd/controller/app/options"
 	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -36,14 +45,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
-	"golang.org/x/sync/errgroup"
-	"k8s.io/apimachinery/pkg/api/resource"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/clock"
 )
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {

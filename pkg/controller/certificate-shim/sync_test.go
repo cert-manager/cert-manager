@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -1128,10 +1128,12 @@ func TestSync(t *testing.T) {
 							Protocol: "HTTPS",
 							TLS: &gwapi.GatewayTLSConfig{
 								Mode: ptrMode(gwapi.TLSModeTerminate),
-								CertificateRef: &gwapi.LocalObjectReference{
-									Group: "core",
-									Kind:  "Secret",
-									Name:  "example-com-tls",
+								CertificateRefs: []*gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
 								},
 							},
 						},
@@ -1187,10 +1189,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1248,10 +1252,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1305,10 +1311,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1356,10 +1364,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1408,10 +1418,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1463,10 +1475,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1513,10 +1527,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1567,10 +1583,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1602,10 +1620,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}, {
@@ -1614,10 +1634,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls-invalid",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1666,8 +1688,8 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
-							Mode:           ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: nil, // 🔥
+							Mode:            ptrMode(gwapi.TLSModeTerminate),
+							CertificateRefs: []*gwapi.SecretObjectReference{nil}, // 🔥
 						},
 					}, {
 						Hostname: ptrHostname("www.example.com"),
@@ -1675,10 +1697,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -1737,10 +1761,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "existing-crt",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "existing-crt",
+								},
 							},
 						},
 					}},
@@ -1789,10 +1815,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "existing-crt",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "existing-crt",
+								},
 							},
 						},
 					}},
@@ -1849,10 +1877,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "cert-secret-name",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "existing-crt",
+								},
 							},
 						},
 					}},
@@ -1925,10 +1955,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "existing-crt",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "existing-crt",
+								},
 							},
 						},
 					}},
@@ -1975,10 +2007,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "existing-crt",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "existing-crt",
+								},
 							},
 						},
 					}},
@@ -2077,10 +2111,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "existing-crt",
+								},
 							},
 						},
 					}},
@@ -2150,10 +2186,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}, {
@@ -2162,10 +2200,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}, {
@@ -2174,10 +2214,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -2229,10 +2271,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "foo-example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "foo-example-com-tls",
+								},
 							},
 						},
 					}, {
@@ -2241,10 +2285,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "bar-example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "bar-example-com-tls",
+								},
 							},
 						},
 					}},
@@ -2314,10 +2360,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -2350,10 +2398,12 @@ func TestSync(t *testing.T) {
 						Protocol: "HTTPS",
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
-							CertificateRef: &gwapi.LocalObjectReference{
-								Group: "core",
-								Kind:  "Secret",
-								Name:  "example-com-tls",
+							CertificateRefs: []*gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
 							},
 						},
 					}},
@@ -2649,10 +2699,12 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.GatewayTLSConfig{
 					Mode: ptrMode(gwapi.TLSModeTerminate),
-					CertificateRef: &gwapi.LocalObjectReference{
-						Group: "core",
-						Kind:  "Secret",
-						Name:  "example-com",
+					CertificateRefs: []*gwapi.SecretObjectReference{
+						{
+							Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+							Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:  "example-com",
+						},
 					},
 				},
 			},
@@ -2666,10 +2718,12 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.GatewayTLSConfig{
 					Mode: ptrMode(gwapi.TLSModeTerminate),
-					CertificateRef: &gwapi.LocalObjectReference{
-						Group: "",
-						Kind:  "Secret",
-						Name:  "example-com",
+					CertificateRefs: []*gwapi.SecretObjectReference{
+						{
+							Group: func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
+							Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:  "example-com",
+						},
 					},
 				},
 			},
@@ -2683,10 +2737,12 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.GatewayTLSConfig{
 					Mode: ptrMode(gwapi.TLSModeTerminate),
-					CertificateRef: &gwapi.LocalObjectReference{
-						Group: "invalid",
-						Kind:  "Secret",
-						Name:  "example-com",
+					CertificateRefs: []*gwapi.SecretObjectReference{
+						{
+							Group: func() *gwapi.Group { g := gwapi.Group("invalid"); return &g }(),
+							Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:  "example-com-tls",
+						},
 					},
 				},
 			},
@@ -2700,10 +2756,12 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.GatewayTLSConfig{
 					Mode: ptrMode(gwapi.TLSModeTerminate),
-					CertificateRef: &gwapi.LocalObjectReference{
-						Group: "core",
-						Kind:  "SomeOtherKind",
-						Name:  "example-com",
+					CertificateRefs: []*gwapi.SecretObjectReference{
+						{
+							Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+							Kind:  func() *gwapi.Kind { k := gwapi.Kind("SomeOtherKind"); return &k }(),
+							Name:  "example-com",
+						},
 					},
 				},
 			},
@@ -2793,7 +2851,11 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 			ingLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "gw-2", Namespace: "default", UID: "gw-2"},
 				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{{
-					TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name"}},
+					TLS: &gwapi.GatewayTLSConfig{CertificateRefs: []*gwapi.SecretObjectReference{
+						{
+							Name: "secret-name",
+						},
+					}},
 				}}},
 			},
 			wantToBeRemoved: nil,
@@ -2812,7 +2874,7 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 			ingLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
 				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
-					{TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "not-secret-name"}}},
+					{TLS: &gwapi.GatewayTLSConfig{CertificateRefs: []*gwapi.SecretObjectReference{{Name: "not-secret-name"}}}},
 				}},
 			},
 			wantToBeRemoved: []string{"cert-1"},
@@ -2831,7 +2893,7 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 			ingLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
 				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
-					{TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name"}}},
+					{TLS: &gwapi.GatewayTLSConfig{CertificateRefs: []*gwapi.SecretObjectReference{{Name: "secret-name"}}}},
 				}},
 			},
 			wantToBeRemoved: nil,
@@ -2850,8 +2912,8 @@ func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
 		Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
 			{TLS: nil},
-			{TLS: &gwapi.GatewayTLSConfig{CertificateRef: nil}},
-			{TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name"}}},
+			{TLS: &gwapi.GatewayTLSConfig{CertificateRefs: nil}},
+			{TLS: &gwapi.GatewayTLSConfig{CertificateRefs: []*gwapi.SecretObjectReference{{Name: "secret-name"}}}},
 		}},
 	})
 	assert.Equal(t, true, got)
@@ -2860,7 +2922,7 @@ func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
 		Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
 			{TLS: nil},
-			{TLS: &gwapi.GatewayTLSConfig{CertificateRef: nil}},
+			{TLS: &gwapi.GatewayTLSConfig{CertificateRefs: nil}},
 		}},
 	})
 	assert.Equal(t, false, got)

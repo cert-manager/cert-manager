@@ -19,4 +19,4 @@ source "$(dirname "${BASH_SOURCE[0]}")/../../lib/lib.sh"
 
 check_tool kubectl
 
-kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.3.0" | kubectl apply -f -
+kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1" | kubectl apply -f -
