@@ -70,7 +70,10 @@ type fixture struct {
 	// Default: "123d=="
 	dnsChallengeKey string
 
-	setupLock   sync.Mutex
+	setupLock     sync.Mutex
+	setupRC       int32
+	setupStopFunc func()
+
 	environment *envtest.Environment
 	clientset   kubernetes.Interface
 
@@ -82,25 +85,41 @@ func (f *fixture) setup(t *testing.T) func() {
 	f.setupLock.Lock()
 	defer f.setupLock.Unlock()
 
-	if err := validate(f); err != nil {
-		t.Fatalf("error validating test fixture configuration: %v", err)
+	f.setupRC++
+
+	// Only run the setup, if there is no instance running already.
+	if f.setupRC == 1 {
+		if err := validate(f); err != nil {
+			t.Fatalf("error validating test fixture configuration: %v", err)
+		}
+
+		env, stopFunc := apiserver.RunBareControlPlane(t)
+		f.environment = env
+
+		cl, err := kubernetes.NewForConfig(env.Config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.clientset = cl
+
+		stopCh := make(chan struct{})
+		f.testSolver.Initialize(env.Config, stopCh)
+
+		f.setupStopFunc = func() {
+			close(stopCh)
+			stopFunc()
+		}
 	}
-
-	env, stopFunc := apiserver.RunBareControlPlane(t)
-	f.environment = env
-
-	cl, err := kubernetes.NewForConfig(env.Config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	f.clientset = cl
-
-	stopCh := make(chan struct{})
-	f.testSolver.Initialize(env.Config, stopCh)
 
 	return func() {
-		close(stopCh)
-		stopFunc()
+		f.setupLock.Lock()
+		defer f.setupLock.Unlock()
+
+		f.setupRC--
+		// Only stop the setup, if this is the last reference to the running instance.
+		if f.setupRC == 0 {
+			f.setupStopFunc()
+		}
 	}
 }
 
