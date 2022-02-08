@@ -71,7 +71,10 @@ type fixture struct {
 	// Default: "123d=="
 	dnsChallengeKey string
 
-	setupLock   sync.Mutex
+	setupLock     sync.Mutex
+	setupRC       int32
+	setupStopFunc func()
+
 	environment *envtest.Environment
 	// An admin user for running kubectl commands against this envtest
 	// environment.
@@ -114,42 +117,58 @@ func (f *fixture) setup(t *testing.T) func() {
 	f.setupLock.Lock()
 	defer f.setupLock.Unlock()
 
-	if err := validate(f); err != nil {
-		t.Fatalf("error validating test fixture configuration: %v", err)
-	}
+	f.setupRC++
 
-	env, stopControlPlaneFn := apiserver.RunBareControlPlane(t)
-	f.environment = env
+	// Only run the setup, if there is no instance running already.
+	if f.setupRC == 1 {
+		if err := validate(f); err != nil {
+			t.Fatalf("error validating test fixture configuration: %v", err)
+		}
 
-	// An admin user instance for running kubectl against this envtest
-	// environment.
-	// Derived from the envtest global config which is configured with very high
-	// QPS and Burst settings for rapid interactions with the API server.
-	adminUser, err := env.AddUser(envtest.User{
-		Name:   "envtest-admin",
-		Groups: []string{"system:masters"},
-	}, env.Config)
-	if err != nil {
-		t.Fatalf("unable to provision admin user: %s", err)
-	}
-	f.adminUser = adminUser
+		env, stopControlPlaneFn := apiserver.RunBareControlPlane(t)
+		f.environment = env
 
-	f.resolver = util.NewCachingResolver()
+		// An admin user instance for running kubectl against this envtest
+		// environment.
+		// Derived from the envtest global config which is configured with very high
+		// QPS and Burst settings for rapid interactions with the API server.
+		adminUser, err := env.AddUser(envtest.User{
+			Name:   "envtest-admin",
+			Groups: []string{"system:masters"},
+		}, env.Config)
+		if err != nil {
+			t.Fatalf("unable to provision admin user: %s", err)
+		}
+		f.adminUser = adminUser
 
-	cl, err := kubernetes.NewForConfig(env.Config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	f.clientset = cl
+		f.resolver = util.NewCachingResolver()
 
-	stopCh := make(chan struct{})
+		cl, err := kubernetes.NewForConfig(env.Config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.clientset = cl
 
-	if err := f.testSolver.Initialize(env.Config, stopCh); err != nil {
-		t.Fatalf("error initializing solver: %v", err)
+		stopCh := make(chan struct{})
+
+		if err := f.testSolver.Initialize(env.Config, stopCh); err != nil {
+			t.Fatalf("error initializing solver: %v", err)
+		}
+
+		f.setupStopFunc = func() {
+			close(stopCh)
+			stopControlPlaneFn()
+		}
 	}
 
 	return func() {
-		close(stopCh)
-		stopControlPlaneFn()
+		f.setupLock.Lock()
+		defer f.setupLock.Unlock()
+
+		f.setupRC--
+		// Only stop the setup, if this is the last reference to the running instance.
+		if f.setupRC == 0 {
+			f.setupStopFunc()
+		}
 	}
 }
