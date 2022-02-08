@@ -17,6 +17,7 @@ limitations under the License.
 package options
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -358,11 +359,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (o *ControllerOptions) Validate() error {
-	switch o.DefaultIssuerKind {
-	case "Issuer":
-	case "ClusterIssuer":
-	default:
-		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
+	if len(o.DefaultIssuerKind) == 0 {
+		return errors.New("the --default-issuer-kind flag must not be empty")
 	}
 
 	if o.KubernetesAPIBurst <= 0 {
