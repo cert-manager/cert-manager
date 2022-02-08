@@ -263,7 +263,7 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// ParentRefs define the Gateways that the HTTP-01 challenges will be
 	// solvable through. See
 	// https://gateway-api.sigs.k8s.io/v1alpha2/api-types/httproute/#attaching-to-gateways
-	ParentRefs []gwapi.ParentRef
+	ParentRefs []gwapi.ParentRef `json:"parentRefs,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {

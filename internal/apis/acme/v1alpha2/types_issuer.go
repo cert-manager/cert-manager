@@ -19,6 +19,7 @@ package v1alpha2
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -255,6 +256,8 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// HTTPRoute needed for solving the HTTP-01 challenge. These labels
 	// must match the label selector of at least one Gateway.
 	Labels map[string]string `json:"labels,omitempty"`
+
+	ParentRefs []gwapi.ParentRef `json:"parentRefs,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
