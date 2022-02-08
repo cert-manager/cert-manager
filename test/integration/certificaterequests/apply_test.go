@@ -37,8 +37,8 @@ import (
 // the ObjectMeta and Status objects respectively.
 func Test_Apply(t *testing.T) {
 	const (
-		namespace = "test-condition-list-type"
-		name      = "test-condition-list-type"
+		namespace = "test-apply"
+		name      = "test-apply"
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
