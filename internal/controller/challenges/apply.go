@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
 // Apply will make a Apply API call with the given client to the challenges
@@ -63,17 +63,18 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 }
 
 // serializeApply converts the given Challenge object in JSON. Only the
-// name, namespace, and spec field values will be copied and encoded into the
-// serialized slice. All other fields will be left at their zero value.
+// objectmeta, and spec fields will be copied and encoded into the serialized
+// slice. All other fields will be left at their zero value.
 // TypeMeta will be populated with the Kind "Challenge" and API Version
 // "acme.cert-manager.io/v1" respectively.
 func serializeApply(challenge *cmacme.Challenge) ([]byte, error) {
-	challenge = &cmacme.Challenge{
+	ch := &cmacme.Challenge{
 		TypeMeta:   metav1.TypeMeta{Kind: cmacme.ChallengeKind, APIVersion: cmacme.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: challenge.Namespace, Name: challenge.Name},
-		Spec:       challenge.Spec,
+		ObjectMeta: *challenge.ObjectMeta.DeepCopy(),
+		Spec:       *challenge.Spec.DeepCopy(),
 	}
-	challengeData, err := json.Marshal(challenge)
+	challenge.ManagedFields = nil
+	challengeData, err := json.Marshal(ch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal challenge object: %w", err)
 	}
@@ -86,12 +87,13 @@ func serializeApply(challenge *cmacme.Challenge) ([]byte, error) {
 // TypeMeta will be populated with the Kind "Challenge" and API Version
 // "acme.cert-manager.io/v1" respectively.
 func serializeApplyStatus(challenge *cmacme.Challenge) ([]byte, error) {
-	challenge = &cmacme.Challenge{
+	ch := &cmacme.Challenge{
 		TypeMeta:   metav1.TypeMeta{Kind: cmacme.ChallengeKind, APIVersion: cmacme.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: challenge.Namespace, Name: challenge.Name},
-		Status:     challenge.Status,
+		Spec:       cmacme.ChallengeSpec{},
+		Status:     *challenge.Status.DeepCopy(),
 	}
-	challengeData, err := json.Marshal(challenge)
+	challengeData, err := json.Marshal(ch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal challenge object: %w", err)
 	}
