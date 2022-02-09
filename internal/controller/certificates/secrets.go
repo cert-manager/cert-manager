@@ -17,7 +17,9 @@ limitations under the License.
 package certificates
 
 import (
+	"bytes"
 	"crypto/x509"
+	"encoding/pem"
 	"strings"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -47,4 +49,18 @@ func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.C
 	}
 
 	return annotations
+}
+
+// OutputFormatDER returns the byte slice of the private key in DER format. To
+// be used for Certificate's Additional Output Format DER.
+func OutputFormatDER(privateKey []byte) []byte {
+	block, _ := pem.Decode(privateKey)
+	return block.Bytes
+}
+
+// OutputFormatCombinedPEM returns the byte slice of the PEM encoded private
+// key and signed certificate chain, concatenated. To be used for Certificate's
+// Additional Output Format Combined PEM.
+func OutputFormatCombinedPEM(privateKey, certificate []byte) []byte {
+	return bytes.Join([][]byte{privateKey, certificate}, []byte("\n"))
 }

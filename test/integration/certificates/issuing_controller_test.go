@@ -21,14 +21,18 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/utils/clock"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -36,6 +40,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/integration/framework"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -460,7 +465,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	}
 }
 
-// Test_IssuinfController_SecretTemplate performs a basic check to ensure that
+// Test_IssuingController_SecretTemplate performs a basic check to ensure that
 // values in a Certificate's SecretTemplate will be copied to the target
 // Secret- when they are both added and deleted.
 func Test_IssuingController_SecretTemplate(t *testing.T) {
@@ -683,6 +688,227 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 			}
 		}
 		return true, nil
+	}, ctx.Done())
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Test_IssuingController_AdditionalOutputFormats performs a basic check to
+// ensure that values in a Certificate's AddiationOutputFormats will be copied
+// to the target Secret- when they are both added and deleted.
+func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
+	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats, true)()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
+
+	// Build, instantiate and run the issuing controller.
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	controllerOptions := controllerpkg.CertificateOptions{
+		EnableOwnerRef: true,
+	}
+
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	c := controllerpkg.NewController(
+		ctx,
+		"issuing_test",
+		metrics.New(logf.Log, clock.RealClock{}),
+		ctrl.ProcessItem,
+		mustSync,
+		nil,
+		queue,
+	)
+	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopController()
+
+	var (
+		crtName                  = "testcrt"
+		revision                 = 1
+		namespace                = "testns"
+		nextPrivateKeySecretName = "next-private-key-test-crt"
+		secretName               = "test-crt-tls"
+	)
+
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a new private key
+	pk, err := utilpki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Encode the private key as PKCS#1, the default format
+	pkBytes := utilpki.EncodePKCS1PrivateKey(pk)
+
+	// Store new private key in secret
+	_, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nextPrivateKeySecretName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			corev1.TLSPrivateKeyKey: pkBytes,
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create Certificate
+	crt := gen.Certificate(crtName,
+		gen.SetCertificateNamespace(namespace),
+		gen.SetCertificateCommonName("my-common-name"),
+		gen.SetCertificateDNSNames("example.com", "foo.example.com"),
+		gen.SetCertificateIPs("1.2.3.4", "5.6.7.8"),
+		gen.SetCertificateURIs("spiffe://hello.world"),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateSecretName(secretName),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+	)
+
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create x509 CSR from Certificate
+	csr, err := utilpki.GenerateCSR(crt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Encode CSR
+	csrDER, err := utilpki.EncodeCSR(csr, pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
+	})
+
+	// Sign Certificate
+	certTemplate, err := utilpki.GenerateTemplate(crt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Sign and encode the certificate
+	certPEM, _, err := utilpki.SignCertificate(certTemplate, certTemplate, pk.Public(), pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create CertificateRequest
+	req := gen.CertificateRequest(crtName,
+		gen.SetCertificateRequestNamespace(namespace),
+		gen.SetCertificateRequestCSR(csrPEM),
+		gen.SetCertificateRequestIssuer(crt.Spec.IssuerRef),
+		gen.SetCertificateRequestAnnotations(map[string]string{
+			cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision+1),
+		}),
+		gen.AddCertificateRequestOwnerReferences(*metav1.NewControllerRef(
+			crt,
+			cmapi.SchemeGroupVersion.WithKind("Certificate"),
+		)),
+	)
+	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set CertificateRequest as ready
+	req.Status.CA = certPEM
+	req.Status.Certificate = certPEM
+	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
+	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Add Issuing condition to Certificate
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
+	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
+	crt.Status.Revision = &revision
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for the Certificate to have the 'Issuing' condition removed, and for
+	// the signed certificate, ca, and private key stored in the Secret.
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+		if err != nil {
+			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
+			return false, nil
+		}
+
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			t.Logf("Certificate does not have expected condition, got=%#v", cond)
+			return false, nil
+		}
+
+		return true, nil
+	}, ctx.Done())
+
+	// Add additional output formats
+	crt = gen.CertificateFrom(crt, gen.SetCertificateAdditionalOutputFormats(
+		cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
+		cmapi.CertificateAdditionalOutputFormat{Type: "DER"},
+	))
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	block, _ := pem.Decode(pkBytes)
+	pkDER := block.Bytes
+	combinedPEM := append(append(pkBytes, '\n'), certPEM...)
+
+	// Wait for the additional output format values to to be observed on the Secret.
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
+			return false, nil
+		}
+		return reflect.DeepEqual(map[string][]byte{
+			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
+			"key.der": pkDER, "tls-combined.pem": combinedPEM,
+		}, secret.Data), nil
+	}, ctx.Done())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Remove AdditionalOutputFormats
+	crt.Spec.AdditionalOutputFormats = nil
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for the additional output formats to be removed from the Secret.
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
+			return false, nil
+		}
+		return reflect.DeepEqual(map[string][]byte{
+			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
+		}, secret.Data), nil
 	}, ctx.Done())
 	if err != nil {
 		t.Fatal(err)

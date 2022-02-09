@@ -18,6 +18,7 @@ package issuing
 
 import (
 	"context"
+	"encoding/pem"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,10 +30,17 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
 
 func Test_ensureSecretData(t *testing.T) {
 	const fieldManager = "cert-manager-unit-tests"
+
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	cert := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "test"}})
+	block, _ := pem.Decode(pk)
+	pkDER := block.Bytes
+	combinedPEM := append(append(pk, '\n'), cert...)
 
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -61,7 +69,57 @@ func Test_ensureSecretData(t *testing.T) {
 			key:            "random-namespace/random-certificate",
 			expectedAction: false,
 		},
-		"if Certificate and Secret exists, but the Certificate has a True Issuing condition, do nothing": {key: "test-namespace/test-name",
+		"if Certificate and Secret exists, but the Secret contains no certificate or private key data, do nothing": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "test-secret",
+					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data:       map[string][]byte{},
+			},
+			expectedAction: false,
+		},
+		"if Certificate and Secret exists, but the Secret contains no certificate data, do nothing": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "test-secret",
+					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.key": pk,
+				},
+			},
+			expectedAction: false,
+		},
+		"if Certificate and Secret exists, but the Secret contains no private key data, do nothing": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "test-secret",
+					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.cert": cert,
+				},
+			},
+			expectedAction: false,
+		},
+		"if Certificate and Secret exists, but the Certificate has a True Issuing condition, do nothing": {
+			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
 				Spec: cmapi.CertificateSpec{
@@ -74,6 +132,10 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
 			},
 			expectedAction: false,
 		},
@@ -106,6 +168,10 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
 					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
 				},
 			},
 			expectedAction: true,
@@ -142,6 +208,10 @@ func Test_ensureSecretData(t *testing.T) {
 						},
 					}},
 				},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
 			},
 			expectedAction: true,
 		},
@@ -174,6 +244,10 @@ func Test_ensureSecretData(t *testing.T) {
 						}}`),
 						}},
 					},
+				},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
 				},
 			},
 			expectedAction: true,
@@ -208,6 +282,10 @@ func Test_ensureSecretData(t *testing.T) {
 						}},
 					},
 				},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
 			},
 			expectedAction: false,
 		},
@@ -228,6 +306,134 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
+			},
+			expectedAction: true,
+		},
+		"if Certificate with combined pem and Secret exists, but the Secret doesn't have combined pem, should apply the combined pem": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "test-secret",
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
+			},
+			expectedAction: true,
+		},
+		"if Certificate with der and Secret exists, but the Secret doesn't have der, should apply the der": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "test-secret",
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
+			},
+			expectedAction: true,
+		},
+		"if Certificate with combined pem and der, and Secret exists, but the Secret doesn't have combined pem or der, should apply the combined pem and der": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "test-secret",
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
+			},
+			expectedAction: true,
+		},
+		"if Certificate with combined pem and der, and Secret exists with combined pem and der with managed fields, should do nothing": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "test-secret",
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					ManagedFields: []metav1.ManagedFieldsEntry{{
+						Manager: fieldManager,
+						FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`{"f:data": {
+							"f:tls-combined.pem": {},
+							"f:key.der": {}
+						}}`),
+						},
+					}},
+				},
+				Data: map[string][]byte{
+					"tls.crt":          cert,
+					"tls.key":          pk,
+					"tls-combined.pem": combinedPEM,
+					"key.der":          pkDER,
+				},
+			},
+			expectedAction: false,
+		},
+		"if Certificate with no combined pem or der, and Secret exists with combined pem and der managed by field manager, should apply to remove them": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName:              "test-secret",
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					ManagedFields: []metav1.ManagedFieldsEntry{{
+						Manager: fieldManager,
+						FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`{"f:data": {
+							"f:tls-combined.pem": {},
+							"f:key.der": {}
+						}}`),
+						},
+					}},
+				},
+				Data: map[string][]byte{
+					"tls.crt":          cert,
+					"tls.key":          pk,
+					"tls-combined.pem": combinedPEM,
+					"key.der":          pkDER,
+				},
 			},
 			expectedAction: true,
 		},

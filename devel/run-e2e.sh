@@ -49,7 +49,7 @@ if [[ -n "$GINKGO_FOCUS" ]]; then GINKGO_FOCUS="--ginkgo.focus=${GINKGO_FOCUS}";
 if  [[ -n "$GINKGO_SKIP" ]]; then GINKGO_SKIP="--ginkgo.skip=${GINKGO_SKIP}"; fi
 
 # Default feature gates to enable
-FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true}"
+FEATURE_GATES="${FEATURE_GATES:-AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true}"
 
 # Configure PATH to use bazel provided e2e tools
 setup_tools

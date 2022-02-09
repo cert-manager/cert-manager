@@ -368,3 +368,94 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 		return "", "", false
 	}
 }
+
+// SecretAdditionalOutputFormatsDataMismatch validates that the Secret has the
+// expected Certificate AdditionalOutputFormats.
+// Returns true (violation) if AdditionalOutputFormat(s) are present and any of
+// the following:
+//   * Secret key is missing
+//   * Secret value is incorrect
+func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, bool) {
+	const message = "Certificate's AdditionalOutputFormats doesn't match Secret Data"
+	for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
+		switch format.Type {
+		case cmapi.CertificateOutputFormatCombinedPEM:
+			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey]
+			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatCombinedPEM(
+				input.Secret.Data[corev1.TLSPrivateKeyKey],
+				input.Secret.Data[corev1.TLSCertKey],
+			)) {
+				return AdditionalOutputFormatsMismatch, message, true
+			}
+
+		case cmapi.CertificateOutputFormatDER:
+			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatDERKey]
+			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatDER(input.Secret.Data[corev1.TLSPrivateKeyKey])) {
+				return AdditionalOutputFormatsMismatch, message, true
+			}
+		}
+	}
+
+	return "", "", false
+}
+
+// SecretAdditionalOutputFormatsOwnerMismatch validates that the field manager
+// owns the correct Certificate's AdditionalOutputFormats in the Secret.
+// Returns true (violation) if:
+//   * missing AdditionalOutputFormat key owned by the field manager
+//   * AdditionalOutputFormat key owned by the field manager shouldn't exist
+func SecretAdditionalOutputFormatsOwnerMismatch(fieldManager string) Func {
+	const message = "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields"
+	return func(input Input) (string, string, bool) {
+		var (
+			crtHasCombinedPEM, crtHasDER       bool
+			secretHasCombinedPEM, secretHasDER bool
+		)
+
+		// Gather which additional output formats have been defined on the
+		// Certificate.
+		for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
+			switch format.Type {
+			case cmapi.CertificateOutputFormatCombinedPEM:
+				crtHasCombinedPEM = true
+			case cmapi.CertificateOutputFormatDER:
+				crtHasDER = true
+			}
+		}
+
+		// Determine whether an output format key exists on the Secret which is
+		// owned my the field manager.
+		for _, managedField := range input.Secret.ManagedFields {
+			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+				continue
+			}
+
+			var fieldset fieldpath.Set
+			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
+			}
+
+			if fieldset.Has(fieldpath.Path{
+				{FieldName: pointer.String("data")},
+				{FieldName: pointer.String(cmapi.CertificateOutputFormatCombinedPEMKey)},
+			}) {
+				secretHasCombinedPEM = true
+			}
+
+			if fieldset.Has(fieldpath.Path{
+				{FieldName: pointer.String("data")},
+				{FieldName: pointer.String(cmapi.CertificateOutputFormatDERKey)},
+			}) {
+				secretHasDER = true
+			}
+		}
+
+		// Format present or missing on the Certificate should be reflected on the
+		// Secret.
+		if crtHasCombinedPEM != secretHasCombinedPEM || crtHasDER != secretHasDER {
+			return AdditionalOutputFormatsMismatch, message, true
+		}
+
+		return "", "", false
+	}
+}

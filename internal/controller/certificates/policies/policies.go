@@ -96,6 +96,8 @@ func NewSecretPostIssuancePolicyChain(fieldManager string) Chain {
 	return Chain{
 		SecretTemplateMismatchesSecret,
 		SecretTemplateMismatchesSecretManagedFields(fieldManager),
+		SecretAdditionalOutputFormatsDataMismatch,
+		SecretAdditionalOutputFormatsOwnerMismatch(fieldManager),
 	}
 }
 

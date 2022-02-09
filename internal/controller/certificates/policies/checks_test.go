@@ -17,6 +17,7 @@ limitations under the License.
 package policies
 
 import (
+	"encoding/pem"
 	"testing"
 	"time"
 
@@ -1025,6 +1026,703 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
 			assert.Equal(t, test.expMessage, gotMessage, "unexpected message")
 			assert.Equal(t, test.expViolation, gotViolation, "unexpected violation")
+		})
+	}
+}
+
+func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
+	cert := []byte("a")
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	block, _ := pem.Decode(pk)
+	pkDER := block.Bytes
+	combinedPEM := append(append(pk, '\n'), cert...)
+
+	tests := map[string]struct {
+		input        Input
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"if additional output formats is empty and secret has no keys, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{},
+				Secret:      &corev1.Secret{},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats is empty and secret has output format keys, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"combined-tls.pem": combinedPEM,
+						"key.der":          pkDER,
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output has combined pem and Secret has wrong combined, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"tls-combined.pem": []byte("wrong"),
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has combined pem and Secret has no combined pem, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": cert,
+						"tls.key": pk,
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has combined pem and Secret has correct combined, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"tls-combined.pem": combinedPEM,
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output has der and Secret has no key, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": cert,
+						"tls.key": pk,
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has der and Secret has wrong der key, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": cert,
+						"tls.key": pk,
+						"key.der": []byte("wrong"),
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has der and Secret has correct der key, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": cert,
+						"tls.key": pk,
+						"key.der": pkDER,
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output has combined and der and Secret has correct combined and der, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"key.der":          pkDER,
+						"tls-combined.pem": combinedPEM,
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output has combined and der and Secret has correct combined and wrong der value, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"key.der":          []byte("wrong"),
+						"tls-combined.pem": combinedPEM,
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has combined and der and Secret has wrong combined value and correct der value, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"key.der":          pkDER,
+						"tls-combined.pem": []byte("wrong"),
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has combined and der and Secret has correct combined value and missing der key, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt":          cert,
+						"tls.key":          pk,
+						"tls-combined.pem": combinedPEM,
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+		"if additional output has combined and der and Secret has missing combined key and correct der value, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": cert,
+						"tls.key": pk,
+						"key.der": pkDER,
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret Data",
+			expViolation: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsDataMismatch(test.input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expMessage, gotMessage)
+			assert.Equal(t, test.expViolation, gotViolation)
+		})
+	}
+}
+
+func Test_SecretAdditionalOutputFormatsOwnerMismatch(t *testing.T) {
+	const fieldManager = "cert-manager-test"
+
+	tests := map[string]struct {
+		input        Input
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"if additional output formats is empty and secret has no managed fields, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{},
+				Secret:      &corev1.Secret{},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats has combined pem and secret has no managed fields, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats has der and secret has no managed fields, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats has combined pem and der, and secret has no managed fields, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats is empty, and secret has managed fields for combined pem for another managed, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+							  "f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats is empty, and secret has managed fields for der for another managed, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+							  "f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats is empty, and secret has managed fields for combined pem and der for another managed, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+							  "f:tls-combined.pem": {},
+							  "f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats is empty, and secret has managed fields for combined pem, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+							  "f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats is empty, and secret has managed fields for der, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+							  "f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats is empty, and secret has managed fields for combined pem and der, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:tls-combined.pem": {},
+							  "f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats has combined pem, and secret has managed fields for combined pem for wrong manager, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats has der, and secret has managed fields for der for wrong manager, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats has combined pem and der, and secret has managed fields for combined pem and der for wrong manager, should return true": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:tls-combined.pem": {},
+								"f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "AdditionalOutputFormatsMismatch",
+			expMessage:   "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields",
+			expViolation: true,
+		},
+		"if additional output formats has combined pem, and secret has managed fields for combined pem, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats has der, and secret has managed fields for der, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:key.der": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats has combined pem and der, and secret has managed fields for combined pem and der, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:key.der": {},
+								"f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats has combined pem and der, and secret has managed fields for combined pem and der in different slice elements, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:key.der": {}
+							}}`),
+							}},
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if additional output formats has combined pem and der, and secret has managed fields for combined pem and der, and is also managed by another manager, should return false": {
+			input: Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
+						{Type: "DER"},
+						{Type: "CombinedPEM"},
+					}},
+				},
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:tls-combined.pem": {},
+								"f:key.der": {}
+							}}`),
+							}},
+							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+              {"f:data": {
+							  ".": {},
+								"f:key.der": {},
+								"f:tls-combined.pem": {}
+							}}`),
+							}},
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsOwnerMismatch(fieldManager)(test.input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expMessage, gotMessage)
+			assert.Equal(t, test.expViolation, gotViolation)
 		})
 	}
 }

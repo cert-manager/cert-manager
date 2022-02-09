@@ -17,10 +17,8 @@ limitations under the License.
 package internal
 
 import (
-	"bytes"
 	"context"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -287,11 +285,10 @@ func setAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, d
 		switch format.Type {
 		case cmapi.CertificateOutputFormatDER:
 			// Store binary format of the private key
-			block, _ := pem.Decode(data.PrivateKey)
-			secret.Data[cmapi.CertificateOutputFormatDERKey] = block.Bytes
+			secret.Data[cmapi.CertificateOutputFormatDERKey] = certificates.OutputFormatDER(data.PrivateKey)
 		case cmapi.CertificateOutputFormatCombinedPEM:
 			// Combine tls.key and tls.crt
-			secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = bytes.Join([][]byte{data.PrivateKey, data.Certificate}, []byte("\n"))
+			secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = certificates.OutputFormatCombinedPEM(data.PrivateKey, data.Certificate)
 		default:
 			return fmt.Errorf("unknown additional output format %s", format.Type)
 		}

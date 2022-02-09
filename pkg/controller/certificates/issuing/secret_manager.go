@@ -32,18 +32,17 @@ import (
 )
 
 // ensureSecretData ensures that the Certificate's Secret is up to date with
-// non-issuing condition related data. Currently only reconciles on Annotations
-// and Labels from the Certificate's SecretTemplate.
+// non-issuing condition related data.
+// Reconciles over the Certificate's SecretTemplate, and
+// AdditionalOutputFormats.
 func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt *cmapi.Certificate) error {
-	dbg := log.V(logf.DebugLevel)
-
 	// Retrieve the Secret which is associated with this Certificate.
 	secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
 	// Secret doesn't exist so we can't do anything. The Certificate will be
 	// marked for a re-issuance and the resulting Secret will be evaluated again.
 	if apierrors.IsNotFound(err) {
-		dbg.Info("secret not found", "error", err.Error())
+		log.V(logf.DebugLevel).Info("secret not found", "error", err.Error())
 		return nil
 	}
 
@@ -55,13 +54,21 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 
 	log = log.WithValues("secret", secret.Name)
 
-	var data internal.SecretData
-	if secret.Data != nil {
-		data = internal.SecretData{
-			PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
-			Certificate: secret.Data[corev1.TLSCertKey],
-			CA:          secret.Data[cmmeta.TLSCAKey],
-		}
+	// If there is no certificate or private key data available at the target
+	// Secret then exit early. The absense of these keys should cause an issuance
+	// of the Certificate, so there is no need to run post issuance checks.
+	if secret.Data == nil ||
+		len(secret.Data[corev1.TLSCertKey]) == 0 ||
+		len(secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
+		log.V(logf.DebugLevel).Info("secret doesn't contain both certificate and private key data",
+			"cert_data_len", len(secret.Data[corev1.TLSCertKey]), "key_data_len", len(secret.Data[corev1.TLSPrivateKeyKey]))
+		return nil
+	}
+
+	data := internal.SecretData{
+		PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
+		Certificate: secret.Data[corev1.TLSCertKey],
+		CA:          secret.Data[cmmeta.TLSCAKey],
 	}
 
 	// Check whether the Certificate's Secret has correct output format and
