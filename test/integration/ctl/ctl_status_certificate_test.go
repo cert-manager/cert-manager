@@ -177,7 +177,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 			expErr:         false,
 			expOutput: `^Name: testcrt-1
 Namespace: testns-1
-Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Created at: .*
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
@@ -194,7 +194,7 @@ Issuer:
   Events:  <none>
 error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
-Not After: 2020-09-16T09:26:18Z
+Not After: .*
 Renewal Time: <none>
 No CertificateRequest found for this Certificate$`,
 		},
@@ -273,7 +273,7 @@ No CertificateRequest found for this Certificate$`,
 			expErr: false,
 			expOutput: `^Name: testcrt-2
 Namespace: testns-1
-Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Created at: .*
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
@@ -306,7 +306,7 @@ Secret:
     ----  ------  ----       ----  -------
     type  reason  <unknown>        message
 Not Before: <none>
-Not After: 2020-09-16T09:26:18Z
+Not After: .*
 Renewal Time: <none>
 CertificateRequest:
   Name: testreq-1
@@ -353,7 +353,7 @@ Challenges:
 			expErr: false,
 			expOutput: `^Name: testcrt-3
 Namespace: testns-1
-Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Created at: .*
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
@@ -363,7 +363,7 @@ Events:  <none>
 error when getting Issuer: issuers.cert-manager.io "non-existing-issuer" not found
 error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
-Not After: 2020-09-16T09:26:18Z
+Not After: .*
 Renewal Time: <none>
 CertificateRequest:
   Name: testreq-2
@@ -395,7 +395,7 @@ CertificateRequest:
 			expErr:    false,
 			expOutput: `^Name: testcrt-4
 Namespace: testns-1
-Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Created at: .*
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
@@ -405,7 +405,7 @@ Events:  <none>
 error when getting ClusterIssuer: clusterissuers.cert-manager.io "non-existing-clusterissuer" not found
 error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
-Not After: 2020-09-16T09:26:18Z
+Not After: .*
 Renewal Time: <none>
 CertificateRequest:
   Name: testreq-3
@@ -549,17 +549,27 @@ CertificateRequest:
 				return
 			} else if test.expErr {
 				// expected error but error is nil
-				t.Errorf("expected but got no error")
+				t.Error("got no error but expected one")
+				return
 			}
 
-			match, err := regexp.MatchString(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
+			expectedOutput := strings.TrimSpace(test.expOutput)
+			commandOutput := strings.TrimSpace(outBuf.String())
+
+			match, err := regexp.MatchString(expectedOutput, commandOutput)
 			if err != nil {
-				t.Error(err)
+				t.Errorf("failed to match regex for output: %s", err)
 			}
-			dmp := diffmatchpatch.New()
+
 			if !match {
-				diffs := dmp.DiffMain(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()), false)
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(expectedOutput, commandOutput, false)
 				t.Errorf("got unexpected output, diff (ignoring line anchors ^ and $ and regex for creation time):\n%s\n\n expected: \n%s\n\n got: \n%s", dmp.DiffPrettyText(diffs), test.expOutput, outBuf.String())
+			}
+
+			err = validateOutputTimes(commandOutput, certIsValidTime)
+			if err != nil {
+				t.Errorf("couldn't validate times in output: %s", err)
 			}
 		})
 	}
@@ -646,5 +656,36 @@ func createEventsOwnedByRef(kubernetesCl kubernetes.Interface, ctx context.Conte
 			return fmt.Errorf(err.Error())
 		}
 	}
+	return nil
+}
+
+func validateOutputTimes(output string, expectedNotAfter time.Time) error {
+	for _, line := range strings.Split(output, "\n") {
+		rawParts := strings.Split(strings.TrimSpace(line), ":")
+
+		if len(rawParts) == 1 {
+			continue
+		}
+
+		partType := strings.ToLower(rawParts[0])
+		rest := strings.TrimSpace(strings.Join(rawParts[1:], ":"))
+
+		if partType == "created at" {
+			_, err := time.Parse(time.RFC3339, rest)
+			if err != nil {
+				return fmt.Errorf("couldn't parse 'created at' as an RFC3339 timestamp: %s", err)
+			}
+		} else if partType == "not after" {
+			notAfter, err := time.Parse(time.RFC3339, rest)
+			if err != nil {
+				return fmt.Errorf("couldn't parse 'not after' as an RFC3339 timestamp: %s", err)
+			}
+
+			if !notAfter.Equal(expectedNotAfter) {
+				return fmt.Errorf("got unexpected 'not after' (note that time zone differences could be a red herring) - wanted %q but got %q", expectedNotAfter.Format(time.RFC3339), notAfter.Format(time.RFC3339))
+			}
+		}
+	}
+
 	return nil
 }
