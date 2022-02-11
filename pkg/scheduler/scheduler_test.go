@@ -58,19 +58,25 @@ func Test_afterFunc(t *testing.T) {
 		assert.InDelta(t, expected, runtime.NumGoroutine(), 100)
 	})
 
-	t.Run("f is called after 100 milliseconds", func(t *testing.T) {
+	t.Run("f is called after roughly 100 milliseconds", func(t *testing.T) {
 		var end time.Time
 		wait := make(chan struct{})
 
 		start := time.Now()
 
-		afterFunc(clock.RealClock{}, 100*time.Millisecond, func() {
+		expectedDuration := 100 * time.Millisecond
+
+		afterFunc(clock.RealClock{}, expectedDuration, func() {
 			end = time.Now()
 			close(wait)
 		})
 
 		<-wait
-		assert.InDelta(t, 100*time.Millisecond, end.Sub(start), float64(1*time.Millisecond))
+
+		elapsed := end.Sub(start)
+
+		assert.InDelta(t, expectedDuration, elapsed, float64(500*time.Millisecond))
+		assert.GreaterOrEqual(t, elapsed, expectedDuration)
 	})
 }
 
