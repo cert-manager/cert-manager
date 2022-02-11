@@ -28,7 +28,7 @@ FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers
 # As Feature Gates are added/removed, these lists should be updated.
 declare -a FEATURE_GATES_CONTROLLER_ALL=(\
 "AllAlpha","AllBeta","ValidateCAA","ExperimentalCertificateSigningRequestControllers",\
-"ExperimentalGatewayAPISupport","AdditionalCertificateOutputFormats")
+"ExperimentalGatewayAPISupport","AdditionalCertificateOutputFormats","ServerSideApply")
 declare -a FEATURE_GATES_WEBHOOK_ALL=(\
 "AllAlpha","AllBeta","AdditionalCertificateOutputFormats")
 declare -a FEATURE_GATES_CAINJECTOR_ALL=(\
