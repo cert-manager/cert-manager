@@ -115,6 +115,7 @@ spec:
           {{- end }}
           ports:
           - containerPort: 9402
+            name: http-metrics
             protocol: TCP
           {{- with .Values.containerSecurityContext }}
           securityContext:
