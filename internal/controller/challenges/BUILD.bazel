@@ -22,6 +22,7 @@ go_test(
         "//pkg/apis/acme/v1:go_default_library",
         "@com_github_google_gofuzz//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
     ],
 )
 

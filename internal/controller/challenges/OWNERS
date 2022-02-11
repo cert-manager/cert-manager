@@ -1,4 +1,4 @@
 filters:
-  "^apply(_test)?\\.go$":
+  "apply(_test)?\\.go$":
     required_reviewers:
     - joshvanl
