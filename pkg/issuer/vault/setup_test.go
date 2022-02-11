@@ -46,7 +46,7 @@ func TestVault_Setup(t *testing.T) {
 	// Create a mock Vault HTTP server.
 	vaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login":
+		case r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" || r.URL.Path == "/v1/auth/cert/login":
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`))
 		}
@@ -367,6 +367,41 @@ func TestVault_Setup(t *testing.T) {
 				},
 			},
 			expectCond: "Ready True: VaultVerified: Vault verified",
+		},
+		{
+			name: "valid auth.clientCertificate: mountPath and secretName can be omitted",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: vaultServer.URL,
+					Auth: v1.VaultAuth{
+						ClientCertificate: &v1.VaultClientCertificateAuth{
+							Path:       "",
+							SecretName: "",
+							Role:       "cert-manager",
+						},
+					},
+				},
+			},
+			expectCond: "Ready True: VaultVerified: Vault verified",
+		},
+		{
+			name: "invalid auth.clientCertificate: role is not set",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: vaultServer.URL,
+					Auth: v1.VaultAuth{
+						ClientCertificate: &v1.VaultClientCertificateAuth{
+							Path:       "",
+							SecretName: "",
+							Role:       "",
+						},
+					},
+				},
+			},
+			expectCond:    "Ready False: VaultError: Vault client certificate auth requires a role to be set",
+			webhookReject: true,
 		},
 	}
 	for _, tt := range tests {

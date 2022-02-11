@@ -186,7 +186,7 @@ func (v *Vault) setToken(client Client) error {
 	// the time of validation, we must still allow multiple authentication methods
 	// to be specified.
 	// In terms of implementation, we will use the first authentication method.
-	// The order of precedence is: tokenSecretRef, appRole, kubernetes
+	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes
 
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef != nil {

@@ -506,6 +506,97 @@ func TestSetToken(t *testing.T) {
 			expectedErr:   nil,
 		},
 
+		"if clientCertificate auth is set but referenced secret doesn't exist return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							Role:       "cert-vault-role",
+							SecretName: "secret-ref-name",
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret does not exist")),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("secret does not exist"),
+		},
+
+		"if clientCertificate auth set but referenced secret doesn't contain tls.crt return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							Role:       "cert-vault-role",
+							SecretName: "secret-ref-name",
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{
+					Data: map[string][]byte{
+						"tls.key": []byte(testLeafCertificate),
+					},
+				}, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("no data for tls.crt in secret 'test-namespace/secret-ref-name'"),
+		},
+
+		"if clientCertificate auth set but referenced secret doesn't contain tls.key return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							Role:       "cert-vault-role",
+							SecretName: "secret-ref-name",
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": []byte(testLeafCertificate),
+					},
+				}, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("no data for tls.key in secret 'test-namespace/secret-ref-name'"),
+		},
+
+		"if clientCertificate auth set but there is no secret referenced, do not return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							Role: "cert-vault-role",
+						},
+					},
+				}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: io.NopCloser(
+						strings.NewReader(
+							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
+					),
+				},
+			}, nil),
+			expectedToken: "my-token",
+			expectedErr:   nil,
+		},
+
 		"if kubernetes role auth set but reference secret doesn't exist return error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
@@ -736,14 +827,9 @@ func TestSetToken(t *testing.T) {
 			}
 
 			err := v.setToken(test.fakeClient)
-			if test.expectedErr == nil && err != nil {
-				t.Errorf("unexpected error, exp=%v got=%v",
-					test.expectedErr, err)
-			} else if test.expectedErr != nil && err == nil {
-				t.Errorf("unexpected error, exp=%v got=%v",
-					test.expectedErr, err)
-			} else if (test.expectedErr != nil && err != nil) &&
-				(test.expectedErr.Error() != err.Error()) {
+			if ((test.expectedErr == nil) != (err == nil)) &&
+				test.expectedErr != nil &&
+				test.expectedErr.Error() != err.Error() {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}

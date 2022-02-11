@@ -103,7 +103,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), ""),
 				field.Required(fldPath.Child("path"), ""),
-				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef"),
+				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate"),
 			},
 		},
 		"vault issuer with a CA bundle containing no valid certificates": {
@@ -226,6 +226,14 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("appRole").Child("roleId"), ""),
+			},
+		},
+		"invalid auth.clientCertificate: role is required": {
+			auth: &cmapi.VaultAuth{
+				ClientCertificate: &cmapi.VaultClientCertificateAuth{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("clientCertificate").Child("role"), ""),
 			},
 		},
 		// The field auth.kubernetes.secretRef.key defaults to 'token' if

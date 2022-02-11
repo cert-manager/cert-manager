@@ -46,7 +46,7 @@ const (
 	messageTokenAuthNameRequired               = "Vault Token auth requires tokenSecretRef.name"
 	messageAppRoleAuthFieldsRequired           = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
 	messageAppRoleAuthKeyRequired              = "Vault AppRole auth requires secretRef.key"
-	messageClientCertificateAuthFieldsRequired = "Vault client certificate auth requires both role and secretName"
+	messageClientCertificateAuthFieldsRequired = "Vault client certificate auth requires a role to be set"
 )
 
 // Setup creates a new Vault client and attempts to authenticate with the Vault instance and sets the issuer's conditions to reflect the success of the setup.
