@@ -720,7 +720,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions, "cert-manager-issuing-test")
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
