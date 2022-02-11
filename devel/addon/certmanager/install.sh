@@ -73,6 +73,12 @@ kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager
 
+echo "Installing cert-manager with feature gates:
+controller:${FEATURE_GATES_CONTROLLER}
+webhook:${FEATURE_GATES_WEBHOOK}
+cainjector:${FEATURE_GATES_CAINJECTOR}
+"
+
 # Upgrade or install cert-manager
 # --wait & --wait-for-jobs flags should wait for resources and Jobs to complete
 helm upgrade \
