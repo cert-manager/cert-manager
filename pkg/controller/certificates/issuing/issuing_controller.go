@@ -35,7 +35,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -46,6 +48,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilkube "github.com/cert-manager/cert-manager/pkg/util/kube"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
@@ -78,6 +81,11 @@ type controller struct {
 	// metadata and output formats are kept are present and correct.
 	postIssuancePolicyChain policies.Chain
 
+	// fieldManager is the string which will be used as the Field Manager on
+	// fields created or edited by the cert-manager Kubernetes client during
+	// Apply API calls.
+	fieldManager string
+
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
 }
@@ -85,13 +93,13 @@ type controller struct {
 func NewController(
 	log logr.Logger,
 	kubeClient kubernetes.Interface,
-	fieldManager string,
 	client cmclient.Interface,
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
 	clock clock.Clock,
 	certificateControllerOptions controllerpkg.CertificateOptions,
+	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 
 	// create a queue used to queue up items to be processed
@@ -140,6 +148,7 @@ func NewController(
 		clock:                    clock,
 		secretsUpdateData:        secretsManager.UpdateData,
 		postIssuancePolicyChain:  policies.NewSecretPostIssuancePolicyChain(fieldManager),
+		fieldManager:             fieldManager,
 		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
@@ -339,8 +348,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
 
-	_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-	if err != nil {
+	if err := c.updateOrApplyStatus(ctx, crt, false); err != nil {
 		return err
 	}
 
@@ -376,13 +384,14 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	crt.Status.Revision = &nextRevision
 
 	// Remove Issuing status condition
+	// TODO @joshvanl: Once we move to only server-side apply API calls, this
+	// should be changed to setting the Issuing condition to False.
 	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
 
 	//Clear status.lastFailureTime (if set)
 	crt.Status.LastFailureTime = nil
 
-	_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-	if err != nil {
+	if err := c.updateOrApplyStatus(ctx, crt, true); err != nil {
 		return err
 	}
 
@@ -390,6 +399,43 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
+
+}
+
+// updateOrApplyStatus will update the controller status. If the
+// ServerSideApply feature is enabled, the managed fields will instead get
+// applied using the relevant Patch API call.
+// conditionRemove should be true if the Issuing condition has been removed by
+// this controller. If the ServerSideApply feature is enabled and condition
+// have been removed, the Issuing condition will be set to False before
+// applying.
+func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate, conditionRemoved bool) error {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		// TODO @joshvanl: Once we move to only server-side apply API calls,
+		// `conditionRemoved` can be removed and setting the Issuing condition to
+		// False can be moved to the `issueCertificate` func.
+		if conditionRemoved {
+			message := "The certificate has been successfully issued"
+			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "Issued", message)
+		}
+
+		var conditions []cmapi.CertificateCondition
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			conditions = []cmapi.CertificateCondition{*cond}
+		}
+
+		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
+			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
+			Status: cmapi.CertificateStatus{
+				Revision:        crt.Status.Revision,
+				LastFailureTime: crt.Status.LastFailureTime,
+				Conditions:      conditions,
+			},
+		})
+	} else {
+		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+		return err
+	}
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement
@@ -404,13 +450,13 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 
 	ctrl, queue, mustSync := NewController(log,
 		ctx.Client,
-		ctx.FieldManager,
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
 		ctx.CertificateOptions,
+		ctx.FieldManager,
 	)
 	c.controller = ctrl
 

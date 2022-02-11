@@ -6,7 +6,9 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger",
     visibility = ["//visibility:public"],
     deps = [
+        "//internal/controller/certificates:go_default_library",
         "//internal/controller/certificates/policies:go_default_library",
+        "//internal/controller/feature:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
@@ -17,6 +19,7 @@ go_library(
         "//pkg/controller/certificates:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/scheduler:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//pkg/util/predicate:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
@@ -30,20 +33,6 @@ go_library(
         "@io_k8s_client_go//util/workqueue:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
     ],
-)
-
-filegroup(
-    name = "package-srcs",
-    srcs = glob(["**"]),
-    tags = ["automanaged"],
-    visibility = ["//visibility:private"],
-)
-
-filegroup(
-    name = "all-srcs",
-    srcs = [":package-srcs"],
-    tags = ["automanaged"],
-    visibility = ["//visibility:public"],
 )
 
 go_test(
@@ -63,4 +52,18 @@ go_test(
         "@io_k8s_client_go//testing:go_default_library",
         "@io_k8s_utils//clock/testing:go_default_library",
     ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
 )

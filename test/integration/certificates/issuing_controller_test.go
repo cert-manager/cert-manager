@@ -64,7 +64,9 @@ func TestIssuingController(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient,
+		cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
+		controllerOptions, "cert-manage-certificates-issuing-test")
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -197,8 +199,8 @@ func TestIssuingController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Wait for the Certificate to have the 'Issuing' condition removed, and for
-	// the signed certificate, ca, and private key stored in the Secret.
+	// Wait for the Certificate to have the 'Issuing' condition removed, and
+	// for the signed certificate, ca, and private key stored in the Secret.
 	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
@@ -268,7 +270,9 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient,
+		cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
+		controllerOptions, "cert-manage-certificates-issuing-test")
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -481,7 +485,9 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient,
+		cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
+		controllerOptions, "cert-manage-certificates-issuing-test")
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -679,11 +685,13 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		}
 		for k := range annotations {
 			if _, ok := secret.Annotations[k]; ok {
+				t.Logf("annotations: %s", secret.Annotations)
 				return false, nil
 			}
 		}
 		for k := range labels {
 			if _, ok := secret.Labels[k]; ok {
+				t.Logf("labels: %s", secret.Labels)
 				return false, nil
 			}
 		}
@@ -712,7 +720,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions, "cert-manager-issuing-test")
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",

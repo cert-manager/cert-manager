@@ -6,6 +6,8 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificates/keymanager",
     visibility = ["//visibility:public"],
     deps = [
+        "//internal/controller/certificates:go_default_library",
+        "//internal/controller/feature:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
@@ -15,6 +17,7 @@ go_library(
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificates:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//pkg/util/predicate:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
