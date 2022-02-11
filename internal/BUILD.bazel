@@ -16,6 +16,7 @@ filegroup(
         "//internal/cainjector/feature:all-srcs",
         "//internal/controller/certificates:all-srcs",
         "//internal/controller/feature:all-srcs",
+        "//internal/controller/issuers:all-srcs",
         "//internal/ingress:all-srcs",
         "//internal/plugin:all-srcs",
         "//internal/test/paths:all-srcs",

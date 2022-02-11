@@ -58,6 +58,9 @@ type controller struct {
 	// clusterResourceNamespace is the namespace used to store resources
 	// referenced by ClusterIssuer resources, e.g. acme account secrets
 	clusterResourceNamespace string
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -91,6 +94,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// instantiate additional helpers used by this controller
 	c.issuerFactory = issuer.NewFactory(ctx)
 	c.cmClient = ctx.CMClient
+	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
 	c.clusterResourceNamespace = ctx.IssuerOptions.ClusterResourceNamespace
 

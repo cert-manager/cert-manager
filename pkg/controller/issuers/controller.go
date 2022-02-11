@@ -54,6 +54,9 @@ type controller struct {
 	// issuerFactory is used to obtain a reference to the Issuer implementation
 	// for each ClusterIssuer resource
 	issuerFactory issuer.Factory
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -87,6 +90,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// instantiate additional helpers used by this controller
 	c.issuerFactory = issuer.NewFactory(ctx)
 	c.cmClient = ctx.CMClient
+	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
 
 	return c.queue, mustSync, nil
