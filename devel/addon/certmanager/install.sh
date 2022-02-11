@@ -25,9 +25,22 @@ RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 # Default feature gates to enable
 FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,AdditionalCertificateOutputFormats=true}"
 
+# As Feature Gates are added/removed, these lists should be updated.
+declare -a FEATURE_GATES_CONTROLLER_ALL=(\
+"AllAlpha","AllBeta","ValidateCAA","ExperimentalCertificateSigningRequestControllers",\
+"ExperimentalGatewayAPISupport","AdditionalCertificateOutputFormats")
+declare -a FEATURE_GATES_WEBHOOK_ALL=(\
+"AllAlpha","AllBeta","AdditionalCertificateOutputFormats")
+declare -a FEATURE_GATES_CAINJECTOR_ALL=(\
+"AllAlpha","AllBeta")
+
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+
+FEATURE_GATES_CONTROLLER=$(registered_feature_gates_for $FEATURE_GATES_CONTROLLER_ALL "${FEATURE_GATES}")
+FEATURE_GATES_WEBHOOK=$(registered_feature_gates_for $FEATURE_GATES_WEBHOOK_ALL "${FEATURE_GATES}")
+FEATURE_GATES_CAINJECTOR=$(registered_feature_gates_for $FEATURE_GATES_CAINJECTOR_ALL "${FEATURE_GATES}")
 
 # Require kubectl & helm available on PATH
 check_tool kubectl
@@ -71,8 +84,10 @@ helm upgrade \
     --set webhook.image.tag="${APP_VERSION}" \
     --set startupapicheck.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
-    --set featureGates="${FEATURE_GATES//,/\\,}" `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
-    --set "webhook.extraArgs={--feature-gates=AllAlpha=true}" \
+    `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
+    --set featureGates="${FEATURE_GATES_CONTROLLER//,/\\,}" \
+    --set "webhook.extraArgs={--feature-gates=${FEATURE_GATES_WEBHOOK//,/\\,}}" \
+    --set "cainjector.extraArgs={--feature-gates=${FEATURE_GATES_CAINJECTOR//,/\\,}}"\
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"

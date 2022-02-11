@@ -115,3 +115,27 @@ export_logs() {
   echo "Exporting cluster logs to artifacts..."
   "${SCRIPT_ROOT}/cluster/export-logs.sh"
 }
+
+# join_by joins a list of strings by a string.
+# e.g. `join_by , a b c` -> `a,b,c`
+join_by() {
+  local d=${1-} f=${2-}
+  if shift 2; then
+    printf %s "$f" "${@/#/$d}"
+  fi
+}
+
+# registered_feature_gates_for returns the subset of supported of feature gates
+# from the given enabled features. Supported features is the first argument,
+# features that are enabled is second.
+registered_feature_gates_for() {
+  declare -a FEATURE_GATES_SUPPORTED=($1)
+  FEATURE_GATES="$2"
+  declare -a FEATURE_GATES_TO_RUN=()
+  for val in ${FEATURE_GATES//,/ }; do
+    if [[ "${FEATURE_GATES_SUPPORTED[*]}" =~ "${val%=*}" ]]; then
+      FEATURE_GATES_TO_RUN+=($val)
+    fi
+  done
+  join_by , ${FEATURE_GATES_TO_RUN[@]}
+}
