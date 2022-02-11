@@ -7,10 +7,12 @@ go_test(
         "condition_list_type_test.go",
     ],
     deps = [
+        "//internal/controller/certificaterequests:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//test/integration/framework:go_default_library",
+        "//test/unit/crypto:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
