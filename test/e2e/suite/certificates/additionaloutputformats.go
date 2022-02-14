@@ -297,7 +297,12 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}))
 	})
 
-	It("if a third part set additional output formats, they then get added to the Certificate, when they are removed again they should persist as they are still owned by a third party", func() {
+	It("if a third party set additional output formats, they then get added to the Certificate, when they are removed again they should persist as they are still owned by a third party", func() {
+		// This e2e test requires that the ServerSideApply feature gate is enabled.
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+			framework.Skipf("feature gate %q is not enabled, skipping test", feature.ServerSideApply)
+		}
+
 		crt := createCertificate(f, nil)
 
 		By("add additional output formats manually to the secret")
