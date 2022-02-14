@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/component-base/featuregate"
 
 	. "github.com/cert-manager/cert-manager/test/e2e/framework/log"
 )
@@ -48,6 +49,12 @@ func Skipf(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	Logf("INFO", msg)
 	Skip(nowStamp() + ": " + msg)
+}
+
+func RequireFeatureGate(f *Framework, featureSet featuregate.FeatureGate, gate featuregate.Feature) {
+	if !featureSet.Enabled(gate) {
+		Skipf("feature gate %q is not enabled, skipping test", gate)
+	}
 }
 
 // TODO: move this function into a different package
