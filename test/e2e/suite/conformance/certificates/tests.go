@@ -786,6 +786,8 @@ func (s *Suite) Define() {
 		})
 
 		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+
 			name := "testcert-gateway"
 			secretName := "testcert-gateway-tls"
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
