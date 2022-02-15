@@ -28,7 +28,7 @@ GOBUILDPROCS ?=
 # Set this as an environment variable to enable signing commands using cmrel
 # Format should be:
 # projects/<project>/locations/<location>/keyRings/<keyring>/cryptoKeys/<keyname>/cryptoKeyVersions/<keyversion>
-CMREL_KEY ?= ""
+CMREL_KEY ?=
 
 HOST_OS = $(shell $(GO) env GOOS)
 HOST_ARCH = $(shell $(GO) env GOARCH)
