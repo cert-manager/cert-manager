@@ -48,7 +48,7 @@ bin/metadata/cert-manager-manifests.tar.gz.metadata.json: bin/release/cert-manag
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-bin/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager/README.md bin/helm/cert-manager/Chart.yaml bin/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) bin/helm/cert-manager/templates/NOTES.txt bin/helm/cert-manager/templates/_helpers.tpl | bin/helm/cert-manager bin/tools/helm
+bin/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager/README.md bin/helm/cert-manager/Chart.yaml bin/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) bin/helm/cert-manager/templates/NOTES.txt bin/helm/cert-manager/templates/_helpers.tpl bin/helm/cert-manager/templates/crds.yaml | bin/helm/cert-manager bin/tools/helm
 	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./bin/helm/cert-manager
 
 bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION).tgz | bin/helm/cert-manager bin/tools/cmrel
@@ -65,6 +65,11 @@ bin/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/templat
 
 bin/helm/cert-manager/templates/NOTES.txt: deploy/charts/cert-manager/templates/NOTES.txt | bin/helm/cert-manager/templates
 	cp $< $@
+
+bin/helm/cert-manager/templates/crds.yaml: bin/scratch/yaml/cert-manager-crd-templates.yaml
+	echo '{{- if .Values.installCRDs }}' > $@
+	cat $< >> $@
+	echo '{{- end }}' >> $@
 
 bin/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | bin/helm/cert-manager
 	cp $< $@
@@ -136,7 +141,7 @@ bin/helm/cert-manager-crds/templates/_helpers.tpl: deploy/charts/cert-manager/te
 bin/helm/cert-manager-crds/templates/crd-templates.yaml: bin/scratch/yaml/cert-manager-crd-templates.yaml | bin/helm/cert-manager-crds/templates
 	cp $< $@
 
-# Create a single file containing all CRDs before they've been templated
+# Create a single file containing all CRDs before they've been templated.
 bin/scratch/yaml/cert-manager-crd-templates.yaml: $(ALLCRDS) | bin/scratch/yaml
 	./hack/concat-yaml.sh $^ > $@
 
