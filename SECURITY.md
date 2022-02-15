@@ -10,8 +10,7 @@ reporting processes.
 ## Covered Repositories and Issues
 
 When we say "a security vulnerability in cert-manager" we mean a security issue
-in any repository under the [cert-manger GitHub organization](https://github.com/cert-manager/)
-or in the main [cert-manager repo](https://github.com/cert-manager/cert-manager).
+in any repository under the [cert-manger GitHub organization](https://github.com/cert-manager/).
 
 This reporting process is intended only for security issues in the cert-manager
 project itself, and doesn't apply to applications _using_ cert-manager or to
