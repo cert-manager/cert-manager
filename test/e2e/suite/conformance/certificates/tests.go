@@ -23,15 +23,16 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/e2e/framework"
 	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/featureset"
@@ -69,6 +70,7 @@ func (s *Suite) Define() {
 				sharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
 			case "Gateway":
 				sharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
+				framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 			}
 		})
 
@@ -784,6 +786,8 @@ func (s *Suite) Define() {
 		})
 
 		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+
 			name := "testcert-gateway"
 			secretName := "testcert-gateway-tls"
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)

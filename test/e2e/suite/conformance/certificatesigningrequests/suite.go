@@ -109,10 +109,7 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(string), require
 		return
 	}
 	It(name, func() {
-		if !utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
-			framework.Skipf("skipping CertificateSigningRequest controller test since FEATURE_GATE %s is not enabled",
-				feature.ExperimentalCertificateSigningRequestControllers)
-		}
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		By("Creating an issuer resource")
 		signerName := s.CreateIssuerFunc(f)

@@ -129,9 +129,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		It("should be able to create a certificate with additional output formats", func() {
 			// Output formats is only enabled via this feature gate being enabled.
 			// Don't run test if the gate isn't enabled.
-			if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-				framework.Skipf("feature gate %s is not enabled, skipping test", feature.AdditionalCertificateOutputFormats)
-			}
+			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
 
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
