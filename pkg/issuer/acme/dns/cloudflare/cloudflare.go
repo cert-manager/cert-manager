@@ -28,7 +28,7 @@ import (
 // TODO: Unexport?
 const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
-// Mockable Interface
+// DNSProviderType is the Mockable Interface
 type DNSProviderType interface {
 	makeRequest(method, uri string, body io.Reader) (json.RawMessage, error)
 }
@@ -91,7 +91,7 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 	}, nil
 }
 
-// This will try to traverse the official Cloudflare API to find the nearest valid Zone.
+// FindNearestZoneForFQDN will try to traverse the official Cloudflare API to find the nearest valid Zone.
 // It's a replacement for /pkg/issuer/acme/dns/util/wait.go#FindZoneByFqdn
 //  example.com.                                   ← Zone-Record found for the SLD (in most cases)
 //  └── foo.example.com.                           ← Zone-Record could be possibly here, but in this case not.
