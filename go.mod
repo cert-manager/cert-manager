@@ -46,15 +46,15 @@ require (
 	k8s.io/client-go v0.23.1
 	k8s.io/code-generator v0.23.1
 	k8s.io/component-base v0.23.1
-	k8s.io/klog/v2 v2.30.0
+	k8s.io/klog/v2 v2.40.1
 	k8s.io/kube-aggregator v0.23.1
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
 	k8s.io/kubectl v0.23.1
-	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
+	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704
 	sigs.k8s.io/controller-runtime v0.11.0
 	sigs.k8s.io/controller-tools v0.7.0
 	sigs.k8s.io/gateway-api v0.3.0
-	sigs.k8s.io/structured-merge-diff/v4 v4.2.0
+	sigs.k8s.io/structured-merge-diff/v4 v4.2.1
 	sigs.k8s.io/yaml v1.3.0
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20210415151418-c5206de65a78
 )
@@ -232,7 +232,6 @@ require (
 	k8s.io/gengo v0.0.0-20210813121822-485abfe95c7c // indirect
 	oras.land/oras-go v0.4.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.25 // indirect
-	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/kustomize/api v0.10.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.0 // indirect
 )
@@ -240,6 +239,24 @@ require (
 replace (
 	golang.org/x/net => golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
 
+	k8s.io/api => github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20220203192237-6b61675b7950
+
+	k8s.io/apiextensions-apiserver => github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20220203192237-6b61675b7950
+
+	k8s.io/apimachinery => github.com/kcp-dev/kubernetes/staging/src/k8s.io/apimachinery v0.0.0-20220203192237-6b61675b7950
+
+	// k8s.io/utils => github.com/ncdc/kubernetes/staging/src/k8s.io/utils v0.0.0-20220119183702-4619e1d3975e
+
+	k8s.io/apiserver => github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiserver v0.0.0-20220203192237-6b61675b7950
+
+	k8s.io/client-go => github.com/kcp-dev/kubernetes/staging/src/k8s.io/client-go v0.0.0-20220203192237-6b61675b7950
+
+	k8s.io/code-generator => github.com/kcp-dev/kubernetes/staging/src/k8s.io/code-generator v0.0.0-20220203192237-6b61675b7950
+
+	k8s.io/component-base => github.com/kcp-dev/kubernetes/staging/src/k8s.io/component-base v0.0.0-20220203192237-6b61675b7950
+
 	// Update gengo to ensure we have the --trim-path-prefix feature in code-generator tools.
 	k8s.io/gengo => k8s.io/gengo v0.0.0-20211115164449-b448ea381d54
+
+	sigs.k8s.io/controller-runtime => github.com/fabianvf/controller-runtime v0.2.0-beta.1.0.20220214203144-4a14c9ca4139
 )
