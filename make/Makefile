@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+MAKEFLAGS += --warn-undefined-variables
+
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -uo pipefail -c
+
+# For details on some of these "prelude" settings, see: https://clarkgrubb.com/makefile-style-guide
+.DEFAULT_GOAL := help
+.DELETE_ON_ERROR:
+.SUFFIXES:
 
 SOURCES := $(shell find . -type f -name "*.go")
 
