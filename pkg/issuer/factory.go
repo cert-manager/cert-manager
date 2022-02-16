@@ -25,7 +25,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller"
 )
 
-// issuerConstructor constructs an issuer given an Issuer resource and a Context.
+// IssuerConstructor constructs an issuer given an Issuer resource and a Context.
 // An error will be returned if the appropriate issuer is not registered.
 type IssuerConstructor func(*controller.Context, v1.GenericIssuer) (Interface, error)
 
@@ -34,7 +34,7 @@ var (
 	constructorsLock sync.RWMutex
 )
 
-// Register will register an issuer constructor so it can be used within the
+// RegisterIssuer will register an issuer constructor so it can be used within the
 // application. 'name' should be unique, and should be used to identify this
 // issuer.
 // TODO: move this method to be on Factory, and invent a way to obtain a
