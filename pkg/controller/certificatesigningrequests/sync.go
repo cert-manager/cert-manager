@@ -119,11 +119,8 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 			message := fmt.Sprintf("Requester may not reference Namespaced Issuer %s/%s", ref.Namespace, ref.Name)
 			c.recorder.Event(csr, corev1.EventTypeWarning, "DeniedReference", message)
 			util.CertificateSigningRequestSetFailed(csr, "DeniedReference", message)
-			if _, err := c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{}); err != nil {
-				return err
-			}
-
-			return nil
+			_, err := util.UpdateOrApplyStatus(ctx, c.certClient, csr, certificatesv1.CertificateFailed, c.fieldManager)
+			return err
 		}
 	}
 
