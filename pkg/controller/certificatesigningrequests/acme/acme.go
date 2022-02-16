@@ -59,9 +59,6 @@ type ACME struct {
 	acmeClientV cmacmeclientset.AcmeV1Interface
 	certClient  certificatesclient.CertificateSigningRequestInterface
 
-	// fieldManager is the manager name used for the Apply operations.
-	fieldManager string
-
 	recorder record.EventRecorder
 
 	copiedAnnotationPrefixes []string
