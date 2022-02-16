@@ -10,6 +10,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/integration/acme:all-srcs",
+        "//test/integration/certificaterequests:all-srcs",
         "//test/integration/certificates:all-srcs",
         "//test/integration/conversion:all-srcs",
         "//test/integration/ctl:all-srcs",

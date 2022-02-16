@@ -57,6 +57,9 @@ type Controller struct {
 	// clientset used to update cert-manager API resources
 	cmClient cmclient.Interface
 
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
+
 	certificateRequestLister cmlisters.CertificateRequestLister
 
 	queue workqueue.RateLimitingInterface
@@ -182,6 +185,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.recorder = ctx.Recorder
 	c.reporter = util.NewReporter(c.clock, c.recorder)
 	c.cmClient = ctx.CMClient
+	c.fieldManager = ctx.FieldManager
 
 	// Construct the issuer implementation with the built component context.
 	c.issuer = c.issuerConstructor(ctx)

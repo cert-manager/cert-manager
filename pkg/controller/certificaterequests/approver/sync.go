@@ -22,10 +22,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -62,8 +65,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	)
 
 	// Update CertificateRequest with
-	_, err = c.cmClient.CertmanagerV1().CertificateRequests(cr.Namespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
-	if err != nil {
+	if err := c.updateStatusOrApply(ctx, cr); err != nil {
 		return err
 	}
 	c.recorder.Event(cr, corev1.EventTypeNormal, "cert-manager.io", ApprovedMessage)
@@ -71,4 +73,13 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	log.V(logf.DebugLevel).Info("approved certificate request")
 
 	return nil
+}
+
+func (c *Controller) updateStatusOrApply(ctx context.Context, cr *cmapi.CertificateRequest) error {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		return internalcertificaterequests.ApplyStatus(ctx, c.cmClient, c.fieldManager, cr)
+	} else {
+		_, err := c.cmClient.CertmanagerV1().CertificateRequests(cr.Namespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
+		return err
+	}
 }

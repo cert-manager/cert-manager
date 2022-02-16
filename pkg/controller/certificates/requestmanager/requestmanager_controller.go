@@ -69,6 +69,11 @@ type controller struct {
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
 	copiedAnnotationPrefixes []string
+
+	// fieldManager is the string which will be used as the Field Manager on
+	// fields created or edited by the cert-manager Kubernetes client during
+	// Create or Apply API calls.
+	fieldManager string
 }
 
 func NewController(
@@ -79,6 +84,7 @@ func NewController(
 	recorder record.EventRecorder,
 	clock clock.Clock,
 	certificateControllerOptions controllerpkg.CertificateOptions,
+	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -118,6 +124,7 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		copiedAnnotationPrefixes: certificateControllerOptions.CopiedAnnotationPrefixes,
+		fieldManager:             fieldManager,
 	}, queue, mustSync
 }
 
@@ -388,11 +395,12 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		},
 	}
 
-	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
+	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{FieldManager: c.fieldManager})
 	if err != nil {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to create CertificateRequest: "+err.Error())
 		return err
 	}
+
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonRequested, "Created new CertificateRequest resource %q", cr.Name)
 	if err := c.waitForCertificateRequestToExist(cr.Namespace, cr.Name); err != nil {
 		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried")
@@ -430,6 +438,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.Recorder,
 		ctx.Clock,
 		ctx.CertificateOptions,
+		ctx.FieldManager,
 	)
 	c.controller = ctrl
 

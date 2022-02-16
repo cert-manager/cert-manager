@@ -27,11 +27,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -51,7 +54,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	crCopy := cr.DeepCopy()
 
 	defer func() {
-		if _, saveErr := c.updateCertificateRequestStatusAndAnnotations(ctx, cr, crCopy); saveErr != nil {
+		if saveErr := c.updateCertificateRequestStatusAndAnnotations(ctx, cr, crCopy); saveErr != nil {
 			err = utilerrors.NewAggregate([]error{saveErr, err})
 		}
 	}()
@@ -161,19 +164,38 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	return nil
 }
 
-func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
+func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *cmapi.CertificateRequest) error {
 	log := logf.FromContext(ctx, "updateStatus")
 
 	// if annotations changed we have to call .Update() and not .UpdateStatus()
 	if !reflect.DeepEqual(old.Annotations, new.Annotations) {
 		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", pretty.Diff(old.Annotations, new.Annotations))
-		return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).Update(ctx, new, metav1.UpdateOptions{})
+		return c.updateOrApply(ctx, new)
 	}
 
 	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
-		return nil, nil
+		return nil
 	}
 
 	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(old.Status, new.Status))
-	return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).UpdateStatus(ctx, new, metav1.UpdateOptions{})
+	return c.updateStatusOrApply(ctx, new)
+}
+
+func (c *Controller) updateOrApply(ctx context.Context, cr *cmapi.CertificateRequest) error {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		_, err := internalcertificaterequests.Apply(ctx, c.cmClient, c.fieldManager, cr)
+		return err
+	} else {
+		_, err := c.cmClient.CertmanagerV1().CertificateRequests(cr.Namespace).Update(ctx, cr, metav1.UpdateOptions{})
+		return err
+	}
+}
+
+func (c *Controller) updateStatusOrApply(ctx context.Context, cr *cmapi.CertificateRequest) error {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		return internalcertificaterequests.ApplyStatus(ctx, c.cmClient, c.fieldManager, cr)
+	} else {
+		_, err := c.cmClient.CertmanagerV1().CertificateRequests(cr.Namespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
+		return err
+	}
 }
