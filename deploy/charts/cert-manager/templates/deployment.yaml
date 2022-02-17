@@ -48,7 +48,9 @@ spec:
         prometheus.io/port: '9402'
       {{- end }}
     spec:
+      {{- if (or .Values.serviceAccount.create .Values.serviceAccount.name) }}
       serviceAccountName: {{ template "cert-manager.serviceAccountName" . }}
+      {{- end }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
