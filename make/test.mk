@@ -21,6 +21,8 @@ unit-test:
 
 .PHONY: setup-integration-tests
 setup-integration-tests: integration-test-tools test/integration/versionchecker/testdata/test_manifests.tar templated-crds
+	$(eval GIT_TAGS_FILE := bin/scratch/git/upstream-tags.txt)
+	@echo -e "\033[0;33mLatest known tag for integration tests is $(shell tail -1 $(GIT_TAGS_FILE)); if that seems out-of-date,\npull latest tags, run 'rm $(GIT_TAGS_FILE)' and retest\033[0m"
 
 .PHONY: integration-test
 integration-test: setup-integration-tests
