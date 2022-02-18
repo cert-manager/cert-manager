@@ -34,8 +34,8 @@ import (
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/upgrade/migrateapiversion"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
-	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	v1 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	v2 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
