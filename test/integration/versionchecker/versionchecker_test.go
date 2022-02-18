@@ -22,6 +22,7 @@ import (
 	"embed"
 	"errors"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -48,17 +49,29 @@ func loadManifests() (io.Reader, error, func() (string, error), func()) {
 	}
 	fileReader := tar.NewReader(data)
 
-	return fileReader, nil, func() (string, error) {
+	nextFunc := func() (string, error) {
+		for {
 			header, err := fileReader.Next()
 			if err != nil {
 				return "", err
 			}
-			return strings.TrimSuffix(header.Name, ".yaml"), nil
-		}, func() {
-			if err := data.Close(); err != nil {
-				panic(err)
+
+			headerName := filepath.Clean(strings.TrimSuffix(header.Name, ".yaml"))
+			if headerName == "." {
+				continue
 			}
+
+			return headerName, nil
 		}
+	}
+
+	closeFunc := func() {
+		if err := data.Close(); err != nil {
+			panic(err)
+		}
+	}
+
+	return fileReader, nil, nextFunc, closeFunc
 }
 
 func manifestToObject(manifest io.Reader) ([]runtime.Object, error) {
@@ -149,27 +162,29 @@ func TestVersionChecker(t *testing.T) {
 	defer close()
 
 	for {
-		version, err := next()
+		expectedVersionString, err := next()
 		if err == io.EOF {
 			break
-		}
-		if err != nil {
+		} else if err != nil {
 			t.Fatal(err)
 		}
 
-		t.Run(version, func(t *testing.T) {
+		t.Run(expectedVersionString, func(t *testing.T) {
 			checker, err := setupFakeVersionChecker(f)
 			if err != nil {
 				t.Error(err)
+				return
 			}
 
 			versionGuess, err := checker.Version(context.TODO())
 			if err != nil {
-				t.Error(err)
+				t.Errorf("failed to detect expected version %q: %s", expectedVersionString, err)
+				return
 			}
 
-			if version != versionGuess.Detected {
-				t.Fatalf("wrong -> expected: %s vs detected: %s", version, versionGuess)
+			if expectedVersionString != versionGuess.Detected {
+				t.Errorf("wrong -> expected: %s vs detected: %s", expectedVersionString, versionGuess)
+				return
 			}
 		})
 	}

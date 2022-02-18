@@ -75,8 +75,13 @@ func WithWebhookConversionHandler(handler handlers.ConversionHook) RunControlPla
 }
 
 func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunControlPlaneOption) (*rest.Config, StopFunc) {
+	crdDirectoryPath, err := paths.CRDDirectory()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	options := &controlPlaneOptions{
-		crdsDir: pointer.StringPtr(paths.CRDDirectory(t)),
+		crdsDir: pointer.StringPtr(crdDirectoryPath),
 	}
 
 	for _, f := range optionFunctions {
