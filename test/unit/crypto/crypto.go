@@ -25,7 +25,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -39,7 +39,7 @@ var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
-type cryptoBundle struct {
+type CryptoBundle struct {
 	// certificate is the Certificate resource used to create this bundle
 	Certificate *cmapi.Certificate
 	// expectedRequestName is the name of the CertificateRequest that is
@@ -69,19 +69,19 @@ type cryptoBundle struct {
 
 	LocalTemporaryCertificateBytes []byte
 
-	FixedClock *fakeclock.FakeClock
+	Clock clock.Clock
 }
 
-// MustCreateCryptoBundle creates a cryptoBundle to be used with tests or fails.
-func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) cryptoBundle {
-	c, err := createCryptoBundle(crt, fixedClock)
+// MustCreateCryptoBundle creates a CryptoBundle to be used with tests or fails.
+func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, clock clock.Clock) CryptoBundle {
+	c, err := createCryptoBundle(crt, clock)
 	if err != nil {
 		t.Fatalf("error generating crypto bundle: %v", err)
 	}
 	return *c
 }
 
-func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*cryptoBundle, error) {
+func createCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*CryptoBundle, error) {
 	crt := originalCert.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
@@ -184,7 +184,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.F
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
-	return &cryptoBundle{
+	return &CryptoBundle{
 		Certificate:                            originalCert,
 		ExpectedRequestName:                    reqName,
 		PrivateKey:                             privateKey,
@@ -199,7 +199,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.F
 		Cert:                                   cert,
 		CertBytes:                              certBytes,
 		LocalTemporaryCertificateBytes:         tempCertBytes,
-		FixedClock:                             fixedClock,
+		Clock:                                  clock,
 	}, nil
 }
 
