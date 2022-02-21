@@ -46,7 +46,7 @@ func Test_controller_Register(t *testing.T) {
 		{
 			name: "gateway is re-queued when an 'Added' event is received for this gateway",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
-				_, err := c.NetworkingV1alpha1().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+				_, err := c.GatewayV1alpha2().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "gateway-1",
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
@@ -59,12 +59,12 @@ func Test_controller_Register(t *testing.T) {
 				// We can't use the gateway-api fake.NewSimpleClientset due to
 				// Gateway being pluralized as "gatewaies" instead of
 				// "gateways". The trick is thus to use Create instead.
-				_, err := c.NetworkingV1alpha1().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+				_, err := c.GatewayV1alpha2().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "gateway-1",
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				_, err = c.NetworkingV1alpha1().Gateways("namespace-1").Update(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+				_, err = c.GatewayV1alpha2().Gateways("namespace-1").Update(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "gateway-1", Labels: map[string]string{"foo": "bar"},
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
@@ -75,12 +75,12 @@ func Test_controller_Register(t *testing.T) {
 		{
 			name: "gateway is re-queued when a 'Deleted' event is received for this gateway",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
-				_, err := c.NetworkingV1alpha1().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+				_, err := c.GatewayV1alpha2().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "gateway-1",
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				err = c.NetworkingV1alpha1().Gateways("namespace-1").Delete(context.Background(), "gateway-1", metav1.DeleteOptions{})
+				err = c.GatewayV1alpha2().Gateways("namespace-1").Delete(context.Background(), "gateway-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
 			expectAddCalls: []interface{}{"namespace-1/gateway-1", "namespace-1/gateway-1"},
