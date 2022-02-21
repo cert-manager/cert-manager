@@ -26,5 +26,8 @@ bin/scratch/git/upstream-tags.txt: | bin/scratch/git
 		sed -n '/v1.0.0/,$$p' | \
 		grep -v "v1.2.0-alpha.1" > $@
 
+bin/release-version: | bin
+	@test "$(RELEASE_VERSION)" == "$$(cat "$@" 2>/dev/null)" || echo $(RELEASE_VERSION) > $@
+
 bin/scratch/git:
 	@mkdir -p $@
