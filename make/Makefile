@@ -51,6 +51,7 @@ include make/containers.mk
 include make/release_containers.mk
 include make/manifests.mk
 include make/licenses.mk
+include make/deploy.mk
 
 .PHONY: all
 all: binaries helm-chart static-manifests all-containers  ## Build all artifacts which might be run or used locally, except for anything signed.

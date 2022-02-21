@@ -13,6 +13,8 @@ HELM=$(WORKDIR)/bin/tools/helm
 COSIGN=$(WORKDIR)/bin/tools/cosign
 CMREL=$(WORKDIR)/bin/tools/cmrel
 YQ=$(WORKDIR)/bin/tools/yq
+KUBECTL=bin/tools/kubectl
+KIND=bin/tools/kind
 
 HELM_VERSION=3.6.3
 KUBECTL_VERSION=1.22.1
