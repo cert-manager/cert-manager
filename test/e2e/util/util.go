@@ -393,6 +393,8 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 						},
 						Kinds: nil,
 					},
+					Name:     "acme-solver",
+					Protocol: gwapiv1alpha2.TCPProtocolType,
 					Port:     gwapiv1alpha2.PortNumber(80),
 					Hostname: (*gwapiv1alpha2.Hostname)(&dnsNames[0]),
 					TLS: &gwapiv1alpha2.GatewayTLSConfig{
