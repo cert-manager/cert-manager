@@ -1669,7 +1669,7 @@ func TestSync(t *testing.T) {
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{
-				`Warning BadConfig Skipped a listener block: spec.listeners[0].tls.certificateRef: Required value: listener is missing a certificateRef`,
+				`Warning BadConfig Skipped a listener block: spec.listeners[0].tls.certificateRef[0]: Required value: listener is missing a certificateRef`,
 				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
 			},
 			IngressLike: &gwapi.Gateway{
@@ -1881,7 +1881,7 @@ func TestSync(t *testing.T) {
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
 									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
-									Name:  "existing-crt",
+									Name:  "cert-secret-name",
 								},
 							},
 						},
@@ -2089,7 +2089,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:         "should update a Certificate if is contains a Common Name that is not defined on the Gateway annotations",
+			Name:         "should update a Certificate if it contains a Common Name that is not defined on the Gateway annotations",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			IngressLike: &gwapi.Gateway{
@@ -2115,7 +2115,7 @@ func TestSync(t *testing.T) {
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
 									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
-									Name:  "existing-crt",
+									Name:  "example-com-tls",
 								},
 							},
 						},
@@ -2727,7 +2727,8 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.listeners[0].tls.certificateRef.group: Unsupported value: \"\": supported values: \"core\"",
+			// no group is now supported
+			wantErr: "",
 		},
 		{
 			name: "unsupported group",
@@ -2746,7 +2747,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.listeners[0].tls.certificateRef.group: Unsupported value: \"invalid\": supported values: \"core\"",
+			wantErr: "spec.listeners[0].tls.certificateRef[0].group: Unsupported value: \"invalid\": supported values: \"core\", \"\"",
 		},
 		{
 			name: "unsupported kind",
@@ -2765,7 +2766,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 					},
 				},
 			},
-			wantErr: "spec.listeners[0].tls.certificateRef.kind: Unsupported value: \"SomeOtherKind\": supported values: \"Secret\"",
+			wantErr: "spec.listeners[0].tls.certificateRef[0].kind: Unsupported value: \"SomeOtherKind\": supported values: \"Secret\", \"\"",
 		},
 	}
 	for _, test := range tests {

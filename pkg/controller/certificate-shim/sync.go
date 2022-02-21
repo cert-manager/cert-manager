@@ -238,7 +238,7 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.Erro
 		// check that each CertificateRef is valid
 		for i, secretRef := range l.TLS.CertificateRefs {
 			if secretRef == nil {
-				errs = append(errs, field.InternalError(path.Child("tls").Child("certificateRef").Index(i), errors.New("nil certificateRef in Gateway Listener")))
+				errs = append(errs, field.Required(path.Child("tls").Child("certificateRef").Index(i), "listener is missing a certificateRef"))
 				continue
 			}
 
@@ -248,7 +248,7 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.Erro
 			}
 
 			if *secretRef.Kind != "Secret" && *secretRef.Kind != "" {
-				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Child("kind"),
+				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Index(i).Child("kind"),
 					*secretRef.Kind, []string{"Secret", ""}))
 			}
 		}
@@ -307,6 +307,8 @@ func buildCertificates(
 				}
 				if certRef.Namespace != nil {
 					secretRef.Namespace = string(*certRef.Namespace)
+				} else {
+					secretRef.Namespace = ingLike.GetNamespace()
 				}
 				// Gateway API hostname explicitly disallows IP addresses, so this
 				// should be OK.
