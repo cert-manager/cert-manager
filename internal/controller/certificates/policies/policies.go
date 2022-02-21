@@ -92,12 +92,14 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 // NewSecretPostIssuancePolicyChain includes policy checks that are to be
 // performed _after_ issuance has been successful, testing for the presence and
 // correctness of metadata and output formats of Certificate's Secrets.
-func NewSecretPostIssuancePolicyChain(fieldManager string) Chain {
+func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string) Chain {
 	return Chain{
 		SecretTemplateMismatchesSecret,
 		SecretTemplateMismatchesSecretManagedFields(fieldManager),
 		SecretAdditionalOutputFormatsDataMismatch,
 		SecretAdditionalOutputFormatsOwnerMismatch(fieldManager),
+		SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled, fieldManager),
+		SecretOwnerReferenceValueMismatch(ownerRefEnabled),
 	}
 }
 

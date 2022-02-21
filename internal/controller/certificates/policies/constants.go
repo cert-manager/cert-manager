@@ -55,4 +55,8 @@ const (
 	// ManagedFieldsParseError is a policy violation whereby cert-manager was
 	// unable to decode the managed fields on a resource.
 	ManagedFieldsParseError string = "ManagedFieldsParseError"
+	// SecretOwnerRefMismatch is a policy violation whereby the Secret either has
+	// a missing owner reference to the Certificate, or has an owner reference it
+	// shouldn't have.
+	SecretOwnerRefMismatch string = "SecretOwnerRefMismatch"
 )

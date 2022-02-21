@@ -25,11 +25,13 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
+	"sigs.k8s.io/structured-merge-diff/v4/value"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -404,6 +406,8 @@ func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, boo
 // Returns true (violation) if:
 //   * missing AdditionalOutputFormat key owned by the field manager
 //   * AdditionalOutputFormat key owned by the field manager shouldn't exist
+// A violation with the reason `ManagedFieldsParseError` should be considered a
+// non re-triable error.
 func SecretAdditionalOutputFormatsOwnerMismatch(fieldManager string) Func {
 	const message = "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields"
 	return func(input Input) (string, string, bool) {
@@ -454,6 +458,86 @@ func SecretAdditionalOutputFormatsOwnerMismatch(fieldManager string) Func {
 		// Secret.
 		if crtHasCombinedPEM != secretHasCombinedPEM || crtHasDER != secretHasDER {
 			return AdditionalOutputFormatsMismatch, message, true
+		}
+
+		return "", "", false
+	}
+}
+
+// SecretOwnerReferenceManagedFieldMismatch validates that the Secret has an
+// owner reference to the Certificate if enabled. Returns true (violation) if:
+// * the Secret doesn't have an owner reference and is expecting one
+// * has an owner reference but is not expecting one
+// A violation with the reason `ManagedFieldsParseError` should be considered a
+// non re-triable error.
+func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager string) Func {
+	return func(input Input) (string, string, bool) {
+		var hasOwnerRefManagedField bool
+		// Determine whether the Secret has the Certificate as an owner reference
+		// which is owned by the field manager.
+		for _, managedField := range input.Secret.ManagedFields {
+			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+				continue
+			}
+
+			var fieldset fieldpath.Set
+			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
+			}
+			if fieldset.Has(fieldpath.Path{
+				{FieldName: pointer.String("metadata")},
+				{FieldName: pointer.String("ownerReferences")},
+				{Key: &value.FieldList{{Name: "uid", Value: value.NewValueInterface(string(input.Certificate.UID))}}},
+			}) {
+				hasOwnerRefManagedField = true
+				break
+			}
+		}
+
+		// The presence of the Certificate owner reference should match owner
+		// reference being enabled.
+		if ownerRefEnabled != hasOwnerRefManagedField {
+			return SecretOwnerRefMismatch,
+				fmt.Sprintf("unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+		}
+
+		return "", "", false
+	}
+}
+
+// SecretOwnerReferenceValueMismatch validates that the Secret has the expected
+// owner reference if it is enabled. Returns true (violation) if:
+// * owner reference is enabled, but the reference has an incorrect value
+func SecretOwnerReferenceValueMismatch(ownerRefEnabled bool) Func {
+	return func(input Input) (string, string, bool) {
+		// If the Owner Reference is not enabled, we don't need to check the value
+		// and can exit early.
+		if !ownerRefEnabled {
+			return "", "", false
+		}
+
+		var (
+			expRef                         = *metav1.NewControllerRef(input.Certificate, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+			hasOwnerRefMatchingCertificate bool
+		)
+		for _, ownerRef := range input.Secret.OwnerReferences {
+			// Owner Reference slice is keyed by UID, so only one Owner Reference
+			// with a particular UID can exist meaning we can break early.
+			// https://github.com/kubernetes/apimachinery/blob/04356ed4cbb061c810a5e3d655802fd1e24284da/pkg/apis/meta/v1/types.go#L251
+			if ownerRef.UID == input.Certificate.UID {
+				if apiequality.Semantic.DeepEqual(ownerRef, expRef) {
+					// Break early, there can only be one owner ref with this UID.
+					hasOwnerRefMatchingCertificate = true
+					break
+				}
+			}
+		}
+
+		// Owner reference is enabled at this point. If the Owner Reference value
+		// doesn't match the expected value, return violation.
+		if !hasOwnerRefMatchingCertificate {
+			return SecretOwnerRefMismatch,
+				fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
 		}
 
 		return "", "", false
