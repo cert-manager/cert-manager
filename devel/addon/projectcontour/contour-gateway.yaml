@@ -5045,7 +5045,7 @@ metadata:
   name: contour
   namespace: projectcontour
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -8996,27 +8996,3 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
-
----
-kind: GatewayClass
-apiVersion: gateway.networking.k8s.io/v1alpha2
-metadata:
-  name: example
-spec:
-  controllerName: projectcontour.io/projectcontour/contour
-
----
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1alpha2
-metadata:
-  name: contour
-  namespace: projectcontour
-spec:
-  gatewayClassName: example
-  listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
