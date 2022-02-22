@@ -19,7 +19,6 @@ package acme
 import (
 	"context"
 	"encoding/base64"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -27,6 +26,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
