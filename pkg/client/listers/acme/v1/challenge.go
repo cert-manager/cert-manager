@@ -19,6 +19,8 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,6 +33,9 @@ type ChallengeLister interface {
 	// List lists all Challenges in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Challenge, err error)
+	// ListWithContext lists all Challenges in the indexer.
+	// Objects returned here must be treated as read-only.
+	ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Challenge, err error)
 	// Challenges returns an object that can list and get Challenges.
 	Challenges(namespace string) ChallengeNamespaceLister
 	ChallengeListerExpansion
@@ -48,6 +53,11 @@ func NewChallengeLister(indexer cache.Indexer) ChallengeLister {
 
 // List lists all Challenges in the indexer.
 func (s *challengeLister) List(selector labels.Selector) (ret []*v1.Challenge, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all Challenges in the indexer.
+func (s *challengeLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Challenge, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.Challenge))
 	})
@@ -80,6 +90,11 @@ type challengeNamespaceLister struct {
 
 // List lists all Challenges in the indexer for a given namespace.
 func (s challengeNamespaceLister) List(selector labels.Selector) (ret []*v1.Challenge, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all Challenges in the indexer for a given namespace.
+func (s challengeNamespaceLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Challenge, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.Challenge))
 	})
@@ -88,6 +103,11 @@ func (s challengeNamespaceLister) List(selector labels.Selector) (ret []*v1.Chal
 
 // Get retrieves the Challenge from the indexer for a given namespace and name.
 func (s challengeNamespaceLister) Get(name string) (*v1.Challenge, error) {
+	return s.GetWithContext(context.Background(), name)
+}
+
+// GetWithContext retrieves the Challenge from the indexer for a given namespace and name.
+func (s challengeNamespaceLister) GetWithContext(ctx context.Context, name string) (*v1.Challenge, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err

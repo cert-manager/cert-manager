@@ -19,6 +19,8 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,6 +33,9 @@ type IssuerLister interface {
 	// List lists all Issuers in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Issuer, err error)
+	// ListWithContext lists all Issuers in the indexer.
+	// Objects returned here must be treated as read-only.
+	ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Issuer, err error)
 	// Issuers returns an object that can list and get Issuers.
 	Issuers(namespace string) IssuerNamespaceLister
 	IssuerListerExpansion
@@ -48,6 +53,11 @@ func NewIssuerLister(indexer cache.Indexer) IssuerLister {
 
 // List lists all Issuers in the indexer.
 func (s *issuerLister) List(selector labels.Selector) (ret []*v1.Issuer, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all Issuers in the indexer.
+func (s *issuerLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Issuer, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.Issuer))
 	})
@@ -80,6 +90,11 @@ type issuerNamespaceLister struct {
 
 // List lists all Issuers in the indexer for a given namespace.
 func (s issuerNamespaceLister) List(selector labels.Selector) (ret []*v1.Issuer, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all Issuers in the indexer for a given namespace.
+func (s issuerNamespaceLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Issuer, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.Issuer))
 	})
@@ -88,6 +103,11 @@ func (s issuerNamespaceLister) List(selector labels.Selector) (ret []*v1.Issuer,
 
 // Get retrieves the Issuer from the indexer for a given namespace and name.
 func (s issuerNamespaceLister) Get(name string) (*v1.Issuer, error) {
+	return s.GetWithContext(context.Background(), name)
+}
+
+// GetWithContext retrieves the Issuer from the indexer for a given namespace and name.
+func (s issuerNamespaceLister) GetWithContext(ctx context.Context, name string) (*v1.Issuer, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err

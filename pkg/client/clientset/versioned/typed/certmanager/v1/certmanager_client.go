@@ -19,8 +19,6 @@ limitations under the License.
 package v1
 
 import (
-	"net/http"
-
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
@@ -37,6 +35,7 @@ type CertmanagerV1Interface interface {
 // CertmanagerV1Client is used to interact with features provided by the cert-manager.io group.
 type CertmanagerV1Client struct {
 	restClient rest.Interface
+	cluster    string
 }
 
 func (c *CertmanagerV1Client) Certificates(namespace string) CertificateInterface {
@@ -56,32 +55,16 @@ func (c *CertmanagerV1Client) Issuers(namespace string) IssuerInterface {
 }
 
 // NewForConfig creates a new CertmanagerV1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*CertmanagerV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
-	httpClient, err := rest.HTTPClientFor(&config)
+	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, err
 	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new CertmanagerV1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*CertmanagerV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
-	if err != nil {
-		return nil, err
-	}
-	return &CertmanagerV1Client{client}, nil
+	return &CertmanagerV1Client{restClient: client}, nil
 }
 
 // NewForConfigOrDie creates a new CertmanagerV1Client for the given config and
@@ -96,7 +79,12 @@ func NewForConfigOrDie(c *rest.Config) *CertmanagerV1Client {
 
 // New creates a new CertmanagerV1Client for the given RESTClient.
 func New(c rest.Interface) *CertmanagerV1Client {
-	return &CertmanagerV1Client{c}
+	return &CertmanagerV1Client{restClient: c}
+}
+
+// NewWithCluster creates a new CertmanagerV1Client for the given RESTClient and cluster.
+func NewWithCluster(c rest.Interface, cluster string) *CertmanagerV1Client {
+	return &CertmanagerV1Client{restClient: c, cluster: cluster}
 }
 
 func setConfigDefaults(config *rest.Config) error {

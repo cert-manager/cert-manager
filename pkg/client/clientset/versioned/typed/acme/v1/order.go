@@ -52,15 +52,17 @@ type OrderInterface interface {
 
 // orders implements OrderInterface
 type orders struct {
-	client rest.Interface
-	ns     string
+	client  rest.Interface
+	cluster string
+	ns      string
 }
 
 // newOrders returns a Orders
 func newOrders(c *AcmeV1Client, namespace string) *orders {
 	return &orders{
-		client: c.RESTClient(),
-		ns:     namespace,
+		client:  c.RESTClient(),
+		cluster: c.cluster,
+		ns:      namespace,
 	}
 }
 
@@ -68,6 +70,7 @@ func newOrders(c *AcmeV1Client, namespace string) *orders {
 func (c *orders) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Order, err error) {
 	result = &v1.Order{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		Name(name).
@@ -85,6 +88,7 @@ func (c *orders) List(ctx context.Context, opts metav1.ListOptions) (result *v1.
 	}
 	result = &v1.OrderList{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -102,6 +106,7 @@ func (c *orders) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Inte
 	}
 	opts.Watch = true
 	return c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -113,6 +118,7 @@ func (c *orders) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Inte
 func (c *orders) Create(ctx context.Context, order *v1.Order, opts metav1.CreateOptions) (result *v1.Order, err error) {
 	result = &v1.Order{}
 	err = c.client.Post().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -126,6 +132,7 @@ func (c *orders) Create(ctx context.Context, order *v1.Order, opts metav1.Create
 func (c *orders) Update(ctx context.Context, order *v1.Order, opts metav1.UpdateOptions) (result *v1.Order, err error) {
 	result = &v1.Order{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		Name(order.Name).
@@ -141,6 +148,7 @@ func (c *orders) Update(ctx context.Context, order *v1.Order, opts metav1.Update
 func (c *orders) UpdateStatus(ctx context.Context, order *v1.Order, opts metav1.UpdateOptions) (result *v1.Order, err error) {
 	result = &v1.Order{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		Name(order.Name).
@@ -155,6 +163,7 @@ func (c *orders) UpdateStatus(ctx context.Context, order *v1.Order, opts metav1.
 // Delete takes name of the order and deletes it. Returns an error if one occurs.
 func (c *orders) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		Name(name).
@@ -170,6 +179,7 @@ func (c *orders) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
@@ -183,6 +193,7 @@ func (c *orders) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions
 func (c *orders) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Order, err error) {
 	result = &v1.Order{}
 	err = c.client.Patch(pt).
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("orders").
 		Name(name).

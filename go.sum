@@ -755,8 +755,8 @@ github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiserver v0.0.0-20220203192237
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiserver v0.0.0-20220203192237-6b61675b7950/go.mod h1:IpeVKsnwInYf7NCGiePI9VMXcHHAlBiZIgvNiMAkyAw=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/client-go v0.0.0-20220203192237-6b61675b7950 h1:6l+eAJ1iqZ/hlsb2gVXjDdA9kqkmz9JftG+yTCYFK4E=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/client-go v0.0.0-20220203192237-6b61675b7950/go.mod h1:n1bRYCJq9UxbItQh0czjVsV9jyPrw3eyuVcldthrIAs=
-github.com/kcp-dev/kubernetes/staging/src/k8s.io/code-generator v0.0.0-20220203192237-6b61675b7950 h1:efmMsPyFPJIzq81tRJT+teEfxIkp6S45vcBHMpa5b/E=
-github.com/kcp-dev/kubernetes/staging/src/k8s.io/code-generator v0.0.0-20220203192237-6b61675b7950/go.mod h1:sUUmwtmwhRVMXuCc1xDCW0VAqgY6LwabgtXcWxMBL8Y=
+github.com/kcp-dev/kubernetes/staging/src/k8s.io/code-generator v0.0.0-20220221152651-2142bb4b2caf h1:r0x2uYY535o+PHU+wesFft6872rvk9r5scLAZ5dWhec=
+github.com/kcp-dev/kubernetes/staging/src/k8s.io/code-generator v0.0.0-20220221152651-2142bb4b2caf/go.mod h1:dha9OV1c2qZShcEiI0SbRqmXXo6Iv/vmX4wNjsQBV7I=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/component-base v0.0.0-20220203192237-6b61675b7950 h1:m1eA+rlfmZ0ZvNC7YQXIJf8eLhYFS57H/UlCghOHLOI=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/component-base v0.0.0-20220203192237-6b61675b7950/go.mod h1:o9dIqwQ1nmWNusj8M3G0ftwE9y/7wLG1UuOB+6oIZLQ=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=

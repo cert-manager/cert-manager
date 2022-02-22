@@ -52,15 +52,17 @@ type ChallengeInterface interface {
 
 // challenges implements ChallengeInterface
 type challenges struct {
-	client rest.Interface
-	ns     string
+	client  rest.Interface
+	cluster string
+	ns      string
 }
 
 // newChallenges returns a Challenges
 func newChallenges(c *AcmeV1Client, namespace string) *challenges {
 	return &challenges{
-		client: c.RESTClient(),
-		ns:     namespace,
+		client:  c.RESTClient(),
+		cluster: c.cluster,
+		ns:      namespace,
 	}
 }
 
@@ -68,6 +70,7 @@ func newChallenges(c *AcmeV1Client, namespace string) *challenges {
 func (c *challenges) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Challenge, err error) {
 	result = &v1.Challenge{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(name).
@@ -85,6 +88,7 @@ func (c *challenges) List(ctx context.Context, opts metav1.ListOptions) (result 
 	}
 	result = &v1.ChallengeList{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -102,6 +106,7 @@ func (c *challenges) Watch(ctx context.Context, opts metav1.ListOptions) (watch.
 	}
 	opts.Watch = true
 	return c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -113,6 +118,7 @@ func (c *challenges) Watch(ctx context.Context, opts metav1.ListOptions) (watch.
 func (c *challenges) Create(ctx context.Context, challenge *v1.Challenge, opts metav1.CreateOptions) (result *v1.Challenge, err error) {
 	result = &v1.Challenge{}
 	err = c.client.Post().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -126,6 +132,7 @@ func (c *challenges) Create(ctx context.Context, challenge *v1.Challenge, opts m
 func (c *challenges) Update(ctx context.Context, challenge *v1.Challenge, opts metav1.UpdateOptions) (result *v1.Challenge, err error) {
 	result = &v1.Challenge{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(challenge.Name).
@@ -141,6 +148,7 @@ func (c *challenges) Update(ctx context.Context, challenge *v1.Challenge, opts m
 func (c *challenges) UpdateStatus(ctx context.Context, challenge *v1.Challenge, opts metav1.UpdateOptions) (result *v1.Challenge, err error) {
 	result = &v1.Challenge{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(challenge.Name).
@@ -155,6 +163,7 @@ func (c *challenges) UpdateStatus(ctx context.Context, challenge *v1.Challenge, 
 // Delete takes name of the challenge and deletes it. Returns an error if one occurs.
 func (c *challenges) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(name).
@@ -170,6 +179,7 @@ func (c *challenges) DeleteCollection(ctx context.Context, opts metav1.DeleteOpt
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
@@ -183,6 +193,7 @@ func (c *challenges) DeleteCollection(ctx context.Context, opts metav1.DeleteOpt
 func (c *challenges) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Challenge, err error) {
 	result = &v1.Challenge{}
 	err = c.client.Patch(pt).
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(name).

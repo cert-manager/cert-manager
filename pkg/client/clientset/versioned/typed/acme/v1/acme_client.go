@@ -19,8 +19,6 @@ limitations under the License.
 package v1
 
 import (
-	"net/http"
-
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
@@ -35,6 +33,7 @@ type AcmeV1Interface interface {
 // AcmeV1Client is used to interact with features provided by the acme.cert-manager.io group.
 type AcmeV1Client struct {
 	restClient rest.Interface
+	cluster    string
 }
 
 func (c *AcmeV1Client) Challenges(namespace string) ChallengeInterface {
@@ -46,32 +45,16 @@ func (c *AcmeV1Client) Orders(namespace string) OrderInterface {
 }
 
 // NewForConfig creates a new AcmeV1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*AcmeV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
-	httpClient, err := rest.HTTPClientFor(&config)
+	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, err
 	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new AcmeV1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*AcmeV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
-	if err != nil {
-		return nil, err
-	}
-	return &AcmeV1Client{client}, nil
+	return &AcmeV1Client{restClient: client}, nil
 }
 
 // NewForConfigOrDie creates a new AcmeV1Client for the given config and
@@ -86,7 +69,12 @@ func NewForConfigOrDie(c *rest.Config) *AcmeV1Client {
 
 // New creates a new AcmeV1Client for the given RESTClient.
 func New(c rest.Interface) *AcmeV1Client {
-	return &AcmeV1Client{c}
+	return &AcmeV1Client{restClient: c}
+}
+
+// NewWithCluster creates a new AcmeV1Client for the given RESTClient and cluster.
+func NewWithCluster(c rest.Interface, cluster string) *AcmeV1Client {
+	return &AcmeV1Client{restClient: c, cluster: cluster}
 }
 
 func setConfigDefaults(config *rest.Config) error {

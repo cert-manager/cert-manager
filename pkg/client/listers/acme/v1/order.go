@@ -19,6 +19,8 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,6 +33,9 @@ type OrderLister interface {
 	// List lists all Orders in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Order, err error)
+	// ListWithContext lists all Orders in the indexer.
+	// Objects returned here must be treated as read-only.
+	ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Order, err error)
 	// Orders returns an object that can list and get Orders.
 	Orders(namespace string) OrderNamespaceLister
 	OrderListerExpansion
@@ -48,6 +53,11 @@ func NewOrderLister(indexer cache.Indexer) OrderLister {
 
 // List lists all Orders in the indexer.
 func (s *orderLister) List(selector labels.Selector) (ret []*v1.Order, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all Orders in the indexer.
+func (s *orderLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Order, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.Order))
 	})
@@ -80,6 +90,11 @@ type orderNamespaceLister struct {
 
 // List lists all Orders in the indexer for a given namespace.
 func (s orderNamespaceLister) List(selector labels.Selector) (ret []*v1.Order, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all Orders in the indexer for a given namespace.
+func (s orderNamespaceLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.Order, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.Order))
 	})
@@ -88,6 +103,11 @@ func (s orderNamespaceLister) List(selector labels.Selector) (ret []*v1.Order, e
 
 // Get retrieves the Order from the indexer for a given namespace and name.
 func (s orderNamespaceLister) Get(name string) (*v1.Order, error) {
+	return s.GetWithContext(context.Background(), name)
+}
+
+// GetWithContext retrieves the Order from the indexer for a given namespace and name.
+func (s orderNamespaceLister) GetWithContext(ctx context.Context, name string) (*v1.Order, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err

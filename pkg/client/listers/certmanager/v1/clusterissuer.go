@@ -19,6 +19,8 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,9 +33,15 @@ type ClusterIssuerLister interface {
 	// List lists all ClusterIssuers in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ClusterIssuer, err error)
+	// ListWithContext lists all ClusterIssuers in the indexer.
+	// Objects returned here must be treated as read-only.
+	ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.ClusterIssuer, err error)
 	// Get retrieves the ClusterIssuer from the index for a given name.
 	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.ClusterIssuer, error)
+	// GetWithContext retrieves the ClusterIssuer from the index for a given name.
+	// Objects returned here must be treated as read-only.
+	GetWithContext(ctx context.Context, name string) (*v1.ClusterIssuer, error)
 	ClusterIssuerListerExpansion
 }
 
@@ -49,6 +57,11 @@ func NewClusterIssuerLister(indexer cache.Indexer) ClusterIssuerLister {
 
 // List lists all ClusterIssuers in the indexer.
 func (s *clusterIssuerLister) List(selector labels.Selector) (ret []*v1.ClusterIssuer, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all ClusterIssuers in the indexer.
+func (s *clusterIssuerLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.ClusterIssuer, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.ClusterIssuer))
 	})
@@ -57,6 +70,11 @@ func (s *clusterIssuerLister) List(selector labels.Selector) (ret []*v1.ClusterI
 
 // Get retrieves the ClusterIssuer from the index for a given name.
 func (s *clusterIssuerLister) Get(name string) (*v1.ClusterIssuer, error) {
+	return s.GetWithContext(context.Background(), name)
+}
+
+// GetWithContext retrieves the ClusterIssuer from the index for a given name.
+func (s *clusterIssuerLister) GetWithContext(ctx context.Context, name string) (*v1.ClusterIssuer, error) {
 	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err

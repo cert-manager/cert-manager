@@ -20,7 +20,6 @@ package versioned
 
 import (
 	"fmt"
-	"net/http"
 
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
@@ -28,6 +27,33 @@ import (
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 )
+
+type ClusterInterface interface {
+	Cluster(name string) Interface
+}
+
+type Cluster struct {
+	*scopedClientset
+}
+
+// Cluster sets the cluster for a Clientset.
+func (c *Cluster) Cluster(name string) Interface {
+	return &Clientset{
+		scopedClientset: c.scopedClientset,
+		cluster:         name,
+	}
+}
+
+// NewClusterForConfig creates a new Cluster for the given config.
+// If config's RateLimiter is not set and QPS and Burst are acceptable,
+// NewClusterForConfig will generate a rate-limiter in configShallowCopy.
+func NewClusterForConfig(c *rest.Config) (*Cluster, error) {
+	cs, err := NewForConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	return &Cluster{scopedClientset: cs.scopedClientset}, nil
+}
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
@@ -38,6 +64,13 @@ type Interface interface {
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
+	*scopedClientset
+	cluster string
+}
+
+// scopedClientset contains the clients for groups. Each group has exactly one
+// version included in a Clientset.
+type scopedClientset struct {
 	*discovery.DiscoveryClient
 	acmeV1        *acmev1.AcmeV1Client
 	certmanagerV1 *certmanagerv1.CertmanagerV1Client
@@ -45,12 +78,12 @@ type Clientset struct {
 
 // AcmeV1 retrieves the AcmeV1Client
 func (c *Clientset) AcmeV1() acmev1.AcmeV1Interface {
-	return c.acmeV1
+	return acmev1.NewWithCluster(c.acmeV1.RESTClient(), c.cluster)
 }
 
 // CertmanagerV1 retrieves the CertmanagerV1Client
 func (c *Clientset) CertmanagerV1() certmanagerv1.CertmanagerV1Interface {
-	return c.certmanagerV1
+	return certmanagerv1.NewWithCluster(c.certmanagerV1.RESTClient(), c.cluster)
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -58,31 +91,13 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	if c == nil {
 		return nil
 	}
-	return c.DiscoveryClient
+	return c.DiscoveryClient.WithCluster(c.cluster)
 }
 
 // NewForConfig creates a new Clientset for the given config.
 // If config's RateLimiter is not set and QPS and Burst are acceptable,
 // NewForConfig will generate a rate-limiter in configShallowCopy.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*Clientset, error) {
-	configShallowCopy := *c
-
-	// share the transport between all clients
-	httpClient, err := rest.HTTPClientFor(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewForConfigAndClient(&configShallowCopy, httpClient)
-}
-
-// NewForConfigAndClient creates a new Clientset for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-// If config's RateLimiter is not set and QPS and Burst are acceptable,
-// NewForConfigAndClient will generate a rate-limiter in configShallowCopy.
-func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
 		if configShallowCopy.Burst <= 0 {
@@ -90,41 +105,41 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
-
-	var cs Clientset
+	var cs scopedClientset
 	var err error
-	cs.acmeV1, err = acmev1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.acmeV1, err = acmev1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
-	cs.certmanagerV1, err = certmanagerv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.certmanagerV1, err = certmanagerv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
+	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
-	return &cs, nil
+	return &Clientset{scopedClientset: &cs}, nil
 }
 
 // NewForConfigOrDie creates a new Clientset for the given config and
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
-	cs, err := NewForConfig(c)
-	if err != nil {
-		panic(err)
-	}
-	return cs
+	var cs scopedClientset
+	cs.acmeV1 = acmev1.NewForConfigOrDie(c)
+	cs.certmanagerV1 = certmanagerv1.NewForConfigOrDie(c)
+
+	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
+	return &Clientset{scopedClientset: &cs}
 }
 
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
-	var cs Clientset
+	var cs scopedClientset
 	cs.acmeV1 = acmev1.New(c)
 	cs.certmanagerV1 = certmanagerv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
-	return &cs
+	return &Clientset{scopedClientset: &cs}
 }

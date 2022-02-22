@@ -30,7 +30,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/api"
@@ -146,7 +145,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		RenewDeadline:                 &o.RenewDeadline,
 		RetryPeriod:                   &o.RetryPeriod,
 		MetricsBindAddress:            "0",
-		NewCache:                      cache.MultiClusterCacheBuilder([]string{"*"}),
+		// NewCache:                      cache.MultiClusterCacheBuilder([]string{"*"}),
 	})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)

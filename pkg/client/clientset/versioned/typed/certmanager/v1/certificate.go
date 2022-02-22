@@ -52,15 +52,17 @@ type CertificateInterface interface {
 
 // certificates implements CertificateInterface
 type certificates struct {
-	client rest.Interface
-	ns     string
+	client  rest.Interface
+	cluster string
+	ns      string
 }
 
 // newCertificates returns a Certificates
 func newCertificates(c *CertmanagerV1Client, namespace string) *certificates {
 	return &certificates{
-		client: c.RESTClient(),
-		ns:     namespace,
+		client:  c.RESTClient(),
+		cluster: c.cluster,
+		ns:      namespace,
 	}
 }
 
@@ -68,6 +70,7 @@ func newCertificates(c *CertmanagerV1Client, namespace string) *certificates {
 func (c *certificates) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Certificate, err error) {
 	result = &v1.Certificate{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		Name(name).
@@ -85,6 +88,7 @@ func (c *certificates) List(ctx context.Context, opts metav1.ListOptions) (resul
 	}
 	result = &v1.CertificateList{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -102,6 +106,7 @@ func (c *certificates) Watch(ctx context.Context, opts metav1.ListOptions) (watc
 	}
 	opts.Watch = true
 	return c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -113,6 +118,7 @@ func (c *certificates) Watch(ctx context.Context, opts metav1.ListOptions) (watc
 func (c *certificates) Create(ctx context.Context, certificate *v1.Certificate, opts metav1.CreateOptions) (result *v1.Certificate, err error) {
 	result = &v1.Certificate{}
 	err = c.client.Post().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -126,6 +132,7 @@ func (c *certificates) Create(ctx context.Context, certificate *v1.Certificate, 
 func (c *certificates) Update(ctx context.Context, certificate *v1.Certificate, opts metav1.UpdateOptions) (result *v1.Certificate, err error) {
 	result = &v1.Certificate{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		Name(certificate.Name).
@@ -141,6 +148,7 @@ func (c *certificates) Update(ctx context.Context, certificate *v1.Certificate, 
 func (c *certificates) UpdateStatus(ctx context.Context, certificate *v1.Certificate, opts metav1.UpdateOptions) (result *v1.Certificate, err error) {
 	result = &v1.Certificate{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		Name(certificate.Name).
@@ -155,6 +163,7 @@ func (c *certificates) UpdateStatus(ctx context.Context, certificate *v1.Certifi
 // Delete takes name of the certificate and deletes it. Returns an error if one occurs.
 func (c *certificates) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		Name(name).
@@ -170,6 +179,7 @@ func (c *certificates) DeleteCollection(ctx context.Context, opts metav1.DeleteO
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
@@ -183,6 +193,7 @@ func (c *certificates) DeleteCollection(ctx context.Context, opts metav1.DeleteO
 func (c *certificates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Certificate, err error) {
 	result = &v1.Certificate{}
 	err = c.client.Patch(pt).
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificates").
 		Name(name).

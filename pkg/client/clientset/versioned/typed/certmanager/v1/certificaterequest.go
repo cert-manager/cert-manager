@@ -52,15 +52,17 @@ type CertificateRequestInterface interface {
 
 // certificateRequests implements CertificateRequestInterface
 type certificateRequests struct {
-	client rest.Interface
-	ns     string
+	client  rest.Interface
+	cluster string
+	ns      string
 }
 
 // newCertificateRequests returns a CertificateRequests
 func newCertificateRequests(c *CertmanagerV1Client, namespace string) *certificateRequests {
 	return &certificateRequests{
-		client: c.RESTClient(),
-		ns:     namespace,
+		client:  c.RESTClient(),
+		cluster: c.cluster,
+		ns:      namespace,
 	}
 }
 
@@ -68,6 +70,7 @@ func newCertificateRequests(c *CertmanagerV1Client, namespace string) *certifica
 func (c *certificateRequests) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.CertificateRequest, err error) {
 	result = &v1.CertificateRequest{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(name).
@@ -85,6 +88,7 @@ func (c *certificateRequests) List(ctx context.Context, opts metav1.ListOptions)
 	}
 	result = &v1.CertificateRequestList{}
 	err = c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -102,6 +106,7 @@ func (c *certificateRequests) Watch(ctx context.Context, opts metav1.ListOptions
 	}
 	opts.Watch = true
 	return c.client.Get().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -113,6 +118,7 @@ func (c *certificateRequests) Watch(ctx context.Context, opts metav1.ListOptions
 func (c *certificateRequests) Create(ctx context.Context, certificateRequest *v1.CertificateRequest, opts metav1.CreateOptions) (result *v1.CertificateRequest, err error) {
 	result = &v1.CertificateRequest{}
 	err = c.client.Post().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -126,6 +132,7 @@ func (c *certificateRequests) Create(ctx context.Context, certificateRequest *v1
 func (c *certificateRequests) Update(ctx context.Context, certificateRequest *v1.CertificateRequest, opts metav1.UpdateOptions) (result *v1.CertificateRequest, err error) {
 	result = &v1.CertificateRequest{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(certificateRequest.Name).
@@ -141,6 +148,7 @@ func (c *certificateRequests) Update(ctx context.Context, certificateRequest *v1
 func (c *certificateRequests) UpdateStatus(ctx context.Context, certificateRequest *v1.CertificateRequest, opts metav1.UpdateOptions) (result *v1.CertificateRequest, err error) {
 	result = &v1.CertificateRequest{}
 	err = c.client.Put().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(certificateRequest.Name).
@@ -155,6 +163,7 @@ func (c *certificateRequests) UpdateStatus(ctx context.Context, certificateReque
 // Delete takes name of the certificateRequest and deletes it. Returns an error if one occurs.
 func (c *certificateRequests) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(name).
@@ -170,6 +179,7 @@ func (c *certificateRequests) DeleteCollection(ctx context.Context, opts metav1.
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
@@ -183,6 +193,7 @@ func (c *certificateRequests) DeleteCollection(ctx context.Context, opts metav1.
 func (c *certificateRequests) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.CertificateRequest, err error) {
 	result = &v1.CertificateRequest{}
 	err = c.client.Patch(pt).
+		Cluster(c.cluster).
 		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(name).

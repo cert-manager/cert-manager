@@ -19,6 +19,8 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,6 +33,9 @@ type CertificateRequestLister interface {
 	// List lists all CertificateRequests in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.CertificateRequest, err error)
+	// ListWithContext lists all CertificateRequests in the indexer.
+	// Objects returned here must be treated as read-only.
+	ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.CertificateRequest, err error)
 	// CertificateRequests returns an object that can list and get CertificateRequests.
 	CertificateRequests(namespace string) CertificateRequestNamespaceLister
 	CertificateRequestListerExpansion
@@ -48,6 +53,11 @@ func NewCertificateRequestLister(indexer cache.Indexer) CertificateRequestLister
 
 // List lists all CertificateRequests in the indexer.
 func (s *certificateRequestLister) List(selector labels.Selector) (ret []*v1.CertificateRequest, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all CertificateRequests in the indexer.
+func (s *certificateRequestLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.CertificateRequest, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.CertificateRequest))
 	})
@@ -80,6 +90,11 @@ type certificateRequestNamespaceLister struct {
 
 // List lists all CertificateRequests in the indexer for a given namespace.
 func (s certificateRequestNamespaceLister) List(selector labels.Selector) (ret []*v1.CertificateRequest, err error) {
+	return s.ListWithContext(context.Background(), selector)
+}
+
+// ListWithContext lists all CertificateRequests in the indexer for a given namespace.
+func (s certificateRequestNamespaceLister) ListWithContext(ctx context.Context, selector labels.Selector) (ret []*v1.CertificateRequest, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1.CertificateRequest))
 	})
@@ -88,6 +103,11 @@ func (s certificateRequestNamespaceLister) List(selector labels.Selector) (ret [
 
 // Get retrieves the CertificateRequest from the indexer for a given namespace and name.
 func (s certificateRequestNamespaceLister) Get(name string) (*v1.CertificateRequest, error) {
+	return s.GetWithContext(context.Background(), name)
+}
+
+// GetWithContext retrieves the CertificateRequest from the indexer for a given namespace and name.
+func (s certificateRequestNamespaceLister) GetWithContext(ctx context.Context, name string) (*v1.CertificateRequest, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
