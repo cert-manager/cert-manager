@@ -31,9 +31,6 @@ BASE_IMAGE_cmctl-linux-s390x:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_s390x)
 BASE_IMAGE_cmctl-linux-ppc64le:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_ppc64le)
 BASE_IMAGE_cmctl-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
 
-bin/containers:
-	@mkdir -p $@
-
 .PHONY: all-containers
 all-containers: cert-manager-controller-linux cert-manager-webhook-linux cert-manager-acmesolver-linux cert-manager-cainjector-linux cert-manager-ctl-linux
 
@@ -117,6 +114,8 @@ bin/containers/cert-manager-ctl-linux-amd64.tar.gz bin/containers/cert-manager-c
 		$(CONTEXT_DIR)
 	$(CTR) save $(TAG) | gzip > $@
 
+bin/containers:
+	@mkdir -p $@
 
 $(foreach arch,amd64 arm64 s390x ppc64le arm,$(foreach bin,controller acmesolver cainjector webhook ctl, bin/scratch/containers/cert-manager-$(bin)-linux-$(arch))):
 	@mkdir -p $@
