@@ -27,10 +27,10 @@ bin/scratch/git/upstream-tags.txt: | bin/scratch/git
 		grep -v "v1.2.0-alpha.1" > $@
 
 # The file "release-version" gets updated whenever git describe --tags changes. This is
-# used by the bin/containers/*.tar.gz targets to make sure the containers, which use the
-# "git describe --tags" string as their tag, get rebuilt whenever you check out a different
-# commit. If we didn't do this, the Helm chart bin/cert-manager-*.tgz would refer to an
-# image tag that doesn't exist in bin/containers/*.tar.gz.
+# used by the bin/containers/*.tar.gz targets to make sure that the containers, which use
+# the output of "git describe --tags" as their tag, get rebuilt whenever you check out a
+# different commit. If we didn't do this, the Helm chart bin/cert-manager-*.tgz would refer
+# to an image tag that doesn't exist in bin/containers/*.tar.gz.
 bin/release-version: | bin
 	@test "$(RELEASE_VERSION)" == "$$(cat "$@" 2>/dev/null)" || echo $(RELEASE_VERSION) > $@
 
