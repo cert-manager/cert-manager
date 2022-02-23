@@ -44,7 +44,7 @@ KIND_CLUSTER_NAME ?= kind
 kind-cluster: devel/cluster/config/v1beta2.yaml | ${KIND} ${KUBECTL}
 	@if [ -z "${KIND_IMAGE_SHA_K8S_$(subst .,,$(K8S_VERSION))}" ]; then echo "this K8S_VERSION is not supported"; exit 1; fi
 	@${KIND} get clusters | grep -q ${KIND_CLUSTER_NAME} || \
-		${KIND} create cluster --config $< --name ${KIND_CLUSTER_NAME} --wait 5m --image docker.io/kindest/node@${KIND_IMAGE_SHA_K8S_$(K8S_VERSION)}
+		${KIND} create cluster --config $< --name ${KIND_CLUSTER_NAME} --wait 5m --image docker.io/kindest/node@${KIND_IMAGE_SHA_K8S_$(subst .,,$(K8S_VERSION))}
 	@if test "$$(kubectl config current-context 2>/dev/null)" != kind-${KIND_CLUSTER_NAME}; then \
 		printf "$(Y)$(WARN)Warning$(E): your current kubectl context isn't equal to kind-${KIND_CLUSTER_NAME}. Run the following command:\n" >&2; \
 		printf "    $(C)kubectl config use-context kind-${KIND_CLUSTER_NAME}$(E)\n" >&2; \
