@@ -39,9 +39,9 @@ type options struct {
 	client   *action.Uninstall
 	cfg      *action.Configuration
 
-	DisableHooks bool
-	DryRun       bool
-	Wait         bool
+	disableHooks bool
+	dryRun       bool
+	wait         bool
 
 	genericclioptions.IOStreams
 }
@@ -91,7 +91,7 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 				return fmt.Errorf("run: %v", err)
 			}
 
-			if options.DryRun {
+			if options.dryRun {
 				fmt.Fprintf(ioStreams.Out, "%s", res.Release.Manifest)
 				return nil
 			}
@@ -116,9 +116,9 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 	cmd.Flag("namespace").Value.Set(defaultCertManagerNamespace)
 
 	cmd.Flags().DurationVar(&options.client.Timeout, "timeout", 5*time.Minute, "time to wait for any individual Kubernetes operation (like Jobs for hooks)")
-	cmd.Flags().BoolVar(&options.Wait, "wait", true, "if set, will wait until all the resources are deleted before returning. It will wait for as long as --timeout")
-	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "simulate uninstall and output manifests to be deleted")
-	cmd.Flags().BoolVar(&options.DisableHooks, "no-hooks", false, "prevent hooks from running during uninstallation (pre- and post-uninstall hooks)")
+	cmd.Flags().BoolVar(&options.wait, "wait", true, "if set, will wait until all the resources are deleted before returning. It will wait for as long as --timeout")
+	cmd.Flags().BoolVar(&options.dryRun, "dry-run", false, "simulate uninstall and output manifests to be deleted")
+	cmd.Flags().BoolVar(&options.disableHooks, "no-hooks", false, "prevent hooks from running during uninstallation (pre- and post-uninstall hooks)")
 
 	return cmd
 }
@@ -132,9 +132,9 @@ func run(ctx context.Context, o options) (*release.UninstallReleaseResponse, err
 		return nil, fmt.Errorf("o.cfg.Init: %v", err)
 	}
 
-	o.client.DisableHooks = o.DisableHooks
-	o.client.DryRun = o.DryRun
-	o.client.Wait = o.Wait
+	o.client.DisableHooks = o.disableHooks
+	o.client.DryRun = o.dryRun
+	o.client.Wait = o.wait
 
 	res, err := o.client.Run(releaseName)
 
