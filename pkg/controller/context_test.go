@@ -38,5 +38,5 @@ func Test_NewContextFactory(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, ctx1.RESTConfig.RateLimiter)
-	assert.Equal(t, ctx1.RESTConfig.RateLimiter, ctx2.RESTConfig.RateLimiter)
+	assert.Same(t, ctx1.RESTConfig.RateLimiter, ctx2.RESTConfig.RateLimiter)
 }
