@@ -111,17 +111,22 @@ bin/containers:
 # each due to the copying happening. To avoid that, we set a different folder
 # for each "docker build" command, which reduces the copying to ~50 MB per
 # "docker build".
+#
+# Note that we can't use symlinks in the build context. In order to avoid the
+# cost of multiple copies of the same binary, we use hard links which shouldn't
+# be a problem since the bin/ folder is entirely managed by make.
+
 $(foreach arch,$(ARCHS),$(foreach bin,$(BINS), bin/scratch/build-context/cert-manager-$(bin)-linux-$(arch))):
 	@mkdir -p $@
 
 bin/scratch/build-context/cert-manager-%/cert-manager.license: bin/scratch/cert-manager.license | bin/scratch/build-context/cert-manager-%
-	@cp $< $@
+	@ln -f $< $@
 
 bin/scratch/build-context/cert-manager-%/cert-manager.licenses_notice: bin/scratch/cert-manager.licenses_notice | bin/scratch/build-context/cert-manager-%
-	@cp $< $@
+	@ln -f $< $@
 
 bin/scratch/build-context/cert-manager-%/controller bin/scratch/build-context/cert-manager-%/acmesolver bin/scratch/build-context/cert-manager-%/cainjector bin/scratch/build-context/cert-manager-%/webhook: bin/server/% | bin/scratch/build-context/cert-manager-%
-	@cp $< $@
+	@ln -f $< $@
 
 bin/scratch/build-context/cert-manager-ctl-%/ctl: bin/cmctl/cmctl-% | bin/scratch/build-context/cert-manager-ctl-%
-	@cp $< $@
+	@ln -f $< $@
