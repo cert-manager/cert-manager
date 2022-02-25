@@ -4,14 +4,9 @@ FROM $BASE_IMAGE
 
 USER 1000
 
-ARG BINARY_PATH
-ARG LICENSE_PATH
-ARG LICENSES_PATH
-
-COPY $BINARY_PATH /app/cmd/controller/controller
-
-COPY $LICENSE_PATH /licenses/LICENSE
-COPY $LICENSES_PATH /licenses/LICENSES
+COPY controller /app/cmd/controller/controller
+COPY cert-manager.license /licenses/LICENSE
+COPY cert-manager.licenses_notice /licenses/LICENSES
 
 ENTRYPOINT ["/app/cmd/controller/controller"]
 
