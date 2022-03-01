@@ -25,7 +25,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"net"
 	"net/url"
 	"time"
@@ -38,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
+	"k8s.io/utils/pointer"
 	gwapiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
