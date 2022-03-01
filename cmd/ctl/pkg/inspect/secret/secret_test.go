@@ -22,28 +22,101 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-const testCert = `-----BEGIN CERTIFICATE-----
-MIICljCCAhugAwIBAgIUNAQr779ga/BNXyCpK7ddFbjAK98wCgYIKoZIzj0EAwMw
-aTELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
-biBGcmFuY2lzY28xHzAdBgNVBAoTFkludGVybmV0IFdpZGdldHMsIEluYy4xDDAK
-BgNVBAsTA1dXVzAeFw0yMTAyMjYxMDM1MDBaFw0yMjAyMjYxMDM1MDBaMDMxCzAJ
-BgNVBAYTAkdCMQ0wCwYDVQQKEwRjbmNmMRUwEwYDVQQLEwxjZXJ0LW1hbmFnZXIw
-WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATd5gWH2rkzWBGrr1jCR6JDB0dZOizZ
-jCt2gnzNfzZmEg3rqxPvIakfT1lsjL2HrQyBRMQGGZhj7RkN7/VUM+VUo4HWMIHT
-MA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIw
-DAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUCUEeUFyT7U3e6zP4q4VYEr2x0KcwHwYD
-VR0jBBgwFoAUFkKAaJ18Vg9xFx3K7d5b7HjoSSMwVAYDVR0RBE0wS4IRY2VydC1t
-YW5hZ2VyLnRlc3SBFHRlc3RAY2VydC1tYW5hZ2VyLmlvhwQKAAABhhpzcGlmZmU6
-Ly9jZXJ0LW1hbmFnZXIudGVzdDAKBggqhkjOPQQDAwNpADBmAjEA3Fv1aP+dBtBh
-+DThW0QQO/Xl0CHQRKnJmJ8JjnleaMYFVdHf7dcf0ZeyOC26aUkdAjEA/fvxvhcz
-Dtj+gY2rewoeJv5Pslli+SEObUslRaVtUMGxwUbmPU2fKuZHWBfe2FfA
------END CERTIFICATE-----
-`
+var (
+	testCert            string
+	testCertSerial      string
+	testCertFingerprint string
+	testNotBefore       string
+	testNotAfter        string
+)
+
+func init() {
+	caKey, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		panic(err)
+	}
+	caCertificateTemplate := gen.Certificate(
+		"ca",
+		gen.SetCertificateCommonName("testing-ca"),
+		gen.SetCertificateIsCA(true),
+		gen.SetCertificateKeyAlgorithm(v1.ECDSAKeyAlgorithm),
+		gen.SetCertificateKeySize(256),
+		gen.SetCertificateKeyUsages(
+			v1.UsageDigitalSignature,
+			v1.UsageKeyEncipherment,
+			v1.UsageCertSign,
+		),
+		gen.SetCertificateNotBefore(metav1.Time{Time: time.Now().Add(-time.Hour)}),
+		gen.SetCertificateNotAfter(metav1.Time{Time: time.Now().Add(time.Hour)}),
+	)
+	caCertificateTemplate.Spec.Subject = &v1.X509Subject{
+		Organizations:       []string{"Internet Widgets, Inc."},
+		Countries:           []string{"US"},
+		OrganizationalUnits: []string{"WWW"},
+		Localities:          []string{"San Francisco"},
+		Provinces:           []string{"California"},
+	}
+	caX509Cert, err := pki.GenerateTemplate(caCertificateTemplate)
+	if err != nil {
+		panic(err)
+	}
+	_, caCert, err := pki.SignCertificate(caX509Cert, caX509Cert, caKey.Public(), caKey)
+	if err != nil {
+		panic(err)
+	}
+
+	testCertKey, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		panic(err)
+	}
+	testCertTemplate := gen.Certificate(
+		"testing-cert",
+		gen.SetCertificateDNSNames("cert-manager.test"),
+		gen.SetCertificateIPs("10.0.0.1"),
+		gen.SetCertificateURIs("spiffe://cert-manager.test"),
+		gen.SetCertificateEmails("test@cert-manager.io"),
+		gen.SetCertificateIsCA(true),
+		gen.SetCertificateKeyAlgorithm(v1.ECDSAKeyAlgorithm),
+		gen.SetCertificateIsCA(false),
+		gen.SetCertificateKeySize(256),
+		gen.SetCertificateKeyUsages(
+			v1.UsageDigitalSignature,
+			v1.UsageKeyEncipherment,
+			v1.UsageServerAuth,
+			v1.UsageClientAuth,
+		),
+		gen.SetCertificateNotBefore(metav1.Time{Time: time.Now().Add(-30 * time.Minute)}),
+		gen.SetCertificateNotAfter(metav1.Time{Time: time.Now().Add(30 * time.Minute)}),
+	)
+	testCertTemplate.Spec.Subject = &v1.X509Subject{
+		Organizations:       []string{"cncf"},
+		Countries:           []string{"GB"},
+		OrganizationalUnits: []string{"cert-manager"},
+	}
+	testX509Cert, err := pki.GenerateTemplate(testCertTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	testCertPEM, testCertGo, err := pki.SignCertificate(testX509Cert, caCert, testCertKey.Public(), caKey)
+	if err != nil {
+		panic(err)
+	}
+
+	testCert = string(testCertPEM)
+	testCertSerial = testCertGo.SerialNumber.String()
+	testCertFingerprint = fingerprintCert(testCertGo)
+	testNotBefore = testCertGo.NotBefore.Format(time.RFC1123)
+	testNotAfter = testCertGo.NotAfter.Format(time.RFC1123)
+}
 
 func MustParseCertificate(t *testing.T, certData string) *x509.Certificate {
 	x509Cert, err := pki.DecodeX509CertificateBytes([]byte(certData))
@@ -85,10 +158,10 @@ func Test_describeCertificate(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Certificate:
-	Signing Algorithm:	ECDSA-SHA384
+	Signing Algorithm:	ECDSA-SHA256
 	Public Key Algorithm: 	ECDSA
-	Serial Number:	296960550473797734497458414367422077039506631647
-	Fingerprints: 	FF:D0:A8:85:0B:A4:5A:E1:FC:55:40:E1:FC:07:09:F1:02:AE:B9:EB:28:C4:01:23:B9:4F:C8:FA:9B:EF:F4:C1
+	Serial Number:	` + testCertSerial + `
+	Fingerprints: 	` + testCertFingerprint + `
 	Is a CA certificate: false
 	CRL:	<none>
 	OCSP:	<none>`,
@@ -147,8 +220,8 @@ func Test_describeIssuedBy(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Issued By:
-	Common Name:	<none>
-	Organization:	<none>
+	Common Name:	testing-ca
+	Organization:	testing-ca
 	OrganizationalUnit:	Internet Widgets, Inc.
 	Country:	US`,
 		},
@@ -298,8 +371,8 @@ func Test_describeValidityPeriod(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Validity period:
-	Not Before: Fri, 26 Feb 2021 10:35:00 UTC
-	Not After: Sat, 26 Feb 2022 10:35:00 UTC`,
+	Not Before: ` + testNotBefore + `
+	Not After: ` + testNotAfter,
 		},
 	}
 	for _, tt := range tests {

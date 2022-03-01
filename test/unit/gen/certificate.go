@@ -74,6 +74,12 @@ func SetCertificateIPs(ips ...string) CertificateModifier {
 	}
 }
 
+func SetCertificateEmails(emails ...string) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.EmailAddresses = emails
+	}
+}
+
 func SetCertificateURIs(uris ...string) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.URIs = uris
