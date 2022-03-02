@@ -52,9 +52,9 @@ const (
 )
 
 func description() string {
-	return build.WithTemplate(`This command uninstalls cert-manager. It uses the Helm libraries to do so.
+	return build.WithTemplate(`This command uninstalls any Helm-managed release of cert-manager.
 
-It assumes cert-manager has been installed with this CLI.
+The CRDs will be deleted if you installed cert-manager with the option --set CRDs=true.
 
 Most of the features supported by 'helm uninstall' are also supported by this command.
 
