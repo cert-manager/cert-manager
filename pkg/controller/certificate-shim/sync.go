@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	ingress "github.com/cert-manager/cert-manager/internal/ingress"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -231,23 +231,26 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.Erro
 		return errs
 	}
 
-	if l.TLS.CertificateRef == nil {
+	if len(l.TLS.CertificateRefs) == 0 {
 		errs = append(errs, field.Required(path.Child("tls").Child("certificateRef"),
-			"listener is missing a certificateRef"))
+			"listener has no certificateRefs"))
 	} else {
-		if l.TLS.CertificateRef.Group != "core" {
-			errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Child("group"),
-				l.TLS.CertificateRef.Group, []string{"core"}))
-		}
+		// check that each CertificateRef is valid
+		for i, secretRef := range l.TLS.CertificateRefs {
+			if secretRef == nil {
+				errs = append(errs, field.Required(path.Child("tls").Child("certificateRef").Index(i), "listener is missing a certificateRef"))
+				continue
+			}
 
-		if l.TLS.CertificateRef.Kind != "Secret" {
-			errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Child("kind"),
-				l.TLS.CertificateRef.Kind, []string{"Secret"}))
-		}
+			if *secretRef.Group != "core" && *secretRef.Group != "" {
+				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Index(i).Child("group"),
+					*secretRef.Group, []string{"core", ""}))
+			}
 
-		if l.TLS.CertificateRef.Name == "" {
-			errs = append(errs, field.Required(path.Child("tls").Child("certificateRef").Child("name"),
-				"the Secret name cannot be empty"))
+			if *secretRef.Kind != "Secret" && *secretRef.Kind != "" {
+				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Index(i).Child("kind"),
+					*secretRef.Kind, []string{"Secret", ""}))
+			}
 		}
 	}
 
@@ -298,13 +301,19 @@ func buildCertificates(
 				continue
 			}
 
-			secretRef := corev1.ObjectReference{
-				Namespace: ingLike.Namespace,
-				Name:      l.TLS.CertificateRef.Name,
+			for _, certRef := range l.TLS.CertificateRefs {
+				secretRef := corev1.ObjectReference{
+					Name: string(certRef.Name),
+				}
+				if certRef.Namespace != nil {
+					secretRef.Namespace = string(*certRef.Namespace)
+				} else {
+					secretRef.Namespace = ingLike.GetNamespace()
+				}
+				// Gateway API hostname explicitly disallows IP addresses, so this
+				// should be OK.
+				tlsHosts[secretRef] = append(tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
 			}
-			// Gateway API hostname explicitly disallows IP addresses, so this
-			// should be OK.
-			tlsHosts[secretRef] = append(tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
 		}
 	default:
 		return nil, nil, fmt.Errorf("buildCertificates: expected ingress or gateway, got %T", ingLike)
@@ -419,11 +428,16 @@ func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 		}
 	case *gwapi.Gateway:
 		for _, l := range o.Spec.Listeners {
-			if l.TLS == nil || l.TLS.CertificateRef == nil {
+			if l.TLS == nil {
 				continue
 			}
-			if secretName == l.TLS.CertificateRef.Name {
-				return true
+			for _, certRef := range l.TLS.CertificateRefs {
+				if certRef == nil {
+					continue
+				}
+				if secretName == string(certRef.Name) {
+					return true
+				}
 			}
 		}
 	}

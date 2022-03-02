@@ -40,8 +40,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/ahmetb/gen-crd-api-reference-docs",
-        sum = "h1:Gz+Wcvp8CATSZBy3a2yj2IdkK1/LaVfy4JJlzxdmETY=",
-        version = "v0.2.1-0.20201224172655-df869c1245d4",
+        sum = "h1:+XfOU14S4bGuwyvCijJwhhBIjYN+YXS18jrCY2EzJaY=",
+        version = "v0.3.0",
     )
 
     go_repository(
@@ -4278,8 +4278,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/gateway-api",
-        sum = "h1:mKbQRlRIIY3dsCCbNF9Jv30V9vvOf6SRG82l0MfJQ9U=",
-        version = "v0.3.0",
+        sum = "h1:Tof9/PNSZXyfDuTTe1XFvaTlvBRE6bKq1kmV6jj6rQE=",
+        version = "v0.4.1",
     )
     go_repository(
         name = "io_k8s_sigs_json",
@@ -4782,15 +4782,6 @@ def go_repositories():
         importpath = "go.uber.org/multierr",
         sum = "h1:y6IPFStTAIT5Ytl7/XYmHvzXQ7S3g/IeZW9hyZ5thw4=",
         version = "v1.6.0",
-    )
-
-    go_repository(
-        name = "org_uber_go_tools",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "go.uber.org/tools",
-        sum = "h1:0mgffUl7nfd+FpvXMVz4IDEaUSmT1ysygQC7qYo7sG4=",
-        version = "v0.0.0-20190618225709-2cfd321de3ee",
     )
 
     go_repository(

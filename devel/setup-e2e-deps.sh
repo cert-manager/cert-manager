@@ -62,5 +62,5 @@ echo "Loading vault into the cluster..."
 echo "Installing sample-external-issuer into the cluster..."
 "${SCRIPT_ROOT}/addon/sample-external-issuer/install.sh"
 
-echo "Installing HAProxy into the cluster"
-"${SCRIPT_ROOT}/addon/haproxy/install.sh"
+echo "Installing Contour into the cluster"
+"${SCRIPT_ROOT}/addon/projectcontour/install.sh"

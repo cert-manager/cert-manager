@@ -25,6 +25,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/conversion:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_sigs_gateway_api//apis/v1alpha2:go_default_library",
     ],
 )
 

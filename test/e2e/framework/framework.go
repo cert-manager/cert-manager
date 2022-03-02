@@ -33,8 +33,8 @@ import (
 	"k8s.io/client-go/rest"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
-	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gwapiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -144,12 +144,12 @@ func (f *Framework) BeforeEach() {
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating a gateway-api class for istio")
-	f.GWClientSet.NetworkingV1alpha1().GatewayClasses().Create(context.Background(), &gwapiv1alpha1.GatewayClass{
+	f.GWClientSet.GatewayV1alpha2().GatewayClasses().Create(context.Background(), &gwapiv1alpha2.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "istio",
 		},
-		Spec: gwapiv1alpha1.GatewayClassSpec{
-			Controller: "istio.io/gateway-controller",
+		Spec: gwapiv1alpha2.GatewayClassSpec{
+			ControllerName: "istio.io/gateway-controller",
 		},
 	}, metav1.CreateOptions{})
 

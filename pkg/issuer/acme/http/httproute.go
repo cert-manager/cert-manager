@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -75,9 +75,11 @@ func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) 
 	case 1:
 		return httpRoutes[0], nil
 	default:
+		// It should not be possible for multiple HTTPRoutes for this challenge to exist
+		// If we find this, try to delete them.
 		for _, httpRoute := range httpRoutes[1:] {
 			log.Info("Deleting extra HTTPRoute", "name", httpRoute.Name, "namespace", httpRoute.Namespace)
-			err := s.GWClient.NetworkingV1alpha1().HTTPRoutes(httpRoute.Namespace).Delete(ctx, httpRoute.Name, metav1.DeleteOptions{})
+			err := s.GWClient.GatewayV1alpha2().HTTPRoutes(httpRoute.Namespace).Delete(ctx, httpRoute.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return nil, err
 			}
@@ -102,7 +104,7 @@ func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 		},
 		Spec: generateHTTPRouteSpec(ch, svcName),
 	}
-	newHTTPRoute, err := s.GWClient.NetworkingV1alpha1().HTTPRoutes(ch.Namespace).Create(ctx, httpRoute, metav1.CreateOptions{})
+	newHTTPRoute, err := s.GWClient.GatewayV1alpha2().HTTPRoutes(ch.Namespace).Create(ctx, httpRoute, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -127,14 +129,14 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	var ret *gwapi.HTTPRoute
 	var err error
 	if err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		oldHTTPRoute, err := s.GWClient.NetworkingV1alpha1().HTTPRoutes(httpRoute.Namespace).Get(ctx, httpRoute.Name, metav1.GetOptions{})
+		oldHTTPRoute, err := s.GWClient.GatewayV1alpha2().HTTPRoutes(httpRoute.Namespace).Get(ctx, httpRoute.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		newHTTPRoute := oldHTTPRoute.DeepCopy()
 		newHTTPRoute.Spec = expectedSpec
 		newHTTPRoute.Labels = expectedLabels
-		ret, err = s.GWClient.NetworkingV1alpha1().HTTPRoutes(newHTTPRoute.Namespace).Update(ctx, newHTTPRoute, metav1.UpdateOptions{})
+		ret, err = s.GWClient.GatewayV1alpha2().HTTPRoutes(newHTTPRoute.Namespace).Update(ctx, newHTTPRoute, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -147,8 +149,8 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 
 func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRouteSpec {
 	return gwapi.HTTPRouteSpec{
-		Gateways: &gwapi.RouteGateways{
-			Allow: func() *gwapi.GatewayAllowType { a := gwapi.GatewayAllowAll; return &a }(),
+		CommonRouteSpec: gwapi.CommonRouteSpec{
+			ParentRefs: ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs,
 		},
 		Hostnames: []gwapi.Hostname{
 			gwapi.Hostname(ch.Spec.DNSName),
@@ -163,10 +165,17 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 						},
 					},
 				},
-				ForwardTo: []gwapi.HTTPRouteForwardTo{
+				BackendRefs: []gwapi.HTTPBackendRef{
 					{
-						ServiceName: pointer.String(svcName),
-						Port:        func() *gwapi.PortNumber { p := gwapi.PortNumber(acmeSolverListenPort); return &p }(),
+						BackendRef: gwapi.BackendRef{
+							BackendObjectReference: gwapi.BackendObjectReference{
+								Kind:      func() *gwapi.Kind { k := gwapi.Kind("Service"); return &k }(),
+								Name:      gwapi.ObjectName(svcName),
+								Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
+								Port:      func() *gwapi.PortNumber { p := gwapi.PortNumber(acmeSolverListenPort); return &p }(),
+							},
+							Weight: pointer.Int32(1),
+						},
 					},
 				},
 			},

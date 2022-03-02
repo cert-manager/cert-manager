@@ -31,7 +31,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	k8snet "k8s.io/utils/net"
-	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
+	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/gateway/apis/v1alpha2"
 
 	"github.com/cert-manager/cert-manager/internal/ingress"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -87,7 +87,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
 		ingressLister:        ingressLister,
 		ingressCreateUpdater: ingressCreateUpdater,
-		httpRouteLister:      ctx.GWShared.Networking().V1alpha1().HTTPRoutes().Lister(),
+		httpRouteLister:      ctx.GWShared.Gateway().V1alpha2().HTTPRoutes().Lister(),
 		testReachability:     testReachability,
 		requiredPasses:       5,
 	}, nil

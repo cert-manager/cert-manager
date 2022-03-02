@@ -804,15 +804,15 @@ func (s *Suite) Define() {
 				"cert-manager.io/renew-before": renewBefore.String(),
 			}, domain)
 
-			gw, err := f.GWClientSet.NetworkingV1alpha1().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
+			gw, err := f.GWClientSet.GatewayV1alpha2().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = f.GWClientSet.NetworkingV1alpha1().HTTPRoutes(f.Namespace.Name).Create(context.TODO(), route, metav1.CreateOptions{})
+			_, err = f.GWClientSet.GatewayV1alpha2().HTTPRoutes(f.Namespace.Name).Create(context.TODO(), route, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// XXX(Mael): the CertificateRef seems to contain the Gateway name
 			// "testcert-gateway" instead of the secretName
 			// "testcert-gateway-tls".
-			certName := gw.Spec.Listeners[0].TLS.CertificateRef.Name
+			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
 
 			By("Waiting for the Certificate to exist...")
 			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
