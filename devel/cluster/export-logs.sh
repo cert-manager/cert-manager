@@ -22,9 +22,6 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/../lib/lib.sh"
 
-# Require helm available on PATH
-check_tool kind
-
 LOGS_DIR="${ARTIFACTS:-$REPO_ROOT/_artifacts}/cert-manager-e2e-logs"
 rm -rf $LOGS_DIR && mkdir -p $LOGS_DIR
 if [[ "$IS_OPENSHIFT" == "true" ]] ; then

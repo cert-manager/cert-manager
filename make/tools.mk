@@ -1,4 +1,3 @@
-GO=go
 CGO_ENABLED ?= 0
 
 GOBUILD=CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
@@ -8,13 +7,24 @@ GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./bin/tools/gotestsum
 
 CTR=docker
 
-WORKDIR=$(shell pwd)
-HELM=$(WORKDIR)/bin/tools/helm
-COSIGN=$(WORKDIR)/bin/tools/cosign
-CMREL=$(WORKDIR)/bin/tools/cmrel
-YQ=$(WORKDIR)/bin/tools/yq
-KUBECTL=bin/tools/kubectl
-KIND=bin/tools/kind
+# We don't need to re-download the whole Go distribution, but we still want
+# to make sure that we don't clutter the PATH by using a symlink. So we use
+# a symlink of the system Go in bin/tools.
+GO := $(PWD)/bin/tools/go
+HELM=$(PWD)/bin/tools/helm
+COSIGN=$(PWD)/bin/tools/cosign
+CMREL=$(PWD)/bin/tools/cmrel
+YQ=$(PWD)/bin/tools/yq
+KUBECTL=$(PWD)/bin/tools/kubectl
+KIND=$(PWD)/bin/tools/kind
+CRANE=$(PWD)/bin/tools/crane
+DOCKER=$(PWD)/bin/tools/docker
+
+# Restrict the PATH so that we don't inavertedly pick up the wrong binary
+# somewhere. We don't actually need "$(GO)" in PATH since bin/tools is
+# already in the PATH. We do this so that the shell command "command -v go"
+# is run before the PATH is overwritten.
+export PATH := $(PWD)/bin/tools:usr/bin:/bin
 
 HELM_VERSION=3.6.3
 KUBECTL_VERSION=1.22.1
@@ -26,8 +36,19 @@ GOIMPORTS_VERSION=0.1.8
 GOTESTSUM_VERSION=1.7.0
 YTT_VERSION=0.36.0
 YQ_VERSION=4.11.2
+CRANE_VERSION=0.8.0
 
 KUBEBUILDER_ASSETS_VERSION=1.22.0
+
+# The reason we don't use "go env GOOS" or "go env GOARCH" is that the "go"
+# binary is not available in the PATH when the Makefiles are evaluated. It
+# becomes available after the target "bin/tools/go" gets built. We only
+# support Linux, BSD and macOS (M1 and Intel).
+HOST_OS := $(shell uname -s | tr A-Z a-z)
+HOST_ARCH = $(shell uname -m)
+ifeq (x86_64, $(HOST_ARCH))
+	HOST_ARCH = amd64
+endif
 
 bin/tools:
 	@mkdir -p $@
@@ -35,8 +56,11 @@ bin/tools:
 bin/scratch/tools:
 	@mkdir -p $@
 
+bin/tools/go:
+	@ln -f -s $(shell command -v go) $(GO)
+
 .PHONY: tools
-tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/gotestsum bin/tools/ytt bin/tools/yq
+tools: bin/tools/go bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/gotestsum bin/tools/ytt bin/tools/yq
 
 .PHONY: integration-test-tools
 integration-test-tools: bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
@@ -114,35 +138,35 @@ bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratc
 
 # We don't specify a version number here because we want to use the version in cert-manager's go.mod
 bin/tools/ginkgo: go.mod go.sum | bin/tools
-	GOBIN=$(shell pwd)/$(dir $@) go install github.com/onsi/ginkgo/ginkgo
+	GOBIN=$(PWD)/$(dir $@) go install github.com/onsi/ginkgo/ginkgo
 
 #########
 # cmrel #
 #########
 
 bin/tools/cmrel: | bin/tools
-	GOBIN=$(shell pwd)/$(dir $@) go install github.com/cert-manager/release/cmd/cmrel@$(CMREL_VERSION)
+	GOBIN=$(PWD)/$(dir $@) go install github.com/cert-manager/release/cmd/cmrel@$(CMREL_VERSION)
 
 #################
 # release-notes #
 #################
 
 bin/tools/release-notes: | bin/tools
-	GOBIN=$(shell pwd)/$(dir $@) go install k8s.io/release/cmd/release-notes@v$(K8S_RELEASE_NOTES_VERSION)
+	GOBIN=$(PWD)/$(dir $@) go install k8s.io/release/cmd/release-notes@v$(K8S_RELEASE_NOTES_VERSION)
 
 #############
 # goimports #
 #############
 
 bin/tools/goimports: | bin/tools
-	GOBIN=$(shell pwd)/$(dir $@) go install golang.org/x/tools/cmd/goimports@v$(GOIMPORTS_VERSION)
+	GOBIN=$(PWD)/$(dir $@) go install golang.org/x/tools/cmd/goimports@v$(GOIMPORTS_VERSION)
 
 #############
 # gotestsum #
 #############
 
 bin/tools/gotestsum : | bin/tools
-	GOBIN=$(shell pwd)/$(dir $@) go install gotest.tools/gotestsum@v$(GOTESTSUM_VERSION)
+	GOBIN=$(PWD)/$(dir $@) go install gotest.tools/gotestsum@v$(GOTESTSUM_VERSION)
 
 #######
 # ytt #
@@ -175,6 +199,11 @@ bin/tools/yq: bin/scratch/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/t
 
 bin/scratch/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$(HOST_OS)_$(HOST_ARCH) > $@
+
+bin/tools/crane: | bin/tools
+	GOBIN=$(PWD)/$(dir $@) go install github.com/google/go-containerregistry/cmd/crane@v$(CRANE_VERSION)
+
+#########
 
 ############################
 # kubebuilder-tools assets #
@@ -209,3 +238,7 @@ else
 	$(eval KUBEBUILDER_ARCH := $(HOST_ARCH))
 endif
 	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(KUBEBUILDER_ARCH).tar.gz > $@
+
+bin/scratch/gatewayapi-v%:
+	@mkdir -p $@
+	curl -sSfL https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$*.tar.gz | tar xz -C $@

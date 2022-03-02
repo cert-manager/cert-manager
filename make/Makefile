@@ -14,7 +14,7 @@
 
 MAKEFLAGS += --warn-undefined-variables
 
-SHELL := /usr/bin/env bash
+SHELL := /bin/bash
 .SHELLFLAGS := -uo pipefail -c
 
 # For details on some of these "prelude" settings, see: https://clarkgrubb.com/makefile-style-guide
@@ -37,9 +37,6 @@ GOBUILDPROCS ?=
 # projects/<project>/locations/<location>/keyRings/<keyring>/cryptoKeys/<keyname>/cryptoKeyVersions/<keyversion>
 CMREL_KEY ?=
 
-HOST_OS = $(shell $(GO) env GOOS)
-HOST_ARCH = $(shell $(GO) env GOARCH)
-
 include make/git.mk
 include make/tools.mk
 include make/ci.mk
@@ -51,7 +48,7 @@ include make/containers.mk
 include make/release_containers.mk
 include make/manifests.mk
 include make/licenses.mk
-include make/deploy.mk
+include make/install.mk
 
 .PHONY: all
 all: binaries helm-chart static-manifests all-containers  ## Build all artifacts which might be run or used locally, except for anything signed.

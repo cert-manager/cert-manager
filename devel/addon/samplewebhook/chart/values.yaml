@@ -13,8 +13,8 @@ certManager:
   serviceAccountName: cert-manager
 
 image:
-  repository: sample-webhook
-  tag: bazel
+  repository: local/samplewebhook
+  tag: local
   pullPolicy: Never
 
 nameOverride: ""

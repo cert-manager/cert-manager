@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
-  repository: pebble
-  tag: "bazel"
+  repository: local/pebble
+  tag: local
   pullPolicy: Never
 service:
   type: ClusterIP

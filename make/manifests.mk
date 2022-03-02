@@ -14,6 +14,9 @@ HELM_TEMPLATE_TARGETS=$(patsubst deploy/charts/cert-manager/templates/%,bin/helm
 .PHONY: helm-chart
 helm-chart: bin/cert-manager-$(RELEASE_VERSION).tgz
 
+bin/cert-manager.tgz: bin/cert-manager-$(RELEASE_VERSION).tgz
+	@ln -s -f $(notdir $<) $@
+
 .PHONY: helm-chart-signature
 helm-chart-signature: bin/cert-manager-$(RELEASE_VERSION).tgz.prov
 

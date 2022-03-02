@@ -51,21 +51,12 @@ if  [[ -n "$GINKGO_SKIP" ]]; then GINKGO_SKIP="--ginkgo.skip=${GINKGO_SKIP}"; fi
 # Default feature gates to enable
 FEATURE_GATES="${FEATURE_GATES:-AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true}"
 
-# Configure PATH to use bazel provided e2e tools
-setup_tools
-
-# Ensure bazel is installed
-check_bazel
-
 # Create output directory for JUnit output
 mkdir -p "${REPO_ROOT}/_artifacts"
 
-# Build the e2e test binary
-bazel build //test/e2e:e2e.test
-
 # Run e2e tests
 ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
-	$(bazel info bazel-genfiles)/test/e2e/e2e.test \
+	./test/e2e/e2e.test \
 	-- \
 	--repo-root="${REPO_ROOT}" \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \

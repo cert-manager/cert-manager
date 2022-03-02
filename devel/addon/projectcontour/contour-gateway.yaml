@@ -5034,7 +5034,7 @@ spec:
   selector:
     app: envoy
   type: ClusterIP
-  clusterIP: 10.0.0.14
+  clusterIP: {CLUSTER_IP}
 
 ---
 apiVersion: apps/v1

@@ -22,7 +22,6 @@ SCRIPT_ROOT="$(dirname "${BASH_SOURCE}")"
 TMP_DIR="$(mktemp -d)"
 
 source "${SCRIPT_ROOT}/../lib/lib.sh"
-setup_tools
 
 if docker ps | grep "openshift/origin-node:v${OPENSHIFT_VERSION}" &>/dev/null; then
   echo "Existing OpenShift 3 cluster found, skipping creating cluster..."
