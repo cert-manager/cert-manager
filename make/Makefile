@@ -17,6 +17,17 @@ MAKEFLAGS += --warn-undefined-variables
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -uo pipefail -c
 
+GITPATH := $(shell type -p git)
+ifeq ($(GITPATH),)
+$(error Couldn't find git in PATH; git must be installed for cert-manager development)
+endif
+
+GOBINPATH := $(shell type -p go)
+
+ifeq ($(GOBINPATH),)
+$(error Couldn't find go in PATH; go must be installed for cert-manager development)
+endif
+
 # For details on some of these "prelude" settings, see: https://clarkgrubb.com/makefile-style-guide
 .DEFAULT_GOAL := help
 .DELETE_ON_ERROR:
