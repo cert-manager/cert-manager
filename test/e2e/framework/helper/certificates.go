@@ -166,6 +166,96 @@ func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificat
 	}, timeout)
 }
 
+func (h *Helper) waitForIssuerCondition(client clientset.IssuerInterface, name string, check func(issuer *v1.Issuer) bool, timeout time.Duration) (*cmapi.Issuer, error) {
+	var issuer *v1.Issuer
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
+		var err error
+		issuer, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		if nil != err {
+			issuer = nil
+			return false, fmt.Errorf("error getting Issuer %v: %v", name, err)
+		}
+		return check(issuer), nil
+	})
+
+	if pollErr != nil && issuer != nil {
+		log.Logf("Failed waiting for issuer %v :%v\n", name, pollErr.Error())
+
+		log.Logf("Issuer:\n")
+		h.describeCMObject(issuer)
+	}
+
+	return issuer, pollErr
+}
+
+// WaitIssuerReady waits for the Issuer resource to be in a Ready=True state
+// The Ready=True condition will be checked against the provided issuer to make sure its ready.
+func (h *Helper) WaitIssuerReady(issuer *cmapi.Issuer, timeout time.Duration) (*cmapi.Issuer, error) {
+	ready_true_condition := cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}
+
+	return h.waitForIssuerCondition(h.CMClient.CertmanagerV1().Issuers(issuer.Namespace), issuer.Name, func(issuer *v1.Issuer) bool {
+		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
+			log.Logf(
+				"Expected Issuer %v condition %v=%v but it has: %v",
+				issuer.Name,
+				ready_true_condition.Type,
+				ready_true_condition.Status,
+				issuer.Status.Conditions,
+			)
+			return false
+		}
+		return true
+	}, timeout)
+}
+
+func (h *Helper) waitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, check func(issuer *v1.ClusterIssuer) bool, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
+	var issuer *v1.ClusterIssuer
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
+		var err error
+		issuer, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		if nil != err {
+			issuer = nil
+			return false, fmt.Errorf("error getting Issuer %v: %v", name, err)
+		}
+		return check(issuer), nil
+	})
+
+	if pollErr != nil && issuer != nil {
+		log.Logf("Failed waiting for issuer %v :%v\n", name, pollErr.Error())
+
+		log.Logf("Issuer:\n")
+		h.describeCMObject(issuer)
+	}
+
+	return issuer, pollErr
+}
+
+// WaitClusterIssuerReady waits for the Cluster Issuer resource to be in a Ready=True state
+// The Ready=True condition will be checked against the provided issuer to make sure its ready.
+func (h *Helper) WaitClusterIssuerReady(issuer *cmapi.ClusterIssuer, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
+	ready_true_condition := cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}
+
+	return h.waitForClusterIssuerCondition(h.CMClient.CertmanagerV1().ClusterIssuers(), issuer.Name, func(issuer *v1.ClusterIssuer) bool {
+		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
+			log.Logf(
+				"Expected Cluster Issuer %v condition %v=%v but it has: %v",
+				issuer.Name,
+				ready_true_condition.Type,
+				ready_true_condition.Status,
+				issuer.Status.Conditions,
+			)
+			return false
+		}
+		return true
+	}, timeout)
+}
+
 func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsage {
 	extKeyUsagesMap := make(map[x509.ExtKeyUsage]bool)
 	for _, e := range us {
