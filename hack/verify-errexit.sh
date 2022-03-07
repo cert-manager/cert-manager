@@ -26,18 +26,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Validating all scripts set '-o errexit'" >&2
-elif ! command -v bazel &> /dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
-  exit 1
-else
-  (
-    set -o xtrace
-    bazel test --test_output=streamed //hack:verify-errexit
-  )
-  exit 0
-fi
+echo "+++ validating all scripts set '-o errexit'" >&2
 
 if [ "$*" != "" ]; then
   args="$*"
@@ -54,8 +43,8 @@ tmp=$(mktemp)
 rm $tmp
 
 for file in ${shFiles}; do
-  grep "set -o errexit" $file > /dev/null 2>&1 && continue
-  grep "set -[a-z]*e" $file > /dev/null 2>&1 && continue
+  grep "^set -o errexit" $file > /dev/null 2>&1 && continue
+  grep "^set -[a-z]*e" $file > /dev/null 2>&1 && continue
 
   echo $file: appears to be missing \"set -o errexit\" | tee -a $tmp
 done
