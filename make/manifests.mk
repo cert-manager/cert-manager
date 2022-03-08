@@ -57,8 +57,8 @@ ifeq ($(strip $(CMREL_KEY)),)
 endif
 	cd $(dir $<) && $(CMREL) sign helm --chart-path "$(notdir $<)" --key "$(CMREL_KEY)"
 
-$(HELM_TEMPLATE_TARGETS): $(HELM_TEMPLATE_SOURCES) | bin/helm/cert-manager/templates
-	cp -f $^ $(dir $@)
+bin/helm/cert-manager/templates/%.yaml: deploy/charts/cert-manager/templates/%.yaml | bin/helm/cert-manager/templates
+	cp -f $^ $@
 
 bin/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/templates/_helpers.tpl | bin/helm/cert-manager/templates
 	cp $< $@
@@ -66,7 +66,7 @@ bin/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/templat
 bin/helm/cert-manager/templates/NOTES.txt: deploy/charts/cert-manager/templates/NOTES.txt | bin/helm/cert-manager/templates
 	cp $< $@
 
-bin/helm/cert-manager/templates/crds.yaml: bin/scratch/yaml/cert-manager-crd-templates.yaml
+bin/helm/cert-manager/templates/crds.yaml: bin/scratch/yaml/cert-manager-crd-templates.yaml | bin/helm/cert-manager/templates
 	echo '{{- if .Values.installCRDs }}' > $@
 	cat $< >> $@
 	echo '{{- end }}' >> $@
