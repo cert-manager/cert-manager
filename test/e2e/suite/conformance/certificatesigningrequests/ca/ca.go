@@ -77,6 +77,11 @@ func (c *ca) createIssuer(f *framework.Framework) string {
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
 
+	// wait for issuer to be ready
+	By("Waiting for CA Issuer to be Ready")
+	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
+
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", f.Namespace.Name, issuer.Name)
 }
 
@@ -101,6 +106,11 @@ func (c *ca) createClusterIssuer(f *framework.Framework) string {
 		},
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
+
+	// wait for issuer to be ready
+	By("Waiting for CA Cluster Issuer to be Ready")
+	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }

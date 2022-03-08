@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -153,6 +154,11 @@ func (a *approle) createIssuer(f *framework.Framework) string {
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
+	// wait for issuer to be ready
+	By("Waiting for Vault Issuer to be Ready")
+	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
+
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", f.Namespace.Name, issuer.Name)
 }
 
@@ -174,6 +180,11 @@ func (a *approle) createClusterIssuer(f *framework.Framework) string {
 		Spec: a.createIssuerSpec(f),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
+
+	// wait for issuer to be ready
+	By("Waiting for Vault Cluster Issuer to be Ready")
+	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }

@@ -18,6 +18,7 @@ package ca
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -66,6 +67,11 @@ func (c *ca) createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
 
+	// wait for issuer to be ready
+	By("Waiting for CA Issuer to be Ready")
+	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
+
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
@@ -89,6 +95,11 @@ func (c *ca) createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReferenc
 	}, metav1.CreateOptions{})
 
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
+
+	// wait for issuer to be ready
+	By("Waiting for CA Cluster Issuer to be Ready")
+	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,

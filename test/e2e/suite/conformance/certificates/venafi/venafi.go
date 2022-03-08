@@ -134,6 +134,7 @@ func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.O
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
+	// wait for issuer to be ready
 	By("Waiting for Venafi Cluster Issuer to be Ready")
 	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
