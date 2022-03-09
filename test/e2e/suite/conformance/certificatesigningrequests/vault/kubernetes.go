@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -85,6 +86,11 @@ func (k *kubernetes) createIssuer(f *framework.Framework) string {
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
+	// wait for issuer to be ready
+	By("Waiting for VaultKubernetes Issuer to be Ready")
+	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
+
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
@@ -99,6 +105,11 @@ func (k *kubernetes) createClusterIssuer(f *framework.Framework) string {
 		Spec: k.issuerSpec(f),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
+
+	// wait for issuer to be ready
+	By("Waiting for VaultKubernetes Cluster Issuer to be Ready")
+	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }

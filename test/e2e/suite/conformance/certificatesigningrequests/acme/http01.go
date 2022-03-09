@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -44,6 +45,11 @@ func (a *acme) createHTTP01Issuer(f *framework.Framework) string {
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
+	// wait for issuer to be ready
+	By("Waiting for acme HTTP01 Issuer to be Ready")
+	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
+
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
@@ -60,6 +66,11 @@ func (a *acme) createHTTP01ClusterIssuer(f *framework.Framework) string {
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
+
+	// wait for issuer to be ready
+	By("Waiting for acme HTTP01 Cluster Issuer to be Ready")
+	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }
