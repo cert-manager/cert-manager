@@ -81,6 +81,8 @@ serviceAccount:
   # Optional additional annotations to add to the controller's ServiceAccount
   # annotations: {}
   # Automount API credentials for a Service Account.
+  # Optional additional labels to add to the controller's ServiceAccount
+  # labels: {}
   automountServiceAccountToken: true
 
 # Additional command line flags to pass to cert-manager controller binary.
