@@ -11,15 +11,6 @@ metadata:
     app.kubernetes.io/component: "controller"
     {{- include "labels" . | nindent 4 }}
 rules:
-  # Used for leader election by the controller
-  # See also: https://github.com/kubernetes-sigs/controller-runtime/pull/1144#discussion_r480173688
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    resourceNames: ["cert-manager-controller"]
-    verbs: ["get", "update", "patch"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["create"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     resourceNames: ["cert-manager-controller"]

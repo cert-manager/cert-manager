@@ -326,15 +326,15 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 		return fmt.Errorf("error getting hostname: %v", err)
 	}
 
-	// Set up Multilock for leader election. This Multilock is here for the
-	// transitionary period from configmaps to leases see
-	// https://github.com/kubernetes-sigs/controller-runtime/pull/1144#discussion_r480173688
 	lockName := "cert-manager-controller"
 	lc := resourcelock.ResourceLockConfig{
 		Identity:      id + "-external-cert-manager-controller",
 		EventRecorder: recorder,
 	}
-	ml, err := resourcelock.New(resourcelock.ConfigMapsLeasesResourceLock,
+
+	// We only support leases for leader election. Previously we supported ConfigMap & Lease objects for leader
+	// election.
+	ml, err := resourcelock.New(resourcelock.LeasesResourceLock,
 		opts.LeaderElectionNamespace,
 		lockName,
 		leaderElectionClient.CoreV1(),
