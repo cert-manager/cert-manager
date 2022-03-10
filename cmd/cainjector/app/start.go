@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
@@ -141,6 +142,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		LeaderElectionNamespace:       o.LeaderElectionNamespace,
 		LeaderElectionID:              "cert-manager-cainjector-leader-election",
 		LeaderElectionReleaseOnCancel: true,
+		LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
 		LeaseDuration:                 &o.LeaseDuration,
 		RenewDeadline:                 &o.RenewDeadline,
 		RetryPeriod:                   &o.RetryPeriod,
