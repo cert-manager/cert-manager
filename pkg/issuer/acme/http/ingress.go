@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 
 	networkingv1 "k8s.io/api/networking/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -215,6 +216,11 @@ func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *netw
 	}
 
 	for k, v := range ingressTempl.Annotations {
+		// check if the user set the whitelist-source-range annotation in the template
+		annotation := k[strings.LastIndex(k, "/")+1:]
+		if annotation == "whitelist-source-range" {
+			delete(ingress.Annotations, "nginx.ingress.kubernetes.io/whitelist-source-range")
+		}
 		ingress.Annotations[k] = v
 	}
 
