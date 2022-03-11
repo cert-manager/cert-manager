@@ -16,7 +16,10 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = ["certificaterequest_test.go"],
+    srcs = [
+        "certificate_test.go",
+        "certificaterequest_test.go",
+    ],
     deps = [
         "//pkg/api:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",

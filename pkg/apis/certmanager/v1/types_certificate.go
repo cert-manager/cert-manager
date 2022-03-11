@@ -212,6 +212,7 @@ type CertificatePrivateKey struct {
 	// will be generated whenever a re-issuance occurs.
 	// Default is 'Never' for backward compatibility.
 	// +optional
+	// +kubebuilder:validation:Enum=Never;Always
 	RotationPolicy PrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
 
 	// The private key cryptography standards (PKCS) encoding for this
