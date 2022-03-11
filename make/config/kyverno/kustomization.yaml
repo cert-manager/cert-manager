@@ -1,0 +1,17 @@
+# This Kustomization is used to adapt the upstream Pod security policy for use
+# specifically in the cert-manager namespace.
+# Changes ClusterPolicy resources to namespaced Policy.
+# Use as follows:
+#  kustomize build . > policy.yaml
+bases:
+  - https://github.com/kyverno/policies/pod-security
+patches:
+  - patch: |-
+      - op: replace
+        path: /kind
+        value: Policy
+      - op: add
+        path: /metadata/namespace
+        value: cert-manager
+    target:
+      kind: ClusterPolicy

@@ -1,0 +1,725 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Privilege escalation, such as via set-user-ID
+      or set-group-ID file mode, should not be allowed.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: deny-privilege-escalation
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: deny-privilege-escalation
+    validate:
+      message: Privilege escalation is disallowed. The fields spec.containers[*].securityContext.allowPrivilegeEscalation,
+        and spec.initContainers[*].securityContext.allowPrivilegeEscalation must be
+        undefined or set to `false`.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              =(allowPrivilegeEscalation): "false"
+          containers:
+          - =(securityContext):
+              =(allowPrivilegeEscalation): "false"
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Capabilities permit privileged actions without
+      giving full root access. Adding capabilities beyond the default set must not
+      be allowed.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: disallow-add-capabilities
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: capabilities
+    validate:
+      message: Adding of additional capabilities beyond the default set is not allowed.
+        The fields spec.containers[*].securityContext.capabilities.add and  spec.initContainers[*].securityContext.capabilities.add
+        must be empty.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              =(capabilities):
+                X(add): null
+          containers:
+          - =(securityContext):
+              =(capabilities):
+                X(add): null
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Host namespaces (Process ID namespace, Inter-Process
+      Communication namespace, and network namespace) allow access to shared information
+      and can be used to elevate privileges. Pods should not be allowed access to
+      host namespaces.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: disallow-host-namespaces
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: host-namespaces
+    validate:
+      message: Sharing the host namespaces is disallowed. The fields spec.hostNetwork,
+        spec.hostIPC, and spec.hostPID must not be set to true.
+      pattern:
+        spec:
+          =(hostIPC): "false"
+          =(hostNetwork): "false"
+          =(hostPID): "false"
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: HostPath volumes let pods use host directories
+      and volumes in containers. Using host resources can be used to access shared
+      data or escalate privileges and should not be allowed.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: disallow-host-path
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: host-path
+    validate:
+      message: HostPath volumes are forbidden. The fields spec.volumes[*].hostPath
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(hostPath): "null"
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Access to host ports allows potential snooping
+      of network traffic and should not be allowed, or at minimum restricted to a
+      known list.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: disallow-host-ports
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: host-ports
+    validate:
+      message: Use of host ports is disallowed. The fields spec.containers[*].ports[*].hostPort
+        and spec.initContainers[*].ports[*].hostPort must be empty.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(ports):
+            - X(hostPort): 0
+          containers:
+          - =(ports):
+            - X(hostPort): 0
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Privileged mode disables most security mechanisms
+      and must not be allowed.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: disallow-privileged-containers
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: priviledged-containers
+    validate:
+      message: Privileged mode is disallowed. The fields spec.containers[*].securityContext.privileged
+        and spec.initContainers[*].securityContext.privileged must not be set to true.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              =(privileged): "false"
+          containers:
+          - =(securityContext):
+              =(privileged): "false"
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: SELinux options can be used to escalate privileges
+      and should not be allowed.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow SELinux
+  name: disallow-selinux
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: seLinux
+    validate:
+      message: Setting custom SELinux options is disallowed. The fields spec.securityContext.seLinuxOptions,
+        spec.containers[*].securityContext.seLinuxOptions, and spec.initContainers[*].securityContext.seLinuxOptions
+        must be empty.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              X(seLinuxOptions): "null"
+          =(securityContext):
+            X(seLinuxOptions): "null"
+          containers:
+          - =(securityContext):
+              X(seLinuxOptions): "null"
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: The default /proc masks are set up to reduce
+      attack surface and should be required.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: require-default-proc-mount
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: check-proc-mount
+    validate:
+      message: Changing the proc mount from the default is not allowed. The fields
+        spec.containers[*].securityContext.procMount and spec.initContainers[*].securityContext.procMount
+        must not be changed  from `Default`.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              =(procMount): Default
+          containers:
+          - =(securityContext):
+              =(procMount): Default
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Containers should be forbidden from running with
+      a root primary or supplementary GID.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: require-non-root-groups
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: check-runasgroup
+    validate:
+      message: "Running with root group IDs is disallowed. The fields\t spec.securityContext.runAsGroup,
+        spec.containers[*].securityContext.runAsGroup,\t and spec.initContainers[*].securityContext.runAsGroup
+        must be empty\t or greater than zero."
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              =(runAsGroup): '>0'
+          =(securityContext):
+            =(runAsGroup): '>0'
+          containers:
+          - =(securityContext):
+              =(runAsGroup): '>0'
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: check-supplementalGroups
+    validate:
+      message: "Adding of supplemental group IDs is not allowed. The field\t spec.securityContext.supplementalGroups
+        must not be defined."
+      pattern:
+        spec:
+          =(securityContext):
+            =(supplementalGroups):
+            - "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: check-fsGroup
+    validate:
+      message: Changing to root group ID is disallowed. The field spec.securityContext.fsGroup
+        must be empty or greater than zero.
+      pattern:
+        spec:
+          =(securityContext):
+            =(fsGroup): '>0'
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Containers must be required to run as non-root
+      users.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: require-run-as-non-root
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: check-containers
+    validate:
+      anyPattern:
+      - spec:
+          =(initContainers):
+          - =(securityContext):
+              =(runAsNonRoot): true
+          containers:
+          - =(securityContext):
+              =(runAsNonRoot): true
+          securityContext:
+            runAsNonRoot: true
+      - spec:
+          =(initContainers):
+          - securityContext:
+              runAsNonRoot: true
+          containers:
+          - securityContext:
+              runAsNonRoot: true
+      message: Running as root is not allowed. The fields spec.securityContext.runAsNonRoot,
+        spec.containers[*].securityContext.runAsNonRoot, and spec.initContainers[*].securityContext.runAsNonRoot
+        must be `true`.
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: On supported hosts, the 'runtime/default' AppArmor
+      profile is applied by default.  The default policy should prevent overriding
+      or disabling the policy, or restrict  overrides to an allowed set of profiles.
+    policies.kyverno.io/minversion: 1.3.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod, Annotation
+    policies.kyverno.io/title: Restrict AppArmor
+  name: restrict-apparmor-profiles
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: app-armor
+    validate:
+      message: Specifying other AppArmor profiles is disallowed. The annotation container.apparmor.security.beta.kubernetes.io
+        must not be defined, or must not be set to anything other than `runtime/default`.
+      pattern:
+        metadata:
+          =(annotations):
+            =(container.apparmor.security.beta.kubernetes.io/*): runtime/default
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: The runtime default seccomp profile must be required,
+      or only specific additional profiles should be allowed.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Restrict Seccomp
+  name: restrict-seccomp
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: seccomp
+    validate:
+      message: Use of custom Seccomp profiles is disallowed. The fields spec.securityContext.seccompProfile.type,
+        spec.containers[*].securityContext.seccompProfile.type, and spec.initContainers[*].securityContext.seccompProfile.type
+        must be unset or set to `runtime/default`.
+      pattern:
+        spec:
+          =(initContainers):
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): runtime/default
+          =(securityContext):
+            =(seccompProfile):
+              =(type): runtime/default
+          containers:
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): runtime/default
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Sysctls can disable security mechanisms or affect
+      all containers on a host, and should be disallowed except for an allowed "safe"
+      subset. A sysctl is considered safe if it is namespaced in the container or
+      the Pod, and it is isolated from other Pods or processes on the same Node.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: restrict-sysctls
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: sysctls
+    validate:
+      message: Setting additional sysctls above the allowed type is disallowed. The
+        field spec.securityContext.sysctls must not use any other names than 'kernel.shm_rmid_forced',
+        'net.ipv4.ip_local_port_range', 'net.ipv4.tcp_syncookies' and 'net.ipv4.ping_group_range'.
+      pattern:
+        spec:
+          =(securityContext):
+            =(sysctls):
+            - name: kernel.shm_rmid_forced | net.ipv4.ip_local_port_range | net.ipv4.tcp_syncookies
+                | net.ipv4.ping_group_range
+              value: ?*
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: In addition to restricting HostPath volumes,
+      the restricted pod security profile limits usage of non-core volume types to
+      those defined through PersistentVolumes.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+  name: restrict-volume-types
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-gcePersistentDisk
+    validate:
+      message: Use of the gcePersistentDisk type volume is disallowed. The fields
+        spec.volumes[*].gcePersistentDisk must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(gcePersistentDisk): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-awsElasticBlockStore
+    validate:
+      message: Use of the awsElasticBlockStore type volume is disallowed. The fields
+        spec.volumes[*].awsElasticBlockStore must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(awsElasticBlockStore): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-gitRepo
+    validate:
+      message: Use of the gitRepo type volume is disallowed. The fields spec.volumes[*].gitRepo
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(gitRepo): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-nfs
+    validate:
+      message: Use of the nfs type volume is disallowed. The fields spec.volumes[*].nfs
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(nfs): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-iscsi
+    validate:
+      message: Use of the iscsi type volume is disallowed. The fields spec.volumes[*].iscsi
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(iscsi): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-glusterfs
+    validate:
+      message: Use of the glusterfs type volume is disallowed. The fields spec.volumes[*].glusterfs
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(glusterfs): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-rbd
+    validate:
+      message: Use of the rbd type volume is disallowed. The fields spec.volumes[*].rbd
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(rbd): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-flexVolume
+    validate:
+      message: Use of the flexVolume type volume is disallowed. The fields spec.volumes[*].flexVolume
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(flexVolume): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-cinder
+    validate:
+      message: Use of the cinder type volume is disallowed. The fields spec.volumes[*].cinder
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(cinder): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-cephfs
+    validate:
+      message: Use of the cephfs type volume is disallowed. The fields spec.volumes[*].cephfs
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(cephfs): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-flocker
+    validate:
+      message: Use of the flocker type volume is disallowed. The fields spec.volumes[*].flocker
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(flocker): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-fc
+    validate:
+      message: Use of the fc type volume is disallowed. The fields spec.volumes[*].fc
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(fc): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-azureFile
+    validate:
+      message: Use of the azureFile type volume is disallowed. The fields spec.volumes[*].azureFile
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(azureFile): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-vsphereVolume
+    validate:
+      message: Use of the vsphereVolume type volume is disallowed. The fields spec.volumes[*].vsphereVolume
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(vsphereVolume): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-quobyte
+    validate:
+      message: Use of the quobyte type volume is disallowed. The fields spec.volumes[*].quobyte
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(quobyte): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-azureDisk
+    validate:
+      message: Use of the azureDisk type volume is disallowed. The fields spec.volumes[*].azureDisk
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(azureDisk): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-portworxVolume
+    validate:
+      message: Use of the portworxVolume type volume is disallowed. The fields spec.volumes[*].portworxVolume
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(portworxVolume): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-scaleIO
+    validate:
+      message: Use of the scaleIO type volume is disallowed. The fields spec.volumes[*].scaleIO
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(scaleIO): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-storageos
+    validate:
+      message: Use of the storageos type volume is disallowed. The fields spec.volumes[*].storageos
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(storageos): "null"
+  - match:
+      resources:
+        kinds:
+        - Pod
+    name: restricted-vol-csi
+    validate:
+      message: Use of the csi type volume is disallowed. The fields spec.volumes[*].csi
+        must not be set.
+      pattern:
+        spec:
+          =(volumes):
+          - X(csi): "null"
+  validationFailureAction: enforce

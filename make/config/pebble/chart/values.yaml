@@ -1,0 +1,16 @@
+replicaCount: 1
+image:
+  repository: local/pebble
+  tag: local
+  pullPolicy: Never
+service:
+  type: ClusterIP
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    cpu: 100m
+    memory: 100Mi
+
+strict: "false"

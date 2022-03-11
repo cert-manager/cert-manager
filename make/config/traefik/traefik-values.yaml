@@ -1,0 +1,28 @@
+dditionalArguments:
+  - --experimental.kubernetesgateway=true
+  - --providers.kubernetesgateway=true
+  - --providers.kubernetesgateway.namespaces=
+  - --entrypoints.web.address=:80
+  - --entrypoints.websecure.address=:443
+
+logs:
+  general:
+    level: DEBUG
+
+ports:
+  web:
+    port: 80
+  websecure:
+    port: 443
+
+# We want to listen on port 80 since that's what ACME requires. By default, the
+# chart uses 8000 to be able to runAsNonRoot.
+# https://stackoverflow.com/questions/66138370
+securityContext:
+  capabilities:
+    drop: [ALL]
+    add: [NET_BIND_SERVICE]
+  readOnlyRootFilesystem: true
+  runAsGroup: 0
+  runAsNonRoot: false
+  runAsUser: 0

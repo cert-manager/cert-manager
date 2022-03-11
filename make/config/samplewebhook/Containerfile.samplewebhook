@@ -1,0 +1,11 @@
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
+
+USER 1000
+
+COPY samplewebhook /app/samplewebhook
+
+ENTRYPOINT ["/app/samplewebhook"]
+
+# vim: syntax=dockerfile

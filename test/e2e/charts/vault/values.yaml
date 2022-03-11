@@ -1,6 +1,6 @@
 image:
-  repository: vault
-  tag: "bazel"
+  repository: local/vault
+  tag: local
 
 vault:
   publicKey:
