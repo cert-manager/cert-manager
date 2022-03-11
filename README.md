@@ -87,15 +87,8 @@ on Google Meet. For more information, see [cert-manager.io](https://cert-manager
 
 We welcome pull requests with open arms! There's a lot of work to do here, and
 we're especially concerned with ensuring the longevity and reliability of the
-project.
-
-Please take a look at our [issue tracker](https://github.com/cert-manager/cert-manager/issues)
-if you are unsure where to start with getting involved!
-
-We also use the #cert-manager and #cert-manager-dev channels on [Kubernetes Slack](https://kubernetes.slack.com)
-for chat relating to the project.
-
-Developer documentation is available on the [cert-manager.io website](https://cert-manager.io/docs/contributing/).
+project. The [contributing guide](https://cert-manager.io/docs/contributing/)
+will help you get started.
 
 ## Coding Conventions
 
