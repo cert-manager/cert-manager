@@ -1,4 +1,4 @@
-export KUBEBUILDER_ASSETS=bin/tools
+export KUBEBUILDER_ASSETS=$(PWD)/bin/tools
 
 # WHAT can be used to control which unit tests are run by "make test"; defaults to running all
 # tests except e2e tests (which require more significant setup)
