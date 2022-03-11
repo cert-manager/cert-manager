@@ -77,12 +77,12 @@ func CRDDirectory() (string, error) {
 	var dir string
 	var err error
 
-	dir, err = bazelCRDDirectory()
+	dir, err = makefileCRDDirectory()
 	if err == nil {
 		return dir, nil
 	}
 
-	dir, err = makefileCRDDirectory()
+	dir, err = bazelCRDDirectory()
 	if err == nil {
 		return dir, nil
 	}
