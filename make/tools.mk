@@ -391,51 +391,6 @@ MISSING=$(shell (command -v curl >/dev/null || echo curl) \
                 || command -v $(GO) >/dev/null || echo $(GO)) \
              && (command -v $(CTR) >/dev/null || echo $(CTR)))
 ifneq ($(MISSING),)
-*: system-tools-instructions
+$(error Missing required tools: $(MISSING))
 endif
 endif
-
-# We can tell the right installation instructions for Fedora, Arch, Ubuntu,
-# Debian, and macOS.
-.PHONY: system-tools-instructions
-system-tools-instructions: system-tools-instructions-$(HOST_OS)$(shell awk -F'=' '/^ID=/ {print "-" tolower($$2)}' /etc/*-release 2>/dev/null)
-
-.PHONY: system-tools-instructions-darwin
-system-tools-instructions-darwin:
-	@command -v curl >/dev/null 2>&1 || (printf "curl is missing, please install it:\n    brew install curl\n" >&2; exit 1)
-	@command -v python3 >/dev/null 2>&1 || (printf "python3 is missing, please install it:\n    brew install python\n" >&2; exit 1)
-	@command -v jq >/dev/null 2>&1 || (printf "jq is missing, please install it:\n    brew install jq\n" >&2; exit 1)
-	@command -v sha256sum >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    brew install coreutils\n" >&2; exit 1)
-	@command -v git >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    brew install git\n" >&2; exit 1)
-	@command -v $(GO) >/dev/null 2>&1 || (printf "$(GO) is missing, please install it:\n    make vendor-go\n" >&2; exit 1)
-	@[ "$(CTR)" != docker ] || command -v docker >/dev/null 2>&1 || (printf "docker is missing, please install it:\n    brew install colima docker && colima start\n" >&2; exit 1)
-
-.PHONY: system-tools-instructions-linux-ubuntu
-system-tools-instructions-linux-ubuntu:
-	@command -v curl >/dev/null 2>&1 || (printf "curl is missing, please install it:\n    sudo apt install -y curl\n" >&2; exit 1)
-	@command -v python3 >/dev/null 2>&1 || (printf "python3 is missing, please install it:\n    sudo apt install -y python3\n" >&2; exit 1)
-	@command -v jq >/dev/null 2>&1 || (printf "jq is missing, please install it:\n    sudo apt install -y jq\n" >&2; exit 1)
-	@command -v sha256sum >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    sudo apt install -y coreutils\n" >&2; exit 1)
-	@command -v git >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    sudo apt install -y git\n" >&2; exit 1)
-	@command -v $(GO) >/dev/null 2>&1 || (printf "$(GO) is missing, please install it:\n    make vendor-go\n" >&2; exit 1)
-	@[ "$(CTR)" != docker ] || command -v docker >/dev/null 2>&1 || (printf "docker is missing, please install it by following the instruction at https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository.\n" >&2; exit 1)
-
-.PHONY: system-tools-instructions-linux-fedora
-system-tools-instructions-linux-fedora:
-	@command -v curl >/dev/null 2>&1 || (printf "curl is missing, please install it:\n    sudo dnf install -y curl\n" >&2; exit 1)
-	@command -v python3 >/dev/null 2>&1 || (printf "python3 is missing, please install it:\n    sudo dnf install -y python3\n" >&2; exit 1)
-	@command -v jq >/dev/null 2>&1 || (printf "jq is missing, please install it:\n    sudo dnf install -y jq\n" >&2; exit 1)
-	@command -v sha256sum >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    sudo dnf install -y coreutils\n" >&2; exit 1)
-	@command -v git >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    sudo dnf install -y git\n" >&2; exit 1)
-	@command -v $(GO) >/dev/null 2>&1 || (printf "$(GO) is missing, please install it:\n    make vendor-go\n" >&2; exit 1)
-	@[ "$(CTR)" != docker ] || command -v docker >/dev/null 2>&1 || (printf "docker is missing, please install it by following the instruction at https://docs.docker.com/engine/install/fedora/#install-using-the-repository.\n" >&2; exit 1)
-
-.PHONY: system-tools-instructions-linux-arch
-system-tools-instructions-linux-arch:
-	@command -v curl >/dev/null 2>&1 || (printf "curl is missing, please install it:\n    sudo pacman -Sy curl\n" >&2; exit 1)
-	@command -v python3 >/dev/null 2>&1 || (printf "python3 is missing, please install it:\n    sudo pacman -Sy python3\n" >&2; exit 1)
-	@command -v jq >/dev/null 2>&1 || (printf "jq is missing, please install it:\n    sudo pacman -Sy jq\n" >&2; exit 1)
-	@command -v sha256sum >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    sudo pacman -Sy coreutils\n" >&2; exit 1)
-	@command -v git >/dev/null 2>&1 || (printf "sha256sum is missing, please install it:\n    sudo pacman -Sy git\n" >&2; exit 1)
-	@command -v $(GO) >/dev/null 2>&1 || (printf "$(GO) is missing, please install it:\n    make vendor-go\n" >&2; exit 1)
-	@[ "$(CTR)" != docker ] || command -v docker >/dev/null 2>&1 || (printf "docker is missing, please install it by following the instruction at https://wiki.archlinux.org/title/docker\n" >&2 && exit 1)
