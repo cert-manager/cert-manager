@@ -29,6 +29,7 @@ import (
 	"net/url"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
@@ -402,6 +403,7 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 							{
 								Kind:      func() *gwapiv1alpha2.Kind { k := gwapiv1alpha2.Kind("Secret"); return &k }(),
 								Name:      gwapiv1alpha2.ObjectName(secretName),
+								Group:     func() *gwapiv1alpha2.Group { g := gwapiv1alpha2.Group(corev1.GroupName); return &g }(),
 								Namespace: (*gwapiv1alpha2.Namespace)(&ns),
 							},
 						},
