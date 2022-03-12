@@ -19,6 +19,7 @@
 here=$(dirname "${BASH_SOURCE[0]}")
 source "$here/config/lib.sh"
 cd "$here/.." || exit 1
+set -e
 
 flake_attempts=1
 nodes=10

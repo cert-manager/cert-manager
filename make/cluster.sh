@@ -19,6 +19,7 @@
 here=$(dirname "${BASH_SOURCE[0]}")
 source "$here/config/lib.sh"
 cd "$here/../"
+set -e
 
 mode=kind
 k8s_version=1.23
