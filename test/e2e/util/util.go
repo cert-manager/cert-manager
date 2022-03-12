@@ -38,7 +38,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
-	"k8s.io/utils/pointer"
 	gwapiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -371,95 +370,46 @@ func pathTypePrefix() *networkingv1.PathType {
 	return &p
 }
 
-func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) (*gwapiv1alpha2.Gateway, *gwapiv1alpha2.HTTPRoute) {
-	var hostnames []gwapiv1alpha2.Hostname
-	for _, dnsName := range dnsNames {
-		hostnames = append(hostnames, gwapiv1alpha2.Hostname(dnsName))
-	}
+// NewGateway creates a new test Gateway. There is no Gateway controller
+// watching the 'foo' gateway class, so this Gateway will not be used to
+// actually route traffic, but can be used to test cert-manager controllers that
+// sync Gateways, such as gateway-shim.
+func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapiv1alpha2.Gateway {
 
 	return &gwapiv1alpha2.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        gatewayName,
-				Annotations: annotations,
-			},
-			Spec: gwapiv1alpha2.GatewaySpec{
-				GatewayClassName: "istio",
-				Listeners: []gwapiv1alpha2.Listener{{
-					AllowedRoutes: &gwapiv1alpha2.AllowedRoutes{
-						Namespaces: &gwapiv1alpha2.RouteNamespaces{
-							From: func() *gwapiv1alpha2.FromNamespaces { f := gwapiv1alpha2.NamespacesFromSame; return &f }(),
-							Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
-								"gw": gatewayName,
-							}},
-						},
-						Kinds: nil,
-					},
-					Name:     "acme-solver",
-					Protocol: gwapiv1alpha2.TCPProtocolType,
-					Port:     gwapiv1alpha2.PortNumber(80),
-					Hostname: (*gwapiv1alpha2.Hostname)(&dnsNames[0]),
-					TLS: &gwapiv1alpha2.GatewayTLSConfig{
-						CertificateRefs: []*gwapiv1alpha2.SecretObjectReference{
-							{
-								Kind:      func() *gwapiv1alpha2.Kind { k := gwapiv1alpha2.Kind("Secret"); return &k }(),
-								Name:      gwapiv1alpha2.ObjectName(secretName),
-								Group:     func() *gwapiv1alpha2.Group { g := gwapiv1alpha2.Group(corev1.GroupName); return &g }(),
-								Namespace: (*gwapiv1alpha2.Namespace)(&ns),
-							},
-						},
-					},
-				}},
-			},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        gatewayName,
+			Annotations: annotations,
 		},
-		&gwapiv1alpha2.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        gatewayName,
-				Annotations: annotations,
-				Labels: map[string]string{
-					"gw": gatewayName,
+		Spec: gwapiv1alpha2.GatewaySpec{
+			GatewayClassName: "foo",
+			Listeners: []gwapiv1alpha2.Listener{{
+				AllowedRoutes: &gwapiv1alpha2.AllowedRoutes{
+					Namespaces: &gwapiv1alpha2.RouteNamespaces{
+						From: func() *gwapiv1alpha2.FromNamespaces { f := gwapiv1alpha2.NamespacesFromSame; return &f }(),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gw": gatewayName,
+						}},
+					},
+					Kinds: nil,
 				},
-			},
-			Spec: gwapiv1alpha2.HTTPRouteSpec{
-				CommonRouteSpec: gwapiv1alpha2.CommonRouteSpec{
-					ParentRefs: []gwapiv1alpha2.ParentRef{
+				Name:     "acme-solver",
+				Protocol: gwapiv1alpha2.TCPProtocolType,
+				Port:     gwapiv1alpha2.PortNumber(80),
+				Hostname: (*gwapiv1alpha2.Hostname)(&dnsNames[0]),
+				TLS: &gwapiv1alpha2.GatewayTLSConfig{
+					CertificateRefs: []*gwapiv1alpha2.SecretObjectReference{
 						{
+							Kind:      func() *gwapiv1alpha2.Kind { k := gwapiv1alpha2.Kind("Secret"); return &k }(),
+							Name:      gwapiv1alpha2.ObjectName(secretName),
+							Group:     func() *gwapiv1alpha2.Group { g := gwapiv1alpha2.Group(corev1.GroupName); return &g }(),
 							Namespace: (*gwapiv1alpha2.Namespace)(&ns),
-							Name:      gwapiv1alpha2.ObjectName(gatewayName),
 						},
 					},
 				},
-				Hostnames: hostnames,
-				Rules: []gwapiv1alpha2.HTTPRouteRule{{
-					Matches: []gwapiv1alpha2.HTTPRouteMatch{{
-						Path: &gwapiv1alpha2.HTTPPathMatch{
-							Type:  ptrPathMatch(gwapiv1alpha2.PathMatchExact),
-							Value: ptrStr("/"),
-						},
-					}},
-					BackendRefs: []gwapiv1alpha2.HTTPBackendRef{{
-						BackendRef: gwapiv1alpha2.BackendRef{
-							BackendObjectReference: gwapiv1alpha2.BackendObjectReference{
-								Name: "dummy-service",
-								Port: ptrPort(80),
-							},
-							Weight: pointer.Int32(1),
-						},
-					}},
-				}},
-			},
-		}
-}
-func ptrPathMatch(p gwapiv1alpha2.PathMatchType) *gwapiv1alpha2.PathMatchType {
-	return &p
-}
-
-func ptrStr(s string) *string {
-	return &s
-}
-
-func ptrPort(port int32) *gwapiv1alpha2.PortNumber {
-	p := gwapiv1alpha2.PortNumber(port)
-	return &p
+			}},
+		},
+	}
 }
 
 // HasIngresses lets you know if an API exists in the discovery API
