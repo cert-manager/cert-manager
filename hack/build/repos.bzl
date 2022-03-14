@@ -2726,8 +2726,9 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/miekg/dns",
-        sum = "h1:WMszZWJG0XmzbK9FEmzH2TVcqYzFesusSIB41b8KHxY=",
-        version = "v1.1.41",
+        replace = "github.com/miekg/dns",
+        sum = "h1:SgTzfkN+oLoIHF1bgUP+C71mzuDl3AhLApHzCCIAMWM=",
+        version = "v1.1.34",
     )
     go_repository(
         name = "com_github_miekg_pkcs11",

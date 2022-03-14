@@ -233,6 +233,7 @@ require (
 )
 
 replace (
+	github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
 	golang.org/x/net => golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
 
 	// Update gengo to ensure we have the --trim-path-prefix feature in code-generator tools.
