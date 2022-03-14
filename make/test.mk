@@ -18,8 +18,9 @@ test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubec
 .PHONY: test-ci
 # test-ci runs all unit and integration tests and writes a JUnit report of the
 # results.
-test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver | bin/testlogs
-	$(GOTESTSUM) --junitfile bin/testlogs/test-ci.xml -- ./...
+test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
+	@mkdir -p $(ARTIFACTS)
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/test-ci.xml -- ./...
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
@@ -74,7 +75,7 @@ test/integration/versionchecker/testdata/test_manifests.tar: bin/scratch/oldcrds
 
 bin/scratch/oldcrds.tar: bin/scratch/git/upstream-tags.txt | bin/scratch/oldcrds
 	@# First, download the CRDs for all releases listed in upstream-tags.txt
-	<bin/scratch/git/upstream-tags.txt xargs -I% --max-procs=5 \
+	<bin/scratch/git/upstream-tags.txt xargs -I% -P5 \
 		curl --compressed -sfL \
 		-o bin/scratch/oldcrds/%.yaml \
 		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml"
