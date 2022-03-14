@@ -1,11 +1,11 @@
-## CRI_ARCH is meant for M1 users. By default, the images loaded into the local
-## cluster when running 'make -j e2e-setup' will match the architecture detected
-## by "uname -m" (e.g., arm64). Note that images that don't have an arm64
-## version are loaded as amd64. To force the use of amd64 images for all the
-## images, use:
-##
-##   make install CRI_ARCH=amd64
-##
+# CRI_ARCH is meant for M1 users. By default, the images loaded into the local
+# cluster when running 'make -j e2e-setup' will match the architecture detected
+# by "uname -m" (e.g., arm64). Note that images that don't have an arm64
+# version are loaded as amd64. To force the use of amd64 images for all the
+# images, use:
+#
+#   make install CRI_ARCH=amd64
+#
 CRI_ARCH := $(HOST_ARCH)
 
 K8S_VERSION = 1.23
@@ -30,8 +30,8 @@ IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:fa1e44e927433f217ef
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:f1a85fb6a95ccc9770e668116e0252c7e7c42b6403f3451047e154b8367cb987
 IMAGE_traefik_arm64 := docker.io/traefik:2.4.9@sha256:837615ad42a24e097bf554e4da8931b906cd50ecddf6ad934dd7882925b9c32a
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
-IMAGE_bind_arm64 := $(IMAGE_bind_amd64)# 🚧 NOT AVAILABLE FOR arm64 🚧
-IMAGE_sampleexternalissuer_arm64 := $(IMAGE_sampleexternalissuer_amd64)# 🚧 NOT AVAILABLE FOR arm64 🚧
+IMAGE_bind_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
+IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
 IMAGE_projectcontour_arm64 := docker.io/projectcontour/contour:v1.20.1@sha256:19c453cbd127e62ff24a2d5a48f4bd2567f04ebcf499df711663db7a0a275303
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
@@ -175,11 +175,20 @@ e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver 
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind
+ifeq ($(CRI_ARCH),amd64)
 e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) bin/scratch/kind-exists bin/tools/kubectl
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval IMAGE = $(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r))
 	bin/tools/kubectl get ns bind 2>/dev/null >&2 || bin/tools/kubectl create ns bind
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | bin/tools/kubectl apply -n bind -f - >/dev/null
+else
+e2e-setup-bind:
+	@printf "\033[0;33mWarning\033[0;0m: skipping the target $@ because there exists no image for $(CRI_ARCH).\n" >&2
+	@printf "The end-to-end tests that rely on bind will fail. If you are using Docker Desktop,\n" >&2
+	@printf "you can force using the amd64 image anyways by running:\n" >&2
+	@printf "    \033[0;36mmake $@ CRI_ARCH=amd64\033[0;0m\n" >&2
+	@printf "Note that this won't if you are using Colima, or Rancher Desktop, or minikube.\n" >&2
+endif
 
 .PHONY: e2e-setup-gatewayapi
 e2e-setup-gatewayapi: bin/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) bin/scratch/kind-exists bin/tools/kubectl
@@ -351,9 +360,18 @@ e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/proj
 	bin/tools/kubectl apply -f make/config/projectcontour/gateway.yaml >/dev/null
 
 .PHONY: e2e-setup-sampleexternalissuer
+ifeq ($(CRI_ARCH),amd64)
 e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) bin/scratch/kind-exists bin/tools/kubectl
 	bin/tools/kubectl apply -n sample-external-issuer-system -f https://github.com/cert-manager/sample-external-issuer/releases/download/v0.1.1/install.yaml >/dev/null
 	bin/tools/kubectl patch -n sample-external-issuer-system deployments.apps sample-external-issuer-controller-manager --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/1/imagePullPolicy", "value": "Never"}]' >/dev/null
+else
+e2e-setup-sampleexternalissuer:
+	@printf "\033[0;33mWarning\033[0;0m: skipping the target $@ because there exists no image for $(CRI_ARCH).\n" >&2
+	@printf "The end-to-end tests that rely on sampleexternalissuer will fail. If you are using Docker Desktop,\n" >&2
+	@printf "you can force using the amd64 image anyways by running:\n" >&2
+	@printf "    \033[0;36mmake $@ CRI_ARCH=amd64\033[0;0m\n" >&2
+	@printf "Note that this won't if you are using Colima, or Rancher Desktop, or minikube.\n" >&2
+endif
 
 .PHONY: e2e-setup-traefik
 e2e-setup-traefik: load-$(call image-tar,traefik) make/config/traefik/traefik-values.yaml make/config/traefik/gateway.yaml e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl
