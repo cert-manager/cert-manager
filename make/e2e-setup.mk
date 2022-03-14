@@ -19,7 +19,7 @@ IMAGE_traefik_amd64 := docker.io/traefik:2.4.9@sha256:bfba2ddb60cea5ebe8bea579a4
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
 IMAGE_bind_amd64 := index.docker.io/sameersbn/bind:9.11.3-20190706@sha256:b8e84f9a9fe0c05c3a963606c3d0170622be9c5e8800431ffcaadb0c79a3ff75
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e@sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86
-IMAGE_projectcontour_amd64 := index.docker.io/bitnami/contour:1.20.1-debian-10-r2@sha256:08233320e825bc1673fead865eac627e8427157e09868ebf98191c217efc8877
+IMAGE_projectcontour_amd64 := docker.io/projectcontour/contour:v1.20.1@sha256:10f6501cbb8514549b2ae71634152fa1a02e4ba63a9a32955d2ff027a0da1254
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
 
@@ -32,7 +32,7 @@ IMAGE_traefik_arm64 := docker.io/traefik:2.4.9@sha256:837615ad42a24e097bf554e4da
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
 IMAGE_bind_arm64 := $(IMAGE_bind_amd64)# 🚧 NOT AVAILABLE FOR arm64 🚧
 IMAGE_sampleexternalissuer_arm64 := $(IMAGE_sampleexternalissuer_amd64)# 🚧 NOT AVAILABLE FOR arm64 🚧
-IMAGE_projectcontour_arm64 := $(IMAGE_projectcontour_amd64)# 🚧 NOT AVAILABLE FOR arm64 🚧
+IMAGE_projectcontour_arm64 := docker.io/projectcontour/contour:v1.20.1@sha256:19c453cbd127e62ff24a2d5a48f4bd2567f04ebcf499df711663db7a0a275303
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
 
