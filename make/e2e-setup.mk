@@ -17,7 +17,7 @@ IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:7d7972e7d9ed2a6da27
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df
 IMAGE_traefik_amd64 := docker.io/traefik:2.4.9@sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
-IMAGE_bind_amd64 := index.docker.io/sameersbn/bind:9.11.3-20190706@sha256:b8e84f9a9fe0c05c3a963606c3d0170622be9c5e8800431ffcaadb0c79a3ff75
+IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e@sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86
 IMAGE_projectcontour_amd64 := docker.io/projectcontour/contour:v1.20.1@sha256:10f6501cbb8514549b2ae71634152fa1a02e4ba63a9a32955d2ff027a0da1254
 IMAGE_pebble_amd64 := local/pebble:local
@@ -30,7 +30,7 @@ IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:fa1e44e927433f217ef
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:f1a85fb6a95ccc9770e668116e0252c7e7c42b6403f3451047e154b8367cb987
 IMAGE_traefik_arm64 := docker.io/traefik:2.4.9@sha256:837615ad42a24e097bf554e4da8931b906cd50ecddf6ad934dd7882925b9c32a
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
-IMAGE_bind_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
+IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
 IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
 IMAGE_projectcontour_arm64 := docker.io/projectcontour/contour:v1.20.1@sha256:19c453cbd127e62ff24a2d5a48f4bd2567f04ebcf499df711663db7a0a275303
 IMAGE_pebble_arm64 := local/pebble:local
@@ -175,20 +175,11 @@ e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver 
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind
-ifeq ($(CRI_ARCH),amd64)
 e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) bin/scratch/kind-exists bin/tools/kubectl
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval IMAGE = $(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r))
 	bin/tools/kubectl get ns bind 2>/dev/null >&2 || bin/tools/kubectl create ns bind
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | bin/tools/kubectl apply -n bind -f - >/dev/null
-else
-e2e-setup-bind:
-	@printf "\033[0;33mWarning\033[0;0m: skipping the target $@ because there exists no image for $(CRI_ARCH).\n" >&2
-	@printf "The end-to-end tests that rely on bind will fail. If you are using Docker Desktop,\n" >&2
-	@printf "you can force using the amd64 image anyways by running:\n" >&2
-	@printf "    \033[0;36mmake $@ CRI_ARCH=amd64\033[0;0m\n" >&2
-	@printf "Note that this won't if you are using Colima, or Rancher Desktop, or minikube.\n" >&2
-endif
 
 .PHONY: e2e-setup-gatewayapi
 e2e-setup-gatewayapi: bin/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) bin/scratch/kind-exists bin/tools/kubectl
