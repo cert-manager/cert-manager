@@ -147,6 +147,7 @@ service_ip_prefix=$(set +o pipefail && kubectl cluster-info dump | grep -m1 ip-r
 dns_server=${service_ip_prefix}.16
 ingress_ip=${service_ip_prefix}.15
 
+export CGO_ENABLED=0
 trace ginkgo \
   -nodes "$nodes" \
   -flakeAttempts "$flake_attempts" \
