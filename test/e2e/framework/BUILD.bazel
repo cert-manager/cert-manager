@@ -40,7 +40,6 @@ go_library(
         "@io_k8s_component_base//featuregate:go_default_library",
         "@io_k8s_kube_aggregator//pkg/apis/apiregistration/v1:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
-        "@io_k8s_sigs_gateway_api//apis/v1alpha2:go_default_library",
         "@io_k8s_sigs_gateway_api//pkg/client/clientset/gateway/versioned:go_default_library",
     ],
 )

@@ -795,7 +795,7 @@ func (s *Suite) Define() {
 			renewBefore := time.Hour * 111
 
 			By("Creating a Gateway with annotations for issuerRef and other Certificate fields")
-			gw, route := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
+			gw := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
 				"cert-manager.io/issuer":       issuerRef.Name,
 				"cert-manager.io/issuer-kind":  issuerRef.Kind,
 				"cert-manager.io/issuer-group": issuerRef.Group,
@@ -805,8 +805,6 @@ func (s *Suite) Define() {
 			}, domain)
 
 			gw, err := f.GWClientSet.GatewayV1alpha2().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
-			_, err = f.GWClientSet.GatewayV1alpha2().HTTPRoutes(f.Namespace.Name).Create(context.TODO(), route, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// XXX(Mael): the CertificateRef seems to contain the Gateway name
@@ -822,7 +820,7 @@ func (s *Suite) Define() {
 			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Verify that the ingres-shim has translated all the supplied
+			// Verify that the gateway-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
 			By("Validating the created Certificate")
 			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
