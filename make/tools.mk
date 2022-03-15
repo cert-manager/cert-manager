@@ -83,7 +83,11 @@ CGO_ENABLED ?= 0
 #     bin/tools/crane: $(DEPENDS_ON_GO)
 #         $(GO) build -o bin/tools/crane
 #
-DEPENDS_ON_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS),)$(shell [ -f bin/tools/go ] && echo yes), bin/tools/go,)
+# DEPENDS_ON_GO is empty most of the time, except when running "make
+# vendor-go" or when "make vendor-go" was previously run, in which case
+# DEPENDS_ON_GO is set to bin/tools/go, since bin/tools/go is a
+# prerequisite of any target depending on Go when "make vendor-go" was run.
+DEPENDS_ON_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f bin/tools/go ] && echo yes), bin/tools/go,)
 ifneq ($(DEPENDS_ON_GO),)
 export GOROOT := $(PWD)/bin/tools/goroot
 export PATH := $(PWD)/bin/tools/goroot/bin:$(PATH)
