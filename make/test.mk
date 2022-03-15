@@ -62,7 +62,7 @@ e2e: bin/scratch/kind-exists bin/tools/kubectl bin/tools/ginkgo
 
 .PHONY: e2e-ci
 e2e-ci: e2e-setup-kind e2e-setup
-	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || (make kind-logs && exit 1)
+	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || ($(MAKE) kind-logs && exit 1)
 
 test/integration/versionchecker/testdata/test_manifests.tar: bin/scratch/oldcrds.tar bin/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist
