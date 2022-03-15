@@ -81,6 +81,8 @@ serviceAccount:
   # Optional additional annotations to add to the controller's ServiceAccount
   # annotations: {}
   # Automount API credentials for a Service Account.
+  # Optional additional labels to add to the controller's ServiceAccount
+  # labels: {}
   automountServiceAccountToken: true
 
 # Additional command line flags to pass to cert-manager controller binary.
@@ -319,6 +321,8 @@ webhook:
     # name: ""
     # Optional additional annotations to add to the controller's ServiceAccount
     # annotations: {}
+    # Optional additional labels to add to the webhook's ServiceAccount
+    # labels: {}
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
 
@@ -426,6 +430,8 @@ cainjector:
     # Optional additional annotations to add to the controller's ServiceAccount
     # annotations: {}
     # Automount API credentials for a Service Account.
+    # Optional additional labels to add to the cainjector's ServiceAccount
+    # labels: {}
     automountServiceAccountToken: true
 
 # This startupapicheck is a Helm post-install hook that waits for the webhook
@@ -514,3 +520,6 @@ startupapicheck:
 
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
+
+    # Optional additional labels to add to the startupapicheck's ServiceAccount
+    # labels: {}
