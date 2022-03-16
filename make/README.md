@@ -16,8 +16,8 @@ If you are running into issues with your host-installed tools, you can
 have them downloaded in `bin/tools` with the command:
 
 ```sh
-# With "-j", the tools are downloaded in parallel.
-make -j tools
+# With "-j8", the tools are downloaded in parallel.
+make -j8 tools
 ```
 
 To setup your shell to use the tools, run the following from the root of
@@ -42,7 +42,7 @@ Once you have a kind cluster running, you can install a development version of
 cert-manager by running:
 
 ```sh
-make -j e2e-setup-certmanager
+make -j8 e2e-setup-certmanager
 ```
 
 This will create a kind cluster, build, load and install cert-manager from
@@ -62,7 +62,7 @@ DNS01 webhook and all the other components required for the end-to-end
 tests:
 
 ```sh
-make -j e2e-setup
+make -j8 e2e-setup
 ```
 
 You only need to run this command once for the lifetime of your test cluster.
