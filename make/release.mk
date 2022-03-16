@@ -23,10 +23,6 @@ release-artifacts-signed: release-artifacts helm-chart-signature
 release: release-signed release-manifests release-containers
 	$(MAKE) --no-print-directory bin/release/metadata.json
 
-# Set this as an environment variable to enable signing commands using cosign
-# Format should be any accepted by cosign; for GCP, use:
-# gcpkms://projects/<project>/locations/<location>/keyRings/<keyring>/cryptoKeys/<keyname>/versions/<keyversion>
-# CMREL_KEY ?= ""
 # Example of how we can generate a SHA256SUMS file and sign it using cosign
 #bin/SHA256SUMS: $(wildcard ...)
 #	@# The patsubst means "all dependencies, but with "bin/" trimmed off the beginning
