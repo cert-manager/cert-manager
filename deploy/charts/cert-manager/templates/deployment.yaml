@@ -90,6 +90,9 @@ spec:
           - --leader-election-retry-period={{ .retryPeriod }}
           {{- end }}
           {{- end }}
+          {{- if .Values.acmeHttp01SolverImage.enabled }}
+          - --acme-http01-solver-image={{ .Values.acmeHttp01SolverImage.image }}:{{ .Values.acmeHttp01SolverImage.tag | default .Chart.AppVersion }}
+          {{- end }}
           {{- with .Values.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}

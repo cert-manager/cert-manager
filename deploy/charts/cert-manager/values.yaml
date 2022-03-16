@@ -410,6 +410,12 @@ webhook:
       - ipBlock:
           cidr: 0.0.0.0/0
 
+acmeHttp01SolverImage:
+  # when enabled the default image will be used from cert-manager
+  enabled: false
+  image: quay.io/jetstack/cert-manager-acmesolver
+  # tag:
+
 cainjector:
   enabled: true
   replicaCount: 1
