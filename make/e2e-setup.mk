@@ -36,6 +36,7 @@ IMAGE_projectcontour_arm64 := docker.io/projectcontour/contour:v1.20.1@sha256:19
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
 
+PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 GATEWAY_API_VERSION = 0.4.1
 
 .PHONY: e2e-setup-kind
@@ -299,8 +300,16 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	@bin/tools/kubectl create ns cert-manager >/dev/null 2>&1 || true
 	bin/tools/kubectl apply -f make/config/kyverno/policy.yaml >/dev/null
 
-bin/downloaded/containers/$(CRI_ARCH)/pebble/pebble: $(DEPENDS_ON_GO)
-	GOBIN=$(PWD)/$(dir $@) GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) install $(GOFLAGS) github.com/letsencrypt/pebble/cmd/pebble@ba5f81d
+bin/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | bin/downloaded
+	curl -sSL https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
+
+# We can't use GOBIN with "go install" because cross-compilation is not
+# possible with go install. That's a problem when cross-compiling for
+# linux/arm64 when running on darwin/arm64.
+bin/downloaded/containers/$(CRI_ARCH)/pebble/pebble: bin/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz $(DEPENDS_ON_GO)
+	@mkdir -p $(dir $@)
+	tar xzf $< -C $(dir $@)
+	cd $(dir $@)pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) -o $(CURDIR)/$@ ./cmd/pebble
 
 bin/downloaded/containers/$(CRI_ARCH)/pebble.tar: bin/downloaded/containers/$(CRI_ARCH)/pebble/pebble make/config/pebble/Containerfile.pebble
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
