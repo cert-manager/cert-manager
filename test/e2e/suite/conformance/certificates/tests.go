@@ -27,6 +27,8 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -886,11 +888,21 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Updating the Certificate after having added an additional dnsName")
-			testCertificate = testCertificate.DeepCopy() // DeepCopy before updating
 			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
-			testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
+			retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				err = f.CRClient.Get(context.Background(), types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
+				if err != nil {
+					return err
+				}
 
-			err = f.CRClient.Update(context.TODO(), testCertificate)
+				testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
+				err = f.CRClient.Update(context.Background(), testCertificate)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate Ready condition to be updated")
