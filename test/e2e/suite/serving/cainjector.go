@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
 	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -152,9 +153,20 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				injectable, cert := generalSetup(test.makeInjectable("changed"))
 
 				By("changing the name of the corresponding secret in the cert")
-				cert = cert.DeepCopy() // DeepCopy before updating
-				cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
-				Expect(f.CRClient.Update(context.Background(), cert)).To(Succeed())
+				retry.RetryOnConflict(retry.DefaultRetry, func() error {
+					err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}, cert)
+					if err != nil {
+						return err
+					}
+
+					cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
+
+					err = f.CRClient.Update(context.Background(), cert)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
 
 				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Second*30)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
