@@ -27,6 +27,11 @@ the repository:
 export PATH="$PWD/bin/tools:$PATH"
 ```
 
+> **Tip:** this change of PATH won't persist between shell sessions. To get
+> this command executed automatically when you enter the cert-manager
+> folder, put this command in an `.envrc` file in the cert-manager folder
+> and install [`direnv`](https://direnv.net/docs/installation.html).
+
 ## Common usages
 
 This section describes common usage patterns for development and testing.
