@@ -1,4 +1,4 @@
-dditionalArguments:
+additionalArguments:
   - --experimental.kubernetesgateway=true
   - --providers.kubernetesgateway=true
   - --providers.kubernetesgateway.namespaces=
