@@ -11,6 +11,7 @@ CRI_ARCH := $(HOST_ARCH)
 K8S_VERSION = 1.23
 
 IMAGE_haproxyingress_amd64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:f19dc8a8865a765d12f7553f961fc1d3768867c930f50bfd2fcafeaf57983e83
+IMAGE_haproxyingress_arm64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:53a38f53c5c005ac9b18adf9c1111601368bb3d73fe23cb99445b6d6bc0bab67
 IMAGE_ingressnginxprev1_amd64=k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha256:c47ed90d1685cb6e3b556353d7afb2aced2be7095066edfc90dd81f3e9014747
 IMAGE_ingressnginxpostv1_amd64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52
