@@ -189,6 +189,7 @@ e2e-setup-gatewayapi: bin/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) bin/scra
 
 .PHONY: e2e-setup-haproxyingress
 e2e-setup-haproxyingress: $(call image-tar,haproxyingress) load-$(call image-tar,haproxyingress) e2e-setup-gatewayapi bin/scratch/kind-exists
+	@printf "\033[0;33mWarning\033[0;0m: the target \033[0;31m$@\033[0;0m is provided for information only and may be removed in the future.\n" >&2
 	bin/tools/helm repo add haproxy-ingress --force-update https://haproxy-ingress.github.io/charts >/dev/null
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
@@ -367,7 +368,7 @@ e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) bin/
 	bin/tools/kubectl patch -n sample-external-issuer-system deployments.apps sample-external-issuer-controller-manager --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/1/imagePullPolicy", "value": "Never"}]' >/dev/null
 else
 e2e-setup-sampleexternalissuer:
-	@printf "\033[0;33mWarning\033[0;0m: skipping the target $@ because there exists no image for $(CRI_ARCH).\n" >&2
+	@printf "\033[0;33mWarning\033[0;0m: skipping the target \033[0;31m$@\033[0;0m because there exists no image for $(CRI_ARCH).\n" >&2
 	@printf "The end-to-end tests that rely on sampleexternalissuer will fail. If you are using Docker Desktop,\n" >&2
 	@printf "you can force using the amd64 image anyways by running:\n" >&2
 	@printf "    \033[0;36mmake $@ CRI_ARCH=amd64\033[0;0m\n" >&2
@@ -376,6 +377,7 @@ endif
 
 .PHONY: e2e-setup-traefik
 e2e-setup-traefik: load-$(call image-tar,traefik) make/config/traefik/traefik-values.yaml make/config/traefik/gateway.yaml e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl
+	@printf "\033[0;33mWarning\033[0;0m: the target \033[0;31m$@\033[0;0m is provided for information only and may be removed in the future.\n" >&2
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	bin/tools/helm repo add traefik --force-update https://helm.traefik.io/traefik >/dev/null
 	bin/tools/helm upgrade \
