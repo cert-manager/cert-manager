@@ -25,9 +25,8 @@ type Gateway struct {
 	// the IP of the Gateway's Service.
 	Domain string
 
-	// Labels is a comma separated list of key=value labels set on the
-	// HTTPRoutes created by the Gateway API solver
-	Labels string
+	// Namespace in which the Gateway called "acmesolver" is looked for.
+	GatewayNamespace string
 }
 
 func (g *Gateway) AddFlags(fs *flag.FlagSet) {
@@ -39,11 +38,11 @@ func (g *Gateway) AddFlags(fs *flag.FlagSet) {
 			"challenges. This must resolve to the IP of the Gateway's service.",
 	)
 	fs.StringVar(
-		&g.Labels,
-		"gateway-httproute-labels",
-		"acme=solver",
-		"Labels is a comma separated list of key=value labels set on the "+
-			"HTTPRoutes created by the Gateway API solver",
+		&g.GatewayNamespace,
+		"gateway-namespace",
+		"traefik",
+		"Gateway referenced in the parentRefs of the HTTPRoute"+
+			" created by the Gateway API solver",
 	)
 }
 

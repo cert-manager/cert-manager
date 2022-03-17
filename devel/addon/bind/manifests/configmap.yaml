@@ -37,10 +37,12 @@ data:
     @	IN	NS	localhost.
     *.ingress-nginx	IN  A {SERVICE_IP_PREFIX}.15
     ingress-nginx	IN	A {SERVICE_IP_PREFIX}.15
-    *.gateway IN  A {SERVICE_IP_PREFIX}.14
-    gateway IN  A {SERVICE_IP_PREFIX}.14
+    *.contour IN  A {SERVICE_IP_PREFIX}.14
+    contour IN  A {SERVICE_IP_PREFIX}.14
     *.traefik IN  A {SERVICE_IP_PREFIX}.13
     traefik IN  A {SERVICE_IP_PREFIX}.13
+    *.haproxy IN  A {SERVICE_IP_PREFIX}.12
+    haproxy IN  A {SERVICE_IP_PREFIX}.12
 
   db.dns01.example.com: |
     ;

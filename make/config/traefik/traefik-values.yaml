@@ -1,13 +1,11 @@
 additionalArguments:
-  - --experimental.kubernetesgateway=true
-  - --providers.kubernetesgateway=true
-  - --providers.kubernetesgateway.namespaces=
   - --entrypoints.web.address=:80
   - --entrypoints.websecure.address=:443
-
+  - --experimental.kubernetesgateway
+  - --providers.kubernetesgateway
 logs:
   general:
-    level: DEBUG
+    level: INFO
 
 ports:
   web:

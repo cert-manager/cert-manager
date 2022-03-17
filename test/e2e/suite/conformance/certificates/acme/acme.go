@@ -38,15 +38,15 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	runACMEIssuerTests(nil)
+	runACMEIssuerTests(nil, "traefik")
 })
 var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
 		KeyID: "kid-1",
-	})
+	}, "traefik")
 })
 
-func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
+func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding, gatewayNamespace string) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
 	var unsupportedHTTP01Features = featureset.NewFeatureSet(
@@ -93,7 +93,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
-		eab: eab,
+		eab:              eab,
+		gatewayNamespace: gatewayNamespace,
 	}
 
 	provisionerDNS01 := &acmeIssuerProvisioner{
@@ -162,8 +163,9 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 }
 
 type acmeIssuerProvisioner struct {
-	eab             *cmacme.ACMEExternalAccountBinding
-	secretNamespace string
+	eab              *cmacme.ACMEExternalAccountBinding
+	secretNamespace  string
+	gatewayNamespace string
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
@@ -239,22 +241,12 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(f *framework.Fr
 func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, "")
 
-	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
-	labels := make(map[string]string)
-	for _, l := range labelFlag {
-		kv := strings.Split(l, "=")
-		if len(kv) != 2 {
-			continue
-		}
-		labels[kv[0]] = kv[1]
-	}
-
 	By("Creating an ACME HTTP01 Gateway Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-issuer-http01-",
 		},
-		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
+		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, a.gatewayNamespace),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
@@ -307,23 +299,13 @@ func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *fra
 func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
-	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
-	labels := make(map[string]string)
-	for _, l := range labelFlag {
-		kv := strings.Split(l, "=")
-		if len(kv) != 2 {
-			continue
-		}
-		labels[kv[0]] = kv[1]
-	}
-
 	// wait for issuer to be ready
 	By("Creating an ACME HTTP01 Gateway ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-cluster-issuer-http01-",
 		},
-		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
+		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, "traefik"),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
@@ -367,7 +349,8 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressIssuerSpec(serverURL string) 
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, labels map[string]string) cmapi.IssuerSpec {
+// The name of the Gateway is fixed to "acmesolver".
+func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, gatewayNamespace string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			ACME: &cmacme.ACMEIssuer{
@@ -383,11 +366,10 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
-								Labels: labels,
 								ParentRefs: []gwapi.ParentRef{
 									{
-										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace("projectcontour"); return &n }(),
-										Name:        "acmesolver",
+										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace(a.gatewayNamespace); return &n }(),
+										Name:        gwapi.ObjectName("acmesolver"),
 										SectionName: nil,
 									},
 								},

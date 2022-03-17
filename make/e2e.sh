@@ -144,8 +144,6 @@ fi
 # The command "kubectl cluster-info dump" returns 141 since grep breaks the
 # pipe as soon as it finds a match.
 service_ip_prefix=$(set +o pipefail && kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3)
-dns_server=${service_ip_prefix}.16
-ingress_ip=${service_ip_prefix}.15
 
 export CGO_ENABLED=0
 trace ginkgo \
@@ -155,10 +153,12 @@ trace ginkgo \
   ./test/e2e/ \
   -- \
   --repo-root="$PWD" \
-  --acme-dns-server="$dns_server" \
-  --acme-ingress-ip="$ingress_ip" \
+  --acme-dns-server="${service_ip_prefix}.16" \
+  --acme-ingress-ip="${service_ip_prefix}.15" \
+  --acme-gateway-ip="${service_ip_prefix}.13" \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
-  --gateway-domain=gateway.http01.example.com \
+  --gateway-domain=traefik.http01.example.com \
+  --gateway-namespace=traefik \
   --feature-gates="$feature_gates" \
   $ginkgo_skip \
   $ginkgo_focus \

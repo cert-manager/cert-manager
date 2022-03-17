@@ -16,7 +16,7 @@ IMAGE_ingressnginxprev1_amd64=k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha256
 IMAGE_ingressnginxpostv1_amd64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df
-IMAGE_traefik_amd64 := docker.io/traefik:2.4.9@sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252
+IMAGE_traefik_amd64 := docker.io/traefik:2.6.1@sha256:79b4af2f1a73345d9cbfc3ae9fca0bde3aaa88787d890456f312c461bc8dcdf8
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e@sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86
@@ -29,7 +29,7 @@ IMAGE_ingressnginxprev1_arm64 := k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha
 IMAGE_ingressnginxpostv1_arm64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:fa1e44e927433f217ef507299aeebf27f9b24a21a5f27d07b3b8acf26b48d5e6
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:f1a85fb6a95ccc9770e668116e0252c7e7c42b6403f3451047e154b8367cb987
-IMAGE_traefik_arm64 := docker.io/traefik:2.4.9@sha256:837615ad42a24e097bf554e4da8931b906cd50ecddf6ad934dd7882925b9c32a
+IMAGE_traefik_arm64 := docker.io/traefik:2.6.1@sha256:4412e77270d7f7309214c89912ba5032900a8133769fbd040d850fb485d41099
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
 IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
 IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
@@ -76,20 +76,22 @@ kind-image-prepull:
 	@$(eval IMAGE = $(shell make/cluster.sh --show-image))
 	$(CTR) inspect $(IMAGE) 2>/dev/null >&2 || $(CTR) pull $(IMAGE)
 
-#  Component              Used in                   IP                     A record in bind
-#  ---------              -------                   --                     ----------------
+#  Component                Used in                   IP                     A record in bind
+#  ---------                -------                   --                     ----------------
 #  e2e-setup-bind           DNS-01 tests              SERVICE_IP_PREFIX.16
 #  e2e-setup-ingressnginx   HTTP-01 Ingress tests     SERVICE_IP_PREFIX.15   *.ingress-nginx.db.http01.example.com
-#  e2e-setup-projectcontour HTTP-01 GatewayAPI tests  SERVICE_IP_PREFIX.14   *.gateway.db.http01.example.com
-#  e2e-setup-traefik        unused                    SERVICE_IP_PREFIX.13   *.traefik.db.http01.example.com
-#  e2e-setup-haproxyingress unused                    SERVICE_IP_PREFIX.12
+#  e2e-setup-projectcontour unused                    SERVICE_IP_PREFIX.14   *.gateway.db.http01.example.com
+#  e2e-setup-traefik        HTTP-01 GatewayAPI tests  SERVICE_IP_PREFIX.13   *.traefik.db.http01.example.com
+#  e2e-setup-haproxyingress unused                    SERVICE_IP_PREFIX.12   *.haproxy.db.http01.example.com
+#
+# The DNS A records are configured in devel/addon/bind/manifests/configmap.yaml.
 .PHONY: e2e-setup
 ## Installs cert-manager as well as components required for running the
 ## end-to-end tests. If the kind cluster does not already exist, it will be
 ## created.
 ##
 ## @category Development
-e2e-setup: e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
+e2e-setup: e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour e2e-setup-traefik
 
 # The function $(call image-tar,traefik) returns the path to the image tarball
 # for a given image name such as "traefik". The path looks like this:
@@ -376,18 +378,20 @@ e2e-setup-sampleexternalissuer:
 endif
 
 .PHONY: e2e-setup-traefik
-e2e-setup-traefik: load-$(call image-tar,traefik) make/config/traefik/traefik-values.yaml make/config/traefik/gateway.yaml e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl
+e2e-setup-traefik: $(call image-tar,traefik) load-$(call image-tar,traefik) make/config/traefik/traefik-values.yaml make/config/traefik/gateway.yaml e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl
 	@printf "\033[0;33mWarning\033[0;0m: the target \033[0;31m$@\033[0;0m is provided for information only and may be removed in the future.\n" >&2
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
+	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm repo add traefik --force-update https://helm.traefik.io/traefik >/dev/null
 	bin/tools/helm upgrade \
 		--install \
 		--force \
-		--version 10.1.1 \
+		--version 10.15.0 \
 		--create-namespace \
 		--namespace traefik \
 		--values=make/config/traefik/traefik-values.yaml \
-		--set image.tag=2.4.9 \
+		--set image.tag=$(TAG) \
+		--set image.pullPolicy=Never \
 		--set service.type=ClusterIP \
 		--set service.spec.clusterIP=$(SERVICE_IP_PREFIX).13 \
 		traefik traefik/traefik >/dev/null
