@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "provider.go",
         "rfc2136.go",
+        "tsig.go",
     ],
     importpath = "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136",
     visibility = ["//visibility:public"],
