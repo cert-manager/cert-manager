@@ -372,7 +372,10 @@ func buildCertificateSigningRequest(crt *cmapi.Certificate, pk []byte, crName, s
 	}
 	csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] = strconv.FormatBool(crt.Spec.IsCA)
 	if crt.Spec.Duration != nil {
-		csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey] = crt.Spec.Duration.Duration.String()
+		duration := crt.Spec.Duration.Duration
+		csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey] = duration.String()
+		seconds := int32(duration.Seconds())  // technically this could overflow but I do not think it matters
+		csr.Spec.ExpirationSeconds = &seconds // if this is less than 600, the API server will fail the request
 	}
 
 	return csr, nil

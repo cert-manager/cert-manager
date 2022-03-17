@@ -131,6 +131,73 @@ func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {
 				DNSNames: []string{"example.com", "foo.example.com"},
 			},
 		},
+		"a CSR with expiration seconds that is valid should return a valid *x509.Certificate": {
+			csr: gen.CertificateSigningRequest("",
+				gen.SetCertificateSigningRequestExpirationSeconds(999),
+				gen.SetCertificateSigningRequestUsages([]certificatesv1.KeyUsage{
+					certificatesv1.UsageAny,
+					certificatesv1.UsageDigitalSignature,
+					certificatesv1.UsageCRLSign,
+					certificatesv1.UsageCodeSigning,
+					certificatesv1.UsageContentCommitment,
+				}),
+				gen.SetCertificateSigningRequestIsCA(false),
+				gen.SetCertificateSigningRequestRequest(csr),
+			),
+			expCertificate: &x509.Certificate{
+				Version:               2,
+				BasicConstraintsValid: true,
+				SerialNumber:          nil,
+				PublicKeyAlgorithm:    x509.RSA,
+				PublicKey:             pk.Public(),
+				IsCA:                  false,
+				Subject: pkix.Name{
+					CommonName: "example.com",
+				},
+				NotBefore: time.Now(),
+				NotAfter:  time.Now().Add(999 * time.Second),
+				KeyUsage:  x509.KeyUsageDigitalSignature | x509.KeyUsageCRLSign | x509.KeyUsageContentCommitment,
+				ExtKeyUsage: []x509.ExtKeyUsage{
+					x509.ExtKeyUsageAny,
+					x509.ExtKeyUsageCodeSigning,
+				},
+				DNSNames: []string{"example.com", "foo.example.com"},
+			},
+		},
+		"a CSR with expiration seconds and duration annotation should prefer the annotation duration": {
+			csr: gen.CertificateSigningRequest("",
+				gen.SetCertificateSigningRequestExpirationSeconds(999),
+				gen.SetCertificateSigningRequestDuration("777s"),
+				gen.SetCertificateSigningRequestUsages([]certificatesv1.KeyUsage{
+					certificatesv1.UsageAny,
+					certificatesv1.UsageDigitalSignature,
+					certificatesv1.UsageCRLSign,
+					certificatesv1.UsageCodeSigning,
+					certificatesv1.UsageContentCommitment,
+				}),
+				gen.SetCertificateSigningRequestIsCA(false),
+				gen.SetCertificateSigningRequestRequest(csr),
+			),
+			expCertificate: &x509.Certificate{
+				Version:               2,
+				BasicConstraintsValid: true,
+				SerialNumber:          nil,
+				PublicKeyAlgorithm:    x509.RSA,
+				PublicKey:             pk.Public(),
+				IsCA:                  false,
+				Subject: pkix.Name{
+					CommonName: "example.com",
+				},
+				NotBefore: time.Now(),
+				NotAfter:  time.Now().Add(777 * time.Second),
+				KeyUsage:  x509.KeyUsageDigitalSignature | x509.KeyUsageCRLSign | x509.KeyUsageContentCommitment,
+				ExtKeyUsage: []x509.ExtKeyUsage{
+					x509.ExtKeyUsageAny,
+					x509.ExtKeyUsageCodeSigning,
+				},
+				DNSNames: []string{"example.com", "foo.example.com"},
+			},
+		},
 	}
 
 	for name, test := range tests {

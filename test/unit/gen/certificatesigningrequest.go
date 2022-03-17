@@ -95,6 +95,12 @@ func SetCertificateSigningRequestSignerName(signerName string) CertificateSignin
 	}
 }
 
+func SetCertificateSigningRequestExpirationSeconds(seconds int32) CertificateSigningRequestModifier {
+	return func(csr *certificatesv1.CertificateSigningRequest) {
+		csr.Spec.ExpirationSeconds = &seconds
+	}
+}
+
 func SetCertificateSigningRequestDuration(duration string) CertificateSigningRequestModifier {
 	return AddCertificateSigningRequestAnnotations(map[string]string{
 		experimentalapi.CertificateSigningRequestDurationAnnotationKey: duration,
