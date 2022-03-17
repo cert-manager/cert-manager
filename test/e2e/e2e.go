@@ -34,8 +34,6 @@ var (
 var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	addon.InitGlobals(cfg)
 
-	ginkgo.By("Provisioning shared cluster addons")
-
 	err := addon.ProvisionGlobals(cfg)
 	if err != nil {
 		framework.Failf("Error provisioning global addons: %v", err)
@@ -44,8 +42,6 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	return nil
 }, func([]byte) {
 	addon.InitGlobals(cfg)
-
-	ginkgo.By("Configuring details for shared cluster addons")
 
 	err := addon.SetupGlobals(cfg)
 	if err != nil {

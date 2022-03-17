@@ -137,7 +137,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating a failing Certificate")
-		// In "devel/addon/pebble/chart/templates/configmap.yaml"
+		// In "make/config/pebble/chart/templates/configmap.yaml"
 		// the "google.com" domain is configured in the pebble blocklist.
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
@@ -215,7 +215,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should fail to obtain a certificate for a blocked ACME dns name", func() {
 		By("Creating a Certificate")
-		// In "devel/addon/pebble/chart/templates/configmap.yaml"
+		// In "make/config/pebble/chart/templates/configmap.yaml"
 		// the "google.com" domain is configured in the pebble blocklist.
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),

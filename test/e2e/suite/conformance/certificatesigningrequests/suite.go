@@ -18,7 +18,6 @@ package certificatesigningrequests
 
 import (
 	"crypto"
-	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -105,7 +104,6 @@ func (s *Suite) complete(f *framework.Framework) {
 // it is called by the tests to in Define() to setup and run the test
 func (s *Suite) it(f *framework.Framework, name string, fn func(string), requiredFeatures ...featureset.Feature) {
 	if !s.checkFeatures(requiredFeatures...) {
-		fmt.Fprintln(GinkgoWriter, "skipping case due to unsupported features")
 		return
 	}
 	It(name, func() {

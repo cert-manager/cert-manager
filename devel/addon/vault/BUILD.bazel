@@ -3,7 +3,7 @@ load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 container_bundle(
     name = "bundle",
     images = {
-        "vault:bazel": "@com_hashicorp_vault//image",
+        "local/vault:local": "@com_hashicorp_vault//image",
     },
     tags = ["manual"],
 )

@@ -76,8 +76,6 @@ func (s *Suite) Define() {
 			}
 		})
 
-		By("Running test suite with the following unsupported features: " + s.UnsupportedFeatures.String())
-
 		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{

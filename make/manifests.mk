@@ -14,6 +14,9 @@ HELM_TEMPLATE_TARGETS=$(patsubst deploy/charts/cert-manager/templates/%,bin/helm
 .PHONY: helm-chart
 helm-chart: bin/cert-manager-$(RELEASE_VERSION).tgz
 
+bin/cert-manager.tgz: bin/cert-manager-$(RELEASE_VERSION).tgz
+	@ln -s -f $(notdir $<) $@
+
 .PHONY: helm-chart-signature
 helm-chart-signature: bin/cert-manager-$(RELEASE_VERSION).tgz.prov
 
@@ -48,17 +51,17 @@ bin/metadata/cert-manager-manifests.tar.gz.metadata.json: bin/release/cert-manag
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-bin/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager/README.md bin/helm/cert-manager/Chart.yaml bin/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) bin/helm/cert-manager/templates/NOTES.txt bin/helm/cert-manager/templates/_helpers.tpl bin/helm/cert-manager/templates/crds.yaml | bin/helm/cert-manager bin/tools/helm
+bin/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager/README.md bin/helm/cert-manager/Chart.yaml bin/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) bin/helm/cert-manager/templates/NOTES.txt bin/helm/cert-manager/templates/_helpers.tpl bin/helm/cert-manager/templates/crds.yaml bin/tools/helm | bin/helm/cert-manager
 	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./bin/helm/cert-manager
 
-bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION).tgz | bin/helm/cert-manager bin/tools/cmrel
+bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION).tgz bin/tools/cmrel | bin/helm/cert-manager
 ifeq ($(strip $(CMREL_KEY)),)
 	$(error Trying to sign helm chart but CMREL_KEY is empty)
 endif
 	cd $(dir $<) && $(CMREL) sign helm --chart-path "$(notdir $<)" --key "$(CMREL_KEY)"
 
-$(HELM_TEMPLATE_TARGETS): $(HELM_TEMPLATE_SOURCES) | bin/helm/cert-manager/templates
-	cp -f $^ $(dir $@)
+bin/helm/cert-manager/templates/%.yaml: deploy/charts/cert-manager/templates/%.yaml | bin/helm/cert-manager/templates
+	cp -f $^ $@
 
 bin/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/templates/_helpers.tpl | bin/helm/cert-manager/templates
 	cp $< $@
@@ -66,7 +69,7 @@ bin/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/templat
 bin/helm/cert-manager/templates/NOTES.txt: deploy/charts/cert-manager/templates/NOTES.txt | bin/helm/cert-manager/templates
 	cp $< $@
 
-bin/helm/cert-manager/templates/crds.yaml: bin/scratch/yaml/cert-manager-crd-templates.yaml
+bin/helm/cert-manager/templates/crds.yaml: bin/scratch/yaml/cert-manager-crd-templates.yaml | bin/helm/cert-manager/templates
 	echo '{{- if .Values.installCRDs }}' > $@
 	cat $< >> $@
 	echo '{{- end }}' >> $@
@@ -77,7 +80,7 @@ bin/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | bin/
 bin/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | bin/helm/cert-manager
 	sed -e "s:{{RELEASE_VERSION}}:$(RELEASE_VERSION):g" < $< > $@
 
-bin/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml deploy/charts/cert-manager/signkey_annotation.txt | bin/helm/cert-manager bin/tools/yq
+bin/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml deploy/charts/cert-manager/signkey_annotation.txt bin/tools/yq | bin/helm/cert-manager
 	@# this horrible mess is taken from the YQ manual's example of multiline string blocks from a file:
 	@# https://mikefarah.gitbook.io/yq/operators/string-operators#string-blocks-bash-and-newlines
 	@# we set a bash variable called SIGNKEY_ANNOTATION using read, and then use that bash variable in yq
@@ -99,7 +102,7 @@ bin/yaml/cert-manager.yaml: bin/scratch/license.yaml deploy/manifests/namespace.
 	./hack/concat-yaml.sh $(filter-out $<, $^) | cat $< - > $@
 
 # Renders all resources except the namespace and the CRDs
-bin/scratch/yaml/cert-manager-static-resources.yaml: bin/cert-manager-$(RELEASE_VERSION).tgz | bin/scratch/yaml bin/tools/helm
+bin/scratch/yaml/cert-manager-static-resources.yaml: bin/cert-manager-$(RELEASE_VERSION).tgz bin/tools/helm | bin/scratch/yaml
 	# The sed command removes the first line but only if it matches "---", which helm adds
 	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
@@ -115,12 +118,12 @@ bin/scratch/yaml/cert-manager-static-resources.yaml: bin/cert-manager-$(RELEASE_
 bin/yaml/cert-manager.crds.yaml: bin/scratch/license.yaml bin/scratch/yaml/cert-manager.crds.unlicensed.yaml | bin/yaml
 	cat $^ > $@
 
-bin/scratch/yaml/cert-manager.crds.unlicensed.yaml: bin/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz | bin/scratch/yaml bin/tools/helm
+bin/scratch/yaml/cert-manager.crds.unlicensed.yaml: bin/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz bin/tools/helm | bin/scratch/yaml
 	# The sed command removes the first line but only if it matches "---", which helm adds
 	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
-bin/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager-crds/templates/_helpers.tpl bin/helm/cert-manager-crds/templates/crd-templates.yaml bin/helm/cert-manager-crds/README.md bin/helm/cert-manager-crds/Chart.yaml bin/helm/cert-manager-crds/values.yaml  | bin/scratch bin/tools/helm
+bin/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager-crds/templates/_helpers.tpl bin/helm/cert-manager-crds/templates/crd-templates.yaml bin/helm/cert-manager-crds/README.md bin/helm/cert-manager-crds/Chart.yaml bin/helm/cert-manager-crds/values.yaml bin/tools/helm | bin/scratch
 	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./bin/helm/cert-manager-crds
 
 # create a temporary chart containing the cert-manager CRDs in order to use helm's
@@ -148,7 +151,7 @@ bin/scratch/yaml/cert-manager-crd-templates.yaml: $(ALLCRDS) | bin/scratch/yaml
 .PHONY: templated-crds
 templated-crds: bin/yaml/templated-crds/crd-challenges.templated.yaml bin/yaml/templated-crds/crd-orders.templated.yaml bin/yaml/templated-crds/crd-certificaterequests.templated.yaml bin/yaml/templated-crds/crd-clusterissuers.templated.yaml bin/yaml/templated-crds/crd-issuers.templated.yaml bin/yaml/templated-crds/crd-certificates.templated.yaml
 
-bin/yaml/templated-crds/crd-challenges.templated.yaml bin/yaml/templated-crds/crd-orders.templated.yaml bin/yaml/templated-crds/crd-certificaterequests.templated.yaml bin/yaml/templated-crds/crd-clusterissuers.templated.yaml bin/yaml/templated-crds/crd-issuers.templated.yaml bin/yaml/templated-crds/crd-certificates.templated.yaml: bin/yaml/templated-crds/crd-%.templated.yaml: bin/yaml/cert-manager.yaml | bin/yaml/templated-crds
+bin/yaml/templated-crds/crd-challenges.templated.yaml bin/yaml/templated-crds/crd-orders.templated.yaml bin/yaml/templated-crds/crd-certificaterequests.templated.yaml bin/yaml/templated-crds/crd-clusterissuers.templated.yaml bin/yaml/templated-crds/crd-issuers.templated.yaml bin/yaml/templated-crds/crd-certificates.templated.yaml: bin/yaml/templated-crds/crd-%.templated.yaml: bin/yaml/cert-manager.yaml $(DEPENDS_ON_GO) | bin/yaml/templated-crds
 	$(GO) run hack/extractcrd/main.go $< $* > $@
 
 ###############

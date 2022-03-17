@@ -17,8 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -99,7 +97,6 @@ func (s *Suite) complete(f *framework.Framework) {
 // it is called by the tests to in Define() to setup and run the test
 func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
 	if !s.checkFeatures(requiredFeatures...) {
-		fmt.Fprintln(GinkgoWriter, "skipping case due to unsupported features")
 		return
 	}
 	It(name, func() {

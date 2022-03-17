@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind
+  labels:
+    name: bind
+spec:
+  selector:
+    matchLabels:
+      app: bind
+  template:
+    metadata:
+      labels:
+        app: bind
+    spec:
+      containers:
+      - name: bind
+        image: "{IMAGE}"
+        imagePullPolicy: Never
+        # TODO(wallrj): I couldn't figure out how to run Bind as a non-root user, using this Docker image.
+        # I think bind expects to start as root and then chown to a non-root BIND user.
+        # securityContext:
+        #   runAsNonRoot: true
+        command:
+        - /bin/bash
+        - -c
+        - |
+          rm -rf /etc/bind
+          mkdir -p /etc/bind
+          ls -lah /config/
+          cp -Lr /config/* /etc/bind/
+          chown -R "${BIND_USER}:${BIND_USER}" /etc/bind
+          exec $(which named) -u ${BIND_USER} -g
+        env:
+        - name: WEBMIN_ENABLED
+          value: "false"
+        ports:
+        - containerPort: 53
+          protocol: UDP
+        volumeMounts:
+        - mountPath: /config
+          name: data
+      volumes:
+      - name: data
+        configMap:
+          name: bind
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"

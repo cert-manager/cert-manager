@@ -1,6 +1,8 @@
 # gazelle:prefix github.com/cert-manager/cert-manager
 # gazelle:proto disable_global
 # gazelle:exclude docs/generated/reference/generate/json_swagger
+# gazelle:exclude bin
+# gazelle:exclude make
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
