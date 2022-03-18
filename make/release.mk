@@ -5,17 +5,17 @@
 ## @category Release
 CMREL_KEY ?=
 
-.PHONY: release
+.PHONY: release-artifacts
 # Build all release artifacts which might be run or used locally, except
 # for anything signed.
 release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart static-manifests all-containers
 
-.PHONY: release-signed
+.PHONY: release-artifacts-signed
 # Same as `release`, except it also signs the Helm chart. Requires CMREL_KEY
 # to be configured.
 release-artifacts-signed: release-artifacts helm-chart-signature
 
-.PHONY: staged-release
+.PHONY: release
 ## Create a full release ready to be staged, including containers bundled for
 ## distribution. Requires CMREL_KEY to be configured.
 ##
