@@ -32,7 +32,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// This list must be kept in sync with pkg/apis/certmanager/validation/issuer.go
+// This list must be kept in sync with internal/apis/certmanager/validation/issuer.go
 var supportedAlgorithms = map[string]string{
 	"HMACMD5":    dns.HmacMD5,
 	"HMACSHA1":   dns.HmacSHA1,
