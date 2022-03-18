@@ -33,6 +33,8 @@ import (
 	"github.com/miekg/dns"
 )
 
+// The code in this file is largely copied from https://github.com/miekg/dns/blob/v1.1.47/tsig.go
+
 // tsigHMACProvider is our implementation of github.com/miekg/dns.TsigProvider interface
 // that also supports HMACMD5 as a TSIG algorithm, which is no longer supported
 // by the default TsigProvider implementation in github.com/miekg/dns.
@@ -42,7 +44,8 @@ type tsigHMACProvider string
 var _ dns.TsigProvider = tsigHMACProvider("")
 
 // Generate is a largely copied from
-// github.com/miekg/dns.tsigHMACProvider.Generate except for supporting HMACMD5
+// github.com/miekg/dns.tsigHMACProvider.Generate
+// https://github.com/miekg/dns/blob/v1.1.47/tsig.go#L37-L60
 func (key tsigHMACProvider) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
 	rawsecret, err := fromBase64([]byte(key))
 	if err != nil {
@@ -73,6 +76,7 @@ func (key tsigHMACProvider) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
 }
 
 // Verify is copied from github.com/miekg/dns.tsigHMACProvider.Verify
+// https://github.com/miekg/dns/blob/v1.1.47/tsig.go#L62-L75
 func (key tsigHMACProvider) Verify(msg []byte, t *dns.TSIG) error {
 	b, err := key.Generate(msg, t)
 	if err != nil {

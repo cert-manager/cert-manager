@@ -26,7 +26,6 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
-	"reflect"
 	"testing"
 
 	"github.com/miekg/dns"
@@ -103,9 +102,10 @@ func Test_tsigHMACProvider_Generate(t *testing.T) {
 			if (err != nil) != scenario.wantErr {
 				t.Errorf("tsigHMACProvider.Generate() error = %v, wantErr %v", err, scenario.wantErr)
 			}
-			if !reflect.DeepEqual(got, scenario.want) {
-				t.Errorf("tsigHMACProvider.Generate() = %v, want %v", got, scenario.want)
-			}
+			assert.Equalf(t, got, scenario.want, "tsigHMACProvider.Generate() = %v, want %v", got, scenario.want)
+			// if !reflect.DeepEqual(got, scenario.want) {
+			// 	t.Errorf("tsigHMACProvider.Generate() = %v, want %v", got, scenario.want)
+			// }
 		})
 	}
 }
