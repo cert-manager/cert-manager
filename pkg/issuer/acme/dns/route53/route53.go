@@ -173,7 +173,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionCreate, fqdn, value, route53TTL)
+	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
