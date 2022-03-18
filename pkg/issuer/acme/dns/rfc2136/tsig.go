@@ -27,6 +27,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"hash"
 
 	"github.com/miekg/dns"
@@ -43,10 +44,9 @@ var _ dns.TsigProvider = tsigHMACProvider("")
 // Generate is a largely copied from
 // github.com/miekg/dns.tsigHMACProvider.Generate except for supporting HMACMD5
 func (key tsigHMACProvider) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
-	// If we barf here, the caller is to blame
 	rawsecret, err := fromBase64([]byte(key))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding the provided TSIG secret: %w", err)
 	}
 	var h hash.Hash
 	switch dns.CanonicalName(t.Algorithm) {
@@ -65,7 +65,10 @@ func (key tsigHMACProvider) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
 	default:
 		return nil, dns.ErrKeyAlg
 	}
-	h.Write(msg)
+	_, err = h.Write(msg)
+	if err != nil {
+		return nil, err
+	}
 	return h.Sum(nil), nil
 }
 
@@ -85,10 +88,10 @@ func (key tsigHMACProvider) Verify(msg []byte, t *dns.TSIG) error {
 	return nil
 }
 
-func fromBase64(s []byte) (buf []byte, err error) {
+func fromBase64(s []byte) ([]byte, error) {
 	buflen := base64.StdEncoding.DecodedLen(len(s))
-	buf = make([]byte, buflen)
+	buf := make([]byte, buflen)
 	n, err := base64.StdEncoding.Decode(buf, s)
 	buf = buf[:n]
-	return
+	return buf, err
 }
