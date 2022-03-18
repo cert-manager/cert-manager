@@ -103,7 +103,7 @@ bin/yaml/cert-manager.yaml: bin/scratch/license.yaml deploy/manifests/namespace.
 
 # Renders all resources except the namespace and the CRDs
 bin/scratch/yaml/cert-manager-static-resources.yaml: bin/cert-manager-$(RELEASE_VERSION).tgz bin/tools/helm | bin/scratch/yaml
-	# The sed command removes the first line but only if it matches "---", which helm adds
+	@# The sed command removes the first line but only if it matches "---", which helm adds
 	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
@@ -119,7 +119,7 @@ bin/yaml/cert-manager.crds.yaml: bin/scratch/license.yaml bin/scratch/yaml/cert-
 	cat $^ > $@
 
 bin/scratch/yaml/cert-manager.crds.unlicensed.yaml: bin/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz bin/tools/helm | bin/scratch/yaml
-	# The sed command removes the first line but only if it matches "---", which helm adds
+	@# The sed command removes the first line but only if it matches "---", which helm adds
 	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
