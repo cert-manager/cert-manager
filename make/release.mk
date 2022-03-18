@@ -28,7 +28,7 @@ release: release-signed release-manifests release-containers
 #	@# The patsubst means "all dependencies, but with "bin/" trimmed off the beginning
 #	@# We cd into bin so that SHA256SUMS file doesn't have a prefix of `bin` on everything
 #	cd $(dir $@) && sha256sum $(patsubst bin/%,%,$^) > $(notdir $@)
-#
+
 #bin/SHA256SUMS.sig: bin/SHA256SUMS bin/tools/cosign
 #	$(COSIGN) sign-blob --key $(COSIGN_KEY) $< > $@
 
