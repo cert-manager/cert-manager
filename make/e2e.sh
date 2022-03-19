@@ -103,7 +103,7 @@ fi
 
 for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP ARTIFACTS; do
   if printenv "$v" >/dev/null && [ -n "${!v}" ]; then
-    eval "$(tr '[:upper:]' '[:lower:]' <<<"$v")"="${!v}"
+    eval "$(tr '[:upper:]' '[:lower:]' <<<"$v")=\"${!v}\""
   fi
 done
 
@@ -122,23 +122,24 @@ case "$k8s_version" in
   ;;
 esac
 
-if [[ -n "$ginkgo_focus" ]]; then ginkgo_focus="--ginkgo.focus=${ginkgo_focus}"; fi
-if [[ -n "$ginkgo_skip" ]]; then ginkgo_skip="--ginkgo.skip=${ginkgo_skip}"; fi
+ginkgo_args=("$@")
+
+if [[ -n "$ginkgo_focus" ]]; then ginkgo_args+=(--ginkgo.focus="${ginkgo_focus}"); fi
+if [[ -n "$ginkgo_skip" ]]; then ginkgo_args+=(--ginkgo.skip="${ginkgo_skip}"); fi
 
 # Only enable junit output if ARTIFACTS is set.
-extra_args=
 if [[ -n "$artifacts" ]]; then
   mkdir -p "$artifacts"
-  extra_args+=(--report-dir="$artifacts")
+  ginkgo_args+=(--report-dir="$artifacts")
 fi
 
 # Ginkgo doesn't stream the logs when running in parallel (--nodes). Let's
 # disable parallelism to force Ginkgo to stream the logs when
 # --ginkgo.focus or GINKGO_FOCUS is set, since --ginkgo.focus and
 # GINKGO_FOCUS are often used to debug a specific test.
-if [[ "$*" =~ ginkgo.focus ]] || [[ -n "$ginkgo_focus" ]]; then
+if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   nodes=1
-  extra_args+=(--ginkgo.v --test.v)
+  ginkgo_args+=(--ginkgo.v --test.v)
 fi
 
 # The command "kubectl cluster-info dump" returns 141 since grep breaks the
@@ -160,7 +161,4 @@ trace ginkgo \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
   --feature-gates="$feature_gates" \
-  $ginkgo_skip \
-  $ginkgo_focus \
-  "${extra_args[@]}" \
-  "$@"
+  "${ginkgo_args[@]}"
