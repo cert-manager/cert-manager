@@ -293,8 +293,9 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// If the certificate request has failed, set the last failure time to now,
-	// and set the Issuing status condition to False with reason.
+	// If the certificate request has failed, set the last failure time to
+	// now, bump the issuance attempts and set the Issuing status condition
+	// to False.
 	if crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
 		return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady))
 	}
@@ -332,11 +333,18 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 }
 
 // failIssueCertificate will mark the Issuing condition of this Certificate as
-// failed, and log an appropriate event. The reason and message of the
-// condition will be that of the CertificateRequest condition passed.
+// false, set the Certificate's last failure time and issuance attempts, and log
+// an appropriate event. The reason and message of the Issuing condition will be that of
+// the CertificateRequest condition passed.
 func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, condition *cmapi.CertificateRequestCondition) error {
 	nowTime := metav1.NewTime(c.clock.Now())
 	crt.Status.LastFailureTime = &nowTime
+
+	failedIssuanceAttempts := 1
+	if crt.Status.FailedIssuanceAttempts != nil {
+		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts + 1
+	}
+	crt.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
 
 	log.V(logf.DebugLevel).Info("CertificateRequest in failed state so retrying issuance later")
 
@@ -388,7 +396,10 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	// should be changed to setting the Issuing condition to False.
 	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
 
-	//Clear status.lastFailureTime (if set)
+	// Clear status.failedIssuanceAttempts (if set)
+	crt.Status.FailedIssuanceAttempts = nil
+
+	// Clear status.lastFailureTime (if set)
 	crt.Status.LastFailureTime = nil
 
 	if err := c.updateOrApplyStatus(ctx, crt, true); err != nil {

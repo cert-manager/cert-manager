@@ -3411,6 +3411,22 @@ def go_repositories():
         sum = "h1:NJjM5DNFOs0s3kYE1WUOr6G8V97sdt46rlXTMfXGWBo=",
         version = "v0.9.1",
     )
+    go_repository(
+        name = "com_github_segmentio_asm",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/segmentio/asm",
+        sum = "h1:WM03sfUOENvvKexOLp+pCqgb/WDjsi7EK8gIsICtzhc=",
+        version = "v1.1.3",
+    )
+    go_repository(
+        name = "com_github_segmentio_encoding",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/segmentio/encoding",
+        sum = "h1:VG1HceOLwHkSDdkxshlu9pD4FftWkScmHc8RDQ+w9uM=",
+        version = "v0.3.3",
+    )
 
     go_repository(
         name = "com_github_sergi_go_diff",

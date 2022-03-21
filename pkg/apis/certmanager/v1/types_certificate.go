@@ -437,6 +437,14 @@ type CertificateStatus struct {
 	// not set or False.
 	// +optional
 	NextPrivateKeySecretName *string `json:"nextPrivateKeySecretName,omitempty"`
+
+	// The number of continuous failed issuance attempts up till now. This
+	// field gets removed (if set) on a successful issuance and gets set to
+	// 1 if unset and an issuance has failed. If an issuance has failed, the
+	// delay till the next issuance will be calculated using formula
+	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
+	// +optional
+	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.

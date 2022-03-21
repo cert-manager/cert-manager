@@ -18,6 +18,8 @@ package trigger
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -49,7 +51,13 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
 
-const ControllerName = "certificates-trigger"
+const (
+	ControllerName = "certificates-trigger"
+	// stopIncreaseBackoff is the number of issuance attempts after which the backoff period should stop to increase
+	stopIncreaseBackoff = 6 // 2 ^ (6 - 1) = 32 = maxDelay
+	// maxDelay is the maximum backoff period
+	maxDelay = 32 * time.Hour
+)
 
 // This controller observes the state of the certificate's currently
 // issued `spec.secretName` and the rest of the `certificate.spec` fields to
@@ -163,11 +171,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	// Back off from re-issuing immediately when the certificate has been
-	// in failing mode for less than 1 hour.
+	// Don't trigger issuance if we need to back off due to previous failures and Certificate's spec has not changed.
 	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate, input.NextRevisionRequest)
 	if backoff {
-		log.V(logf.InfoLevel).Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_delay", delay)
+		nextIssuanceRetry := c.clock.Now().Add(delay)
+		message := fmt.Sprintf("Backing off from issuance due to previously failed issuance(s). Issuance will next be attempted at %v", nextIssuanceRetry)
+		log.V(logf.InfoLevel).Info(message)
 		c.scheduleRecheckOfCertificateIfRequired(log, key, delay)
 		return nil
 	}
@@ -219,14 +228,19 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 	}
 }
 
-// shouldBackoffReissuingOnFailure tells us if we should back-off re-issuing for
-// an hour or not. Notably, it returns no back-off when the certificate doesn't
+// shouldBackOffReissuingOnFailure returns true if an issuance needs to be
+// delayed and the required delay after calculating the exponential backoff.
+// The backoff periods are 1h, 2h, 4h, 8h, 16h and 32h counting from when the last
+// failure occured,
+// so the returned delay will be backoff_period - (current_time - last_failure_time)
+//
+// Notably, it returns no back-off when the certificate doesn't
 // match the "next" certificate (since a mismatch means that this certificate
 // gets re-issued immediately).
 //
 // Note that the request can be left nil: in that case, the returned back-off
 // will be 0 since it means the CR must be created immediately.
-func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (backoff bool, delay time.Duration) {
+func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (bool, time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0
 	}
@@ -257,11 +271,40 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 
 	now := c.Now()
 	durationSinceFailure := now.Sub(crt.Status.LastFailureTime.Time)
-	if durationSinceFailure >= certificates.RetryAfterLastFailure {
+
+	initialDelay := time.Hour
+	delay := initialDelay
+	failedIssuanceAttempts := 0
+	// It is possible that crt.Status.LastFailureTime != nil &&
+	// crt.Status.FailedIssuanceAttempts == nil (in case of the Certificate having
+	// failed for an installation of cert-manager before the issuance
+	// attempts were introduced). In such case delay = initialDelay.
+	if crt.Status.FailedIssuanceAttempts != nil {
+		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts
+		delay = time.Hour * time.Duration(math.Pow(2, float64(failedIssuanceAttempts-1)))
+	}
+
+	// Ensure that maximum returned delay is 32 hours
+	// delay cannot be calculated for large issuance numbers, so we
+	// cannot reliably check if delay > maxDelay directly
+	// (see i.e the result of time.Duration(math.Pow(2, 99)))
+	if failedIssuanceAttempts > stopIncreaseBackoff {
+		delay = maxDelay
+	}
+
+	// Ensure that minimum returned delay is 1 hour. This is here to guard
+	// against an edge case where the delay duration got messed
+	// up as a result of maths misuse in the previous calculations
+	if delay < initialDelay {
+		delay = initialDelay
+	}
+
+	if durationSinceFailure >= delay {
 		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure state long enough, no need to back off")
 		return false, 0
 	}
-	return true, certificates.RetryAfterLastFailure - durationSinceFailure
+
+	return true, delay - durationSinceFailure
 }
 
 // scheduleRecheckOfCertificateIfRequired will schedule the resource with the

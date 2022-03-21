@@ -516,6 +516,11 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.FailedIssuanceAttempts != nil {
+		in, out := &in.FailedIssuanceAttempts, &out.FailedIssuanceAttempts
+		*out = new(int)
+		**out = **in
+	}
 	return
 }
 
