@@ -28,6 +28,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -76,9 +77,10 @@ func (s *Suite) Define() {
 			// csrModifers define the shape of the X.509 CSR which is used in the
 			// test case. We use a function to allow access to variables that are
 			// initialized at test runtime by complete().
-			csrModifiers       func() []gen.CSRModifier
-			kubeCSRUsages      []certificatesv1.KeyUsage
-			kubeCSRAnnotations map[string]string
+			csrModifiers             func() []gen.CSRModifier
+			kubeCSRUsages            []certificatesv1.KeyUsage
+			kubeCSRAnnotations       map[string]string
+			kubeCSRExpirationSeconds *int32
 			// The list of features that are required by the Issuer for the test to
 			// run.
 			requiredFeatures []featureset.Feature
@@ -252,6 +254,22 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.DurationFeature},
 			},
 
+			"should issue a certificate that defines a Common Name, DNS Name, and sets a duration via expiration seconds": {
+				keyAlgo: x509.RSA,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRDNSNames(sharedCommonName),
+						gen.SetCSRDNSNames(sharedCommonName),
+					}
+				},
+				kubeCSRUsages: []certificatesv1.KeyUsage{
+					certificatesv1.UsageDigitalSignature,
+					certificatesv1.UsageKeyEncipherment,
+				},
+				kubeCSRExpirationSeconds: pointer.Int32(3333),
+				requiredFeatures:         []featureset.Feature{featureset.DurationFeature},
+			},
+
 			"should issue a certificate that defines a DNS Name and sets a duration": {
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
@@ -353,9 +371,10 @@ func (s *Suite) Define() {
 						Annotations:  test.kubeCSRAnnotations,
 					},
 					Spec: certificatesv1.CertificateSigningRequestSpec{
-						Request:    csr,
-						SignerName: signerName,
-						Usages:     test.kubeCSRUsages,
+						Request:           csr,
+						SignerName:        signerName,
+						Usages:            test.kubeCSRUsages,
+						ExpirationSeconds: test.kubeCSRExpirationSeconds,
 					},
 				}
 

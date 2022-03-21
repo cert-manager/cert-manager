@@ -48,12 +48,18 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 
 // DurationFromCertificateSigningRequest returns the duration that the user may
 // have requested using the annotation
-// "experimental.cert-manager.io/request-duration".
+// "experimental.cert-manager.io/request-duration" or via the CSR
+// spec.expirationSeconds field (the annotation is preferred since it predates
+// the field which is only available in Kubernetes v1.22+).
 // Returns the cert-manager default certificate duration when the user hasn't
-// provided the annotation.
+// provided the annotation or spec.expirationSeconds.
 func DurationFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (time.Duration, error) {
 	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
 	if !ok {
+		if csr.Spec.ExpirationSeconds != nil {
+			return time.Duration(*csr.Spec.ExpirationSeconds) * time.Second, nil
+		}
+
 		// The user may not have set a duration annotation. Use the default
 		// duration in this case.
 		return cmapi.DefaultCertificateDuration, nil

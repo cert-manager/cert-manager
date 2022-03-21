@@ -194,8 +194,12 @@ func ExpectValidDuration(csr *certificatesv1.CertificateSigningRequest, _ crypto
 	var expectedDuration time.Duration
 	durationString, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
 	if !ok {
-		// If duration wasn't requested, then we match against the default.
-		expectedDuration = cmapi.DefaultCertificateDuration
+		if csr.Spec.ExpirationSeconds != nil {
+			expectedDuration = time.Duration(*csr.Spec.ExpirationSeconds) * time.Second
+		} else {
+			// If duration wasn't requested, then we match against the default.
+			expectedDuration = cmapi.DefaultCertificateDuration
+		}
 	} else {
 		expectedDuration, err = time.ParseDuration(durationString)
 		if err != nil {
