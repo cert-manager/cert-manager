@@ -411,9 +411,11 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "controller"
     {{- include "labels" . | nindent 4 }}
+    {{- if .Values.global.rbac.aggregateClusterRoles }}
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "issuers"]
@@ -435,8 +437,10 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "controller"
     {{- include "labels" . | nindent 4 }}
+    {{- if .Values.global.rbac.aggregateClusterRoles }}
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "issuers"]
