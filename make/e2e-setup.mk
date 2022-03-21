@@ -334,7 +334,7 @@ e2e-setup-pebble: load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar bin/scra
 
 bin/downloaded/containers/$(CRI_ARCH)/samplewebhook/samplewebhook: make/config/samplewebhook/sample/main.go $(DEPENDS_ON_GO)
 	@mkdir -p $(dir $@)
-	GOOS=linux GOARCH=$(CRI_ARCH) $(GOBUILD) -o $@ $(GOFLAGS) make/config/samplewebhook/sample/main.go
+	GOOS=linux GOARCH=$(CRI_ARCH) $(GOBUILD) -o $@ make/config/samplewebhook/sample/main.go
 
 bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar: bin/downloaded/containers/$(CRI_ARCH)/samplewebhook/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
