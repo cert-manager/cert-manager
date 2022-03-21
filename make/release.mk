@@ -38,8 +38,9 @@ release: release-artifacts-signed
 bin/release/metadata.json: $(wildcard bin/metadata/*.json) | bin/release
 	jq -n \
 		--arg releaseVersion "$(RELEASE_VERSION)" \
+		--arg buildSource "make" \
 		--arg gitCommitRef "$(GITCOMMIT)" \
-		'.releaseVersion = $$releaseVersion | .gitCommitRef = $$gitCommitRef | .artifacts += [inputs]' $^ > $@
+		'.releaseVersion = $$releaseVersion | .gitCommitRef = $$gitCommitRef | .buildSource = $$buildSource | .artifacts += [inputs]' $^ > $@
 
 .PHONY: release-containers
 release-containers: release-container-bundles release-container-metadata
