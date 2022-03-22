@@ -29,9 +29,11 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSigningRequest) error {
@@ -122,6 +124,22 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 			_, err := util.UpdateOrApplyStatus(ctx, c.certClient, csr, certificatesv1.CertificateFailed, c.fieldManager)
 			return err
 		}
+	}
+
+	// Enforce minimum duration of certificate to be 600s to ensure
+	// compatibility with Certificate Signing Requests's
+	// spec.expirationSeconds
+	duration, err := pki.DurationFromCertificateSigningRequest(csr)
+	if err != nil {
+		return err
+	}
+	if duration < experimentalapi.CertificateSigningRequestMinimumDuration {
+		message := fmt.Sprintf("CertificateSigningRequest minimum allowed duration is %s, requested %s", experimentalapi.CertificateSigningRequestMinimumDuration, duration)
+		c.recorder.Event(csr, corev1.EventTypeWarning, "InvalidDuration", message)
+		util.CertificateSigningRequestSetFailed(csr, "InvalidDuration", message)
+		_, err := util.UpdateOrApplyStatus(ctx, c.certClient, csr, certificatesv1.CertificateFailed, c.fieldManager)
+		return err
+
 	}
 
 	// check ready condition
