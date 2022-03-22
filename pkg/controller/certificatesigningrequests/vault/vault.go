@@ -107,13 +107,12 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 	}
 
 	duration, err := pki.DurationFromCertificateSigningRequest(csr)
+	// We should never get to this point as the caller would have already
+	// caught this condition
 	if err != nil {
 		message := fmt.Sprintf("Failed to parse requested duration: %s", err)
 		log.Error(err, message)
-		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorParseDuration", message)
-		util.CertificateSigningRequestSetFailed(csr, "ErrorParseDuration", message)
-		_, err := util.UpdateOrApplyStatus(ctx, v.certClient, csr, certificatesv1.CertificateFailed, v.fieldManager)
-		return err
+		return nil
 	}
 
 	certPEM, _, err := client.Sign(csr.Spec.Request, duration)

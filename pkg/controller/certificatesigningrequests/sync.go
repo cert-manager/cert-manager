@@ -126,13 +126,19 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 		}
 	}
 
+	duration, err := pki.DurationFromCertificateSigningRequest(csr)
+	if err != nil {
+		message := fmt.Sprintf("Failed to parse requested duration: %s", err)
+		log.Error(err, message)
+		c.recorder.Event(csr, corev1.EventTypeWarning, "ErrorParseDuration", message)
+		util.CertificateSigningRequestSetFailed(csr, "ErrorParseDuration", message)
+		_, err := util.UpdateOrApplyStatus(ctx, c.certClient, csr, certificatesv1.CertificateFailed, c.fieldManager)
+		return err
+	}
+
 	// Enforce minimum duration of certificate to be 600s to ensure
 	// compatibility with Certificate Signing Requests's
 	// spec.expirationSeconds
-	duration, err := pki.DurationFromCertificateSigningRequest(csr)
-	if err != nil {
-		return err
-	}
 	if duration < experimentalapi.CertificateSigningRequestMinimumDuration {
 		message := fmt.Sprintf("CertificateSigningRequest minimum allowed duration is %s, requested %s", experimentalapi.CertificateSigningRequestMinimumDuration, duration)
 		c.recorder.Event(csr, corev1.EventTypeWarning, "InvalidDuration", message)
