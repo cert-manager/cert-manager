@@ -126,6 +126,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) er
 
 	// Setup client
 	c := new(dns.Client)
+	c.TsigProvider = tsigHMACProvider(r.tsigSecret)
 	c.SingleInflight = true
 	// TSIG authentication / msg signing
 	if len(r.tsigKeyName) > 0 && len(r.tsigSecret) > 0 {

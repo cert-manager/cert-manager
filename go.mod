@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/vault/api v1.1.1
 	github.com/hashicorp/vault/sdk v0.2.1
 	github.com/kr/pretty v0.3.0
-	github.com/miekg/dns v1.1.41
+	github.com/miekg/dns v1.1.47
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/munnerz/crd-schema-fuzz v1.0.0
 	github.com/onsi/ginkgo v1.16.5
