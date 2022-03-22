@@ -132,7 +132,7 @@ setup_kind() {
     fi
 
     # Wait for the network to be created so kind does not overwrite it.
-    while ! docker network inspect kind; do
+    while ! docker network inspect kind >/dev/null; do
       sleep 100ms
     done
   fi
