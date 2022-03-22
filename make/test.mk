@@ -20,7 +20,7 @@ test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubec
 # results. WHAT also works here.
 test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/test-ci.xml -- $(WHAT)
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml -- $(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
