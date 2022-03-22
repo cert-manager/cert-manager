@@ -202,6 +202,9 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 							ContainerPort: acmeSolverListenPort,
 						},
 					},
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					},
 				},
 			},
 		},
