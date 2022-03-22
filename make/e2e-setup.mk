@@ -155,6 +155,7 @@ feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 .PHONY: e2e-setup-certmanager
 e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver cainjector webhook ctl,bin/containers/cert-manager-$(bin)-linux-$(CRI_ARCH).tar) $(foreach bin,controller acmesolver cainjector webhook ctl,load-bin/containers/cert-manager-$(bin)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl bin/tools/kind
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
+	@$(eval TAG = $(shell tar xfO bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm upgrade \
 		--install \
 		--force \
@@ -165,15 +166,15 @@ e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver 
 		--set cainjector.image.repository="$(shell tar xfO bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
 		--set webhook.image.repository="$(shell tar xfO bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
 		--set startupapicheck.image.repository="$(shell tar xfO bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
-		--set image.tag="$(shell tar xfO bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
-		--set cainjector.image.tag="$(shell tar xfO bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
-		--set webhook.image.tag="$(shell tar xfO bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
-		--set startupapicheck.image.tag="$(shell tar xfO bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
+		--set image.tag="$(TAG)" \
+		--set cainjector.image.tag="$(TAG)" \
+		--set webhook.image.tag="$(TAG)" \
+		--set startupapicheck.image.tag="$(TAG)" \
 		--set installCRDs=true \
 		--set featureGates="$(feature_gates_controller)" \
 		--set "webhook.extraArgs={--feature-gates=$(feature_gates_webhook)}" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
-		--set "extraArgs={--dns01-recursive-nameservers=$(SERVICE_IP_PREFIX).16:53,--dns01-recursive-nameservers-only=true}" \
+		--set "extraArgs={--dns01-recursive-nameservers=$(SERVICE_IP_PREFIX).16:53,--dns01-recursive-nameservers-only=true,--acme-http01-solver-image=cert-manager-acmesolver-$(CRI_ARCH):$(TAG)}" \
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind
