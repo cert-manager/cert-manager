@@ -46,9 +46,9 @@ elif [[ "$K8S_VERSION" =~ 1\.19 ]] ; then
 elif [[ "$K8S_VERSION" =~ 1\.20 ]] ; then
   KIND_IMAGE_SHA="sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9"
 elif [[ "$K8S_VERSION" =~ 1\.21 ]] ; then
-  KIND_IMAGE_SHA="sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6"
+  KIND_IMAGE_SHA="sha256:0fda882e43d425622f045b492f8bd83c2e0b4984fc03e2e05ec101ca1a685fb7"
 elif [[ "$K8S_VERSION" =~ 1\.22 ]] ; then
-  KIND_IMAGE_SHA="sha256:b8bda84bb3a190e6e028b1760d277454a72267a5454b57db34437c34a588d047"
+  KIND_IMAGE_SHA="sha256:1dfd72d193bf7da64765fd2f2898f78663b9ba366c2aa74be1fd7498a1873166"
 else
   echo "Unrecognised Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
