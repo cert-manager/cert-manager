@@ -101,18 +101,18 @@ fi
 # hack/update-kind-images.sh.
 source "${here}/config/kind/kind_cluster_node_versions.env"
 case "$k8s_version" in
-1.18*) kind_image_sha=$KIND_IMAGE_SHA_K8S_118 ;;
-1.19*) kind_image_sha=$KIND_IMAGE_SHA_K8S_119 ;;
-1.20*) kind_image_sha=$KIND_IMAGE_SHA_K8S_120 ;;
-1.21*) kind_image_sha=$KIND_IMAGE_SHA_K8S_121 ;;
-1.22*) kind_image_sha=$KIND_IMAGE_SHA_K8S_122 ;;
-1.23*) kind_image_sha=$KIND_IMAGE_SHA_K8S_123 ;;
+1.18*) image="${kind_image_repo}:v1.18.0@$KIND_IMAGE_SHA_K8S_118" ;;
+1.19*) image="${kind_image_repo}:v1.19.0@$KIND_IMAGE_SHA_K8S_119" ;;
+1.20*) image="${kind_image_repo}:v1.20.0@$KIND_IMAGE_SHA_K8S_120" ;;
+1.21*) image="${kind_image_repo}:v1.21.0@$KIND_IMAGE_SHA_K8S_121" ;;
+1.22*) image="${kind_image_repo}:v1.22.0@$KIND_IMAGE_SHA_K8S_122" ;;
+1.23*) image="${kind_image_repo}:v1.23.0@$KIND_IMAGE_SHA_K8S_123" ;;
 v*) printf "${red}${redcross}Error${end}: the Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
 
 if [ -n "$show_image" ]; then
-  echo "${kind_image_repo}:${k8s_version}@${kind_image_sha}"
+  echo "$image"
   exit 0
 fi
 
@@ -140,7 +140,7 @@ setup_kind() {
   # (1) Does the kind cluster already exist?
   if ! kind get clusters -q | grep -q "^$kind_cluster_name\$"; then
     trace kind create cluster --config make/config/kind/v1beta2.yaml \
-      --image "${kind_image_repo}:${k8s_version}@${kind_image_sha}" \
+      --image "$image" \
       --name "$kind_cluster_name"
   fi
 
