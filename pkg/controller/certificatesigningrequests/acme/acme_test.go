@@ -397,7 +397,7 @@ func Test_ProcessItem(t *testing.T) {
 				},
 			},
 		},
-		"an approved CSR which contains a garbage duration and has duration enabled, should fail when building the order and be marked as Failed": {
+		"an approved CSR which contains a garbage duration and has duration enabled, should fail when parsing duration and be marked as Failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.SetCertificateSigningRequestDuration("garbage-data"),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -411,7 +411,7 @@ func Test_ProcessItem(t *testing.T) {
 						gen.SetIssuerACME(cmacme.ACMEIssuer{EnableDurationFeature: true}),
 					)},
 				ExpectedEvents: []string{
-					`Warning OrderBuildingError Failed to build order: failed to parse requested duration on annotation "experimental.cert-manager.io/request-duration": time: invalid duration "garbage-data"`,
+					`Warning ErrorParseDuration Failed to parse requested duration: failed to parse requested duration on annotation "experimental.cert-manager.io/request-duration": time: invalid duration "garbage-data"`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -450,8 +450,8 @@ func Test_ProcessItem(t *testing.T) {
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
-								Reason:             "OrderBuildingError",
-								Message:            `Failed to build order: failed to parse requested duration on annotation "experimental.cert-manager.io/request-duration": time: invalid duration "garbage-data"`,
+								Reason:             "ErrorParseDuration",
+								Message:            `Failed to parse requested duration: failed to parse requested duration on annotation "experimental.cert-manager.io/request-duration": time: invalid duration "garbage-data"`,
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),
