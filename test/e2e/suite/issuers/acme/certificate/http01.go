@@ -440,7 +440,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		var pod corev1.Pod
 		logf, done := log.LogBackoff()
 		defer done()
-		err = wait.PollImmediate(1*time.Second, time.Minute,
+		err = wait.PollImmediate(1*time.Second, time.Minute*3,
 			func() (bool, error) {
 				logf("Waiting for solver pod to exist")
 				podlist, err := podClient.List(context.TODO(), metav1.ListOptions{})

@@ -115,7 +115,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").Should(HaveKeyWithValue("foo", "bar"))
+		}, "20s", "1s").Should(HaveKeyWithValue("foo", "bar"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("random", "annotation"))
 
 		By("add Label to Secret which should not be removed")
@@ -130,7 +130,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Labels
-		}, "5s", "1s").Should(HaveKeyWithValue("abc", "123"))
+		}, "20s", "1s").Should(HaveKeyWithValue("abc", "123"))
 	})
 
 	It("should add Annotations and Labels to the Secret when the Certificate's SecretTemplate is updated, then remove Annotations and Labels when removed from the SecretTemplate", func() {
@@ -161,7 +161,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").Should(HaveKeyWithValue("random", "annotation"))
+		}, "20s", "1s").Should(HaveKeyWithValue("random", "annotation"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("bar", "foo"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("foo", "bar"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("another", "random annotation"))
@@ -170,7 +170,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Labels
-		}, "5s", "1s").Should(HaveKeyWithValue("hello", "world"))
+		}, "20s", "1s").Should(HaveKeyWithValue("hello", "world"))
 		Expect(secret.Labels).To(HaveKeyWithValue("def", "456"))
 		Expect(secret.Labels).To(HaveKeyWithValue("abc", "123"))
 		Expect(secret.Labels).To(HaveKeyWithValue("random", "label"))
@@ -192,7 +192,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").ShouldNot(HaveKey("foo"))
+		}, "20s", "1s").ShouldNot(HaveKey("foo"))
 
 		Expect(secret.Annotations).ToNot(HaveKey("random"))
 		Expect(secret.Labels).ToNot(HaveKey("abc"))
@@ -228,7 +228,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").Should(HaveKeyWithValue("foo", "123"))
+		}, "20s", "1s").Should(HaveKeyWithValue("foo", "123"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("bar", "not foo"))
 		Expect(secret.Labels).To(HaveKeyWithValue("abc", "098"))
 		Expect(secret.Labels).To(HaveKeyWithValue("def", "555"))
@@ -353,7 +353,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			}
 
 			return true
-		}, "5s", "1s").Should(BeTrue())
+		}, "20s", "1s").Should(BeTrue())
 
 		By("removing Annotation and Labels from by third party client should not remove them as they are also managed by cert-manager")
 
@@ -367,7 +367,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").Should(HaveKeyWithValue("an-annotation", "bar"))
+		}, "20s", "1s").Should(HaveKeyWithValue("an-annotation", "bar"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("another-annotation", "def"))
 		Expect(secret.Labels).To(HaveKeyWithValue("abc", "123"))
 		Expect(secret.Labels).To(HaveKeyWithValue("foo", "bar"))
@@ -389,7 +389,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Data
-		}, "5s", "1s").Should(HaveKeyWithValue("random-key", []byte("hello-world")))
+		}, "20s", "1s").Should(HaveKeyWithValue("random-key", []byte("hello-world")))
 	})
 
 	It("if values are modified on the Certificate's SecretTemplate, than those values should be reflected on the Secret", func() {
@@ -407,13 +407,13 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").Should(HaveKeyWithValue("abc", "456"))
+		}, "20s", "1s").Should(HaveKeyWithValue("abc", "456"))
 
 		Eventually(func() map[string]string {
 			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Labels
-		}, "5s", "1s").Should(HaveKeyWithValue("foo", "foo"))
+		}, "20s", "1s").Should(HaveKeyWithValue("foo", "foo"))
 	})
 
 	It("deleting a Certificate's SecretTemplate should remove all keys it defined", func() {
@@ -430,7 +430,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").Should(HaveKeyWithValue("abc", "123"))
+		}, "20s", "1s").Should(HaveKeyWithValue("abc", "123"))
 		Expect(secret.Annotations).To(HaveKeyWithValue("def", "456"))
 		Expect(secret.Labels).To(HaveKeyWithValue("foo", "bar"))
 		Expect(secret.Labels).To(HaveKeyWithValue("label", "hello-world"))
@@ -444,7 +444,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Annotations
-		}, "5s", "1s").ShouldNot(HaveKey("abc"))
+		}, "20s", "1s").ShouldNot(HaveKey("abc"))
 		Expect(secret.Annotations).ToNot(HaveKey("def"))
 		Expect(secret.Labels).ToNot(HaveKey("foo"))
 		Expect(secret.Labels).ToNot(HaveKey("label"))
