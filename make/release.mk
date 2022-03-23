@@ -31,7 +31,7 @@ release: release-artifacts-signed
 #	cd $(dir $@) && sha256sum $(patsubst bin/%,%,$^) > $(notdir $@)
 
 #bin/SHA256SUMS.sig: bin/SHA256SUMS bin/tools/cosign
-#	$(COSIGN) sign-blob --key $(COSIGN_KEY) $< > $@
+#	bin/tools/cosign sign-blob --key $(COSIGN_KEY) $< > $@
 
 # Takes all metadata files in bin/metadata and combines them into one.
 

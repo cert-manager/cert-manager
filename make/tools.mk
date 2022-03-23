@@ -1,15 +1,9 @@
-CTR=docker
-
-# We don't need to re-download the whole Go distribution, but we still want
-# to make sure that we don't clutter the PATH by using a symlink. So we use
-# a symlink of the system Go in bin/tools.
-HELM=$(PWD)/bin/tools/helm
-COSIGN=$(PWD)/bin/tools/cosign
-CMREL=$(PWD)/bin/tools/cmrel
-YQ=$(PWD)/bin/tools/yq
-KUBECTL=$(PWD)/bin/tools/kubectl
-KIND=$(PWD)/bin/tools/kind
-CRANE=$(PWD)/bin/tools/crane
+# To make sure we use the right version of each tool, we put symlink in
+# bin/tools, and the actual binaries are in bin/downloaded. When bumping
+# the version of the tools, this symlink gets updated. The only limitation
+# is that moving from a version to another version that you previously
+# already had in cache won't work, and you will need to remove the
+# previously downloaded version first.
 
 # Let's have bin/tools in front of the PATH so that we don't inavertedly
 # pick up the wrong binary somewhere. Watch out, $(shell echo $$PATH) will
@@ -17,13 +11,7 @@ CRANE=$(PWD)/bin/tools/crane
 # variables: https://stackoverflow.com/questions/54726457
 export PATH := $(PWD)/bin/tools:$(PATH)
 
-CLIENT_GEN=$(WORKDIR)/bin/tools/client-gen
-CONVERSION_GEN=$(WORKDIR)/bin/tools/conversion-gen
-CONTROLLER_GEN=$(WORKDIR)/bin/tools/controller-gen
-DEEPCOPY_GEN=$(WORKDIR)/bin/tools/deepcopy-gen
-DEFAULTER_GEN=$(WORKDIR)/bin/tools/defaulter-gen
-INFORMER_GEN=$(WORKDIR)/bin/tools/informer-gen
-LISTER_GEN=$(WORKDIR)/bin/tools/lister-gen
+CTR=docker
 
 HELM_VERSION=3.8.0
 KUBECTL_VERSION=1.22.1
@@ -115,14 +103,36 @@ vendor-go: bin/tools/go
 unvendor-go: bin/tools/go
 	rm -rf bin/tools/go bin/tools/goroot
 
-bin/tools/go: bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<)/go $@root
-	@ln -f -s $(patsubst bin/%,../%,$<)/go/bin/go $@
+# In Prow, the pod has the folder "bin/downloaded" mounted into the
+# container. For some reason, even though the permissions are correct,
+# binaries that are mounted with hostPath can't be executed. When in CI, we
+# copy the binaries to work around that. Using $(LN) is only required when
+# dealing with binaries. Other files and folders can be symlinked.
+#
+# Details on how "bin/downloaded" gets cached are available in the
+# description of the PR https://github.com/jetstack/testing/pull/651.
+ifeq ($(CI),)
+LN := ln -f -s
+else
+LN := cp -f -r
+endif
+
+# The "_" in "_go "prevents "go mod tidy" from trying to tidy the vendored
+# goroot.
+bin/tools/go: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot/bin/go bin/tools/goroot | bin/tools
+	cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) .
 	@touch $@
 
-bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%: bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz
-	@mkdir -p $@
-	tar -xzf $< -C $@
+bin/tools/goroot: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot | bin/tools
+	@rm -rf bin/tools/goroot
+	cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) .
+	@touch $@
+
+bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot/bin/go: bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz
+	@mkdir -p $(dir $@)
+	rm -rf bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
+	tar xzf $< -C bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*
+	mv bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/go bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
 
 bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | bin/downloaded/tools
 	curl -sSfL https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
@@ -136,7 +146,7 @@ HELM_darwin_amd64_SHA256SUM=532ddd6213891084873e5c2dcafa577f425ca662a6594a3389e2
 HELM_darwin_arm64_SHA256SUM=751348f1a4a876ffe089fd68df6aea310fd05fe3b163ab76aa62632e327122f3
 
 bin/tools/helm: bin/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/helm-v$(HELM_VERSION)-%: | bin/downloaded/tools
 	curl -sSfL https://get.helm.sh/helm-v$(HELM_VERSION)-$*.tar.gz > $@.tar.gz
@@ -155,7 +165,7 @@ KUBECTL_darwin_amd64_SHA256SUM=00bb3947ac6ff15690f90ee1a732d0a9a44360fc7743dbfee
 KUBECTL_darwin_arm64_SHA256SUM=c81a314ab7f0827a5376f8ffd6d47f913df046275d44c562915a822229819d77
 
 bin/tools/kubectl: bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/downloaded/tools
 	curl -sSfL https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl > $@
@@ -171,7 +181,7 @@ KIND_darwin_amd64_SHA256SUM=432bef555a70e9360b44661c759658265b9eaaf7f75f1beec4c4
 KIND_darwin_arm64_SHA256SUM=4f019c578600c087908ac59dd0c4ce1791574f153a70608adb372d5abc58cd47
 
 bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kind_$(KIND_VERSION)_%: | bin/downloaded/tools bin/tools
 	curl -sSfL https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(subst _,-,$*) > $@
@@ -187,7 +197,7 @@ COSIGN_darwin_amd64_SHA256SUM=bcffa19e80f3e94d70e1fb1b0f591b0dec08926b31d3609fe3
 COSIGN_darwin_arm64_SHA256SUM=eda58f090d8f4f1db5a0e3a0d2d8845626181fe8aa1cea1791e0afa87fee7b5c
 
 bin/tools/cosign: bin/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
@@ -201,7 +211,7 @@ bin/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | bin/downloaded/tools
 ##########
 
 bin/tools/ginkgo: bin/downloaded/tools/ginkgo@$(GINKGO_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
@@ -212,7 +222,7 @@ bin/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | bin/downloaded
 #########
 
 bin/tools/cmrel: bin/downloaded/tools/cmrel@$(CMREL_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/cert-manager/release/cmd/cmrel@$(CMREL_VERSION)
@@ -223,7 +233,7 @@ bin/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/t
 #################
 
 bin/tools/release-notes: bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install k8s.io/release/cmd/release-notes@v$(K8S_RELEASE_NOTES_VERSION)
@@ -234,7 +244,7 @@ bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO
 ##################
 
 bin/tools/controller-gen: bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v$(CONTROLLER_GEN_VERSION)
@@ -248,7 +258,7 @@ bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) 
 k8s-codegen-tools: bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen
 
 bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen: bin/tools/%-gen: bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install k8s.io/code-generator/cmd/$(notdir $@)
@@ -259,7 +269,7 @@ bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | bin/downlo
 #############
 
 bin/tools/goimports: bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install golang.org/x/tools/cmd/goimports@v$(GOIMPORTS_VERSION)
@@ -270,7 +280,7 @@ bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | bin/down
 #############
 
 bin/tools/gotestsum: bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install gotest.tools/gotestsum@v$(GOTESTSUM_VERSION)
@@ -281,7 +291,7 @@ bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | bin/down
 #########
 
 bin/tools/crane: bin/downloaded/tools/crane@$(CRANE_VERSION) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/crane@$(CRANE_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/google/go-containerregistry/cmd/crane@v$(CRANE_VERSION)
@@ -296,7 +306,7 @@ YTT_darwin_amd64_SHA256SUM=9662e3f8e30333726a03f7a5ae6231fbfb2cebb6c1aa3f545b253
 YTT_darwin_arm64_SHA256SUM=c970b2c13d4059f0bee3bf3ceaa09bd0674a62c24550453d90b284d885a06b7b
 
 bin/tools/ytt: bin/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/ytt_$(YTT_VERSION)_%: | bin/downloaded/tools
 	curl -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(subst _,-,$*) > $@
@@ -312,7 +322,7 @@ YQ_darwin_amd64_SHA256SUM=5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f
 YQ_darwin_arm64_SHA256SUM=665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69
 
 bin/tools/yq: bin/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/yq_$(YQ_VERSION)_%: | bin/downloaded/tools
 	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$* > $@
@@ -334,7 +344,7 @@ KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=bb27efb1d2ee43749475293408fc80b923324ab
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=$(KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM)
 
 bin/tools/etcd: bin/downloaded/tools/etcd-$(HOST_OS)-$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/etcd-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
@@ -342,7 +352,7 @@ bin/downloaded/tools/etcd-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDE
 	tar xfO $< kubebuilder/bin/etcd > $@ && chmod 775 $@
 
 bin/tools/kube-apiserver: bin/downloaded/tools/kube-apiserver-$(HOST_OS)-$(HOST_ARCH) | bin/tools
-	@ln -f -s $(patsubst bin/%,../%,$<) $@
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kube-apiserver-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
