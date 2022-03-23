@@ -27,7 +27,7 @@ test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubec
 #
 test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml --post-run-command='bash -c "perl -ni -e \"print if !/\\/fuzz_\\d+/\" $$GOTESTSUM_JUNITFILE"' -- $(WHAT)
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml --post-run-command='bash -c "perl -ni -e \"print if !/\\/fuzz_\\d+/\" $$GOTESTSUM_JUNITFILE"'  --junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
@@ -83,7 +83,7 @@ test/integration/versionchecker/testdata/test_manifests.tar: bin/scratch/oldcrds
 bin/scratch/oldcrds.tar: bin/scratch/git/upstream-tags.txt | bin/scratch/oldcrds
 	@# First, download the CRDs for all releases listed in upstream-tags.txt
 	<bin/scratch/git/upstream-tags.txt xargs -I% -P5 \
-		curl --compressed -sfL \
+		curl --compressed -sSfL \
 		-o bin/scratch/oldcrds/%.yaml \
 		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml"
 	@# Next, tar up the old CRDs together
