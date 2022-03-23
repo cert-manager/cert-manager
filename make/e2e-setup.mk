@@ -50,7 +50,7 @@ GATEWAY_API_VERSION = 0.4.1
 ## with `make kind KIND_CLUSTER_NAME=name`.
 ##
 ## @category Development
-e2e-setup-kind: kind-exists preload-kind-image
+e2e-setup-kind: kind-exists
 	@printf "✅  \033[0;32mReady\033[0;0m. The next step is to install cert-manager and the addons with the command:\n" >&2
 	@printf "    \033[0;36mmake -j e2e-setup\033[0;0m\n" >&2
 
@@ -64,7 +64,7 @@ e2e-setup-kind: kind-exists preload-kind-image
 # used as a prerequisite. If we were to use .PHONY, then the file's
 # timestamp would not be used to check whether targets should be rebuilt,
 # and they would get constantly rebuilt.
-bin/scratch/kind-exists: make/config/kind/v1beta2.yaml make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
+bin/scratch/kind-exists: make/config/kind/v1beta2.yaml preload-kind-image make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
 	@$(eval KIND_CLUSTER_NAME ?= kind)
 	@make/cluster.sh --name $(KIND_CLUSTER_NAME)
 	@if [ "$(shell cat $@ 2>/dev/null)" != kind ]; then echo kind > $@; else touch $@; fi
@@ -116,7 +116,7 @@ endef
 .PHONY: preload-kind-image
 ifeq ($(CI),)
 preload-kind-image: bin/tools/crane
-	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) pull $(IMAGE_kind_$(CRI_ARCH))
+	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
 preload-kind-image: $(call image-tar,kind) bin/tools/crane
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
