@@ -16,11 +16,18 @@ test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubec
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
-# test-ci runs all unit and integration tests and writes a JUnit report of the
-# results. WHAT also works here.
+# test-ci runs all unit and integration tests and writes a JUnit report of
+# the results. WHAT also works here.
+#
+# The reason we are hiding the fuzz tests is because there are over 50,000
+# XML lines with fuzz test cases, which means the Prow UI struggles
+# displaying the JUnit results. We are hiding lines that look like this:
+#
+#   <testcase classname="internal/controller/certificates" name="Test_serializeApplyStatus/fuzz_8358"></testcase>
+#
 test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml -- $(WHAT)
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml --post-run-command='bash -c "perl -ni -e \"print if !/\\/fuzz_\\d+/\" $$GOTESTSUM_JUNITFILE"' -- $(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
