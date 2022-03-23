@@ -33,10 +33,12 @@ import (
 // CertificateSigningRequest resource to be signed.
 func (h *Helper) WaitForCertificateSigningRequestSigned(name string, timeout time.Duration) (*certificatesv1.CertificateSigningRequest, error) {
 	var csr *certificatesv1.CertificateSigningRequest
+	logf, done := log.LogBackoff()
+	defer done()
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
-			log.Logf("Waiting for CertificateSigningRequest %s to be ready", name)
+			logf("Waiting for CertificateSigningRequest %s to be ready", name)
 			csr, err = h.KubeClient.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateSigningRequest %s: %v", name, err)

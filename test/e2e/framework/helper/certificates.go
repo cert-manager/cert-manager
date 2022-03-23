@@ -39,8 +39,10 @@ import (
 func (h *Helper) WaitForCertificateToExist(namespace string, name string, timeout time.Duration) (*cmapi.Certificate, error) {
 	client := h.CMClient.CertmanagerV1().Certificates(namespace)
 	var certificate *v1.Certificate
+	logf, done := log.LogBackoff()
+	defer done()
 	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
-		log.Logf("Waiting for Certificate %v to exist", name)
+		logf("Waiting for Certificate %v to exist", name)
 		var err error
 		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
@@ -100,9 +102,11 @@ func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, 
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
 	}
+	logf, done := log.LogBackoff()
+	defer done()
 	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
 		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_true_condition) {
-			log.Logf(
+			logf(
 				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
 				certificate.Name,
 				ready_true_condition.Type,
@@ -114,12 +118,12 @@ func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, 
 		}
 
 		if apiutil.CertificateHasCondition(certificate, issuing_true_condition) {
-			log.Logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
+			logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
 			return false
 		}
 
 		if certificate.Status.NextPrivateKeySecretName != nil {
-			log.Logf("Expected Certificate %v 'next-private-key-secret-name' attribute to be empty but has: %v", certificate.Name, *certificate.Status.NextPrivateKeySecretName)
+			logf("Expected Certificate %v 'next-private-key-secret-name' attribute to be empty but has: %v", certificate.Name, *certificate.Status.NextPrivateKeySecretName)
 			return false
 		}
 
@@ -139,9 +143,11 @@ func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificat
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
 	}
+	logf, done := log.LogBackoff()
+	defer done()
 	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
 		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_false_condition) {
-			log.Logf(
+			logf(
 				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
 				certificate.Name,
 				ready_false_condition.Type,
@@ -153,12 +159,12 @@ func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificat
 		}
 
 		if apiutil.CertificateHasCondition(certificate, issuing_true_condition) {
-			log.Logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
+			logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
 			return false
 		}
 
 		if certificate.Status.NextPrivateKeySecretName != nil {
-			log.Logf("Expected Certificate %v 'next-private-key-secret-name' attribute to be empty but has: %v", certificate.Name, *certificate.Status.NextPrivateKeySecretName)
+			logf("Expected Certificate %v 'next-private-key-secret-name' attribute to be empty but has: %v", certificate.Name, *certificate.Status.NextPrivateKeySecretName)
 			return false
 		}
 
@@ -196,9 +202,11 @@ func (h *Helper) WaitIssuerReady(issuer *cmapi.Issuer, timeout time.Duration) (*
 		Status: cmmeta.ConditionTrue,
 	}
 
+	logf, done := log.LogBackoff()
+	defer done()
 	return h.waitForIssuerCondition(h.CMClient.CertmanagerV1().Issuers(issuer.Namespace), issuer.Name, func(issuer *v1.Issuer) bool {
 		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
-			log.Logf(
+			logf(
 				"Expected Issuer %v condition %v=%v but it has: %v",
 				issuer.Name,
 				ready_true_condition.Type,
@@ -240,10 +248,11 @@ func (h *Helper) WaitClusterIssuerReady(issuer *cmapi.ClusterIssuer, timeout tim
 		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}
-
+	logf, done := log.LogBackoff()
+	defer done()
 	return h.waitForClusterIssuerCondition(h.CMClient.CertmanagerV1().ClusterIssuers(), issuer.Name, func(issuer *v1.ClusterIssuer) bool {
 		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
-			log.Logf(
+			logf(
 				"Expected Cluster Issuer %v condition %v=%v but it has: %v",
 				issuer.Name,
 				ready_true_condition.Type,

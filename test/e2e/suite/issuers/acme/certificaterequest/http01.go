@@ -218,16 +218,18 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		By("killing the solver pod")
 		podClient := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name)
 		var pod corev1.Pod
+		logf, done := log.LogBackoff()
+		defer done()
 		err = wait.PollImmediate(1*time.Second, time.Minute,
 			func() (bool, error) {
-				log.Logf("Waiting for solver pod to exist")
+				logf("Waiting for solver pod to exist")
 				podlist, err := podClient.List(context.TODO(), metav1.ListOptions{})
 				if err != nil {
 					return false, err
 				}
 
 				for _, p := range podlist.Items {
-					log.Logf("solver pod %s", p.Name)
+					logf("solver pod %s", p.Name)
 					// TODO(dmo): make this cleaner instead of just going by name
 					if strings.Contains(p.Name, "http-solver") {
 						pod = p

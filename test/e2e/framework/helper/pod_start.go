@@ -45,6 +45,8 @@ func (h *Helper) WaitForAllPodsRunningInNamespace(ns string) error {
 
 func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time.Duration) error {
 	ginkgo.By("Waiting " + timeout.String() + " for all pods in namespace '" + ns + "' to be Ready")
+	logf, done := log.LogBackoff()
+	defer done()
 	return wait.PollImmediate(Poll, timeout, func() (bool, error) {
 		pods, err := h.KubeClient.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
@@ -52,7 +54,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 		}
 
 		if len(pods.Items) == 0 {
-			log.Logf("No pods found in namespace %s - checking again...")
+			logf("No pods found in namespace %s - checking again...")
 			return false, nil
 		}
 
@@ -64,7 +66,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 				continue
 			}
 			if c.Reason == "PodCompleted" {
-				log.Logf("Pod %q has Completed, assuming it is ready/expected", p.Name)
+				logf("Pod %q has Completed, assuming it is ready/expected", p.Name)
 				continue
 			}
 			// This pod does not have the ready condition set to True
@@ -75,7 +77,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 
 		if len(errs) > 0 {
 			for _, err := range errs {
-				log.Logf(err)
+				logf(err)
 			}
 			return false, nil
 		}
