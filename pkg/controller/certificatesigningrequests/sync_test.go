@@ -23,7 +23,9 @@ import (
 	"time"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/pkg/api/util"
@@ -31,8 +33,10 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/fake"
+	csrutil "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -41,6 +45,11 @@ var (
 )
 
 func TestController_Sync(t *testing.T) {
+	metaFixedTime := metav1.NewTime(fixedClockStart)
+	// This Clock is used to get values for last transition time and last
+	// update time when a condition is set on a CertificateSigningRequest.
+	csrutil.Clock = fixedClock
+
 	tests := map[string]testT{
 		"malformed signer name": {
 			builder: &testpkg.Builder{},
@@ -135,6 +144,84 @@ func TestController_Sync(t *testing.T) {
 					Type: certificatesv1.CertificateApproved,
 				})),
 		},
+		"Duration annotation has been provided, but is invalid": {
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.ClusterIssuer("foo-issuer",
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{})),
+				},
+				ExpectedEvents: []string{
+					"Warning ErrorParseDuration Failed to parse requested duration: failed to parse requested duration on annotation \"experimental.cert-manager.io/request-duration\": time: invalid duration \"foo\"",
+				},
+
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
+						"status",
+						"",
+						gen.CertificateSigningRequest("test",
+							gen.SetCertificateSigningRequestSignerName("clusterissuers.cert-manager.io/foo-issuer"),
+							gen.SetCertificateSigningRequestDuration("foo"),
+							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+								Type: certificatesv1.CertificateApproved,
+							}),
+							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+								Type:               certificatesv1.CertificateFailed,
+								Status:             corev1.ConditionTrue,
+								Reason:             "ErrorParseDuration",
+								Message:            `Failed to parse requested duration: failed to parse requested duration on annotation "experimental.cert-manager.io/request-duration": time: invalid duration "foo"`,
+								LastTransitionTime: metaFixedTime,
+								LastUpdateTime:     metaFixedTime,
+							})),
+					)),
+				},
+			},
+			csr: gen.CertificateSigningRequest("test",
+				gen.SetCertificateSigningRequestSignerName("clusterissuers.cert-manager.io/foo-issuer"),
+				gen.SetCertificateSigningRequestDuration("foo"),
+				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+					Type: certificatesv1.CertificateApproved,
+				})),
+		},
+		"Duration annotation has been provided with a value less than 600s": {
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.ClusterIssuer("foo-issuer",
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{})),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidDuration CertificateSigningRequest minimum allowed duration is 10m0s, requested 9m59s",
+				},
+
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
+						"status",
+						"",
+						gen.CertificateSigningRequest("test",
+							gen.SetCertificateSigningRequestSignerName("clusterissuers.cert-manager.io/foo-issuer"),
+							gen.SetCertificateSigningRequestDuration("599s"),
+							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+								Type: certificatesv1.CertificateApproved,
+							}),
+							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+								Type:               certificatesv1.CertificateFailed,
+								Status:             corev1.ConditionTrue,
+								Reason:             "InvalidDuration",
+								Message:            `CertificateSigningRequest minimum allowed duration is 10m0s, requested 9m59s`,
+								LastTransitionTime: metaFixedTime,
+								LastUpdateTime:     metaFixedTime,
+							})),
+					)),
+				},
+			},
+			csr: gen.CertificateSigningRequest("test",
+				gen.SetCertificateSigningRequestSignerName("clusterissuers.cert-manager.io/foo-issuer"),
+				gen.SetCertificateSigningRequestDuration("599s"),
+				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+					Type: certificatesv1.CertificateApproved,
+				})),
+		},
 		// TODO (irbekrm) Test the scenario where the user is not allowed to reference Issuer
 		// Perhaps restructure and use fake SubjectAccessReview https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/authorization/v1/fake/fake_subjectaccessreview.go
 		"Referenced ClusterIssuer is not ready": {
@@ -198,11 +285,60 @@ func TestController_Sync(t *testing.T) {
 				},
 			},
 		},
+		"Signing succeeds with a valid duration annotation": {
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.ClusterIssuer("foo-issuer",
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+						gen.AddIssuerCondition(cmapi.IssuerCondition{
+							Type:   cmapi.IssuerConditionReady,
+							Status: cmmeta.ConditionTrue,
+						})),
+				},
+			},
+			csr: gen.CertificateSigningRequest("test",
+				gen.SetCertificateSigningRequestSignerName("clusterissuers.cert-manager.io/foo-issuer"),
+				gen.SetCertificateSigningRequestDuration("600s"),
+				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
+					Type: certificatesv1.CertificateApproved,
+				})),
+			signerImpl: &fake.Signer{
+				FakeSign: func(context.Context, *certificatesv1.CertificateSigningRequest, cmapi.GenericIssuer) error {
+					return nil
+				},
+			},
+		},
 	}
 	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
+			if scenario.csr != nil {
+				scenario.builder.KubeObjects = append(scenario.builder.KubeObjects, scenario.csr)
+			}
 			fixedClock.SetTime(fixedClockStart)
-			runTest(t, scenario)
+			scenario.builder.Clock = fixedClock
+			scenario.builder.T = t
+			scenario.builder.Init()
+
+			defer scenario.builder.Stop()
+
+			if scenario.signerImpl == nil {
+				scenario.signerImpl = &fake.Signer{
+					FakeSign: func(context.Context, *certificatesv1.CertificateSigningRequest, cmapi.GenericIssuer) error {
+						return errors.New("unexpected sign call")
+					},
+				}
+			}
+
+			c := New(util.IssuerSelfSigned, func(*controller.Context) Signer { return scenario.signerImpl })
+			c.Register(scenario.builder.Context)
+
+			scenario.builder.Start()
+
+			err := c.Sync(context.Background(), scenario.csr)
+			if (err == nil) == scenario.wantErr {
+				t.Errorf("expected error: %v, but got: %v", scenario.wantErr, err)
+			}
+			scenario.builder.CheckAndFinish(err)
 		})
 	}
 }
@@ -212,31 +348,4 @@ type testT struct {
 	csr        *certificatesv1.CertificateSigningRequest
 	signerImpl Signer
 	wantErr    bool
-}
-
-func runTest(t *testing.T, test testT) {
-	test.builder.T = t
-	test.builder.Clock = fixedClock
-	test.builder.Init()
-
-	defer test.builder.Stop()
-
-	if test.signerImpl == nil {
-		test.signerImpl = &fake.Signer{
-			FakeSign: func(context.Context, *certificatesv1.CertificateSigningRequest, cmapi.GenericIssuer) error {
-				return errors.New("unexpected sign call")
-			},
-		}
-	}
-
-	c := New(util.IssuerSelfSigned, func(*controller.Context) Signer { return test.signerImpl })
-	c.Register(test.builder.Context)
-
-	test.builder.Start()
-
-	err := c.Sync(context.Background(), test.csr)
-	if (err == nil) == test.wantErr {
-		t.Errorf("expected error: %v, but got: %v", test.wantErr, err)
-	}
-	test.builder.CheckAndFinish(err)
 }
