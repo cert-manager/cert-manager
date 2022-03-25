@@ -21,7 +21,7 @@ SHELL := /bin/bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-SOURCES := $(shell find . -type f -name "*.go")
+SOURCES := $(shell find . -type f -name "*.go" -not -path "./bin/*" -not -path "./make/*")
 
 GOFLAGS := -ldflags '-w -s' -trimpath
 

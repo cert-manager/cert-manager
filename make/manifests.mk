@@ -58,7 +58,7 @@ bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION
 ifeq ($(strip $(CMREL_KEY)),)
 	$(error Trying to sign helm chart but CMREL_KEY is empty)
 endif
-	cd $(dir $<) && $(CMREL) sign helm --chart-path "$(notdir $<)" --key "$(CMREL_KEY)"
+	cd $(dir $<) && bin/tools/cmrel sign helm --chart-path "$(notdir $<)" --key "$(CMREL_KEY)"
 
 bin/helm/cert-manager/templates/%.yaml: deploy/charts/cert-manager/templates/%.yaml | bin/helm/cert-manager/templates
 	cp -f $^ $@
@@ -85,7 +85,7 @@ bin/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml
 	@# https://mikefarah.gitbook.io/yq/operators/string-operators#string-blocks-bash-and-newlines
 	@# we set a bash variable called SIGNKEY_ANNOTATION using read, and then use that bash variable in yq
 	IFS= read -rd '' SIGNKEY_ANNOTATION < <(cat deploy/charts/cert-manager/signkey_annotation.txt) ; \
-		SIGNKEY_ANNOTATION=$$SIGNKEY_ANNOTATION $(YQ) eval \
+		SIGNKEY_ANNOTATION=$$SIGNKEY_ANNOTATION bin/tools/yq eval \
 		'.annotations."artifacthub.io/signKey" = strenv(SIGNKEY_ANNOTATION) | .annotations."artifacthub.io/prerelease" = "$(IS_PRERELEASE)" | .version = "$(RELEASE_VERSION)" | .appVersion = "$(RELEASE_VERSION)"' \
 		$< > $@
 
