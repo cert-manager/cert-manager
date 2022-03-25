@@ -1,9 +1,6 @@
 # To make sure we use the right version of each tool, we put symlink in
 # bin/tools, and the actual binaries are in bin/downloaded. When bumping
-# the version of the tools, this symlink gets updated. The only limitation
-# is that moving from a version to another version that you previously
-# already had in cache won't work, and you will need to remove the
-# previously downloaded version first.
+# the version of the tools, this symlink gets updated.
 
 # Let's have bin/tools in front of the PATH so that we don't inavertedly
 # pick up the wrong binary somewhere. Watch out, $(shell echo $$PATH) will
@@ -44,6 +41,11 @@ GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
 K8S_CODEGEN_VERSION=5915ef051dfa0658ffebb9af39679e52c31762bf
 
 KUBEBUILDER_ASSETS_VERSION=1.22.0
+
+# When switching branches which use different versions of the tools, we
+# need a way to re-trigger the symlinking from bin/downloaded to bin/tools.
+bin/scratch/%_VERSION: FORCE | bin/scratch
+	@test "$($*_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $($*_VERSION) > $@
 
 # The reason we don't use "go env GOOS" or "go env GOARCH" is that the "go"
 # binary may not be available in the PATH yet when the Makefiles are
@@ -119,11 +121,11 @@ endif
 
 # The "_" in "_go "prevents "go mod tidy" from trying to tidy the vendored
 # goroot.
-bin/tools/go: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot/bin/go bin/tools/goroot | bin/tools
+bin/tools/go: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot/bin/go bin/tools/goroot bin/scratch/VENDORED_GO_VERSION | bin/tools
 	cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) .
 	@touch $@
 
-bin/tools/goroot: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot | bin/tools
+bin/tools/goroot: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot bin/scratch/VENDORED_GO_VERSION | bin/tools
 	@rm -rf bin/tools/goroot
 	cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) .
 	@touch $@
@@ -145,7 +147,7 @@ HELM_linux_amd64_SHA256SUM=8408c91e846c5b9ba15eb6b1a5a79fc22dd4d33ac6ea63388e569
 HELM_darwin_amd64_SHA256SUM=532ddd6213891084873e5c2dcafa577f425ca662a6594a3389e288fc48dc2089
 HELM_darwin_arm64_SHA256SUM=751348f1a4a876ffe089fd68df6aea310fd05fe3b163ab76aa62632e327122f3
 
-bin/tools/helm: bin/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH) | bin/tools
+bin/tools/helm: bin/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH) bin/scratch/HELM_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/helm-v$(HELM_VERSION)-%: | bin/downloaded/tools
@@ -164,7 +166,7 @@ KUBECTL_linux_amd64_SHA256SUM=78178a8337fc6c76780f60541fca7199f0f1a2e9c41806bded
 KUBECTL_darwin_amd64_SHA256SUM=00bb3947ac6ff15690f90ee1a732d0a9a44360fc7743dbfee4cba5a8f6a31413
 KUBECTL_darwin_arm64_SHA256SUM=c81a314ab7f0827a5376f8ffd6d47f913df046275d44c562915a822229819d77
 
-bin/tools/kubectl: bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+bin/tools/kubectl: bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/KUBECTL_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/downloaded/tools
@@ -180,7 +182,7 @@ KIND_linux_amd64_SHA256SUM=949f81b3c30ca03a3d4effdecda04f100fa3edc07a28b19400f72
 KIND_darwin_amd64_SHA256SUM=432bef555a70e9360b44661c759658265b9eaaf7f75f1beec4c4d1e6bbf97ce3
 KIND_darwin_arm64_SHA256SUM=4f019c578600c087908ac59dd0c4ce1791574f153a70608adb372d5abc58cd47
 
-bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/KIND_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kind_$(KIND_VERSION)_%: | bin/downloaded/tools bin/tools
@@ -196,7 +198,7 @@ COSIGN_linux_amd64_SHA256SUM=1227b270e5d7d21d09469253cce17b72a14f6b7c9036dfc0969
 COSIGN_darwin_amd64_SHA256SUM=bcffa19e80f3e94d70e1fb1b0f591b0dec08926b31d3609fe3d25a1cc0389a0a
 COSIGN_darwin_arm64_SHA256SUM=eda58f090d8f4f1db5a0e3a0d2d8845626181fe8aa1cea1791e0afa87fee7b5c
 
-bin/tools/cosign: bin/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+bin/tools/cosign: bin/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/COSIGN_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
@@ -210,7 +212,7 @@ bin/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | bin/downloaded/tools
 # ginkgo #
 ##########
 
-bin/tools/ginkgo: bin/downloaded/tools/ginkgo@$(GINKGO_VERSION) | bin/tools
+bin/tools/ginkgo: bin/downloaded/tools/ginkgo@$(GINKGO_VERSION) bin/scratch/GINKGO_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -221,7 +223,7 @@ bin/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | bin/downloaded
 # cmrel #
 #########
 
-bin/tools/cmrel: bin/downloaded/tools/cmrel@$(CMREL_VERSION) | bin/tools
+bin/tools/cmrel: bin/downloaded/tools/cmrel@$(CMREL_VERSION) bin/scratch/CMREL_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -232,7 +234,7 @@ bin/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/t
 # release-notes #
 #################
 
-bin/tools/release-notes: bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION) | bin/tools
+bin/tools/release-notes: bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION) bin/scratch/K8S_RELEASE_NOTES_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -243,7 +245,7 @@ bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO
 # controller-gen #
 ##################
 
-bin/tools/controller-gen: bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION) | bin/tools
+bin/tools/controller-gen: bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION) bin/scratch/CONTROLLER_GEN_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -257,7 +259,7 @@ bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) 
 .PHONY: k8s-codegen-tools
 k8s-codegen-tools: bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen
 
-bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen: bin/tools/%-gen: bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) | bin/tools
+bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen: bin/tools/%-gen: bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) bin/scratch/K8S_CODEGEN_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -268,7 +270,7 @@ bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | bin/downlo
 # goimports #
 #############
 
-bin/tools/goimports: bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION) | bin/tools
+bin/tools/goimports: bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION) bin/scratch/GOIMPORTS_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -279,7 +281,7 @@ bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | bin/down
 # gotestsum #
 #############
 
-bin/tools/gotestsum: bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION) | bin/tools
+bin/tools/gotestsum: bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION) bin/scratch/GOTESTSUM_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -290,7 +292,7 @@ bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | bin/down
 # crane #
 #########
 
-bin/tools/crane: bin/downloaded/tools/crane@$(CRANE_VERSION) | bin/tools
+bin/tools/crane: bin/downloaded/tools/crane@$(CRANE_VERSION) bin/scratch/CRANE_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/crane@$(CRANE_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
@@ -305,7 +307,7 @@ YTT_linux_amd64_SHA256SUM=d81ecf6c47209f6ac527e503a6fd85e999c3c2f8369e972794047b
 YTT_darwin_amd64_SHA256SUM=9662e3f8e30333726a03f7a5ae6231fbfb2cebb6c1aa3f545b253d7c695487e6
 YTT_darwin_arm64_SHA256SUM=c970b2c13d4059f0bee3bf3ceaa09bd0674a62c24550453d90b284d885a06b7b
 
-bin/tools/ytt: bin/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+bin/tools/ytt: bin/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/YTT_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/ytt_$(YTT_VERSION)_%: | bin/downloaded/tools
@@ -321,7 +323,7 @@ YQ_linux_amd64_SHA256SUM=6b891fd5bb13820b2f6c1027b613220a690ce0ef4fc2b6c76ec5f64
 YQ_darwin_amd64_SHA256SUM=5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46
 YQ_darwin_arm64_SHA256SUM=665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69
 
-bin/tools/yq: bin/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+bin/tools/yq: bin/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/YQ_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/yq_$(YQ_VERSION)_%: | bin/downloaded/tools
@@ -343,18 +345,18 @@ KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=bb27efb1d2ee43749475293408fc80b923324ab
 # out for us. This means that the hash we expect is the same as the amd64 hash.
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=$(KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM)
 
-bin/tools/etcd: bin/downloaded/tools/etcd-$(HOST_OS)-$(HOST_ARCH) | bin/tools
+bin/tools/etcd: bin/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) bin/scratch/KUBEBUILDER_ASSETS_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/etcd-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
+bin/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/etcd > $@ && chmod 775 $@
 
-bin/tools/kube-apiserver: bin/downloaded/tools/kube-apiserver-$(HOST_OS)-$(HOST_ARCH) | bin/tools
+bin/tools/kube-apiserver: bin/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) bin/scratch/KUBEBUILDER_ASSETS_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/kube-apiserver-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
+bin/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
