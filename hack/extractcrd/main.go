@@ -49,7 +49,7 @@ func main() {
 
 	filename := os.Args[1]
 	wantedCRDName := strings.ToLower(os.Args[2])
-
+//rawYAMLBytes, err := os.ReadFile(filename)
 	rawYAMLBytes, err := os.ReadFile(filename)
 	if err != nil {
 		logger.Printf("failed to read %q: %s", filename, err)
