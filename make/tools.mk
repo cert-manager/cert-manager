@@ -409,3 +409,7 @@ ifneq ($(MISSING),)
 $(error Missing required tools: $(MISSING))
 endif
 endif
+
+.PHONY: e2e-setup-kind-update-images
+e2e-setup-kind-update-images: make/cluster.sh bin/tools/crane
+	make/cluster.sh --update-images
