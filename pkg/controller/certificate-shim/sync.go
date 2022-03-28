@@ -37,6 +37,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	ingress "github.com/cert-manager/cert-manager/internal/ingress"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -45,6 +47,7 @@ import (
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -75,6 +78,7 @@ func SyncFnFor(
 	cmClient clientset.Interface,
 	cmLister cmlisters.CertificateLister,
 	defaults controller.IngressShimOptions,
+	fieldManager string,
 ) SyncFn {
 	return func(ctx context.Context, ingLike metav1.Object) error {
 		log := logf.WithResource(log, ingLike)
@@ -121,7 +125,7 @@ func SyncFnFor(
 		}
 
 		for _, crt := range newCrts {
-			_, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{})
+			_, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{FieldManager: fieldManager})
 			if err != nil {
 				return err
 			}
@@ -129,10 +133,29 @@ func SyncFnFor(
 		}
 
 		for _, crt := range updateCrts {
-			_, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
+
+			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            crt.Name,
+						Namespace:       crt.Namespace,
+						Labels:          crt.Labels,
+						OwnerReferences: crt.OwnerReferences,
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   crt.Spec.DNSNames,
+						SecretName: crt.Spec.SecretName,
+						IssuerRef:  crt.Spec.IssuerRef,
+						Usages:     crt.Spec.Usages,
+					},
+				})
+			} else {
+				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
+			}
 			if err != nil {
 				return err
 			}
+
 			rec.Eventf(ingLikeObj, corev1.EventTypeNormal, reasonUpdateCertificate, "Successfully updated Certificate %q", crt.Name)
 		}
 

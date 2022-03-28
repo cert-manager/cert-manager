@@ -55,7 +55,7 @@ type controller struct {
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	c.gatewayLister = ctx.GWShared.Gateway().V1alpha2().Gateways().Lister()
 	log := logf.FromContext(ctx.RootContext, ControllerName)
-	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions)
+	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
 
 	// We don't need to requeue Gateways on "Deleted" events, since our Sync
 	// function does nothing when the Gateway lister returns "not found". But we

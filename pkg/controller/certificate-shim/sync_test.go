@@ -2486,7 +2486,7 @@ func TestSync(t *testing.T) {
 				DefaultIssuerKind:                 test.DefaultIssuerKind,
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,
 				DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
-			})
+			}, "cert-manager-test")
 			b.Start()
 
 			err := sync(context.Background(), test.IngressLike)

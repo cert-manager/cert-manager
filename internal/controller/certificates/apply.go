@@ -29,6 +29,26 @@ import (
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
+// Apply will make a Apply API call with the given client to the certificates
+// resource endpoint. All data in the given Certificate's status field is
+// dropped.
+// The given fieldManager is will be used as the FieldManager in the Apply
+// call.
+// Always sets Force Apply to true.
+func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate) error {
+	crtData, err := serializeApply(crt)
+	if err != nil {
+		return err
+	}
+
+	_, err = cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
+		ctx, crt.Name, apitypes.ApplyPatchType, crtData,
+		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager},
+	)
+
+	return err
+}
+
 // ApplyStatus will make a Patch API call with the given client to the
 // certificates status sub-resource endpoint. All data in the given Certificate
 // object is dropped; expect for the name, namespace, and status object. The
@@ -46,6 +66,24 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 	)
 
 	return err
+}
+
+// serializeApply converts the given Certificate object in JSON.
+// The status field will be set empty before serializing.
+// TypeMeta will be populated with the Kind "Certificate" and API Version
+// "cert-manager.io/v1" respectively.
+func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
+	crt = &cmapi.Certificate{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: *crt.ObjectMeta.DeepCopy(),
+		Spec:       *crt.Spec.DeepCopy(),
+		Status:     cmapi.CertificateStatus{},
+	}
+	crtData, err := json.Marshal(crt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal certificate object: %w", err)
+	}
+	return crtData, nil
 }
 
 // serializeApplyStatus converts the given Certificate object in JSON. Only the

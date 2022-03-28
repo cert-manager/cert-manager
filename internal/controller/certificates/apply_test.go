@@ -17,6 +17,7 @@ limitations under the License.
 package certificates
 
 import (
+	"encoding/json"
 	"strconv"
 	"sync"
 	"testing"
@@ -26,6 +27,46 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
+
+func Test_serializeApply(t *testing.T) {
+	const (
+		expReg  = `^{"kind":"Certificate","apiVersion":"cert-manager.io/v1","metadata":{.*},"spec":{.*},"status":{}}$`
+		numJobs = 10000
+	)
+
+	var wg sync.WaitGroup
+	jobs := make(chan int)
+
+	wg.Add(numJobs)
+	for i := 0; i < 3; i++ {
+		go func() {
+			for j := range jobs {
+				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
+					var crt cmapi.Certificate
+					fuzz.New().NilChance(0.5).Fuzz(&crt)
+					crt.ManagedFields = nil
+
+					crtData, err := serializeApply(&crt)
+					assert.NoError(t, err)
+					assert.Regexp(t, expReg, string(crtData))
+
+					// Test round trip serializing Certificate preserved the spec.
+					var rtCrt cmapi.Certificate
+					assert.NoError(t, json.Unmarshal(crtData, &rtCrt))
+					assert.Equal(t, rtCrt.Spec, crt.Spec)
+
+					wg.Done()
+				})
+			}
+		}()
+	}
+
+	for i := 0; i < numJobs; i++ {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+}
 
 // This test ensures that when a Certificate object is serialized in
 // preparation for a Certificate status Apply call. Only the required
@@ -65,6 +106,11 @@ func Test_serializeApplyStatus(t *testing.T) {
 					crtData, err = serializeApplyStatus(&crt)
 					assert.NoError(t, err)
 					assert.Equal(t, expEmpty, string(crtData))
+
+					// Test round trip serializing Certificate preserved the status.
+					var rtCrt cmapi.Certificate
+					assert.NoError(t, json.Unmarshal(crtData, &rtCrt))
+					assert.Equal(t, rtCrt.Status, crt.Status)
 
 					wg.Done()
 				})
