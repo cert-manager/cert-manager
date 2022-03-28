@@ -10,6 +10,10 @@ export PATH := $(PWD)/bin/tools:$(PATH)
 
 CTR=docker
 
+# We have a variable for cmrel since one of the targets which uses it
+# requires an absolute path to the tool.
+CMREL=$(PWD)/bin/tools/cmrel
+
 HELM_VERSION=3.8.0
 KUBECTL_VERSION=1.22.1
 KIND_VERSION=0.11.1
