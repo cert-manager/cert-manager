@@ -45,6 +45,9 @@ installCRDs: false
 
 replicaCount: 1
 
+podDisruptionBudget: {}
+  # minAvailable: 1
+
 strategy: {}
   # type: RollingUpdate
   # rollingUpdate:
@@ -247,6 +250,8 @@ webhook:
     #   - ALL
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
+  podDisruptionBudget: {}
+    # minAvailable: 1
 
   # Optional additional annotations to add to the webhook Deployment
   # deploymentAnnotations: {}
@@ -383,7 +388,9 @@ cainjector:
     #   - ALL
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
-
+  
+  podDisruptionBudget: {}
+    # minAvailable: 1
 
   # Optional additional annotations to add to the cainjector Deployment
   # deploymentAnnotations: {}
