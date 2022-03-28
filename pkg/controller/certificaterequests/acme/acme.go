@@ -57,6 +57,9 @@ type ACME struct {
 	acmeClientV cmacmeclientset.AcmeV1Interface
 
 	reporter *crutil.Reporter
+
+	// fieldManager is the manager name used for Create and Apply operations.
+	fieldManager string
 }
 
 func init() {
@@ -82,6 +85,7 @@ func NewACME(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		orderLister:   ctx.SharedInformerFactory.Acme().V1().Orders().Lister(),
 		acmeClientV:   ctx.CMClient.AcmeV1(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		fieldManager:  ctx.FieldManager,
 	}
 }
 
@@ -132,7 +136,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 	if k8sErrors.IsNotFound(err) {
 		// Failing to create the order here is most likely network related.
 		// We should backoff and keep trying.
-		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{})
+		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{FieldManager: a.fieldManager})
 		if err != nil {
 			message := fmt.Sprintf("Failed create new order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
 

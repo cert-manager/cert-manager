@@ -128,6 +128,7 @@ func TestAcmeOrdersController(t *testing.T) {
 		framework.NewEventRecorder(t),
 		clock.RealClock{},
 		false,
+		"cert-manager-test",
 	)
 	c := controllerpkg.NewController(
 		ctx,
