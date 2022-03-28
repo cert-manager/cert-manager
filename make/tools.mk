@@ -399,7 +399,6 @@ else
 # check for the presence of Go when 'make vendor-go' is run.
 MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v python3 >/dev/null || echo python3) \
-             && (command -v perl >/dev/null || echo perl) \
              && (command -v jq >/dev/null || echo jq) \
              && (command -v sha256sum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \

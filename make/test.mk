@@ -27,7 +27,9 @@ test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubec
 #
 test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml --post-run-command='bash -c "perl -ni -e \"print if !/\\/fuzz_\\d+/\" $$GOTESTSUM_JUNITFILE"'  --junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
+		--post-run-command $$'bash -c "awk \'$$1 \!~ /\\/fuzz_\\d+// { print $$2 }\' - $$GOTESTSUM_JUNITFILE >/tmp/$$$$ && mv /tmp/$$$$ $$GOTESTSUM_JUNITFILE"' \
+		--junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
