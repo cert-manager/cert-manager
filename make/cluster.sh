@@ -176,9 +176,11 @@ setup_kind() {
     printf "and then retry.\n" >&2
   fi
 
+  service_ip_prefix=$(set +o pipefail && kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3)
+
   # (6) Has the Corefile been patched?
   corefile=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
-  to_be_appended=$'example.com:53 {\n    forward . 10.0.0.16\n}\n'
+  to_be_appended=$'example.com:53 {\n    forward . '$service_ip_prefix$'.16\n}\n'
   if ! grep -q --null-data -F "$(tr -d $'\n' <<<"$to_be_appended")" <(tr -d $'\n' <<<"$corefile"); then
     kubectl create configmap -oyaml coredns --dry-run=client --from-literal=Corefile="$(printf '%s\n%s' "$corefile" "$to_be_appended")" \
       | kubectl apply -n kube-system -f - >/dev/null

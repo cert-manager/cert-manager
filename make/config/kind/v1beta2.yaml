@@ -1,8 +1,3 @@
-# this config file is similar to the default, except we set the cluster's
-# service cidr range to be 10.0.0.0/16.
-# we do this because we need a fixed/predictable clusterIP of 10.0.0.15 for the
-# nginx-ingress service, in order to perform HTTP01 validations during tests.
-#
 # The --unsafe-no-fsync decreases the load on the pod's filesystem [1],
 # which in turn decreases the end-to-end tests duration. It is OK for us to
 # use this flag because we are using a one-node etcd cluster. The fsync
@@ -20,8 +15,6 @@ kubeadmConfigPatches:
     kind: ClusterConfiguration
     metadata:
       name: config
-    networking:
-      serviceSubnet: 10.0.0.0/16
     etcd:
       local:
         extraArgs:
