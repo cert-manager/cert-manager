@@ -16,6 +16,8 @@ limitations under the License.
 
 package v1alpha1
 
+import "time"
+
 // CertificateSigningRequest specific Annotations
 const (
 	// CertificateSigningRequestDurationAnnotationKey is the
@@ -26,6 +28,13 @@ const (
 	// CertificateSigningRequestIsCAAnnotationKey is the annotation key used to
 	// request whether the certificate should be marked as CA.
 	CertificateSigningRequestIsCAAnnotationKey = "experimental.cert-manager.io/request-is-ca"
+
+	// CertificateSigningRequestMinimumDuration is the minimum allowed
+	// duration that can be requested for a CertificateSigningRequest via
+	// the experimental.cert-manager.io/request-duration annotation. This
+	// has to be the same as the minimum allowed value for
+	// spec.expirationSeconds of a CertificateSigningRequest
+	CertificateSigningRequestMinimumDuration = time.Duration(time.Second * 600)
 )
 
 // SelfSigned Issuer specific Annotations

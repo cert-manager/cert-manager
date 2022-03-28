@@ -269,6 +269,9 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 	if iss.GetSpec().ACME.EnableDurationFeature {
 		duration, err := pki.DurationFromCertificateSigningRequest(csr)
 		if err != nil {
+			// This should never happen as caller would have errored
+			// before calling the ACME signer if the duration was
+			// invalid.
 			return nil, err
 		}
 		spec.Duration = &metav1.Duration{Duration: duration}
