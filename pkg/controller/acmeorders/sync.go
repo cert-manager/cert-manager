@@ -34,11 +34,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	internalorders "github.com/cert-manager/cert-manager/internal/controller/orders"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -65,7 +68,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			return
 		}
 		log.V(logf.DebugLevel).Info("updating Order resource status")
-		_, updateErr := c.cmClient.AcmeV1().Orders(o.Namespace).UpdateStatus(ctx, o, metav1.UpdateOptions{})
+		updateErr := c.updateOrApplyStatus(ctx, o)
 		if updateErr != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
@@ -709,4 +712,19 @@ func getAltCertChain(ctx context.Context, cl acmecl.Interface, certURL string, p
 	}
 	return false, nil, nil
 
+}
+
+// updateOrApplyStatus will update the order status.
+// If the ServerSideApply feature is enabled, the managed fields will instead
+// get applied using the relevant Patch API call.
+func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Order) error {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		return internalorders.ApplyStatus(ctx, c.cmClient, c.fieldManager, &cmacme.Order{
+			ObjectMeta: metav1.ObjectMeta{Namespace: order.Namespace, Name: order.Name},
+			Status:     *order.Status.DeepCopy(),
+		})
+	} else {
+		_, err := c.cmClient.AcmeV1().Orders(order.Namespace).UpdateStatus(ctx, order, metav1.UpdateOptions{})
+		return err
+	}
 }
