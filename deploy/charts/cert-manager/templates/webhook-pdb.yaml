@@ -1,0 +1,20 @@
+{{- if .Values.webhook.podDisruptionBudget -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ template "webhook.fullname" . }}-pdb
+  namespace: {{ .Release.Namespace }}
+  labels: 
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+spec:
+  {{ toYaml .Values.podDisruptionBudget }}
+  selector:
+    matchLabels:
+      app: webhook
+      app.kubernetes.io/component: webhook
+      app.kubernetes.io/instance: certmanager
+{{- end -}}
