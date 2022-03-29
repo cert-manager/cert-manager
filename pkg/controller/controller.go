@@ -159,8 +159,12 @@ func (c *controller) worker(ctx context.Context) {
 			if err != nil {
 				if strings.Contains(err.Error(), genericregistry.OptimisticLockErrorMsg) {
 					log.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())
+					// These errors are not counted towards the controllerSyncErrorCount metric on purpose
+					// as they will go way with
+					// https://github.com/cert-manager/cert-manager/blob/master/design/20220118.server-side-apply.md
 				} else {
 					log.Error(err, "re-queuing item due to error processing")
+					c.metrics.IncrementSyncErrorCount(c.name)
 				}
 
 				c.queue.AddRateLimited(obj)

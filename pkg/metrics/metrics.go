@@ -59,6 +59,7 @@ type Metrics struct {
 	acmeClientRequestDurationSeconds *prometheus.SummaryVec
 	acmeClientRequestCount           *prometheus.CounterVec
 	controllerSyncCallCount          *prometheus.CounterVec
+	controllerSyncErrorCount         *prometheus.CounterVec
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -157,6 +158,15 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			},
 			[]string{"controller"},
 		)
+
+		controllerSyncErrorCount = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "controller_sync_error_count",
+				Help:      "The number of errors encountered during controller sync().",
+			},
+			[]string{"controller"},
+		)
 	)
 
 	// Create server and register Prometheus metrics handler
@@ -172,6 +182,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		acmeClientRequestCount:           acmeClientRequestCount,
 		acmeClientRequestDurationSeconds: acmeClientRequestDurationSeconds,
 		controllerSyncCallCount:          controllerSyncCallCount,
+		controllerSyncErrorCount:         controllerSyncErrorCount,
 	}
 
 	return m
@@ -187,6 +198,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
+	m.registry.MustRegister(m.controllerSyncErrorCount)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
@@ -205,4 +217,9 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 // IncrementSyncCallCount will increase the sync counter for that controller.
 func (m *Metrics) IncrementSyncCallCount(controllerName string) {
 	m.controllerSyncCallCount.WithLabelValues(controllerName).Inc()
+}
+
+// IncrementSyncErrorCount will increase count of errors during sync of that controller.
+func (m *Metrics) IncrementSyncErrorCount(controllerName string) {
+	m.controllerSyncErrorCount.WithLabelValues(controllerName).Inc()
 }
