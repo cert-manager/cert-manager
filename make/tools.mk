@@ -113,7 +113,10 @@ unvendor-go: bin/tools/go
 #
 # Details on how "bin/downloaded" gets cached are available in the
 # description of the PR https://github.com/jetstack/testing/pull/651.
-ifeq ($(CI),)
+#
+# We use "printenv CI" instead of just "ifeq ($(CI),)" because otherwise we
+# would get "warning: undefined variable 'CI'".
+ifeq ($(shell printenv CI),)
 LN := ln -f -s
 else
 LN := cp -f -r
