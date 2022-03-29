@@ -73,7 +73,7 @@ func serializeApply(challenge *cmacme.Challenge) ([]byte, error) {
 		ObjectMeta: *challenge.ObjectMeta.DeepCopy(),
 		Spec:       *challenge.Spec.DeepCopy(),
 	}
-	challenge.ManagedFields = nil
+	ch.ManagedFields = nil
 	challengeData, err := json.Marshal(ch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal challenge object: %w", err)
