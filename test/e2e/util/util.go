@@ -70,9 +70,11 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 // WaitForIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1.IssuerCondition) error {
+	logf, done := log.LogBackoff()
+	defer done()
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			log.Logf("Waiting for issuer %v condition %#v", name, condition)
+			logf("Waiting for issuer %v condition %#v", name, condition)
 			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
@@ -108,9 +110,11 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 // WaitForClusterIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1.IssuerCondition) error {
+	logf, done := log.LogBackoff()
+	defer done()
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			log.Logf("Waiting for clusterissuer %v condition %#v", name, condition)
+			logf("Waiting for clusterissuer %v condition %#v", name, condition)
 			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
@@ -146,9 +150,11 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 // WaitForCRDToNotExist waits for the CRD with the given name to no
 // longer exist.
 func WaitForCRDToNotExist(client apiextensionsv1.CustomResourceDefinitionInterface, name string) error {
+	logf, done := log.LogBackoff()
+	defer done()
 	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			log.Logf("Waiting for CRD %v to not exist", name)
+			logf("Waiting for CRD %v to not exist", name)
 			_, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil == err {
 				return false, nil

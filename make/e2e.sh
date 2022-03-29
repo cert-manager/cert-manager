@@ -21,8 +21,52 @@ source "$here/config/lib.sh"
 cd "$here/.." || exit 1
 set -e
 
+# Why do we only run 20 tests concurrently? Because we have noticed that
+# many tests start timing out when the Prow pod gets overloaded. We are
+# using a n1-standard-8 VM (7900m vCPU and 24GB RAM), and the pod requests
+# 3500m of vCPU and 12GB of RAM.
+#
+# The components that seem to overload are kyverno (which is in the hot
+# path of kube-apiserver), etcd, the kube-apiserver. cert-manager then
+# becomes sluggish due to slow calls to the apiserver.
+#
+# In the following table, the first column shows the various -nodes values
+# tested when running ginkgo. The "test duration" is the time spent while
+# running "ginkgo", and the column"timeouts" column shows the number of
+# tests that failed with a time out (including the tests that are retried;
+# tests that show in the "Flaky" column in the Prow UI are thus counted
+# twice).
+#
+#
+#  | nodes | ginkgo duration | timeouts | total duration |  startup time  | link  |
+#  |-------|-----------------|----------|----------------|----------------|-------|
+#  | 5     | 37m 49s         | 0        | 40m 21s        | 2m 32s   (hot) | [1][] |
+#  | 10    | 27m 49s         | 0        | 34m 53s        | 7m 4s   (cold) | [2][] |
+#  | 20    | 24m 16s         | 0        | 26m 46s        | 2m 30s   (hot) | [3][] |
+#  | 20    | 24m 15s         | 1        | 30m 15s        | 6m 0s   (cold) | [4][] |
+#  | 30    | 23m 42s         | 0        | 26m 35s        | 2m 53s   (hot) | [5][] |
+#  | 40    | 26m 26s         | 26       | 29m 29s        | 3m 3s    (hot) | [6][] |
+#  | 50    | interrupted (*) |          |                |          (hot) | [7][] |
+#
+# The startup time is calculated by substracting the "started time" visible
+# on the Prow UI with the first line that has a timestamp. This time
+# depends on whether this Kubernetes node already has a cache or not.
+#
+# These results have no statistical significance since each line is the
+# result of a single Prow job. But these results still show that 10 is a
+# good number.
+#
+# (*) It seems like at 50 nodes the pod gets killed somehow.
+#
+#  [1]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507028321639075840
+#  [2]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507002589567258624
+#  [3]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1506994096810496000
+#  [4]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1506974361645486080
+#  [5]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507011895024947200
+#  [6]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507019887451574272
+#  [7]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507040653668782080
+nodes=20
 flake_attempts=1
-nodes=10
 ginkgo_skip=
 ginkgo_focus=
 feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true
@@ -103,7 +147,7 @@ fi
 
 for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP ARTIFACTS; do
   if printenv "$v" >/dev/null && [ -n "${!v}" ]; then
-    eval "$(tr '[:upper:]' '[:lower:]' <<<"$v")"="${!v}"
+    eval "$(tr '[:upper:]' '[:lower:]' <<<"$v")=\"${!v}\""
   fi
 done
 
@@ -122,30 +166,29 @@ case "$k8s_version" in
   ;;
 esac
 
-if [[ -n "$ginkgo_focus" ]]; then ginkgo_focus="--ginkgo.focus=${ginkgo_focus}"; fi
-if [[ -n "$ginkgo_skip" ]]; then ginkgo_skip="--ginkgo.skip=${ginkgo_skip}"; fi
+ginkgo_args=("$@")
+
+if [[ -n "$ginkgo_focus" ]]; then ginkgo_args+=(--ginkgo.focus="${ginkgo_focus}"); fi
+if [[ -n "$ginkgo_skip" ]]; then ginkgo_args+=(--ginkgo.skip="${ginkgo_skip}"); fi
 
 # Only enable junit output if ARTIFACTS is set.
-extra_args=
 if [[ -n "$artifacts" ]]; then
   mkdir -p "$artifacts"
-  extra_args+=(--report-dir="$artifacts")
+  ginkgo_args+=(--report-dir="$artifacts")
 fi
 
 # Ginkgo doesn't stream the logs when running in parallel (--nodes). Let's
 # disable parallelism to force Ginkgo to stream the logs when
 # --ginkgo.focus or GINKGO_FOCUS is set, since --ginkgo.focus and
 # GINKGO_FOCUS are often used to debug a specific test.
-if [[ "$*" =~ ginkgo.focus ]] || [[ -n "$ginkgo_focus" ]]; then
+if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   nodes=1
-  extra_args+=(--ginkgo.v --test.v)
+  ginkgo_args+=(--ginkgo.v --test.v)
 fi
 
 # The command "kubectl cluster-info dump" returns 141 since grep breaks the
 # pipe as soon as it finds a match.
 service_ip_prefix=$(set +o pipefail && kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3)
-dns_server=${service_ip_prefix}.16
-ingress_ip=${service_ip_prefix}.15
 
 export CGO_ENABLED=0
 trace ginkgo \
@@ -155,12 +198,10 @@ trace ginkgo \
   ./test/e2e/ \
   -- \
   --repo-root="$PWD" \
-  --acme-dns-server="$dns_server" \
-  --acme-ingress-ip="$ingress_ip" \
+  --acme-dns-server="${service_ip_prefix}.16" \
+  --acme-ingress-ip="${service_ip_prefix}.15" \
+  --acme-gateway-ip="${service_ip_prefix}.14" \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
   --feature-gates="$feature_gates" \
-  $ginkgo_skip \
-  $ginkgo_focus \
-  "${extra_args[@]}" \
-  "$@"
+  "${ginkgo_args[@]}"

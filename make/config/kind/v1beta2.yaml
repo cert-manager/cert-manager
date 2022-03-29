@@ -1,8 +1,12 @@
-# this config file is similar to the default, except we set the cluster's
-# service cidr range to be 10.0.0.0/16.
-# we do this because we need a fixed/predictable clusterIP of 10.0.0.15 for the
-# nginx-ingress service, in order to perform HTTP01 validations during tests.
-
+# The --unsafe-no-fsync decreases the load on the pod's filesystem [1],
+# which in turn decreases the end-to-end tests duration. It is OK for us to
+# use this flag because we are using a one-node etcd cluster. The fsync
+# feature is used for the raft consensus protocol and is thus only useful
+# when using 3 or more etcd nodes.
+#
+#  [1]: https://github.com/etcd-io/etcd/pull/11946
+#  [2]: https://etcd.io/docs/v3.5/tuning/#disk
+#  [3]: https://etcd.io/docs/v3.5/faq/
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 kubeadmConfigPatches:
@@ -11,7 +15,9 @@ kubeadmConfigPatches:
     kind: ClusterConfiguration
     metadata:
       name: config
-    networking:
-      serviceSubnet: 10.0.0.0/16
+    etcd:
+      local:
+        extraArgs:
+          unsafe-no-fsync: "True"
 nodes:
   - role: control-plane

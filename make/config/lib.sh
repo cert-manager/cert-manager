@@ -69,13 +69,6 @@ color() {
   done
 }
 
-# https://superuser.com/questions/184307/bash-create-anonymous-fifo
-PIPE=$(mktemp -u)
-mkfifo "$PIPE"
-exec 3<>"$PIPE"
-rm "$PIPE"
-exec 3>/dev/stderr
-
 # Shows the command before running it. Usage:
 #
 #     trace CMD ARGUMENTS...
@@ -84,12 +77,11 @@ exec 3>/dev/stderr
 #
 #     trace bash -c "command | command | command"
 trace() {
-  # This mysterious perl expression makes sure to double-quote the arguments
+  # This mysterious awk expression makes sure to double-quote the arguments
   # that have special characters in them, such as spaces, curly braces (since
   # zsh interprets curly braces), interogation marks, simple braces, and "*".
-  # Note that no ending newline is printed in this line so that we can append
-  # "<<EOF" (see below.)
-  LANG=C perl -e "print \"${yel}$1${bold} \""', join(" ", map { $_ =~ / |}|{|\(|\)|\\|\*|\?/ ? "\"".$_."\"" : $_} @ARGV)',"\"\n${end}\"" -- "${@:2}" >&3
+  for arg in "$@"; do echo "$arg"; done \
+    | awk '{if (NR==1) printf "'"$yel"'%s '"$bold"'",$0; else if ($0 ~ / |\}|\{|\(|\)|\\|\*|\?/) printf "\"%s\" ",$0; else printf "%s ",$0} END {printf "\n"}'
 
   command "$@"
 }

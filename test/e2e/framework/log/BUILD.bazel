@@ -6,7 +6,10 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/test/e2e/framework/log",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["@com_github_onsi_ginkgo//:go_default_library"],
+    deps = [
+        "@com_github_onsi_ginkgo//:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
+    ],
 )
 
 filegroup(

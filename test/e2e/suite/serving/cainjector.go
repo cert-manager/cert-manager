@@ -92,7 +92,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Second*30)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 				By("grabbing the corresponding secret")
@@ -168,7 +168,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return nil
 				})
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Second*30)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")
@@ -243,7 +243,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						return nil, err
 					}
 					return test.getCAs(newInjectable), nil
-				}, "10s", "2s").Should(Equal(expectedCAs))
+				}, "1m", "2s").Should(Equal(expectedCAs))
 			})
 
 			It("should inject a CA directly from a secret if the inject-ca-from-secret annotation is present", func() {
@@ -300,7 +300,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 				By("grabbing the corresponding secret")
 				var secret corev1.Secret
-				Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "10s", "2s").Should(Succeed())
+				Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "30s", "2s").Should(Succeed())
 
 				By("checking that all webhooks have an empty CA")
 				expectedLen := len(test.getCAs(injectable))
@@ -314,7 +314,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						return nil, err
 					}
 					return test.getCAs(newInjectable), nil
-				}, "10s", "2s").Should(Equal(expectedCAs))
+				}, "30s", "2s").Should(Equal(expectedCAs))
 			})
 		})
 	}

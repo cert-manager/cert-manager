@@ -16,11 +16,20 @@ test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubec
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
-# test-ci runs all unit and integration tests and writes a JUnit report of the
-# results. WHAT also works here.
+# test-ci runs all unit and integration tests and writes a JUnit report of
+# the results. WHAT also works here.
+#
+# The reason we are hiding the fuzz tests is because there are over 50,000
+# XML lines with fuzz test cases, which means the Prow UI struggles
+# displaying the JUnit results. We are hiding lines that look like this:
+#
+#   <testcase classname="internal/controller/certificates" name="Test_serializeApplyStatus/fuzz_8358"></testcase>
+#
 test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/test-ci.xml -- $(WHAT)
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
+		--post-run-command $$'bash -c "awk \'$$1 \!~ /\\/fuzz_\\d+// { print $$2 }\' - $$GOTESTSUM_JUNITFILE >/tmp/$$$$ && mv /tmp/$$$$ $$GOTESTSUM_JUNITFILE"' \
+		--junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
@@ -76,7 +85,7 @@ test/integration/versionchecker/testdata/test_manifests.tar: bin/scratch/oldcrds
 bin/scratch/oldcrds.tar: bin/scratch/git/upstream-tags.txt | bin/scratch/oldcrds
 	@# First, download the CRDs for all releases listed in upstream-tags.txt
 	<bin/scratch/git/upstream-tags.txt xargs -I% -P5 \
-		curl --compressed -sfL \
+		curl --compressed -sSfL \
 		-o bin/scratch/oldcrds/%.yaml \
 		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml"
 	@# Next, tar up the old CRDs together

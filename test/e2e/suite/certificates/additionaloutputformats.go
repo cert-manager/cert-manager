@@ -70,7 +70,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		By("creating Certificate with AdditionalOutputFormats")
 		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Second*30)
+		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		return crt
@@ -243,7 +243,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return secret.Data
-		}).WithTimeout(5 * time.Second).WithPolling(time.Second).Should(MatchAllKeys(Keys{
+		}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(MatchAllKeys(Keys{
 			"ca.crt":           Not(BeEmpty()),
 			"tls.crt":          Not(BeEmpty()),
 			"tls.key":          Not(BeEmpty()),
@@ -277,7 +277,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "e2e-testing", "Renewing for AdditionalOutputFormat e2e test")
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).UpdateStatus(context.Background(), crt, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Second*30)
+		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		By("ensuring additional output formats reflect the new private key and certificate")

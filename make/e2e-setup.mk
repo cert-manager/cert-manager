@@ -19,7 +19,7 @@ IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:94fc7f204917a
 IMAGE_traefik_amd64 := docker.io/traefik:2.4.9@sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
-IMAGE_sampleexternalissuer_amd64 := ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e@sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86
+IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.1.1@sha256:7dafe98c73d229bbac08067fccf9b2884c63c8e1412fe18f9986f59232cf3cb5
 IMAGE_projectcontour_amd64 := docker.io/projectcontour/contour:v1.20.1@sha256:10f6501cbb8514549b2ae71634152fa1a02e4ba63a9a32955d2ff027a0da1254
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
@@ -37,6 +37,9 @@ IMAGE_projectcontour_arm64 := docker.io/projectcontour/contour:v1.20.1@sha256:19
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
 
+IMAGE_kind_amd64 := $(shell make/cluster.sh --show-image)
+IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
+
 PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 GATEWAY_API_VERSION = 0.4.1
 
@@ -47,7 +50,7 @@ GATEWAY_API_VERSION = 0.4.1
 ## with `make kind KIND_CLUSTER_NAME=name`.
 ##
 ## @category Development
-e2e-setup-kind: kind-exists kind-image-prepull
+e2e-setup-kind: kind-exists
 	@printf "✅  \033[0;32mReady\033[0;0m. The next step is to install cert-manager and the addons with the command:\n" >&2
 	@printf "    \033[0;36mmake -j e2e-setup\033[0;0m\n" >&2
 
@@ -61,7 +64,7 @@ e2e-setup-kind: kind-exists kind-image-prepull
 # used as a prerequisite. If we were to use .PHONY, then the file's
 # timestamp would not be used to check whether targets should be rebuilt,
 # and they would get constantly rebuilt.
-bin/scratch/kind-exists: make/config/kind/v1beta2.yaml make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
+bin/scratch/kind-exists: make/config/kind/v1beta2.yaml preload-kind-image make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
 	@$(eval KIND_CLUSTER_NAME ?= kind)
 	@make/cluster.sh --name $(KIND_CLUSTER_NAME)
 	@if [ "$(shell cat $@ 2>/dev/null)" != kind ]; then echo kind > $@; else touch $@; fi
@@ -69,15 +72,8 @@ bin/scratch/kind-exists: make/config/kind/v1beta2.yaml make/cluster.sh FORCE bin
 .PHONY: kind-exists
 kind-exists: bin/scratch/kind-exists
 
-# Let's separate the pulling of the Kind image so that more tasks can be
-# run in parallel when running "make -j e2e-setup".
-.PHONY: kind-image-prepull
-kind-image-prepull:
-	@$(eval IMAGE = $(shell make/cluster.sh --show-image))
-	$(CTR) inspect $(IMAGE) 2>/dev/null >&2 || $(CTR) pull $(IMAGE)
-
-#  Component              Used in                   IP                     A record in bind
-#  ---------              -------                   --                     ----------------
+#  Component                Used in                   IP                     A record in bind
+#  ---------                -------                   --                     ----------------
 #  e2e-setup-bind           DNS-01 tests              SERVICE_IP_PREFIX.16
 #  e2e-setup-ingressnginx   HTTP-01 Ingress tests     SERVICE_IP_PREFIX.15   *.ingress-nginx.db.http01.example.com
 #  e2e-setup-projectcontour HTTP-01 GatewayAPI tests  SERVICE_IP_PREFIX.14   *.gateway.db.http01.example.com
@@ -91,13 +87,17 @@ kind-image-prepull:
 ## @category Development
 e2e-setup: e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
 
-# The function $(call image-tar,traefik) returns the path to the image tarball
-# for a given image name such as "traefik". The path looks like this:
+# The function "image-tar" returns the path to the image tarball for a given
+# image name. For example:
+#
+#     $(call image-tar,traefik)
+#
+# returns the following path:
 #
 #     bin/downloaded/containers/amd64/docker.io/traefik+2.4.9@sha256+bfba204252.tar
-#                       <---> <--------------------------------------->
-#                      CRI_ARCH         IMAGE_traefik_amd64
-#                                   (with ":" replaced with "+")
+#                               <---> <--------------------------------------->
+#                              CRI_ARCH         IMAGE_traefik_amd64
+#                                           (with ":" replaced with "+")
 #
 # Note the "+" signs. We replace all the "+" with ":" because ":" can't be used
 # in make targets. The "+" replacement is safe since it isn't a valid character
@@ -106,8 +106,21 @@ e2e-setup: e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bin
 # When an image isn't available, i.e., IMAGE_imagename_arm64 is empty, we still
 # return a string of the form "bin/downloaded/containers/amd64/missing-imagename.tar".
 define image-tar
-bin/downloaded/containers/$(CRI_ARCH)/$(if $(IMAGE_$(1)_$(CRI_ARCH)),$(subst :,+,$(IMAGE_$(1)_$(CRI_ARCH))),missing-$(1)_$(CRI_ARCH)).tar
+bin/downloaded/containers/$(CRI_ARCH)/$(if $(IMAGE_$(1)_$(CRI_ARCH)),$(subst :,+,$(IMAGE_$(1)_$(CRI_ARCH))),missing-$(1)).tar
 endef
+
+# Let's separate the pulling of the Kind image so that more tasks can be
+# run in parallel when running "make -j e2e-setup". In CI, the Docker
+# engine being stripped on every job, we save the kind image to
+# "bin/downloads".
+.PHONY: preload-kind-image
+ifeq ($(CI),)
+preload-kind-image: bin/tools/crane
+	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
+else
+preload-kind-image: $(call image-tar,kind) bin/tools/crane
+	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
+endif
 
 LOAD_TARGETS=load-$(call image-tar,ingressnginxprev1) load-$(call image-tar,ingressnginxpostv1) load-$(call image-tar,haproxyingress) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,traefik) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
@@ -126,6 +139,15 @@ $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
 	@mkdir -p $(dir $@)
 	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <(bin/tools/crane manifest --platform=linux/$(CRI_ARCH) $(IMAGE) | sha256sum)
+	bin/tools/crane pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
+
+# Same as above, except it supports multiarch images.
+$(call image-tar,kind): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
+	@$(eval IMAGE=$(subst +,:,$(shell cut -d/ -f2- <<<$*)))
+	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
+	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
+	@mkdir -p $(dir $@)
+	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <(bin/tools/crane manifest $(IMAGE) | sha256sum)
 	bin/tools/crane pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
 
 # Since we dynamically install Vault via Helm during the end-to-end tests,
@@ -155,6 +177,7 @@ feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 .PHONY: e2e-setup-certmanager
 e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver cainjector webhook ctl,bin/containers/cert-manager-$(bin)-linux-$(CRI_ARCH).tar) $(foreach bin,controller acmesolver cainjector webhook ctl,load-bin/containers/cert-manager-$(bin)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl bin/tools/kind
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
+	@$(eval TAG = $(shell tar xfO bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm upgrade \
 		--install \
 		--force \
@@ -165,15 +188,15 @@ e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver 
 		--set cainjector.image.repository="$(shell tar xfO bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
 		--set webhook.image.repository="$(shell tar xfO bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
 		--set startupapicheck.image.repository="$(shell tar xfO bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
-		--set image.tag="$(shell tar xfO bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
-		--set cainjector.image.tag="$(shell tar xfO bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
-		--set webhook.image.tag="$(shell tar xfO bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
-		--set startupapicheck.image.tag="$(shell tar xfO bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2)" \
+		--set image.tag="$(TAG)" \
+		--set cainjector.image.tag="$(TAG)" \
+		--set webhook.image.tag="$(TAG)" \
+		--set startupapicheck.image.tag="$(TAG)" \
 		--set installCRDs=true \
 		--set featureGates="$(feature_gates_controller)" \
 		--set "webhook.extraArgs={--feature-gates=$(feature_gates_webhook)}" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
-		--set "extraArgs={--dns01-recursive-nameservers=$(SERVICE_IP_PREFIX).16:53,--dns01-recursive-nameservers-only=true}" \
+		--set "extraArgs={--dns01-recursive-nameservers=$(SERVICE_IP_PREFIX).16:53,--dns01-recursive-nameservers-only=true,--acme-http01-solver-image=cert-manager-acmesolver-$(CRI_ARCH):$(TAG)}" \
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind

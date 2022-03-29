@@ -113,7 +113,10 @@ unvendor-go: bin/tools/go
 #
 # Details on how "bin/downloaded" gets cached are available in the
 # description of the PR https://github.com/jetstack/testing/pull/651.
-ifeq ($(CI),)
+#
+# We use "printenv CI" instead of just "ifeq ($(CI),)" because otherwise we
+# would get "warning: undefined variable 'CI'".
+ifeq ($(shell printenv CI),)
 LN := ln -f -s
 else
 LN := cp -f -r
@@ -399,7 +402,6 @@ else
 # check for the presence of Go when 'make vendor-go' is run.
 MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v python3 >/dev/null || echo python3) \
-             && (command -v perl >/dev/null || echo perl) \
              && (command -v jq >/dev/null || echo jq) \
              && (command -v sha256sum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
@@ -410,3 +412,7 @@ ifneq ($(MISSING),)
 $(error Missing required tools: $(MISSING))
 endif
 endif
+
+.PHONY: e2e-setup-kind-update-images
+e2e-setup-kind-update-images: make/cluster.sh bin/tools/crane
+	make/cluster.sh --update-images

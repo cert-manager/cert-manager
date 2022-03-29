@@ -151,19 +151,21 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		By("Making sure the Order failed with a 400 since google.com is invalid")
 		order := &cmacme.Order{}
+		logf, done := log.LogBackoff()
+		defer done()
 		err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (done bool, err error) {
 			orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
 			Expect(err).NotTo(HaveOccurred())
 
 			if len(orders) == 0 || len(orders) > 1 {
-				log.Logf("Waiting as one Order should exist, but we found %d", len(orders))
+				logf("Waiting as one Order should exist, but we found %d", len(orders))
 				return false, nil
 			}
 			order = orders[0]
 
 			expected := `400 urn:ietf:params:acme:error:rejectedIdentifier`
 			if !strings.Contains(order.Status.Reason, expected) {
-				log.Logf("Waiting for Order's reason, current: %s, should contain: %s", order.Status.Reason, expected)
+				logf("Waiting for Order's reason, current: %s, should contain: %s", order.Status.Reason, expected)
 				return false, nil
 			}
 
@@ -436,16 +438,18 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("killing the solver pod")
 		podClient := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name)
 		var pod corev1.Pod
-		err = wait.PollImmediate(1*time.Second, time.Minute,
+		logf, done := log.LogBackoff()
+		defer done()
+		err = wait.PollImmediate(1*time.Second, time.Minute*3,
 			func() (bool, error) {
-				log.Logf("Waiting for solver pod to exist")
+				logf("Waiting for solver pod to exist")
 				podlist, err := podClient.List(context.TODO(), metav1.ListOptions{})
 				if err != nil {
 					return false, err
 				}
 
 				for _, p := range podlist.Items {
-					log.Logf("solver pod %s", p.Name)
+					logf("solver pod %s", p.Name)
 					// TODO(dmo): make this cleaner instead of just going by name
 					if strings.Contains(p.Name, "http-solver") {
 						pod = p
