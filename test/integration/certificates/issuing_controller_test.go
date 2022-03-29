@@ -1019,7 +1019,7 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 	secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: types.UID("not-cert"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)}
-	applyCnf.OwnerReferences = []applymetav1.OwnerReferenceApplyConfiguration{applymetav1.OwnerReferenceApplyConfiguration{
+	applyCnf.OwnerReferences = []applymetav1.OwnerReferenceApplyConfiguration{{
 		APIVersion: &fooRef.APIVersion, Kind: &fooRef.Kind, Name: &fooRef.Name,
 		UID: &fooRef.UID, Controller: fooRef.Controller, BlockOwnerDeletion: fooRef.BlockOwnerDeletion,
 	}}
