@@ -334,7 +334,7 @@ bin/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | bin/downloaded
 bin/downloaded/containers/$(CRI_ARCH)/pebble/pebble: bin/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz $(DEPENDS_ON_GO)
 	@mkdir -p $(dir $@)
 	tar xzf $< -C $(dir $@)
-	cd $(dir $@)pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) -o $(CURDIR)/$@ ./cmd/pebble
+	cd $(dir $@)pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) $(GOFLAGS) -o $(CURDIR)/$@ ./cmd/pebble
 
 bin/downloaded/containers/$(CRI_ARCH)/pebble.tar: bin/downloaded/containers/$(CRI_ARCH)/pebble/pebble make/config/pebble/Containerfile.pebble
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
