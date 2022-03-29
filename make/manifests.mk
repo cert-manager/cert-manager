@@ -58,7 +58,7 @@ bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION
 ifeq ($(strip $(CMREL_KEY)),)
 	$(error Trying to sign helm chart but CMREL_KEY is empty)
 endif
-	cd $(dir $<) && bin/tools/cmrel sign helm --chart-path "$(notdir $<)" --key "$(CMREL_KEY)"
+	cd $(dir $<) && $(CMREL) sign helm --chart-path "$(notdir $<)" --key "$(CMREL_KEY)"
 
 bin/helm/cert-manager/templates/%.yaml: deploy/charts/cert-manager/templates/%.yaml | bin/helm/cert-manager/templates
 	cp -f $^ $@
