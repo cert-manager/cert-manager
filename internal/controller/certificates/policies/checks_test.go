@@ -23,7 +23,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -1720,6 +1722,442 @@ func Test_SecretAdditionalOutputFormatsOwnerMismatch(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsOwnerMismatch(fieldManager)(test.input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expMessage, gotMessage)
+			assert.Equal(t, test.expViolation, gotViolation)
+		})
+	}
+}
+
+func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
+	const fieldManager = "cert-manager-test"
+
+	crt := gen.Certificate("test-certificate",
+		gen.SetCertificateUID(types.UID("uid-123")),
+	)
+
+	tests := map[string]struct {
+		input           Input
+		ownerRefEnabled bool
+
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"ownerReferenceEnabled=false no secret managed field owner reference should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret managed field owner reference for different UID should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
+							}}}`),
+							}},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret managed field owner reference for same UID should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"uid-123\"}": {}
+							}}}`),
+							}},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=false",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=false secret managed field different owner reference for same UID should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager-test", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"uid-123\"}": {}
+							}}}`),
+							}},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+
+		"ownerReferenceEnabled=true no secret managed field owner reference should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret managed field owner reference for different UID should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
+							}}}`),
+							}},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret managed field owner reference for same UID should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"uid-123\"}": {}
+							}}}`),
+							}},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=true secret managed field different owner reference for same UID should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						ManagedFields: []metav1.ManagedFieldsEntry{
+							{Manager: "not-cert-manager-test", FieldsV1: &metav1.FieldsV1{
+								Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"uid-123\"}": {}
+							}}}`),
+							}},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceManagedFieldMismatch(test.ownerRefEnabled, fieldManager)(test.input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expMessage, gotMessage)
+			assert.Equal(t, test.expViolation, gotViolation)
+		})
+	}
+}
+
+func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
+	crt := gen.Certificate("test-certificate",
+		gen.SetCertificateUID(types.UID("uid-123")),
+	)
+
+	tests := map[string]struct {
+		input           Input
+		ownerRefEnabled bool
+
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"ownerReferenceEnabled=false no secret owner reference should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret has random owner reference should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret has multiple random owner reference should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret has owner reference for certificate with correct value should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret has owner reference for certificate with in-correct value should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+
+		"ownerReferenceEnabled=false no secret owner reference should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has random owner reference should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has multiple random owner reference should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with correct value should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong Name value should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong APIVersion value should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "acme.cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong Kind value should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Issuer", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong Controller value should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong BlockDeletion value should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(false)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
+			expViolation:    true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceValueMismatch(test.ownerRefEnabled)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)

@@ -147,9 +147,12 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		secretsUpdateData:        secretsManager.UpdateData,
-		postIssuancePolicyChain:  policies.NewSecretPostIssuancePolicyChain(fieldManager),
-		fieldManager:             fieldManager,
-		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
+		postIssuancePolicyChain: policies.NewSecretPostIssuancePolicyChain(
+			certificateControllerOptions.EnableOwnerRef,
+			fieldManager,
+		),
+		fieldManager:         fieldManager,
+		localTemporarySigner: certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
 

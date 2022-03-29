@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -57,6 +59,9 @@ func Test_ensureSecretData(t *testing.T) {
 		// expectedAction is true if the test expects that the controller should
 		// reconcile the Secret.
 		expectedAction bool
+
+		// enableOwnerRef is passed to the post issuance policy checks.
+		enableOwnerRef bool
 	}{
 		"if 'key' is empty, should do nothing and not error": {
 			expectedAction: false,
@@ -437,6 +442,56 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			expectedAction: true,
 		},
+
+		"enabledOwnerRef=false if Secret has owner reference to Certificate owned by field manager, expect action": {
+			key:            "test-namespace/test-name",
+			enableOwnerRef: false,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec:       cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"uid-123\"}": {}
+							}}}`),
+						}},
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
+			},
+			expectedAction: true,
+		},
+		"enabledOwnerRef=true if Secret has owner reference to Certificate owned by field manager, expect no action": {
+			key:            "test-namespace/test-name",
+			enableOwnerRef: true,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec:       cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					OwnerReferences: []metav1.OwnerReference{
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+					},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`
+                {"f:metadata": {
+								"f:ownerReferences": {
+                "k:{\"uid\":\"uid-123\"}": {}
+							}}}`),
+						}},
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
+			},
+			expectedAction: false,
+		},
 	}
 
 	for name, test := range tests {
@@ -456,6 +511,7 @@ func Test_ensureSecretData(t *testing.T) {
 
 			// Initialise with RESTConfig which is used to discover the User Agent.
 			builder.InitWithRESTConfig()
+			builder.EnableOwnerRef = test.enableOwnerRef
 
 			// Register informers used by the controller using the registration wrapper.
 			w := &controllerWrapper{}
@@ -467,7 +523,7 @@ func Test_ensureSecretData(t *testing.T) {
 				actionCalled = true
 				return nil
 			}
-			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(fieldManager)
+			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(test.enableOwnerRef, fieldManager)
 
 			// Start the informers and begin processing updates.
 			builder.Start()

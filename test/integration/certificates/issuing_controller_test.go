@@ -25,14 +25,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/utils/clock"
+	"k8s.io/utils/pointer"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -43,7 +47,9 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/integration/framework"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 )
 
 // TestIssuingController performs a basic test to ensure that the issuing
@@ -921,4 +927,151 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// Test_IssuingController_SecretOwnerReference performs a basic check to ensure
+// that a Secret is updated with an owner ref if the gate becomes enabled, then
+// is removed again when disabled.
+// Also ensures that changes to the Secret which modify the owner reference,
+// are reverted or corrected if needed by the issuing controller.
+func Test_IssuingController_OwnerRefernece(t *testing.T) {
+	const (
+		fieldManager = "cert-manager-issuing-test"
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
+
+	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	controllerOptions := controllerpkg.CertificateOptions{
+		EnableOwnerRef: false,
+	}
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmClient,
+		factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
+		controllerOptions, fieldManager,
+	)
+	c := controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
+	stopControllerNoOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer func() {
+		if stopControllerNoOwnerRef != nil {
+			stopControllerNoOwnerRef()
+		}
+	}()
+
+	t.Log("creating a Secret and Certificate which does not need issuance")
+	ns, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "owner-reference-test"}}, metav1.CreateOptions{})
+	require.NoError(t, err)
+	crt := gen.Certificate("owner-reference-test",
+		gen.SetCertificateNamespace(ns.Name),
+		gen.SetCertificateCommonName("my-common-name"),
+		gen.SetCertificateDNSNames("example.com", "foo.example.com"),
+		gen.SetCertificateIPs("1.2.3.4", "5.6.7.8"),
+		gen.SetCertificateURIs("spiffe://hello.world"),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateSecretName("cert-manager-issuing-test-secret"),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+	)
+	bundle := testcrypto.MustCreateCryptoBundle(t, crt, &clock.RealClock{})
+	secret, err := kubeClient.CoreV1().Secrets(ns.Name).Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: crt.Spec.SecretName},
+		Data: map[string][]byte{
+			"ca.crt":  bundle.CertBytes,
+			"tls.crt": bundle.CertBytes,
+			"tls.key": bundle.PrivateKeyBytes,
+		},
+	}, metav1.CreateOptions{FieldManager: fieldManager})
+	require.NoError(t, err)
+	crt, err = cmClient.CertmanagerV1().Certificates(ns.Name).Create(ctx, crt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	t.Log("ensure Certificate does not gain Issuing condition")
+	require.Never(t, func() bool {
+		crt, err = cmClient.CertmanagerV1().Certificates(ns.Name).Get(ctx, crt.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue})
+	}, time.Second*3, time.Millisecond*10, "expected Certificate to not gain Issuing condition")
+
+	t.Log("added owner reference to Secret for Certificate with field manager should get removed")
+	secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	ref := *metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
+		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
+		WithData(secret.Data).WithType(secret.Type).WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+		APIVersion: &ref.APIVersion, Kind: &ref.Kind,
+		Name: &ref.Name, UID: &ref.UID,
+		Controller: ref.Controller, BlockOwnerDeletion: ref.BlockOwnerDeletion,
+	})
+	secret, err = kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	require.NoError(t, err)
+	require.Len(t, secret.OwnerReferences, 1)
+	require.Eventually(t, func() bool {
+		secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return len(secret.OwnerReferences) == 0
+	}, time.Second*3, time.Millisecond*10, "expected Secret to have owner reference to Certificate removed: %#+v", secret.OwnerReferences)
+
+	t.Log("added owner reference to Secret for non Certificate UID with field manager should not get removed")
+	secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: types.UID("not-cert"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)}
+	applyCnf.OwnerReferences = []applymetav1.OwnerReferenceApplyConfiguration{{
+		APIVersion: &fooRef.APIVersion, Kind: &fooRef.Kind, Name: &fooRef.Name,
+		UID: &fooRef.UID, Controller: fooRef.Controller, BlockOwnerDeletion: fooRef.BlockOwnerDeletion,
+	}}
+	secret, err = kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	require.NoError(t, err)
+	require.Never(t, func() bool {
+		secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return !apiequality.Semantic.DeepEqual(secret.OwnerReferences, []metav1.OwnerReference{fooRef})
+	}, time.Second*3, time.Millisecond*10, "expected Secret to not have owner reference to Foo removed: %#+v", secret.OwnerReferences)
+
+	t.Log("restarting controller with secret owner reference option enabled")
+	stopControllerNoOwnerRef()
+	kubeClient, factory, cmClient, cmFactory = framework.NewClients(t, config)
+	stopControllerNoOwnerRef = nil
+	controllerOptions.EnableOwnerRef = true
+	ctrl, queue, mustSync = issuing.NewController(logf.Log, kubeClient, cmClient,
+		factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
+		controllerOptions, fieldManager,
+	)
+	c = controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
+	stopControllerOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopControllerOwnerRef()
+
+	t.Log("waiting for owner reference to be set")
+	applyCnf.OwnerReferences = nil
+	secret, err = kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return apiequality.Semantic.DeepEqual(secret.OwnerReferences, []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))})
+	}, time.Second*10, time.Millisecond*10, "expected Secret to have owner reference to Certificate added: %#+v", secret.OwnerReferences)
+
+	t.Log("deleting the owner reference, should have owner reference added back")
+	applyCnf.OwnerReferences = []applymetav1.OwnerReferenceApplyConfiguration{}
+	secret, err = kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	require.NoError(t, err)
+	require.Len(t, secret.OwnerReferences, 0)
+	require.Eventually(t, func() bool {
+		secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return apiequality.Semantic.DeepEqual(secret.OwnerReferences, []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))})
+	}, time.Second*3, time.Millisecond*10, "expected Secret to have owner reference to Certificate added: %#+v", secret.OwnerReferences)
+
+	t.Log("changing the options on the owner reference, should have the options reversed")
+	secret.OwnerReferences[0].Name = "random-certificate-name"
+	secret, err = kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return apiequality.Semantic.DeepEqual(secret.OwnerReferences, []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))})
+	}, time.Second*3, time.Millisecond*10, "expected Secret to have owner reference options to Certificate reverse: %#+v", secret.OwnerReferences)
 }
