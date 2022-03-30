@@ -112,9 +112,10 @@ endef
 # Let's separate the pulling of the Kind image so that more tasks can be
 # run in parallel when running "make -j e2e-setup". In CI, the Docker
 # engine being stripped on every job, we save the kind image to
-# "bin/downloads".
+# "bin/downloads". Side note: we don't use "$(CI)" directly since we would
+# get the message "warning: undefined variable 'CI'".
 .PHONY: preload-kind-image
-ifeq ($(CI),)
+ifeq ($(shell printenv CI),)
 preload-kind-image: bin/tools/crane
 	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
