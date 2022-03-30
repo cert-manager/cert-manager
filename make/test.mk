@@ -85,9 +85,9 @@ test/integration/versionchecker/testdata/test_manifests.tar: bin/scratch/oldcrds
 bin/scratch/oldcrds.tar: bin/scratch/git/upstream-tags.txt | bin/scratch/oldcrds
 	@# First, download the CRDs for all releases listed in upstream-tags.txt
 	<bin/scratch/git/upstream-tags.txt xargs -I% -P5 \
-		curl --compressed -sSfL \
-		-o bin/scratch/oldcrds/%.yaml \
-		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml"
+		./hack/fetch-old-crd.sh \
+		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml" \
+		bin/scratch/oldcrds/%.yaml
 	@# Next, tar up the old CRDs together
 	tar cf $@ -C bin/scratch/oldcrds .
 
