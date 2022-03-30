@@ -201,6 +201,9 @@ func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMECh
 	default:
 		el = append(el, field.Invalid(fldPath.Child("serviceType"), gateway.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
 	}
+	if len(gateway.ParentRefs) == 0 {
+		el = append(el, field.Required(fldPath.Child("parentRefs"), `at least 1 parentRef is required`))
+	}
 	return el
 }
 

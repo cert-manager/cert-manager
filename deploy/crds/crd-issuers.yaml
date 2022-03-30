@@ -412,7 +412,7 @@ spec:
                                 type: object
                                 properties:
                                   labels:
-                                    description: Custom labels that you want the HTTPRoutes created by cert-manager for solving HTTP-01 challenges. Back when cert-manager supported v1alpha1, this field was used when creating the solver's HTTPRoute, and used to be how the HTTPRoute was matched to a Gateway. Since v1alpha2, the HTTPRoute is matched to a Gateway using the field parentRefs on the HTTPRoute.
+                                    description: Custom labels that will be applied to HTTPRoutes created by cert-manager while solving HTTP-01 challenges.
                                     type: object
                                     additionalProperties:
                                       type: string

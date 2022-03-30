@@ -252,12 +252,9 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// Custom labels that you want the HTTPRoutes created by cert-manager
-	// for solving HTTP-01 challenges. Back when cert-manager supported
-	// v1alpha1, this field was used when creating the solver's HTTPRoute,
-	// and used to be how the HTTPRoute was matched to a Gateway. Since
-	// v1alpha2, the HTTPRoute is matched to a Gateway using the field
-	// parentRefs on the HTTPRoute.
+	// Custom labels that will be applied to HTTPRoutes created by cert-manager
+	// while solving HTTP-01 challenges.
+	// +optional
 	Labels map[string]string
 
 	// When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute.
