@@ -158,6 +158,7 @@ func checkDNSPropagationWithHTTPS(fqdn, value string, nameservers []string, useA
 	if resp.Status == 0 && len(resp.Answer) >= 1 {
 		for _, answer := range resp.Answer {
 			if txt := strings.Trim(answer.Data, "\""); txt == value {
+				logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS-over-HTTPS Lookup method was successful")
 				return true, nil
 			}
 		}
@@ -171,8 +172,10 @@ func checkDNSPropagation(fqdn, value string, nameservers []string,
 	useAuthoritative bool, acmeDNS01CheckMethod string) (bool, error) {
 	switch acmeDNS01CheckMethod {
 	case ACMEDNS01CheckViaDNSLookup:
+		logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS Lookup method")
 		return checkDNSPropagationWithDNSLookup(fqdn, value, nameservers, useAuthoritative)
 	case ACMEDNS01CheckViaHTTPS:
+		logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS over HTTPS Lookup method")
 		return checkDNSPropagationWithHTTPS(fqdn, value, nameservers, useAuthoritative)
 	default:
 		return false, fmt.Errorf("Unknown DNS propagation method")
@@ -207,7 +210,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, nil
 		}
 	}
-
+	logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS Lookup method was successful")
 	return true, nil
 }
 
