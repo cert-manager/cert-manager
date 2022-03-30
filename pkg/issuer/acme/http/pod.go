@@ -169,6 +169,9 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.PodSpec{
+			NodeSelector: map[string]string{
+				"kubernetes.io/os": "linux",
+			},
 			RestartPolicy: corev1.RestartPolicyOnFailure,
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot: pointer.BoolPtr(true),

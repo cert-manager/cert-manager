@@ -160,7 +160,8 @@ podLabels: {}
 #     - "1.1.1.1"
 #     - "8.8.8.8"
 
-nodeSelector: {}
+nodeSelector:
+  kubernetes.io/os: linux
 
 ingressShim: {}
   # defaultIssuerName: ""
@@ -290,7 +291,8 @@ webhook:
     successThreshold: 1
     timeoutSeconds: 1
 
-  nodeSelector: {}
+  nodeSelector:
+    kubernetes.io/os: linux
 
   affinity: {}
 
@@ -402,7 +404,8 @@ cainjector:
     #   cpu: 10m
     #   memory: 32Mi
 
-  nodeSelector: {}
+  nodeSelector:
+    kubernetes.io/os: linux
 
   affinity: {}
 
