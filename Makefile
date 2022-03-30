@@ -23,7 +23,19 @@ SHELL := /bin/bash
 
 SOURCES := $(shell find . -type f -name "*.go" -not -path "./bin/*" -not -path "./make/*")
 
+## GOBUILDPROCS is passed to GOMAXPROCS when running go build; if you're running
+## make in parallel using "-jN" then you'll probably want to reduce the value
+## of GOBUILDPROCS or else you could end up running N parallel invocations of
+## go build, each of which will spin up as many threads as are available on your
+## system.
+GOBUILDPROCS ?=
+
 include make/git.mk
+
+GOFLAGS := -trimpath -ldflags '-w -s \
+	-X github.com/cert-manager/cert-manager/pkg/util.AppVersion=$(RELEASE_VERSION) \
+    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)'
+
 include make/tools.mk
 include make/ci.mk
 include make/test.mk
@@ -36,17 +48,6 @@ include make/manifests.mk
 include make/licenses.mk
 include make/e2e-setup.mk
 include make/help.mk
-
-## GOBUILDPROCS is passed to GOMAXPROCS when running go build; if you're running
-## make in parallel using "-jN" then you'll probably want to reduce the value
-## of GOBUILDPROCS or else you could end up running N parallel invocations of
-## go build, each of which will spin up as many threads as are available on your
-## system.
-GOBUILDPROCS ?=
-
-GOFLAGS := -trimpath -ldflags '-w -s \
-	-X github.com/cert-manager/cert-manager/pkg/util.AppVersion=$(RELEASE_VERSION) \
-    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)'
 
 .PHONY: clean
 ## Remove the kind cluster and everything that was built. The downloaded images
