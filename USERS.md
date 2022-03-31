@@ -13,6 +13,7 @@ We'd love for you to share your cert-manager story with the world!
 | [<img src="https://raw.githubusercontent.com/cert-manager/website/50afb0436bc0e72d7d27cc4b1c0195d029a9704b/assets/icons/jetstack.svg" alt="Jetstack text" width="100"> ](https://jetstack.io) | Securing MySQL inside Kubernetes | [Blog](https://blog.jetstack.io/blog/securing-mysql-with-cert-manager/)  |
 | [<img src="https://media.jfrog.com/wp-content/uploads/2017/12/20133032/Jfrog-Logo.svg" alt="JFrog" width="100"> ](https://jfrog.com/) | Securing ingresses |  |
 | [<img src="https://www.urssaf.org/files/Logos/logo_urssaforg.png" width="100" alt="Urssaf Caisse nationale"> ](https://urssaf.org) | Securing ingresses | |
+| [<img src="https://avatars.githubusercontent.com/u/24900634?s=200&v=4" alt="Azusa Pacific University Logo" width="100"> ](https://www.apu.edu) | Securing Ingresses | [@azusapacificuniversity](https://github.com/azusapacificuniversity) [www.apu.edu](https://www.apu.edu) |
 
 ## Individuals
 
