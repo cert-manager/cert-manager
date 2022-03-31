@@ -23,3 +23,4 @@ Plus, if you've written something about cert-manager throw in a link too for oth
 | :--: | :----: | :---: | :---: |
 | Maartje Eyskens | [@meyskens](https://github.com/meyskens)     | Securing ingresses |  |
 | Noah Kantrowitz | [@coderanger](https://github.com/coderanger) | Many things!       | [Lessons Learned From Two Years Of Kubernetes](https://coderanger.net/lessons-learned/) |
+| Dipto Chakrabarty | [@DiptoChakrabarty](https://github.com/DiptoChakrabarty) | Securing Ingress | [Cert Manager in Kubernetes with external DNS provider](https://diptochakrabarty.medium.com/cert-manager-in-kubernetes-with-external-dns-provider-64ae5d7f577b) |
