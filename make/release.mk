@@ -8,7 +8,7 @@ CMREL_KEY ?=
 .PHONY: release-artifacts
 # Build all release artifacts which might be run or used locally, except
 # for anything signed.
-release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart release-container-bundles release-manifests
+release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart release-containers release-manifests
 
 .PHONY: release-artifacts-signed
 # Same as `release`, except it also signs the Helm chart. Requires CMREL_KEY
