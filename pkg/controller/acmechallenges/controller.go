@@ -23,7 +23,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -31,6 +30,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/ingress"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
@@ -54,6 +54,9 @@ type controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        corelisters.SecretLister
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 
 	// ACME challenge solvers are instantiated once at the time of controller
 	// construction.
@@ -139,6 +142,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
+	c.fieldManager = ctx.FieldManager
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
 	c.httpSolver, err = http.NewSolver(ctx)
@@ -181,9 +185,27 @@ func (c *controller) runScheduler(ctx context.Context) {
 	for _, ch := range toSchedule {
 		log := logf.WithResource(log, ch)
 		ch = ch.DeepCopy()
-		ch.Status.Processing = true
+		// Apply a finalizer, to ensure that the challenge is not
+		// garbage collected before cert-manager has a chance to clean
+		// up resources created for the challenge.
+		hasFinalizer := false
+		for _, finalizer := range ch.Finalizers {
+			if finalizer == cmacme.ACMEFinalizer {
+				hasFinalizer = true
+				break
+			}
+		}
+		if !hasFinalizer {
+			ch.Finalizers = append(ch.Finalizers, cmacme.ACMEFinalizer)
+			_, updateErr := c.updateOrApply(ctx, ch)
+			if updateErr != nil {
+				log.Error(err, "error applying finalizer to the challenge")
+				return
+			}
+		}
 
-		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
+		ch.Status.Processing = true
+		_, err := c.updateStatusOrApply(ctx, ch)
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

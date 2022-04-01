@@ -73,7 +73,6 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 			Name:            chName,
 			Namespace:       o.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
-			Finalizers:      []string{cmacme.ACMEFinalizer},
 		},
 		Spec: *chSpec,
 	}, nil
