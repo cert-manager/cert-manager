@@ -74,7 +74,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	}
 
 	defer func() {
-		if apiequality.Semantic.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
+		if apiequality.Semantic.DeepEqual(oldChal.Status, ch.Status) {
 			return
 		}
 		if _, updateErr := c.updateStatusOrApply(ctx, ch); updateErr != nil {
