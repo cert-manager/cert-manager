@@ -30,6 +30,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/ingress"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
@@ -184,8 +185,26 @@ func (c *controller) runScheduler(ctx context.Context) {
 	for _, ch := range toSchedule {
 		log := logf.WithResource(log, ch)
 		ch = ch.DeepCopy()
-		ch.Status.Processing = true
+		// Apply a finalizer, to ensure that the challenge is not
+		// garbage collected before cert-manager has a chance to clean
+		// up resources created for the challenge.
+		hasFinalizer := false
+		for _, finalizer := range ch.Finalizers {
+			if finalizer == cmacme.ACMEFinalizer {
+				hasFinalizer = true
+				break
+			}
+		}
+		if !hasFinalizer {
+			ch.Finalizers = append(ch.Finalizers, cmacme.ACMEFinalizer)
+			_, updateErr := c.updateOrApply(ctx, ch)
+			if updateErr != nil {
+				log.Error(err, "error applying finalizer to the challenge")
+				return
+			}
+		}
 
+		ch.Status.Processing = true
 		_, err := c.updateStatusOrApply(ctx, ch)
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
