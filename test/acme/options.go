@@ -74,6 +74,9 @@ func applyDefaults(f *fixture) {
 		trueVal := true
 		f.useAuthoritative = &trueVal
 	}
+	if f.acmeDNS01CheckMethod == "" {
+		f.acmeDNS01CheckMethod = "dnslookup"
+	}
 }
 
 func validate(f *fixture) error {
