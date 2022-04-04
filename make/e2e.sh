@@ -203,5 +203,6 @@ trace ginkgo \
   --acme-gateway-ip="${service_ip_prefix}.14" \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
+  --gateway-namespace=projectcontour \
   --feature-gates="$feature_gates" \
   "${ginkgo_args[@]}"
