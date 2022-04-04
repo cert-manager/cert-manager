@@ -91,6 +91,8 @@ type ControllerOptions struct {
 
 	ACMEDNS01CheckMethod string
 
+	DnsOverHttpsJsonEndpoint string
+
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
 
@@ -147,6 +149,8 @@ const (
 	defaultKubernetesAPIBurst         = 50
 
 	defaultACMEDNS01CheckMethod = dnsutil.ACMEDNS01CheckViaDNSLookup
+
+	defaultDnsOverHttpsJsonEndpoint = "https://8.8.8.8/resolve"
 
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
@@ -337,6 +341,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"want to change this parameter if you run cert-manager with a different DNS view "+
 			"than the rest of the world (aka DNS split horizon).",
 		dnsutil.ACMEDNS01CheckViaDNSLookup, dnsutil.ACMEDNS01CheckViaHTTPS))
+
+	fs.StringVar(&s.DnsOverHttpsJsonEndpoint, "dns-over-https-json-endpoint", defaultDnsOverHttpsJsonEndpoint, fmt.Sprintf(
+		"[%s, %s] Only used when specifying \"dns-over-https\" for the \"acme-dns01-check-method\" option. "+
+			"This allows specifying what JSON endpoint to use for doing the DNS-over-HTTPS verification."+
+			"Examples: 'https://1.1.1.1/dns-query', 'https://8.8.8.8/resolve', ''https://8.8.4.4/resolve'. or 'https://9.9.9.9:5053/dns-query'"))
 
 	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", defaultACMEHTTP01SolverResourceRequestCPU, ""+
 		"Defines the resource request CPU size when spawning new ACME HTTP01 challenge solver pods.")

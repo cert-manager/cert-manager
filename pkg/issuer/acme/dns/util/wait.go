@@ -23,7 +23,7 @@ import (
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,
-	useAuthoritative bool, acmeDNS01CheckMethod string) (bool, error)
+	useAuthoritative bool, acmeDNS01CheckMethod string, dnsOverHttpsJsonEndpoint string) (bool, error)
 type dnsQueryFunc func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
 var (
@@ -47,6 +47,8 @@ const (
 	ACMEDNS01CheckViaDNSLookup = "dnslookup"
 	ACMEDNS01CheckViaHTTPS     = "dns-over-https"
 )
+
+const DefaultDnsOverHttpsJsonEndpoint = "https://8.8.8.8/resolve"
 
 var defaultNameservers = []string{
 	"8.8.8.8:53",
@@ -132,14 +134,27 @@ func checkDNSPropagationWithDNSLookup(fqdn, value string, nameservers []string,
 	return checkAuthoritativeNss(fqdn, value, authoritativeNss)
 }
 
-func checkDNSPropagationWithHTTPS(fqdn, value string, nameservers []string, useAuthoritative bool) (bool, error) {
+// The dnsOverHttpsJsonEndpoint has to be a JSON GET endpoint and NOT an RFC 8484 GET endpoint.
+// This decision was taken because the JSON format is much easier to parse, test and debug, and is a standard
+// for the big DNS-over-HTTPS DNS providers such as Google, Cloudflare, or Quad9.
+// Examples:
+// - "https://1.1.1.1/dns-query"
+// - "https://8.8.8.8/resolve"
+// - "https://8.8.4.4/resolve"
+// - "https://9.9.9.9:5053/dns-query"
+func checkDNSPropagationWithHTTPS(fqdn, value string, dnsOverHttpsJsonEndpoint string) (bool, error) {
 	logf.V(logf.InfoLevel).Infof("Checking DNS propagation for FQDN %s using Google's API for DNS over HTTPS", fqdn)
 
-	req, err := http.NewRequest("GET", "https://8.8.8.8/resolve?name="+fqdn+"&type=TXT", nil)
+	if dnsOverHttpsJsonEndpoint == "" {
+		dnsOverHttpsJsonEndpoint = DefaultDnsOverHttpsJsonEndpoint
+	}
+
+	req, err := http.NewRequest("GET", dnsOverHttpsJsonEndpoint+"?name="+fqdn+"&type=TXT", nil)
 	if err != nil {
 		return false, err
 	}
 	req.Header.Add("Cache-Control", "no-cache")
+	req.Header.Add("accept", "application/dns-json")
 	r, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return false, fmt.Errorf("Unable to lookup DNS via HTTPS: %s", err)
@@ -158,7 +173,7 @@ func checkDNSPropagationWithHTTPS(fqdn, value string, nameservers []string, useA
 	if resp.Status == 0 && len(resp.Answer) >= 1 {
 		for _, answer := range resp.Answer {
 			if txt := strings.Trim(answer.Data, "\""); txt == value {
-				logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS-over-HTTPS Lookup method was successful")
+				logf.V(logf.DebugLevel).Infof("Self-checking using the DNS-over-HTTPS Lookup method was successful")
 				return true, nil
 			}
 		}
@@ -169,14 +184,14 @@ func checkDNSPropagationWithHTTPS(fqdn, value string, nameservers []string, useA
 }
 
 func checkDNSPropagation(fqdn, value string, nameservers []string,
-	useAuthoritative bool, acmeDNS01CheckMethod string) (bool, error) {
+	useAuthoritative bool, acmeDNS01CheckMethod string, dnsOverHttpsJsonEndpoint string) (bool, error) {
 	switch acmeDNS01CheckMethod {
 	case ACMEDNS01CheckViaDNSLookup:
-		logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS Lookup method")
+		logf.V(logf.DebugLevel).Infof("Self-checking using the DNS Lookup method")
 		return checkDNSPropagationWithDNSLookup(fqdn, value, nameservers, useAuthoritative)
 	case ACMEDNS01CheckViaHTTPS:
-		logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS over HTTPS Lookup method")
-		return checkDNSPropagationWithHTTPS(fqdn, value, nameservers, useAuthoritative)
+		logf.V(logf.DebugLevel).Infof("Self-checking using the DNS-over-HTTPS Lookup method")
+		return checkDNSPropagationWithHTTPS(fqdn, value, dnsOverHttpsJsonEndpoint)
 	default:
 		return false, fmt.Errorf("Unknown DNS propagation method")
 	}

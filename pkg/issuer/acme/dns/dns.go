@@ -116,7 +116,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 	log.V(logf.DebugLevel).Info("checking DNS propagation", "nameservers", s.Context.DNS01Nameservers)
 
 	ok, err := util.PreCheckDNS(fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
-		s.Context.DNS01CheckAuthoritative, s.Context.ACMEDNS01CheckMethod)
+		s.Context.DNS01CheckAuthoritative, s.Context.ACMEDNS01CheckMethod, s.Context.DnsOverHttpsJsonEndpoint)
 	if err != nil {
 		return err
 	}
