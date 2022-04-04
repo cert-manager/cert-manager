@@ -77,6 +77,9 @@ func applyDefaults(f *fixture) {
 	if f.acmeDNS01CheckMethod == "" {
 		f.acmeDNS01CheckMethod = "dnslookup"
 	}
+	if f.dnsOverHttpsJsonEndpoint == "" {
+		f.dnsOverHttpsJsonEndpoint = "https://8.8.8.8/resolve"
+	}
 }
 
 func validate(f *fixture) error {

@@ -51,6 +51,7 @@ type fixture struct {
 	useAuthoritative        *bool
 	kubectlManifestsPath    string
 	acmeDNS01CheckMethod    string
+	dnsOverHttpsJsonEndpoint string
 
 	// testDNSServer is the address:port of the DNS server to send requests to
 	// when validating that records are set as expected.
