@@ -42,6 +42,9 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ template "cainjector.serviceAccountName" . }}
+      {{- if hasKey .Values.cainjector "automountServiceAccountToken" }}
+      automountServiceAccountToken: {{ .Values.cainjector.automountServiceAccountToken }}
+      {{- end }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}

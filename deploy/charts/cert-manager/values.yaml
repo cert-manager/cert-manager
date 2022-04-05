@@ -87,6 +87,9 @@ serviceAccount:
   # labels: {}
   automountServiceAccountToken: true
 
+# Automounting API credentials for a particular pod
+# automountServiceAccountToken: true
+
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run docker run quay.io/jetstack/cert-manager-controller:<version> --help
 extraArgs: []
@@ -332,6 +335,9 @@ webhook:
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
 
+  # Automounting API credentials for a particular pod
+  # automountServiceAccountToken: true
+
   # The port that the webhook should listen on for requests.
   # In GKE private clusters, by default kubernetes apiservers are allowed to
   # talk to the cluster nodes only on 443 and 10250. so configuring
@@ -441,6 +447,9 @@ cainjector:
     # Optional additional labels to add to the cainjector's ServiceAccount
     # labels: {}
     automountServiceAccountToken: true
+
+  # Automounting API credentials for a particular pod
+  # automountServiceAccountToken: true
 
 # This startupapicheck is a Helm post-install hook that waits for the webhook
 # endpoints to become available.
