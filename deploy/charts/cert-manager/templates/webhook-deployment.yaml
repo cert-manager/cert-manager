@@ -41,6 +41,9 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ template "webhook.serviceAccountName" . }}
+      {{- if hasKey .Values.webhook "automountServiceAccountToken" }}
+      automountServiceAccountToken: {{ .Values.webhook.automountServiceAccountToken }}
+      {{- end }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}

@@ -49,6 +49,9 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ template "cert-manager.serviceAccountName" . }}
+      {{- if hasKey .Values "automountServiceAccountToken" }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+      {{- end }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
