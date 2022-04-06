@@ -78,7 +78,6 @@ tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tool
 ######
 
 GO = go
-CGO_ENABLED ?= 0
 
 # DEPENDS_ON_GO is a target that is set as an order-only prerequisite in
 # any target that calls $(GO), e.g.:
