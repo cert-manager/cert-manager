@@ -199,7 +199,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 			ch.Finalizers = append(ch.Finalizers, cmacme.ACMEFinalizer)
 			_, updateErr := c.updateOrApply(ctx, ch)
 			if updateErr != nil {
-				log.Error(err, "error applying finalizer to the challenge")
+				log.Error(updateErr, "error applying finalizer to the challenge")
 				return
 			}
 		}
