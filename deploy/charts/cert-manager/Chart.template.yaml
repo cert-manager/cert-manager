@@ -5,7 +5,7 @@ version: v0.1.0
 appVersion: v0.1.0
 description: A Helm chart for cert-manager
 home: https://github.com/cert-manager/cert-manager
-icon: https://raw.githubusercontent.com/jetstack/cert-manager/master/logo/logo.png
+icon: https://raw.githubusercontent.com/cert-manager/cert-manager/master/logo/logo.png
 keywords:
   - cert-manager
   - kube-lego
