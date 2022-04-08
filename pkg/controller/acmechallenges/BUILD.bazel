@@ -45,7 +45,10 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["sync_test.go"],
+    srcs = [
+        "controller_test.go",
+        "sync_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/acme/accounts/test:go_default_library",
@@ -53,9 +56,13 @@ go_test(
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/client/clientset/versioned/fake:go_default_library",
+        "//pkg/client/informers/externalversions:go_default_library",
+        "//pkg/controller/acmechallenges/scheduler:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//pkg/issuer:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
         "@org_golang_x_crypto//acme:go_default_library",

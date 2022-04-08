@@ -107,3 +107,9 @@ func SetChallengeProcessing(b bool) ChallengeModifier {
 		ch.Status.Processing = b
 	}
 }
+
+func SetChallengeFinalizers(finalizers []string) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Finalizers = finalizers
+	}
+}
