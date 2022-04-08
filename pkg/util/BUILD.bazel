@@ -42,7 +42,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/util/cmapichecker:all-srcs",
-        "//pkg/util/coverage:all-srcs",
         "//pkg/util/errors:all-srcs",
         "//pkg/util/feature:all-srcs",
         "//pkg/util/kube:all-srcs",

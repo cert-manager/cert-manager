@@ -61,3 +61,4 @@ clean:
 	@$(eval KIND_CLUSTER_NAME ?= kind)
 	bin/tools/kind delete cluster --name=$(shell cat bin/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
 	rm -rf $(filter-out bin/downloaded,$(wildcard bin/*))
+	rm -rf bazel-bin bazel-cert-manager bazel-out bazel-testlogs
