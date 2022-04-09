@@ -75,35 +75,66 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	subject := &cmapi.X509Subject{}
 	if organizations, found := ingLikeAnnotations[cmapi.SubjectOrganizationsAnnotationKey]; found {
-		subject.Organizations = strings.Split(organizations, ",")
+		organizations, err := splitWithEscapeCSV(organizations)
+		subject.Organizations = organizations
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectOrganizationsAnnotationKey, err)
+		}
 	}
 
 	if organizationalUnits, found := ingLikeAnnotations[cmapi.SubjectOrganizationalUnitsAnnotationKey]; found {
-		subject.OrganizationalUnits = strings.Split(organizationalUnits, ",")
+		organizationalUnits, err := splitWithEscapeCSV(organizationalUnits)
+		subject.OrganizationalUnits = organizationalUnits
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectOrganizationsAnnotationKey, err)
+		}
 	}
 
 	if countries, found := ingLikeAnnotations[cmapi.SubjectCountriesAnnotationKey]; found {
-		subject.Countries = strings.Split(countries, ",")
+		countries, err := splitWithEscapeCSV(countries)
+		subject.Countries = countries
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectCountriesAnnotationKey, err)
+		}
 	}
 
 	if provinces, found := ingLikeAnnotations[cmapi.SubjectProvincesAnnotationKey]; found {
-		subject.Provinces = strings.Split(provinces, ",")
+		provinces, err := splitWithEscapeCSV(provinces)
+		subject.Provinces = provinces
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectProvincesAnnotationKey, err)
+		}
 	}
 
 	if localities, found := ingLikeAnnotations[cmapi.SubjectLocalitiesAnnotationKey]; found {
-		subject.Localities = strings.Split(localities, ",")
+		localities, err := splitWithEscapeCSV(localities)
+		subject.Localities = localities
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectLocalitiesAnnotationKey, err)
+		}
 	}
 
 	if postalCodes, found := ingLikeAnnotations[cmapi.SubjectPostalCodesAnnotationKey]; found {
-		subject.PostalCodes = strings.Split(postalCodes, ",")
+		postalCodes, err := splitWithEscapeCSV(postalCodes)
+		subject.PostalCodes = postalCodes
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectPostalCodesAnnotationKey, err)
+		}
 	}
 
 	if streetAddresses, found := ingLikeAnnotations[cmapi.SubjectStreetAddressesAnnotationKey]; found {
-		addresses, err := splitWithEscapeCSV(streetAddresses)
+		streetAddresses, err := splitWithEscapeCSV(streetAddresses)
+		subject.StreetAddresses = streetAddresses
+
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectStreetAddressesAnnotationKey, err)
 		}
-		subject.StreetAddresses = addresses
 	}
 
 	if serialNumber, found := ingLikeAnnotations[cmapi.SubjectSerialNumberAnnotationKey]; found {

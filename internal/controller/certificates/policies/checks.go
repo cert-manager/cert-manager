@@ -287,7 +287,10 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 			}
 		}
 
-		baseAnnotations := internalcertificates.AnnotationsForCertificateSecret(input.Certificate, x509cert)
+		baseAnnotations, err := internalcertificates.AnnotationsForCertificateSecret(input.Certificate, x509cert)
+		if err != nil {
+			return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
+		}
 
 		managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
 

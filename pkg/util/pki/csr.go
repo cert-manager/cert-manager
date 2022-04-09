@@ -110,6 +110,13 @@ func URLsToString(uris []*url.URL) []string {
 	return uriStrs
 }
 
+func SerialNumberToString(sn *big.Int) string {
+	if sn == nil {
+		return ""
+	}
+	return sn.String()
+}
+
 func removeDuplicates(in []string) []string {
 	var found []string
 Outer:

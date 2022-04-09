@@ -17,7 +17,11 @@ limitations under the License.
 package shimhelper
 
 import (
+	"bytes"
+	"encoding/csv"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,7 +55,7 @@ func Test_translateAnnotations(t *testing.T) {
 			cmapi.SubjectCountriesAnnotationKey:           "Country",
 			cmapi.SubjectProvincesAnnotationKey:           "Province",
 			cmapi.SubjectLocalitiesAnnotationKey:          "City",
-			cmapi.SubjectStreetAddressesAnnotationKey:     "\"1725 Slough Avenue, Suite 200, Scranton Business Park\"",
+			cmapi.SubjectStreetAddressesAnnotationKey:     "\"1725 Slough Avenue, Suite 200, Scranton Business Park\",\"1800 Slough Avenue, Suite 200, Scranton Business Park\"",
 			cmapi.SubjectPostalCodesAnnotationKey:         "ABC123",
 			cmapi.SubjectSerialNumberAnnotationKey:        "123456",
 			cmapi.DurationAnnotationKey:                   "168h", // 1 week
@@ -70,6 +74,15 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
 				a.Equal(pointer.Int32(7), crt.Spec.RevisionHistoryLimit)
+				a.Equal("123456", crt.Spec.Subject.SerialNumber)
+
+				splitAddresses, splitErr := splitWithEscapeCSV("\"1725 Slough Avenue, Suite 200, Scranton Business Park\",\"1800 Slough Avenue, Suite 200, Scranton Business Park\"")
+				a.Equal(nil, splitErr)
+				a.Equal(splitAddresses, crt.Spec.Subject.StreetAddresses)
+
+				joinedAddresses, joinErr := joinWithEscapeCSV(crt.Spec.Subject.StreetAddresses)
+				a.Equal(nil, joinErr)
+				a.Equal("\"1725 Slough Avenue, Suite 200, Scranton Business Park\",\"1800 Slough Avenue, Suite 200, Scranton Business Park\"", joinedAddresses)
 			},
 		},
 		"success rsa private key algorithm": {
@@ -137,7 +150,6 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(cmapi.Ed25519KeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
 				a.Equal(cmapi.PKCS8, crt.Spec.PrivateKey.Encoding)
 				a.Equal(cmapi.RotationPolicyAlways, crt.Spec.PrivateKey.RotationPolicy)
-				a.Equal([]string{"1725 Slough Avenue, Suite 200, Scranton Business Park"}, crt.Spec.Subject.StreetAddresses)
 			},
 		},
 		"nil annotations": {
@@ -295,4 +307,22 @@ func assertErrorIs(t *testing.T, err, target error) {
 	if assert.Error(t, err) {
 		assert.Truef(t, errors.Is(err, target), "unexpected error type. err: %v, target: %v", err, target)
 	}
+}
+
+// joinWithEscapeCSV returns the given list as a single line of CSV that
+// is escaped with quotes if necessary
+func joinWithEscapeCSV(in []string) (string, error) {
+	b := new(bytes.Buffer)
+	writer := csv.NewWriter(b)
+	writer.Write(in)
+	writer.Flush()
+
+	if err := writer.Error(); err != nil {
+		return "", fmt.Errorf("failed to write %q as CSV: %w", in, err)
+	}
+
+	s := b.String()
+	// CSV writer adds a trailing new line, we need to clean it up
+	s = strings.TrimSuffix(s, "\n")
+	return s, nil
 }

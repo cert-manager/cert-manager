@@ -19,7 +19,9 @@ package certificates
 import (
 	"bytes"
 	"crypto/x509"
+	"encoding/csv"
 	"encoding/pem"
+	"fmt"
 	"strings"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -32,7 +34,7 @@ import (
 // information about the Issuer and Certificate.
 // If the X.509 certificate is not-nil, additional annotations will be added
 // relating to its Common Name and Subject Alternative Names.
-func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.Certificate) map[string]string {
+func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.Certificate) (map[string]string, error) {
 	annotations := make(map[string]string)
 
 	annotations[cmapi.CertificateNameKey] = crt.Name
@@ -42,13 +44,44 @@ func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.C
 
 	// Only add certificate data if certificate is non-nil.
 	if certificate != nil {
+		var err error
 		annotations[cmapi.CommonNameAnnotationKey] = certificate.Subject.CommonName
 		annotations[cmapi.AltNamesAnnotationKey] = strings.Join(certificate.DNSNames, ",")
 		annotations[cmapi.IPSANAnnotationKey] = strings.Join(utilpki.IPAddressesToString(certificate.IPAddresses), ",")
 		annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(certificate.URIs), ",")
+		annotations[cmapi.EmailsAnnotationKey] = strings.Join(certificate.EmailAddresses, ",")
+		annotations[cmapi.SubjectSerialNumberAnnotationKey] = utilpki.SerialNumberToString(certificate.SerialNumber)
+
+		var errList []error
+		annotations[cmapi.SubjectOrganizationsAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.Organization)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectOrganizationalUnitsAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.OrganizationalUnit)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectCountriesAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.Country)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectProvincesAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.Province)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectLocalitiesAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.Locality)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectPostalCodesAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.PostalCode)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectStreetAddressesAnnotationKey], err = joinWithEscapeCSV(certificate.Subject.StreetAddress)
+		errList = append(errList, err)
+		// return first error
+		for _, v := range errList {
+			if v != nil {
+				return nil, err
+			}
+		}
 	}
 
-	return annotations
+	return annotations, nil
 }
 
 // OutputFormatDER returns the byte slice of the private key in DER format. To
@@ -63,4 +96,22 @@ func OutputFormatDER(privateKey []byte) []byte {
 // Additional Output Format Combined PEM.
 func OutputFormatCombinedPEM(privateKey, certificate []byte) []byte {
 	return bytes.Join([][]byte{privateKey, certificate}, []byte("\n"))
+}
+
+// joinWithEscapeCSV returns the given list as a single line of CSV that
+// is escaped with quotes if necessary
+func joinWithEscapeCSV(in []string) (string, error) {
+	b := new(bytes.Buffer)
+	writer := csv.NewWriter(b)
+	writer.Write(in)
+	writer.Flush()
+
+	if err := writer.Error(); err != nil {
+		return "", fmt.Errorf("failed to write %q as CSV: %w", in, err)
+	}
+
+	s := b.String()
+	// CSV writer adds a trailing new line, we need to clean it up
+	s = strings.TrimSuffix(s, "\n")
+	return s, nil
 }
