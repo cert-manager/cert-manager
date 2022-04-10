@@ -59,8 +59,11 @@ func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *
 	}
 
 	m.certificateExpiryTimeSeconds.With(prometheus.Labels{
-		"name":      crt.Name,
-		"namespace": crt.Namespace}).Set(expiryTime)
+		"name":         crt.Name,
+		"namespace":    crt.Namespace,
+		"issuer_name":  crt.Spec.IssuerRef.Name,
+		"issuer_kind":  crt.Spec.IssuerRef.Kind,
+		"issuer_group": crt.Spec.IssuerRef.Group}).Set(expiryTime)
 }
 
 // updateCertificateRenewalTime updates the renew before duration of a certificate

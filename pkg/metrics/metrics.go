@@ -104,7 +104,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Name:      "certificate_expiration_timestamp_seconds",
 				Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
 			},
-			[]string{"name", "namespace"},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
 
 		certificateRenewalTimeSeconds = prometheus.NewGaugeVec(
