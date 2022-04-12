@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -32,11 +31,8 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
-	cmapiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -171,69 +167,63 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	if err != nil {
 		return err
 	}
+	challengeWithRuntimeDefaults := copyOfChallengeWithDefaultsApplied(ch)
+	syncState := &syncState{
+		controller: c,
+		challenge:  challengeWithRuntimeDefaults,
+		acmeClient: cl,
+		solver:     solver,
+		issuer:     genericIssuer,
+	}
 
-	if !ch.Status.Presented {
-		presented := true
-		conditionStatus := cmmeta.ConditionTrue
-		reason := reasonPresented
-		message := fmt.Sprintf("Presented challenge using %s challenge mechanism", ch.Spec.Type)
-		err := solver.Present(ctx, genericIssuer, ch)
-		if err != nil {
-			presented = false
-			conditionStatus = cmmeta.ConditionFalse
-			reason = reasonPresentError
-			message = fmt.Sprintf("Error presenting challenge: %v", err)
+	syncSteps := []syncStep{
+		// &waitToBeScheduled{},
+		&presentChallenge{},
+		&checkChallengeReadiness{},
+		&acceptChallenge{},
+		// &waitForACMEResult{},
+		// &cleanupChallenge{},
+	}
+
+	for _, step := range syncSteps {
+		log = log.WithValues("step", fmt.Sprintf("%T", step))
+		if err := step.Initialize(ctx, syncState); err != nil {
+			log.Error(err, "Unable to initialize sync step")
+			return nil
 		}
-		ch.Status.Presented = presented
-		cmapiutil.SetChallengeCondition(ch, ch.Generation, cmacme.ChallengConditionPresented, conditionStatus, reason, message)
-		c.recorder.Event(ch, corev1.EventTypeNormal, reason, message)
+		action, err := step.Evaluate(ctx, challengeWithRuntimeDefaults)
 		if err != nil {
+			log.Error(err, "Unable to evaluate sync step. Retrying.")
 			return err
 		}
-	}
-
-	// Make a copy of the challenge with all the defaults applied so that we
-	// don't have to do so much defensive checking for nil pointers in the
-	// readiness gates and readiness checker helpers.
-	chDefaulted := copyOfChallengeWithDefaultsApplied(ch)
-
-	// Accept challenge if all readiness gate conditions are true.
-	if c.allReadinessGateConditionsAreTrue(chDefaulted) {
-		return c.acceptChallenge(ctx, cl, ch)
-	}
-
-	// Run any configured readiness checks
-	checker, err := c.readinessStrategyFactory(chDefaulted)
-	if err != nil {
-		log.Error(err, "Unable to build a readiness checker")
+		if action == nil {
+			log.Info("Step has already been run. Skipping.")
+			continue
+		}
+		if err := action.Run(ctx, ch); err != nil {
+			log.Error(err, "Unable to run sync step. Retrying.")
+			return err
+		}
 		return nil
 	}
-
-	switch t := checker.(type) {
-	case *selfCheck:
-		t.ch = ch
-		t.issuer = genericIssuer
-		t.solver = solver
-		t.retryPeriod = c.DNS01CheckRetryPeriod
-	case *delayedAccept:
-		t.ch = ch
-		t.currentTime = time.Now()
-	}
-
-	retryAfter, condition := checker.ready(ctx)
-	if retryAfter > 0 {
-		key, err := controllerpkg.KeyFunc(ch)
-		// This is an unexpected edge case and should never occur
-		if err != nil {
-			return err
-		}
-		c.queue.AddAfter(key, retryAfter)
-	}
-	if condition.Status == cmmeta.ConditionTrue {
-		cmapiutil.SetChallengeCondition(ch, ch.Generation, condition.Type, condition.Status, "ChallengeReadinessCheck", condition.Message)
-	}
-	ch.Status.Reason = condition.Message
 	return nil
+}
+
+type syncState struct {
+	controller *controller
+	challenge  *cmacme.Challenge
+	acmeClient acmecl.Interface
+	solver     solver
+	issuer     cmapi.GenericIssuer
+}
+
+type syncAction interface {
+	Run(context.Context, *cmacme.Challenge) error
+}
+
+type syncStep interface {
+	Initialize(context.Context, *syncState) error
+	Evaluate(context.Context, *cmacme.Challenge) (syncAction, error)
 }
 
 // handleError will handle ACME error types, updating the challenge resource
@@ -383,66 +373,6 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	}
 	ch.Status.State = cmState
 
-	return nil
-}
-
-// acceptChallenge will accept the challenge with the acme server and then wait
-// for the authorization to reach a 'final' state.
-// It will update the challenge's status to reflect the final state of the
-// challenge if it failed, or the final state of the challenge's authorization
-// if accepting the challenge succeeds.
-func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge) error {
-	log := logf.FromContext(ctx, "acceptChallenge")
-
-	log.V(logf.DebugLevel).Info("accepting challenge with ACME server")
-	// We manually construct an ACME challenge here from our own internal type
-	// to save additional round trips to the ACME server.
-	acmeChal := &acmeapi.Challenge{
-		URI:   ch.Spec.URL,
-		Token: ch.Spec.Token,
-	}
-	acmeChal, err := cl.Accept(ctx, acmeChal)
-	if acmeChal != nil {
-		ch.Status.State = cmacme.State(acmeChal.Status)
-	}
-	if err != nil {
-		log.Error(err, "error accepting challenge")
-		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
-		return handleError(ch, err)
-	}
-
-	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthorizationURL)
-	if err != nil {
-		log.Error(err, "error waiting for authorization")
-		return c.handleAuthorizationError(ch, err)
-	}
-
-	ch.Status.State = cmacme.State(authorization.Status)
-	ch.Status.Reason = "Successfully authorized domain"
-	c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
-
-	return nil
-}
-
-func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) error {
-	authErr, ok := err.(*acmeapi.AuthorizationError)
-	if !ok {
-		return handleError(ch, err)
-	}
-
-	// TODO: the AuthorizationError above could technically contain the final
-	//   state of the authorization in its raw JSON form. This isn't currently
-	//   exposed by the ACME client implementation, so for now we fix this to
-	//   'invalid' if the returned type here is an AuthorizationError, which
-	//   should be safe as the client library only returns an AuthorizationError
-	//   if the returned state is 'invalid'
-	ch.Status.State = cmacme.Invalid
-	ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
-	c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonFailed, "Accepting challenge authorization failed: %v", authErr)
-
-	// return nil here, as accepting the challenge did not error, the challenge
-	// simply failed
 	return nil
 }
 

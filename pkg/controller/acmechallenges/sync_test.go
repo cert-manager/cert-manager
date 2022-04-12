@@ -69,13 +69,12 @@ type fakeSolver struct {
 }
 
 type testT struct {
-	challenge                         *cmacme.Challenge
-	builder                           *testpkg.Builder
-	httpSolver                        *fakeSolver
-	dnsSolver                         *fakeSolver
-	expectErr                         bool
-	acmeClient                        *acmecl.FakeACME
-	allReadinessGateConditionsAreTrue bool
+	challenge  *cmacme.Challenge
+	builder    *testpkg.Builder
+	httpSolver *fakeSolver
+	dnsSolver  *fakeSolver
+	expectErr  bool
+	acmeClient *acmecl.FakeACME
 }
 
 func TestSyncHappyPath(t *testing.T) {
@@ -216,7 +215,6 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Pending),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
-							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
 							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
 								Type:               cmacme.ChallengConditionPresented,
 								Status:             cmmeta.ConditionTrue,
@@ -232,7 +230,6 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		"accept the challenge if the self check is passing": {
-			allReadinessGateConditionsAreTrue: true,
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -289,7 +286,6 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		"mark certificate as failed if accepting the authorization fails": {
-			allReadinessGateConditionsAreTrue: true,
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -349,7 +345,6 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		"correctly persist ACME authorization error details as Challenge failure reason": {
-			allReadinessGateConditionsAreTrue: true,
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -511,9 +506,6 @@ func runTest(t *testing.T, test testT) {
 	}
 	c.httpSolver = test.httpSolver
 	c.dnsSolver = test.dnsSolver
-	c.allReadinessGateConditionsAreTrue = func(_ *cmacme.Challenge) bool {
-		return test.allReadinessGateConditionsAreTrue
-	}
 	test.builder.Start()
 
 	err := c.Sync(context.Background(), test.challenge)
