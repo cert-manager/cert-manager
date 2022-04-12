@@ -31,9 +31,9 @@ the top right of the page.
 
 Issues and PRs towards the documentation should be filed in the [website repo](https://github.com/cert-manager/website/).
 
-For the common use-case of automatically issuing TLS certificates to
+For the common use case of automatically issuing TLS certificates to
 Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
-replacement, see the [cert-manager nginx ingress quick start
+replacement, see the [cert-manager Nginx ingress quick start
 guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
 See [Installation](https://cert-manager.io/docs/installation/)
@@ -49,7 +49,7 @@ First of all we recommend looking at the [troubleshooting guide](https://cert-ma
 
 The quickest way to ask a question is to first post on our Slack channel (#cert-manager)
 on the [Kubernetes Slack](http://slack.kubernetes.io/).
-There are a lot of community members in this channel, and you can often get an answer
+There are a lot of community members on this channel, and you can often get an answer
 to your question straight away!
 
 You can also try [searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
@@ -58,10 +58,10 @@ and help you find the answer you are looking for quicker.
 
 Please also make sure to read through the relevant pages in the [documentation](https://cert-manager.io/docs/)
 before opening an issue. You can also search the documentation using the search box on the
-top left of the page.
+top right of the page.
 
 If you believe you have encountered a bug, and cannot find an existing issue similar to your
-own, you may [open a new issue](https://github.com/cert-manager/cert-manager/issues).
+own, you may [open a new issue](https://github.com/cert-manager/cert-manager/issues/new/choose).
 Please be sure to include as much information as possible about your environment.
 
 ## Community
