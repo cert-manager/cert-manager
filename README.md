@@ -33,7 +33,7 @@ Issues and PRs towards the documentation should be filed in the [website repo](h
 
 For the common use case of automatically issuing TLS certificates to
 Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
-replacement, see the [cert-manager Nginx ingress quick start
+replacement, see the [cert-manager nginx ingress quick start
 guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
 See [Installation](https://cert-manager.io/docs/installation/)
@@ -49,7 +49,7 @@ First of all we recommend looking at the [troubleshooting guide](https://cert-ma
 
 The quickest way to ask a question is to first post on our Slack channel (#cert-manager)
 on the [Kubernetes Slack](http://slack.kubernetes.io/).
-There are a lot of community members on this channel, and you can often get an answer
+There are a lot of community members in this channel, and you can often get an answer
 to your question straight away!
 
 You can also try [searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
