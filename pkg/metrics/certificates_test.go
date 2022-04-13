@@ -70,7 +70,7 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 			),
 			expectedExpiry: `
-	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 2.208988804e+09
+	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
@@ -78,7 +78,7 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
 `,
 			expectedRenewalTime: `
-		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 0
+		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 		},
 
@@ -92,7 +92,7 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 			),
 			expectedExpiry: `
-	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 0
+	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
@@ -100,7 +100,7 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 1
 `,
 			expectedRenewalTime: `
-		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 0
+		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 		},
 
@@ -121,7 +121,7 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 			),
 			expectedExpiry: `
-	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 100
+	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 100
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 1
@@ -129,7 +129,7 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
 `,
 			expectedRenewalTime: `
-		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 0
+		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 		},
 		"certificate with expiry and status Unknown should give an expiry and Unknown status": {
@@ -149,7 +149,7 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 			),
 			expectedExpiry: `
-	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 99999
+	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns",issuer="test-issuer"} 99999
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
@@ -157,7 +157,7 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 1
 `,
 			expectedRenewalTime: `
-		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 0
+		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns",issuer="test-issuer"} 0
 `,
 		},
 		"certificate with expiry and ready status and renew before": {
@@ -180,7 +180,7 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 			),
 			expectedExpiry: `
-	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 2.208988804e+09
+	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
@@ -188,7 +188,7 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
 `,
 			expectedRenewalTime: `
-		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 2.208988804e+09
+		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
 `,
 		},
 	}
@@ -302,9 +302,9 @@ func TestCertificateCache(t *testing.T) {
 	}
 	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
 		strings.NewReader(expiryMetadata+`
-        certmanager_certificate_expiration_timestamp_seconds{name="crt1",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 100
-        certmanager_certificate_expiration_timestamp_seconds{name="crt2",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 200
-        certmanager_certificate_expiration_timestamp_seconds{name="crt3",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 300
+        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 200
+        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
 `),
 		"certmanager_certificate_expiration_timestamp_seconds",
 	); err != nil {
@@ -313,9 +313,9 @@ func TestCertificateCache(t *testing.T) {
 
 	if err := testutil.CollectAndCompare(m.certificateRenewalTimeSeconds,
 		strings.NewReader(renewalTimeMetadata+`
-        certmanager_certificate_renewal_timestamp_seconds{name="crt1",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 100
-        certmanager_certificate_renewal_timestamp_seconds{name="crt2",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 200
-        certmanager_certificate_renewal_timestamp_seconds{name="crt3",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 300
+        certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 200
+        certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
 `),
 		"certmanager_certificate_renewal_timestamp_seconds",
 	); err != nil {
@@ -339,8 +339,8 @@ func TestCertificateCache(t *testing.T) {
 	}
 	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
 		strings.NewReader(expiryMetadata+`
-        certmanager_certificate_expiration_timestamp_seconds{name="crt1",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 100
-        certmanager_certificate_expiration_timestamp_seconds{name="crt3",namespace="default-unit-test-ns",issuer="test-issuer",issuer_kind="test-issuer-kind",issuer_group="test-issuer-group"} 300
+        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
 `),
 		"certmanager_certificate_expiration_timestamp_seconds",
 	); err != nil {
