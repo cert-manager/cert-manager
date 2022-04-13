@@ -194,6 +194,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeReason("error-from-a-previous-failed-call-to-present"),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -205,7 +206,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Pending),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
-							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
+							gen.SetChallengeReason(""),
 						))),
 				},
 				ExpectedEvents: []string{

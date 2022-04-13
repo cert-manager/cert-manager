@@ -42,8 +42,6 @@ import (
 const (
 	reasonDomainVerified = "DomainVerified"
 	reasonCleanUpError   = "CleanUpError"
-	reasonPresentError   = "PresentError"
-	reasonPresented      = "Presented"
 	reasonFailed         = "Failed"
 )
 
@@ -169,16 +167,15 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		return err
 	}
 
-	if !ch.Status.Presented {
-		err := solver.Present(ctx, genericIssuer, ch)
-		if err != nil {
-			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
-			ch.Status.Reason = err.Error()
-			return err
-		}
-
-		ch.Status.Presented = true
-		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
+	// Deploy ("present") the challenge resources if they have not already been
+	// deployed.
+	if present := (&presentStep{
+		ch:       ch,
+		solver:   solver,
+		issuer:   genericIssuer,
+		recorder: c.recorder,
+	}); present.Required() {
+		return present.Run(ctx)
 	}
 
 	err = solver.Check(ctx, genericIssuer, ch)

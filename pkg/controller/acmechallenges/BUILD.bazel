@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "checks.go",
         "controller.go",
+        "present.go",
         "sync.go",
     ],
     importpath = "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges",
@@ -47,6 +48,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "controller_test.go",
+        "present_test.go",
         "sync_test.go",
     ],
     embed = [":go_default_library"],
@@ -62,9 +64,11 @@ go_test(
         "//pkg/controller/test:go_default_library",
         "//pkg/issuer:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
+        "@io_k8s_client_go//tools/record:go_default_library",
         "@org_golang_x_crypto//acme:go_default_library",
     ],
 )
