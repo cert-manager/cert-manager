@@ -16,8 +16,8 @@ limitations under the License.
 
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
-// certificate_expiration_timestamp_seconds{name, namespace}
-// certificate_renewal_timestamp_seconds{name, namespace}
+// certificate_expiration_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
+// certificate_renewal_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
 // certificate_ready_status{name, namespace, condition}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
