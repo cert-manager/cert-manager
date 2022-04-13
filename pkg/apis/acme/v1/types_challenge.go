@@ -202,4 +202,9 @@ const (
 	// time has passed since the creation of the Challenge, and the ACME
 	// ‘authorization’ associated with this challenge will be ‘accepted’.
 	ChallengConditionDelayedAcceptTimeoutReached ChallengeConditionType = "DelayedAcceptTimeoutReached"
+
+	// ChallengeConditionDelayedAcceptTimeoutReached means that the required
+	// time has passed since the creation of the Challenge, and the ACME
+	// ‘authorization’ associated with this challenge will be ‘accepted’.
+	ChallengConditionAllReadinessGatesTrue ChallengeConditionType = "AllReadinessGatesTrue"
 )

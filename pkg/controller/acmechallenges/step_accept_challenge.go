@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmapiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -45,7 +46,7 @@ func (o *acceptChallenge) Initialize(_ context.Context, state *syncState) error 
 }
 
 func (o *acceptChallenge) Evaluate(ctx context.Context, ch *cmacme.Challenge) (syncAction, error) {
-	if allReadinessGateConditionsAreTrue(ch) {
+	if acme.IsFinalState(ch.Status.State) {
 		return nil, nil
 	}
 	return o, nil

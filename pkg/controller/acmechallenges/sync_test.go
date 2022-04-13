@@ -237,6 +237,14 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Pending),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+					Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+					Status: cmmeta.ConditionTrue,
+				}),
+				gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+					Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+					Status: cmmeta.ConditionTrue,
+				}),
 			),
 			httpSolver: &fakeSolver{
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
@@ -254,6 +262,14 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Pending),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+						Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+						Status: cmmeta.ConditionTrue,
+					}),
+					gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+						Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+						Status: cmmeta.ConditionTrue,
+					}),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -266,6 +282,14 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Valid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+								Status: cmmeta.ConditionTrue,
+							}),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+								Status: cmmeta.ConditionTrue,
+							}),
 							gen.SetChallengeReason("Successfully authorized domain"),
 						))),
 				},
@@ -292,6 +316,14 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Pending),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+					Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+					Status: cmmeta.ConditionTrue,
+				}),
+				gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+					Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+					Status: cmmeta.ConditionTrue,
+				}),
 			),
 			httpSolver: &fakeSolver{
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
@@ -308,6 +340,14 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Pending),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+						Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+						Status: cmmeta.ConditionTrue,
+					}),
+					gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+						Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+						Status: cmmeta.ConditionTrue,
+					}),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -319,6 +359,14 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+								Status: cmmeta.ConditionTrue,
+							}),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+								Status: cmmeta.ConditionTrue,
+							}),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: an error happened"),
 						))),
 				},
@@ -351,6 +399,14 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Pending),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+					Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+					Status: cmmeta.ConditionTrue,
+				}),
+				gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+					Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+					Status: cmmeta.ConditionTrue,
+				}),
 			),
 			httpSolver: &fakeSolver{
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
@@ -367,6 +423,14 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Pending),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+						Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+						Status: cmmeta.ConditionTrue,
+					}),
+					gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+						Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+						Status: cmmeta.ConditionTrue,
+					}),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -378,6 +442,14 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:   cmacme.ChallengConditionSelfCheckSucceeded,
+								Status: cmmeta.ConditionTrue,
+							}),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:   cmacme.ChallengConditionAllReadinessGatesTrue,
+								Status: cmmeta.ConditionTrue,
+							}),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error"),
 						))),
 				},

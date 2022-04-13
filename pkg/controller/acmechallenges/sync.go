@@ -180,6 +180,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		// &waitToBeScheduled{},
 		&presentChallenge{},
 		&checkChallengeReadiness{},
+		&waitForReadinessGates{},
 		&acceptChallenge{},
 		// &waitForACMEResult{},
 		// &cleanupChallenge{},
