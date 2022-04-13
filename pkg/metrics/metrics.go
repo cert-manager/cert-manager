@@ -113,7 +113,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Name:      "certificate_renewal_timestamp_seconds",
 				Help:      "The number of seconds before expiration time the certificate should renew.",
 			},
-			[]string{"name", "namespace"},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
 
 		certificateReadyStatus = prometheus.NewGaugeVec(
