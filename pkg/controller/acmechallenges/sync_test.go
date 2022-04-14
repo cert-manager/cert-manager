@@ -83,9 +83,32 @@ func TestSyncHappyPath(t *testing.T) {
 		gen.SetChallengeIssuer(cmmeta.ObjectReference{
 			Name: "testissuer",
 		}),
+		gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
 	)
 
 	tests := map[string]testT{
+		"if finalizer is missing, add it": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeFinalizers(nil),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeFinalizers(nil),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateAction(
+							cmacme.SchemeGroupVersion.WithResource("challenges"),
+							gen.DefaultTestNamespace,
+							gen.ChallengeFrom(baseChallenge,
+								gen.SetChallengeProcessing(true),
+								gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer})))),
+				},
+			},
+			expectErr: false,
+		},
 		"if GetAuthorization doesn't return challenge, error": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),

@@ -88,6 +88,14 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		return nil
 	}
 
+	// This finalizer ensures that the challenge is not garbage collected before
+	// cert-manager has a chance to clean up resources created for the
+	// challenge.
+	if finalizerRequired(ch) {
+		ch, err = addFinalizer(c, ctx, ch)
+		return err
+	}
+
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
