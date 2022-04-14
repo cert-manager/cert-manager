@@ -31,6 +31,7 @@ bin/release/cert-manager-cmctl-linux-amd64.tar.gz bin/release/cert-manager-cmctl
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/cmctl
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
+	# removes leading ./ from archived paths
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
@@ -59,6 +60,7 @@ bin/release/cert-manager-cmctl-darwin-amd64.tar.gz bin/release/cert-manager-cmct
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/cmctl
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
+	# removes leading ./ from archived paths
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
@@ -95,6 +97,7 @@ bin/release/cert-manager-cmctl-windows-amd64.tar.gz: bin/cmctl/cmctl-windows-amd
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/cmctl.exe
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
+	# removes leading ./ from archived paths
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
@@ -137,6 +140,7 @@ bin/release/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz bin/release/cer
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/kubectl-cert_manager
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
+	# removes leading ./ from archived paths
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
@@ -165,6 +169,7 @@ bin/release/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz bin/release/ce
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/kubectl-cert_manager
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
+	# removes leading ./ from archived paths
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
@@ -201,6 +206,7 @@ bin/release/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz: bin/kubectl-
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/kubectl-cert_manager.exe
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
+	# removes leading ./ from archived paths
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
