@@ -149,7 +149,7 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 			),
 			expectedExpiry: `
-	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns",issuer="test-issuer"} 99999
+	certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 99999
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
@@ -157,7 +157,7 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 1
 `,
 			expectedRenewalTime: `
-		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns",issuer="test-issuer"} 0
+		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 		},
 		"certificate with expiry and ready status and renew before": {
