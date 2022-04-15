@@ -18,6 +18,8 @@ package certificates
 
 import (
 	"crypto"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"fmt"
 	"reflect"
 	"testing"
@@ -139,6 +141,32 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			data: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
+			}),
+		},
+		"should match if given name is present": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+				Subject: &cmapi.X509Subject{
+					ExtraNames: []cmapi.ExtraName{
+						{
+							Type:  "2.5.4.42",
+							Value: "givennametest",
+						},
+					},
+				},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+				Subject: &cmapi.X509Subject{
+					ExtraNames: []cmapi.ExtraName{
+						{
+							Type:  "2.5.4.42",
+							Value: "givennametest",
+						},
+					},
+				},
 			}),
 		},
 		"should match if commonName is missing but is present in dnsNames": {
@@ -271,6 +299,187 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			}
 			if !reflect.DeepEqual(violations, test.violations) {
 				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
+			}
+		})
+	}
+}
+
+func TestExtraNameFieldsEqual(t *testing.T) {
+	tests := map[string]struct {
+		requestNames      []pkix.AttributeTypeAndValue
+		subjectExtraNames []cmapi.ExtraName
+		shouldMatch       bool
+	}{
+		"should match if the request and subject names have the same fields": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "valuehere",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "valuehere",
+				},
+			},
+			shouldMatch: true,
+		},
+		"should match if the request and subject names have no fields": {
+			requestNames:      []pkix.AttributeTypeAndValue{},
+			subjectExtraNames: []cmapi.ExtraName{},
+			shouldMatch:       true,
+		},
+		"should match if the request and subject names are nil": {
+			requestNames:      nil,
+			subjectExtraNames: nil,
+			shouldMatch:       true,
+		},
+		"should not match if the request and subject names have different values for the same type": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "onevaluehere",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "differentvaluehere",
+				},
+			},
+			shouldMatch: false,
+		},
+		"should not match if the request names has multiple attributeAndTypeValues and subject names has one which does not match": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value1",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{4, 5, 6, 7}),
+					Value: "value2",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{8, 9, 10, 11}),
+					Value: "value3",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "xxxxxxx",
+				},
+				{
+					Type:  "4.5.6.7",
+					Value: "value2",
+				},
+			},
+			shouldMatch: false,
+		},
+		"should match if the request names has more fields than subject names and all extra names have a match": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value1",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{4, 5, 6, 7}),
+					Value: "value2",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{8, 9, 10, 11}),
+					Value: "value3",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "value1",
+				},
+				{
+					Type:  "4.5.6.7",
+					Value: "value2",
+				},
+			},
+			shouldMatch: true,
+		},
+		"should not match if the request names and subject names have the same number of fields, but different values": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value1",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{5, 6, 7, 8}),
+					Value: "value1",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "value1",
+				},
+				{
+					Type:  "5.6.7.8",
+					Value: "somethingelse",
+				},
+			},
+			shouldMatch: false,
+		},
+		"if the same type is provided multiple times with non-matching values": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value1",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value1",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "value2",
+				},
+				{
+					Type:  "1.2.3.4",
+					Value: "value2",
+				},
+			},
+			shouldMatch: false,
+		},
+		"if the same OID is provided multiple times with the same values but the ordering may be off": {
+			requestNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value2",
+				},
+				{
+					Type:  asn1.ObjectIdentifier([]int{1, 2, 3, 4}),
+					Value: "value1",
+				},
+			},
+			subjectExtraNames: []cmapi.ExtraName{
+				{
+					Type:  "1.2.3.4",
+					Value: "value2",
+				},
+				{
+					Type:  "1.2.3.4",
+					Value: "value1",
+				},
+			},
+			// TODO - we may want to support this eventually and have this be true
+			shouldMatch: false,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			matches := ExtraNameFieldsEqual(test.requestNames, test.subjectExtraNames)
+			if matches != test.shouldMatch {
+				t.Errorf("match did not match, got=%v, exp=%v", matches, test.shouldMatch)
 			}
 		})
 	}

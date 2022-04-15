@@ -210,6 +210,14 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		}
 	}
 
+	var extraNames []pkix.AttributeTypeAndValue
+	if subject.ExtraNames != nil {
+		extraNames, err = buildExtraNamesForCertificate(crt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &x509.CertificateRequest{
 		// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
 		// This value isn't used by Go at the time of writing.
@@ -227,6 +235,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 			PostalCode:         subject.PostalCodes,
 			SerialNumber:       subject.SerialNumber,
 			CommonName:         commonName,
+			ExtraNames:         extraNames,
 		},
 		DNSNames:        dnsNames,
 		IPAddresses:     iPAddresses,
@@ -234,6 +243,27 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		EmailAddresses:  crt.Spec.EmailAddresses,
 		ExtraExtensions: extraExtensions,
 	}, nil
+}
+
+func buildExtraNamesForCertificate(crt *v1.Certificate) ([]pkix.AttributeTypeAndValue, error) {
+	extraNames := crt.Spec.Subject.ExtraNames
+	extraNamesLength := len(extraNames)
+	if extraNamesLength == 0 {
+		return nil, nil
+	}
+	attributesAndValues := make([]pkix.AttributeTypeAndValue, extraNamesLength)
+	for i, extraName := range extraNames {
+		asn1Oid, err := ToAsn1Oid(extraName.Type)
+		if err != nil {
+			return nil, err
+		}
+		attributeTypeAndValue := pkix.AttributeTypeAndValue{
+			Type:  asn1Oid,
+			Value: extraName.Value,
+		}
+		attributesAndValues[i] = attributeTypeAndValue
+	}
+	return attributesAndValues, nil
 }
 
 func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
@@ -303,6 +333,14 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 		return nil, err
 	}
 
+	var extraNames []pkix.AttributeTypeAndValue
+	if subject.ExtraNames != nil {
+		extraNames, err = buildExtraNamesForCertificate(crt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &x509.Certificate{
 		// Version must be 2 according to RFC5280.
 		// A version value of 2 confusingly means version 3.
@@ -323,6 +361,7 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 			PostalCode:         subject.PostalCodes,
 			SerialNumber:       subject.SerialNumber,
 			CommonName:         commonName,
+			ExtraNames:         extraNames,
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),
@@ -406,6 +445,7 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 // It returns a PEM encoded copy of the Certificate as well as a *x509.Certificate
 // which can be used for reading the encoded values.
 func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey interface{}) ([]byte, *x509.Certificate, error) {
+	swapNamesAndExtraNamesIfNeeded(template)
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
 
 	if err != nil {
@@ -448,6 +488,27 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 	}
 
 	return bundle, nil
+}
+
+// This is a workaround in order to include ExtraNames in the DER bytes of a signed Certificate.
+// The underlying go library will ignore Names when marshalling the Subject of a signed Certificate
+// inside ToRDNSequence().
+
+// However, it does go through the ExtraNames and use those as part of the final subject DER bytes.
+// It will overwrite clashing OID of those are provided, i.e., if you provide the OID for CommonName
+// but also include the OID for CommonName in ExtraNames, it will use the one from ExtraNames.
+
+// The Names array at this point, will include any supported Subject fields as well as any ExtraNames,
+// which are pushed into the array when the CSR is parsed.
+// We want to include those in the signed Cert, so we'll swap them over.
+
+// See Documentation for pkix.ExtraNames and pkix.Names for more details on how marshalling/unmarshalling is handled
+// and hence, why this workaround is needed.
+func swapNamesAndExtraNamesIfNeeded(template *x509.Certificate) {
+	if template.RawSubject == nil && template.Subject.Names != nil && template.Subject.ExtraNames == nil {
+		template.Subject.ExtraNames = template.Subject.Names
+		template.Subject.Names = nil
+	}
 }
 
 // EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.

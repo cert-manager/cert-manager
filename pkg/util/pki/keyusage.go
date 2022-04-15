@@ -20,6 +20,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"strconv"
+	"strings"
 )
 
 // Copied from x509.go
@@ -147,4 +149,25 @@ func buildASN1KeyUsageRequest(usage x509.KeyUsage) (pkix.Extension, error) {
 	}
 
 	return OIDExtensionKeyUsage, nil
+}
+
+// Allow users of the API to pass in an OID string and we will convert to an asn1.ObjectIdentifier
+// https://datatracker.ietf.org/doc/html/rfc4519.html
+func ToAsn1Oid(oidString string) (asn1.ObjectIdentifier, error) {
+	oidStringArray := strings.Split(oidString, ".")
+
+	oidIntArraySize := len(oidStringArray)
+	oidIntArray := make([]int, oidIntArraySize)
+
+	for c, s := range oidStringArray {
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, err
+		}
+		oidIntArray[c] = i
+	}
+
+	asn1Oid := asn1.ObjectIdentifier(oidIntArray)
+
+	return asn1Oid, nil
 }

@@ -80,6 +80,20 @@ func SetCertificateEmails(emails ...string) CertificateModifier {
 	}
 }
 
+func SetCertificateExtraName(extraName v1.ExtraName) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		if crt.Spec.Subject == nil {
+			crt.Spec.Subject = &v1.X509Subject{}
+		}
+		if crt.Spec.Subject.ExtraNames == nil {
+			crt.Spec.Subject.ExtraNames = make([]v1.ExtraName, 1)
+			crt.Spec.Subject.ExtraNames[0] = extraName
+		} else {
+			crt.Spec.Subject.ExtraNames = append(crt.Spec.Subject.ExtraNames, extraName)
+		}
+	}
+}
+
 func SetCertificateURIs(uris ...string) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.URIs = uris

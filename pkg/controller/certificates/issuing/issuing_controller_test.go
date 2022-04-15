@@ -63,6 +63,11 @@ func TestIssuingController(t *testing.T) {
 
 	nextPrivateKeySecretName := "next-private-key"
 
+	givenName := cmapi.ExtraName{
+		Type:  "2.5.4.42",
+		Value: "givenname",
+	}
+
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateGeneration(3),
@@ -71,6 +76,8 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateRevision(1),
 		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),
+		gen.SetCertificateCommonName("commonname"),
+		gen.SetCertificateExtraName(givenName),
 	)
 	exampleBundle := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
 

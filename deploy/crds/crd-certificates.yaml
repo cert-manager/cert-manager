@@ -229,6 +229,22 @@ spec:
                       type: array
                       items:
                         type: string
+                    extraNames:
+                      description: Extra subject fields to be used on the Certificate.
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - type
+                          - value
+                        properties:
+                          type:
+                            description: The type. This should be an asn1.ObjectIdentifier string, e.g., "2.5.4.42"
+                            type: string
+                            pattern: ^(\d+\.)+(\d+)
+                          value:
+                            description: The value. This should be an IA5String - essentially ASCII
+                            type: string
                     localities:
                       description: Cities to be used on the Certificate.
                       type: array

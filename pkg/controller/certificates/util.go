@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"crypto/x509/pkix"
 	"fmt"
 	"reflect"
 	"time"
@@ -167,6 +168,9 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
 		violations = append(violations, "spec.usages")
 	}
+	if !ExtraNameFieldsEqual(x509req.Subject.Names, spec.Subject.ExtraNames) {
+		violations = append(violations, "spec.subject.extraNames")
+	}
 	if spec.Duration != nil && req.Spec.Duration != nil &&
 		spec.Duration.Duration != req.Spec.Duration.Duration {
 		violations = append(violations, "spec.duration")
@@ -176,6 +180,32 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	}
 
 	return violations, nil
+}
+
+// ExtraNameFieldsEqual will check the Subject to see that it has the expected extra Subject fields, if any are defined.
+// Note the "ExtraNames" of the CertificateSpec end up in the "Names" (Subject) of the CertificateRequest.
+// requestNames will have the standard fields, such as CommonName
+func ExtraNameFieldsEqual(requestNames []pkix.AttributeTypeAndValue, subjectExtraNames []cmapi.ExtraName) bool {
+	// no need to look further if no extra names were requested
+	if len(subjectExtraNames) == 0 {
+		return true
+	}
+
+	for _, subjectExtraName := range subjectExtraNames {
+		for _, requestAttributeTypeAndValue := range requestNames {
+			extraNameOid, err := pki.ToAsn1Oid(subjectExtraName.Type)
+			if err != nil {
+				return false
+			}
+			if extraNameOid.Equal(requestAttributeTypeAndValue.Type) {
+				if subjectExtraName.Value != requestAttributeTypeAndValue.Value {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 // SecretDataAltNamesMatchSpec will compare a Secret resource containing certificate

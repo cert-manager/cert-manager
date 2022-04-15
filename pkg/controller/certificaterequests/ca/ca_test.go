@@ -58,9 +58,43 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
+func generateCSRWithExtraNames(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlgorithm) []byte {
+	template := x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName: "test",
+			ExtraNames: []pkix.AttributeTypeAndValue{
+				{
+					Type:  asn1.ObjectIdentifier{2, 5, 4, 42},
+					Value: "givenNameExample",
+				},
+				{
+					Type:  asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25},
+					Value: "domainComponentExample",
+				},
+			},
+		},
+		SignatureAlgorithm: sigAlg,
+	}
+
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	return csr
+}
+
 func generateCSR(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlgorithm) []byte {
 	asn1Subj, _ := asn1.Marshal(pkix.Name{
 		CommonName: "test",
+		ExtraNames: []pkix.AttributeTypeAndValue{
+			{
+				Type:  asn1.ObjectIdentifier{2, 5, 4, 42},
+				Value: "givenNameExample",
+			},
+		},
 	}.ToRDNSequence())
 	template := x509.CertificateRequest{
 		RawSubject:         asn1Subj,
@@ -474,6 +508,7 @@ func TestCA_Sign(t *testing.T) {
 		t.Fatal(err)
 	}
 	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
+	generateCSRWithExtraNames := generateCSRWithExtraNames(t, testpk, x509.ECDSAWithSHA256)
 
 	tests := map[string]struct {
 		givenCASecret    *corev1.Secret
@@ -539,6 +574,29 @@ func TestCA_Sign(t *testing.T) {
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
 				assert.Equal(t, true, got.IsCA)
+			},
+		},
+		"when the CertificateRequest has ExtraNames set, they should appear on the signed ca": {
+			givenCASecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"), gen.SetSecretData(secretDataFor(t, rootPK, rootCert))),
+			givenCAIssuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName: "secret-1",
+			})),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(generateCSRWithExtraNames),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.True(t, len(got.Subject.Names) == 3)
+				assert.True(t, got.Subject.Names[0].Type.String() == "2.5.4.3")
+				assert.True(t, got.Subject.Names[0].Value == "test")
+				assert.True(t, got.Subject.Names[1].Type.String() == "2.5.4.42")
+				assert.True(t, got.Subject.Names[1].Value == "givenNameExample")
+				assert.True(t, got.Subject.Names[2].Type.String() == "0.9.2342.19200300.100.1.25")
+				assert.True(t, got.Subject.Names[2].Value == "domainComponentExample")
 			},
 		},
 		"when the Issuer has ocspServers set, it should appear on the signed ca": {

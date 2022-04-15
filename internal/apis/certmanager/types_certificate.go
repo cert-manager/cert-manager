@@ -279,6 +279,16 @@ type X509Subject struct {
 	PostalCodes []string
 	// Serial number to be used on the Certificate.
 	SerialNumber string
+	// Extra subject fields to be used on the Certificate.
+	ExtraNames []ExtraName
+}
+
+type ExtraName struct {
+	// The type. This should be an asn1.ObjectIdentifier string, e.g., "2.5.4.42"
+	// +kubebuilder:validation:Pattern=^(\d+\.)+(\d+)
+	Type string
+	// The value. This should be an IA5String - essentially ASCII
+	Value string
 }
 
 // CertificateKeystores configures additional keystore output formats to be
