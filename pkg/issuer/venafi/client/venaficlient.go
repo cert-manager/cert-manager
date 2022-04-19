@@ -27,6 +27,7 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 const (
@@ -38,7 +39,7 @@ const (
 )
 
 type VenafiClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
-	issuer cmapi.GenericIssuer) (Interface, error)
+	issuer cmapi.GenericIssuer, metrics *metrics.Metrics) (Interface, error)
 
 // Interface implements a Venafi client
 type Interface interface {
@@ -58,6 +59,8 @@ type Venafi struct {
 	secretsLister corelisters.SecretLister
 
 	vcertClient connector
+
+	metrics *metrics.Metrics
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -67,12 +70,13 @@ type connector interface {
 	ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error)
 	RequestCertificate(req *certificate.Request) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
+	// TODO: (irbekrm) this method is never used- can it be removed?
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer) (Interface, error) {
+func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace)
 	if err != nil {
 		return nil, err
@@ -83,10 +87,12 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
+	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics)
+
 	return &Venafi{
 		namespace:     namespace,
 		secretsLister: secretsLister,
-		vcertClient:   vcertClient,
+		vcertClient:   instrumentedVCertClient,
 	}, nil
 }
 

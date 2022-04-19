@@ -51,15 +51,16 @@ type Metrics struct {
 	log      logr.Logger
 	registry *prometheus.Registry
 
-	clockTimeSeconds                 prometheus.CounterFunc
-	clockTimeSecondsGauge            prometheus.GaugeFunc
-	certificateExpiryTimeSeconds     *prometheus.GaugeVec
-	certificateRenewalTimeSeconds    *prometheus.GaugeVec
-	certificateReadyStatus           *prometheus.GaugeVec
-	acmeClientRequestDurationSeconds *prometheus.SummaryVec
-	acmeClientRequestCount           *prometheus.CounterVec
-	controllerSyncCallCount          *prometheus.CounterVec
-	controllerSyncErrorCount         *prometheus.CounterVec
+	clockTimeSeconds                   prometheus.CounterFunc
+	clockTimeSecondsGauge              prometheus.GaugeFunc
+	certificateExpiryTimeSeconds       *prometheus.GaugeVec
+	certificateRenewalTimeSeconds      *prometheus.GaugeVec
+	certificateReadyStatus             *prometheus.GaugeVec
+	acmeClientRequestDurationSeconds   *prometheus.SummaryVec
+	acmeClientRequestCount             *prometheus.CounterVec
+	venafiClientRequestDurationSeconds *prometheus.SummaryVec
+	controllerSyncCallCount            *prometheus.CounterVec
+	controllerSyncErrorCount           *prometheus.CounterVec
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -150,6 +151,19 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			[]string{"scheme", "host", "path", "method", "status"},
 		)
 
+		// venafiClientRequestDurationSeconds is a Prometheus summary to
+		// collect api call latencies for the the Venafi client.
+		venafiClientRequestDurationSeconds = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace:  namespace,
+				Name:       "venafi_client_request_duration_seconds",
+				Help:       "The HTTP request latencies in seconds for the Venafi client.",
+				Subsystem:  "http",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			},
+			[]string{"api_call"},
+		)
+
 		controllerSyncCallCount = prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -174,15 +188,16 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		log:      log.WithName("metrics"),
 		registry: prometheus.NewRegistry(),
 
-		clockTimeSeconds:                 clockTimeSeconds,
-		clockTimeSecondsGauge:            clockTimeSecondsGauge,
-		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
-		certificateRenewalTimeSeconds:    certificateRenewalTimeSeconds,
-		certificateReadyStatus:           certificateReadyStatus,
-		acmeClientRequestCount:           acmeClientRequestCount,
-		acmeClientRequestDurationSeconds: acmeClientRequestDurationSeconds,
-		controllerSyncCallCount:          controllerSyncCallCount,
-		controllerSyncErrorCount:         controllerSyncErrorCount,
+		clockTimeSeconds:                   clockTimeSeconds,
+		clockTimeSecondsGauge:              clockTimeSecondsGauge,
+		certificateExpiryTimeSeconds:       certificateExpiryTimeSeconds,
+		certificateRenewalTimeSeconds:      certificateRenewalTimeSeconds,
+		certificateReadyStatus:             certificateReadyStatus,
+		acmeClientRequestCount:             acmeClientRequestCount,
+		acmeClientRequestDurationSeconds:   acmeClientRequestDurationSeconds,
+		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
+		controllerSyncCallCount:            controllerSyncCallCount,
+		controllerSyncErrorCount:           controllerSyncErrorCount,
 	}
 
 	return m
@@ -196,6 +211,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
+	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)

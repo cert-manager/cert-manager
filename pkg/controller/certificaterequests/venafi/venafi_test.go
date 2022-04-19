@@ -46,6 +46,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	internalvenafifake "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/fake"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
@@ -829,7 +830,7 @@ func runTest(t *testing.T, test testT) {
 
 	if test.fakeClient != nil {
 		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
-			issuer cmapi.GenericIssuer) (client.Interface, error) {
+			issuer cmapi.GenericIssuer, metrics *metrics.Metrics) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
 	}

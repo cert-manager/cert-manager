@@ -27,6 +27,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
@@ -42,6 +43,8 @@ type Venafi struct {
 	resourceNamespace string
 
 	clientBuilder client.VenafiClientBuilder
+
+	metrics *metrics.Metrics
 
 	log logr.Logger
 }

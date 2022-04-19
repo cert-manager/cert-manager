@@ -49,9 +49,7 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	if err != nil {
 		return "", err
 	}
-	// Send the certificate signing request to Venafi
-	requestID, err := v.vcertClient.RequestCertificate(vreq)
-	return requestID, err
+	return v.vcertClient.RequestCertificate(vreq)
 }
 
 func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
