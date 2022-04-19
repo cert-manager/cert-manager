@@ -59,6 +59,28 @@ var (
 	oidExtKeyUsageMicrosoftKernelCodeSigning     = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 61, 1, 1}
 )
 
+// Fields natively supported on a Certificate. We don't want to over-ride these values if provided as raw OIDs.
+var nativeNames = map[string]string{
+	"2.5.4.6":  "C",            // Countries
+	"2.5.4.10": "O",            // Organizations
+	"2.5.4.11": "OU",           // OrganizationalUnits
+	"2.5.4.3":  "CN",           // CommonName
+	"2.5.4.5":  "SERIALNUMBER", // SerialNumber
+	"2.5.4.7":  "L",            // Localities
+	"2.5.4.8":  "ST",           // Provinces
+	"2.5.4.9":  "STREET",       // StreetAddresses
+	"2.5.4.17": "POSTALCODE",   // PostalCodes
+}
+
+// Fields not natively supported on a Certificate. This is an inclusion list, so we know which custom OIDs we will allow
+// inside ExtraNames.
+// More examples we may want to add: https://datatracker.ietf.org/doc/html/rfc4519.html
+var extraNames = map[string]string{
+	"2.5.4.42":                   "GN",  // GivenName
+	"0.9.2342.19200300.100.1.25": "DC",  // DomainComponent
+	"0.9.2342.19200300.100.1.1":  "UID", // UserId
+}
+
 // extKeyUsageOIDs contains the mapping between an ExtKeyUsage and its OID.
 var extKeyUsageOIDs = []struct {
 	extKeyUsage x509.ExtKeyUsage

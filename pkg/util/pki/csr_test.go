@@ -442,6 +442,63 @@ func TestGenerateCSR(t *testing.T) {
 			},
 		},
 		{
+			name: "Generate CSR from certificate with CN and duplicate OID in ExtraNames",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "example.org",
+				Subject: &cmapi.X509Subject{
+					ExtraNames: []cmapi.ExtraName{
+						{
+							Type:  "2.5.4.3",
+							Value: "example.org",
+						},
+					},
+				},
+			}},
+			wantErr: true,
+		},
+		{
+			name: "Generate CSR from certificate with CN and non-supported OID in ExtraNames",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "example.org",
+				Subject: &cmapi.X509Subject{
+					ExtraNames: []cmapi.ExtraName{
+						{
+							Type:  "2.5.4.19",
+							Value: "officename",
+						},
+					},
+				},
+			}},
+			wantErr: true,
+		},
+		{
+			name: "Generate CSR from certificate with CN and supported OID in ExtraNames",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "example.org",
+				Subject: &cmapi.X509Subject{
+					ExtraNames: []cmapi.ExtraName{
+						{
+							Type:  "2.5.4.42",
+							Value: "givenName",
+						},
+					},
+				},
+			}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject: pkix.Name{
+					CommonName: "example.org",
+					ExtraNames: []pkix.AttributeTypeAndValue{{
+						Type:  asn1.ObjectIdentifier{2, 5, 4, 42},
+						Value: "givenName",
+					}},
+				},
+				ExtraExtensions: defaultExtraExtensions,
+			},
+		},
+		{
 			name: "Generate CSR from certificate with extended key usages",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageIPsecEndSystem}}},
 			want: &x509.CertificateRequest{

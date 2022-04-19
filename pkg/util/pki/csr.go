@@ -246,17 +246,26 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 }
 
 func buildExtraNamesForCertificate(crt *v1.Certificate) ([]pkix.AttributeTypeAndValue, error) {
-	extraNames := crt.Spec.Subject.ExtraNames
-	extraNamesLength := len(extraNames)
+	certExtraNames := crt.Spec.Subject.ExtraNames
+	extraNamesLength := len(certExtraNames)
 	if extraNamesLength == 0 {
 		return nil, nil
 	}
 	attributesAndValues := make([]pkix.AttributeTypeAndValue, extraNamesLength)
-	for i, extraName := range extraNames {
+	for i, extraName := range certExtraNames {
 		asn1Oid, err := ToAsn1Oid(extraName.Type)
 		if err != nil {
 			return nil, err
 		}
+		nativeName, found := nativeNames[extraName.Type]
+		if found == true {
+			return nil, errors.New(fmt.Sprintf("Found value %s in extraNames which would override %s. Please use the supported field directly.", extraName.Value, nativeName))
+		}
+		_, found = extraNames[extraName.Type]
+		if found != true {
+			return nil, errors.New(fmt.Sprintf("Found unsupported extraName type %s with value %s", extraName.Type, extraName.Value))
+		}
+
 		attributeTypeAndValue := pkix.AttributeTypeAndValue{
 			Type:  asn1Oid,
 			Value: extraName.Value,
