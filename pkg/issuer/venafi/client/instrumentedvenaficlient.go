@@ -21,7 +21,6 @@ import (
 
 	"github.com/Venafi/vcert/v4/pkg/certificate"
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/go-logr/logr"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -48,7 +47,6 @@ func (ic instrumentedConnector) ReadZoneConfiguration() (*endpoint.ZoneConfigura
 	start := time.Now()
 	ic.logger.V(logf.TraceLevel).Info("calling ReadZoneConfiguration")
 	config, err := ic.conn.ReadZoneConfiguration()
-	// TODO: how do the key value pairs work for the labels work?
 	labels := []string{"read_zone_configuration"}
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return config, err

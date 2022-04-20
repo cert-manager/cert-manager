@@ -60,8 +60,6 @@ type Venafi struct {
 	secretsLister corelisters.SecretLister
 
 	vcertClient connector
-
-	metrics *metrics.Metrics
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
