@@ -101,7 +101,7 @@ func (c *Config) Complete() CompletedConfig {
 	completedCfg := completedConfig{
 		c.GenericConfig.Complete(),
 		&c.ExtraConfig,
-		c.restConfig,
+		c.GenericConfig.ClientConfig,
 	}
 
 	completedCfg.GenericConfig.Version = &version.Info{
