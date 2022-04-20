@@ -23,26 +23,30 @@ import (
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/go-logr/logr"
+
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 type instrumentedConnector struct {
 	conn    connector
 	metrics *metrics.Metrics
-	// TODO: actually use this logger or remove it
-	logger *logr.Logger
+	logger  *logr.Logger
 }
 
 var _ connector = instrumentedConnector{}
 
-func newInstumentedConnector(conn connector, metrics *metrics.Metrics) connector {
+func newInstumentedConnector(conn connector, metrics *metrics.Metrics, log logr.Logger) connector {
 	return instrumentedConnector{
 		conn:    conn,
 		metrics: metrics,
+		logger:  &log,
 	}
 }
 
 func (ic instrumentedConnector) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 	start := time.Now()
+	ic.logger.V(logf.TraceLevel).Info("calling ReadZoneConfiguration")
 	config, err := ic.conn.ReadZoneConfiguration()
 	// TODO: how do the key value pairs work for the labels work?
 	labels := []string{"read_zone_configuration"}
@@ -52,6 +56,7 @@ func (ic instrumentedConnector) ReadZoneConfiguration() (*endpoint.ZoneConfigura
 
 func (ic instrumentedConnector) RequestCertificate(req *certificate.Request) (string, error) {
 	start := time.Now()
+	ic.logger.V(logf.TraceLevel).Info("calling RequestCertificate")
 	reqID, err := ic.conn.RequestCertificate(req)
 	labels := []string{"request_certificate"}
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
@@ -60,6 +65,7 @@ func (ic instrumentedConnector) RequestCertificate(req *certificate.Request) (st
 
 func (ic instrumentedConnector) RetrieveCertificate(req *certificate.Request) (*certificate.PEMCollection, error) {
 	start := time.Now()
+	ic.logger.V(logf.TraceLevel).Info("calling RetrieveCertificate")
 	pemCollection, err := ic.conn.RetrieveCertificate(req)
 	labels := []string{"retrieve_certificate"}
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
@@ -68,6 +74,7 @@ func (ic instrumentedConnector) RetrieveCertificate(req *certificate.Request) (*
 
 func (ic instrumentedConnector) Ping() error {
 	start := time.Now()
+	ic.logger.V(logf.TraceLevel).Info("calling Ping")
 	err := ic.conn.Ping()
 	labels := []string{"ping"}
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
@@ -76,6 +83,7 @@ func (ic instrumentedConnector) Ping() error {
 
 func (ic instrumentedConnector) RenewCertificate(req *certificate.RenewalRequest) (string, error) {
 	start := time.Now()
+	ic.logger.V(logf.TraceLevel).Info("calling RenewCertificate")
 	reqID, err := ic.conn.RenewCertificate(req)
 	labels := []string{"renew_certificate"}
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)

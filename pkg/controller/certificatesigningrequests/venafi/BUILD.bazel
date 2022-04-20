@@ -47,6 +47,7 @@ go_test(
         "//pkg/metrics:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
         "@com_github_venafi_vcert_v4//pkg/endpoint:go_default_library",
         "@io_k8s_api//authorization/v1:go_default_library",
         "@io_k8s_api//certificates/v1:go_default_library",

@@ -23,6 +23,7 @@ import (
 	vcert "github.com/Venafi/vcert/v4"
 	"github.com/Venafi/vcert/v4/pkg/certificate"
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/go-logr/logr"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -39,7 +40,7 @@ const (
 )
 
 type VenafiClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
-	issuer cmapi.GenericIssuer, metrics *metrics.Metrics) (Interface, error)
+	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error)
 
 // Interface implements a Venafi client
 type Interface interface {
@@ -76,7 +77,7 @@ type connector interface {
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics) (Interface, error) {
+func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
-	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics)
+	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
 
 	return &Venafi{
 		namespace:     namespace,
