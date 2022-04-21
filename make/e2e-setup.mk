@@ -64,7 +64,7 @@ e2e-setup-kind: kind-exists
 # used as a prerequisite. If we were to use .PHONY, then the file's
 # timestamp would not be used to check whether targets should be rebuilt,
 # and they would get constantly rebuilt.
-bin/scratch/kind-exists: make/config/kind/v1beta2.yaml preload-kind-image make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
+bin/scratch/kind-exists: make/config/kind/config.yaml make/config/kind/config_etcd_no_fsync.yaml preload-kind-image make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
 	@$(eval KIND_CLUSTER_NAME ?= kind)
 	@make/cluster.sh --name $(KIND_CLUSTER_NAME)
 	@if [ "$(shell cat $@ 2>/dev/null)" != kind ]; then echo kind > $@; else touch $@; fi
