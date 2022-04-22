@@ -181,7 +181,6 @@ e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver 
 	@$(eval TAG = $(shell tar xfO bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--create-namespace \
 		--wait \
 		--namespace cert-manager \
@@ -220,7 +219,6 @@ e2e-setup-haproxyingress: $(call image-tar,haproxyingress) load-$(call image-tar
 	bin/tools/kubectl apply -f make/config/haproxy/manifests.yaml >/dev/null
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--wait \
 		--namespace haproxy-ingress \
 		--create-namespace \
@@ -261,7 +259,6 @@ e2e-setup-ingressnginxprev1: $(call image-tar,ingressnginxprev1) load-$(call ima
 	bin/tools/helm repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
 	bin/tools/Helm upgrade \
 		--install \
-		--force \
 		--wait \
 		--version 3.40.0 \
 		--namespace ingress-nginx \
@@ -291,7 +288,6 @@ e2e-setup-ingressnginxpostv1: $(call image-tar,ingressnginxpostv1) load-$(call i
 	bin/tools/helm repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--wait \
 		--version 4.0.10 \
 		--namespace ingress-nginx \
@@ -313,7 +309,6 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	bin/tools/helm repo add kyverno --force-update https://kyverno.github.io/kyverno/ >/dev/null
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--wait \
 		--namespace kyverno \
 		--create-namespace \
@@ -350,7 +345,6 @@ bin/downloaded/containers/$(CRI_ARCH)/pebble.tar: bin/downloaded/containers/$(CR
 e2e-setup-pebble: load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar bin/scratch/kind-exists bin/tools/helm
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--wait \
 		--namespace pebble \
 		--create-namespace \
@@ -373,7 +367,6 @@ bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar: bin/downloaded/containe
 e2e-setup-samplewebhook: load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar e2e-setup-certmanager bin/scratch/kind-exists bin/tools/helm
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--wait \
 		--namespace samplewebhook \
 		--create-namespace \
@@ -406,7 +399,6 @@ e2e-setup-traefik: load-$(call image-tar,traefik) make/config/traefik/traefik-va
 	bin/tools/helm repo add traefik --force-update https://helm.traefik.io/traefik >/dev/null
 	bin/tools/helm upgrade \
 		--install \
-		--force \
 		--version 10.1.1 \
 		--create-namespace \
 		--namespace traefik \
