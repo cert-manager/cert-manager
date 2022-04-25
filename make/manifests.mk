@@ -35,7 +35,8 @@ bin/release/cert-manager-manifests.tar.gz: bin/cert-manager-$(RELEASE_VERSION).t
 	mkdir -p bin/scratch/manifests/deploy/manifests/
 	cp bin/cert-manager-$(RELEASE_VERSION).tgz bin/cert-manager-$(RELEASE_VERSION).tgz.prov bin/scratch/manifests/deploy/chart/
 	cp bin/yaml/cert-manager.crds.yaml bin/yaml/cert-manager.yaml bin/scratch/manifests/deploy/manifests/
-	tar czf $@ -C bin/scratch/manifests .
+	# removes leading ./ from archived paths
+	find bin/scratch/manifests -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C bin/scratch/manifests -T -
 	rm -rf bin/scratch/manifests
 
 # This metadata blob is constructed slightly differently and doesn't use hack/artifact-metadata.template.json directly;

@@ -31,7 +31,8 @@ bin/release/cert-manager-cmctl-linux-amd64.tar.gz bin/release/cert-manager-cmctl
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/cmctl
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
-	tar czf $@ -C $(TARDIR) .
+	# removes leading ./ from archived paths
+	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
 bin/metadata/cert-manager-cmctl-linux-amd64.tar.gz.metadata.json bin/metadata/cert-manager-cmctl-linux-arm64.tar.gz.metadata.json bin/metadata/cert-manager-cmctl-linux-s390x.tar.gz.metadata.json bin/metadata/cert-manager-cmctl-linux-ppc64le.tar.gz.metadata.json bin/metadata/cert-manager-cmctl-linux-arm.tar.gz.metadata.json: bin/metadata/cert-manager-cmctl-linux-%.tar.gz.metadata.json: bin/release/cert-manager-cmctl-linux-%.tar.gz hack/artifact-metadata.template.json | bin/metadata
@@ -59,7 +60,8 @@ bin/release/cert-manager-cmctl-darwin-amd64.tar.gz bin/release/cert-manager-cmct
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/cmctl
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
-	tar czf $@ -C $(TARDIR) .
+	# removes leading ./ from archived paths
+	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
 bin/metadata/cert-manager-cmctl-darwin-amd64.tar.gz.metadata.json bin/metadata/cert-manager-cmctl-darwin-arm64.tar.gz.metadata.json: bin/metadata/cert-manager-cmctl-darwin-%.tar.gz.metadata.json: bin/release/cert-manager-cmctl-darwin-%.tar.gz hack/artifact-metadata.template.json | bin/metadata
@@ -95,7 +97,8 @@ bin/release/cert-manager-cmctl-windows-amd64.tar.gz: bin/cmctl/cmctl-windows-amd
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/cmctl.exe
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
-	tar czf $@ -C $(TARDIR) .
+	# removes leading ./ from archived paths
+	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
 bin/metadata/cert-manager-cmctl-windows-amd64.tar.gz.metadata.json: bin/release/cert-manager-cmctl-windows-amd64.tar.gz hack/artifact-metadata.template.json | bin/metadata
@@ -137,7 +140,8 @@ bin/release/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz bin/release/cer
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/kubectl-cert_manager
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
-	tar czf $@ -C $(TARDIR) .
+	# removes leading ./ from archived paths
+	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
 bin/metadata/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz.metadata.json bin/metadata/cert-manager-kubectl-cert_manager-linux-arm64.tar.gz.metadata.json bin/metadata/cert-manager-kubectl-cert_manager-linux-s390x.tar.gz.metadata.json bin/metadata/cert-manager-kubectl-cert_manager-linux-ppc64le.tar.gz.metadata.json bin/metadata/cert-manager-kubectl-cert_manager-linux-arm.tar.gz.metadata.json: bin/metadata/cert-manager-kubectl-cert_manager-linux-%.tar.gz.metadata.json: bin/release/cert-manager-kubectl-cert_manager-linux-%.tar.gz hack/artifact-metadata.template.json | bin/metadata
@@ -165,7 +169,8 @@ bin/release/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz bin/release/ce
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/kubectl-cert_manager
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
-	tar czf $@ -C $(TARDIR) .
+	# removes leading ./ from archived paths
+	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
 bin/metadata/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz.metadata.json bin/metadata/cert-manager-kubectl-cert_manager-darwin-arm64.tar.gz.metadata.json: bin/metadata/cert-manager-kubectl-cert_manager-darwin-%.tar.gz.metadata.json: bin/release/cert-manager-kubectl-cert_manager-darwin-%.tar.gz hack/artifact-metadata.template.json | bin/metadata
@@ -201,7 +206,8 @@ bin/release/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz: bin/kubectl-
 	mkdir -p $(TARDIR)
 	cp $< $(TARDIR)/kubectl-cert_manager.exe
 	cp bin/scratch/cert-manager.license $(TARDIR)/LICENSE
-	tar czf $@ -C $(TARDIR) .
+	# removes leading ./ from archived paths
+	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
 bin/metadata/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz.metadata.json: bin/release/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz hack/artifact-metadata.template.json | bin/metadata
