@@ -1,4 +1,10 @@
-<p align="center"><img src="./logo/logo.png" width="250x" /></p>
+
+<p align="center">
+  <img src="./logo/logo.png" height="241" width="250" alt="cert-manager project logo" />
+</p>
+<!-- note that the cert-manager logo in this repo is referred to in other README files in the cert-manager org;
+     if you change its location or name, you'll need to update several other repos too! -->
+
 <p align="center"><a href="https://prow.build-infra.jetstack.net/?job=ci-cert-manager-bazel">
 <!-- prow build badge, godoc, and go report card-->
 <img alt="Build Status" src="https://prow.build-infra.jetstack.net/badge.svg?jobs=ci-cert-manager-bazel">
