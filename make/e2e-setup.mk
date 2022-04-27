@@ -415,7 +415,7 @@ e2e-setup-traefik: load-$(call image-tar,traefik) make/config/traefik/traefik-va
 e2e-setup-vault: load-$(call image-tar,vaultretagged) bin/scratch/kind-exists bin/tools/helm
 
 # Exported because it needs to flow down to make/e2e.sh.
-export ARTIFACTS ?= bin/artifacts
+export ARTIFACTS ?= $(shell pwd)/bin/artifacts
 
 .PHONY: kind-logs
 kind-logs: bin/scratch/kind-exists bin/tools/kind
