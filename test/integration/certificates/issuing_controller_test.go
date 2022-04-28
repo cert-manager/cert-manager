@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -36,6 +37,8 @@ import (
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
 
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -91,6 +94,7 @@ func TestIssuingController(t *testing.T) {
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
+		fieldManager             = "integration-test-field-manager"
 	)
 
 	// Create Namespace
@@ -136,7 +140,7 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +186,7 @@ func TestIssuingController(t *testing.T) {
 			cmapi.SchemeGroupVersion.WithKind("Certificate"),
 		)),
 	)
-	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	_, err = internalcertificaterequests.Apply(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +195,7 @@ func TestIssuingController(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	err = internalcertificaterequests.ApplyStatus(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +204,7 @@ func TestIssuingController(t *testing.T) {
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	err = internalcertificates.ApplyStatus(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,6 +301,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
+		fieldManager             = "integration-test-field-manager"
 	)
 
 	// Create Namespace
@@ -349,7 +354,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -395,7 +400,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 			cmapi.SchemeGroupVersion.WithKind("Certificate"),
 		)),
 	)
-	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	req, err = internalcertificaterequests.Apply(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -404,7 +409,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	err = internalcertificaterequests.ApplyStatus(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +418,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	err = internalcertificates.ApplyStatus(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -512,6 +517,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
+		fieldManager             = "integration-test-field-manager"
 	)
 
 	// Create Namespace
@@ -557,7 +563,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -603,7 +609,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 			cmapi.SchemeGroupVersion.WithKind("Certificate"),
 		)),
 	)
-	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	req, err = internalcertificaterequests.Apply(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -612,7 +618,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	err = internalcertificaterequests.ApplyStatus(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -621,7 +627,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	err = internalcertificates.ApplyStatus(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -642,12 +648,16 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 		return true, nil
 	}, ctx.Done())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Add labels and annotations to the SecretTemplate.
 	annotations := map[string]string{"annotation-1": "abc", "annotation-2": "123"}
 	labels := map[string]string{"labels-1": "abc", "labels-2": "123"}
 	crt = gen.CertificateFrom(crt, gen.SetCertificateSecretTemplate(annotations, labels))
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	crt.ManagedFields = nil
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -677,7 +687,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	// Remove labels and annotations from the SecretTemplate.
 	crt.Spec.SecretTemplate = nil
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	crt.ManagedFields = nil
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -745,6 +756,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
+		fieldManager             = "integration-test-field-manager"
 	)
 
 	// Create Namespace
@@ -790,7 +802,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -836,7 +848,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			cmapi.SchemeGroupVersion.WithKind("Certificate"),
 		)),
 	)
-	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	req, err = internalcertificaterequests.Apply(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -845,7 +857,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	req.Status.CA = certPEM
 	req.Status.Certificate = certPEM
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	err = internalcertificaterequests.ApplyStatus(ctx, cmCl, fieldManager, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -854,7 +866,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	err = internalcertificates.ApplyStatus(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -875,13 +887,17 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 		return true, nil
 	}, ctx.Done())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Add additional output formats
 	crt = gen.CertificateFrom(crt, gen.SetCertificateAdditionalOutputFormats(
 		cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 		cmapi.CertificateAdditionalOutputFormat{Type: "DER"},
 	))
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	crt.ManagedFields = nil
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -908,7 +924,8 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	// Remove AdditionalOutputFormats
 	crt.Spec.AdditionalOutputFormats = nil
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	crt.ManagedFields = nil
+	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}

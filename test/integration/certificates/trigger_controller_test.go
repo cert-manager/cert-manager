@@ -22,15 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/segmentio/encoding/json"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -230,6 +228,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	namespace := "testns"
 	secretName := "example"
 	certName := "testcrt"
+	fieldManager := "integration-test-field-manager"
 
 	failedIssuanceAttempts := 7
 	backoffPeriod := time.Hour * 32
@@ -284,7 +283,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "", "")
 	cert.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
 	cert.Status.LastFailureTime = &metaNow
-	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	err = internalcertificates.ApplyStatus(ctx, cmCl, fieldManager, cert)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -390,30 +389,9 @@ func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cm
 // triggered on certificate events.
 func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certificate, client cmclient.Interface) {
 	t.Helper()
-	testCond := cmapi.CertificateCondition{
-		Type:    cmapi.CertificateConditionType("Test"),
-		Reason:  "TestTwo",
-		Message: fmt.Sprintf("Test-%s", time.Now().Truncate(time.Second).String()),
-		Status:  cmmeta.ConditionUnknown,
-	}
-	// Patch instead of update as there might be conflicts here due to
-	// trigger controller picking up the cert and adding Issuing condition
-	// in between.
-	statusUpdate := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: cert.Name, Namespace: cert.Namespace},
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		Status: cmapi.CertificateStatus{
-			Conditions: []cmapi.CertificateCondition{testCond},
-		},
-	}
-	statusUpdateJson, err := json.Marshal(statusUpdate)
-	if err != nil {
-		t.Errorf("failed to marshal cert data: %v", err)
-	}
-	_, err = client.CertmanagerV1().Certificates(cert.Namespace).Patch(
-		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: pointer.Bool(true)},
-		"status",
-	)
+	message := fmt.Sprintf("Test-%s", time.Now().Truncate(time.Second))
+	apiutil.SetCertificateCondition(cert, cert.Generation, cmapi.CertificateConditionType("Test"), cmmeta.ConditionUnknown, "Test", message)
+	err := internalcertificates.ApplyStatus(ctx, client, "test", cert)
 	if err != nil {
 		t.Fatalf("Failed to apply test condition: %v", err)
 	}
