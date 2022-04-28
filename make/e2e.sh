@@ -21,6 +21,8 @@ source "$here/config/lib.sh"
 cd "$here/.." || exit 1
 set -e
 
+ARTIFACTS=${ARTIFACTS:-$(pwd)/bin/artifacts}
+
 # Why do we only run 20 tests concurrently? Because we have noticed that
 # many tests start timing out when the Prow pod gets overloaded. We are
 # using a n1-standard-8 VM (7900m vCPU and 24GB RAM), and the pod requests
@@ -70,7 +72,6 @@ flake_attempts=1
 ginkgo_skip=
 ginkgo_focus=
 feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true
-artifacts=
 help() {
   cat <<EOF | color ""
 Runs the end-to-end test suite against an already configured kind cluster.
@@ -102,7 +103,7 @@ Environment variables:
       to $feature_gates
   ${green}ARTIFACTS${end}
       The path to a directory where the JUnit XML files will be stored. By
-      default, the JUnit XML files are not saved.
+      default, the JUnit XML files are saved to ./bin/artifacts
 
 Details:
   Imagine you got the following failure:
@@ -145,7 +146,7 @@ if [ $# -gt 0 ]; then
   esac
 fi
 
-for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP ARTIFACTS; do
+for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP; do
   if printenv "$v" >/dev/null && [ -n "${!v}" ]; then
     eval "$(tr '[:upper:]' '[:lower:]' <<<"$v")=\"${!v}\""
   fi
@@ -171,11 +172,6 @@ ginkgo_args=("$@")
 if [[ -n "$ginkgo_focus" ]]; then ginkgo_args+=(--ginkgo.focus="${ginkgo_focus}"); fi
 if [[ -n "$ginkgo_skip" ]]; then ginkgo_args+=(--ginkgo.skip="${ginkgo_skip}"); fi
 
-# Only enable junit output if ARTIFACTS is set.
-if [[ -n "$artifacts" ]]; then
-  mkdir -p "$artifacts"
-  ginkgo_args+=(--report-dir="$artifacts")
-fi
 
 # Ginkgo doesn't stream the logs when running in parallel (--nodes). Let's
 # disable parallelism to force Ginkgo to stream the logs when
@@ -185,6 +181,8 @@ if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   nodes=1
   ginkgo_args+=(--ginkgo.v --test.v)
 fi
+
+mkdir -p "${ARTIFACTS}"
 
 # The command "kubectl cluster-info dump" returns 141 since grep breaks the
 # pipe as soon as it finds a match.
@@ -198,6 +196,7 @@ trace ginkgo \
   ./test/e2e/ \
   -- \
   --repo-root="$PWD" \
+  --report-dir="${ARTIFACTS}" \
   --acme-dns-server="${service_ip_prefix}.16" \
   --acme-ingress-ip="${service_ip_prefix}.15" \
   --acme-gateway-ip="${service_ip_prefix}.14" \
