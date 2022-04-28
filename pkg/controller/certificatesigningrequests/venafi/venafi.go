@@ -39,6 +39,7 @@ import (
 	venaficlient "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	venafiapi "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -57,6 +58,8 @@ type Venafi struct {
 	recorder      record.EventRecorder
 
 	clientBuilder venaficlient.VenafiClientBuilder
+
+	metrics *metrics.Metrics
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
@@ -95,7 +98,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuerObj, v.metrics, log)
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		v.recorder.Event(csr, corev1.EventTypeWarning, "SecretNotFound", message)

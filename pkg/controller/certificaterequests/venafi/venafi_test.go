@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,6 +47,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	internalvenafifake "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/fake"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
@@ -829,7 +831,7 @@ func runTest(t *testing.T, test testT) {
 
 	if test.fakeClient != nil {
 		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
-			issuer cmapi.GenericIssuer) (client.Interface, error) {
+			issuer cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
 	}

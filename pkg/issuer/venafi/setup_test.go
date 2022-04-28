@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/go-logr/logr"
 
 	corelisters "k8s.io/client-go/listers/core/v1"
 
@@ -38,12 +40,12 @@ func TestSetup(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer")
 
 	failingClientBuilder := func(string, corelisters.SecretLister,
-		cmapi.GenericIssuer) (client.Interface, error) {
+		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return nil, errors.New("this is an error")
 	}
 
 	failingPingClient := func(string, corelisters.SecretLister,
-		cmapi.GenericIssuer) (client.Interface, error) {
+		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return errors.New("this is a ping error")
@@ -52,7 +54,7 @@ func TestSetup(t *testing.T) {
 	}
 
 	pingClient := func(string, corelisters.SecretLister,
-		cmapi.GenericIssuer) (client.Interface, error) {
+		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return nil

@@ -6,6 +6,7 @@ go_library(
         "acme.go",
         "certificates.go",
         "metrics.go",
+        "venafi.go",
     ],
     importpath = "github.com/cert-manager/cert-manager/pkg/metrics",
     visibility = ["//visibility:public"],

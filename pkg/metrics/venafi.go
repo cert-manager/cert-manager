@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2022 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,12 +20,7 @@ import (
 	"time"
 )
 
-// ObserveACMERequestDuration increases bucket counters for that ACME client duration.
-func (m *Metrics) ObserveACMERequestDuration(duration time.Duration, labels ...string) {
-	m.acmeClientRequestDurationSeconds.WithLabelValues(labels...).Observe(duration.Seconds())
-}
-
-// IncrementACMERequestCount increases the acme client request counter.
-func (m *Metrics) IncrementACMERequestCount(labels ...string) {
-	m.acmeClientRequestCount.WithLabelValues(labels...).Inc()
+// ObserveVenafiRequestDuration increases bucket counters for that Venafi client duration.
+func (m *Metrics) ObserveVenafiRequestDuration(duration time.Duration, labels ...string) {
+	m.venafiClientRequestDurationSeconds.WithLabelValues(labels...).Observe(duration.Seconds())
 }

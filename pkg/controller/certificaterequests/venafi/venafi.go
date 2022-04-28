@@ -37,6 +37,7 @@ import (
 	venaficlient "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -51,6 +52,8 @@ type Venafi struct {
 	cmClient      clientset.Interface
 
 	clientBuilder venaficlient.VenafiClientBuilder
+
+	metrics *metrics.Metrics
 }
 
 func init() {
@@ -68,6 +71,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		clientBuilder: venaficlient.New,
+		metrics:       ctx.Metrics,
 		cmClient:      ctx.CMClient,
 	}
 }
@@ -76,7 +80,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
-	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj, v.metrics, log)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
