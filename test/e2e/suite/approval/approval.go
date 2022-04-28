@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -54,6 +55,8 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		crd       *crdapi.CustomResourceDefinition
 		crdclient crdclientset.Interface
 		group     string
+
+		fieldManager = "e2e-test-field-manager"
 	)
 
 	JustBeforeEach(func() {
@@ -82,7 +85,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 					Resources: []string{"certificaterequests"},
 				},
 				{
-					Verbs:     []string{"update"},
+					Verbs:     []string{"patch"},
 					APIGroups: []string{"cert-manager.io"},
 					Resources: []string{"certificaterequests/status"},
 				},
@@ -176,14 +179,14 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	It("attempting to approve a certificate request without the approve permission should error", func() {
 		approvedCR := request.DeepCopy()
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err := saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err := internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("attempting to deny a certificate request without the approve permission should error", func() {
 		approvedCR := request.DeepCopy()
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err := saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err := internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -195,7 +198,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -205,7 +208,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, deniedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -218,7 +221,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -229,7 +232,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, deniedCR)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -242,7 +245,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -253,7 +256,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -264,7 +267,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -275,7 +278,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, approvedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -288,7 +291,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, deniedCR)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -299,7 +302,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, deniedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -310,7 +313,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, deniedCR)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -321,7 +324,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
-		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		err = internalcertificaterequests.ApplyStatus(context.Background(), saclient, fieldManager, deniedCR)
 		Expect(err).To(HaveOccurred())
 	})
 
