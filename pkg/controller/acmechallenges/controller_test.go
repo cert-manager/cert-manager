@@ -20,17 +20,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
-	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
-	"github.com/cert-manager/cert-manager/pkg/controller/acmechallenges/scheduler"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -39,107 +35,94 @@ const (
 )
 
 func TestRunScheduler(t *testing.T) {
-	baseChallenge := gen.Challenge("testchal",
-		gen.SetChallengeIssuer(cmmeta.ObjectReference{
-			Name: "testissuer",
-		}),
-	)
-
 	tests := map[string]struct {
-		challenge *cmacme.Challenge
-		builder   *testpkg.Builder
+		maxConcurrentChallenges int
+		builder                 *testpkg.Builder
 	}{
-		"A finalizer gets added and status gets set to processing in for a challenge that doesn't have any finalizers yet, an event gets throw": {
-			challenge: gen.ChallengeFrom(baseChallenge,
-				gen.SetChallengeProcessing(false),
-				gen.SetChallengeURL("testurl"),
-			),
-
+		"unscheduled challenges are scheduled": {
+			maxConcurrentChallenges: 2,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
-					gen.SetChallengeProcessing(false),
-					gen.SetChallengeURL("testurl"),
-				)},
+				CertManagerObjects: []runtime.Object{
+					gen.Challenge("ch1",
+						gen.SetChallengeDNSName("host1.example.com"),
+						gen.SetChallengeProcessing(false),
+					),
+					gen.Challenge("ch2",
+						gen.SetChallengeDNSName("host2.example.com"),
+						gen.SetChallengeProcessing(false),
+					),
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
-						coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+							"status",
 							gen.DefaultTestNamespace,
-							gen.ChallengeFrom(baseChallenge,
-								gen.SetChallengeProcessing(false),
-								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
+							gen.Challenge("ch1",
+								gen.SetChallengeDNSName("host1.example.com"),
+								gen.SetChallengeProcessing(true),
 							))),
 					testpkg.NewAction(
 						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 							"status",
 							gen.DefaultTestNamespace,
-							gen.ChallengeFrom(baseChallenge,
+							gen.Challenge("ch2",
+								gen.SetChallengeDNSName("host2.example.com"),
 								gen.SetChallengeProcessing(true),
-								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
 							))),
 				},
-				ExpectedEvents: []string{"Normal Started Challenge scheduled for processing"},
+				ExpectedEvents: []string{
+					"Normal Started Challenge scheduled for processing",
+					"Normal Started Challenge scheduled for processing",
+				},
 			},
 		},
-		"A finalizer gets added and status gets set to processing in for a challenge that has a random finalizer, an event gets throw": {
-			challenge: gen.ChallengeFrom(baseChallenge,
-				gen.SetChallengeProcessing(false),
-				gen.SetChallengeURL("testurl"),
-				gen.SetChallengeFinalizers([]string{randomFinalizer}),
-			),
+		"maxConcurrentChallenges limits the number of challenges that are scheduled": {
+			maxConcurrentChallenges: 1,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
-					gen.SetChallengeProcessing(false),
-					gen.SetChallengeURL("testurl"),
-					gen.SetChallengeFinalizers([]string{randomFinalizer}),
-				)},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(
-						coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
-							gen.DefaultTestNamespace,
-							gen.ChallengeFrom(baseChallenge,
-								gen.SetChallengeProcessing(false),
-								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{randomFinalizer, cmacme.ACMEFinalizer}),
-							))),
-					testpkg.NewAction(
-						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
-							"status",
-							gen.DefaultTestNamespace,
-							gen.ChallengeFrom(baseChallenge,
-								gen.SetChallengeProcessing(true),
-								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{randomFinalizer, cmacme.ACMEFinalizer}),
-							))),
+				CertManagerObjects: []runtime.Object{
+					gen.Challenge("ch1",
+						gen.SetChallengeDNSName("host1.example.com"),
+						gen.SetChallengeProcessing(true),
+					),
+					gen.Challenge("ch2",
+						gen.SetChallengeDNSName("host2.example.com"),
+						gen.SetChallengeProcessing(false),
+					),
 				},
-				ExpectedEvents: []string{"Normal Started Challenge scheduled for processing"},
+				ExpectedActions: nil,
+				ExpectedEvents:  nil,
 			},
 		},
-		"Status gets set to processing, but no finalizer if there already is the ACME finalizer, an event gets thrown": {
-			challenge: gen.ChallengeFrom(baseChallenge,
-				gen.SetChallengeProcessing(false),
-				gen.SetChallengeURL("testurl"),
-				gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
-			),
+		"challenges with the same domain are never scheduled together": {
+			maxConcurrentChallenges: 2,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
-					gen.SetChallengeProcessing(false),
-					gen.SetChallengeURL("testurl"),
-					gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
-				)},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(
-						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
-							"status",
-							gen.DefaultTestNamespace,
-							gen.ChallengeFrom(baseChallenge,
-								gen.SetChallengeProcessing(true),
-								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
-							))),
+				CertManagerObjects: []runtime.Object{
+					gen.Challenge("ch1",
+						gen.SetChallengeDNSName("host1.example.com"),
+						gen.SetChallengeProcessing(true),
+					),
+					gen.Challenge("ch2",
+						gen.SetChallengeDNSName("host1.example.com"),
+						gen.SetChallengeProcessing(false),
+					),
 				},
-				ExpectedEvents: []string{"Normal Started Challenge scheduled for processing"},
+				ExpectedActions: nil,
+				ExpectedEvents:  nil,
+			},
+		},
+		"scheduled challenges are ignored": {
+			maxConcurrentChallenges: 2,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.Challenge("ch1",
+						gen.SetChallengeProcessing(true),
+					),
+					gen.Challenge("ch2",
+						gen.SetChallengeProcessing(true),
+					),
+				},
+				ExpectedActions: nil,
+				ExpectedEvents:  nil,
 			},
 		},
 	}
@@ -147,27 +130,14 @@ func TestRunScheduler(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.builder.T = t
 			test.builder.Init()
+			test.builder.Context.SchedulerOptions.MaxConcurrentChallenges = test.maxConcurrentChallenges
+
 			defer test.builder.Stop()
-
-			cl := fake.NewSimpleClientset()
-			factory := cminformers.NewSharedInformerFactory(cl, 0)
-			challengesInformer := factory.Acme().V1().Challenges()
-
-			err := challengesInformer.Informer().GetIndexer().Add(test.challenge)
+			c := &controller{}
+			_, _, err := c.Register(test.builder.Context)
 			require.NoError(t, err)
-
-			controller := &controller{}
-			_, _, err = controller.Register(test.builder.Context)
-			if err != nil {
-				t.Fatal(err)
-			}
-			controller.scheduler = scheduler.New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)
-			controller.challengeLister = challengesInformer.Lister()
-
 			test.builder.Start()
-
-			controller.runScheduler(context.Background())
-
+			c.runScheduler(context.Background())
 			test.builder.CheckAndFinish()
 		})
 	}
