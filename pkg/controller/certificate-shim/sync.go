@@ -135,7 +135,7 @@ func SyncFnFor(
 		for _, crt := range updateCrts {
 
 			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
+				_, err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            crt.Name,
 						Namespace:       crt.Namespace,
