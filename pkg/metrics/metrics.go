@@ -21,6 +21,7 @@ limitations under the License.
 // certificate_ready_status{name, namespace, condition}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
+// venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // controller_sync_call_count{"controller"}
 package metrics
 
