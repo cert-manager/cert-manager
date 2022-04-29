@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 
+	internalchallenges "github.com/cert-manager/cert-manager/internal/controller/challenges"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -56,6 +57,7 @@ func TestAcmeOrdersController(t *testing.T) {
 		testName      string = "acmetest"
 		challengeType string = "dns-01"
 		authType      string = "dns"
+		fieldManager  string = "integration-test-field-manager"
 	)
 
 	// Initial ACME authorization to be returned by GetAuthorization.
@@ -235,7 +237,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Set the Challenge state to valid- the status of the ACME order remains 'pending'.
 	chal = chal.DeepCopy()
 	chal.Status.State = cmacme.Valid
-	_, err = cmCl.AcmeV1().Challenges(testName).UpdateStatus(ctx, chal, metav1.UpdateOptions{})
+	_, err = internalchallenges.ApplyStatus(ctx, cmCl, fieldManager, chal)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -68,9 +69,10 @@ func TestRevisionManagerController(t *testing.T) {
 	defer stopController()
 
 	var (
-		crtName    = "testcrt"
-		namespace  = "testns"
-		secretName = "test-crt-tls"
+		crtName      = "testcrt"
+		namespace    = "testns"
+		secretName   = "test-crt-tls"
+		fieldManager = "integration-test-field-manager"
 	)
 
 	// Create Namespace
@@ -97,7 +99,7 @@ func TestRevisionManagerController(t *testing.T) {
 	// Set Certificate to Ready
 	apiutil.SetCertificateCondition(crt, crt.Generation,
 		cmapi.CertificateConditionReady, cmmeta.ConditionTrue, "Issued", "integration test")
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	err = internalcertificates.ApplyStatus(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
 	}

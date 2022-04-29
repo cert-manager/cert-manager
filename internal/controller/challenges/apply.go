@@ -73,7 +73,10 @@ func serializeApply(challenge *cmacme.Challenge) ([]byte, error) {
 		ObjectMeta: *challenge.ObjectMeta.DeepCopy(),
 		Spec:       *challenge.Spec.DeepCopy(),
 	}
+	// When using the apply operation you cannot have managedFields in the object that is being applied
+	// https://kubernetes.io/docs/reference/using-api/server-side-apply/#apply-and-update
 	ch.ManagedFields = nil
+
 	challengeData, err := json.Marshal(ch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal challenge object: %w", err)
