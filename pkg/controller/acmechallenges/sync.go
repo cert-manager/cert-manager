@@ -69,7 +69,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	oldChal := ch
 	ch = ch.DeepCopy()
 
-	if ch.DeletionTimestamp != nil {
+	if !ch.DeletionTimestamp.IsZero() {
 		return c.handleFinalizer(ctx, ch)
 	}
 
