@@ -19,6 +19,7 @@ package gen
 import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ChallengeModifier func(*cmacme.Challenge)
@@ -111,5 +112,11 @@ func SetChallengeProcessing(b bool) ChallengeModifier {
 func SetChallengeFinalizers(finalizers []string) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Finalizers = finalizers
+	}
+}
+
+func SetChallengeDeletionTimestamp(ts metav1.Time) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.DeletionTimestamp = &ts
 	}
 }

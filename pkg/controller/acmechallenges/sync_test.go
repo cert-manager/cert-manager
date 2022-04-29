@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	acmeapi "golang.org/x/crypto/acme"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
@@ -85,8 +86,49 @@ func TestSyncHappyPath(t *testing.T) {
 		}),
 		gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
 	)
-
+	deletedChallenge := gen.ChallengeFrom(baseChallenge,
+		gen.SetChallengeDeletionTimestamp(metav1.Now()))
 	tests := map[string]testT{
+		"cleanup if the challenge is deleted and remove the finalizer": {
+			challenge: gen.ChallengeFrom(deletedChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+			),
+			httpSolver: &fakeSolver{
+				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.ChallengeFrom(deletedChallenge,
+						gen.SetChallengeProcessing(true),
+						gen.SetChallengeURL("testurl"),
+						gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					),
+					testIssuerHTTP01Enabled,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(deletedChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+						))),
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(deletedChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengeFinalizers([]string{}),
+						))),
+				},
+			},
+		},
 		"if finalizer is missing, add it": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
