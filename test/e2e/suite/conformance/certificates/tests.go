@@ -49,9 +49,9 @@ func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
 		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
-
 		sharedIPAddress := "127.0.0.1"
-		fieldManager := "e2e-test-conformance"
+
+		const fieldManager = "e2e-test-conformance"
 
 		// Wrap this in a BeforeEach else flags will not have been parsed and
 		// f.Config will not be populated at the time that this code is run.
@@ -890,7 +890,6 @@ func (s *Suite) Define() {
 
 			testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
 
-			testCertificate.ManagedFields = nil
 			testCertificate, err = internalcertificates.Apply(ctx, f.Helper().CMClient, fieldManager, testCertificate)
 
 			Expect(err).NotTo(HaveOccurred())

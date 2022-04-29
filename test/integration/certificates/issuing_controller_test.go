@@ -656,7 +656,6 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	annotations := map[string]string{"annotation-1": "abc", "annotation-2": "123"}
 	labels := map[string]string{"labels-1": "abc", "labels-2": "123"}
 	crt = gen.CertificateFrom(crt, gen.SetCertificateSecretTemplate(annotations, labels))
-	crt.ManagedFields = nil
 	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
@@ -687,7 +686,6 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	// Remove labels and annotations from the SecretTemplate.
 	crt.Spec.SecretTemplate = nil
-	crt.ManagedFields = nil
 	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
@@ -896,7 +894,6 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 		cmapi.CertificateAdditionalOutputFormat{Type: "DER"},
 	))
-	crt.ManagedFields = nil
 	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)
@@ -924,7 +921,6 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	// Remove AdditionalOutputFormats
 	crt.Spec.AdditionalOutputFormats = nil
-	crt.ManagedFields = nil
 	crt, err = internalcertificates.Apply(ctx, cmCl, fieldManager, crt)
 	if err != nil {
 		t.Fatal(err)

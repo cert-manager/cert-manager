@@ -77,6 +77,9 @@ func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 		Spec:       *crt.Spec.DeepCopy(),
 		Status:     cmapi.CertificateStatus{},
 	}
+	// When using the apply operation you cannot have managedFields in the object that is being applied
+	// https://kubernetes.io/docs/reference/using-api/server-side-apply/#apply-and-update
+	crt.ObjectMeta.ManagedFields = nil
 	crtData, err := json.Marshal(crt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal certificate object: %w", err)

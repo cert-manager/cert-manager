@@ -159,7 +159,6 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		crt.Spec.SecretTemplate.Labels["hello"] = "world"
 		crt.Spec.SecretTemplate.Labels["random"] = "label"
 
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -191,7 +190,6 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		delete(crt.Spec.SecretTemplate.Labels, "abc")
 		delete(crt.Spec.SecretTemplate.Labels, "another")
 
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -228,7 +226,6 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		crt.Spec.SecretTemplate.Labels["abc"] = "098"
 		crt.Spec.SecretTemplate.Labels["def"] = "555"
 
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -281,7 +278,6 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			Labels:      map[string]string{"abc": "123", "foo": "bar"},
 		}
 
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -400,7 +396,6 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		crt.Spec.SecretTemplate.Annotations["abc"] = "456"
 		crt.Spec.SecretTemplate.Labels["foo"] = "foo"
 
-		crt.ManagedFields = nil
 		_, err := internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -438,7 +433,6 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 
 		crt.Spec.SecretTemplate = nil
 
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 

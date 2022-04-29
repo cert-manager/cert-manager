@@ -47,6 +47,8 @@ import (
 var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	f := framework.NewDefaultFramework("approval-certificaterequests")
 
+	const fieldManager = "e2e-test-field-manager"
+
 	var (
 		sa       *corev1.ServiceAccount
 		saclient clientset.Interface
@@ -55,8 +57,6 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		crd       *crdapi.CustomResourceDefinition
 		crdclient crdclientset.Interface
 		group     string
-
-		fieldManager = "e2e-test-field-manager"
 	)
 
 	JustBeforeEach(func() {

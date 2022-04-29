@@ -44,16 +44,17 @@ import (
 type injectableTest struct {
 	makeInjectable func(namePrefix string) client.Object
 	getCAs         func(runtime.Object) [][]byte
-	subject        string
 	disabled       string
 }
 
 var _ = framework.CertManagerDescribe("CA Injector", func() {
 	f := framework.NewDefaultFramework("ca-injector")
 
-	issuerName := "inject-cert-issuer"
-	secretName := "serving-certs-data"
-	fieldManger := "e2e-test-ca-injector"
+	const (
+		issuerName  = "inject-cert-issuer"
+		secretName  = "serving-certs-data"
+		fieldManger = "e2e-test-ca-injector"
+	)
 
 	injectorContext := func(subj string, test *injectableTest) {
 		Context("for "+subj+"s", func() {
@@ -157,7 +158,6 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 				cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
 
-				cert.ManagedFields = nil
 				cert, err := internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManger, cert)
 				Expect(err).ToNot(HaveOccurred())
 

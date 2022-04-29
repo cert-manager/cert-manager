@@ -161,7 +161,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 
 		By("add Combined PEM to Certificate's Additional Output Formats")
 		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}}
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -181,7 +180,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}}
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 		By("ensure Secret has correct Combined PEM and DER additional output formats")
@@ -201,7 +199,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "DER"}}
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 		By("ensure Secret has correct DER additional output formats")
@@ -220,7 +217,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = nil
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 		By("ensure Secret has no additional output formats")
@@ -346,7 +342,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}}
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -379,7 +374,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = nil
-		crt.ManagedFields = nil
 		_, err = internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
 
