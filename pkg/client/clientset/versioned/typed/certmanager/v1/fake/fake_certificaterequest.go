@@ -20,8 +20,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	applyconfigurationscertmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -134,6 +137,51 @@ func (c *FakeCertificateRequests) DeleteCollection(ctx context.Context, opts v1.
 func (c *FakeCertificateRequests) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *certmanagerv1.CertificateRequest, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(certificaterequestsResource, c.ns, name, pt, data, subresources...), &certmanagerv1.CertificateRequest{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*certmanagerv1.CertificateRequest), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied certificateRequest.
+func (c *FakeCertificateRequests) Apply(ctx context.Context, certificateRequest *applyconfigurationscertmanagerv1.CertificateRequestApplyConfiguration, opts v1.ApplyOptions) (result *certmanagerv1.CertificateRequest, err error) {
+	if certificateRequest == nil {
+		return nil, fmt.Errorf("certificateRequest provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(certificateRequest)
+	if err != nil {
+		return nil, err
+	}
+	name := certificateRequest.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificateRequest.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(certificaterequestsResource, c.ns, *name, types.ApplyPatchType, data), &certmanagerv1.CertificateRequest{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*certmanagerv1.CertificateRequest), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeCertificateRequests) ApplyStatus(ctx context.Context, certificateRequest *applyconfigurationscertmanagerv1.CertificateRequestApplyConfiguration, opts v1.ApplyOptions) (result *certmanagerv1.CertificateRequest, err error) {
+	if certificateRequest == nil {
+		return nil, fmt.Errorf("certificateRequest provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(certificateRequest)
+	if err != nil {
+		return nil, err
+	}
+	name := certificateRequest.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificateRequest.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(certificaterequestsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &certmanagerv1.CertificateRequest{})
 
 	if obj == nil {
 		return nil, err

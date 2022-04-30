@@ -20,8 +20,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	applyconfigurationscertmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -134,6 +137,51 @@ func (c *FakeIssuers) DeleteCollection(ctx context.Context, opts v1.DeleteOption
 func (c *FakeIssuers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *certmanagerv1.Issuer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(issuersResource, c.ns, name, pt, data, subresources...), &certmanagerv1.Issuer{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*certmanagerv1.Issuer), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied issuer.
+func (c *FakeIssuers) Apply(ctx context.Context, issuer *applyconfigurationscertmanagerv1.IssuerApplyConfiguration, opts v1.ApplyOptions) (result *certmanagerv1.Issuer, err error) {
+	if issuer == nil {
+		return nil, fmt.Errorf("issuer provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(issuer)
+	if err != nil {
+		return nil, err
+	}
+	name := issuer.Name
+	if name == nil {
+		return nil, fmt.Errorf("issuer.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(issuersResource, c.ns, *name, types.ApplyPatchType, data), &certmanagerv1.Issuer{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*certmanagerv1.Issuer), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeIssuers) ApplyStatus(ctx context.Context, issuer *applyconfigurationscertmanagerv1.IssuerApplyConfiguration, opts v1.ApplyOptions) (result *certmanagerv1.Issuer, err error) {
+	if issuer == nil {
+		return nil, fmt.Errorf("issuer provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(issuer)
+	if err != nil {
+		return nil, err
+	}
+	name := issuer.Name
+	if name == nil {
+		return nil, fmt.Errorf("issuer.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(issuersResource, c.ns, *name, types.ApplyPatchType, data, "status"), &certmanagerv1.Issuer{})
 
 	if obj == nil {
 		return nil, err

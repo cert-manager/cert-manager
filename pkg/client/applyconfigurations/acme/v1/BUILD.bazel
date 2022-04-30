@@ -1,0 +1,65 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "acmeauthorization.go",
+        "acmechallenge.go",
+        "acmechallengesolver.go",
+        "acmechallengesolverdns01.go",
+        "acmechallengesolverhttp01.go",
+        "acmechallengesolverhttp01gatewayhttproute.go",
+        "acmechallengesolverhttp01ingress.go",
+        "acmechallengesolverhttp01ingressobjectmeta.go",
+        "acmechallengesolverhttp01ingresspodobjectmeta.go",
+        "acmechallengesolverhttp01ingresspodspec.go",
+        "acmechallengesolverhttp01ingresspodtemplate.go",
+        "acmechallengesolverhttp01ingresstemplate.go",
+        "acmeexternalaccountbinding.go",
+        "acmeissuer.go",
+        "acmeissuerdns01provideracmedns.go",
+        "acmeissuerdns01providerakamai.go",
+        "acmeissuerdns01providerazuredns.go",
+        "acmeissuerdns01providerclouddns.go",
+        "acmeissuerdns01providercloudflare.go",
+        "acmeissuerdns01providerdigitalocean.go",
+        "acmeissuerdns01providerrfc2136.go",
+        "acmeissuerdns01providerroute53.go",
+        "acmeissuerdns01providerwebhook.go",
+        "acmeissuerstatus.go",
+        "azuremanagedidentity.go",
+        "certificatednsnameselector.go",
+        "challenge.go",
+        "challengespec.go",
+        "challengestatus.go",
+        "order.go",
+        "orderspec.go",
+        "orderstatus.go",
+    ],
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/client/applyconfigurations/meta/v1:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
+        "@io_k8s_sigs_gateway_api//apis/v1alpha2:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

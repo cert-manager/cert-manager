@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["utils.go"],
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/client/applyconfigurations/acme/v1:go_default_library",
+        "//pkg/client/applyconfigurations/certmanager/v1:go_default_library",
+        "//pkg/client/applyconfigurations/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/client/applyconfigurations/acme/v1:all-srcs",
+        "//pkg/client/applyconfigurations/certmanager/v1:all-srcs",
+        "//pkg/client/applyconfigurations/internal:all-srcs",
+        "//pkg/client/applyconfigurations/meta/v1:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

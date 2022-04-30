@@ -20,9 +20,12 @@ package v1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	scheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -47,6 +50,8 @@ type IssuerInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.IssuerList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Issuer, err error)
+	Apply(ctx context.Context, issuer *certmanagerv1.IssuerApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Issuer, err error)
+	ApplyStatus(ctx context.Context, issuer *certmanagerv1.IssuerApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Issuer, err error)
 	IssuerExpansion
 }
 
@@ -188,6 +193,62 @@ func (c *issuers) Patch(ctx context.Context, name string, pt types.PatchType, da
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied issuer.
+func (c *issuers) Apply(ctx context.Context, issuer *certmanagerv1.IssuerApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Issuer, err error) {
+	if issuer == nil {
+		return nil, fmt.Errorf("issuer provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(issuer)
+	if err != nil {
+		return nil, err
+	}
+	name := issuer.Name
+	if name == nil {
+		return nil, fmt.Errorf("issuer.Name must be provided to Apply")
+	}
+	result = &v1.Issuer{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("issuers").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *issuers) ApplyStatus(ctx context.Context, issuer *certmanagerv1.IssuerApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Issuer, err error) {
+	if issuer == nil {
+		return nil, fmt.Errorf("issuer provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(issuer)
+	if err != nil {
+		return nil, err
+	}
+
+	name := issuer.Name
+	if name == nil {
+		return nil, fmt.Errorf("issuer.Name must be provided to Apply")
+	}
+
+	result = &v1.Issuer{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("issuers").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)
