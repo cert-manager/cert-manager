@@ -102,8 +102,9 @@ informergen=$PWD/$4
 listergen=$PWD/$5
 defaultergen=$PWD/$6
 conversiongen=$PWD/$7
+applyconfigurationgen=$PWD/$8
 
-shift 7
+shift 8
 
 export GOROOT=$go_sdk
 
@@ -146,6 +147,26 @@ gen-deepcopy() {
     --output-base ./
 }
 
+gen-applyconfigurations() {
+    rm -rf "${client_subpackage}"/applyconfigurations
+    echo "Generating applyconfigurations..." >&2
+    prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
+    joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
+    # It's necessary to have k8s.io/apimachinery/pkg/apis/meta/v1 to have
+    # the proper method signature for `WithOwnerReferences` generated. If this
+    # is not specified then the generated code cannot be compiled (wrong
+    # import is used). This is the same as done in:
+    # https://github.com/istio/client-go/pull/718/files#r770894721
+    "$applyconfigurationgen" \
+        --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+        --input-dirs "$joined",k8s.io/apimachinery/pkg/apis/meta/v1 \
+        --trim-path-prefix="$module_name" \
+        --output-package "${client_package}"/applyconfigurations \
+        --output-base ./
+    mv ./pkg/client/applyconfigurations/{cert-manager,certmanager}
+    sed -i -e 's|github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/cert-manager/|github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/|g' pkg/client/applyconfigurations/utils.go
+}
+
 gen-clientsets() {
   clean "${client_subpackage}"/clientset '*.go'
   echo "Generating clientset..." >&2
@@ -156,6 +177,7 @@ gen-clientsets() {
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
+    --apply-configuration-package "${client_package}"/applyconfigurations \
     --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/clientset \
     --output-base ./
@@ -229,6 +251,7 @@ runfiles="$(pwd)"
 cd "$BUILD_WORKSPACE_DIRECTORY"
 
 gen-deepcopy
+gen-applyconfigurations
 gen-clientsets
 gen-listers
 gen-informers
