@@ -12,6 +12,7 @@ go_library(
         "//internal/controller/feature:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/client/applyconfigurations/certmanager/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/feature:go_default_library",
         "//pkg/util/pki:go_default_library",

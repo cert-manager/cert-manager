@@ -27,12 +27,11 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmapply "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -42,6 +41,8 @@ import (
 	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/validation/certificates"
 	e2eutil "github.com/cert-manager/cert-manager/test/e2e/util"
 )
+
+const fieldManager = "e2e-test-field-manager"
 
 // Define defines simple conformance tests that can be run against any issuer type.
 // If Complete has not been called on this Suite before Define, it will be
@@ -860,21 +861,20 @@ func (s *Suite) Define() {
 		}, featureset.OnlySAN, featureset.LongDomainFeatureSet)
 
 		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
-			testCertificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testcert",
-					Namespace: f.Namespace.Name,
-				},
-				Spec: cmapi.CertificateSpec{
-					SecretName: "testcert-tls",
-					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
-					IssuerRef:  issuerRef,
-				},
-			}
-			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
-
 			By("Creating a Certificate")
-			err := f.CRClient.Create(ctx, testCertificate)
+			testCertificateConf := cmapply.Certificate("testcert", f.Namespace.Name).
+				WithSpec(
+					cmapply.CertificateSpec().
+						WithSecretName("testcert-tls").
+						WithDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)).
+						WithIssuerRef(issuerRef),
+				)
+
+			testCertificate, err := f.Helper().CMClient.CertmanagerV1().Certificates(*testCertificateConf.Namespace).Apply(
+				ctx,
+				testCertificateConf,
+				metav1.ApplyOptions{FieldManager: fieldManager},
+			)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be ready")
@@ -882,25 +882,17 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
+			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
 			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Updating the Certificate after having added an additional dnsName")
-			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
-			retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				err = f.CRClient.Get(context.Background(), types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
-				if err != nil {
-					return err
-				}
-
-				testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
-				err = f.CRClient.Update(context.Background(), testCertificate)
-				if err != nil {
-					return err
-				}
-				return nil
-			})
-
+			testCertificateConf.Spec.WithDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))
+			testCertificate, err = f.Helper().CMClient.CertmanagerV1().Certificates(f.Namespace.Name).Apply(
+				ctx,
+				testCertificateConf,
+				metav1.ApplyOptions{FieldManager: fieldManager},
+			)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate Ready condition to be updated")
