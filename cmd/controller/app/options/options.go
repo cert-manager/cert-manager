@@ -113,6 +113,9 @@ type ControllerOptions struct {
 
 	DNS01CheckRetryPeriod time.Duration
 
+	// Max context lifetime.
+	ContextTimeout time.Duration
+
 	// Annotations copied Certificate -> CertificateRequest,
 	// CertificateRequest -> Order. Slice of string literals that are
 	// treated as prefixes for annotation keys.
@@ -143,6 +146,8 @@ const (
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
+
+	defaultContextTimeout = 10 * time.Second
 )
 
 var (
@@ -241,6 +246,7 @@ func NewControllerOptions() *ControllerOptions {
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
+		ContextTimeout:                    defaultContextTimeout,
 		EnablePprof:                       cmdutil.DefaultEnableProfiling,
 		PprofAddress:                      cmdutil.DefaultProfilerAddr,
 	}
@@ -349,6 +355,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
 		"The duration the controller should wait between checking if a ACME dns entry exists."+
 		"This should be a valid duration string, for example 180s or 1h")
+
+  fs.DurationVar(&s.ContextTimeout, "context-timeout", defaultContextTimeout, ""+
+    "The duration a Controller Context is kept alive. "+
+		"Can be changed if context timeouts occure due to slow responding ACME api."+
+		"This should be a valid duration string, for example 10s or 1m")
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")

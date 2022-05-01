@@ -86,6 +86,9 @@ type controller struct {
 	// Apply API calls.
 	fieldManager string
 
+	// ContextTimeout is the duration the controllers context is kept alive
+	contextTimeout time.Duration
+
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
 }
@@ -100,6 +103,7 @@ func NewController(
 	clock clock.Clock,
 	certificateControllerOptions controllerpkg.CertificateOptions,
 	fieldManager string,
+	contextTimeout time.Duration,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 
 	// create a queue used to queue up items to be processed
@@ -139,6 +143,11 @@ func NewController(
 		fieldManager, certificateControllerOptions.EnableOwnerRef,
 	)
 
+	ctxTimeout := 10 * time.Second
+	if contextTimeout > 0 {
+		ctxTimeout = contextTimeout
+	}
+
 	return &controller{
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
@@ -146,6 +155,7 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
+		contextTimeout:           ctxTimeout,
 		secretsUpdateData:        secretsManager.UpdateData,
 		postIssuancePolicyChain: policies.NewSecretPostIssuancePolicyChain(
 			certificateControllerOptions.EnableOwnerRef,
@@ -158,7 +168,7 @@ func NewController(
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// Set context deadline for full sync in 10 seconds
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	ctx, cancel := context.WithTimeout(ctx, c.contextTimeout)
 	defer cancel()
 
 	log := logf.FromContext(ctx).WithValues("key", key)
@@ -471,6 +481,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.Clock,
 		ctx.CertificateOptions,
 		ctx.FieldManager,
+    ctx.ContextTimeout,
 	)
 	c.controller = ctrl
 

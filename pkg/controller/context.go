@@ -131,6 +131,9 @@ type ContextOptions struct {
 	// Metrics is used for exposing Prometheus metrics across the controllers
 	Metrics *metrics.Metrics
 
+	// ContextTimeout is the duration the controllers context is kept alive
+	ContextTimeout time.Duration
+
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions

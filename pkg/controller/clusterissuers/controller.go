@@ -18,6 +18,7 @@ package clusterissuers
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -61,6 +62,9 @@ type controller struct {
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
+
+	// ContextTimeout is the duration the controllers context is kept alive
+	contextTimeout time.Duration
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -97,6 +101,10 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
 	c.clusterResourceNamespace = ctx.IssuerOptions.ClusterResourceNamespace
+	c.contextTimeout = time.Second * 10
+	if ctx.ContextTimeout > 0 {
+			c.contextTimeout = ctx.ContextTimeout
+	}
 
 	return c.queue, mustSync, nil
 }

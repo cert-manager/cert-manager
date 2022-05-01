@@ -49,12 +49,15 @@ type controller struct {
 	certificateLister cmlisters.CertificateLister
 
 	metrics *metrics.Metrics
+
+	contextTimeout time.Duration
 }
 
 func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	metrics *metrics.Metrics,
+	contextTimeout time.Duration,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -77,12 +80,13 @@ func NewController(
 	return &controller{
 		certificateLister: certificateInformer.Lister(),
 		metrics:           metrics,
+		contextTimeout:    contextTimeout,
 	}, queue, mustSync
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// Set context deadline for full sync in 10 seconds
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	ctx, cancel := context.WithTimeout(ctx, c.contextTimeout)
 	defer cancel()
 
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
@@ -111,6 +115,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		ctx.Metrics,
+		ctx.ContextTimeout,
 	)
 	c.controller = ctrl
 

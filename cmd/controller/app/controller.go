@@ -271,6 +271,8 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 
 		Namespace: opts.Namespace,
 
+		ContextTimeout: opts.ContextTimeout,
+
 		Clock:   clock.RealClock{},
 		Metrics: metrics.New(log, clock.RealClock{}),
 
