@@ -35,16 +35,18 @@ import (
 // The given fieldManager is will be used as the FieldManager in the Apply
 // call.
 // Always sets Force Apply to true.
-func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate) (*cmapi.Certificate, error) {
+func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate) error {
 	crtData, err := serializeApply(crt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
+	_, err = cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
 		ctx, crt.Name, apitypes.ApplyPatchType, crtData,
 		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager},
 	)
+
+	return err
 }
 
 // ApplyStatus will make a Patch API call with the given client to the
@@ -77,9 +79,6 @@ func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 		Spec:       *crt.Spec.DeepCopy(),
 		Status:     cmapi.CertificateStatus{},
 	}
-	// When using the apply operation you cannot have managedFields in the object that is being applied
-	// https://kubernetes.io/docs/reference/using-api/server-side-apply/#apply-and-update
-	crt.ObjectMeta.ManagedFields = nil
 	crtData, err := json.Marshal(crt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal certificate object: %w", err)

@@ -9,7 +9,6 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/approval",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/controller/certificaterequests:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",

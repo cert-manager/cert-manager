@@ -27,8 +27,9 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 
-	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -49,9 +50,8 @@ func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
 		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
-		sharedIPAddress := "127.0.0.1"
 
-		const fieldManager = "e2e-test-conformance"
+		sharedIPAddress := "127.0.0.1"
 
 		// Wrap this in a BeforeEach else flags will not have been parsed and
 		// f.Config will not be populated at the time that this code is run.
@@ -887,10 +887,19 @@ func (s *Suite) Define() {
 
 			By("Updating the Certificate after having added an additional dnsName")
 			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
+			retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				err = f.CRClient.Get(context.Background(), types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
+				if err != nil {
+					return err
+				}
 
-			testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
-
-			testCertificate, err = internalcertificates.Apply(ctx, f.Helper().CMClient, fieldManager, testCertificate)
+				testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
+				err = f.CRClient.Update(context.Background(), testCertificate)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
 
 			Expect(err).NotTo(HaveOccurred())
 
