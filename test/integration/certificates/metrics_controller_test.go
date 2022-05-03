@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -113,7 +112,6 @@ func TestMetricsController(t *testing.T) {
 		crtName         = "testcrt"
 		namespace       = "testns"
 		metricsEndpoint = fmt.Sprintf("http://%s/metrics", server.Addr)
-		fieldManager    = "integration-test-field-manager"
 
 		lastErr error
 	)
@@ -206,8 +204,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	crt.Status.RenewalTime = &metav1.Time{
 		Time: time.Unix(100, 0),
 	}
-
-	err = internalcertificates.ApplyStatus(ctx, cmClient, fieldManager, crt)
+	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

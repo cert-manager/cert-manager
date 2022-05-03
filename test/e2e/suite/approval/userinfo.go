@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -42,8 +41,6 @@ import (
 // correctly, and they cannot be modified.
 var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 	f := framework.NewDefaultFramework("userinfo-certificaterequests")
-
-	var fieldManager = "e2e-test-field-manager"
 
 	It("should appropriately create set UserInfo of CertificateRequests, and reject changes", func() {
 		var (
@@ -76,7 +73,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		By("Should error when attempting to update UserInfo fields")
 		cr.Spec.Username = "abc"
 		cr.Spec.UID = "123"
-		_, err = internalcertificaterequests.Apply(context.Background(), f.CertManagerClientSet, fieldManager, cr)
+		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Update(context.TODO(), cr, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
 

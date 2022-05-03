@@ -29,9 +29,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
-	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -44,17 +44,15 @@ import (
 type injectableTest struct {
 	makeInjectable func(namePrefix string) client.Object
 	getCAs         func(runtime.Object) [][]byte
+	subject        string
 	disabled       string
 }
 
 var _ = framework.CertManagerDescribe("CA Injector", func() {
 	f := framework.NewDefaultFramework("ca-injector")
 
-	const (
-		issuerName  = "inject-cert-issuer"
-		secretName  = "serving-certs-data"
-		fieldManger = "e2e-test-ca-injector"
-	)
+	issuerName := "inject-cert-issuer"
+	secretName := "serving-certs-data"
 
 	injectorContext := func(subj string, test *injectableTest) {
 		Context("for "+subj+"s", func() {
@@ -155,13 +153,22 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				injectable, cert := generalSetup(test.makeInjectable("changed"))
 
 				By("changing the name of the corresponding secret in the cert")
+				retry.RetryOnConflict(retry.DefaultRetry, func() error {
+					err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}, cert)
+					if err != nil {
+						return err
+					}
 
-				cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
+					cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
 
-				cert, err := internalcertificates.Apply(context.Background(), f.CertManagerClientSet, fieldManger, cert)
-				Expect(err).ToNot(HaveOccurred())
+					err = f.CRClient.Update(context.Background(), cert)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
 
-				cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")

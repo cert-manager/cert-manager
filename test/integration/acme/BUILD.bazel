@@ -4,7 +4,6 @@ go_test(
     name = "go_default_test",
     srcs = ["orders_controller_test.go"],
     deps = [
-        "//internal/controller/challenges:go_default_library",
         "//pkg/acme/accounts/test:go_default_library",
         "//pkg/acme/client:go_default_library",
         "//pkg/apis/acme/v1:go_default_library",
