@@ -6,7 +6,6 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/serving",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/controller/certificates:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//test/e2e/framework:go_default_library",
@@ -20,6 +19,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
+        "@io_k8s_client_go//util/retry:go_default_library",
         "@io_k8s_kube_aggregator//pkg/apis/apiregistration/v1:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
     ],
