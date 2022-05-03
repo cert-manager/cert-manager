@@ -42,6 +42,8 @@ import (
 var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 	f := framework.NewDefaultFramework("userinfo-certificaterequests")
 
+	var fieldManager = "e2e-test-field-manager"
+
 	It("should appropriately create set UserInfo of CertificateRequests, and reject changes", func() {
 		var (
 			adminUsername = "kubernetes-admin"

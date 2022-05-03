@@ -20,15 +20,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/pem"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -44,8 +47,9 @@ import (
 // events.
 var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFormats", func() {
 	const (
-		issuerName = "certificate-additional-output-formats"
-		secretName = "test-additional-output-formats"
+		issuerName   = "certificate-additional-output-formats"
+		secretName   = "test-additional-output-formats"
+		fieldManager = "e2-test-field-manager"
 	)
 
 	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) *cmapi.Certificate {
@@ -108,11 +112,17 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		secret.Data["random-1"] = []byte("data-1")
-		secret.Data["random-2"] = []byte("data-2")
-		secret.Data["tls-combined.pem"] = []byte("data-3")
-		secret.Data["key.der"] = []byte("data-4")
-		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.Background(), secret, metav1.UpdateOptions{})
+		applyConfig, err := applycorev1.ExtractSecret(secret, fieldManager)
+		Expect(err).ToNot(HaveOccurred())
+		data := map[string][]byte{
+			"random-1":         []byte("data-1"),
+			"random-2":         []byte("data-2"),
+			"tls-combined.pem": []byte("data-3"),
+			"key.der":          []byte("data-4"),
+		}
+
+		applyConfig = applyConfig.WithData(data)
+		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Apply(context.Background(), applyConfig, metav1.ApplyOptions{FieldManager: fieldManager})
 		Expect(err).NotTo(HaveOccurred())
 
 		Consistently(func() map[string][]byte {
@@ -202,7 +212,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = nil
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+		_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("ensure Secret has no additional output formats")
 		Eventually(func() map[string][]byte {
@@ -234,9 +244,15 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}))
 
 		By("changing the values of additional output format keys, should have that value reverted to the correct value")
-		secret.Data["tls-combined.pem"] = []byte("random-1")
-		secret.Data["key.der"] = []byte("random-2")
-		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.Background(), secret, metav1.UpdateOptions{})
+		applyconfig, err := applycorev1.ExtractSecret(secret, fieldManager)
+		Expect(err).NotTo(HaveOccurred())
+		data := map[string][]byte{
+			"tls-combined.pem": []byte("random-1"),
+			"key.der":          []byte("random-2"),
+		}
+
+		applyconfig = applyconfig.WithData(data)
+		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Apply(context.Background(), applyconfig, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
 		Expect(err).NotTo(HaveOccurred())
 		By("wait for those values to be reverted on the Secret")
 		Eventually(func() map[string][]byte {
@@ -275,9 +291,9 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "e2e-testing", "Renewing for AdditionalOutputFormat e2e test")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).UpdateStatus(context.Background(), crt, metav1.UpdateOptions{})
+		err = internalcertificates.ApplyStatus(context.Background(), f.CertManagerClientSet, fieldManager, crt)
 		Expect(err).NotTo(HaveOccurred())
-		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		By("ensuring additional output formats reflect the new private key and certificate")
@@ -307,9 +323,14 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crtPEM := secret.Data["tls.crt"]
 		pkPEM := secret.Data["tls.key"]
 		block, _ := pem.Decode(pkPEM)
-		secret.Data["tls-combined.pem"] = append(append(pkPEM, '\n'), crtPEM...)
-		secret.Data["key.der"] = block.Bytes
-		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.Background(), secret, metav1.UpdateOptions{})
+		applyConfig, err := applycorev1.ExtractSecret(secret, fieldManager)
+		Expect(err).NotTo(HaveOccurred())
+		data := map[string][]byte{
+			"tls-combined.pem": append(append(pkPEM, '\n'), crtPEM...),
+			"key.der":          block.Bytes,
+		}
+		applyConfig = applyConfig.WithData(data)
+		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Apply(context.Background(), applyConfig, metav1.ApplyOptions{FieldManager: fieldManager})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("add additional output formats to Certificate")
@@ -348,7 +369,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		crt.Spec.AdditionalOutputFormats = nil
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+		_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("observe secret maintain the additional output format keys and values since they are owned by a third party")
