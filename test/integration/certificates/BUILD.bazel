@@ -10,6 +10,8 @@ go_test(
         "trigger_controller_test.go",
     ],
     deps = [
+        "//internal/controller/certificaterequests:go_default_library",
+        "//internal/controller/certificates:go_default_library",
         "//internal/controller/certificates/policies:go_default_library",
         "//internal/webhook/feature:go_default_library",
         "//pkg/api/util:go_default_library",
@@ -29,7 +31,6 @@ go_test(
         "//test/integration/framework:go_default_library",
         "//test/unit/crypto:go_default_library",
         "//test/unit/gen:go_default_library",
-        "@com_github_segmentio_encoding//json:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

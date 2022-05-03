@@ -78,6 +78,8 @@ func serializeApply(req *cmapi.CertificateRequest) ([]byte, error) {
 		Spec:       *req.Spec.DeepCopy(),
 		Status:     cmapi.CertificateRequestStatus{},
 	}
+	// When using the apply operation you cannot have managedFields in the object that is being applied
+	// https://kubernetes.io/docs/reference/using-api/server-side-apply/#apply-and-update
 	req.ObjectMeta.ManagedFields = nil
 
 	reqData, err := json.Marshal(req)
