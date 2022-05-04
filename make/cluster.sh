@@ -64,6 +64,8 @@ docker.io/kindest/node:v1.20.0@sha256:b40ecf8bcb188f6a0d0f5d406089c48588b75edc11
 docker.io/kindest/node:v1.21.1@sha256:f08bcc2d38416fa58b9857a1000dd69062b0c3024dcbd696373ea026abe38bbc
 docker.io/kindest/node:v1.22.0@sha256:b8bda84bb3a190e6e028b1760d277454a72267a5454b57db34437c34a588d047
 docker.io/kindest/node:v1.23.0@sha256:49824ab1727c04e56a21a5d8372a402fcd32ea51ac96a2706a12af38934f81ac
+eu.gcr.io/jetstack-build-infra-images/kind:v1.24.0@sha256:2f170bf60cfad9d961711f96c34349d789a56b5783c9a5dbc0a29cb5a25ec729
+
 EOF
 )
 
@@ -131,6 +133,7 @@ case "$k8s_version" in
 1.21*) image=$(grep -F 1.21 <<<"$images") ;;
 1.22*) image=$(grep -F 1.22 <<<"$images") ;;
 1.23*) image=$(grep -F 1.23 <<<"$images") ;;
+1.24*) image=$(grep -F 1.24 <<<"$images") ;;
 v*) printf "${red}${redcross}Error${end}: the Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac

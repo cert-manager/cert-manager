@@ -45,9 +45,10 @@ GATEWAY_API_VERSION = 0.4.1
 
 .PHONY: e2e-setup-kind
 ## Create a Kubernetes cluster using Kind, which is required for `make e2e`.
-## The image is pre-pulled to avoid 'kind create' from blocking other make
-## targets. By default, the name is "kind". You can specify a different name
-## with `make kind KIND_CLUSTER_NAME=name`.
+## The Kind image is pre-pulled to avoid 'kind create' from blocking other make
+## targets.
+##
+##	make kind [KIND_CLUSTER_NAME=name] [K8S_VERSION=<kubernetes_version>]
 ##
 ## @category Development
 e2e-setup-kind: kind-exists
