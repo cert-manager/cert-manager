@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="./logo/logo.png" height="241" width="250" alt="cert-manager project logo" />
+  <img src="./logo/logo-small.png" height="256" width="256" alt="cert-manager project logo" />
 </p>
 <!-- note that the cert-manager logo in this repo is referred to in other README files in the cert-manager org;
      if you change its location or name, you'll need to update several other repos too! -->
@@ -17,14 +17,13 @@
 
 # cert-manager
 
-cert-manager is a Kubernetes add-on to automate the management and issuance of
-TLS certificates from various issuing sources.
+cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.
 
-It will ensure certificates are valid and up to date periodically, and attempt
-to renew certificates at an appropriate time before expiry.
+It can issue certificates from a variety of supported sources, including Let's Encrypt, HashiCorp Vault, and Venafi as well as private PKI, and it ensures certificates remain
+valid and up to date, attempting to renew certificates at an appropriate time before expiry.
 
 It is loosely based upon the work of [kube-lego](https://github.com/jetstack/kube-lego)
-and has borrowed some wisdom from other similar projects e.g.
+and has borrowed some wisdom from other similar projects such as
 [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
 
 ![cert-manager high level overview diagram](https://cert-manager.io/images/high-level-overview.svg)
@@ -32,43 +31,26 @@ and has borrowed some wisdom from other similar projects e.g.
 ## Documentation
 
 Documentation for cert-manager can be found at [cert-manager.io](https://cert-manager.io/docs/).
-Please make sure to select the correct version of the documentation to view on
-the top right of the page.
 
-Issues and PRs towards the documentation should be filed in the [website repo](https://github.com/cert-manager/website/).
+Issues and PRs for documentation should be filed in the [website repo](https://github.com/cert-manager/website/).
 
-For the common use-case of automatically issuing TLS certificates to
-Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
-replacement, see the [cert-manager nginx ingress quick start
-guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
+For the common use-case of automatically issuing TLS certificates for
+Ingress resources, see the [cert-manager nginx-ingress quick start guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
-See [Installation](https://cert-manager.io/docs/installation/)
-within the [documentation](https://cert-manager.io/docs)
-for installation instructions.
+### Installation
+
+We document [installation](https://cert-manager.io/docs/installation/) on the website.
 
 ## Troubleshooting
 
-If you encounter any issues whilst using cert-manager, we have a number of places you
-can use to try and get help.
+If you encounter any issues whilst using cert-manager, we have a number of ways to get help:
 
-First of all we recommend looking at the [troubleshooting guide](https://cert-manager.io/docs/faq/troubleshooting/) of our documentation.
+- A [troubleshooting guide](https://cert-manager.io/docs/faq/troubleshooting/) on our website.
+- Our official [Kubernetes Slack channel](https://cert-manager.io/docs/contributing/#slack) - the quickest way to ask!
+- [Searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
 
-The quickest way to ask a question is to first post on our Slack channel (#cert-manager)
-on the [Kubernetes Slack](http://slack.kubernetes.io/).
-There are a lot of community members in this channel, and you can often get an answer
-to your question straight away!
-
-You can also try [searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
-Properly searching for an existing issue will help reduce the number of duplicates,
-and help you find the answer you are looking for quicker.
-
-Please also make sure to read through the relevant pages in the [documentation](https://cert-manager.io/docs/)
-before opening an issue. You can also search the documentation using the search box on the
-top left of the page.
-
-If you believe you have encountered a bug, and cannot find an existing issue similar to your
-own, you may [open a new issue](https://github.com/cert-manager/cert-manager/issues).
-Please be sure to include as much information as possible about your environment.
+If you believe you've found a bug, and cannot find an existing issue, feel free to [open a new issue](https://github.com/cert-manager/cert-manager/issues)!
+Be sure to include as much information as you can about your environment.
 
 ## Community
 
@@ -76,18 +58,12 @@ The `cert-manager-dev` Google Group is used for project wide announcements and d
 Anybody can join the group by visiting [here](https://groups.google.com/forum/#!forum/cert-manager-dev)
 and clicking "Join Group". A Google account is required to join the group.
 
-### Bi-weekly Development Meeting
+### Meetings
 
-Once you've joined the `cert-manager-dev` Google Group, you should receive an invite to the bi-weekly development
-meeting, hosted every other Wednesday at [5pm London time](http://www.thetimezoneconverter.com/?t=17:00&tz=Europe/London) on Google Meet.
+We have several public meetings which any member of our Google Group is more than welcome to join!
 
-Anyone is welcome to join these calls, even if just to ask questions. Meeting notes are recorded in
-[Google docs](https://docs.google.com/document/d/1Tc5t6ylY9dhXAan1OjOoldeaoys1Yh4Ir710ATfBa5U).
-
-### Daily Standups
-
-You are also welcome to join our daily standup every weekday at [10.30am London time](http://www.thetimezoneconverter.com/?t=10:30&tz=Europe/London)
-on Google Meet. For more information, see [cert-manager.io](https://cert-manager.io/docs/contributing/).
+Check out the details on [our website](https://cert-manager.io/docs/contributing/#meetings). Feel
+free to drop in and ask questions, chat with us or just to say hi!
 
 ## Contributing
 
@@ -119,15 +95,13 @@ For all versions of cert-manager before 1.8, including minor and patch releases,
 
 ## Security Reporting
 
-Security is the number one priority for cert-manager. If you think you've found
-a security vulnerability, we'd love to hear from you.
+Security is the number one priority for cert-manager. If you think you've found a security vulnerability, we'd love to hear from you.
 
-Please follow the instructions in [SECURITY.md](./SECURITY.md) to report a
-vulnerability to the team.
+Follow the instructions in [SECURITY.md](./SECURITY.md) to make a report.
 
 ## Changelog
 
-The [list of releases](https://github.com/cert-manager/cert-manager/releases)
-is the best place to look for information on changes between releases.
+[Every release](https://github.com/cert-manager/cert-manager/releases) on GitHub has a changelog,
+and we also publish release notes on [the website](https://cert-manager.io/docs/release-notes/).
 
 <sub><sup>Logo design by [Zoe Paterson](https://zoepatersonmedia.com)</sup></sub>
