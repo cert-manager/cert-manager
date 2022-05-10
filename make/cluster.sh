@@ -114,6 +114,9 @@ if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
   k8s_version="$K8S_VERSION"
 fi
 
+# TODO (irbekrm): replace this with functionality that can get latest patch for
+# the given minor Kubernetes release (perhaps just use
+# ./hack/latest-kind-images.sh that already does that)
 if [ -n "$update_images" ]; then
   for img in $images; do
     sha=$(crane digest "$(cut -d@ -f1 <<<"$img")")
@@ -126,6 +129,9 @@ if [ -n "$update_images" ]; then
   exit 0
 fi
 
+# TODO(irbekrm): change this functionality so that images from
+# eu.gcr.io/jetstack-build-infra-images/kind can be retrieved in the same way as
+# those from docker.io/kindest/node
 case "$k8s_version" in
 1.18*) image=$(grep -F 1.18 <<<"$images") ;;
 1.19*) image=$(grep -F 1.19 <<<"$images") ;;

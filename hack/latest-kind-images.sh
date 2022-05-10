@@ -31,6 +31,8 @@ if ! which $CRANE >/dev/null 2>&1; then
 fi
 
 function latest_kind_tag () {
+	# TODO (irbekrm): fix this so it sorts semver tags properly. 'sort'
+	# seems to consider vX.Y.2 bigger than vX.Y.12
 	grep -E "^v$1" $TAGS | sort | tail -1
 }
 
