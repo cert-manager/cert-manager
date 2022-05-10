@@ -9,7 +9,7 @@ verify-imports: bin/tools/goimports
 
 .PHONY: verify-chart
 verify-chart: bin/cert-manager-$(RELEASE_VERSION).tgz
-	./hack/verify-chart-version.sh $<
+	DOCKER=$(CTR) ./hack/verify-chart-version.sh $<
 
 .PHONY: verify-errexit
 verify-errexit:
