@@ -23,32 +23,14 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
 
+# Ensure ytt is available
+bazel build //hack/bin:ytt
+bindir="$(bazel info bazel-bin)"
+export PATH="${bindir}/hack/bin/:$PATH"
+
 check_tool kubectl
+check_tool ytt
 
-kubectl apply -f "${SCRIPT_ROOT}/contour-gateway.yaml"
-
-cat <<EOYAML | kubectl apply -f -
----
-kind: GatewayClass
-apiVersion: gateway.networking.k8s.io/v1alpha2
-metadata:
-  name: acmesolver
-spec:
-  controllerName: projectcontour.io/projectcontour/contour
-
----
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1alpha2
-metadata:
-  name: acmesolver
-  namespace: projectcontour
-spec:
-  gatewayClassName: acmesolver
-  listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
-EOYAML
+ytt --data-value gateway_ip="${GATEWAY_IP}" \
+  --file "${SCRIPT_ROOT}/contour-gateway.yaml" \
+  --file "${SCRIPT_ROOT}/gateway-resources.yaml" | kubectl apply -f -

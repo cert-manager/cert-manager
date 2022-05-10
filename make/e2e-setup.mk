@@ -381,10 +381,11 @@ e2e-setup-samplewebhook: load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhoo
 		samplewebhook make/config/samplewebhook/chart >/dev/null
 
 .PHONY: e2e-setup-projectcontour
-e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/projectcontour/contour-gateway.yaml make/config/projectcontour/gateway.yaml bin/scratch/kind-exists bin/tools/kubectl
+e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/projectcontour/contour-gateway.yaml make/config/projectcontour/gateway.yaml bin/scratch/kind-exists bin/tools/kubectl bin/tools/ytt
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
-	sed 's|{CLUSTER_IP}|$(SERVICE_IP_PREFIX).14|' make/config/projectcontour/contour-gateway.yaml | bin/tools/kubectl apply -f- >/dev/null
-	bin/tools/kubectl apply -f make/config/projectcontour/gateway.yaml >/dev/null
+	bin/tools/ytt --data-value service_ip_prefix="${SERVICE_IP_PREFIX}" \
+		--file make/config/projectcontour/contour-gateway.yaml \
+		--file make/config/projectcontour/gateway.yaml | bin/tools/kubectl apply -f-
 
 .PHONY: e2e-setup-sampleexternalissuer
 ifeq ($(CRI_ARCH),amd64)
