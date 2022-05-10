@@ -86,7 +86,7 @@ kind-exists: bin/scratch/kind-exists
 ## created.
 ##
 ## @category Development
-e2e-setup: e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
+e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
 
 # The function "image-tar" returns the path to the image tarball for a given
 # image name. For example:

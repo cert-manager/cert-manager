@@ -29,11 +29,6 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
-export SERVICE_IP_PREFIX="10.0.0"
-if [[ "$IS_OPENSHIFT" == "true" ]] ; then
-  export SERVICE_IP_PREFIX="172.30.0"
-fi
-
 # NB: kind will use a network called "kind" by default and so our creating a network by that name will be used for all clusters
 # in the future, and that'll clobber anyone who has their local network on 192.168.0.0/16 (which will be true for most people at home)
 # At the time of writing there's an env var - KIND_EXPERIMENTAL_DOCKER_NETWORK - which can be used to change
