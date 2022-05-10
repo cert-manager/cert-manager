@@ -403,8 +403,8 @@ MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v sha256sum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
              && ([ -n "$(findstring vendor-go,$(MAKECMDGOALS),)" ] \
-                || command -v $(GO) >/dev/null || echo $(GO)) \
-             && (command -v $(CTR) >/dev/null || echo $(CTR)))
+                || command -v $(GO) >/dev/null || echo "$(GO) (or run 'make vendor-go')") \
+             && (command -v $(CTR) >/dev/null || echo "$(CTR) (or set CTR to a docker-compatible tool)"))
 ifneq ($(MISSING),)
 $(error Missing required tools: $(MISSING))
 endif
