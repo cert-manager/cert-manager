@@ -64,8 +64,6 @@ docker.io/kindest/node:v1.20.15@sha256:393bb9096c6c4d723bb17bceb0896407d7db58153
 docker.io/kindest/node:v1.21.10@sha256:84709f09756ba4f863769bdcabe5edafc2ada72d3c8c44d6515fc581b66b029c
 docker.io/kindest/node:v1.22.7@sha256:1dfd72d193bf7da64765fd2f2898f78663b9ba366c2aa74be1fd7498a1873166
 docker.io/kindest/node:v1.23.4@sha256:0e34f0d0fd448aa2f2819cfd74e99fe5793a6e4938b328f657c8e3f81ee0dfb9
-eu.gcr.io/jetstack-build-infra-images/kind:v1.24.0@sha256:2f170bf60cfad9d961711f96c34349d789a56b5783c9a5dbc0a29cb5a25ec729
-
 EOF
 )
 
@@ -139,7 +137,7 @@ case "$k8s_version" in
 1.21*) image=$(grep -F 1.21 <<<"$images") ;;
 1.22*) image=$(grep -F 1.22 <<<"$images") ;;
 1.23*) image=$(grep -F 1.23 <<<"$images") ;;
-1.24*) image=$(grep -F 1.24 <<<"$images") ;;
+1.24*) image="eu.gcr.io/jetstack-build-infra-images/kind:v1.24.0@sha256:2f170bf60cfad9d961711f96c34349d789a56b5783c9a5dbc0a29cb5a25ec729" ;;
 v*) printf "${red}${redcross}Error${end}: the Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac

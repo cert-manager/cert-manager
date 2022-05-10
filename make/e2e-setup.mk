@@ -145,7 +145,7 @@ $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(
 
 # Same as above, except it supports multiarch images.
 $(call image-tar,kind): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
-	@$(eval IMAGE=$(subst +,:,$(shell cut -d/ -f2- <<<$*)))
+	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
 	@mkdir -p $(dir $@)
