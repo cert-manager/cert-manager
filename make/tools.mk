@@ -28,21 +28,7 @@ YQ_VERSION=4.11.2
 CRANE_VERSION=0.8.0
 GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
 
-# This is a temporary special case; k8s.io/code-generator makes its tags on
-# version-based branches (so v0.23.1 would be on a branch called release-1.23)
-# but those version-based branches don't backport changes to gomod. For module-aware
-# codegen, we need k8s.io/gengo at least version v0.0.0-20211115164449-b448ea381d54
-# but that version hasn't been used on anything except master, and there are no tags
-# on master for us to refer to. So, we refer to the latest commit on master at the time
-# of writing here; when k8s 1.24 is released, presumably the go.mod on the release-1.24
-# branch will be updated and so we'll be able to use a v0.24.x tag rather than a hash
-# of a commit on master.
-
-# A alternative workaround for this is to use "go get" to install the binaries, but that's
-# deprecated and will be removed in go 1.18. Referring to a commit on master here seems
-# a lesser evil than blocking our potential future upgrade to go 1.18 behind the release
-# of k8s 1.24
-K8S_CODEGEN_VERSION=5915ef051dfa0658ffebb9af39679e52c31762bf
+K8S_CODEGEN_VERSION=v0.24.0
 
 KUBEBUILDER_ASSETS_VERSION=1.22.0
 
