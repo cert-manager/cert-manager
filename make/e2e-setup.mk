@@ -8,7 +8,7 @@
 #
 CRI_ARCH := $(HOST_ARCH)
 
-K8S_VERSION = 1.23
+K8S_VERSION := 1.23
 
 IMAGE_haproxyingress_amd64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:f19dc8a8865a765d12f7553f961fc1d3768867c930f50bfd2fcafeaf57983e83
 IMAGE_haproxyingress_arm64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:53a38f53c5c005ac9b18adf9c1111601368bb3d73fe23cb99445b6d6bc0bab67
