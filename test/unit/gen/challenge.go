@@ -120,3 +120,9 @@ func SetChallengeDeletionTimestamp(ts metav1.Time) ChallengeModifier {
 		ch.DeletionTimestamp = &ts
 	}
 }
+
+func ResetChallengeStatus() ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Status = cmacme.ChallengeStatus{}
+	}
+}

@@ -17,8 +17,6 @@ limitations under the License.
 package acmechallenges
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -31,24 +29,7 @@ import (
 // deployed ("presented") resources and if successful, removes this finalizer
 // allowing the garbage collector to remove the challenge.
 
-// challengeUpdater allows the spec and metadata of a Challenge to be modified.
-type challengeUpdater interface {
-	updateOrApply(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
-}
-
 // finalizerRequired returns true if the finalizer is not found on the challenge.
 func finalizerRequired(ch *cmacme.Challenge) bool {
 	return !sets.NewString(ch.Finalizers...).Has(cmacme.ACMEFinalizer)
-}
-
-// addFinalizer adds the finalizer to the challenge and saves the change to the API
-// server.
-func addFinalizer(client challengeUpdater, ctx context.Context, ch *cmacme.Challenge) (*cmacme.Challenge, error) {
-	ch = ch.DeepCopy()
-	ch.Finalizers = append(ch.Finalizers, cmacme.ACMEFinalizer)
-	ch, err := client.updateOrApply(ctx, ch)
-	if err != nil {
-		return nil, err
-	}
-	return ch, nil
 }

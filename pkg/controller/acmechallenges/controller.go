@@ -181,16 +181,14 @@ func (c *controller) runScheduler(ctx context.Context) {
 		return
 	}
 
-	for _, ch := range toSchedule {
-		log := logf.WithResource(log, ch)
-		ch = ch.DeepCopy()
+	for _, chOriginal := range toSchedule {
+		log := logf.WithResource(log, chOriginal)
+		ch := chOriginal.DeepCopy()
 		ch.Status.Processing = true
-		_, err := c.updateStatusOrApply(ctx, ch)
-		if err != nil {
+		if err := newObjectUpdater(c.cmClient, c.fieldManager).updateObject(ctx, chOriginal, ch); err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return
 		}
-
 		c.recorder.Event(ch, corev1.EventTypeNormal, "Started", "Challenge scheduled for processing")
 	}
 
