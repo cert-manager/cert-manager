@@ -417,6 +417,6 @@ $(error Missing required tools: $(MISSING))
 endif
 endif
 
-.PHONY: e2e-setup-kind-update-images
-e2e-setup-kind-update-images: make/cluster.sh bin/tools/crane
-	make/cluster.sh --update-images
+.PHONY: update-kind-images
+update-kind-images: bin/tools/crane
+	CRANE=./bin/tools/crane ./hack/latest-kind-images.sh

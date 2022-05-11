@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@
 here=$(dirname "${BASH_SOURCE[0]}")
 source "$here/config/lib.sh"
 cd "$here/../"
+
 set -e
+
+source ./make/kind_images.sh
 
 mode=kind
 k8s_version=1.23
@@ -44,8 +47,6 @@ Flags:
   --show-image
       Show the image that will be used for the cluster and exit with 0. The
       image will be of the form docker.io/kindest/node:1.23@sha256:498...81ac.
-  --update-images
-      Update the kind images to the latest version.
 
 Environment variables:
   ${green}K8S_VERSION${end}
@@ -54,21 +55,7 @@ EOF
   exit
 }
 
-# The below image digests can be refreshed with the command:
-#  make/cluster.sh --update-images
-images=$(
-  cat <<EOF
-docker.io/kindest/node:v1.18.20@sha256:e3dca5e16116d11363e31639640042a9b1bd2c90f85717a7fc66be34089a8169
-docker.io/kindest/node:v1.19.16@sha256:81f552397c1e6c1f293f967ecb1344d8857613fb978f963c30e907c32f598467
-docker.io/kindest/node:v1.20.15@sha256:393bb9096c6c4d723bb17bceb0896407d7db581532d11ea2839c80b28e5d8deb
-docker.io/kindest/node:v1.21.10@sha256:84709f09756ba4f863769bdcabe5edafc2ada72d3c8c44d6515fc581b66b029c
-docker.io/kindest/node:v1.22.7@sha256:1dfd72d193bf7da64765fd2f2898f78663b9ba366c2aa74be1fd7498a1873166
-docker.io/kindest/node:v1.23.4@sha256:0e34f0d0fd448aa2f2819cfd74e99fe5793a6e4938b328f657c8e3f81ee0dfb9
-EOF
-)
-
 show_image=
-update_images=
 while [ $# -ne 0 ]; do
   case "$1" in
   --*=*)
@@ -90,11 +77,8 @@ while [ $# -ne 0 ]; do
     eval "$var=$2"
     shift
     ;;
-  --show-image | --update-images)
-    var=$1
-    var=${var/--/}
-    var=${var//-/_}
-    eval "$var=yes"
+  --show-image)
+    show_image="yes"
     ;;
   --*)
     echo "error: unknown flag: $1" >&2
@@ -112,33 +96,15 @@ if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
   k8s_version="$K8S_VERSION"
 fi
 
-# TODO (irbekrm): replace this with functionality that can get latest patch for
-# the given minor Kubernetes release (perhaps just use
-# ./hack/latest-kind-images.sh that already does that)
-if [ -n "$update_images" ]; then
-  for img in $images; do
-    sha=$(crane digest "$(cut -d@ -f1 <<<"$img")")
-    if [ "$(cut -d@ -f2 <<<"$img")" != "$sha" ]; then
-      trace sed -i.bak "s|^$img$|$(cut -d@ -f1 <<<"$img")@$sha|" "$0"
-    else
-      printf "${green}${greencheck}Info${end}: $img already uses the latest digest\n" >&2
-    fi
-  done
-  exit 0
-fi
-
-# TODO(irbekrm): change this functionality so that images from
-# eu.gcr.io/jetstack-build-infra-images/kind can be retrieved in the same way as
-# those from docker.io/kindest/node
 case "$k8s_version" in
-1.18*) image=$(grep -F 1.18 <<<"$images") ;;
-1.19*) image=$(grep -F 1.19 <<<"$images") ;;
-1.20*) image=$(grep -F 1.20 <<<"$images") ;;
-1.21*) image=$(grep -F 1.21 <<<"$images") ;;
-1.22*) image=$(grep -F 1.22 <<<"$images") ;;
-1.23*) image=$(grep -F 1.23 <<<"$images") ;;
-1.24*) image="eu.gcr.io/jetstack-build-infra-images/kind:v1.24.0@sha256:2f170bf60cfad9d961711f96c34349d789a56b5783c9a5dbc0a29cb5a25ec729" ;;
-v*) printf "${red}${redcross}Error${end}: the Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
+1.18*) image=$KIND_IMAGE_FULL_K8S_118 ;;
+1.19*) image=$KIND_IMAGE_FULL_K8S_119 ;;
+1.20*) image=$KIND_IMAGE_FULL_K8S_120 ;;
+1.21*) image=$KIND_IMAGE_FULL_K8S_121 ;;
+1.22*) image=$KIND_IMAGE_FULL_K8S_122 ;;
+1.23*) image=$KIND_IMAGE_FULL_K8S_123 ;;
+1.24*) image=$KIND_IMAGE_FULL_K8S_124 ;;
+v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
 
