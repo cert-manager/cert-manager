@@ -25,7 +25,7 @@ TAGS=$(mktemp)
 
 trap 'rm -f -- "$TAGS"' EXIT
 
-if ! which $CRANE >/dev/null 2>&1; then
+if ! command -v $CRANE >/dev/null 2>&1; then
 	echo -e "Couldn't find crane. Try running:\ngo install github.com/google/go-containerregistry/cmd/crane@latest" >&2
 	exit 1
 fi
