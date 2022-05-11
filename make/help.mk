@@ -50,7 +50,6 @@ default_category_tag_end := </category-default>
 DEFAULT_CATEGORY = General
 
 .PHONY: help
-## Show the help.
 help:
 	@echo "Usage: make [$(TARGET_STYLED_HELP_NAME) [$(TARGET_STYLED_HELP_NAME) ...]] [$(ARGUMENTS_HELP_NAME) [$(ARGUMENTS_HELP_NAME) ...]]"
 	@cat ${MAKEFILE_LIST} \

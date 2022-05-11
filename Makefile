@@ -52,9 +52,7 @@ include make/help.mk
 .PHONY: clean
 ## Remove the kind cluster and everything that was built. The downloaded images
 ## and tools are kept intact to avoid re-downloading everything. To really wipe
-## out everything, run the command:
-##
-##     rm -rf bin
+## out everything, use `make clean-all` instead.
 ##
 ## @category Development
 clean:
@@ -62,3 +60,7 @@ clean:
 	bin/tools/kind delete cluster --name=$(shell cat bin/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
 	rm -rf $(filter-out bin/downloaded,$(wildcard bin/*))
 	rm -rf bazel-bin bazel-cert-manager bazel-out bazel-testlogs
+
+.PHONY: clean-all
+clean-all: clean
+	rm -rf bin/
