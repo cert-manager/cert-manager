@@ -6,19 +6,29 @@
 CMREL_KEY ?=
 
 .PHONY: release-artifacts
-# Build all release artifacts which might be run or used locally, except
-# for anything signed.
+## Build all release artifacts which might be run or used locally, except
+## for anything signed.
+##
+## Useful to check that all binaries and manifests on all platforms can be
+## built without errors.
+##
+## @category Release
 release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart release-containers release-manifests
 
 .PHONY: release-artifacts-signed
 # Same as `release`, except it also signs the Helm chart. Requires CMREL_KEY
 # to be configured.
+# Note that this doesn't sign containers, since it's tricky to do that before
+# a release is staged. Instead we sign them after we push them to a registry.
 release-artifacts-signed: release-artifacts
 	$(MAKE) --no-print-directory helm-chart-signature
 
 .PHONY: release
-## Create a full release ready to be staged, including containers bundled for
-## distribution. Requires CMREL_KEY to be configured.
+## Create a complete release ready to be staged, including containers bundled for
+## distribution and all signatures.
+##
+## Since this command signs artifacts, this requires CMREL_KEY to be configured.
+## Prefer `make release-artifacts` locally.
 ##
 ## @category Release
 release: release-artifacts-signed

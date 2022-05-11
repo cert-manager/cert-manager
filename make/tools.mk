@@ -109,6 +109,13 @@ vendor-go: bin/tools/go
 unvendor-go: bin/tools/go
 	rm -rf bin/tools/go bin/tools/goroot
 
+.PHONY: which-go
+## Print the version and path of go which will be used for building and
+## testing in Makefile commands. Vendored go will have a path in ./bin
+which-go: |  $(DEPENDS_ON_GO)
+	@$(GO) version
+	@echo "go binary used for above version information: $(GO)"
+
 # In Prow, the pod has the folder "bin/downloaded" mounted into the
 # container. For some reason, even though the permissions are correct,
 # binaries that are mounted with hostPath can't be executed. When in CI, we

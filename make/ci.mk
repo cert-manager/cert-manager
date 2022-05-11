@@ -1,6 +1,10 @@
 __PYTHON := python3
 
 .PHONY: ci-presubmit
+## Run all checks (but not Go tests) which should pass before any given pull
+## request or change is merged.
+##
+## @category CI
 ci-presubmit: verify-imports verify-chart verify-errexit verify-boilerplate
 
 .PHONY: verify-imports
