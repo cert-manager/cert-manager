@@ -28,15 +28,20 @@ goimports=$(realpath "$1")
 # passing "-local" would be ideal, but it'll conflict with auto generated files ATM
 # and cause churn when we want to update those files
 #common_flags="-local github.com/cert-manager/cert-manager"
+
 common_flags=""
 
 echo "+++ running goimports" >&2
 
-output=$($goimports $common_flags -l .)
+# find all directories except bin which contain go files, and output them on a single line
+
+godirs=$(find . -not \( -path "./bin/*" -prune \) -name "*.go" | cut -d'/' -f2 | sort | uniq | tr '\n' ' ')
+
+output=$($goimports $common_flags -l $godirs)
 
 if [ ! -z "${output}" ]; then
     echo "${output}"
     echo "+++ goimports failed; the following command may fix:" >&2
-    echo "+++ $goimports $common_flags -w ." &>2
+    echo "+++ $goimports $common_flags -w $godirs" >&2
     exit 1
 fi
