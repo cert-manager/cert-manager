@@ -5,7 +5,7 @@ __PYTHON := python3
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-deps-licenses verify-codegen verify-crds
 
 .PHONY: verify-imports
 verify-imports: bin/tools/goimports
@@ -69,6 +69,14 @@ update-codegen: | k8s-codegen-tools $(DEPENDS_ON_GO)
 		./bin/tools/lister-gen \
 		./bin/tools/defaulter-gen \
 		./bin/tools/conversion-gen
+
+.PHONY: update-deps-licenses
+update-deps-licenses: | $(DEPENDS_ON_GO) bin
+	./hack/generate-deps-licenses.sh $(GO) LICENSES >/dev/null 2>&1
+
+.PHONY: verify-deps-licenses
+verify-deps-licenses: | $(DEPENDS_ON_GO) bin
+	./hack/verify-deps-licenses.sh $(GO) LICENSES
 
 # The targets (verify_deps, verify_chart, verify_upgrade, and cluster) are
 # temorary and exist to keep the compatibility with the following Prow jobs:

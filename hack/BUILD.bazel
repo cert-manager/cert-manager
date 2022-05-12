@@ -117,23 +117,6 @@ sh_binary(
     ],
 )
 
-sh_test(
-    name = "verify-deps-licenses",
-    srcs = ["verify-deps-licenses.sh"],
-    args = [
-        "$(location :update-deps-licenses)",
-        "$(location %s)" % GO,
-    ],
-    data = [
-        GAZELLE,
-        GO,
-        KAZEL,
-        ":update-deps-licenses",
-        "@//:all-srcs",
-    ],
-    tags = ["manual"],
-)
-
 # Kubernetes codegen rules
 
 sh_binary(
