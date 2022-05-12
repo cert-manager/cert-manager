@@ -93,6 +93,7 @@ verify:
 	bazel test //...
 
 .PHONY: verify_deps
+# verify_deps on't be recreated in make because it's tightly tied to bazel.
 verify_deps:
 	$(warning "The 'verify_deps' target is deprecated and will be removed soon. This target is not useful anymore with the new make flow.")
 	./hack/verify-deps.sh
