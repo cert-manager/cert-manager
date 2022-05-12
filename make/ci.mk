@@ -1,7 +1,7 @@
 __PYTHON := python3
 
 .PHONY: ci-presubmit
-ci-presubmit: verify-imports verify-chart verify-errexit verify-boilerplate
+ci-presubmit: verify-imports verify-errexit verify-boilerplate
 
 .PHONY: verify-imports
 verify-imports: bin/tools/goimports
