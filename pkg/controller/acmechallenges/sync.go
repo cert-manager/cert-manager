@@ -26,7 +26,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -64,6 +63,16 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	ctx = logf.NewContext(ctx, log)
 	ch := chOriginal.DeepCopy()
 
+	solver, err := c.solverFor(ch.Spec.Type)
+	if err != nil {
+		return err
+	}
+
+	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
+	if err != nil {
+		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
+	}
+
 	defer func() {
 		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
 			if errors.Is(updateError, argumentError) {
@@ -74,12 +83,21 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 	}()
 
-	if !ch.DeletionTimestamp.IsZero() {
-		return c.handleFinalizer(ctx, ch)
+	// If the challenge has been deleted or is in a finished state then attempt
+	// to cleanup any presented resources, remove the finalizer and reset the
+	// processing and presented status fields.
+	// Once the challenge reaches this final state, we always return here.
+	if challengeFinished(ch) {
+		err := handleCleanup(ctx, solver, genericIssuer, ch)
+		if err != nil {
+			ch.Status.Reason = err.Error()
+			c.recorder.Event(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
+		}
+		return err
 	}
 
 	// bail out early on if processing=false, as this challenge has not been
-	// scheduled yet.
+	// scheduled yet or has finished.
 	if !ch.Status.Processing {
 		return nil
 	}
@@ -87,39 +105,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
-	if finalizerRequired(ch) {
-		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEFinalizer)
-		return nil
-	}
-
-	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
-	if err != nil {
-		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
-	}
-
-	// if a challenge is in a final state, we bail out early as there is nothing
-	// left for us to do here.
-	if acme.IsFinalState(ch.Status.State) {
-		if ch.Status.Presented {
-			solver, err := c.solverFor(ch.Spec.Type)
-			if err != nil {
-				log.Error(err, "error getting solver for challenge")
-				return err
-			}
-
-			err = solver.CleanUp(ctx, genericIssuer, ch)
-			if err != nil {
-				c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
-				ch.Status.Reason = err.Error()
-				log.Error(err, "error cleaning up challenge")
-				return err
-			}
-
-			ch.Status.Presented = false
-		}
-
-		ch.Status.Processing = false
-
+	if addCleanupFinalizer(ch) {
 		return nil
 	}
 
@@ -166,11 +152,6 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 				return err
 			}
 		}
-	}
-
-	solver, err := c.solverFor(ch.Spec.Type)
-	if err != nil {
-		return err
 	}
 
 	if !ch.Status.Presented {
@@ -242,49 +223,6 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	}
 
 	return err
-}
-
-// handleFinalizer will attempt to 'finalize' the Challenge resource by calling
-// CleanUp if the resource is in a 'processing' state.
-func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) (err error) {
-	log := logf.FromContext(ctx, "finalizer")
-	if len(ch.Finalizers) == 0 {
-		return nil
-	}
-	if ch.Finalizers[0] != cmacme.ACMEFinalizer {
-		log.V(logf.DebugLevel).Info("waiting to run challenge finalization...")
-		return nil
-	}
-
-	defer func() {
-		// call Update to remove the metadata.finalizers entry
-		ch.Finalizers = ch.Finalizers[1:]
-	}()
-
-	if !ch.Status.Processing {
-		return nil
-	}
-
-	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
-	if err != nil {
-		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
-	}
-
-	solver, err := c.solverFor(ch.Spec.Type)
-	if err != nil {
-		log.Error(err, "error getting solver for challenge")
-		return nil
-	}
-
-	err = solver.CleanUp(ctx, genericIssuer, ch)
-	if err != nil {
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
-		ch.Status.Reason = err.Error()
-		log.Error(err, "error cleaning up challenge")
-		return nil
-	}
-
-	return nil
 }
 
 // syncChallengeStatus will communicate with the ACME server to retrieve the current
