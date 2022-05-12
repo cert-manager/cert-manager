@@ -5,7 +5,7 @@ __PYTHON := python3
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen
 
 .PHONY: verify-imports
 verify-imports: $(BINDIR)/tools/goimports
@@ -22,6 +22,28 @@ verify-errexit:
 .PHONY: verify-boilerplate
 verify-boilerplate:
 	$(__PYTHON) hack/verify_boilerplate.py
+
+.PHONY: verify-codegen
+verify-codegen: | k8s-codegen-tools $(DEPENDS_ON_GO)
+	VERIFY_ONLY="true" ./hack/k8s-codegen.sh \
+		$(GO) \
+		./$(BINDIR)/tools/client-gen \
+		./$(BINDIR)/tools/deepcopy-gen \
+		./$(BINDIR)/tools/informer-gen \
+		./$(BINDIR)/tools/lister-gen \
+		./$(BINDIR)/tools/defaulter-gen \
+		./$(BINDIR)/tools/conversion-gen
+
+.PHONY: update-codegen
+update-codegen: | k8s-codegen-tools $(DEPENDS_ON_GO)
+	./hack/k8s-codegen.sh \
+		$(GO) \
+		./$(BINDIR)/tools/client-gen \
+		./$(BINDIR)/tools/deepcopy-gen \
+		./$(BINDIR)/tools/informer-gen \
+		./$(BINDIR)/tools/lister-gen \
+		./$(BINDIR)/tools/defaulter-gen \
+		./$(BINDIR)/tools/conversion-gen
 
 # The targets (verify_deps, verify_chart, verify_upgrade, and cluster) are
 # temorary and exist to keep the compatibility with the following Prow jobs:

@@ -172,39 +172,6 @@ sh_binary(
     ],
 )
 
-sh_test(
-    name = "verify-codegen",
-    srcs = ["verify-codegen.sh"],
-    args = [
-        "$(location :update-codegen)",
-        "$(location %s)" % GO,
-        "$(location @io_k8s_code_generator//cmd/client-gen)",
-        "$(location @io_k8s_code_generator//cmd/deepcopy-gen)",
-        "$(location @io_k8s_code_generator//cmd/informer-gen)",
-        "$(location @io_k8s_code_generator//cmd/lister-gen)",
-        "$(location @io_k8s_code_generator//cmd/defaulter-gen)",
-        "$(location @io_k8s_code_generator//cmd/conversion-gen)",
-        "$(location :update-bazel)",
-        "$(location %s)" % GAZELLE,
-        "$(location %s)" % KAZEL,
-    ],
-    data = [
-        ":update-bazel",
-        ":update-codegen",
-        GO,
-        GOROOT,
-        GAZELLE,
-        KAZEL,
-        "@//:all-srcs",
-        "@io_k8s_code_generator//cmd/client-gen",
-        "@io_k8s_code_generator//cmd/conversion-gen",
-        "@io_k8s_code_generator//cmd/deepcopy-gen",
-        "@io_k8s_code_generator//cmd/defaulter-gen",
-        "@io_k8s_code_generator//cmd/informer-gen",
-        "@io_k8s_code_generator//cmd/lister-gen",
-    ],
-)
-
 # Gofmt rules
 
 sh_binary(
