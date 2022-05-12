@@ -72,9 +72,12 @@ $KIND_BIN create cluster \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
 
+# Get the Cluster IP range
+source "${SCRIPT_ROOT}/../lib/export_kube_vars.sh"
+
 # Get the current config
 original_coredns_config=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
-additional_coredns_config="$(printf 'example.com:53 {\n    forward . 10.0.0.16\n}\n')"
+additional_coredns_config=$'example.com:53 {\n    forward . '$SERVICE_IP_PREFIX$'.16\n}\n'
 echo "Original CoreDNS config:"
 echo "${original_coredns_config}"
 # Patch it
@@ -83,4 +86,4 @@ fixed_coredns_config=$(
 )
 echo "Patched CoreDNS config:"
 echo "${fixed_coredns_config}"
-kubectl create configmap -oyaml coredns --dry-run --from-literal=Corefile="${fixed_coredns_config}" | kubectl apply --namespace kube-system -f -
+kubectl create configmap -oyaml coredns --dry-run=client --from-literal=Corefile="${fixed_coredns_config}" | kubectl apply --namespace kube-system -f -

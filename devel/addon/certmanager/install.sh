@@ -27,6 +27,7 @@ FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
+source "${SCRIPT_ROOT}/../../lib/export_kube_vars.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require kubectl & helm available on PATH
@@ -73,7 +74,7 @@ helm upgrade \
     --set installCRDs=true \
     --set featureGates="${FEATURE_GATES//,/\\,}" `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
     --set "webhook.extraArgs={--feature-gates=AllAlpha=true}" \
-    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
+    --set "extraArgs={--dns01-recursive-nameservers=${DNS_SERVER}:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 

@@ -28,12 +28,8 @@ export KIND_IMAGE_REPO="docker.io/kindest/node"
 export K8S_VERSION=${K8S_VERSION:-1.23}
 # Default OpenShift version to use to 3.11
 export OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"}
-export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
 export IS_OPENSHIFT="${IS_OPENSHIFT:-"false"}"
 export OPENSHIFT_VERSION="${OPENSHIFT_VERSION:-"3.11"}"
-export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
-export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
-export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
 
 # setup_tools will build and set up the environment to use bazel-provided
 # versions of the tools required for development

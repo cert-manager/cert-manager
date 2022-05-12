@@ -20,6 +20,7 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
+source "${SCRIPT_ROOT}/../../lib/export_kube_vars.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Installs an instance of bind using the manifests located in manifests/
@@ -32,8 +33,6 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   # OpenShift needs bind to be in kube-system due to file ownership restrictions
   NAMESPACE="kube-system"
 fi
-
-SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
 
 check_tool kubectl
 require_image "sameersbn/bind:bazel" "//devel/addon/bind:bundle"
