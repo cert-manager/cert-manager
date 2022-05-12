@@ -25,7 +25,8 @@ hack=$(dirname "${BASH_SOURCE[0]}")
 "$hack"/update-bazel.sh
 # update-codegen is done by make now, no need to call it here
 # "$hack"/update-codegen.sh
-"$hack"/update-crds.sh
+# update-crds is done by make now, no need to call it here
+# "$hack"/update-crds.sh
 "$hack"/update-deps.sh
 # This is already run automatically by update-deps.sh
 #"$hack"/update-deps-licenses.sh
