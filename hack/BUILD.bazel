@@ -210,24 +210,6 @@ sh_binary(
     ],
 )
 
-sh_test(
-    name = "verify-crds",
-    srcs = ["verify-crds.sh"],
-    args = [
-        "$(location :update-crds)",
-        "$(location %s)" % GO,
-        "$(location %s)" % CONTROLLER_GEN,
-        "$(location %s)" % YQ,
-    ],
-    data = [
-        ":update-crds",
-        GO,
-        CONTROLLER_GEN,
-        YQ,
-        "@//:all-srcs",
-    ],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),

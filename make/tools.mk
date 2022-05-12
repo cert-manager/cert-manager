@@ -24,7 +24,7 @@ K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
 GOTESTSUM_VERSION=1.7.0
 YTT_VERSION=0.36.0
-YQ_VERSION=4.11.2
+YQ_VERSION=4.25.1
 CRANE_VERSION=0.8.0
 GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
 
@@ -319,9 +319,9 @@ bin/downloaded/tools/ytt_$(YTT_VERSION)_%: | bin/downloaded/tools
 # yq #
 ######
 
-YQ_linux_amd64_SHA256SUM=6b891fd5bb13820b2f6c1027b613220a690ce0ef4fc2b6c76ec5f643d5535e61
-YQ_darwin_amd64_SHA256SUM=5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46
-YQ_darwin_arm64_SHA256SUM=665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69
+YQ_linux_amd64_SHA256SUM=57b6247bc2406c20a887aee3594399e081759601fd2f8ae9df21938499d76c81
+YQ_darwin_amd64_SHA256SUM=e0665487ebd131ca1af7a796db16ecbabf04f8bfec8ecab890c5a013f96ff13
+YQ_darwin_arm64_SHA256SUM=2e3dc822cf184c997573f95b4b9b05e1936695d151d673f95e25b4fdcf34868
 
 bin/tools/yq: bin/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/YQ_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
