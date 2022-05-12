@@ -5,7 +5,7 @@ __PYTHON := python3
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-chart verify-errexit verify-boilerplate
+ci-presubmit: verify-imports verify-errexit verify-boilerplate
 
 .PHONY: verify-imports
 verify-imports: bin/tools/goimports
