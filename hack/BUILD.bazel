@@ -14,26 +14,6 @@ YQ = "//hack/bin:yq"
 
 CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 
-# General repo verification targets
-
-py_test(
-    name = "verify-boilerplate",
-    srcs = ["verify_boilerplate.py"],
-    data = ["@//:all-srcs"],
-    main = "verify_boilerplate.py",
-    python_version = "PY3",
-    tags = ["lint"],
-)
-
-sh_test(
-    name = "verify-errexit",
-    srcs = ["verify-errexit.sh"],
-    data = [
-        "@//:all-srcs",
-    ],
-    tags = ["lint"],
-)
-
 # Bazel file generation rules
 
 sh_binary(
@@ -165,18 +145,6 @@ sh_binary(
     ],
     data = [
         GOFMT,
-    ],
-)
-
-sh_test(
-    name = "verify-gofmt",
-    srcs = ["verify-gofmt.sh"],
-    args = [
-        "$(location %s)" % GOFMT,
-    ],
-    data = [
-        GOFMT,
-        "@//:all-srcs",
     ],
 )
 
