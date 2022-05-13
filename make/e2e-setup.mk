@@ -8,7 +8,7 @@
 #
 CRI_ARCH := $(HOST_ARCH)
 
-K8S_VERSION = 1.23
+K8S_VERSION := 1.23
 
 IMAGE_haproxyingress_amd64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:f19dc8a8865a765d12f7553f961fc1d3768867c930f50bfd2fcafeaf57983e83
 IMAGE_haproxyingress_arm64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:53a38f53c5c005ac9b18adf9c1111601368bb3d73fe23cb99445b6d6bc0bab67
@@ -45,9 +45,10 @@ GATEWAY_API_VERSION = 0.4.1
 
 .PHONY: e2e-setup-kind
 ## Create a Kubernetes cluster using Kind, which is required for `make e2e`.
-## The image is pre-pulled to avoid 'kind create' from blocking other make
-## targets. By default, the name is "kind". You can specify a different name
-## with `make kind KIND_CLUSTER_NAME=name`.
+## The Kind image is pre-pulled to avoid 'kind create' from blocking other make
+## targets.
+##
+##	make kind [KIND_CLUSTER_NAME=name] [K8S_VERSION=<kubernetes_version>]
 ##
 ## @category Development
 e2e-setup-kind: kind-exists
@@ -85,7 +86,7 @@ kind-exists: bin/scratch/kind-exists
 ## created.
 ##
 ## @category Development
-e2e-setup: e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
+e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
 
 # The function "image-tar" returns the path to the image tarball for a given
 # image name. For example:
@@ -144,7 +145,7 @@ $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(
 
 # Same as above, except it supports multiarch images.
 $(call image-tar,kind): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
-	@$(eval IMAGE=$(subst +,:,$(shell cut -d/ -f2- <<<$*)))
+	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
 	@mkdir -p $(dir $@)
@@ -380,10 +381,11 @@ e2e-setup-samplewebhook: load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhoo
 		samplewebhook make/config/samplewebhook/chart >/dev/null
 
 .PHONY: e2e-setup-projectcontour
-e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/projectcontour/contour-gateway.yaml make/config/projectcontour/gateway.yaml bin/scratch/kind-exists bin/tools/kubectl
+e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/projectcontour/contour-gateway.yaml make/config/projectcontour/gateway.yaml bin/scratch/kind-exists bin/tools/kubectl bin/tools/ytt
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
-	sed 's|{CLUSTER_IP}|$(SERVICE_IP_PREFIX).14|' make/config/projectcontour/contour-gateway.yaml | bin/tools/kubectl apply -f- >/dev/null
-	bin/tools/kubectl apply -f make/config/projectcontour/gateway.yaml >/dev/null
+	bin/tools/ytt --data-value service_ip_prefix="${SERVICE_IP_PREFIX}" \
+		--file make/config/projectcontour/contour-gateway.yaml \
+		--file make/config/projectcontour/gateway.yaml | bin/tools/kubectl apply -f-
 
 .PHONY: e2e-setup-sampleexternalissuer
 ifeq ($(CRI_ARCH),amd64)

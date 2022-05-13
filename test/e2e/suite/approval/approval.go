@@ -111,30 +111,48 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
+		// Manually create a Secret to be populated with Service Account token
+		// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "sa-secret-",
+				Name:         f.Namespace.Name,
+				Annotations: map[string]string{
+					"kubernetes.io/service-account.name": sa.Name,
+				},
+			},
+			Type: corev1.SecretTypeServiceAccountToken,
+		}, metav1.CreateOptions{})
+
+		var (
+			token []byte
+			ok    bool
+		)
 		err = wait.PollImmediate(time.Second, time.Second*10,
 			func() (bool, error) {
-				sa, err = f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Get(context.TODO(), sa.Name, metav1.GetOptions{})
+				secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secret.Name, metav1.GetOptions{})
 				if err != nil {
 					return false, err
 				}
 
-				if len(sa.Secrets) == 0 {
+				if len(secret.Data) == 0 {
+					return false, nil
+				}
+				if token, ok = secret.Data["token"]; !ok {
 					return false, nil
 				}
 
 				return true, nil
 			},
 		)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error: %s", err))
 
 		By("Building ServiceAccount kubernetes clientset")
-		sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), sa.Secrets[0].Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
 
 		kubeConfig, err := testutil.LoadConfig(f.Config.KubeConfig, f.Config.KubeContext)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubeConfig.BearerToken = fmt.Sprintf("%s", sec.Data["token"])
+		kubeConfig.BearerToken = fmt.Sprintf("%s", token)
 		kubeConfig.CertData = nil
 		kubeConfig.KeyData = nil
 
@@ -187,8 +205,6 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
-	//
-
 	It("a service account with the approve permissions for a resource that doesn't exist attempting to approve should error", func() {
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
 
@@ -208,8 +224,6 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
-
-	//
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to approve requests", func() {
 		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
@@ -232,8 +246,6 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 	})
-
-	//
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to approve requests", func() {
 		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)

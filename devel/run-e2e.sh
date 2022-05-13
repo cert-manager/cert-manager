@@ -71,6 +71,7 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
 	--acme-ingress-ip="$INGRESS_IP" \
+        --acme-gateway-ip="${GATEWAY_IP}" \
 	--feature-gates="${FEATURE_GATES}" \
 	${GINKGO_SKIP:+"$GINKGO_SKIP"} \
 	${GINKGO_FOCUS:+"$GINKGO_FOCUS"} \

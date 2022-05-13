@@ -16,7 +16,7 @@ CMREL=$(PWD)/bin/tools/cmrel
 
 HELM_VERSION=3.8.0
 KUBECTL_VERSION=1.22.1
-KIND_VERSION=0.11.1
+KIND_VERSION=0.12.0
 CONTROLLER_GEN_VERSION=0.8.0
 COSIGN_VERSION=1.3.1
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
@@ -163,7 +163,7 @@ bin/downloaded/tools/helm-v$(HELM_VERSION)-%: | bin/downloaded/tools
 	@# O writes the specified file to stdout
 	tar xfO $@.tar.gz $*/helm > $@
 	chmod +x $@
-	rm $@.tar.gz
+	rm -f $@.tar.gz
 
 ###########
 # kubectl #
@@ -185,9 +185,9 @@ bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/d
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=949f81b3c30ca03a3d4effdecda04f100fa3edc07a28b19400f72ede7c5f0491
-KIND_darwin_amd64_SHA256SUM=432bef555a70e9360b44661c759658265b9eaaf7f75f1beec4c4d1e6bbf97ce3
-KIND_darwin_arm64_SHA256SUM=4f019c578600c087908ac59dd0c4ce1791574f153a70608adb372d5abc58cd47
+KIND_linux_amd64_SHA256SUM=b80624c14c807490c0944d21fdc9c3455d6cc904fad486fe236f2187ecaa5789
+KIND_darwin_amd64_SHA256SUM=969d607a4eb5df20e1ea3841813b7869614235f6b1644c9a27700bff9de5bdfc
+KIND_darwin_arm64_SHA256SUM=98d0f29fbde2154c64653aff81e6d0b9faea5001c5e29ce80ecfb9f67810197b
 
 bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/KIND_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
