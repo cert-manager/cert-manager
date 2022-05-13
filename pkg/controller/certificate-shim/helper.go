@@ -19,6 +19,7 @@ package shimhelper
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,7 @@ var (
 //       cert-manager.io/duration: 2160h
 //       cert-manager.io/renew-before: 1440h
 //       cert-manager.io/usages: "digital signature,key encipherment"
+//       cert-manager.io/encoded-usages-in-request: "false"
 //
 // is mapped to the following Certificate:
 //
@@ -54,6 +56,7 @@ var (
 //     usages:
 //       - digital signature
 //       - key encipherment
+//     encodedUsagesInRequest: false
 func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]string) error {
 	if crt == nil {
 		return errNilCertificate
@@ -92,5 +95,14 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		}
 		crt.Spec.Usages = newUsages
 	}
+
+	if encodeUsagesInRequest, found := ingLikeAnnotations[cmapi.EncodeUsagesInRequestAnnotationKey]; found {
+		flag, err := strconv.ParseBool(encodeUsagesInRequest)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.EncodeUsagesInRequestAnnotationKey, err)
+		}
+		crt.Spec.EncodeUsagesInRequest = &flag
+	}
+
 	return nil
 }

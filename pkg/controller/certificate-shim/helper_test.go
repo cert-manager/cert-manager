@@ -39,10 +39,11 @@ func Test_translateAnnotations(t *testing.T) {
 
 	validAnnotations := func() map[string]string {
 		return map[string]string{
-			cmapi.CommonNameAnnotationKey:  "www.example.com",
-			cmapi.DurationAnnotationKey:    "168h", // 1 week
-			cmapi.RenewBeforeAnnotationKey: "24h",
-			cmapi.UsagesAnnotationKey:      "server auth,signing",
+			cmapi.CommonNameAnnotationKey:            "www.example.com",
+			cmapi.DurationAnnotationKey:              "168h", // 1 week
+			cmapi.RenewBeforeAnnotationKey:           "24h",
+			cmapi.UsagesAnnotationKey:                "server auth,signing",
+			cmapi.EncodeUsagesInRequestAnnotationKey: "false",
 		}
 	}
 
@@ -55,6 +56,7 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
+				a.Equal(false, *crt.Spec.EncodeUsagesInRequest)
 			},
 		},
 		"nil annotations": {

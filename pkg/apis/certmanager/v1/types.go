@@ -39,6 +39,9 @@ const (
 	// Annotation key for certificate key usages.
 	UsagesAnnotationKey = "cert-manager.io/usages"
 
+	// Annotation key for certificate encodeUsagesInRequest.
+	EncodeUsagesInRequestAnnotationKey = "cert-manager.io/encode-usages-in-request"
+
 	// Annotation key the 'name' of the Issuer resource.
 	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
 
