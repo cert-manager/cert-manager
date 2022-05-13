@@ -170,7 +170,7 @@ bin/downloaded/tools/helm-v$(HELM_VERSION)-%: | bin/downloaded/tools
 	@# O writes the specified file to stdout
 	tar xfO $@.tar.gz $*/helm > $@
 	chmod +x $@
-	rm $@.tar.gz
+	rm -f $@.tar.gz
 
 ###########
 # kubectl #
