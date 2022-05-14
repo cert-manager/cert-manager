@@ -19,6 +19,7 @@ package acmechallenges
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,11 @@ func TestUpdateObjectStandard(t *testing.T) {
 }
 
 func TestUpdateObjectSSA(t *testing.T) {
-	t.Skip("Server Side Apply cannot be tested because PatchType is not supported by the fake versioned client")
+	t.Skip(
+		"Server Side Apply cannot be tested because PatchType is not supported by the fake versioned client. See:",
+		"https://github.com/kubernetes/client-go/issues/970",
+		"https://github.com/kubernetes/client-go/issues/992",
+	)
 	defer featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)()
 	runUpdateObjectTests(t)
 }
@@ -49,12 +54,12 @@ func runUpdateObjectTests(t *testing.T) {
 	simulatedUpdateStatusError := errors.New("simulated-update-status-error")
 
 	tests := []struct {
-		name         string
-		mods         []gen.ChallengeModifier
-		notFound     bool
-		apiResponse  clienttesting.ReactionFunc
-		panicMessage string
-		errorMessage string
+		name              string
+		mods              []gen.ChallengeModifier
+		notFound          bool
+		updateError       error
+		updateStatusError error
+		errorMessage      string
 	}{
 		// Modifying the finalizers and any status fields results in both
 		// finalizers and status being updated.
@@ -76,13 +81,16 @@ func runUpdateObjectTests(t *testing.T) {
 			notFound: true,
 		},
 		// Only the Finalizers and Status fields can be updated. Updates to any
-		// other fields suggests a programming error and results in a panic.
+		// other fields suggests a programming error an argument error.
 		{
-			name: "panic-on-non-finalizer-non-status-modifications",
+			name: "error-on-non-finalizer-non-status-modifications",
 			mods: []gen.ChallengeModifier{
 				gen.SetChallengeDNSName("new-dns-name"),
 			},
-			panicMessage: "only the finalizers and status fields may be modified",
+			errorMessage: fmt.Sprintf(
+				"%s: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
+				argumentError,
+			),
 		},
 		// If the Update API call fails, that error is returned.
 		{
@@ -90,13 +98,8 @@ func runUpdateObjectTests(t *testing.T) {
 			mods: []gen.ChallengeModifier{
 				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
 			},
-			apiResponse: func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-				if action.GetSubresource() == "" {
-					return true, nil, simulatedUpdateError
-				}
-				return false, nil, nil
-			},
-			errorMessage: "when updating the finalizers: simulated-update-error",
+			updateError:  simulatedUpdateError,
+			errorMessage: fmt.Sprintf("when updating the finalizers: %s", simulatedUpdateError),
 		},
 		// If the UpdateStatus API call fails, that error is returned.
 		{
@@ -104,13 +107,8 @@ func runUpdateObjectTests(t *testing.T) {
 			mods: []gen.ChallengeModifier{
 				gen.SetChallengePresented(true),
 			},
-			apiResponse: func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-				if action.GetSubresource() == "status" {
-					return true, nil, simulatedUpdateStatusError
-				}
-				return false, nil, nil
-			},
-			errorMessage: "when updating the status: simulated-update-status-error",
+			updateStatusError: simulatedUpdateStatusError,
+			errorMessage:      fmt.Sprintf("when updating the status: %s", simulatedUpdateStatusError),
 		},
 		// If both Update and UpdateStatus API calls fail, both errors are returned.
 		{
@@ -119,16 +117,13 @@ func runUpdateObjectTests(t *testing.T) {
 				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
 				gen.SetChallengePresented(true),
 			},
-			apiResponse: func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-				if action.GetSubresource() == "" {
-					return true, nil, simulatedUpdateError
-				}
-				if action.GetSubresource() == "status" {
-					return true, nil, simulatedUpdateStatusError
-				}
-				return false, nil, nil
-			},
-			errorMessage: "[when updating the status: simulated-update-status-error, when updating the finalizers: simulated-update-error]",
+			updateError:       simulatedUpdateError,
+			updateStatusError: simulatedUpdateStatusError,
+			errorMessage: fmt.Sprintf(
+				"[when updating the status: %s, when updating the finalizers: %s]",
+				simulatedUpdateStatusError,
+				simulatedUpdateError,
+			),
 		},
 	}
 	for _, tt := range tests {
@@ -142,17 +137,20 @@ func runUpdateObjectTests(t *testing.T) {
 				objects = nil
 			}
 			cl := fake.NewSimpleClientset(objects...)
-			if tt.apiResponse != nil {
-				t.Log("Simulating an API server 'update' error")
-				cl.PrependReactor("update", "*", tt.apiResponse)
+			if tt.updateError != nil {
+				cl.PrependReactor("update", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					t.Log("Simulating a challenge update error")
+					return true, nil, tt.updateError
+				})
+			}
+			if tt.updateStatusError != nil {
+				cl.PrependReactor("update", "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					t.Log("Simulating a challenge/status update error")
+					return true, nil, tt.updateStatusError
+				})
 			}
 			updater := newObjectUpdater(cl, "test-fieldmanager")
-			if tt.panicMessage != "" {
-				assert.PanicsWithValue(t, tt.panicMessage, func() { _ = updater.updateObject(ctx, old, new) },
-					"updateObject should panic when changes are made to fields other than Finalizers and Status")
-				return
-			}
-			t.Log("Executing the function")
+			t.Log("Calling updateObject")
 			updateObjectErr := updater.updateObject(ctx, old, new)
 			if tt.errorMessage == "" {
 				assert.NoError(t, updateObjectErr)

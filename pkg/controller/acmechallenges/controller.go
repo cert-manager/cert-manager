@@ -30,7 +30,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/ingress"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
-	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -54,9 +53,6 @@ type controller struct {
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        corelisters.SecretLister
 
-	// fieldManager is the manager name used for the Apply operations.
-	fieldManager string
-
 	// ACME challenge solvers are instantiated once at the time of controller
 	// construction.
 	// This also allows for easy mocking of the different challenge mechanisms.
@@ -69,8 +65,6 @@ type controller struct {
 
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
-	// clientset used to update cert-manager API resources
-	cmClient cmclient.Interface
 
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
@@ -82,6 +76,10 @@ type controller struct {
 	dns01Nameservers []string
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// objectUpdater implements the updateObject function which is used to save
+	// changes to the Challenge.Status and Challenge.Finalizers
+	objectUpdater
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
@@ -140,8 +138,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
-	c.cmClient = ctx.CMClient
-	c.fieldManager = ctx.FieldManager
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
 	c.httpSolver, err = http.NewSolver(ctx)
@@ -156,6 +152,10 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// read options from context
 	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
 	c.DNS01CheckRetryPeriod = ctx.ACMEOptions.DNS01CheckRetryPeriod
+
+	// Construct an objectUpdater which is used to save changes to the Challenge
+	// object, either using Update or using Patch + Server Side Apply.
+	c.objectUpdater = newObjectUpdater(ctx.CMClient, ctx.FieldManager)
 
 	return c.queue, mustSync, nil
 }
@@ -185,7 +185,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		log := logf.WithResource(log, chOriginal)
 		ch := chOriginal.DeepCopy()
 		ch.Status.Processing = true
-		if err := newObjectUpdater(c.cmClient, c.fieldManager).updateObject(ctx, chOriginal, ch); err != nil {
+		if err := c.updateObject(ctx, chOriginal, ch); err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return
 		}

@@ -65,10 +65,13 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	ch := chOriginal.DeepCopy()
 
 	defer func() {
-		err = utilerrors.NewAggregate([]error{
-			err,
-			newObjectUpdater(c.cmClient, c.fieldManager).updateObject(ctx, chOriginal, ch),
-		})
+		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
+			if errors.Is(updateError, argumentError) {
+				log.Error(updateError, "If this error occurs there is a bug in cert-manager. Please report it. Not retrying.")
+				return
+			}
+			err = utilerrors.NewAggregate([]error{err, updateError})
+		}
 	}()
 
 	if !ch.DeletionTimestamp.IsZero() {

@@ -18,6 +18,7 @@ package acmechallenges
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -88,6 +89,8 @@ func TestSyncHappyPath(t *testing.T) {
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
+
+	simulatedCleanupError := errors.New("simulated-cleanup-error")
 	tests := map[string]testT{
 		"cleanup if the challenge is deleted and remove the finalizer": {
 			challenge: gen.ChallengeFrom(deletedChallenge,
@@ -118,6 +121,53 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengeFinalizers([]string{}),
 						))),
+				},
+			},
+		},
+		"if the challenge is deleted and the cleanup fails, set the reason (and remove the finalizer, which is a bug)": {
+			challenge: gen.ChallengeFrom(deletedChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+			),
+			httpSolver: &fakeSolver{
+				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return simulatedCleanupError
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.ChallengeFrom(deletedChallenge,
+						gen.SetChallengeProcessing(true),
+						gen.SetChallengeURL("testurl"),
+						gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					),
+					testIssuerHTTP01Enabled,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(deletedChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengeFinalizers([]string{}),
+							gen.SetChallengeReason(simulatedCleanupError.Error()),
+						))),
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+							"status",
+							gen.DefaultTestNamespace,
+							gen.ChallengeFrom(deletedChallenge,
+								gen.SetChallengeProcessing(true),
+								gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+								gen.SetChallengeURL("testurl"),
+								gen.SetChallengeFinalizers([]string{}),
+								gen.SetChallengeReason(simulatedCleanupError.Error()),
+							))),
+				},
+				ExpectedEvents: []string{
+					fmt.Sprintf("Warning CleanUpError Error cleaning up challenge: %s", simulatedCleanupError),
 				},
 			},
 		},

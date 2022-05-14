@@ -18,6 +18,8 @@ package acmechallenges
 
 import (
 	"context"
+	stderrors "errors"
+	"fmt"
 
 	"github.com/pkg/errors"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -33,21 +35,27 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-type updater interface {
+var argumentError = stderrors.New("invalid arguments")
+
+type objectUpdateClient interface {
 	update(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
 	updateStatus(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
 }
 
-type objectUpdater struct {
-	updater
+type objectUpdater interface {
+	updateObject(context.Context, *cmacme.Challenge, *cmacme.Challenge) error
 }
 
-func newObjectUpdater(cl versioned.Interface, fieldManager string) *objectUpdater {
-	o := &objectUpdater{
-		updater: &objectUpdaterDefault{cl: cl},
+type defaultObjectUpdater struct {
+	objectUpdateClient
+}
+
+func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater {
+	o := &defaultObjectUpdater{
+		objectUpdateClient: &objectUpdateClientDefault{cl: cl},
 	}
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		o.updater = &objectUpdaterSSA{
+		o.objectUpdateClient = &objectUpdateClientSSA{
 			fieldManager: fieldManager,
 			cl:           cl,
 		}
@@ -64,13 +72,18 @@ func newObjectUpdater(cl versioned.Interface, fieldManager string) *objectUpdate
 // will exit without error and the remaining operations will be skipped.
 // Only the Finalizers and Status fields may be modified. If there are any
 // modifications to new object, outside of the Finalizers and Status fields,
-// this function will panic.
-func (o *objectUpdater) updateObject(ctx context.Context, old, new *cmacme.Challenge) error {
+// this function return an error.
+func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacme.Challenge) error {
 	if !apiequality.Semantic.DeepEqual(
 		gen.ChallengeFrom(old, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
 		gen.ChallengeFrom(new, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
 	) {
-		panic("only the finalizers and status fields may be modified")
+		return errors.WithStack(
+			fmt.Errorf(
+				"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
+				argumentError,
+			),
+		)
 	}
 
 	var updateFunctions []func() (*cmacme.Challenge, error)
@@ -106,27 +119,27 @@ func (o *objectUpdater) updateObject(ctx context.Context, old, new *cmacme.Chall
 	return utilerrors.NewAggregate(errors)
 }
 
-type objectUpdaterDefault struct {
+type objectUpdateClientDefault struct {
 	cl versioned.Interface
 }
 
-func (o *objectUpdaterDefault) update(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientDefault) update(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
 	return o.cl.AcmeV1().Challenges(new.Namespace).Update(ctx, new, metav1.UpdateOptions{})
 }
 
-func (o *objectUpdaterDefault) updateStatus(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientDefault) updateStatus(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
 	return o.cl.AcmeV1().Challenges(new.Namespace).UpdateStatus(ctx, new, metav1.UpdateOptions{})
 }
 
-type objectUpdaterSSA struct {
+type objectUpdateClientSSA struct {
 	cl           versioned.Interface
 	fieldManager string
 }
 
-func (o *objectUpdaterSSA) update(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientSSA) update(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
 	return internalchallenges.Apply(ctx, o.cl, o.fieldManager, new)
 }
 
-func (o *objectUpdaterSSA) updateStatus(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
 	return internalchallenges.ApplyStatus(ctx, o.cl, o.fieldManager, new)
 }
