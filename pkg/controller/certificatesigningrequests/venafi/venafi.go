@@ -81,6 +81,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		recorder:      ctx.Recorder,
 		clientBuilder: venaficlient.New,
 		fieldManager:  ctx.FieldManager,
+		metrics:       ctx.Metrics,
 	}
 }
 
