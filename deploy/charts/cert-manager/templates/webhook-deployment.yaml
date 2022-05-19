@@ -80,6 +80,9 @@ spec:
           {{- with .Values.webhook.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
+          { { - if .Values.featureGates } }
+          - --feature-gates={{ .Values.featureGates }}
+          { { - end } }
           ports:
           - name: https
             protocol: TCP
