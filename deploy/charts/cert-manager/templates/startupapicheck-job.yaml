@@ -3,7 +3,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "startupapicheck.fullname" . }}
-  namespace: {{ .Release.Namespace | quote }}
+  namespace: {{ include "cert-manager.namespace" . }}
   labels:
     app: {{ include "startupapicheck.name" . }}
     app.kubernetes.io/name: {{ include "startupapicheck.name" . }}

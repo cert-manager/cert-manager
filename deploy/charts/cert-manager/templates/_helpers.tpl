@@ -58,7 +58,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{- define "webhook.caRef" -}}
-{{ .Release.Namespace }}/{{ template "webhook.fullname" . }}-ca
+{{- template "cert-manager.namespace" }}/{{ template "webhook.fullname" . }}-ca
 {{- end -}}
 
 {{/*
@@ -156,4 +156,13 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ include "chartName" . }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Namespace for all resources to be installed into
+If not defined in values file then the helm release namespace is used
+By default this is not set so the helm release namespace will be used
+*/}}
+{{- define "cert-manager.namespace" -}}
+    {{ .Values.namespace | default .Release.Namespace }}
 {{- end -}}
