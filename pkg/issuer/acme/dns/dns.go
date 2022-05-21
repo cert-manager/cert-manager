@@ -39,6 +39,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/ovh"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -63,6 +64,7 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	OVH          func(endpoint, applicationKey, applicationSecret, consumerKey string, dns01Nameservers []string) (*ovh.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -371,6 +373,42 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		if err != nil {
 			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
+	case providerConfig.OVH != nil:
+		dbg.Info("preparing to create OVH provider")
+		applicationSecret := ""
+		if providerConfig.OVH.ApplicationSecret.Name != "" {
+			secret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OVH.ApplicationSecret.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting ovh secret applicationSecret: %s", err)
+			}
+			secretBytes, ok := secret.Data[providerConfig.OVH.ApplicationSecret.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("error getting ovh secret applicationSecret: key '%s' not found in secret", providerConfig.OVH.ApplicationSecret.Key)
+			}
+			applicationSecret = string(secretBytes)
+		}
+		consumerKey := ""
+		if providerConfig.OVH.ConsumerKey.Name != "" {
+			secret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OVH.ConsumerKey.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting ovh secret consumerKey: %s", err)
+			}
+			secretBytes, ok := secret.Data[providerConfig.OVH.ConsumerKey.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("error getting ovh secret consumerKey: key '%s' not found in secret", providerConfig.OVH.ConsumerKey.Key)
+			}
+			consumerKey = string(secretBytes)
+		}
+		impl, err = s.dnsProviderConstructors.OVH(
+			strings.TrimSpace(providerConfig.OVH.Endpoint),
+			strings.TrimSpace(providerConfig.OVH.ApplicationKey),
+			strings.TrimSpace(applicationSecret),
+			strings.TrimSpace(consumerKey),
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, providerConfig, fmt.Errorf("error instantiating ovh challenge solver: %s", err)
+		}
 	default:
 		return nil, providerConfig, fmt.Errorf("no dns provider config specified for challenge")
 	}
@@ -480,6 +518,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
+			ovh.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
 	}, nil

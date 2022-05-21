@@ -24,6 +24,7 @@ require (
 	github.com/munnerz/crd-schema-fuzz v1.0.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
+	github.com/ovh/go-ovh v1.1.0
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0

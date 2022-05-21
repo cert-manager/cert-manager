@@ -458,6 +458,24 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			}
 		}
 	}
+	if p.OVH != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("ovh"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+
+			if len(p.OVH.Endpoint) == 0 {
+				el = append(el, field.Required(fldPath.Child("ovh", "endpoint"), ""))
+			}
+			if len(p.OVH.ApplicationKey) == 0 {
+				el = append(el, field.Required(fldPath.Child("ovh", "applicationKey"), ""))
+			}
+
+			el = append(el, ValidateSecretKeySelector(&p.OVH.ConsumerKey, fldPath.Child("ovh", "consumerKeySecretRef"))...)
+			el = append(el, ValidateSecretKeySelector(&p.OVH.ApplicationSecret, fldPath.Child("ovh", "applicationSecretSecretRef"))...)
+		}
+	}
+
 	if p.Webhook != nil {
 		if numProviders > 0 {
 			el = append(el, field.Forbidden(fldPath.Child("webhook"), "may not specify more than one provider type"))

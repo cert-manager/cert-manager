@@ -3117,6 +3117,14 @@ def go_repositories():
         sum = "h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=",
         version = "v1.1.0",
     )
+    go_repository(
+        name = "com_github_ovh_go_ovh",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/ovh/go-ovh",
+        sum = "h1:bHXZmw8nTgZin4Nv7JuaLs0KG5x54EQR7migYTd1zrk=",
+        version = "v1.1.0",
+    )
 
     go_repository(
         name = "com_github_pascaldekloe_goe",

@@ -43,8 +43,8 @@ const (
 
 	ErrorLevel        = 0
 	WarnLevel         = 1
-	InfoLevel         = 2
 	ExtendedInfoLevel = 3
+	InfoLevel         = 2
 	DebugLevel        = 4
 	TraceLevel        = 5
 )
