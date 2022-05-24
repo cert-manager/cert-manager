@@ -20,6 +20,7 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
+source "${SCRIPT_ROOT}/../../lib/export_kube_vars.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Installs an instance of ingress-nginx using the 'stable' Helm chart.
@@ -91,7 +92,7 @@ helm upgrade \
     --set controller.image.digest="" \
     --set controller.image.tag="${IMAGE_TAG}" \
     --set controller.image.pullPolicy=Never \
-    --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
+    --set "controller.service.clusterIP=${INGRESS_IP}"\
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
     --set admissionWebhooks.enabled=false \

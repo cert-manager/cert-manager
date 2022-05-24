@@ -25,6 +25,7 @@ set -o pipefail
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
+source "${SCRIPT_ROOT}/lib/export_kube_vars.sh"
 
 GINKGO_SKIP=${GINKGO_SKIP:-}
 GINKGO_FOCUS=${GINKGO_FOCUS:-}
@@ -70,6 +71,7 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--repo-root="${REPO_ROOT}" \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
+	--acme-gateway-ip="$GATEWAY_IP" \
 	--acme-ingress-ip="$INGRESS_IP" \
 	--feature-gates="${FEATURE_GATES}" \
 	${GINKGO_SKIP:+"$GINKGO_SKIP"} \

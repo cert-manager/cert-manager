@@ -22,6 +22,7 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
+source "${SCRIPT_ROOT}/../../lib/export_kube_vars.sh"
 
 check_tool helm
 check_tool kubectl
@@ -56,7 +57,7 @@ helm upgrade \
   --set "controller.extraArgs.watch-gateway=true" \
   --set "controller.extraArgs.configmap=${NAMESPACE}/${CONFIG_MAP}" \
   --set "controller.service.type=ClusterIP" \
-  --set "controller.service.clusterIP=10.0.0.14" \
+  --set "controller.service.clusterIP=${GATEWAY_IP}" \
   haproxy-ingress haproxy-ingress/haproxy-ingress
 
 cat <<EOYAML | kubectl apply -f -
