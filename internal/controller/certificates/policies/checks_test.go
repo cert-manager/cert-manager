@@ -27,12 +27,14 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	"github.com/stretchr/testify/assert"
 )
 
 // Runs a full set of tests against the trigger 'policy chain' once it is
@@ -2027,9 +2029,20 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 		gen.SetCertificateUID(types.UID("uid-123")),
 	)
 
+	crtWithCleanupPolicyOnDelete := gen.Certificate("test-certificate",
+		gen.SetCertificateUID(types.UID("uid-123")),
+		gen.SetCertificateCleanupPolicy(certmanager.CleanupPolicyOnDelete),
+	)
+
+	crtWithCleanupPolicyNever := gen.Certificate("test-certificate",
+		gen.SetCertificateUID(types.UID("uid-123")),
+		gen.SetCertificateCleanupPolicy(certmanager.CleanupPolicyNever),
+	)
+
 	tests := map[string]struct {
-		input           Input
-		ownerRefEnabled bool
+		input                      Input
+		ownerRefEnabled            bool
+		defaultSecretCleanupPolicy certmanager.CleanupPolicy
 
 		expReason    string
 		expMessage   string
@@ -2266,11 +2279,181 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
 			expViolation:    true,
 		},
+
+		"ownerReferenceEnabled=false no secret owner reference cleanup policy set to OnDelete should return true": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyOnDelete,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: false,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=false certificate cleanupPolicy=OnDelete",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true no secret owner reference cleanup policy set to OnDelete should return true": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyOnDelete,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true certificate cleanupPolicy=OnDelete",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=false secret has owner reference for certificate with correct value cleanup policy set to OnDelete should return false": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyOnDelete,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with correct value cleanup policy set to OnDelete should return false": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyOnDelete,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret has owner reference for certificate with incorrect value cleanup policy set to OnDelete should return true": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyOnDelete,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-1234"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=false certificate cleanupPolicy=OnDelete",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with incorrect value cleanup policy set to OnDelete should return true": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyOnDelete,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+
+		"ownerReferenceEnabled=false no secret owner reference cleanup policy set to Never should return false": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyNever,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=true no secret owner reference cleanup policy set to Never should return false": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyNever,
+				Secret:      &corev1.Secret{},
+			},
+			ownerRefEnabled: true,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=false secret has owner reference for certificate with correct value cleanup policy set to Never should return true": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyNever,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=false certificate cleanupPolicy=Never",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with correct value cleanup policy set to Never should return true": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyNever,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "SecretOwnerRefMismatch",
+			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true certificate cleanupPolicy=Never",
+			expViolation:    true,
+		},
+		"ownerReferenceEnabled=false secret has owner reference for certificate with incorrect value cleanup policy set to Never should return false": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyNever,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-1234"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: false,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
+		"ownerReferenceEnabled=true secret has owner reference for certificate with incorrect value cleanup policy set to Never should return false": {
+			input: Input{
+				Certificate: crtWithCleanupPolicyNever,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						OwnerReferences: []metav1.OwnerReference{
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-1234"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+						},
+					},
+				},
+			},
+			ownerRefEnabled: true,
+			expReason:       "",
+			expMessage:      "",
+			expViolation:    false,
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.ownerRefEnabled)(test.input)
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.ownerRefEnabled, test.defaultSecretCleanupPolicy)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)

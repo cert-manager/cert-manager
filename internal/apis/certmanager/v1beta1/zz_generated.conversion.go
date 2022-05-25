@@ -843,6 +843,7 @@ func autoConvert_v1beta1_CertificateSpec_To_certmanager_CertificateSpec(in *Cert
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]certmanager.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
+	out.CleanupPolicy = certmanager.CleanupPolicy(in.CleanupPolicy)
 	return nil
 }
 
@@ -881,6 +882,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1beta1_CertificateSpec(in *cert
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
+	out.CleanupPolicy = certmanager.CleanupPolicy(in.CleanupPolicy)
 	return nil
 }
 

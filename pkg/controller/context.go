@@ -45,6 +45,7 @@ import (
 	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
@@ -220,6 +221,9 @@ type CertificateOptions struct {
 	// EnableOwnerRef controls whether the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
+	// defaultSecretCleanupPolicy controls whether the certificate is configured as an owner of
+	// secret where the effective TLS certificate is stored.
+	DefaultSecretCleanupPolicy certmanager.CleanupPolicy
 	// CopiedAnnotationPrefixes defines which annotations should be copied
 	// Certificate -> CertificateRequest, CertificateRequest -> Order.
 	CopiedAnnotationPrefixes []string

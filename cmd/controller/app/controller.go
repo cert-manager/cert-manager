@@ -37,6 +37,7 @@ import (
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -319,8 +320,9 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
-			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
+			EnableOwnerRef:             opts.EnableCertificateOwnerRef,
+			DefaultSecretCleanupPolicy: certmanager.CleanupPolicy(opts.DefaultSecretCleanupPolicy),
+			CopiedAnnotationPrefixes:   opts.CopiedAnnotationPrefixes,
 		},
 	})
 	if err != nil {

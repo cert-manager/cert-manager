@@ -128,6 +128,7 @@ func NewController(
 	secretsManager := internal.NewSecretsManager(
 		ctx.Client.CoreV1(), secretsInformer.Lister(),
 		ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
+		ctx.DefaultSecretCleanupPolicy,
 	)
 
 	return &controller{
@@ -141,6 +142,7 @@ func NewController(
 		postIssuancePolicyChain: policies.NewSecretPostIssuancePolicyChain(
 			ctx.CertificateOptions.EnableOwnerRef,
 			ctx.FieldManager,
+			ctx.DefaultSecretCleanupPolicy,
 		),
 		fieldManager:         ctx.FieldManager,
 		localTemporarySigner: pki.GenerateLocallySignedTemporaryCertificate,

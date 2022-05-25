@@ -19,6 +19,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -263,6 +264,16 @@ type CertificateSpec struct {
 	// the controller and webhook components.
 	// +optional
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
+
+	// CleanupPolicy is when this field is set to `OnDelete`, the owner reference
+	// is always created on the Secret resource and the secret will be
+	// automatically removed when the certificate resource is deleted.
+	// When this field is set to `Never`, the owner reference is never created
+	// on the Secret resource and the secret will not be automatically removed
+	// when the certificate resource is deleted.
+	// If the value of this field is unset this field "inherits" the value of
+	// the flag `--default-secret-cleanup-policy`.
+	CleanupPolicy certmanager.CleanupPolicy `json:"cleanupPolicy,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys

@@ -28,6 +28,7 @@ import (
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -54,7 +55,16 @@ type SecretsManager struct {
 	// 'owner reference' set, meaning when the Certificate is deleted, the
 	// Secret resource will be automatically deleted.
 	// This option is disabled by default.
+	// This option is deprecated.
 	enableSecretOwnerReferences bool
+
+	// When this field is set to `OnDelete`, the owner reference is always
+	// created on the Secret resource  and the secret will be automatically
+	// removed when the certificate resource is deleted.
+	// When this field is set to `Never`, the owner reference is never created
+	// on the Secret resource and the secret will not be automatically removed
+	// when the certificate resource is deleted.
+	defaultSecretCleanupPolicy certmanager.CleanupPolicy
 }
 
 // SecretData is a structure wrapping private key, Certificate and CA data
@@ -72,12 +82,14 @@ func NewSecretsManager(
 	secretLister internalinformers.SecretLister,
 	fieldManager string,
 	enableSecretOwnerReferences bool,
+	defaultSecretCleanupPolicy certmanager.CleanupPolicy,
 ) *SecretsManager {
 	return &SecretsManager{
 		secretClient:                secretClient,
 		secretLister:                secretLister,
 		fieldManager:                fieldManager,
 		enableSecretOwnerReferences: enableSecretOwnerReferences,
+		defaultSecretCleanupPolicy:  defaultSecretCleanupPolicy,
 	}
 }
 
@@ -104,10 +116,22 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
 		WithData(secret.Data).WithType(secret.Type)
 
+	cleanupPolicy := s.defaultSecretCleanupPolicy
+
+	if s.enableSecretOwnerReferences {
+		cleanupPolicy = certmanager.CleanupPolicyOnDelete
+	}
+
+	// Check the cleanupPolicy field of the certificate, and if it is not empty,
+	// override with the cleanupPolicy value.
+	if crt.Spec.CleanupPolicy != "" {
+		cleanupPolicy = crt.Spec.CleanupPolicy
+	}
+
 	// If Secret owner reference is enabled, set it on the Secret. This results
 	// in a no-op if the Secret already exists and has the owner reference set,
 	// and visa-versa.
-	if s.enableSecretOwnerReferences {
+	if cleanupPolicy == certmanager.CleanupPolicyOnDelete {
 		ref := *metav1.NewControllerRef(crt, certificateGvk)
 		applyCnf = applyCnf.WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
 			APIVersion: &ref.APIVersion, Kind: &ref.Kind,

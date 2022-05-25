@@ -236,6 +236,16 @@ type CertificateSpec struct {
 	// `--feature-gates=AdditionalCertificateOutputFormats=true` option set on both
 	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
+
+	// CleanupPolicy is when this field is set to `OnDelete`, the owner reference
+	// is always created on the Secret resource and the secret will be
+	// automatically removed when the certificate resource is deleted.
+	// When this field is set to `Never`, the owner reference is never created
+	// on the Secret resource and the secret will not be automatically removed
+	// when the certificate resource is deleted.
+	// If the value of this field is unset this field "inherits" the value of
+	// the flag `--default-secret-cleanup-policy`.
+	CleanupPolicy CleanupPolicy `json:"cleanupPolicy,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys

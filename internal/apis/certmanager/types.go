@@ -212,3 +212,11 @@ const (
 	UsageMicrosoftSGC      KeyUsage = "microsoft sgc"
 	UsageNetscapeSGC       KeyUsage = "netscape sgc"
 )
+
+// +kubebuilder:validation:Enum=Never;OnDelete
+type CleanupPolicy string
+
+const (
+	CleanupPolicyNever    CleanupPolicy = "Never"
+	CleanupPolicyOnDelete CleanupPolicy = "OnDelete"
+)

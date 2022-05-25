@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -276,5 +277,11 @@ func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
 func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.CertificateAdditionalOutputFormat) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.AdditionalOutputFormats = additionalOutputFormats
+	}
+}
+
+func SetCertificateCleanupPolicy(cleanupPolicy certmanager.CleanupPolicy) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.CleanupPolicy = cleanupPolicy
 	}
 }

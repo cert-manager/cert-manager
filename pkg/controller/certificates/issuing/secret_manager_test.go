@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -62,6 +63,9 @@ func Test_ensureSecretData(t *testing.T) {
 
 		// enableOwnerRef is passed to the post issuance policy checks.
 		enableOwnerRef bool
+
+		// enableOwnerRef is passed to the post issuance policy checks.
+		defaultSecretCleanupPolicy certmanager.CleanupPolicy
 	}{
 		"if 'key' is empty, should do nothing and not error": {
 			expectedAction: false,
@@ -1178,7 +1182,7 @@ func Test_ensureSecretData(t *testing.T) {
 				actionCalled = true
 				return nil
 			}
-			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(test.enableOwnerRef, fieldManager)
+			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(test.enableOwnerRef, test.defaultSecretCleanupPolicy, fieldManager)
 
 			// Start the informers and begin processing updates.
 			builder.Start()

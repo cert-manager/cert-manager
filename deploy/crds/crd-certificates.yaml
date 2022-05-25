@@ -78,6 +78,12 @@ spec:
                         enum:
                           - DER
                           - CombinedPEM
+                cleanupPolicy:
+                  description: CleanupPolicy is when this field is set to `OnDelete`, the owner reference is always created on the Secret resource and the secret will be automatically removed when the certificate resource is deleted. When this field is set to `Never`, the owner reference is never created on the Secret resource and the secret will not be automatically removed when the certificate resource is deleted. If the value of this field is unset this field "inherits" the value of the flag `--default-secret-cleanup-policy`.
+                  type: string
+                  enum:
+                    - Never
+                    - OnDelete
                 commonName:
                   description: "Requested common name X509 certificate subject attribute. More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6 NOTE: TLS clients will ignore this value when any subject alternative name is set (see https://tools.ietf.org/html/rfc6125#section-6.4.4). \n Should have a length of 64 characters or fewer to avoid generating invalid CSRs. Cannot be set if the `literalSubject` field is set."
                   type: string
