@@ -18,7 +18,6 @@ package issuers
 
 import (
 	"context"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -42,7 +41,7 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.Issuer) (err error) {
 	log := logf.FromContext(ctx)
 
 	// allow a maximum of 10s
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	ctx, cancel := context.WithTimeout(ctx, c.issuerSetupTimeout)
 	defer cancel()
 
 	issuerCopy := iss.DeepCopy()

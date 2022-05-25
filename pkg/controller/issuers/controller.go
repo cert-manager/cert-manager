@@ -18,6 +18,7 @@ package issuers
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -57,6 +58,9 @@ type controller struct {
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
+
+	// IssuerSetupTimeout is the duration the controllers context is kept alive
+	issuerSetupTimeout time.Duration
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -92,6 +96,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.cmClient = ctx.CMClient
 	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
+	c.issuerSetupTimeout = ctx.IssuerOptions.IssuerSetupTimeout
 
 	return c.queue, mustSync, nil
 }

@@ -151,6 +151,9 @@ type IssuerOptions struct {
 	// IssuerAmbientCredentials controls whether an issuer should pick up ambient
 	// credentials, such as those from metadata services, to construct clients.
 	IssuerAmbientCredentials bool
+
+	// Can be changed if context timeouts occure due to slow responding ACME api.
+	IssuerSetupTimeout time.Duration
 }
 
 type ACMEOptions struct {
