@@ -19,7 +19,6 @@ package venafi
 import (
 	"context"
 	"fmt"
-
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -44,6 +43,11 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 	err = client.Ping()
 	if err != nil {
 		return fmt.Errorf("error pinging Venafi API: %v", err)
+	}
+
+	err = client.Authenticate()
+	if err != nil {
+		return fmt.Errorf("client.Authenticate: %v", err)
 	}
 
 	// If it does not already have a 'ready' condition, we'll also log an event
