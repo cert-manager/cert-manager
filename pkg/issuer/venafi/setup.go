@@ -48,6 +48,8 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 	err = client.Authenticate()
 	if err != nil {
 		return fmt.Errorf("client.Authenticate: %v", err)
+	} else {
+		v.log.V(0).Info("Authenticate worked")
 	}
 
 	// If it does not already have a 'ready' condition, we'll also log an event
