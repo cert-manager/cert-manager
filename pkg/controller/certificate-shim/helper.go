@@ -17,7 +17,6 @@ limitations under the License.
 package shimhelper
 
 import (
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"strconv"
@@ -30,6 +29,7 @@ import (
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 var (
@@ -75,7 +75,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	subject := &cmapi.X509Subject{}
 	if organizations, found := ingLikeAnnotations[cmapi.SubjectOrganizationsAnnotationKey]; found {
-		organizations, err := splitWithEscapeCSV(organizations)
+		organizations, err := util.SplitWithEscapeCSV(organizations)
 		subject.Organizations = organizations
 
 		if err != nil {
@@ -84,7 +84,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if organizationalUnits, found := ingLikeAnnotations[cmapi.SubjectOrganizationalUnitsAnnotationKey]; found {
-		organizationalUnits, err := splitWithEscapeCSV(organizationalUnits)
+		organizationalUnits, err := util.SplitWithEscapeCSV(organizationalUnits)
 		subject.OrganizationalUnits = organizationalUnits
 
 		if err != nil {
@@ -93,7 +93,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if countries, found := ingLikeAnnotations[cmapi.SubjectCountriesAnnotationKey]; found {
-		countries, err := splitWithEscapeCSV(countries)
+		countries, err := util.SplitWithEscapeCSV(countries)
 		subject.Countries = countries
 
 		if err != nil {
@@ -102,7 +102,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if provinces, found := ingLikeAnnotations[cmapi.SubjectProvincesAnnotationKey]; found {
-		provinces, err := splitWithEscapeCSV(provinces)
+		provinces, err := util.SplitWithEscapeCSV(provinces)
 		subject.Provinces = provinces
 
 		if err != nil {
@@ -111,7 +111,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if localities, found := ingLikeAnnotations[cmapi.SubjectLocalitiesAnnotationKey]; found {
-		localities, err := splitWithEscapeCSV(localities)
+		localities, err := util.SplitWithEscapeCSV(localities)
 		subject.Localities = localities
 
 		if err != nil {
@@ -120,7 +120,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if postalCodes, found := ingLikeAnnotations[cmapi.SubjectPostalCodesAnnotationKey]; found {
-		postalCodes, err := splitWithEscapeCSV(postalCodes)
+		postalCodes, err := util.SplitWithEscapeCSV(postalCodes)
 		subject.PostalCodes = postalCodes
 
 		if err != nil {
@@ -129,7 +129,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if streetAddresses, found := ingLikeAnnotations[cmapi.SubjectStreetAddressesAnnotationKey]; found {
-		streetAddresses, err := splitWithEscapeCSV(streetAddresses)
+		streetAddresses, err := util.SplitWithEscapeCSV(streetAddresses)
 		subject.StreetAddresses = streetAddresses
 
 		if err != nil {
@@ -269,27 +269,4 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	return nil
-}
-
-// splitWithEscapeCSV parses the given input as a single line of CSV, which allows
-// a comma-separated list of strings to be parsed while allowing commas to be present
-// in each field. For example, a user can specify:
-// "10 Downing Street, Westminster",Manchester
-// to produce []string{"10 Downing Street, Westminster", "Manchester"}, keeping the comma
-// in the first address. Empty lines or multiple CSV records are both rejected.
-func splitWithEscapeCSV(in string) ([]string, error) {
-	reader := csv.NewReader(strings.NewReader(in))
-
-	records, err := reader.ReadAll()
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse %q as CSV: %w", in, err)
-	}
-
-	if len(records) == 0 {
-		return nil, fmt.Errorf("no values found after parsing %q", in)
-	} else if len(records) > 1 {
-		return nil, fmt.Errorf("refusing to use %q as input as it parses as multiple lines of CSV", in)
-	}
-
-	return records[0], nil
 }

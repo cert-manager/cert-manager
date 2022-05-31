@@ -1473,7 +1473,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
 						cmapi.CommonNameAnnotationKey:               "my-cn",
-						"cert-manager.io/subject-streetaddresses":   "\"1725 Slough Avenue, Suite 200, Scranton Business Park\"",
+						cmapi.SubjectStreetAddressesAnnotationKey:   `"1725 Slough Avenue, Suite 200, Scranton Business Park"`,
 					},
 					UID: types.UID("ingress-name"),
 				},
