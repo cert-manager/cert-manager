@@ -6,7 +6,7 @@ appVersion: v0.1.0
 kubeVersion: ">= 1.19.0-0"
 description: A Helm chart for cert-manager
 home: https://github.com/cert-manager/cert-manager
-icon: https://raw.githubusercontent.com/cert-manager/cert-manager/master/logo/logo.png
+icon: https://raw.githubusercontent.com/cert-manager/cert-manager/d53c0b9270f8cd90d908460d69502694e1838f5f/logo/logo-small.png
 keywords:
   - cert-manager
   - kube-lego
@@ -17,5 +17,6 @@ sources:
 maintainers:
   - name: cert-manager-maintainers
     email: cert-manager-maintainers@googlegroups.com
+    url: https://cert-manager.io
 annotations:
   artifacthub.io/prerelease: "{{IS_PRERELEASE}}"
