@@ -1,6 +1,8 @@
+<!--
 This template is adapted from Kubernetes Enchancements KEP template https://raw.githubusercontent.com/kubernetes/enhancements/a86942e8ba802d0035ec7d4a9c992f03bca7dce9/keps/NNNN-kep-template/README.md
+-->
 
-# Title
+# CHANGEME: Title
 
 
 <!-- toc -->
@@ -27,7 +29,7 @@ This template is adapted from Kubernetes Enchancements KEP template https://raw.
 
 ## Release Signoff Checklist
 
-These checklist contains actions that must be completed before the PR with the feature described in this design can be merged.
+This checklist contains actions which must be completed before a PR implementing this design can be merged.
 
 
 - [ ] This design doc has been discussed and approved
@@ -43,7 +45,7 @@ These checklist contains actions that must be completed before the PR with the f
 This section is important for producing high-quality, user-focused
 documentation such as release notes.
 
-A good summary is probably at least a paragraph in length.
+A good summary is probably around a paragraph in length.
 
 [documentation style guide]: https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md
 -->
@@ -184,7 +186,7 @@ This section should confirm that the feature can be safely operated in productio
 -->
 
 
-###### How can this feature be enabled / disabled for an existing cert-manager installation?
+### How can this feature be enabled / disabled for an existing cert-manager installation?
 
 <!--
 
@@ -197,21 +199,25 @@ Do the test cases cover both the feature being enabled and it being disabled (wh
 
 -->
 
-###### Does this feature depend on any specific services running in the cluster?
+### Does this feature depend on any specific services running in the cluster?
 
 <!--
 For example, are external dependencies such as ingress controllers, third party CRDs etc required for this feature to function?
 -->
 
-###### Will enabling / using this feature result in new API calls (i.e to Kubernetes apiserver or external services)?
+### Will enabling / using this feature result in new API calls (i.e to Kubernetes apiserver or external services)?
 <!--
 We should ensure that cert-manager does not hammer any external services with excessive calls.
 Consider whether there will be sufficient backoff if any external calls fail and need to be retried.
 -->
 
-###### Will enabling / using this feature result in increasing size or count of the existing API objects?
+### Will enabling / using this feature result in increasing size or count of the existing API objects?
 
-###### Will enabling / using this feature result in significant increase of resource usage? (CPU, RAM...)
+<!--
+For example, will cert-manager `CustomResourceDefinition`s increase in size, will there be more `Secret`s or `CertificateRequest`s created?
+-->
+
+### Will enabling / using this feature result in significant increase of resource usage? (CPU, RAM...)
 
 <!--
 For example, will implementing this feature result in more objects being cache thus increasing memory consumption?
