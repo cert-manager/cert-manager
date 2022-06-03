@@ -30,6 +30,7 @@ type Connector struct {
 	RetrieveCertificateFunc   func(*certificate.Request) (*certificate.PEMCollection, error)
 	RequestCertificateFunc    func(*certificate.Request) (string, error)
 	RenewCertificateFunc      func(*certificate.RenewalRequest) (string, error)
+	VerifyAccessTokenFunc     func() error
 }
 
 func (f Connector) Default() *Connector {
@@ -72,4 +73,13 @@ func (f *Connector) RenewCertificate(req *certificate.RenewalRequest) (requestID
 		return f.RenewCertificateFunc(req)
 	}
 	return f.Connector.RenewCertificate(req)
+}
+
+// VerifyAccessToken will return VerifyAccessTokenFunc if set, otherwise nil.
+func (f *Connector) VerifyAccessToken() error {
+	if f.VerifyAccessTokenFunc != nil {
+		return f.VerifyAccessTokenFunc()
+	}
+
+	return nil
 }

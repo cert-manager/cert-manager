@@ -35,7 +35,7 @@ type instrumentedConnector struct {
 
 var _ connector = instrumentedConnector{}
 
-func newInstumentedConnector(conn connector, metrics *metrics.Metrics, log logr.Logger) connector {
+func newInstumentedConnector(conn connector, metrics *metrics.Metrics, log logr.Logger) instrumentedConnector {
 	return instrumentedConnector{
 		conn:    conn,
 		metrics: metrics,
@@ -86,4 +86,10 @@ func (ic instrumentedConnector) RenewCertificate(req *certificate.RenewalRequest
 	labels := []string{"renew_certificate"}
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return reqID, err
+}
+
+func (ic instrumentedConnector) Authenticate(auth *endpoint.Authentication) error {
+	//return nil
+	ic.logger.V(logf.WarnLevel).Info("calling Authenticate")
+	return ic.conn.Authenticate(auth)
 }

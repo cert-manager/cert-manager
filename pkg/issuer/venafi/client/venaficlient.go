@@ -17,7 +17,10 @@ limitations under the License.
 package client
 
 import (
+	"crypto/tls"
 	"fmt"
+	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
+	"net/http"
 	"time"
 
 	vcert "github.com/Venafi/vcert/v4"
@@ -49,6 +52,8 @@ type Interface interface {
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
+	//Authenticate() error
+	VerifyAccessToken() error
 }
 
 // Venafi is a implementation of vcert library to manager certificates from TPP or Venafi Cloud
@@ -60,6 +65,8 @@ type Venafi struct {
 	secretsLister corelisters.SecretLister
 
 	vcertClient connector
+	tppClient   *tpp.Connector
+	config      *vcert.Config
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -71,6 +78,7 @@ type connector interface {
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
 	// TODO: (irbekrm) this method is never used- can it be removed?
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
+	Authenticate(auth *endpoint.Authentication) error
 }
 
 // New constructs a Venafi client Interface. Errors may be network errors and
@@ -86,12 +94,24 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
+	logger.V(0).Info(fmt.Sprintf("type is: %v", vcertClient.GetType()))
+
+	var tppc *tpp.Connector
+	if vcertClient.GetType() == endpoint.ConnectorTypeTPP {
+		c, ok := vcertClient.(*tpp.Connector)
+		if ok {
+			tppc = c
+		}
+
+	}
 	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
 
 	return &Venafi{
 		namespace:     namespace,
 		secretsLister: secretsLister,
 		vcertClient:   instrumentedVCertClient,
+		tppClient:     tppc,
+		config:        cfg,
 	}, nil
 }
 
@@ -123,6 +143,14 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 				User:        username,
 				Password:    password,
 				AccessToken: accessToken,
+			},
+			// this is needed for local development when tunneling to the TPP server
+			Client: &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						Renegotiation: tls.RenegotiateOnceAsClient,
+					},
+				},
 			},
 		}, nil
 	case venCfg.Cloud != nil:
@@ -163,5 +191,36 @@ func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 }
 
 func (v *Venafi) SetClient(client endpoint.Connector) {
-	v.vcertClient = client
+	epc, ok := client.(endpoint.Connector)
+	if !ok {
+		return
+	}
+	v.vcertClient = epc
+}
+
+func (v *Venafi) Authenticate() error {
+	return v.vcertClient.Authenticate(&endpoint.Authentication{
+		AccessToken: tppAccessTokenKey,
+	})
+}
+
+// VerifyAccessToken will remotely verify the access token with a TPP server.
+func (v *Venafi) VerifyAccessToken() error {
+	if v.tppClient == nil {
+		return fmt.Errorf("tppClient not set")
+	}
+
+	_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
+		AccessToken: v.config.Credentials.AccessToken,
+	})
+
+	if err != nil {
+		return fmt.Errorf("tppClient.VerifyAccessToken: %v", err)
+	}
+
+	return nil
+}
+
+func (v *Venafi) GetConnector() connector {
+	return v.vcertClient
 }
