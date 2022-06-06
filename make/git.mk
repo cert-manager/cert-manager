@@ -40,7 +40,5 @@ $(BINDIR)/scratch/git/upstream-tags.txt: | $(BINDIR)/scratch/git
 $(BINDIR)/release-version: FORCE | $(BINDIR)
 	@test "$(RELEASE_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $(RELEASE_VERSION) > $@
 
-FORCE:
-
 $(BINDIR)/scratch/git:
 	@mkdir -p $@

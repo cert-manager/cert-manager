@@ -73,3 +73,7 @@ clean:
 .PHONY: clean-all
 clean-all: clean
 	rm -rf $(BINDIR)/
+
+# FORCE is a helper target to force a file to be rebuilt whenever its
+# target is invoked.
+FORCE:
