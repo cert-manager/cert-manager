@@ -220,6 +220,7 @@ func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {
 				templ.NotBefore = time.Time{}
 				templ.SerialNumber = nil
 				templ.Subject.Names = nil
+				templ.RawSubject = nil
 
 				assert.Equal(t, test.expCertificate, templ)
 			}

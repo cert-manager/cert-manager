@@ -157,4 +157,9 @@ const (
 	// LongDomainFeatureSet denotes whether the target issuer is able to sign
 	// a certificate that defines a domain containing a label of 63 characters.
 	LongDomainFeatureSet Feature = "LongDomain"
+
+	// LiteralSubjectFeature denotes whether the target issuer is able to sign
+	// a certificate containing an arbitrary Subject in the CSR, without
+	// imposing requirements on form or structure.
+	LiteralSubjectFeature Feature = "LiteralCertificateSubject"
 )

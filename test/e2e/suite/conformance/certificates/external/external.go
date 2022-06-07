@@ -45,6 +45,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.SaveCAToSecret,
 		featureset.Ed25519FeatureSet,
 		featureset.IssueCAFeature,
+		featureset.LiteralSubjectFeature,
 	)
 
 	issuerBuilder := newIssuerBuilder("Issuer")

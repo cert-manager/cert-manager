@@ -21,6 +21,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+
 	"fmt"
 	"reflect"
 	"time"
@@ -122,57 +125,77 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	}
 
 	var violations []string
-	if x509req.Subject.CommonName != spec.CommonName {
-		violations = append(violations, "spec.commonName")
-	}
-	if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
-		violations = append(violations, "spec.dnsNames")
-	}
-	if !util.EqualUnsorted(pki.IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
-		violations = append(violations, "spec.ipAddresses")
-	}
-	if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URIs) {
-		violations = append(violations, "spec.uris")
-	}
-	if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
-		violations = append(violations, "spec.emailAddresses")
-	}
-	if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
-		violations = append(violations, "spec.subject.serialNumber")
-	}
-	if !util.EqualUnsorted(x509req.Subject.Organization, spec.Subject.Organizations) {
-		violations = append(violations, "spec.subject.organizations")
-	}
-	if !util.EqualUnsorted(x509req.Subject.Country, spec.Subject.Countries) {
-		violations = append(violations, "spec.subject.countries")
-	}
-	if !util.EqualUnsorted(x509req.Subject.Locality, spec.Subject.Localities) {
-		violations = append(violations, "spec.subject.localities")
-	}
-	if !util.EqualUnsorted(x509req.Subject.OrganizationalUnit, spec.Subject.OrganizationalUnits) {
-		violations = append(violations, "spec.subject.organizationalUnits")
-	}
-	if !util.EqualUnsorted(x509req.Subject.PostalCode, spec.Subject.PostalCodes) {
-		violations = append(violations, "spec.subject.postCodes")
-	}
-	if !util.EqualUnsorted(x509req.Subject.Province, spec.Subject.Provinces) {
-		violations = append(violations, "spec.subject.postCodes")
-	}
-	if !util.EqualUnsorted(x509req.Subject.StreetAddress, spec.Subject.StreetAddresses) {
-		violations = append(violations, "spec.subject.streetAddresses")
-	}
-	if req.Spec.IsCA != spec.IsCA {
-		violations = append(violations, "spec.isCA")
-	}
-	if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
-		violations = append(violations, "spec.usages")
-	}
-	if spec.Duration != nil && req.Spec.Duration != nil &&
-		spec.Duration.Duration != req.Spec.Duration.Duration {
-		violations = append(violations, "spec.duration")
-	}
-	if !reflect.DeepEqual(spec.IssuerRef, req.Spec.IssuerRef) {
-		violations = append(violations, "spec.issuerRef")
+	if spec.LiteralSubject == "" {
+		if x509req.Subject.CommonName != spec.CommonName {
+			violations = append(violations, "spec.commonName")
+		}
+		if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
+			violations = append(violations, "spec.dnsNames")
+		}
+		if !util.EqualUnsorted(pki.IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
+			violations = append(violations, "spec.ipAddresses")
+		}
+		if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URIs) {
+			violations = append(violations, "spec.uris")
+		}
+		if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
+			violations = append(violations, "spec.emailAddresses")
+		}
+		if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
+			violations = append(violations, "spec.subject.serialNumber")
+		}
+		if !util.EqualUnsorted(x509req.Subject.Organization, spec.Subject.Organizations) {
+			violations = append(violations, "spec.subject.organizations")
+		}
+		if !util.EqualUnsorted(x509req.Subject.Country, spec.Subject.Countries) {
+			violations = append(violations, "spec.subject.countries")
+		}
+		if !util.EqualUnsorted(x509req.Subject.Locality, spec.Subject.Localities) {
+			violations = append(violations, "spec.subject.localities")
+		}
+		if !util.EqualUnsorted(x509req.Subject.OrganizationalUnit, spec.Subject.OrganizationalUnits) {
+			violations = append(violations, "spec.subject.organizationalUnits")
+		}
+		if !util.EqualUnsorted(x509req.Subject.PostalCode, spec.Subject.PostalCodes) {
+			violations = append(violations, "spec.subject.postCodes")
+		}
+		if !util.EqualUnsorted(x509req.Subject.Province, spec.Subject.Provinces) {
+			violations = append(violations, "spec.subject.postCodes")
+		}
+		if !util.EqualUnsorted(x509req.Subject.StreetAddress, spec.Subject.StreetAddresses) {
+			violations = append(violations, "spec.subject.streetAddresses")
+		}
+		if req.Spec.IsCA != spec.IsCA {
+			violations = append(violations, "spec.isCA")
+		}
+		if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
+			violations = append(violations, "spec.usages")
+		}
+		if spec.Duration != nil && req.Spec.Duration != nil &&
+			spec.Duration.Duration != req.Spec.Duration.Duration {
+			violations = append(violations, "spec.duration")
+		}
+		if !reflect.DeepEqual(spec.IssuerRef, req.Spec.IssuerRef) {
+			violations = append(violations, "spec.issuerRef")
+		}
+	} else {
+		// we have a LiteralSubject
+		// parse the subject of the csr in the same way as we parse LiteralSubject and see whether the RDN Sequences match
+
+		var rdnSequenceFromCertificateRequest pkix.RDNSequence
+		_, err2 := asn1.Unmarshal(x509req.RawSubject, &rdnSequenceFromCertificateRequest)
+		if err2 != nil {
+			return nil, err2
+		}
+
+		rdnSequenceFromCertificate, err := pki.ParseSubjectStringToRdnSequence(spec.LiteralSubject)
+		if err != nil {
+			return nil, err
+		}
+
+		if !reflect.DeepEqual(rdnSequenceFromCertificate, rdnSequenceFromCertificateRequest) {
+			violations = append(violations, "spec.literalSubject")
+		}
 	}
 
 	return violations, nil

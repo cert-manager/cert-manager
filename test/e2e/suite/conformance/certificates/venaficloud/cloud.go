@@ -50,6 +50,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// Venafi seems to only support SSH Ed25519 keys
 		featureset.Ed25519FeatureSet,
 		featureset.IssueCAFeature,
+		featureset.LiteralSubjectFeature,
 	)
 
 	provisioner := new(venafiProvisioner)

@@ -51,6 +51,13 @@ const (
 	//
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
+
+	// Owner (responsible for graduating feature through to GA): @spockz , @irbekrm
+	// Alpha: v1.9
+	// LiteralCertificateSubject will enable providing a subject in the Certificate that will be used literally in the CertificateSigningRequest. The subject can be provided via `LiteralSubject` field on `Certificate`'s spec.
+	// This feature gate must be used together with LiteralCertificateSubject webhook feature gate.
+	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
+	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 )
 
 func init() {
@@ -66,4 +73,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
+	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 }

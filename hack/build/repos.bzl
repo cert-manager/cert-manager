@@ -257,6 +257,14 @@ def go_repositories():
         sum = "h1:TYi4+3m5t6K48TGI9AUdb+IzbnSxvnvUMfuitfgcfuo=",
         version = "v0.6.0",
     )
+    go_repository(
+        name = "com_github_azure_go_ntlmssp",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/Azure/go-ntlmssp",
+        sum = "h1:/IBSNwUN8+eKzUzbJPqhK839ygXJ82sde8x3ogr6R28=",
+        version = "v0.0.0-20200615164410-66371956d46c",
+    )
 
     go_repository(
         name = "com_github_benbjohnson_clock",
@@ -1292,8 +1300,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/go-asn1-ber/asn1-ber",
-        sum = "h1:gvPdv/Hr++TRFCl0UbPFHC54P9N9jgsRPnmnr419Uck=",
-        version = "v1.3.1",
+        sum = "h1:pDbRAunXzIUXfx4CB2QJFv5IuPiuoW+sWvr/Us009o8=",
+        version = "v1.5.1",
     )
 
     go_repository(
@@ -1355,8 +1363,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/go-ldap/ldap/v3",
-        sum = "h1:7WsKqasmPThNvdl0Q5GPpbTDD/ZD98CfuawrMIuh7qQ=",
-        version = "v3.1.10",
+        sum = "h1:zFZKcXKLqZpFMrMQGHeHWKXbDTdNCmhGY9AK41zPh+8=",
+        version = "v3.4.2",
     )
 
     go_repository(

@@ -795,6 +795,7 @@ func autoConvert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *Cer
 	} else {
 		out.Subject = nil
 	}
+	out.LiteralSubject = in.LiteralSubject
 	out.CommonName = in.CommonName
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
@@ -846,6 +847,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *cer
 	} else {
 		out.Subject = nil
 	}
+	out.LiteralSubject = in.LiteralSubject
 	out.CommonName = in.CommonName
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))

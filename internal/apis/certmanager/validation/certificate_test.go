@@ -898,3 +898,124 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateLiteralSubject(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	tests := map[string]struct {
+		featureEnabled bool
+		cfg            *internalcmapi.Certificate
+		a              *admissionv1.AdmissionRequest
+		errs           []*field.Error
+	}{
+		"featureGate should be enabled to use literalSubject": {
+			featureEnabled: false,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					LiteralSubject: "CN=testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"),
+			},
+			a: someAdmissionRequest,
+		},
+		"valid with only `literalSubject` and no `Subject`  or `CommonName` provided": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					LiteralSubject: "CN=testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"valid with only `literalSubject` and only a `Subject.SerialNumber` provided": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Subject:        &internalcmapi.X509Subject{SerialNumber: "1"},
+					LiteralSubject: "CN=testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"invalid with a `literalSubject` without CN and no dnsNames, ipAddresses, or emailAddress": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					LiteralSubject: "O=SomeCorp",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
+			},
+		},
+		"invalid with a `literalSubject` and any `Subject` other than serialNumber": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Subject:        &internalcmapi.X509Subject{Organizations: []string{"US"}},
+					LiteralSubject: "CN=testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("subject"),
+					&internalcmapi.X509Subject{Organizations: []string{"US"}}, "When providing a `LiteralSubject` no `Subject` properties may be provided with the exception of `Subject.serialNumber`"),
+			},
+		},
+		"invalid with a `literalSubject` and a `commonName`": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:     "testcn",
+					LiteralSubject: "CN=testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("commonName"),
+					"testcn", "When providing a `LiteralSubject` no `commonName` may be provided."),
+			},
+		},
+		"invalid with an unknown OID": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					LiteralSubject: "C=O,B=TX,CN=foo",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("literalSubject"),
+					"C=O,B=TX,CN=foo", "Literal subject contains unrecognized key with value [TX]"),
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)()
+			errs, warnings := ValidateCertificate(test.a, test.cfg)
+			assert.ElementsMatch(t, errs, test.errs)
+			assert.ElementsMatch(t, warnings, []string{})
+		})
+	}
+}

@@ -48,6 +48,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// Vault does not support signing using Ed25519
 		featureset.Ed25519FeatureSet,
 		featureset.IssueCAFeature,
+		featureset.LiteralSubjectFeature,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)
