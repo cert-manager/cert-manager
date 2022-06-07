@@ -19,11 +19,13 @@ package venafi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+
+	"github.com/go-logr/logr"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/go-logr/logr"
 
 	corelisters "k8s.io/client-go/listers/core/v1"
 
@@ -62,6 +64,28 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
+	verifyAccessTokenClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+		return &internalvenafifake.Venafi{
+			PingFn: func() error {
+				return nil
+			},
+			VerifyAccessTokenFn: func() error {
+				return nil
+			},
+		}, nil
+	}
+
+	failingVerifyAccessTokenClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+		return &internalvenafifake.Venafi{
+			PingFn: func() error {
+				return nil
+			},
+			VerifyAccessTokenFn: func() error {
+				return fmt.Errorf("401 Unauthorized")
+			},
+		}, nil
+	}
+
 	tests := map[string]testSetupT{
 		"if client builder fails then should error": {
 			clientBuilder: failingClientBuilder,
@@ -96,6 +120,31 @@ func TestSetup(t *testing.T) {
 			},
 			expectedEvents: []string{
 				"Normal Ready Verified issuer with Venafi server",
+			},
+		},
+
+		"verifyAccessToken happy path": {
+			clientBuilder: verifyAccessTokenClient,
+			iss:           baseIssuer.DeepCopy(),
+			expectedErr:   false,
+			expectedCondition: &cmapi.IssuerCondition{
+				Message: "Venafi issuer started",
+				Reason:  "Venafi issuer started",
+				Status:  "True",
+			},
+			expectedEvents: []string{
+				"Normal Ready Verified issuer with Venafi server",
+			},
+		},
+
+		"if verifyAccessToken returns an error we should set condition to False": {
+			clientBuilder: failingVerifyAccessTokenClient,
+			iss:           baseIssuer.DeepCopy(),
+			expectedErr:   true,
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  "ErrorSetup",
+				Message: "Failed to setup Venafi issuer: client.VerifyAccessToken: 401 Unauthorized",
+				Status:  "False",
 			},
 		},
 	}
