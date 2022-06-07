@@ -17,9 +17,7 @@ limitations under the License.
 package client
 
 import (
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
@@ -142,13 +140,13 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 				AccessToken: accessToken,
 			},
 			// this is needed for local development when tunneling to the TPP server
-			Client: &http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						Renegotiation: tls.RenegotiateOnceAsClient,
-					},
-				},
-			},
+			//Client: &http.Client{
+			//	Transport: &http.Transport{
+			//		TLSClientConfig: &tls.Config{
+			//			Renegotiation: tls.RenegotiateOnceAsClient,
+			//		},
+			//	},
+			//},
 		}, nil
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
