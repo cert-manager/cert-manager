@@ -19,9 +19,10 @@ package client
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
 	"net/http"
 	"time"
+
+	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
 
 	vcert "github.com/Venafi/vcert/v4"
 	"github.com/Venafi/vcert/v4/pkg/certificate"
@@ -210,7 +211,7 @@ func (v *Venafi) VerifyAccessToken() error {
 		return fmt.Errorf("tppClient not set")
 	}
 
-	if v.config.Credentials != nil {
+	if v.config.Credentials == nil {
 		return fmt.Errorf("config.Credentials not set")
 	}
 
