@@ -210,6 +210,10 @@ func (v *Venafi) VerifyAccessToken() error {
 		return fmt.Errorf("tppClient not set")
 	}
 
+	if v.config.Credentials != nil {
+		return fmt.Errorf("config.Credentials not set")
+	}
+
 	_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
 		AccessToken: v.config.Credentials.AccessToken,
 	})
