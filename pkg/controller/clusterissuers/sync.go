@@ -41,8 +41,8 @@ const (
 func (c *controller) Sync(ctx context.Context, iss *cmapi.ClusterIssuer) (err error) {
 	log := logf.FromContext(ctx)
 
-	// allow a maximum of 10s
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	// allow a maximum of 90s
+	ctx, cancel := context.WithTimeout(ctx, time.Second*90)
 	defer cancel()
 
 	issuerCopy := iss.DeepCopy()
