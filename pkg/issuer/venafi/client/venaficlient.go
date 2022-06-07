@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
-
-	vcert "github.com/Venafi/vcert/v4"
+	"github.com/Venafi/vcert/v4"
 	"github.com/Venafi/vcert/v4/pkg/certificate"
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
 	"github.com/go-logr/logr"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
