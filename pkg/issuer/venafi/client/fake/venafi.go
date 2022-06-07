@@ -58,8 +58,3 @@ func (v *Venafi) VerifyAccessToken() error {
 
 	return nil
 }
-
-//
-//func (v *Venafi) Authenticate() error {
-//	return nil
-//}

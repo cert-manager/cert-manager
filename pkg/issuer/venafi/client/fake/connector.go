@@ -74,12 +74,3 @@ func (f *Connector) RenewCertificate(req *certificate.RenewalRequest) (requestID
 	}
 	return f.Connector.RenewCertificate(req)
 }
-
-// VerifyAccessToken will return VerifyAccessTokenFunc if set, otherwise nil.
-func (f *Connector) VerifyAccessToken() error {
-	if f.VerifyAccessTokenFunc != nil {
-		return f.VerifyAccessTokenFunc()
-	}
-
-	return nil
-}

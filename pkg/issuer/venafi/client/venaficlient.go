@@ -53,7 +53,6 @@ type Interface interface {
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
-	//Authenticate() error
 	VerifyAccessToken() error
 }
 
@@ -79,7 +78,6 @@ type connector interface {
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
 	// TODO: (irbekrm) this method is never used- can it be removed?
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
-	Authenticate(auth *endpoint.Authentication) error
 }
 
 // New constructs a Venafi client Interface. Errors may be network errors and
@@ -95,16 +93,14 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
-	logger.V(0).Info(fmt.Sprintf("type is: %v", vcertClient.GetType()))
-
 	var tppc *tpp.Connector
 	if vcertClient.GetType() == endpoint.ConnectorTypeTPP {
 		c, ok := vcertClient.(*tpp.Connector)
 		if ok {
 			tppc = c
 		}
-
 	}
+
 	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
 
 	return &Venafi{
@@ -192,17 +188,7 @@ func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 }
 
 func (v *Venafi) SetClient(client endpoint.Connector) {
-	epc, ok := client.(endpoint.Connector)
-	if !ok {
-		return
-	}
-	v.vcertClient = epc
-}
-
-func (v *Venafi) Authenticate() error {
-	return v.vcertClient.Authenticate(&endpoint.Authentication{
-		AccessToken: tppAccessTokenKey,
-	})
+	v.vcertClient = client
 }
 
 // VerifyAccessToken will remotely verify the access token with a TPP server.
@@ -224,8 +210,4 @@ func (v *Venafi) VerifyAccessToken() error {
 	}
 
 	return nil
-}
-
-func (v *Venafi) GetConnector() connector {
-	return v.vcertClient
 }
