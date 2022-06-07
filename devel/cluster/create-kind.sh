@@ -66,13 +66,10 @@ $KIND_BIN create cluster \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
 
-# kubectl cluster-info dump does not return output in format that could be
-# easily parsed with a json or yaml parser.
-service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n1 | cut -d= -f2 | cut -d. -f1,2,3)
 
 # Get the current config
 original_coredns_config=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
-additional_coredns_config=$'example.com:53 {\n    forward . '$service_ip_prefix$'.16\n}\n'
+additional_coredns_config=$'example.com:53 {\n    forward . '$SERVICE_IP_PREFIX$'.16\n}\n'
 echo "Original CoreDNS config:"
 echo "${original_coredns_config}"
 # Patch it

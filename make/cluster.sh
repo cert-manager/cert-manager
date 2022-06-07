@@ -146,14 +146,6 @@ setup_kind() {
       --name "$kind_cluster_name"
   fi
 
-  # Sleep to wait for cluster-info to be up to date
-  # TODO (irbekrm): loop and repeatedly check for the info to become available instead of sleeping
-  echo "Waiting for kubectl cluster-info to be up to date..."
-  sleep 20
-  # kubectl cluster-info dump does not return output in format that could be
-  # easily parsed with a json or yaml parser.
-  service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n 1 | cut -d= -f2 | cut -d. -f1,2,3)
-
   # (2) Does the kube config contain the context for this existing kind cluster?
   if ! kubectl config get-contexts -oname 2>/dev/null | grep -q "^kind-${kind_cluster_name}$"; then
     printf "${red}${redcross}Error${end}: the kind cluster ${yel}$kind_cluster_name${end} already exists, but your current kube config does not contain the context ${yel}kind-$kind_cluster_name${end}. Run:\n" >&2
@@ -189,7 +181,7 @@ setup_kind() {
 
   # (6) Has the Corefile been patched?
   corefile=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
-  to_be_appended=$'example.com:53 {\n    forward . '$service_ip_prefix$'.16\n}\n'
+  to_be_appended=$'example.com:53 {\n    forward . '$SERVICE_IP_PREFIX$'.16\n}\n'
   if ! grep -q --null-data -F "$(tr -d $'\n' <<<"$to_be_appended")" <(tr -d $'\n' <<<"$corefile"); then
     kubectl create configmap -oyaml coredns --dry-run=client --from-literal=Corefile="$(printf '%s\n%s' "$corefile" "$to_be_appended")" \
       | kubectl apply -n kube-system -f - >/dev/null
