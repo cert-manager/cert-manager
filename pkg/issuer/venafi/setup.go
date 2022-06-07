@@ -19,11 +19,13 @@ package venafi
 import (
 	"context"
 	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func (v *Venafi) Setup(ctx context.Context) (err error) {
@@ -49,14 +51,6 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("client.VerifyAccessToken: %v", err)
 	}
-
-	//c2, ok := client.(*tpp.Connector)
-
-	//if err != nil {
-	//	return fmt.Errorf("client.VerifyAccessToken : %v", err)
-	//} else {
-	//	v.log.V(0).Info("Authenticate worked: " + res.Expires)
-	//}
 
 	// If it does not already have a 'ready' condition, we'll also log an event
 	// to make it really clear to users that this Issuer is ready.
