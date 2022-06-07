@@ -97,6 +97,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
 	c.clusterResourceNamespace = ctx.IssuerOptions.ClusterResourceNamespace
+
 	return c.queue, mustSync, nil
 }
 
