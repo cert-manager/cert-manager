@@ -24,6 +24,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["conversion_test.go"],
+    data = glob(["testdata/**"]),
     embed = [":go_default_library"],
     deps = [
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",

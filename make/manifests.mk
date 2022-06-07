@@ -28,12 +28,33 @@ static-manifests: bin/yaml/cert-manager.crds.yaml bin/yaml/cert-manager.yaml
 ###################
 
 .PHONY: release-manifests
-release-manifests: bin/release/cert-manager-manifests.tar.gz bin/metadata/cert-manager-manifests.tar.gz.metadata.json
+## Build YAML manifests and helm charts (but not the helm chart signature)
+##
+## @category Release
+release-manifests: bin/scratch/cert-manager-manifests-unsigned.tar.gz
+
+.PHONY: release-manifests-signed
+## Build YAML manifests and helm charts including the helm chart signature
+##
+## Since this command signs artifacts, this requires CMREL_KEY to be configured.
+## Prefer `make release-manifests` locally.
+##
+## @category Release
+release-manifests-signed: bin/release/cert-manager-manifests.tar.gz bin/metadata/cert-manager-manifests.tar.gz.metadata.json
 
 bin/release/cert-manager-manifests.tar.gz: bin/cert-manager-$(RELEASE_VERSION).tgz bin/yaml/cert-manager.crds.yaml bin/yaml/cert-manager.yaml bin/cert-manager-$(RELEASE_VERSION).tgz.prov | bin/scratch/manifests bin/release
 	mkdir -p bin/scratch/manifests/deploy/chart/
 	mkdir -p bin/scratch/manifests/deploy/manifests/
 	cp bin/cert-manager-$(RELEASE_VERSION).tgz bin/cert-manager-$(RELEASE_VERSION).tgz.prov bin/scratch/manifests/deploy/chart/
+	cp bin/yaml/cert-manager.crds.yaml bin/yaml/cert-manager.yaml bin/scratch/manifests/deploy/manifests/
+	# removes leading ./ from archived paths
+	find bin/scratch/manifests -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C bin/scratch/manifests -T -
+	rm -rf bin/scratch/manifests
+
+bin/scratch/cert-manager-manifests-unsigned.tar.gz: bin/cert-manager-$(RELEASE_VERSION).tgz bin/yaml/cert-manager.crds.yaml bin/yaml/cert-manager.yaml | bin/scratch/manifests
+	mkdir -p bin/scratch/manifests/deploy/chart/
+	mkdir -p bin/scratch/manifests/deploy/manifests/
+	cp bin/cert-manager-$(RELEASE_VERSION).tgz bin/scratch/manifests/deploy/chart/
 	cp bin/yaml/cert-manager.crds.yaml bin/yaml/cert-manager.yaml bin/scratch/manifests/deploy/manifests/
 	# removes leading ./ from archived paths
 	find bin/scratch/manifests -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C bin/scratch/manifests -T -
@@ -55,7 +76,7 @@ bin/metadata/cert-manager-manifests.tar.gz.metadata.json: bin/release/cert-manag
 bin/cert-manager-$(RELEASE_VERSION).tgz: bin/helm/cert-manager/README.md bin/helm/cert-manager/Chart.yaml bin/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) bin/helm/cert-manager/templates/NOTES.txt bin/helm/cert-manager/templates/_helpers.tpl bin/helm/cert-manager/templates/crds.yaml bin/tools/helm | bin/helm/cert-manager
 	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./bin/helm/cert-manager
 
-bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION).tgz bin/tools/cmrel | bin/helm/cert-manager
+bin/cert-manager-$(RELEASE_VERSION).tgz.prov: bin/cert-manager-$(RELEASE_VERSION).tgz | bin/helm/cert-manager bin/tools/cmrel
 ifeq ($(strip $(CMREL_KEY)),)
 	$(error Trying to sign helm chart but CMREL_KEY is empty)
 endif

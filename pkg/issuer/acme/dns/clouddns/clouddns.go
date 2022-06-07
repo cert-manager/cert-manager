@@ -11,6 +11,7 @@ this directory.
 package clouddns
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/option"
@@ -247,7 +247,6 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 }
 
 func (c *DNSProvider) findTxtRecords(zone, fqdn string) ([]*dns.ResourceRecordSet, error) {
-
 	recs, err := c.client.ResourceRecordSets.List(c.project, zone).Do()
 	if err != nil {
 		return nil, err

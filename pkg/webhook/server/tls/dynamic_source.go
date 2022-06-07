@@ -166,7 +166,7 @@ func (f *DynamicSource) Run(ctx context.Context) error {
 			}
 		// trigger regeneration if a renewal is required
 		case <-renewalChan:
-			f.log.V(logf.InfoLevel).Info("Serving certificate requires renewal, regenerating")
+			f.log.V(logf.InfoLevel).Info("cert-manager webhook certificate requires renewal, regenerating", "DNSNames", f.DNSNames)
 			if err := f.regenerateCertificate(nextRenewCh); err != nil {
 				f.log.Error(err, "Failed to regenerate serving certificate")
 				// Return an error here and stop the source running - this case should never
@@ -263,7 +263,7 @@ func (f *DynamicSource) updateCertificate(pk crypto.Signer, cert *x509.Certifica
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
 	// renew the certificate 1/3 of the time before its expiry
 	nextRenew <- cert.NotAfter.Add(certDuration / -3)
+	f.log.V(logf.InfoLevel).Info("Updated cert-manager webhook TLS certificate", "DNSNames", f.DNSNames)
 
-	f.log.V(logf.InfoLevel).Info("Updated serving TLS certificate")
 	return nil
 }

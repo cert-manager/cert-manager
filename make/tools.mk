@@ -93,7 +93,7 @@ GOTEST=CGO_ENABLED=$(CGO_ENABLED) $(GO) test
 
 GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./bin/tools/gotestsum
 
-VENDORED_GO_VERSION := 1.17.8
+VENDORED_GO_VERSION := 1.18.3
 
 .PHONY: vendor-go
 ## By default, this Makefile uses the system's Go. You can use a "vendored"
