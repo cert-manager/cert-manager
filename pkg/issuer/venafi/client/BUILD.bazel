@@ -19,6 +19,7 @@ go_library(
         "@com_github_venafi_vcert_v4//:go_default_library",
         "@com_github_venafi_vcert_v4//pkg/certificate:go_default_library",
         "@com_github_venafi_vcert_v4//pkg/endpoint:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/venafi/tpp:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
     ],
 )
