@@ -47,9 +47,6 @@ elif [[ "$K8S_VERSION" =~ 1\.22 ]] ; then
   KIND_IMAGE_SHA=$KIND_IMAGE_SHA_K8S_122
 elif [[ "$K8S_VERSION" =~ 1\.23 ]]; then
   KIND_IMAGE_SHA=$KIND_IMAGE_SHA_K8S_123
-elif [[ "$K8S_VERSION" =~ 1\.24 ]]; then
-  KIND_IMAGE_SHA=$KIND_IMAGE_SHA_K8S_124
-  KIND_IMAGE_REPO="eu.gcr.io/jetstack-build-infra-images/kind"
 else
   echo "Unrecognised/unsupported Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
@@ -72,13 +69,9 @@ $KIND_BIN create cluster \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
 
-# kubectl cluster-info dump does not return output in format that could be
-# easily parsed with a json or yaml parser.
-service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n1 | cut -d= -f2 | cut -d. -f1,2,3)
-
 # Get the current config
 original_coredns_config=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
-additional_coredns_config=$'example.com:53 {\n    forward . '$service_ip_prefix$'.16\n}\n'
+additional_coredns_config="$(printf 'example.com:53 {\n    forward . 10.0.0.16\n}\n')"
 echo "Original CoreDNS config:"
 echo "${original_coredns_config}"
 # Patch it

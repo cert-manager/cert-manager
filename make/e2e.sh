@@ -186,12 +186,11 @@ if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   ginkgo_args+=(--ginkgo.v --test.v)
 fi
 
-mkdir -p "${ARTIFACTS}"
-
-service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n1 | cut -d= -f2 | cut -d. -f1,2,3)
+# The command "kubectl cluster-info dump" returns 141 since grep breaks the
+# pipe as soon as it finds a match.
+service_ip_prefix=$(set +o pipefail && kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3)
 
 export CGO_ENABLED=0
-
 trace ginkgo \
   -nodes "$nodes" \
   -flakeAttempts "$flake_attempts" \

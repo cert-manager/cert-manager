@@ -58,12 +58,12 @@ EOF
 #  make/cluster.sh --update-images
 images=$(
   cat <<EOF
-docker.io/kindest/node:v1.18.20@sha256:e3dca5e16116d11363e31639640042a9b1bd2c90f85717a7fc66be34089a8169
-docker.io/kindest/node:v1.19.16@sha256:81f552397c1e6c1f293f967ecb1344d8857613fb978f963c30e907c32f598467
-docker.io/kindest/node:v1.20.15@sha256:393bb9096c6c4d723bb17bceb0896407d7db581532d11ea2839c80b28e5d8deb
-docker.io/kindest/node:v1.21.10@sha256:84709f09756ba4f863769bdcabe5edafc2ada72d3c8c44d6515fc581b66b029c
-docker.io/kindest/node:v1.22.7@sha256:1dfd72d193bf7da64765fd2f2898f78663b9ba366c2aa74be1fd7498a1873166
-docker.io/kindest/node:v1.23.4@sha256:0e34f0d0fd448aa2f2819cfd74e99fe5793a6e4938b328f657c8e3f81ee0dfb9
+docker.io/kindest/node:v1.18.0@sha256:0e20578828edd939d25eb98496a685c76c98d54084932f76069f886ec315d694
+docker.io/kindest/node:v1.19.0@sha256:3b0289b2d1bab2cb9108645a006939d2f447a10ad2bb21919c332d06b548bbc6
+docker.io/kindest/node:v1.20.0@sha256:b40ecf8bcb188f6a0d0f5d406089c48588b75edc112c6f635d26be5de1c89040
+docker.io/kindest/node:v1.21.1@sha256:f08bcc2d38416fa58b9857a1000dd69062b0c3024dcbd696373ea026abe38bbc
+docker.io/kindest/node:v1.22.0@sha256:b8bda84bb3a190e6e028b1760d277454a72267a5454b57db34437c34a588d047
+docker.io/kindest/node:v1.23.0@sha256:49824ab1727c04e56a21a5d8372a402fcd32ea51ac96a2706a12af38934f81ac
 EOF
 )
 
@@ -131,7 +131,6 @@ case "$k8s_version" in
 1.21*) image=$(grep -F 1.21 <<<"$images") ;;
 1.22*) image=$(grep -F 1.22 <<<"$images") ;;
 1.23*) image=$(grep -F 1.23 <<<"$images") ;;
-1.24*) image="eu.gcr.io/jetstack-build-infra-images/kind:v1.24.0@sha256:2f170bf60cfad9d961711f96c34349d789a56b5783c9a5dbc0a29cb5a25ec729" ;;
 v*) printf "${red}${redcross}Error${end}: the Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
@@ -169,14 +168,6 @@ setup_kind() {
       --name "$kind_cluster_name"
   fi
 
-  # Sleep to wait for cluster-info to be up to date
-  # TODO (irbekrm): loop and repeatedly check for the info to become available instead of sleeping
-  echo "Waiting for kubectl cluster-info to be up to date..."
-  sleep 20
-  # kubectl cluster-info dump does not return output in format that could be
-  # easily parsed with a json or yaml parser.
-  service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n 1 | cut -d= -f2 | cut -d. -f1,2,3)
-
   # (2) Does the kube config contain the context for this existing kind cluster?
   if ! kubectl config get-contexts -oname 2>/dev/null | grep -q "^kind-${kind_cluster_name}$"; then
     printf "${red}${redcross}Error${end}: the kind cluster ${yel}$kind_cluster_name${end} already exists, but your current kube config does not contain the context ${yel}kind-$kind_cluster_name${end}. Run:\n" >&2
@@ -209,6 +200,7 @@ setup_kind() {
     printf "and then retry.\n" >&2
   fi
 
+  service_ip_prefix=$(set +o pipefail && kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3)
 
   # (6) Has the Corefile been patched?
   corefile=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
