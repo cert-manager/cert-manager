@@ -45,35 +45,19 @@ bazel build //hack/bin:yq
 bindir="$(bazel info bazel-bin)"
 export PATH="${bindir}/hack/bin/:$PATH"
 
-# We need to install different versions of Ingress depending on which version of
-# Kubernetes we are running as the NGINX Ingress controller does not have a
-# release where they would support both v1 and v1beta1 versions of networking API.
+IMAGE_TAG="v1.1.0"
+HELM_CHART="4.0.10"
 
-# This allows running ./devel/setup-e2e-deps.sh locally against Kubernetes v1.22
-# without passing the K8S_VERSION env var.
-k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .minor' -)
-if [[ $k8s_version =~ 1\.18 ]]; then
-  # Ingress v1+ versions only support Kubernetes v1 networking API which is only
-  # available from Kubernetes v1.19 onwards.
-  # TODO: remove this if statement once the oldest version of Kubernetes
-  # supported by cert-manager is v1.19
-  IMAGE_TAG="v0.49.3"
-  HELM_CHART="3.40.0"
-  INGRESS_WITHOUT_CLASS="false"
-  require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle_pre_networking_v1"
-else
-  IMAGE_TAG="v1.1.0"
-  HELM_CHART="4.0.10"
-  # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
-  # defined. When configuring solver block for ACME HTTTP01 challenge on an ACME
-  # issuer, cert-manager users can currently specify either an Ingress name or a
-  # class. We also e2e test these two ways of creating Ingresses with
-  # ingress-shim. For the ingress controller to watch our Ingresses that don't
-  # have a class, we pass a --watch-ingress-without-class flag
-  # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
-  INGRESS_WITHOUT_CLASS="true"
-  require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle"
-fi
+# TODO (irbekrm): is this comment and configuration setting still accurate post-https://github.com/cert-manager/cert-manager/pull/4783?
+# v1 NGINX-Ingress by default only watches Ingresses with Ingress class
+# defined. When configuring solver block for ACME HTTTP01 challenge on an ACME
+# issuer, cert-manager users can currently specify either an Ingress name or a
+# class. We also e2e test these two ways of creating Ingresses with
+# ingress-shim. For the ingress controller to watch our Ingresses that don't
+# have a class, we pass a --watch-ingress-without-class flag
+# https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
+INGRESS_WITHOUT_CLASS="true"
+require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle"
 
 # Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"

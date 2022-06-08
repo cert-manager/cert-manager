@@ -10,8 +10,7 @@ CRI_ARCH := $(HOST_ARCH)
 
 K8S_VERSION := 1.23
 
-IMAGE_ingressnginxprev1_amd64=k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha256:c47ed90d1685cb6e3b556353d7afb2aced2be7095066edfc90dd81f3e9014747
-IMAGE_ingressnginxpostv1_amd64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
+IMAGE_ingressnginx_amd64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
@@ -21,8 +20,7 @@ IMAGE_projectcontour_amd64 := docker.io/projectcontour/contour:v1.20.1@sha256:10
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
 
-IMAGE_ingressnginxprev1_arm64 := k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha256:9138968b41c238118a36eba32433704f5246afcf987f2245b5c1aa429995392d
-IMAGE_ingressnginxpostv1_arm64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
+IMAGE_ingressnginx_arm64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:fa1e44e927433f217ef507299aeebf27f9b24a21a5f27d07b3b8acf26b48d5e6
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:f1a85fb6a95ccc9770e668116e0252c7e7c42b6403f3451047e154b8367cb987
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
@@ -117,7 +115,7 @@ preload-kind-image: $(call image-tar,kind) bin/tools/crane
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
-LOAD_TARGETS=load-$(call image-tar,ingressnginxprev1) load-$(call image-tar,ingressnginxpostv1) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
+LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
 $(LOAD_TARGETS): load-%: % bin/scratch/kind-exists bin/tools/kind
 	bin/tools/kind load image-archive --name=$(shell cat bin/scratch/kind-exists) $*
@@ -128,7 +126,7 @@ $(LOAD_TARGETS): load-%: % bin/scratch/kind-exists bin/tools/kind
 # We don't pull using both the digest and tag because crane replaces the
 # tag with "i-was-a-digest". We still check that the downloaded image
 # matches the digest.
-$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,vault) $(call image-tar,ingressnginxpostv1) $(call image-tar,ingressnginxprev1): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
+$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,vault) $(call image-tar,ingressnginx): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
@@ -205,49 +203,6 @@ e2e-setup-gatewayapi: bin/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) bin/scra
 	bin/tools/kubectl kustomize $</*/config/crd | bin/tools/kubectl apply -f - >/dev/null
 
 
-# We need to install different versions of Ingress depending on which version of
-# Kubernetes we are running as the NGINX Ingress controller does not have a
-# release where they would support both v1 and v1beta1 versions of networking
-# API.
-#
-# We don't use ifeq because that would require running the kubectl command for
-# every make invokation.
-.PHONY: e2e-setup-ingressnginx
-e2e-setup-ingressnginx: bin/scratch/kind-exists bin/tools/kubectl bin/tools/yq
-	@$(eval k8s_version = $(shell bin/tools/kubectl version -oyaml | bin/tools/yq e '.serverVersion | .major +"."+ .minor' -))
-	@if [[ "$(k8s_version)" =~ 1\.18 ]]; then \
-		$(MAKE) --no-print-directory e2e-setup-ingressnginxprev1; \
-	else \
-		$(MAKE) --no-print-directory e2e-setup-ingressnginxpostv1; \
-	fi
-
-# Ingress v1+ versions only support Kubernetes v1 networking API which is
-# only available from Kubernetes v1.19 onwards.
-#
-# TODO: Remove this target once the oldest version of Kubernetes supported
-# by cert-manager is v1.19.
-.PHONY: e2e-setup-ingressnginxprev1
-e2e-setup-ingressnginxprev1: $(call image-tar,ingressnginxprev1) load-$(call image-tar,ingressnginxprev1) bin/tools/kubectl bin/tools/helm
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
-	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
-	bin/tools/helm repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
-	bin/tools/Helm upgrade \
-		--install \
-		--wait \
-		--version 3.40.0 \
-		--namespace ingress-nginx \
-		--create-namespace \
-		--set controller.image.tar=$(TAG) \
-		--set controller.image.digest= \
-		--set controller.image.pullPolicy=Never \
-		--set controller.service.clusterIP=${SERVICE_IP_PREFIX}.15 \
-		--set controller.service.type=ClusterIP \
-		--set controller.config.no-tls-redirect-locations= \
-		--set admissionWebhooks.enabled=false \
-		--set controller.admissionWebhooks.enabled=false \
-		--set controller.watchIngressWithoutClass=true \
-		ingress-nginx ingress-nginx/ingress-nginx >/dev/null
-
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
 # defined. When configuring solver block for ACME HTTTP01 challenge on an
 # ACME issuer, cert-manager users can currently specify either an Ingress
@@ -255,8 +210,8 @@ e2e-setup-ingressnginxprev1: $(call image-tar,ingressnginxprev1) load-$(call ima
 # with ingress-shim. For the ingress controller to watch our Ingresses that
 # don't have a class, we pass a --watch-ingress-without-class flag:
 # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
-.PHONY: e2e-setup-ingressnginxpostv1
-e2e-setup-ingressnginxpostv1: $(call image-tar,ingressnginxpostv1) load-$(call image-tar,ingressnginxpostv1) bin/tools/helm
+.PHONY: e2e-setup-ingressnginx
+e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ingressnginx) bin/tools/helm
 	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
