@@ -10,13 +10,10 @@ CRI_ARCH := $(HOST_ARCH)
 
 K8S_VERSION := 1.23
 
-IMAGE_haproxyingress_amd64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:f19dc8a8865a765d12f7553f961fc1d3768867c930f50bfd2fcafeaf57983e83
-IMAGE_haproxyingress_arm64=quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:53a38f53c5c005ac9b18adf9c1111601368bb3d73fe23cb99445b6d6bc0bab67
 IMAGE_ingressnginxprev1_amd64=k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha256:c47ed90d1685cb6e3b556353d7afb2aced2be7095066edfc90dd81f3e9014747
 IMAGE_ingressnginxpostv1_amd64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df
-IMAGE_traefik_amd64 := docker.io/traefik:2.4.9@sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.1.1@sha256:7dafe98c73d229bbac08067fccf9b2884c63c8e1412fe18f9986f59232cf3cb5
@@ -24,12 +21,10 @@ IMAGE_projectcontour_amd64 := docker.io/projectcontour/contour:v1.20.1@sha256:10
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
 
-IMAGE_haproxyingress_amd64 := quay.io/jcmoraisjr/haproxy-ingress:v0.13.6@sha256:53a38f53c5c005ac9b18adf9c1111601368bb3d73fe23cb99445b6d6bc0bab67
 IMAGE_ingressnginxprev1_arm64 := k8s.gcr.io/ingress-nginx/controller:v0.49.3@sha256:9138968b41c238118a36eba32433704f5246afcf987f2245b5c1aa429995392d
 IMAGE_ingressnginxpostv1_arm64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.3.6@sha256:fa1e44e927433f217ef507299aeebf27f9b24a21a5f27d07b3b8acf26b48d5e6
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.3.6@sha256:f1a85fb6a95ccc9770e668116e0252c7e7c42b6403f3451047e154b8367cb987
-IMAGE_traefik_arm64 := docker.io/traefik:2.4.9@sha256:837615ad42a24e097bf554e4da8931b906cd50ecddf6ad934dd7882925b9c32a
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
 IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
 IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
@@ -78,8 +73,6 @@ kind-exists: bin/scratch/kind-exists
 #  e2e-setup-bind           DNS-01 tests              SERVICE_IP_PREFIX.16
 #  e2e-setup-ingressnginx   HTTP-01 Ingress tests     SERVICE_IP_PREFIX.15   *.ingress-nginx.db.http01.example.com
 #  e2e-setup-projectcontour HTTP-01 GatewayAPI tests  SERVICE_IP_PREFIX.14   *.gateway.db.http01.example.com
-#  e2e-setup-traefik        unused                    SERVICE_IP_PREFIX.13   *.traefik.db.http01.example.com
-#  e2e-setup-haproxyingress unused                    SERVICE_IP_PREFIX.12
 .PHONY: e2e-setup
 ## Installs cert-manager as well as components required for running the
 ## end-to-end tests. If the kind cluster does not already exist, it will be
@@ -91,13 +84,13 @@ e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-kyverno e2e-setu
 # The function "image-tar" returns the path to the image tarball for a given
 # image name. For example:
 #
-#     $(call image-tar,traefik)
+#     $(call image-tar, kyverno)
 #
 # returns the following path:
 #
-#     bin/downloaded/containers/amd64/docker.io/traefik+2.4.9@sha256+bfba204252.tar
+#     bin/downloaded/containers/amd64/docker.io/kyverno+2.4.9@sha256+bfba204252.tar
 #                               <---> <--------------------------------------->
-#                              CRI_ARCH         IMAGE_traefik_amd64
+#                              CRI_ARCH         IMAGE_kyverno_amd64
 #                                           (with ":" replaced with "+")
 #
 # Note the "+" signs. We replace all the "+" with ":" because ":" can't be used
@@ -124,7 +117,7 @@ preload-kind-image: $(call image-tar,kind) bin/tools/crane
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
-LOAD_TARGETS=load-$(call image-tar,ingressnginxprev1) load-$(call image-tar,ingressnginxpostv1) load-$(call image-tar,haproxyingress) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,traefik) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
+LOAD_TARGETS=load-$(call image-tar,ingressnginxprev1) load-$(call image-tar,ingressnginxpostv1) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-bin/downloaded/containers/$(CRI_ARCH)/pebble.tar load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-bin/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
 $(LOAD_TARGETS): load-%: % bin/scratch/kind-exists bin/tools/kind
 	bin/tools/kind load image-archive --name=$(shell cat bin/scratch/kind-exists) $*
@@ -135,7 +128,7 @@ $(LOAD_TARGETS): load-%: % bin/scratch/kind-exists bin/tools/kind
 # We don't pull using both the digest and tag because crane replaces the
 # tag with "i-was-a-digest". We still check that the downloaded image
 # matches the digest.
-$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,traefik) $(call image-tar,vault) $(call image-tar,haproxyingress) $(call image-tar,ingressnginxpostv1) $(call image-tar,ingressnginxprev1): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
+$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,vault) $(call image-tar,ingressnginxpostv1) $(call image-tar,ingressnginxprev1): bin/downloaded/containers/$(CRI_ARCH)/%.tar: bin/tools/crane
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
@@ -211,26 +204,6 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 e2e-setup-gatewayapi: bin/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) bin/scratch/kind-exists bin/tools/kubectl
 	bin/tools/kubectl kustomize $</*/config/crd | bin/tools/kubectl apply -f - >/dev/null
 
-.PHONY: e2e-setup-haproxyingress
-e2e-setup-haproxyingress: $(call image-tar,haproxyingress) load-$(call image-tar,haproxyingress) e2e-setup-gatewayapi bin/scratch/kind-exists
-	@printf "\033[0;33mWarning\033[0;0m: the target \033[0;31m$@\033[0;0m is provided for information only and may be removed in the future.\n" >&2
-	bin/tools/helm repo add haproxy-ingress --force-update https://haproxy-ingress.github.io/charts >/dev/null
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
-	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
-	bin/tools/kubectl apply -f make/config/haproxy/manifests.yaml >/dev/null
-	bin/tools/helm upgrade \
-		--install \
-		--wait \
-		--namespace haproxy-ingress \
-		--create-namespace \
-		--version 0.13.6 \
-		--set controller.extraArgs.watch-gateway=true \
-		--set controller.extraArgs.configmap=haproxy-ingress/haproxy-ingress-config \
-		--set controller.service.type=ClusterIP \
-		--set controller.service.clusterIP=$(SERVICE_IP_PREFIX).12 \
-		--set controller.image.tag=$(TAG) \
-		--set controller.image.pullPolicy=Never \
-		haproxy-ingress haproxy-ingress/haproxy-ingress >/dev/null
 
 # We need to install different versions of Ingress depending on which version of
 # Kubernetes we are running as the NGINX Ingress controller does not have a
@@ -394,22 +367,6 @@ e2e-setup-sampleexternalissuer:
 	@printf "Note that this won't if you are using Colima, or Rancher Desktop, or minikube.\n" >&2
 endif
 
-.PHONY: e2e-setup-traefik
-e2e-setup-traefik: load-$(call image-tar,traefik) make/config/traefik/traefik-values.yaml make/config/traefik/gateway.yaml e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl
-	@printf "\033[0;33mWarning\033[0;0m: the target \033[0;31m$@\033[0;0m is provided for information only and may be removed in the future.\n" >&2
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
-	bin/tools/helm repo add traefik --force-update https://helm.traefik.io/traefik >/dev/null
-	bin/tools/helm upgrade \
-		--install \
-		--version 10.1.1 \
-		--create-namespace \
-		--namespace traefik \
-		--values=make/config/traefik/traefik-values.yaml \
-		--set image.tag=2.4.9 \
-		--set service.type=ClusterIP \
-		--set service.spec.clusterIP=$(SERVICE_IP_PREFIX).13 \
-		traefik traefik/traefik >/dev/null
-	bin/tools/kubectl apply -f make/config/traefik/gateway.yaml >/dev/null
 
 # Note that the end-to-end tests are dealing with the Helm installation. We
 # do not need to Helm install here.

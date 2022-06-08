@@ -69,15 +69,6 @@ def install():
         digest = "sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df",
     )
 
-    ## Fetch traefik for use during e2e tests.
-    container_pull(
-        name = "io_traefik_traefik",
-        registry = "docker.io",
-        repository = "traefik",
-        tag = "2.4.9",
-        digest = "sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252",
-    )
-
     ## Fetch vault for use during e2e tests
     ## You can change the version of vault used for tests by changing the 'tag'
     ## field in this rule
