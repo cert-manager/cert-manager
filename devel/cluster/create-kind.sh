@@ -62,7 +62,7 @@ fi
 
 # Create the kind cluster
 $KIND_BIN create cluster \
-  --config "${SCRIPT_ROOT}/config/v1beta2.yaml" \
+  --config "${SCRIPT_ROOT}/config/kind.yaml" \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
 
