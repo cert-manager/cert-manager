@@ -136,12 +136,7 @@ setup_kind() {
 
   # (1) Does the kind cluster already exist?
   if ! kind get clusters -q | grep -q "^$kind_cluster_name\$"; then
-    # Kind with Kubernetes v1.18 and v1.19 need different config files
-    config="config_etcd_no_fsync"
-    if [[ "$k8s_version" == 1.18 || "$k8s_version" == 1.19 ]]; then
-      config="config"
-    fi
-    trace kind create cluster --config "make/config/kind/${config}.yaml" \
+    trace kind create cluster --config "make/config/kind/cluster.yaml" \
       --image "$image" \
       --name "$kind_cluster_name"
   fi
