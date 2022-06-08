@@ -230,22 +230,22 @@ def install_kind():
     http_file(
         name = "kind_darwin",
         executable = 1,
-        sha256 = "969d607a4eb5df20e1ea3841813b7869614235f6b1644c9a27700bff9de5bdfc",
-        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.12.0/kind-darwin-amd64"],
+        sha256 = "fdf7209e5f92651ee5d55b78eb4ee5efded0d28c3f3ab8a4a163b6ffd92becfd",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.14.0/kind-darwin-amd64"],
     )
 
     http_file(
         name = "kind_darwin_arm",
         executable = 1,
-        sha256 = "",
-        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.12.0/kind-darwin-arm64"],
+        sha256 = "bdbb6e94bc8c846b0a6a1df9f962fe58950d92b26852fd6ebdc48fabb229932c",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.14.0/kind-darwin-arm64"],
     )
 
     http_file(
         name = "kind_linux",
         executable = 1,
-        sha256 = "b80624c14c807490c0944d21fdc9c3455d6cc904fad486fe236f2187ecaa5789",
-        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.12.0/kind-linux-amd64"],
+        sha256 = "af5e8331f2165feab52ec2ae07c427c7b66f4ad044d09f253004a20252524c8b",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.14.0/kind-linux-amd64"],
     )
 
 

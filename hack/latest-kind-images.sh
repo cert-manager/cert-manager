@@ -48,17 +48,14 @@ LATEST_120_TAG=$(latest_kind_tag "1\\.20")
 LATEST_121_TAG=$(latest_kind_tag "1\\.21")
 LATEST_122_TAG=$(latest_kind_tag "1\\.22")
 LATEST_123_TAG=$(latest_kind_tag "1\\.23")
+LATEST_124_TAG=$(latest_kind_tag "1\\.24")
+
 
 LATEST_120_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_120_TAG)
 LATEST_121_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_121_TAG)
 LATEST_122_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_122_TAG)
 LATEST_123_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_123_TAG)
-
-# v1.24 is a special hardcoded case for now, pending an official upstream 1.24 image
-
-TEMP_124_IMAGE_REPO=eu.gcr.io/jetstack-build-infra-images/kind
-LATEST_124_TAG=v1.24.0
-LATEST_124_DIGEST=sha256:2f170bf60cfad9d961711f96c34349d789a56b5783c9a5dbc0a29cb5a25ec729
+LATEST_124_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_124_TAG)
 
 cat << EOF | tee ./devel/cluster/kind_cluster_node_versions.sh > ./make/kind_images.sh
 # Copyright 2022 The cert-manager Authors.
@@ -81,6 +78,7 @@ KIND_IMAGE_K8S_120=$KIND_IMAGE_REPO@$LATEST_120_DIGEST
 KIND_IMAGE_K8S_121=$KIND_IMAGE_REPO@$LATEST_121_DIGEST
 KIND_IMAGE_K8S_122=$KIND_IMAGE_REPO@$LATEST_122_DIGEST
 KIND_IMAGE_K8S_123=$KIND_IMAGE_REPO@$LATEST_123_DIGEST
+KIND_IMAGE_K8S_124=$KIND_IMAGE_REPO@$LATEST_124_DIGEST
 
 # $KIND_IMAGE_REPO:$LATEST_120_TAG
 KIND_IMAGE_SHA_K8S_120=$LATEST_120_DIGEST
@@ -94,16 +92,21 @@ KIND_IMAGE_SHA_K8S_122=$LATEST_122_DIGEST
 # $KIND_IMAGE_REPO:$LATEST_123_TAG
 KIND_IMAGE_SHA_K8S_123=$LATEST_123_DIGEST
 
+# $KIND_IMAGE_REPO:$LATEST_124_TAG
+KIND_IMAGE_SHA_K8S_124=$LATEST_124_DIGEST
+
 # note that these 'full' digests should be avoided since not all tools support them
 # prefer KIND_IMAGE_K8S_*** instead
 KIND_IMAGE_FULL_K8S_120=$KIND_IMAGE_REPO:$LATEST_120_TAG@$LATEST_120_DIGEST
 KIND_IMAGE_FULL_K8S_121=$KIND_IMAGE_REPO:$LATEST_121_TAG@$LATEST_121_DIGEST
 KIND_IMAGE_FULL_K8S_122=$KIND_IMAGE_REPO:$LATEST_122_TAG@$LATEST_122_DIGEST
 KIND_IMAGE_FULL_K8S_123=$KIND_IMAGE_REPO:$LATEST_123_TAG@$LATEST_123_DIGEST
+KIND_IMAGE_FULL_K8S_124=$KIND_IMAGE_REPO:$LATEST_124_TAG@$LATEST_124_DIGEST
 
-# 1.24 is a special case for now since there's no official upstream image
-# $TEMP_124_IMAGE_REPO:$LATEST_124_TAG
-KIND_IMAGE_SHA_K8S_124=$LATEST_124_DIGEST
-KIND_IMAGE_K8S_124=$TEMP_124_IMAGE_REPO@$LATEST_124_DIGEST
-KIND_IMAGE_FULL_K8S_124=$TEMP_124_IMAGE_REPO:$LATEST_124_TAG@$LATEST_124_DIGEST
+EOF
+
+cat << EOF
+# Images have been updated.
+# Now check kind release notes and verify that if specific images are recommended to be used with the kind release that we are using, the script hasn't pulled in other images.
+# https://github.com/kubernetes-sigs/kind/releases
 EOF

@@ -16,7 +16,7 @@ CMREL=$(PWD)/bin/tools/cmrel
 
 HELM_VERSION=3.8.0
 KUBECTL_VERSION=1.22.1
-KIND_VERSION=0.12.0
+KIND_VERSION=0.14.0
 CONTROLLER_GEN_VERSION=0.8.0
 COSIGN_VERSION=1.3.1
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
@@ -192,9 +192,9 @@ bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/d
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=b80624c14c807490c0944d21fdc9c3455d6cc904fad486fe236f2187ecaa5789
-KIND_darwin_amd64_SHA256SUM=969d607a4eb5df20e1ea3841813b7869614235f6b1644c9a27700bff9de5bdfc
-KIND_darwin_arm64_SHA256SUM=98d0f29fbde2154c64653aff81e6d0b9faea5001c5e29ce80ecfb9f67810197b
+KIND_linux_amd64_SHA256SUM=af5e8331f2165feab52ec2ae07c427c7b66f4ad044d09f253004a20252524c8b
+KIND_darwin_amd64_SHA256SUM=fdf7209e5f92651ee5d55b78eb4ee5efded0d28c3f3ab8a4a163b6ffd92becfd
+KIND_darwin_arm64_SHA256SUM=bdbb6e94bc8c846b0a6a1df9f962fe58950d92b26852fd6ebdc48fabb229932c
 
 bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/KIND_VERSION | bin/tools
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
