@@ -6,6 +6,7 @@ go_library(
         "certificate.go",
         "certificaterequest.go",
         "doc.go",
+        "setup.go",
     ],
     importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/venafi/tpp",
     tags = ["manual"],
