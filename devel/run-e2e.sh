@@ -29,17 +29,6 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 GINKGO_SKIP=${GINKGO_SKIP:-}
 GINKGO_FOCUS=${GINKGO_FOCUS:-}
 
-# Skip Gateway tests for Kubernetes below v1.19
-if [[ "$K8S_VERSION" =~ 1\.16 ]] || [[ "$K8S_VERSION" =~ 1\.17 ]] || [[ "$K8S_VERSION" =~ 1\.18 ]]; then
-	echo "Kubernetes version ${K8S_VERSION}, skipping Gateway tests..."
-	if [[ -z "$GINKGO_SKIP" ]]; then
-		GINKGO_SKIP="Gateway"
-	else
-	# duplicates are ok
-	GINKGO_SKIP="${GINKGO_SKIP}|Gateway"
-	fi
-fi
-
 # GINKGO_FOCUS can be set to a regex matching ginkgo specs to run.
 # Example- 'export GINKGO_FOCUS='Gateway' (runs only test cases with 'Gateway' in name).
 if [[ -n "$GINKGO_FOCUS" ]]; then GINKGO_FOCUS="--ginkgo.focus=${GINKGO_FOCUS}"; fi

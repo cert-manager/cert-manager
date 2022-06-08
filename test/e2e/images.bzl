@@ -39,14 +39,7 @@ def install():
     ## match the manifest list digest in ingress-nginx release notes- you will
     ## have to find the value by other means.
     container_pull(
-        name = "io_kubernetes_ingress-nginx_old",
-        registry = "k8s.gcr.io",
-        repository = "ingress-nginx/controller",
-        tag = "v0.49.3",
-        digest = "sha256:c47ed90d1685cb6e3b556353d7afb2aced2be7095066edfc90dd81f3e9014747"
-    )
-    container_pull(
-        name = "io_kubernetes_ingress-nginx_new",
+        name = "io_kubernetes_ingress-nginx",
         registry = "k8s.gcr.io",
         repository = "ingress-nginx/controller",
         tag = "v1.1.0",
@@ -67,15 +60,6 @@ def install():
         repository = "kyverno/kyvernopre",
         tag = "v1.3.6",
         digest = "sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df",
-    )
-
-    ## Fetch traefik for use during e2e tests.
-    container_pull(
-        name = "io_traefik_traefik",
-        registry = "docker.io",
-        repository = "traefik",
-        tag = "2.4.9",
-        digest = "sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252",
     )
 
     ## Fetch vault for use during e2e tests
