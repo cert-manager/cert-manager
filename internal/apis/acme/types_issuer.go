@@ -403,6 +403,10 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	AccessKeyID string
 
+	// The SecretAccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
+	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	SecretAccessKeyID cmmeta.SecretKeySelector
+
 	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	SecretAccessKey cmmeta.SecretKeySelector

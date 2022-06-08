@@ -292,6 +292,20 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 	case providerConfig.Route53 != nil:
 		dbg.Info("preparing to create Route53 provider")
+		secretAccessKeyID := strings.TrimSpace(providerConfig.Route53.AccessKeyID)
+		if providerConfig.Route53.SecretAccessKeyID.Name != "" {
+			secretAccessKeyIDSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKeyID.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting route53 secret access key id: %s", err)
+			}
+
+			secretAccessKeyIDBytes, ok := secretAccessKeyIDSecret.Data[providerConfig.Route53.SecretAccessKeyID.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("error getting route53 secret access key id: key '%s' not found in secret", providerConfig.Route53.SecretAccessKeyID.Key)
+			}
+			secretAccessKeyID = string(secretAccessKeyIDBytes)
+		}
+
 		secretAccessKey := ""
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
 			secretAccessKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
@@ -307,7 +321,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 
 		impl, err = s.dnsProviderConstructors.route53(
-			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
+			secretAccessKeyID,
 			strings.TrimSpace(secretAccessKey),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,

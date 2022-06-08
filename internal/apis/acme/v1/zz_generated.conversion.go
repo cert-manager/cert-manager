@@ -1205,6 +1205,9 @@ func Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1_ACMEIssuerDNS01ProviderRF
 
 func autoConvert_v1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *v1.ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretAccessKeyID, &out.SecretAccessKeyID, s); err != nil {
+		return err
+	}
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
 	}
@@ -1221,6 +1224,9 @@ func Convert_v1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRo
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *v1.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretAccessKeyID, &out.SecretAccessKeyID, s); err != nil {
+		return err
+	}
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
 	}
