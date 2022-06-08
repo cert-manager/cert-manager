@@ -6,7 +6,7 @@ metadata:
 {{- if .Values.prometheus.servicemonitor.namespace }}
   namespace: {{ .Values.prometheus.servicemonitor.namespace }}
 {{- else }}
-  namespace: {{ .Release.Namespace | quote }}
+  namespace: {{ include "cert-manager.namespace" . }}
 {{- end }}
   labels:
     app: {{ include "cert-manager.name" . }}
@@ -28,7 +28,7 @@ spec:
 {{- if .Values.prometheus.servicemonitor.namespace }}
   namespaceSelector:
     matchNames:
-      - {{ .Release.Namespace }}
+      - {{ include "cert-manager.namespace" . }}
 {{- end }}
   endpoints:
   - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
