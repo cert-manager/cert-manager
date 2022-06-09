@@ -77,6 +77,7 @@ type connector interface {
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
+// ErrNoAccessToken indicates that the client is configured with an empty access token, and might use username and password instead.
 var ErrNoAccessToken = fmt.Errorf("no TPP access token configured")
 
 // New constructs a Venafi client Interface. Errors may be network errors and
