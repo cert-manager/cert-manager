@@ -23,8 +23,8 @@ export REPO_ROOT="$LIB_ROOT/../.."
 
 export SKIP_BUILD_ADDON_IMAGES="${SKIP_BUILD_ADDON_IMAGES:-}"
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
-# Default Kubernetes version to use to 1.23
-export K8S_VERSION=${K8S_VERSION:-1.23}
+# Default Kubernetes version to use to 1.24
+export K8S_VERSION=${K8S_VERSION:-1.24}
 # Default OpenShift version to use to 3.11
 export OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"}
 export IS_OPENSHIFT="${IS_OPENSHIFT:-"false"}"
