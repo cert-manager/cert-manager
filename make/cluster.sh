@@ -36,10 +36,12 @@ Usage:
     ${bold}$0 [--mode kind] [--name NAME] [--show-image] [--help]${end}
 
 Flags:
+  # TODO: do we need this flag? kind is the only mode possible at the moment.
   --mode MODE
       Can be either kind.
   --name NAME
       The name of the cluster. Only useful when using --mode kind.
+  # TODO: do we need this flag? It's not used anywhere.
   --k8s-version VERSION
       The Kubernetes version to spin up with kind. It should be either a
       minor version e.g. 1.23 or a full version e.g. 1.23.3. You can also

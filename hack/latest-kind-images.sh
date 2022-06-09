@@ -17,6 +17,10 @@
 
 set -eu -o pipefail
 
+# This script can be used to update kind images. However, you should check kind
+# release notes as often specific images need to be used with a specific release
+# of kind https://github.com/kubernetes-sigs/kind/releases
+
 export KIND_IMAGE_REPO="docker.io/kindest/node"
 
 CRANE=crane
