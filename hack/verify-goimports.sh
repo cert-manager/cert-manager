@@ -40,8 +40,8 @@ godirs=$(find . -not \( -path "./bin/*" -prune \) -name "*.go" | cut -d'/' -f2 |
 output=$($goimports $common_flags -l $godirs)
 
 if [ ! -z "${output}" ]; then
-    echo "${output}"
-    echo "+++ goimports failed; the following command may fix:" >&2
-    echo "+++ $goimports $common_flags -w $godirs" >&2
-    exit 1
+	echo "${output}" | sed "s/^/goimports: broken file: /"
+	echo "+++ goimports failed; the following command may fix:" >&2
+	echo "+++ $goimports $common_flags -w $godirs" >&2
+	exit 1
 fi
