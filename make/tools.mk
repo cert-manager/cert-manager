@@ -23,6 +23,7 @@ CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
 GOTESTSUM_VERSION=1.7.0
+RCLONE_VERSION=1.58.1
 YTT_VERSION=0.36.0
 YQ_VERSION=4.11.2
 CRANE_VERSION=0.8.0
@@ -62,7 +63,7 @@ ifeq (x86_64, $(HOST_ARCH))
 endif
 
 .PHONY: tools
-tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/controller-gen k8s-codegen-tools bin/tools/goimports bin/tools/gotestsum bin/tools/ytt bin/tools/yq
+tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/controller-gen k8s-codegen-tools bin/tools/goimports bin/tools/gotestsum bin/tools/rclone bin/tools/ytt bin/tools/yq
 
 ######
 # Go #
@@ -312,6 +313,32 @@ bin/tools/crane: bin/downloaded/tools/crane@$(CRANE_VERSION) bin/scratch/CRANE_V
 bin/downloaded/tools/crane@$(CRANE_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/google/go-containerregistry/cmd/crane@v$(CRANE_VERSION)
 	@mv $(subst @$(CRANE_VERSION),,$@) $@
+
+##########
+# rclone #
+##########
+
+RCLONE_OS := $(HOST_OS)
+ifeq (darwin, $(HOST_OS))
+	# rclone calls macOS "osx" not "darwin"
+	RCLONE_OS = osx
+endif
+
+RCLONE_linux_amd64_SHA256SUM=135a4a0965cb58eafb07941f2013a82282c44c28fea9595587778e969d9ed035
+RCLONE_osx_amd64_SHA256SUM=03b104accc26d5aec14088c253ea5a6bba3263ae00fc403737cabceecad9eae9
+RCLONE_osx_arm64_SHA256SUM=eb547bd0ef2037118a01003bed6cf00a1d6e6975b6f0a73cb811f882a3c3de72
+
+bin/tools/rclone: bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-$(RCLONE_OS)-$(HOST_ARCH) bin/scratch/RCLONE_VERSION | bin/tools
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+
+bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | bin/downloaded/tools
+	curl -sSfL https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip > $@.zip
+	./hack/util/checkhash.sh $@.zip $(RCLONE_$(subst -,_,$*)_SHA256SUM)
+	@# -p writes to stdout, the second file arg specifies the sole file we
+	@# want to extract
+	unzip -p $@.zip $(notdir $@)/rclone > $@
+	chmod +x $@
+	rm -f $@.zip
 
 #######
 # ytt #
