@@ -77,6 +77,8 @@ type connector interface {
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
+var ErrNoAccessToken = fmt.Errorf("no TPP access token configured")
+
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
 func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
@@ -196,6 +198,11 @@ func (v *Venafi) VerifyAccessToken() error {
 
 	if v.config.Credentials == nil {
 		return fmt.Errorf("config.Credentials not set")
+	}
+
+	// empty access token means we use Username + Password
+	if v.config.Credentials.AccessToken == "" {
+		return ErrNoAccessToken
 	}
 
 	_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
