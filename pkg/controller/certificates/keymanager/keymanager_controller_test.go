@@ -435,7 +435,7 @@ func TestProcessItem(t *testing.T) {
 			secrets: []runtime.Object{
 				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateECDSA(t, pki.ECCurve256)}),
 			},
-			expectedEvents: []string{"Normal Deleted Regenerating private key due to change in fields: [spec.keyAlgorithm]"},
+			expectedEvents: []string{"Normal Deleted Regenerating private key due to change in fields: [spec.privateKey.algorithm]"},
 			expectedActions: []testpkg.Action{
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
