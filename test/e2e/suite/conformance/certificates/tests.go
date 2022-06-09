@@ -18,6 +18,11 @@ package certificates
 
 import (
 	"context"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/base64"
+	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -211,6 +216,72 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
+
+		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name with a literal subject", func(issuerRef cmmeta.ObjectReference) {
+			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
+			// Some issuers use the CN to define the cert's "ID"
+			// if one cert manages to be in an error state in the issuer it might throw an error
+			// this makes the CN more unique
+			host := fmt.Sprintf("*.%s.foo-long.bar.com", util.RandStringRunes(10))
+			literalSubject := fmt.Sprintf("CN=%s,OU=FooLong,OU=Bar,OU=Baz,OU=Dept.,O=Corp.", host)
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "testcert-tls",
+					IssuerRef:      issuerRef,
+					LiteralSubject: literalSubject,
+					DNSNames:       []string{host},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			//type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) error
+			valFunc := func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+				certBytes, ok := secret.Data[corev1.TLSCertKey]
+				if !ok {
+					return fmt.Errorf("no certificate data found for Certificate %q (secret %q)", certificate.Name, certificate.Spec.SecretName)
+				}
+
+				createdCert, err := pki.DecodeX509CertificateBytes(certBytes)
+				if err != nil {
+					return err
+				}
+
+				var dns pkix.RDNSequence
+				rest, err := asn1.Unmarshal(createdCert.RawSubject, &dns)
+
+				if err != nil {
+					return err
+				}
+
+				rdnSeq, err2 := pki.ParseSubjectStringToRdnSequence(literalSubject)
+
+				if err2 != nil {
+					return err2
+				}
+
+				fmt.Fprintln(GinkgoWriter, "cert", base64.StdEncoding.EncodeToString(createdCert.RawSubject), dns, err, rest)
+				if !reflect.DeepEqual(rdnSeq, dns) {
+					return fmt.Errorf("generated certificate's subject [%s] does not match expected subject [%s]", dns.String(), literalSubject)
+				}
+				return nil
+			}
+
+			By("Validating the issued Certificate...")
+
+			err = f.Helper().ValidateCertificate(testCertificate, valFunc)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.LiteralSubjectFeature)
 
 		s.it(f, "should issue an ECDSA, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
 			// Some issuers use the CN to define the cert's "ID"

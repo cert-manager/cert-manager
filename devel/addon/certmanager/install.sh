@@ -23,14 +23,14 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 # Default feature gates to enable
-FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,AdditionalCertificateOutputFormats=true,ServerSideApply=true}"
+FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,AdditionalCertificateOutputFormats=true,ServerSideApply=true,LiteralCertificateSubject=true}"
 
 # As Feature Gates are added/removed, these lists should be updated.
 declare -a FEATURE_GATES_CONTROLLER_ALL=(\
 "AllAlpha","AllBeta","ValidateCAA","ExperimentalCertificateSigningRequestControllers",\
-"ExperimentalGatewayAPISupport","AdditionalCertificateOutputFormats","ServerSideApply")
+"ExperimentalGatewayAPISupport","AdditionalCertificateOutputFormats","ServerSideApply","LiteralCertificateSubject")
 declare -a FEATURE_GATES_WEBHOOK_ALL=(\
-"AllAlpha","AllBeta","AdditionalCertificateOutputFormats")
+"AllAlpha","AllBeta","AdditionalCertificateOutputFormats","LiteralCertificateSubject")
 declare -a FEATURE_GATES_CAINJECTOR_ALL=(\
 "AllAlpha","AllBeta")
 

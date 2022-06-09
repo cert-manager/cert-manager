@@ -35,6 +35,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // Validation functions for cert-manager Certificate types
@@ -47,12 +48,56 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
-	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 && len(crt.IPAddresses) == 0 {
+	var commonName = crt.CommonName
+	if crt.LiteralSubject != "" {
+
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject) {
+			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
+		}
+
+		sequence, err := pki.ParseSubjectStringToRdnSequence(crt.LiteralSubject)
+		if err != nil {
+			el = append(el, field.Invalid(fldPath.Child("literalSubject"), crt.LiteralSubject, err.Error()))
+		}
+
+		// Must contain a CN
+		for _, rdns := range sequence {
+			for _, atv := range rdns {
+				if atv.Type.Equal(pki.OIDConstants.CommonName) {
+					if str, ok := atv.Value.(string); ok {
+						commonName = str
+					} else {
+						el = append(el, field.Invalid(fldPath.Child("literalSubject"), atv.Value, "Field with type CN should be a string"))
+					}
+				}
+			}
+		}
+
+		// Should not contain unrecognized OIDs
+		for _, rdns := range sequence {
+			for _, atv := range rdns {
+				if atv.Type.Equal(nil) {
+					el = append(el, field.Invalid(fldPath.Child("literalSubject"), crt.LiteralSubject, fmt.Sprintf("Literal subject contains unrecognized key with value [%s]", atv.Value)))
+				}
+			}
+		}
+
+		if len(crt.CommonName) != 0 {
+			el = append(el, field.Invalid(fldPath.Child("commonName"), crt.CommonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
+		}
+
+		if crt.Subject != nil && len(crt.Subject.Organizations)+len(crt.Subject.Countries)+len(crt.Subject.OrganizationalUnits)+len(crt.Subject.Localities)+len(crt.Subject.Provinces)+len(crt.Subject.StreetAddresses)+len(crt.Subject.PostalCodes) != 0 {
+			el = append(el, field.Invalid(fldPath.Child("subject"), crt.Subject, "When providing a `LiteralSubject` no `Subject` properties may be provided with the exception of `Subject.serialNumber`"))
+		}
+
+	}
+
+	if len(commonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 && len(crt.IPAddresses) == 0 {
 		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
-	if len(crt.CommonName) > 64 {
+	if len(commonName) > 64 {
 		el = append(el, field.TooLong(fldPath.Child("commonName"), crt.CommonName, 64))
 	}
 

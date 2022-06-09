@@ -807,6 +807,7 @@ func Convert_certmanager_CertificateSecretTemplate_To_v1_CertificateSecretTempla
 
 func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.CertificateSpec, out *certmanager.CertificateSpec, s conversion.Scope) error {
 	out.Subject = (*certmanager.X509Subject)(unsafe.Pointer(in.Subject))
+	out.LiteralSubject = in.LiteralSubject
 	out.CommonName = in.CommonName
 	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
@@ -839,6 +840,7 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 
 func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanager.CertificateSpec, out *v1.CertificateSpec, s conversion.Scope) error {
 	out.Subject = (*v1.X509Subject)(unsafe.Pointer(in.Subject))
+	out.LiteralSubject = in.LiteralSubject
 	out.CommonName = in.CommonName
 	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))

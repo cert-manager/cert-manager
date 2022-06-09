@@ -29,9 +29,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 func buildCertificate(cn string, dnsNames ...string) *cmapi.Certificate {
@@ -413,11 +416,24 @@ func TestGenerateCSR(t *testing.T) {
 		},
 	}
 
+	exampleLiteralSubject := "CN=actual-cn, OU=FooLong, OU=Bar, O=example.org"
+	rawExampleLiteralSubject, err := ParseSubjectStringToRawDerBytes(exampleLiteralSubject)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	exampleMultiValueRDNLiteralSubject := "CN=actual-cn, OU=FooLong+OU=Bar, O=example.org"
+	rawExampleMultiValueRDNLiteralSubject, err := ParseSubjectStringToRawDerBytes(exampleMultiValueRDNLiteralSubject)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
-		name    string
-		crt     *cmapi.Certificate
-		want    *x509.CertificateRequest
-		wantErr bool
+		name                                    string
+		crt                                     *cmapi.Certificate
+		want                                    *x509.CertificateRequest
+		wantErr                                 bool
+		literalCertificateSubjectFeatureEnabled bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
@@ -468,9 +484,40 @@ func TestGenerateCSR(t *testing.T) {
 			crt:     &cmapi.Certificate{Spec: cmapi.CertificateSpec{}},
 			wantErr: true,
 		},
+		{
+			name: "Generate CSR from certficate with literal subject honouring the exact order",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: exampleLiteralSubject}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				RawSubject:         rawExampleLiteralSubject,
+				ExtraExtensions:    defaultExtraExtensions,
+			},
+			literalCertificateSubjectFeatureEnabled: true,
+		},
+		{
+			name: "Generate CSR from certficate with literal multi value subject honouring the exact order",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: exampleMultiValueRDNLiteralSubject}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				RawSubject:         rawExampleMultiValueRDNLiteralSubject,
+				ExtraExtensions:    defaultExtraExtensions,
+			},
+			literalCertificateSubjectFeatureEnabled: true,
+		},
+		{
+			name:                                    "Error on generating CSR from certificate without CommonName in LiteralSubject, uri names, email address, or ip addresses",
+			crt:                                     &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: "O=EmptyOrg"}},
+			wantErr:                                 true,
+			literalCertificateSubjectFeatureEnabled: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, tt.literalCertificateSubjectFeatureEnabled)()
 			got, err := GenerateCSR(tt.crt)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)

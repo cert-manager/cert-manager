@@ -58,6 +58,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.EmailSANsFeature,
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
+		featureset.LiteralSubjectFeature,
 	)
 
 	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Copy().Add(
@@ -77,6 +78,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.EmailSANsFeature,
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
+		featureset.LiteralSubjectFeature,
 	)
 
 	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
@@ -90,6 +92,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		// the common name field. This field has a maximum total length of
 		// 64 bytes. Skip the long domain test in this case.
 		featureset.LongDomainFeatureSet,
+		featureset.LiteralSubjectFeature,
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
