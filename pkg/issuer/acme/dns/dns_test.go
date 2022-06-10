@@ -462,65 +462,6 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 	}
 }
 
-func TestRoute53SecretAccessKeyAndLiteralAccessKey(t *testing.T) {
-	f := &solverFixture{
-		Builder: &test.Builder{
-			KubeObjects: []runtime.Object{
-				newSecret("route53", "default", map[string][]byte{
-					"accessKeyID":     []byte("AWSACCESSKEYID"),
-					"secretAccessKey": []byte("AKIENDINNEWLINE \n"),
-				}),
-			},
-		},
-		Issuer: newIssuer("test", "default"),
-		Challenge: &cmacme.Challenge{
-			Spec: cmacme.ChallengeSpec{
-				Solver: cmacme.ACMEChallengeSolver{
-					DNS01: &cmacme.ACMEChallengeSolverDNS01{
-						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-							AccessKeyID: "AWSLITERALACCESSKEY",
-							SecretAccessKeyID: cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "route53",
-								},
-								Key: "accessKeyID",
-							},
-							Region: "us-west-2",
-							SecretAccessKey: cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "route53",
-								},
-								Key: "secretAccessKey",
-							},
-						},
-					},
-				},
-			},
-		},
-		dnsProviders: newFakeDNSProviders(),
-	}
-
-	f.Setup(t)
-	defer f.Finish(t)
-
-	s := f.Solver
-	_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
-	if err != nil {
-		t.Fatalf("expected solverFor to not error, but got: %s", err)
-	}
-
-	expectedR53Call := []fakeDNSProviderCall{
-		{
-			name: "route53",
-			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", false, util.RecursiveNameservers},
-		},
-	}
-
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
-}
-
 func TestRoute53AmbientCreds(t *testing.T) {
 	type result struct {
 		expectedCall *fakeDNSProviderCall

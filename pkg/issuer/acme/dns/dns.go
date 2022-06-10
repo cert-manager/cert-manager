@@ -292,7 +292,17 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 	case providerConfig.Route53 != nil:
 		dbg.Info("preparing to create Route53 provider")
+
+		// For route53, you must specify either an AccessKeyID or a secret reference to an AccessKeyID
+		// but not both.
+		if providerConfig.Route53.AccessKeyID != "" && providerConfig.Route53.SecretAccessKeyID.Name != "" {
+			return nil, nil, fmt.Errorf("route53 accessKeyID and accessKeySecretRef cannot both be specified")
+		}
+
+		// Default to the AccessKeyID literal in the configuration
 		secretAccessKeyID := strings.TrimSpace(providerConfig.Route53.AccessKeyID)
+
+		// If the AccessKeyID secret reference option is defined, override the secretAccessKeyID variable
 		if providerConfig.Route53.SecretAccessKeyID.Name != "" {
 			secretAccessKeyIDSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKeyID.Name)
 			if err != nil {
