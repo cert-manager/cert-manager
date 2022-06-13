@@ -30,7 +30,6 @@ type Connector struct {
 	RetrieveCertificateFunc   func(*certificate.Request) (*certificate.PEMCollection, error)
 	RequestCertificateFunc    func(*certificate.Request) (string, error)
 	RenewCertificateFunc      func(*certificate.RenewalRequest) (string, error)
-	VerifyAccessTokenFunc     func() error
 }
 
 func (f Connector) Default() *Connector {

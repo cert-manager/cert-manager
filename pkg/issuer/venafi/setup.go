@@ -47,12 +47,6 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 		return fmt.Errorf("error pinging Venafi API: %v", err)
 	}
 
-	//attempt to VerifyAccessToken, ignore if it's not set
-	//err = client.VerifyAccessToken()
-	//if err != nil && !errors.Is(err, venaficlient.ErrNoAccessToken) {
-	//	return fmt.Errorf("client.VerifyAccessToken: %v", err)
-	//}
-
 	err = client.VerifyCredentials()
 	if err != nil {
 		return fmt.Errorf("client.VerifyCredentials: %v", err)

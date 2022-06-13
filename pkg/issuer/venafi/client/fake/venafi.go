@@ -29,7 +29,6 @@ type Venafi struct {
 	RequestCertificateFn    func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
 	RetrieveCertificateFn   func(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
-	VerifyAccessTokenFn     func() error
 	VerifyCredentialsFn     func() error
 }
 
@@ -51,16 +50,7 @@ func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 
 func (v *Venafi) SetClient(endpoint.Connector) {}
 
-// VerifyAccessToken will return VerifyAccessTokenFn if set, otherwise nil.
-func (v *Venafi) VerifyAccessToken() error {
-	if v.VerifyAccessTokenFn != nil {
-		return v.VerifyAccessTokenFn()
-	}
-
-	return nil
-}
-
-// VerifyCredentials will return VerifyAccessTokenFn if set, otherwise nil.
+// VerifyCredentials will return VerifyCredentialsFn if set, otherwise nil.
 func (v *Venafi) VerifyCredentials() error {
 	if v.VerifyCredentialsFn != nil {
 		return v.VerifyCredentialsFn()

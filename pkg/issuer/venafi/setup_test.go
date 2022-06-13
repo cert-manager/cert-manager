@@ -64,28 +64,6 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
-	//verifyAccessTokenClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
-	//	return &internalvenafifake.Venafi{
-	//		PingFn: func() error {
-	//			return nil
-	//		},
-	//		VerifyAccessTokenFn: func() error {
-	//			return nil
-	//		},
-	//	}, nil
-	//}
-	//
-	//failingVerifyAccessTokenClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
-	//	return &internalvenafifake.Venafi{
-	//		PingFn: func() error {
-	//			return nil
-	//		},
-	//		VerifyAccessTokenFn: func() error {
-	//			return fmt.Errorf("401 Unauthorized")
-	//		},
-	//	}, nil
-	//}
-
 	verifyCredentialsClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
@@ -144,31 +122,6 @@ func TestSetup(t *testing.T) {
 				"Normal Ready Verified issuer with Venafi server",
 			},
 		},
-
-		//"verifyAccessToken happy path": {
-		//	clientBuilder: verifyAccessTokenClient,
-		//	iss:           baseIssuer.DeepCopy(),
-		//	expectedErr:   false,
-		//	expectedCondition: &cmapi.IssuerCondition{
-		//		Message: "Venafi issuer started",
-		//		Reason:  "Venafi issuer started",
-		//		Status:  "True",
-		//	},
-		//	expectedEvents: []string{
-		//		"Normal Ready Verified issuer with Venafi server",
-		//	},
-		//},
-		//
-		//"if verifyAccessToken returns an error we should set condition to False": {
-		//	clientBuilder: failingVerifyAccessTokenClient,
-		//	iss:           baseIssuer.DeepCopy(),
-		//	expectedErr:   true,
-		//	expectedCondition: &cmapi.IssuerCondition{
-		//		Reason:  "ErrorSetup",
-		//		Message: "Failed to setup Venafi issuer: client.VerifyAccessToken: 401 Unauthorized",
-		//		Status:  "False",
-		//	},
-		//},
 
 		"verifyCredentials happy path": {
 			clientBuilder: verifyCredentialsClient,

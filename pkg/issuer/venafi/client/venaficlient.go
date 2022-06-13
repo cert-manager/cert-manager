@@ -51,7 +51,6 @@ type Interface interface {
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
-	VerifyAccessToken() error
 	VerifyCredentials() error
 }
 
@@ -80,9 +79,6 @@ type connector interface {
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
-// ErrNoAccessToken indicates that the client is configured with an empty access token, and might use username and password instead.
-var ErrNoAccessToken = fmt.Errorf("no TPP access token configured")
-
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
 func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
@@ -96,14 +92,6 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
-	//switch vcertClient.GetType() {
-	//case endpoint.ConnectorTypeTPP:
-	//	c, ok := vcertClient.(*tpp.Connector)
-	//	if ok {
-	//
-	//	}
-	//}
-	//
 	var tppc *tpp.Connector
 	var cc *cloud.Connector
 
@@ -211,32 +199,7 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
 }
 
-// VerifyAccessToken will remotely verify the access token with a TPP server.
-func (v *Venafi) VerifyAccessToken() error {
-	if v.tppClient == nil {
-		return fmt.Errorf("tppClient not set")
-	}
-
-	if v.config.Credentials == nil {
-		return fmt.Errorf("config.Credentials not set")
-	}
-
-	// empty access token means we use Username + Password
-	if v.config.Credentials.AccessToken == "" {
-		return ErrNoAccessToken
-	}
-
-	_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
-		AccessToken: v.config.Credentials.AccessToken,
-	})
-
-	if err != nil {
-		return fmt.Errorf("tppClient.VerifyAccessToken: %v", err)
-	}
-
-	return nil
-}
-
+// VerifyCredentials will remotely verify the credentials for the client, both for TPP and Cloud
 func (v *Venafi) VerifyCredentials() error {
 	switch {
 	case v.cloudClient != nil:

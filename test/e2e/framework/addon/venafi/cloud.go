@@ -137,7 +137,7 @@ func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	}
 }
 
-// SetAPIKey sets the Secret data["api-key"] value
+// SetAPIKey sets the Secret data["apikey"] value
 func (v *VenafiCloud) SetAPIKey(token string) error {
 	v.createdSecret.Data["apikey"] = []byte(token)
 	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(context.TODO(), v.createdSecret, metav1.UpdateOptions{})
