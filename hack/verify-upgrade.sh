@@ -90,7 +90,7 @@ kubectl cert-manager check api --wait=2m -v
 echo "Creating some cert-manager resources.."
 
 # Create a cert-manager issuer and cert
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="first"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=circleci.dec.yaml="first"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test1 --timeout=180s
@@ -118,7 +118,7 @@ kubectl get issuer/selfsigned-issuer cert/test1
 echo "Creating some cert-manager resources.."
 
 # # Create another certificate
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="second"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=circleci.dec.yaml="second"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test2 --timeout=180s
@@ -158,7 +158,7 @@ kubectl wait \
 kubectl cert-manager check api --wait=2m -v
 
 # Create a cert-manager issuer and cert
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="first"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=circleci.dec.yaml="first"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test1 --timeout=180s
@@ -200,7 +200,7 @@ kubectl get issuer/selfsigned-issuer cert/test1
 echo "Creating some cert-manager resources.."
 
 # # Create another certificate
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="second"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=circleci.dec.yaml="second"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test2 --timeout=180s

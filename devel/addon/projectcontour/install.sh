@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install Contour as a gateway-API e2e test.
+# Install Contour as a gateway-API e2e circleci.dec.yaml.
 
 set -o nounset
 set -o errexit

@@ -4,29 +4,29 @@ items:
   kind: Certificate
   metadata:
     creationTimestamp: null
-    name: list-test-1
+    name: list-circleci.dec.yaml-1
     namespace: default
   spec:
     dnsNames:
     - example.cert-manager.1
     duration: 24h0m0s
     issuerRef:
-      name: cert-manager-test-1
-    secretName: cert-manager-test-1
+      name: cert-manager-circleci.dec.yaml-1
+    secretName: cert-manager-circleci.dec.yaml-1
   status: {}
 - apiVersion: cert-manager.io/v1alpha3
   kind: Certificate
   metadata:
     creationTimestamp: null
-    name: list-test-1
+    name: list-circleci.dec.yaml-1
     namespace: default
   spec:
     dnsNames:
     - example.cert-manager.2
     duration: 24h0m0s
     issuerRef:
-      name: cert-manager-test-2
-    secretName: cert-manager-test-2
+      name: cert-manager-circleci.dec.yaml-2
+    secretName: cert-manager-circleci.dec.yaml-2
   status: {}
 - apiVersion: cert-manager.io/v1alpha3
   kind: Issuer

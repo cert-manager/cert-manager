@@ -109,7 +109,7 @@ export GOROOT=$go_sdk
 
 # clean will delete files matching name in path.
 #
-# When inside bazel test the files are read-only.
+# When inside bazel circleci.dec.yaml the files are read-only.
 # Any attempts to write a file that already exists will fail.
 # So resolve by deleting the files before generating them.
 clean() {

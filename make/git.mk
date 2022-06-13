@@ -17,7 +17,7 @@ gitver:
 # "<commit> ref/tags/<tag>". Strips commit + tag prefix, filters out tags for v1+,
 # and manually removes v1.2.0-alpha.1, since that version's manifest contains
 # duplicate CRD resources (2 CRDs with the same name) which in turn can cause problems
-# with the versionchecker test.
+# with the versionchecker circleci.dec.yaml.
 # Open question: how do we decide when to refresh this target?
 bin/scratch/git/upstream-tags.txt: | bin/scratch/git
 	git ls-remote --tags --refs https://github.com/cert-manager/cert-manager.git | \

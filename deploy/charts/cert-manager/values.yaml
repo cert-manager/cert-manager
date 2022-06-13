@@ -8,6 +8,11 @@ global:
   imagePullSecrets: []
   # - name: "image-pull-secret"
 
+  ## Labels to apply to all resources
+  ##
+  commonLabels: {}
+  # team_name: dev
+
   # Optional priority class to be used for the cert-manager pods
   priorityClassName: ""
   rbac:

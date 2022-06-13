@@ -33,7 +33,7 @@ ARTIFACTS=${ARTIFACTS:-$(pwd)/bin/artifacts}
 # becomes sluggish due to slow calls to the apiserver.
 #
 # In the following table, the first column shows the various -nodes values
-# tested when running ginkgo. The "test duration" is the time spent while
+# tested when running ginkgo. The "circleci.dec.yaml duration" is the time spent while
 # running "ginkgo", and the column"timeouts" column shows the number of
 # tests that failed with a time out (including the tests that are retried;
 # tests that show in the "Flaky" column in the Prow UI are thus counted
@@ -176,7 +176,7 @@ if [[ -n "$ginkgo_skip" ]]; then ginkgo_args+=(--ginkgo.skip="${ginkgo_skip}"); 
 # Ginkgo doesn't stream the logs when running in parallel (--nodes). Let's
 # disable parallelism to force Ginkgo to stream the logs when
 # --ginkgo.focus or GINKGO_FOCUS is set, since --ginkgo.focus and
-# GINKGO_FOCUS are often used to debug a specific test.
+# GINKGO_FOCUS are often used to debug a specific circleci.dec.yaml.
 if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   nodes=1
   ginkgo_args+=(--ginkgo.v --test.v)

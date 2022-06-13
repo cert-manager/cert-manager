@@ -56,7 +56,7 @@ setup_tools() {
 }
 
 # check_tool ensures that the tool with the given name is available, or advises
-# users to setup their PATH for the test/e3e/bin directory if not.
+# users to setup their PATH for the circleci.dec.yaml/e3e/bin directory if not.
 check_tool() {
   tool="$1"
   if ! command -v "$tool" &>/dev/null; then

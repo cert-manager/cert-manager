@@ -143,7 +143,7 @@ kube::version::get_version_vars() {
 }
 
 # This function can be used to find the version of last published release that
-# is not alpha or beta release (i.e in upgrade test script)
+# is not alpha or beta release (i.e in upgrade circleci.dec.yaml script)
 # If the latest published release is v1.2.3 it will set KUBE_LAST_VERSION to
 # v1.2.3.
 # If the last published releases are v1.2.3 and v1.3.0-alpha.0 it will set

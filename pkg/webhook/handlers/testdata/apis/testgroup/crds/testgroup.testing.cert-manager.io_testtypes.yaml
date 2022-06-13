@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           testDefaultingField:
-            description: TestDefaultingField is used to test defaulting. In the v1
+            description: TestDefaultingField is used to circleci.dec.yaml defaulting. In the v1
               API, it defaults to `set-in-v1`. In the v2 API, it defaults to `set-in-v2`.
             type: string
           testField:
@@ -72,7 +72,7 @@ spec:
           metadata:
             type: object
           testDefaultingField:
-            description: TestDefaultingField is used to test defaulting. In the v1
+            description: TestDefaultingField is used to circleci.dec.yaml defaulting. In the v1
               API, it defaults to `set-in-v1`. In the v2 API, it defaults to `set-in-v2`.
             type: string
           testField:

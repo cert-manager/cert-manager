@@ -36,7 +36,7 @@ tmpfiles=$TEST_TMPDIR/files
   mkdir -p "$tmpfiles"
   rm -f bazel-*
   cp -aL "." "$tmpfiles"
-  # clean up 'external' directory copied from test runfiles
+  # clean up 'external' directory copied from circleci.dec.yaml runfiles
   rm -rf "$tmpfiles"/external
   export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
   export HOME=$(realpath "$TEST_TMPDIR/home")

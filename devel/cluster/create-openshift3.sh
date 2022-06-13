@@ -81,7 +81,7 @@ echo "Running 'cluster up'"
 # Set kubeconfig to be sysadmin
 "${OC3}" login -u system:admin
 
-# Disable restrictions for our test dependencies
+# Disable restrictions for our circleci.dec.yaml dependencies
 "${OC3}" adm policy add-scc-to-group privileged system:authenticated
 
 # Replace kube-dns with our patched CoreDNS

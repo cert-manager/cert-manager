@@ -18,10 +18,10 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-# This script will load end-to-end test dependencies into the kind cluster, as
+# This script will load end-to-end circleci.dec.yaml dependencies into the kind cluster, as
 # well as installing all 'global' components such as cert-manager itself,
 # pebble, ingress-nginx etc.
-# If you are running the *full* test suite, you should be sure to run this
+# If you are running the *full* circleci.dec.yaml suite, you should be sure to run this
 # script beforehand.
 
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"

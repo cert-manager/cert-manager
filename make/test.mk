@@ -1,24 +1,24 @@
 export KUBEBUILDER_ASSETS=$(PWD)/bin/tools
 
-# WHAT can be used to control which unit tests are run by "make test"; defaults to running all
+# WHAT can be used to control which unit tests are run by "make circleci.dec.yaml"; defaults to running all
 # tests except e2e tests (which require more significant setup)
-# For example: make WHAT=./pkg/util/pki test-pretty to only run the PKI utils tests
+# For example: make WHAT=./pkg/util/pki circleci.dec.yaml-pretty to only run the PKI utils tests
 WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/...
 
 .PHONY: test
-## Test is the workhorse test command which by default runs all unit and
+## Test is the workhorse circleci.dec.yaml command which by default runs all unit and
 ## integration tests. Configured through WHAT, e.g.:
 ##
-##   make test WHAT=./pkg/...
+##   make circleci.dec.yaml WHAT=./pkg/...
 ##
 ## @category Development
 test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
-## test-ci runs all unit and integration tests and writes a JUnit report of
+## circleci.dec.yaml-ci runs all unit and integration tests and writes a JUnit report of
 ## the results. WHAT can be used to limit which tests are run; see help for
-## `make test` for more details.
+## `make circleci.dec.yaml` for more details.
 ##
 ## Fuzz tests are hidden from JUnit output, because they're noisy and can cause
 ## issues with dashboards and UIs.
@@ -34,7 +34,7 @@ test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/ku
 		--junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
 
 .PHONY: unit-test
-## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
+## Same as `circleci.dec.yaml` but only runs the unit tests. By "unit tests", we mean tests
 ## that are quick to run and don't require dependencies like Kubernetes, etcd,
 ## or an apiserver.
 ##
@@ -48,7 +48,7 @@ setup-integration-tests: test/integration/versionchecker/testdata/test_manifests
 	@echo -e "\033[0;33mLatest known tag for integration tests is $(shell tail -1 $(GIT_TAGS_FILE)); if that seems out-of-date,\npull latest tags, run 'rm $(GIT_TAGS_FILE)' and retest\033[0m"
 
 .PHONY: integration-test
-## Same as `test` but only run the integration tests. By "integration tests",
+## Same as `circleci.dec.yaml` but only run the integration tests. By "integration tests",
 ## we mean the tests that require a live apiserver and etcd to run, but don't
 ## require a full Kubernetes cluster.
 ##
@@ -61,7 +61,7 @@ integration-test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin
 ##
 ##     make -j e2e-setup
 ##
-## To run a specific test instead of the whole suite, run:
+## To run a specific circleci.dec.yaml instead of the whole suite, run:
 ##
 ##     make e2e GINKGO_FOCUS='.*call the dummy webhook'
 ##
