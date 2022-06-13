@@ -18,7 +18,6 @@ package venafi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,7 +25,6 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	venaficlient "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -49,10 +47,15 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 		return fmt.Errorf("error pinging Venafi API: %v", err)
 	}
 
-	// attempt to VerifyAccessToken, ignore if it's not set
-	err = client.VerifyAccessToken()
-	if err != nil && !errors.Is(err, venaficlient.ErrNoAccessToken) {
-		return fmt.Errorf("client.VerifyAccessToken: %v", err)
+	//attempt to VerifyAccessToken, ignore if it's not set
+	//err = client.VerifyAccessToken()
+	//if err != nil && !errors.Is(err, venaficlient.ErrNoAccessToken) {
+	//	return fmt.Errorf("client.VerifyAccessToken: %v", err)
+	//}
+
+	err = client.VerifyCredentials()
+	if err != nil {
+		return fmt.Errorf("client.VerifyCredentials: %v", err)
 	}
 
 	// If it does not already have a 'ready' condition, we'll also log an event

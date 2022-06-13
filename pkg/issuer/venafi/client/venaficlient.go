@@ -23,6 +23,7 @@ import (
 	"github.com/Venafi/vcert/v4"
 	"github.com/Venafi/vcert/v4/pkg/certificate"
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v4/pkg/venafi/cloud"
 	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
 	"github.com/go-logr/logr"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -51,6 +52,7 @@ type Interface interface {
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
 	VerifyAccessToken() error
+	VerifyCredentials() error
 }
 
 // Venafi is a implementation of vcert library to manager certificates from TPP or Venafi Cloud
@@ -63,6 +65,7 @@ type Venafi struct {
 
 	vcertClient connector
 	tppClient   *tpp.Connector
+	cloudClient *cloud.Connector
 	config      *vcert.Config
 }
 
@@ -93,11 +96,27 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
+	//switch vcertClient.GetType() {
+	//case endpoint.ConnectorTypeTPP:
+	//	c, ok := vcertClient.(*tpp.Connector)
+	//	if ok {
+	//
+	//	}
+	//}
+	//
 	var tppc *tpp.Connector
-	if vcertClient.GetType() == endpoint.ConnectorTypeTPP {
+	var cc *cloud.Connector
+
+	switch vcertClient.GetType() {
+	case endpoint.ConnectorTypeTPP:
 		c, ok := vcertClient.(*tpp.Connector)
 		if ok {
 			tppc = c
+		}
+	case endpoint.ConnectorTypeCloud:
+		c, ok := vcertClient.(*cloud.Connector)
+		if ok {
+			cc = c
 		}
 	}
 
@@ -107,6 +126,7 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 		namespace:     namespace,
 		secretsLister: secretsLister,
 		vcertClient:   instrumentedVCertClient,
+		cloudClient:   cc,
 		tppClient:     tppc,
 		config:        cfg,
 	}, nil
@@ -215,4 +235,50 @@ func (v *Venafi) VerifyAccessToken() error {
 	}
 
 	return nil
+}
+
+func (v *Venafi) VerifyCredentials() error {
+	switch {
+	case v.cloudClient != nil:
+		err := v.cloudClient.Authenticate(&endpoint.Authentication{
+			APIKey: v.config.Credentials.APIKey,
+		})
+
+		if err != nil {
+			return fmt.Errorf("cloudClient.Authenticate: %v", err)
+		}
+
+		return nil
+	case v.tppClient != nil:
+		if v.config.Credentials == nil {
+			return fmt.Errorf("credentials not configured")
+		}
+
+		if v.config.Credentials.AccessToken != "" {
+			_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
+				AccessToken: v.config.Credentials.AccessToken,
+			})
+
+			if err != nil {
+				return fmt.Errorf("tppClient.VerifyAccessToken: %v", err)
+			}
+
+			return nil
+		}
+
+		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
+			err := v.tppClient.Authenticate(&endpoint.Authentication{
+				User:     v.config.Credentials.User,
+				Password: v.config.Credentials.Password,
+			})
+
+			if err != nil {
+				return fmt.Errorf("tppClient.Authenticate: %v", err)
+			}
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("bah")
 }
