@@ -30,7 +30,7 @@ import (
 	"github.com/cert-manager/cert-manager/test/e2e/util"
 )
 
-var _ = TPPDescribe("properly configured Venafi Issuer", func() {
+var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-setup")
 
 	var (
