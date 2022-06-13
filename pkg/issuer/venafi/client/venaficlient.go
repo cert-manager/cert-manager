@@ -280,5 +280,5 @@ func (v *Venafi) VerifyCredentials() error {
 		}
 	}
 
-	return fmt.Errorf("bah")
+	return fmt.Errorf("neither tppClient or cloudClient have been set")
 }
