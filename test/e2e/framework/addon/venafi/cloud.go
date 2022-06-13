@@ -74,7 +74,7 @@ func (v *VenafiCloud) Provision() error {
 			Namespace:    v.Namespace,
 		},
 		Data: map[string][]byte{
-			"apikey": []byte(v.config.Addons.Venafi.Cloud.APIToken),
+			"api-key": []byte(v.config.Addons.Venafi.Cloud.APIToken),
 		},
 	}
 
@@ -137,9 +137,9 @@ func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	}
 }
 
-// SetAPIKey sets the Secret data["access-token"] value
+// SetAPIKey sets the Secret data["api-key"] value
 func (v *VenafiCloud) SetAPIKey(token string) error {
-	v.createdSecret.Data["apitoken"] = []byte(token)
+	v.createdSecret.Data["api-key"] = []byte(token)
 	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(context.TODO(), v.createdSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err
