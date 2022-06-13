@@ -5,7 +5,10 @@ go_library(
     srcs = ["import.go"],
     importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/venafi",
     visibility = ["//visibility:public"],
-    deps = ["//test/e2e/suite/issuers/venafi/tpp:go_default_library"],
+    deps = [
+        "//test/e2e/suite/issuers/venafi/cloud:go_default_library",
+        "//test/e2e/suite/issuers/venafi/tpp:go_default_library",
+    ],
 )
 
 filegroup(
