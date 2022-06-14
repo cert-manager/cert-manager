@@ -36,4 +36,11 @@ spec:
     interval: {{ .Values.prometheus.servicemonitor.interval }}
     scrapeTimeout: {{ .Values.prometheus.servicemonitor.scrapeTimeout }}
     honorLabels: {{ .Values.prometheus.servicemonitor.honorLabels }}
+    {{- if .Values.prometheus.servicemonitor.scheme }}
+    scheme: {{ .Values.prometheus.servicemonitor.scheme }}
+    {{- end }}
+    {{- if .Values.prometheus.servicemonitor.tlsConfig }}
+    tlsConfig: 
+      {{- toYaml .Values.prometheus.servicemonitor.tlsConfig | nindent 6 }}
+    {{- end }}
 {{- end }}

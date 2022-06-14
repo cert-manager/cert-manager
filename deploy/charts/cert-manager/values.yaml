@@ -167,6 +167,8 @@ ingressShim: {}
 
 prometheus:
   enabled: true
+  service:
+    portName: tcp-prometheus-servicemonitor
   servicemonitor:
     enabled: false
     prometheusInstance: default
@@ -176,6 +178,9 @@ prometheus:
     scrapeTimeout: 30s
     labels: {}
     honorLabels: false
+    # Set tls config
+    # scheme: "https"
+    # tlsConfig: {}
 
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
