@@ -5,6 +5,12 @@
 ## @category Release
 CMREL_KEY ?=
 
+## Set this as an environment variable when uploading a release to GCS. This is generally
+## only needed in CI. Should be the name of a GCS bucket.
+##
+## @category Release
+RELEASE_TARGET_BUCKET ?=
+
 .PHONY: release-artifacts
 # Build all release artifacts which might be run or used locally, except
 # for anything signed.
@@ -23,6 +29,17 @@ release-artifacts-signed: release-artifacts
 ## @category Release
 release: release-artifacts-signed
 	$(MAKE) --no-print-directory bin/release/metadata.json
+
+.PHONY: upload-release
+## Create a complete release and then upload it to a target GCS bucket specified by
+## RELEASE_TARGET_BUCKET
+##
+## @category Release
+upload-release: release | bin/tools/rclone
+ifeq ($(strip $(RELEASE_TARGET_BUCKET)),)
+	$(error Trying to upload-release but RELEASE_TARGET_BUCKET is empty)
+endif
+	./bin/tools/rclone copyto ./bin/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
 
 # Example of how we can generate a SHA256SUMS file and sign it using cosign
 #bin/SHA256SUMS: $(wildcard ...)
