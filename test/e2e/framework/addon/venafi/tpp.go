@@ -144,3 +144,15 @@ func (t *TPPDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 		},
 	}
 }
+
+// SetAccessToken sets the Secret data["access-token"] value
+func (v *VenafiTPP) SetAccessToken(token string) error {
+	v.createdSecret.Data["access-token"] = []byte(token)
+	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(context.TODO(), v.createdSecret, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	v.createdSecret = s
+	return nil
+}
