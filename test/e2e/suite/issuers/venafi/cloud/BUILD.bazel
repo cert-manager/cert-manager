@@ -2,19 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "certificate.go",
-        "certificaterequest.go",
-        "doc.go",
-        "setup.go",
-    ],
-    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/venafi/tpp",
+    srcs = ["setup.go"],
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/venafi/cloud",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon/venafi:go_default_library",
         "//test/e2e/util:go_default_library",
