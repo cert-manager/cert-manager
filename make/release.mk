@@ -52,15 +52,6 @@ ifeq ($(strip $(RELEASE_TARGET_BUCKET)),)
 endif
 	./$(BINDIR)/tools/rclone copyto ./$(BINDIR)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
 
-# Example of how we can generate a SHA256SUMS file and sign it using cosign
-#$(BINDIR)/SHA256SUMS: $(wildcard ...)
-#	@# The patsubst means "all dependencies, but with "$(BINDIR)/" trimmed off the beginning
-#	@# We cd into bin so that SHA256SUMS file doesn't have a prefix of `bin` on everything
-#	cd $(dir $@) && sha256sum $(patsubst $(BINDIR)/%,%,$^) > $(notdir $@)
-
-#$(BINDIR)/SHA256SUMS.sig: $(BINDIR)/SHA256SUMS $(BINDIR)/tools/cosign
-#	$(BINDIR)/tools/cosign sign-blob --key $(COSIGN_KEY) $< > $@
-
 # Takes all metadata files in $(BINDIR)/metadata and combines them into one.
 
 $(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDIR)/release
@@ -116,3 +107,12 @@ forcetime: | $(BINDIR)
 
 $(BINDIR)/release $(BINDIR)/metadata:
 	@mkdir -p $@
+
+# Example of how we can generate a SHA256SUMS file and sign it using cosign
+#$(BINDIR)/SHA256SUMS: $(wildcard ...)
+#	@# The patsubst means "all dependencies, but with "$(BINDIR)/" trimmed off the beginning
+#	@# We cd into bin so that SHA256SUMS file doesn't have a prefix of `bin` on everything
+#	cd $(dir $@) && sha256sum $(patsubst $(BINDIR)/%,%,$^) > $(notdir $@)
+
+#$(BINDIR)/SHA256SUMS.sig: $(BINDIR)/SHA256SUMS $(BINDIR)/tools/cosign
+#	$(BINDIR)/tools/cosign sign-blob --key $(COSIGN_KEY) $< > $@
