@@ -62,7 +62,7 @@ func installDesc() string {
 
 The latest published cert-manager chart in the "https://charts.jetstack.io" repo is used.
 Most of the features supported by 'helm install' are also supported by this command.
-In addition, his command will always correctly install the required CRD resources.
+In addition, this command will always correctly install the required CRD resources.
 
 Some example uses:
 	$ {{.BuildName}} x install
