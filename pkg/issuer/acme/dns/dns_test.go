@@ -420,7 +420,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
 						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-							SecretAccessKeyID: cmmeta.SecretKeySelector{
+							SecretAccessKeyID: &cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "route53",
 								},
