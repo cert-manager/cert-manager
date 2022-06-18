@@ -299,6 +299,16 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 			return nil, nil, fmt.Errorf("route53 accessKeyID and accessKeyIDSecretRef cannot both be specified")
 		}
 
+		// If a SecretAccessKeyID name is given, make sure we have a key specified as well
+		if providerConfig.Route53.SecretAccessKeyID.Name != "" && providerConfig.Route53.SecretAccessKeyID.Key == "" {
+			return nil, nil, fmt.Errorf("route53 accessKeyIDSecretRef requires a key field to be specified")
+		}
+
+		// If a SecretAccessKeyID key is given, make sure there is a name specified as well
+		if providerConfig.Route53.SecretAccessKeyID.Key != "" && providerConfig.Route53.SecretAccessKeyID.Name == "" {
+			return nil, nil, fmt.Errorf("route53 accessKeyIDSecretRef requires a name field to be specified")
+		}
+
 		// Default to the AccessKeyID literal in the configuration
 		secretAccessKeyID := strings.TrimSpace(providerConfig.Route53.AccessKeyID)
 
