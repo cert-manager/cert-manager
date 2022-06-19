@@ -127,7 +127,7 @@ func ingressServiceName(ing *networkingv1.Ingress) string {
 // createIngress will create a challenge solving ingress for the given certificate,
 // domain, token and key.
 func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
-	ing, err := buildIngressResource(ch, svcName)
+	ing, err := buildIngressResource(ch, svcName, s.HTTP01SolverUseIngressClass)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	return s.Client.NetworkingV1().Ingresses(ch.Namespace).Create(ctx, ing, metav1.CreateOptions{})
 }
 
-func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
+func buildIngressResource(ch *cmacme.Challenge, svcName string, useIngressClassName bool) (*networkingv1.Ingress, error) {
 	http01IngressCfg, err := http01IngressCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -154,13 +154,21 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	// TODO: Figure out how to remove this without breaking users who depend on it.
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
 
-	// Use the Ingress Class annotation defined in networkingv1beta1 even though our Ingress objects
-	// are networkingv1, for maximum compatibility with all Ingress controllers.
-	// if the `kubernetes.io/ingress.class` annotation is present, it takes precedence over the
-	// `spec.IngressClassName` field.
-	// See discussion in https://github.com/cert-manager/cert-manager/issues/4537.
-	if http01IngressCfg.Class != nil {
-		ingAnnotations[annotationIngressClass] = *http01IngressCfg.Class
+	// Use the annotation based on whether the user wants to
+	// https://github.com/cert-manager/cert-manager/issues/4821
+	var ingressClassName *string = nil
+	if useIngressClassName {
+		// https://github.com/cert-manager/cert-manager/issues/4537
+		ingressClassName = http01IngressCfg.Class
+	} else {
+		// Use the Ingress Class annotation defined in networkingv1beta1 even though our Ingress objects
+		// are networkingv1, for maximum compatibility with all Ingress controllers.
+		// if the `kubernetes.io/ingress.class` annotation is present, it takes precedence over the
+		// `spec.IngressClassName` field.
+		// See discussion in https://github.com/cert-manager/cert-manager/issues/4537.
+		if http01IngressCfg.Class != nil {
+			ingAnnotations[annotationIngressClass] = *http01IngressCfg.Class
+		}
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
@@ -179,8 +187,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: networkingv1.IngressSpec{
-			// https://github.com/cert-manager/cert-manager/issues/4537
-			IngressClassName: nil,
+			IngressClassName: ingressClassName,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: httpHost,
