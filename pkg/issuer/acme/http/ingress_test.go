@@ -519,7 +519,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice", false)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -597,7 +597,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice", false)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
