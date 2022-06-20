@@ -33,6 +33,13 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
+const (
+	// defaultACMEHTTPTimeout sets the default maximum time that an individual HTTP request can take when doing ACME operations.
+	// Note that there may be other timeouts - e.g. dial timeouts or TLS handshake timeouts - which will be smaller than this. This
+	// timeout is the overall timeout for the entire request.
+	defaultACMEHTTPTimeout = time.Second * 90
+)
+
 // NewClientFunc is a function type for building a new ACME client.
 type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey) acmecl.Interface
 
@@ -71,6 +78,6 @@ func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client 
 				TLSHandshakeTimeout:   10 * time.Second,
 				ExpectContinueTimeout: 1 * time.Second,
 			},
-			Timeout: time.Second * 30,
+			Timeout: defaultACMEHTTPTimeout,
 		})
 }
