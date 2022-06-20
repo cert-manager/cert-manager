@@ -18,7 +18,6 @@ package clusterissuers
 
 import (
 	"context"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -28,6 +27,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalissuers "github.com/cert-manager/cert-manager/internal/controller/issuers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/globals"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
@@ -41,8 +41,7 @@ const (
 func (c *controller) Sync(ctx context.Context, iss *cmapi.ClusterIssuer) (err error) {
 	log := logf.FromContext(ctx)
 
-	// allow a maximum of 90s
-	ctx, cancel := context.WithTimeout(ctx, time.Second*90)
+	ctx, cancel := context.WithTimeout(ctx, globals.DefaultControllerContextTimeout)
 	defer cancel()
 
 	issuerCopy := iss.DeepCopy()
