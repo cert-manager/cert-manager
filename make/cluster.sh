@@ -98,6 +98,9 @@ if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
   k8s_version="$K8S_VERSION"
 fi
 
+# TODO(SgtCoDFish): Using "KIND_IMAGE_FULL_*" here breaks podman, which doesn't support using both tags and digests
+# when referring to an image. We should avoid using FULL where possible.
+
 case "$k8s_version" in
 1.18*) image=$KIND_IMAGE_FULL_K8S_118 ;;
 1.19*) image=$KIND_IMAGE_FULL_K8S_119 ;;
