@@ -54,6 +54,11 @@ const (
 	// Annotation key used to denote whether a Secret is named on a Certificate
 	// as a 'next private key' Secret resource.
 	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
+
+	// Annotation key used to limit the number of CertificateRequests to be kept for a Certificate.
+	// Minimum value is 1.
+	// If unset all CertificateRequests will be kept.
+	RevisionHistoryLimitAnnotationKey = "cert-manager.io/revision-history-limit"
 )
 
 const (

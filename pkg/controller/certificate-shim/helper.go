@@ -19,10 +19,12 @@ package shimhelper
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -43,6 +45,7 @@ var (
 //       cert-manager.io/duration: 2160h
 //       cert-manager.io/renew-before: 1440h
 //       cert-manager.io/usages: "digital signature,key encipherment"
+//       cert-manager.io/revision-history-limit: 7
 //
 // is mapped to the following Certificate:
 //
@@ -54,6 +57,7 @@ var (
 //     usages:
 //       - digital signature
 //       - key encipherment
+//     revisionHistoryLimit: 7
 func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]string) error {
 	if crt == nil {
 		return errNilCertificate
@@ -92,5 +96,19 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		}
 		crt.Spec.Usages = newUsages
 	}
+
+	if revisionHistoryLimit, found := ingLikeAnnotations[cmapi.RevisionHistoryLimitAnnotationKey]; found {
+		limit, err := strconv.ParseInt(revisionHistoryLimit, 10, 32)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, err)
+		}
+
+		if limit < 1 {
+			return fmt.Errorf("%w %q: revision history limit must be a positive number %q", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, revisionHistoryLimit)
+		}
+
+		crt.Spec.RevisionHistoryLimit = pointer.Int32(int32(limit))
+	}
+
 	return nil
 }
