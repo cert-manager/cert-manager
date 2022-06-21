@@ -13,7 +13,7 @@ should just work, so long as the versions you have installed are roughly
 compatible.
 
 If you are running into issues with your host-installed tools, you can
-have them downloaded in `bin/tools` with the command:
+have them downloaded in `$(BINDIR)/tools` with the command:
 
 ```sh
 # With "-j8", the tools are downloaded in parallel.
@@ -24,7 +24,7 @@ To setup your shell to use the tools, run the following from the root of
 the repository:
 
 ```sh
-export PATH="$PWD/bin/tools:$PATH"
+export PATH="$PWD/$(BINDIR)/tools:$PATH"
 ```
 
 > **Tip:** this change of PATH won't persist between shell sessions. To get

@@ -1,4 +1,4 @@
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 # For details on some of these "prelude" settings, see:
 # https://clarkgrubb.com/makefile-style-guide
+
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -uo pipefail -c
@@ -21,7 +22,15 @@ SHELL := /usr/bin/env bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-SOURCES := $(shell find . -type f -name "*.go" -not -path "./bin/*" -not -path "./make/*")
+BINDIR := _bin
+
+include make/util.mk
+
+# SOURCES contains all go files except those in $(BINDIR), the old bindir `bin`, or in
+# the make dir.
+# NB: we skip `bin/` since users might have a `bin` directory left over in repos they were
+# using before the bin dir was renamed
+SOURCES := $(call get-sources,cat -)
 
 ## GOBUILDPROCS is passed to GOMAXPROCS when running go build; if you're running
 ## make in parallel using "-jN" then you'll probably want to reduce the value
@@ -57,10 +66,10 @@ include make/help.mk
 ## @category Development
 clean:
 	@$(eval KIND_CLUSTER_NAME ?= kind)
-	bin/tools/kind delete cluster --name=$(shell cat bin/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
-	rm -rf $(filter-out bin/downloaded,$(wildcard bin/*))
+	$(BINDIR)/tools/kind delete cluster --name=$(shell cat $(BINDIR)/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
+	rm -rf $(filter-out $(BINDIR)/downloaded,$(wildcard $(BINDIR)/*))
 	rm -rf bazel-bin bazel-cert-manager bazel-out bazel-testlogs
 
 .PHONY: clean-all
 clean-all: clean
-	rm -rf bin/
+	rm -rf $(BINDIR)/

@@ -32,7 +32,9 @@ var (
 
 	// BinDir is the filesystem path of the bin directory which is populated using
 	// Makefile commands
-	BinDir = filepath.Join(ModuleRootDir, "bin")
+	// TODO: the BINDIR is configurable in make but is hardcoded here. It might be nice
+	// to detect the BINDIR here (`make print-bindir`?)
+	BinDir = filepath.Join(ModuleRootDir, "_bin")
 
 	// BinToolsDir is the filesystem path of the bin/tools directory which can for
 	// example be populated by `make -f make/Makefile integration-test-tools`.

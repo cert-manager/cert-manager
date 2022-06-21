@@ -8,11 +8,11 @@ __PYTHON := python3
 ci-presubmit: verify-imports verify-errexit verify-boilerplate
 
 .PHONY: verify-imports
-verify-imports: bin/tools/goimports
+verify-imports: $(BINDIR)/tools/goimports
 	./hack/verify-goimports.sh $<
 
 .PHONY: verify-chart
-verify-chart: bin/cert-manager-$(RELEASE_VERSION).tgz
+verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz
 	DOCKER=$(CTR) ./hack/verify-chart-version.sh $<
 
 .PHONY: verify-errexit
