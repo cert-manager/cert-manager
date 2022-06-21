@@ -38,6 +38,10 @@ IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
 PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 GATEWAY_API_VERSION = 0.4.1
 
+# TODO: move the installation commands in this file to separate scripts like those in https://github.com/cert-manager/cert-manager/tree/master/devel/addon for readability
+# Once that is done, we can consume this variable from ./make/config/lib.sh
+SERVICE_IP_PREFIX = 10.0.0
+
 .PHONY: e2e-setup-kind
 ## Create a Kubernetes cluster using Kind, which is required for `make e2e`.
 ## The Kind image is pre-pulled to avoid 'kind create' from blocking other make
@@ -60,7 +64,7 @@ e2e-setup-kind: kind-exists
 # used as a prerequisite. If we were to use .PHONY, then the file's
 # timestamp would not be used to check whether targets should be rebuilt,
 # and they would get constantly rebuilt.
-bin/scratch/kind-exists: make/config/kind/config.yaml make/config/kind/config_etcd_no_fsync.yaml preload-kind-image make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
+bin/scratch/kind-exists: make/config/kind/cluster.yaml preload-kind-image make/cluster.sh FORCE bin/tools/kind bin/tools/kubectl bin/tools/yq | bin/scratch
 	@$(eval KIND_CLUSTER_NAME ?= kind)
 	@make/cluster.sh --name $(KIND_CLUSTER_NAME)
 	@if [ "$(shell cat $@ 2>/dev/null)" != kind ]; then echo kind > $@; else touch $@; fi
@@ -169,9 +173,9 @@ feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=%,   $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
+# TODO: move these commands to separate scripts for readability
 .PHONY: e2e-setup-certmanager
 e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver cainjector webhook ctl,bin/containers/cert-manager-$(bin)-linux-$(CRI_ARCH).tar) $(foreach bin,controller acmesolver cainjector webhook ctl,load-bin/containers/cert-manager-$(bin)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi bin/scratch/kind-exists bin/tools/kubectl bin/tools/kind
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval TAG = $(shell tar xfO bin/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm upgrade \
 		--install \
@@ -195,7 +199,6 @@ e2e-setup-certmanager: bin/cert-manager.tgz $(foreach bin,controller acmesolver 
 
 .PHONY: e2e-setup-bind
 e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) bin/scratch/kind-exists bin/tools/kubectl
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval IMAGE = $(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r))
 	bin/tools/kubectl get ns bind 2>/dev/null >&2 || bin/tools/kubectl create ns bind
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | bin/tools/kubectl apply -n bind -f - >/dev/null
@@ -214,7 +217,6 @@ e2e-setup-gatewayapi: bin/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) bin/scra
 # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
 .PHONY: e2e-setup-ingressnginx
 e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ingressnginx) bin/tools/helm
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	bin/tools/helm repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
 	bin/tools/helm upgrade \
@@ -305,7 +307,6 @@ e2e-setup-samplewebhook: load-bin/downloaded/containers/$(CRI_ARCH)/samplewebhoo
 
 .PHONY: e2e-setup-projectcontour
 e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/projectcontour/contour-gateway.yaml make/config/projectcontour/gateway.yaml bin/scratch/kind-exists bin/tools/kubectl bin/tools/ytt
-	@$(eval SERVICE_IP_PREFIX = $(shell bin/tools/kubectl cluster-info dump | grep -m1 ip-range | cut -d= -f2 | cut -d. -f1,2,3))
 	bin/tools/ytt --data-value service_ip_prefix="${SERVICE_IP_PREFIX}" \
 		--file make/config/projectcontour/contour-gateway.yaml \
 		--file make/config/projectcontour/gateway.yaml | bin/tools/kubectl apply -f-

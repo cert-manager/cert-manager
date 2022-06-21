@@ -184,8 +184,6 @@ fi
 
 mkdir -p "${ARTIFACTS}"
 
-service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n1 | cut -d= -f2 | cut -d. -f1,2,3)
-
 export CGO_ENABLED=0
 
 trace ginkgo \
@@ -196,9 +194,9 @@ trace ginkgo \
   -- \
   --repo-root="$PWD" \
   --report-dir="${ARTIFACTS}" \
-  --acme-dns-server="${service_ip_prefix}.16" \
-  --acme-ingress-ip="${service_ip_prefix}.15" \
-  --acme-gateway-ip="${service_ip_prefix}.14" \
+  --acme-dns-server="${SERVICE_IP_PREFIX}.16" \
+  --acme-ingress-ip="${SERVICE_IP_PREFIX}.15" \
+  --acme-gateway-ip="${SERVICE_IP_PREFIX}.14" \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
   --feature-gates="$feature_gates" \
