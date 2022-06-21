@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -39,10 +40,11 @@ func Test_translateAnnotations(t *testing.T) {
 
 	validAnnotations := func() map[string]string {
 		return map[string]string{
-			cmapi.CommonNameAnnotationKey:  "www.example.com",
-			cmapi.DurationAnnotationKey:    "168h", // 1 week
-			cmapi.RenewBeforeAnnotationKey: "24h",
-			cmapi.UsagesAnnotationKey:      "server auth,signing",
+			cmapi.CommonNameAnnotationKey:           "www.example.com",
+			cmapi.DurationAnnotationKey:             "168h", // 1 week
+			cmapi.RenewBeforeAnnotationKey:          "24h",
+			cmapi.UsagesAnnotationKey:               "server auth,signing",
+			cmapi.RevisionHistoryLimitAnnotationKey: "7",
 		}
 	}
 
@@ -55,6 +57,7 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
+				a.Equal(pointer.Int32(7), crt.Spec.RevisionHistoryLimit)
 			},
 		},
 		"nil annotations": {
@@ -99,6 +102,22 @@ func Test_translateAnnotations(t *testing.T) {
 			annotations: validAnnotations(),
 			mutate: func(tc *testCase) {
 				tc.annotations[cmapi.UsagesAnnotationKey] = "server auth,,signing"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"bad revision history limit": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.RevisionHistoryLimitAnnotationKey] = "invalid revision history limit"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"zero revision history limit": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.RevisionHistoryLimitAnnotationKey] = "0"
 			},
 			expectedError: errInvalidIngressAnnotation,
 		},

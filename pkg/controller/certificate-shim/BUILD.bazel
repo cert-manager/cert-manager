@@ -33,6 +33,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
         "@io_k8s_client_go//tools/record:go_default_library",
         "@io_k8s_sigs_gateway_api//apis/v1alpha2:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
@@ -59,6 +60,7 @@ go_test(
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
         "@io_k8s_sigs_gateway_api//apis/v1alpha2:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 

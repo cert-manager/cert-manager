@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -784,6 +786,7 @@ func (s *Suite) Define() {
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
+			revisitionHistoryLimit := pointer.Int32(7)
 
 			switch {
 			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
@@ -794,12 +797,13 @@ func (s *Suite) Define() {
 
 				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
 				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
-					"cert-manager.io/issuer":       issuerRef.Name,
-					"cert-manager.io/issuer-kind":  issuerRef.Kind,
-					"cert-manager.io/issuer-group": issuerRef.Group,
-					"cert-manager.io/common-name":  domain,
-					"cert-manager.io/duration":     duration.String(),
-					"cert-manager.io/renew-before": renewBefore.String(),
+					"cert-manager.io/issuer":                 issuerRef.Name,
+					"cert-manager.io/issuer-kind":            issuerRef.Kind,
+					"cert-manager.io/issuer-group":           issuerRef.Group,
+					"cert-manager.io/common-name":            domain,
+					"cert-manager.io/duration":               duration.String(),
+					"cert-manager.io/renew-before":           renewBefore.String(),
+					"cert-manager.io/revision-history-limit": strconv.FormatInt(int64(*revisitionHistoryLimit), 10),
 				}, domain), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -812,12 +816,13 @@ func (s *Suite) Define() {
 
 				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
 				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
-					"cert-manager.io/issuer":       issuerRef.Name,
-					"cert-manager.io/issuer-kind":  issuerRef.Kind,
-					"cert-manager.io/issuer-group": issuerRef.Group,
-					"cert-manager.io/common-name":  domain,
-					"cert-manager.io/duration":     duration.String(),
-					"cert-manager.io/renew-before": renewBefore.String(),
+					"cert-manager.io/issuer":                 issuerRef.Name,
+					"cert-manager.io/issuer-kind":            issuerRef.Kind,
+					"cert-manager.io/issuer-group":           issuerRef.Group,
+					"cert-manager.io/common-name":            domain,
+					"cert-manager.io/duration":               duration.String(),
+					"cert-manager.io/renew-before":           renewBefore.String(),
+					"cert-manager.io/revision-history-limit": strconv.FormatInt(int64(*revisitionHistoryLimit), 10),
 				}, domain), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -844,6 +849,7 @@ func (s *Suite) Define() {
 					Expect(certificate.Spec.CommonName).To(Equal(domain))
 					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
 					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+					Expect(certificate.Spec.RevisionHistoryLimit).To(Equal(revisitionHistoryLimit))
 					return nil
 				},
 			)
