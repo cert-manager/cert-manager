@@ -38,9 +38,9 @@ BASE_IMAGE_cmctl-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
 all-containers: cert-manager-controller-linux cert-manager-webhook-linux cert-manager-acmesolver-linux cert-manager-cainjector-linux cert-manager-ctl-linux
 
 .PHONY: cert-manager-controller-linux
-cert-manager-controller-linux: bin/containers/cert-manager-controller-linux-amd64.tar.gz bin/containers/cert-manager-controller-linux-arm64.tar.gz bin/containers/cert-manager-controller-linux-s390x.tar.gz bin/containers/cert-manager-controller-linux-ppc64le.tar.gz bin/containers/cert-manager-controller-linux-arm.tar.gz
+cert-manager-controller-linux: $(BINDIR)/containers/cert-manager-controller-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-arm.tar.gz
 
-bin/containers/cert-manager-controller-linux-amd64.tar bin/containers/cert-manager-controller-linux-arm64.tar bin/containers/cert-manager-controller-linux-s390x.tar bin/containers/cert-manager-controller-linux-ppc64le.tar bin/containers/cert-manager-controller-linux-arm.tar: bin/containers/cert-manager-controller-linux-%.tar: bin/scratch/build-context/cert-manager-controller-linux-%/controller hack/containers/Containerfile.controller bin/scratch/build-context/cert-manager-controller-linux-%/cert-manager.license bin/scratch/build-context/cert-manager-controller-linux-%/cert-manager.licenses_notice bin/release-version | bin/containers
+$(BINDIR)/containers/cert-manager-controller-linux-amd64.tar $(BINDIR)/containers/cert-manager-controller-linux-arm64.tar $(BINDIR)/containers/cert-manager-controller-linux-s390x.tar $(BINDIR)/containers/cert-manager-controller-linux-ppc64le.tar $(BINDIR)/containers/cert-manager-controller-linux-arm.tar: $(BINDIR)/containers/cert-manager-controller-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-controller-linux-%/controller hack/containers/Containerfile.controller $(BINDIR)/scratch/build-context/cert-manager-controller-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-controller-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
 	@$(eval TAG := cert-manager-controller-$*:$(RELEASE_VERSION))
 	@$(eval BASE := BASE_IMAGE_controller-linux-$*)
 	$(CTR) build --quiet \
@@ -51,9 +51,9 @@ bin/containers/cert-manager-controller-linux-amd64.tar bin/containers/cert-manag
 	$(CTR) save $(TAG) -o $@ >/dev/null
 
 .PHONY: cert-manager-webhook-linux
-cert-manager-webhook-linux: bin/containers/cert-manager-webhook-linux-amd64.tar.gz bin/containers/cert-manager-webhook-linux-arm64.tar.gz bin/containers/cert-manager-webhook-linux-s390x.tar.gz bin/containers/cert-manager-webhook-linux-ppc64le.tar.gz bin/containers/cert-manager-webhook-linux-arm.tar.gz
+cert-manager-webhook-linux: $(BINDIR)/containers/cert-manager-webhook-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-webhook-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-webhook-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-webhook-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-webhook-linux-arm.tar.gz
 
-bin/containers/cert-manager-webhook-linux-amd64.tar bin/containers/cert-manager-webhook-linux-arm64.tar bin/containers/cert-manager-webhook-linux-s390x.tar bin/containers/cert-manager-webhook-linux-ppc64le.tar bin/containers/cert-manager-webhook-linux-arm.tar: bin/containers/cert-manager-webhook-linux-%.tar: bin/scratch/build-context/cert-manager-webhook-linux-%/webhook hack/containers/Containerfile.webhook bin/scratch/build-context/cert-manager-webhook-linux-%/cert-manager.license bin/scratch/build-context/cert-manager-webhook-linux-%/cert-manager.licenses_notice bin/release-version | bin/containers
+$(BINDIR)/containers/cert-manager-webhook-linux-amd64.tar $(BINDIR)/containers/cert-manager-webhook-linux-arm64.tar $(BINDIR)/containers/cert-manager-webhook-linux-s390x.tar $(BINDIR)/containers/cert-manager-webhook-linux-ppc64le.tar $(BINDIR)/containers/cert-manager-webhook-linux-arm.tar: $(BINDIR)/containers/cert-manager-webhook-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-webhook-linux-%/webhook hack/containers/Containerfile.webhook $(BINDIR)/scratch/build-context/cert-manager-webhook-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-webhook-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
 	@$(eval TAG := cert-manager-webhook-$*:$(RELEASE_VERSION))
 	@$(eval BASE := BASE_IMAGE_webhook-linux-$*)
 	$(CTR) build --quiet \
@@ -64,9 +64,9 @@ bin/containers/cert-manager-webhook-linux-amd64.tar bin/containers/cert-manager-
 	$(CTR) save $(TAG) -o $@ >/dev/null
 
 .PHONY: cert-manager-cainjector-linux
-cert-manager-cainjector-linux: bin/containers/cert-manager-cainjector-linux-amd64.tar.gz bin/containers/cert-manager-cainjector-linux-arm64.tar.gz bin/containers/cert-manager-cainjector-linux-s390x.tar.gz bin/containers/cert-manager-cainjector-linux-ppc64le.tar.gz bin/containers/cert-manager-cainjector-linux-arm.tar.gz
+cert-manager-cainjector-linux: $(BINDIR)/containers/cert-manager-cainjector-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-cainjector-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-cainjector-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-cainjector-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-cainjector-linux-arm.tar.gz
 
-bin/containers/cert-manager-cainjector-linux-amd64.tar bin/containers/cert-manager-cainjector-linux-arm64.tar bin/containers/cert-manager-cainjector-linux-s390x.tar bin/containers/cert-manager-cainjector-linux-ppc64le.tar bin/containers/cert-manager-cainjector-linux-arm.tar: bin/containers/cert-manager-cainjector-linux-%.tar: bin/scratch/build-context/cert-manager-cainjector-linux-%/cainjector hack/containers/Containerfile.cainjector bin/scratch/build-context/cert-manager-cainjector-linux-%/cert-manager.license bin/scratch/build-context/cert-manager-cainjector-linux-%/cert-manager.licenses_notice bin/release-version | bin/containers
+$(BINDIR)/containers/cert-manager-cainjector-linux-amd64.tar $(BINDIR)/containers/cert-manager-cainjector-linux-arm64.tar $(BINDIR)/containers/cert-manager-cainjector-linux-s390x.tar $(BINDIR)/containers/cert-manager-cainjector-linux-ppc64le.tar $(BINDIR)/containers/cert-manager-cainjector-linux-arm.tar: $(BINDIR)/containers/cert-manager-cainjector-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-cainjector-linux-%/cainjector hack/containers/Containerfile.cainjector $(BINDIR)/scratch/build-context/cert-manager-cainjector-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-cainjector-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
 	@$(eval TAG := cert-manager-cainjector-$*:$(RELEASE_VERSION))
 	@$(eval BASE := BASE_IMAGE_cainjector-linux-$*)
 	$(CTR) build --quiet \
@@ -77,9 +77,9 @@ bin/containers/cert-manager-cainjector-linux-amd64.tar bin/containers/cert-manag
 	$(CTR) save $(TAG) -o $@ >/dev/null
 
 .PHONY: cert-manager-acmesolver-linux
-cert-manager-acmesolver-linux: bin/containers/cert-manager-acmesolver-linux-amd64.tar.gz bin/containers/cert-manager-acmesolver-linux-arm64.tar.gz bin/containers/cert-manager-acmesolver-linux-s390x.tar.gz bin/containers/cert-manager-acmesolver-linux-ppc64le.tar.gz bin/containers/cert-manager-acmesolver-linux-arm.tar.gz
+cert-manager-acmesolver-linux: $(BINDIR)/containers/cert-manager-acmesolver-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-acmesolver-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-acmesolver-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-acmesolver-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-acmesolver-linux-arm.tar.gz
 
-bin/containers/cert-manager-acmesolver-linux-amd64.tar bin/containers/cert-manager-acmesolver-linux-arm64.tar bin/containers/cert-manager-acmesolver-linux-s390x.tar bin/containers/cert-manager-acmesolver-linux-ppc64le.tar bin/containers/cert-manager-acmesolver-linux-arm.tar: bin/containers/cert-manager-acmesolver-linux-%.tar: bin/scratch/build-context/cert-manager-acmesolver-linux-%/acmesolver hack/containers/Containerfile.acmesolver bin/scratch/build-context/cert-manager-acmesolver-linux-%/cert-manager.license bin/scratch/build-context/cert-manager-acmesolver-linux-%/cert-manager.licenses_notice bin/release-version | bin/containers
+$(BINDIR)/containers/cert-manager-acmesolver-linux-amd64.tar $(BINDIR)/containers/cert-manager-acmesolver-linux-arm64.tar $(BINDIR)/containers/cert-manager-acmesolver-linux-s390x.tar $(BINDIR)/containers/cert-manager-acmesolver-linux-ppc64le.tar $(BINDIR)/containers/cert-manager-acmesolver-linux-arm.tar: $(BINDIR)/containers/cert-manager-acmesolver-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-acmesolver-linux-%/acmesolver hack/containers/Containerfile.acmesolver $(BINDIR)/scratch/build-context/cert-manager-acmesolver-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-acmesolver-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
 	@$(eval TAG := cert-manager-acmesolver-$*:$(RELEASE_VERSION))
 	@$(eval BASE := BASE_IMAGE_acmesolver-linux-$*)
 	$(CTR) build --quiet \
@@ -90,9 +90,9 @@ bin/containers/cert-manager-acmesolver-linux-amd64.tar bin/containers/cert-manag
 	$(CTR) save $(TAG) -o $@ >/dev/null
 
 .PHONY: cert-manager-ctl-linux
-cert-manager-ctl-linux: bin/containers/cert-manager-ctl-linux-amd64.tar.gz bin/containers/cert-manager-ctl-linux-arm64.tar.gz bin/containers/cert-manager-ctl-linux-s390x.tar.gz bin/containers/cert-manager-ctl-linux-ppc64le.tar.gz bin/containers/cert-manager-ctl-linux-arm.tar.gz
+cert-manager-ctl-linux: $(BINDIR)/containers/cert-manager-ctl-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-arm.tar.gz
 
-$(foreach arch,$(ARCHS),bin/containers/cert-manager-ctl-linux-$(arch).tar): bin/containers/cert-manager-ctl-linux-%.tar: bin/scratch/build-context/cert-manager-ctl-linux-%/ctl hack/containers/Containerfile.ctl bin/scratch/build-context/cert-manager-ctl-linux-%/cert-manager.license bin/scratch/build-context/cert-manager-ctl-linux-%/cert-manager.licenses_notice bin/release-version | bin/containers
+$(foreach arch,$(ARCHS),$(BINDIR)/containers/cert-manager-ctl-linux-$(arch).tar): $(BINDIR)/containers/cert-manager-ctl-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-ctl-linux-%/ctl hack/containers/Containerfile.ctl $(BINDIR)/scratch/build-context/cert-manager-ctl-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-ctl-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
 	@$(eval TAG := cert-manager-ctl-$*:$(RELEASE_VERSION))
 	@$(eval BASE := BASE_IMAGE_cmctl-linux-$*)
 	$(CTR) build --quiet \
@@ -105,10 +105,10 @@ $(foreach arch,$(ARCHS),bin/containers/cert-manager-ctl-linux-$(arch).tar): bin/
 # At first, we used .INTERMEDIATE to remove the intermediate .tar files.
 # But it meant "make install" would always have to rebuild
 # the tar files.
-bin/containers/cert-manager-%.tar.gz: bin/containers/cert-manager-%.tar
+$(BINDIR)/containers/cert-manager-%.tar.gz: $(BINDIR)/containers/cert-manager-%.tar
 	gzip -c $< > $@
 
-bin/containers:
+$(BINDIR)/containers:
 	@mkdir -p $@
 
 # When running "docker build .", the "build context" was getting too big (1.1 GB
@@ -120,19 +120,19 @@ bin/containers:
 #
 # Note that we can't use symlinks in the build context. In order to avoid the
 # cost of multiple copies of the same binary, we use hard links which shouldn't
-# be a problem since the bin/ folder is entirely managed by make.
+# be a problem since the $(BINDIR)/ folder is entirely managed by make.
 
-$(foreach arch,$(ARCHS),$(foreach bin,$(BINS), bin/scratch/build-context/cert-manager-$(bin)-linux-$(arch))):
+$(foreach arch,$(ARCHS),$(foreach bin,$(BINS), $(BINDIR)/scratch/build-context/cert-manager-$(bin)-linux-$(arch))):
 	@mkdir -p $@
 
-bin/scratch/build-context/cert-manager-%/cert-manager.license: bin/scratch/cert-manager.license | bin/scratch/build-context/cert-manager-%
+$(BINDIR)/scratch/build-context/cert-manager-%/cert-manager.license: $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch/build-context/cert-manager-%
 	@ln -f $< $@
 
-bin/scratch/build-context/cert-manager-%/cert-manager.licenses_notice: bin/scratch/cert-manager.licenses_notice | bin/scratch/build-context/cert-manager-%
+$(BINDIR)/scratch/build-context/cert-manager-%/cert-manager.licenses_notice: $(BINDIR)/scratch/cert-manager.licenses_notice | $(BINDIR)/scratch/build-context/cert-manager-%
 	@ln -f $< $@
 
-bin/scratch/build-context/cert-manager-%/controller bin/scratch/build-context/cert-manager-%/acmesolver bin/scratch/build-context/cert-manager-%/cainjector bin/scratch/build-context/cert-manager-%/webhook: bin/server/% | bin/scratch/build-context/cert-manager-%
+$(BINDIR)/scratch/build-context/cert-manager-%/controller $(BINDIR)/scratch/build-context/cert-manager-%/acmesolver $(BINDIR)/scratch/build-context/cert-manager-%/cainjector $(BINDIR)/scratch/build-context/cert-manager-%/webhook: $(BINDIR)/server/% | $(BINDIR)/scratch/build-context/cert-manager-%
 	@ln -f $< $@
 
-bin/scratch/build-context/cert-manager-ctl-%/ctl: bin/cmctl/cmctl-% | bin/scratch/build-context/cert-manager-ctl-%
+$(BINDIR)/scratch/build-context/cert-manager-ctl-%/ctl: $(BINDIR)/cmctl/cmctl-% | $(BINDIR)/scratch/build-context/cert-manager-ctl-%
 	@ln -f $< $@

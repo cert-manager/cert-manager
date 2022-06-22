@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ source "$here/config/lib.sh"
 cd "$here/.." || exit 1
 set -e
 
-ARTIFACTS=${ARTIFACTS:-$(pwd)/bin/artifacts}
+_default_bindir=$(make print-bindir)
+
+BINDIR=${BINDIR:-$_default_bindir}
+ARTIFACTS=${ARTIFACTS:-$(pwd)/$BINDIR/artifacts}
 
 # Why do we only run 20 tests concurrently? Because we have noticed that
 # many tests start timing out when the Prow pod gets overloaded. We are
@@ -103,7 +106,7 @@ Environment variables:
       to $feature_gates
   ${green}ARTIFACTS${end}
       The path to a directory where the JUnit XML files will be stored. By
-      default, the JUnit XML files are saved to ./bin/artifacts
+      default, the JUnit XML files are saved to ./$BINDIR/artifacts
 
 Details:
   Imagine you got the following failure:

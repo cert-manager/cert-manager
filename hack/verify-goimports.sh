@@ -33,9 +33,7 @@ common_flags=""
 
 echo "+++ running goimports" >&2
 
-# find all directories except bin which contain go files, and output them on a single line
-
-godirs=$(find . -not \( -path "./bin/*" -prune \) -name "*.go" | cut -d'/' -f2 | sort | uniq | tr '\n' ' ')
+godirs=$(make --silent print-source-dirs)
 
 output=$($goimports $common_flags -l $godirs)
 

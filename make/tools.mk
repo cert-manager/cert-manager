@@ -1,18 +1,18 @@
 # To make sure we use the right version of each tool, we put symlink in
-# bin/tools, and the actual binaries are in bin/downloaded. When bumping
+# $(BINDIR)/tools, and the actual binaries are in $(BINDIR)/downloaded. When bumping
 # the version of the tools, this symlink gets updated.
 
-# Let's have bin/tools in front of the PATH so that we don't inavertedly
+# Let's have $(BINDIR)/tools in front of the PATH so that we don't inavertedly
 # pick up the wrong binary somewhere. Watch out, $(shell echo $$PATH) will
 # still print the original PATH, since GNU make does not honor exported
 # variables: https://stackoverflow.com/questions/54726457
-export PATH := $(PWD)/bin/tools:$(PATH)
+export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
 
 CTR=docker
 
 # We have a variable for cmrel since one of the targets which uses it
 # requires an absolute path to the tool.
-CMREL=$(PWD)/bin/tools/cmrel
+CMREL=$(PWD)/$(BINDIR)/tools/cmrel
 
 HELM_VERSION=3.8.0
 KUBECTL_VERSION=1.22.1
@@ -48,8 +48,8 @@ K8S_CODEGEN_VERSION=5915ef051dfa0658ffebb9af39679e52c31762bf
 KUBEBUILDER_ASSETS_VERSION=1.22.0
 
 # When switching branches which use different versions of the tools, we
-# need a way to re-trigger the symlinking from bin/downloaded to bin/tools.
-bin/scratch/%_VERSION: FORCE | bin/scratch
+# need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
+$(BINDIR)/scratch/%_VERSION: FORCE | $(BINDIR)/scratch
 	@test "$($*_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $($*_VERSION) > $@
 
 # The reason we don't use "go env GOOS" or "go env GOARCH" is that the "go"
@@ -63,7 +63,7 @@ ifeq (x86_64, $(HOST_ARCH))
 endif
 
 .PHONY: tools
-tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/controller-gen k8s-codegen-tools bin/tools/goimports bin/tools/gotestsum bin/tools/rclone bin/tools/ytt bin/tools/yq
+tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
 
 ######
 # Go #
@@ -75,24 +75,24 @@ CGO_ENABLED ?= 0
 # DEPENDS_ON_GO is a target that is set as an order-only prerequisite in
 # any target that calls $(GO), e.g.:
 #
-#     bin/tools/crane: $(DEPENDS_ON_GO)
-#         $(GO) build -o bin/tools/crane
+#     $(BINDIR)/tools/crane: $(DEPENDS_ON_GO)
+#         $(GO) build -o $(BINDIR)/tools/crane
 #
 # DEPENDS_ON_GO is empty most of the time, except when running "make
 # vendor-go" or when "make vendor-go" was previously run, in which case
-# DEPENDS_ON_GO is set to bin/tools/go, since bin/tools/go is a
+# DEPENDS_ON_GO is set to $(BINDIR)/tools/go, since $(BINDIR)/tools/go is a
 # prerequisite of any target depending on Go when "make vendor-go" was run.
-DEPENDS_ON_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f bin/tools/go ] && echo yes), bin/tools/go,)
+DEPENDS_ON_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(BINDIR)/tools/go ] && echo yes), $(BINDIR)/tools/go,)
 ifneq ($(DEPENDS_ON_GO),)
-export GOROOT := $(PWD)/bin/tools/goroot
-export PATH := $(PWD)/bin/tools/goroot/bin:$(PATH)
-GO := $(PWD)/bin/tools/go
+export GOROOT := $(PWD)/$(BINDIR)/tools/goroot
+export PATH := $(PWD)/$(BINDIR)/tools/goroot/bin:$(PATH)
+GO := $(PWD)/$(BINDIR)/tools/go
 endif
 
 GOBUILD=CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
 GOTEST=CGO_ENABLED=$(CGO_ENABLED) $(GO) test
 
-GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./bin/tools/gotestsum
+GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./$(BINDIR)/tools/gotestsum
 
 VENDORED_GO_VERSION := 1.18.3
 
@@ -102,13 +102,13 @@ VENDORED_GO_VERSION := 1.18.3
 ## disable vendoring, run "make unvendor-go". When vendoring is enabled,
 ## you will want to set the following:
 ##
-##     export PATH="$PWD/bin/tools:$PATH"
-##     export GOROOT="$PWD/bin/tools/goroot"
-vendor-go: bin/tools/go
+##     export PATH="$PWD/$(BINDIR)/tools:$PATH"
+##     export GOROOT="$PWD/$(BINDIR)/tools/goroot"
+vendor-go: $(BINDIR)/tools/go
 
 .PHONY: unvendor-go
-unvendor-go: bin/tools/go
-	rm -rf bin/tools/go bin/tools/goroot
+unvendor-go: $(BINDIR)/tools/go
+	rm -rf $(BINDIR)/tools/go $(BINDIR)/tools/goroot
 
 .PHONY: which-go
 ## Print the version and path of go which will be used for building and
@@ -117,13 +117,13 @@ which-go: |  $(DEPENDS_ON_GO)
 	@$(GO) version
 	@echo "go binary used for above version information: $(GO)"
 
-# In Prow, the pod has the folder "bin/downloaded" mounted into the
+# In Prow, the pod has the folder "$(BINDIR)/downloaded" mounted into the
 # container. For some reason, even though the permissions are correct,
 # binaries that are mounted with hostPath can't be executed. When in CI, we
 # copy the binaries to work around that. Using $(LN) is only required when
 # dealing with binaries. Other files and folders can be symlinked.
 #
-# Details on how "bin/downloaded" gets cached are available in the
+# Details on how "$(BINDIR)/downloaded" gets cached are available in the
 # description of the PR https://github.com/jetstack/testing/pull/651.
 #
 # We use "printenv CI" instead of just "ifeq ($(CI),)" because otherwise we
@@ -136,22 +136,22 @@ endif
 
 # The "_" in "_go "prevents "go mod tidy" from trying to tidy the vendored
 # goroot.
-bin/tools/go: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot/bin/go bin/tools/goroot bin/scratch/VENDORED_GO_VERSION | bin/tools
-	cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) .
+$(BINDIR)/tools/go: $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot/bin/go $(BINDIR)/tools/goroot $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/tools
+	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) .
 	@touch $@
 
-bin/tools/goroot: bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot bin/scratch/VENDORED_GO_VERSION | bin/tools
-	@rm -rf bin/tools/goroot
-	cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) .
+$(BINDIR)/tools/goroot: $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/tools
+	@rm -rf $(BINDIR)/tools/goroot
+	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) .
 	@touch $@
 
-bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot/bin/go: bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz
+$(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot/bin/go: $(BINDIR)/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz
 	@mkdir -p $(dir $@)
-	rm -rf bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
-	tar xzf $< -C bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*
-	mv bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/go bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
+	rm -rf $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
+	tar xzf $< -C $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*
+	mv $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/go $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
 
-bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
 
 ########
@@ -162,10 +162,10 @@ HELM_linux_amd64_SHA256SUM=8408c91e846c5b9ba15eb6b1a5a79fc22dd4d33ac6ea63388e569
 HELM_darwin_amd64_SHA256SUM=532ddd6213891084873e5c2dcafa577f425ca662a6594a3389e288fc48dc2089
 HELM_darwin_arm64_SHA256SUM=751348f1a4a876ffe089fd68df6aea310fd05fe3b163ab76aa62632e327122f3
 
-bin/tools/helm: bin/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH) bin/scratch/HELM_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/helm: $(BINDIR)/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH) $(BINDIR)/scratch/HELM_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/helm-v$(HELM_VERSION)-%: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/helm-v$(HELM_VERSION)-%: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://get.helm.sh/helm-v$(HELM_VERSION)-$*.tar.gz > $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
@@ -181,10 +181,10 @@ KUBECTL_linux_amd64_SHA256SUM=78178a8337fc6c76780f60541fca7199f0f1a2e9c41806bded
 KUBECTL_darwin_amd64_SHA256SUM=00bb3947ac6ff15690f90ee1a732d0a9a44360fc7743dbfee4cba5a8f6a31413
 KUBECTL_darwin_arm64_SHA256SUM=c81a314ab7f0827a5376f8ffd6d47f913df046275d44c562915a822229819d77
 
-bin/tools/kubectl: bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/KUBECTL_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/kubectl: $(BINDIR)/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/KUBECTL_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(BINDIR)/downloaded/tools
 	curl -sSfL https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl > $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	chmod +x $@
@@ -197,10 +197,10 @@ KIND_linux_amd64_SHA256SUM=af5e8331f2165feab52ec2ae07c427c7b66f4ad044d09f253004a
 KIND_darwin_amd64_SHA256SUM=fdf7209e5f92651ee5d55b78eb4ee5efded0d28c3f3ab8a4a163b6ffd92becfd
 KIND_darwin_arm64_SHA256SUM=bdbb6e94bc8c846b0a6a1df9f962fe58950d92b26852fd6ebdc48fabb229932c
 
-bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/KIND_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/kind: $(BINDIR)/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/KIND_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/kind_$(KIND_VERSION)_%: | bin/downloaded/tools bin/tools
+$(BINDIR)/downloaded/tools/kind_$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	curl -sSfL https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(subst _,-,$*) > $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
 	chmod +x $@
@@ -213,12 +213,12 @@ COSIGN_linux_amd64_SHA256SUM=1227b270e5d7d21d09469253cce17b72a14f6b7c9036dfc0969
 COSIGN_darwin_amd64_SHA256SUM=bcffa19e80f3e94d70e1fb1b0f591b0dec08926b31d3609fe3d25a1cc0389a0a
 COSIGN_darwin_arm64_SHA256SUM=eda58f090d8f4f1db5a0e3a0d2d8845626181fe8aa1cea1791e0afa87fee7b5c
 
-bin/tools/cosign: bin/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/COSIGN_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/cosign: $(BINDIR)/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/COSIGN_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
-bin/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(subst _,-,$*) > $@
 	./hack/util/checkhash.sh $@ $(COSIGN_$*_SHA256SUM)
 	chmod +x $@
@@ -227,10 +227,10 @@ bin/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | bin/downloaded/tools
 # ginkgo #
 ##########
 
-bin/tools/ginkgo: bin/downloaded/tools/ginkgo@$(GINKGO_VERSION) bin/scratch/GINKGO_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/ginkgo: $(BINDIR)/downloaded/tools/ginkgo@$(GINKGO_VERSION) $(BINDIR)/scratch/GINKGO_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
 	@mv $(subst @$(GINKGO_VERSION),,$@) $@
 
@@ -238,10 +238,10 @@ bin/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | bin/downloaded
 # cmrel #
 #########
 
-bin/tools/cmrel: bin/downloaded/tools/cmrel@$(CMREL_VERSION) bin/scratch/CMREL_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/cmrel: $(BINDIR)/downloaded/tools/cmrel@$(CMREL_VERSION) $(BINDIR)/scratch/CMREL_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/cert-manager/release/cmd/cmrel@$(CMREL_VERSION)
 	@mv $(subst @$(CMREL_VERSION),,$@) $@
 
@@ -249,10 +249,10 @@ bin/downloaded/tools/cmrel@$(CMREL_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/t
 # release-notes #
 #################
 
-bin/tools/release-notes: bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION) bin/scratch/K8S_RELEASE_NOTES_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/release-notes: $(BINDIR)/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION) $(BINDIR)/scratch/K8S_RELEASE_NOTES_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install k8s.io/release/cmd/release-notes@v$(K8S_RELEASE_NOTES_VERSION)
 	@mv $(subst @$(K8S_RELEASE_NOTES_VERSION),,$@) $@
 
@@ -260,10 +260,10 @@ bin/downloaded/tools/release-notes@$(K8S_RELEASE_NOTES_VERSION): $(DEPENDS_ON_GO
 # controller-gen #
 ##################
 
-bin/tools/controller-gen: bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION) bin/scratch/CONTROLLER_GEN_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/controller-gen: $(BINDIR)/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION) $(BINDIR)/scratch/CONTROLLER_GEN_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v$(CONTROLLER_GEN_VERSION)
 	@mv $(subst @$(CONTROLLER_GEN_VERSION),,$@) $@
 
@@ -272,12 +272,12 @@ bin/downloaded/tools/controller-gen@$(CONTROLLER_GEN_VERSION): $(DEPENDS_ON_GO) 
 #####################
 
 .PHONY: k8s-codegen-tools
-k8s-codegen-tools: bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen
+k8s-codegen-tools: $(BINDIR)/tools/client-gen $(BINDIR)/tools/conversion-gen $(BINDIR)/tools/deepcopy-gen $(BINDIR)/tools/defaulter-gen $(BINDIR)/tools/informer-gen $(BINDIR)/tools/lister-gen
 
-bin/tools/client-gen bin/tools/conversion-gen bin/tools/deepcopy-gen bin/tools/defaulter-gen bin/tools/informer-gen bin/tools/lister-gen: bin/tools/%-gen: bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) bin/scratch/K8S_CODEGEN_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/client-gen $(BINDIR)/tools/conversion-gen $(BINDIR)/tools/deepcopy-gen $(BINDIR)/tools/defaulter-gen $(BINDIR)/tools/informer-gen $(BINDIR)/tools/lister-gen: $(BINDIR)/tools/%-gen: $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) $(BINDIR)/scratch/K8S_CODEGEN_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install k8s.io/code-generator/cmd/$(notdir $@)
 	@mv $(subst @$(K8S_CODEGEN_VERSION),,$@) $@
 
@@ -285,10 +285,10 @@ bin/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | bin/downlo
 # goimports #
 #############
 
-bin/tools/goimports: bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION) bin/scratch/GOIMPORTS_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/goimports: $(BINDIR)/downloaded/tools/goimports@$(GOIMPORTS_VERSION) $(BINDIR)/scratch/GOIMPORTS_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install golang.org/x/tools/cmd/goimports@v$(GOIMPORTS_VERSION)
 	@mv $(subst @$(GOIMPORTS_VERSION),,$@) $@
 
@@ -296,10 +296,10 @@ bin/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | bin/down
 # gotestsum #
 #############
 
-bin/tools/gotestsum: bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION) bin/scratch/GOTESTSUM_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/gotestsum: $(BINDIR)/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION) $(BINDIR)/scratch/GOTESTSUM_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install gotest.tools/gotestsum@v$(GOTESTSUM_VERSION)
 	@mv $(subst @$(GOTESTSUM_VERSION),,$@) $@
 
@@ -307,10 +307,10 @@ bin/downloaded/tools/gotestsum@$(GOTESTSUM_VERSION): $(DEPENDS_ON_GO) | bin/down
 # crane #
 #########
 
-bin/tools/crane: bin/downloaded/tools/crane@$(CRANE_VERSION) bin/scratch/CRANE_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/crane: $(BINDIR)/downloaded/tools/crane@$(CRANE_VERSION) $(BINDIR)/scratch/CRANE_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/crane@$(CRANE_VERSION): $(DEPENDS_ON_GO) | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/crane@$(CRANE_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/google/go-containerregistry/cmd/crane@v$(CRANE_VERSION)
 	@mv $(subst @$(CRANE_VERSION),,$@) $@
 
@@ -328,10 +328,10 @@ RCLONE_linux_amd64_SHA256SUM=135a4a0965cb58eafb07941f2013a82282c44c28fea95955877
 RCLONE_osx_amd64_SHA256SUM=03b104accc26d5aec14088c253ea5a6bba3263ae00fc403737cabceecad9eae9
 RCLONE_osx_arm64_SHA256SUM=eb547bd0ef2037118a01003bed6cf00a1d6e6975b6f0a73cb811f882a3c3de72
 
-bin/tools/rclone: bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-$(RCLONE_OS)-$(HOST_ARCH) bin/scratch/RCLONE_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/rclone: $(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-$(RCLONE_OS)-$(HOST_ARCH) $(BINDIR)/scratch/RCLONE_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip > $@.zip
 	./hack/util/checkhash.sh $@.zip $(RCLONE_$(subst -,_,$*)_SHA256SUM)
 	@# -p writes to stdout, the second file arg specifies the sole file we
@@ -348,10 +348,10 @@ YTT_linux_amd64_SHA256SUM=d81ecf6c47209f6ac527e503a6fd85e999c3c2f8369e972794047b
 YTT_darwin_amd64_SHA256SUM=9662e3f8e30333726a03f7a5ae6231fbfb2cebb6c1aa3f545b253d7c695487e6
 YTT_darwin_arm64_SHA256SUM=c970b2c13d4059f0bee3bf3ceaa09bd0674a62c24550453d90b284d885a06b7b
 
-bin/tools/ytt: bin/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/YTT_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/ytt: $(BINDIR)/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/YTT_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/ytt_$(YTT_VERSION)_%: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/ytt_$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(subst _,-,$*) > $@
 	./hack/util/checkhash.sh $@ $(YTT_$*_SHA256SUM)
 	chmod +x $@
@@ -364,10 +364,10 @@ YQ_linux_amd64_SHA256SUM=6b891fd5bb13820b2f6c1027b613220a690ce0ef4fc2b6c76ec5f64
 YQ_darwin_amd64_SHA256SUM=5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46
 YQ_darwin_arm64_SHA256SUM=665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69
 
-bin/tools/yq: bin/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/scratch/YQ_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/yq: $(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/YQ_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/yq_$(YQ_VERSION)_%: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$* > $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
 	chmod +x $@
@@ -386,23 +386,23 @@ KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=bb27efb1d2ee43749475293408fc80b923324ab
 # out for us. This means that the hash we expect is the same as the amd64 hash.
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=$(KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM)
 
-bin/tools/etcd: bin/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) bin/scratch/KUBEBUILDER_ASSETS_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/etcd: $(BINDIR)/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) $(BINDIR)/scratch/KUBEBUILDER_ASSETS_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/etcd > $@ && chmod 775 $@
 
-bin/tools/kube-apiserver: bin/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) bin/scratch/KUBEBUILDER_ASSETS_VERSION | bin/tools
-	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+$(BINDIR)/tools/kube-apiserver: $(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) $(BINDIR)/scratch/KUBEBUILDER_ASSETS_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
-bin/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
 
-bin/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | bin/downloaded/tools
+$(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
 ifeq ($(HOST_OS)-$(HOST_ARCH),darwin-arm64)
 	@$(eval KUBEBUILDER_ARCH := amd64)
 	$(warning Downloading amd64 kubebuilder-tools for integration tests since darwin/arm64 isn't currently packaged. This will require rosetta in order to work)
@@ -411,11 +411,11 @@ else
 endif
 	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(KUBEBUILDER_ARCH).tar.gz > $@
 
-bin/downloaded/gatewayapi-v%: | bin/downloaded
+$(BINDIR)/downloaded/gatewayapi-v%: | $(BINDIR)/downloaded
 	@mkdir -p $@
 	curl -sSfL https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$*.tar.gz | tar xz -C $@
 
-bin bin/tools bin/downloaded bin/downloaded/tools:
+$(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
 	@mkdir -p $@
 
 # The targets (verify_deps, verify_chart, verify_upgrade, and cluster) are
@@ -435,7 +435,7 @@ BAZEL_TARGET := $(filter verify verify_deps verify_chart verify_upgrade cluster,
 ifneq ($(BAZEL_TARGET),)
 $(warning Not checking whether the system tools are present since Bazel already takes care of that in the target $(MAKECMDGOALS). .)
 else
-# Although we "vendor" most tools in bin/tools, we still require some binaries
+# Although we "vendor" most tools in $(BINDIR)/tools, we still require some binaries
 # to be available on the system. The vendor-go MAKECMDGOALS trick prevents the
 # check for the presence of Go when 'make vendor-go' is run.
 MISSING=$(shell (command -v curl >/dev/null || echo curl) \
@@ -452,5 +452,5 @@ endif
 endif
 
 .PHONY: update-kind-images
-update-kind-images: bin/tools/crane
-	CRANE=./bin/tools/crane ./hack/latest-kind-images.sh
+update-kind-images: $(BINDIR)/tools/crane
+	CRANE=./$(BINDIR)/tools/crane ./hack/latest-kind-images.sh

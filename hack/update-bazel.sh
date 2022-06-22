@@ -42,6 +42,7 @@ fi
 
 set -o xtrace
 "$gazelle" fix \
+  --exclude=_bin \
   --external=external \
   --go_naming_convention=go_default_library
 
