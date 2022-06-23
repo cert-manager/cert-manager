@@ -23,7 +23,7 @@ def define_base_images():
         name = "static_base",
         registry = "gcr.io",
         repository = "distroless/static",
-        digest = "sha256:49f33fac9328ac595cb74bd02e6a186414191c969de0d8be34e6307c185acb8e"
+        digest = "sha256:3e8b85e48c98349a4b6e853c63704b3df78ba8b73279663da26f42a3472ff888"
     )
     # Use 'dynamic' distroless image for modified cert-manager deployments that
     # are dynamically linked. (This is not the default and you probably don't
@@ -35,5 +35,5 @@ def define_base_images():
         name = "dynamic_base",
         registry = "gcr.io",
         repository = "distroless/base",
-        digest = "sha256:26bbe93b4e3bbc4846aab153fde35885d22dc3ff22f1166eb7935717d86c5c7e"
+        digest = "sha256:6010a285f9a871e8f1f33142d53e2ad6d9d102d647704ac191c191f5becc2516"
     )
