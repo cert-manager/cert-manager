@@ -146,7 +146,8 @@ func NewController(
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
-	// Set context deadline for full sync in 10 seconds
+	// TODO: Change to globals.DefaultControllerContextTimeout as part of a wider effort to ensure we have
+	// failsafe timeouts in every controller
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
