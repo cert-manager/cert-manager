@@ -16,3 +16,4 @@ _artifacts/
 bin/
 user.bazelrc
 *.bak
+_bin/
