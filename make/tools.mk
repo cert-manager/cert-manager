@@ -33,6 +33,8 @@ K8S_CODEGEN_VERSION=v0.24.2
 
 KUBEBUILDER_ASSETS_VERSION=1.22.0
 
+VENDORED_GO_VERSION := 1.18.3
+
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
 $(BINDIR)/scratch/%_VERSION: FORCE | $(BINDIR)/scratch
@@ -79,8 +81,6 @@ GOBUILD=CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
 GOTEST=CGO_ENABLED=$(CGO_ENABLED) $(GO) test
 
 GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./$(BINDIR)/tools/gotestsum
-
-VENDORED_GO_VERSION := 1.18.3
 
 .PHONY: vendor-go
 ## By default, this Makefile uses the system's Go. You can use a "vendored"
