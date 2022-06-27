@@ -5,7 +5,7 @@ __PYTHON := python3
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-licenses
 
 .PHONY: verify-imports
 verify-imports: $(BINDIR)/tools/goimports
@@ -23,9 +23,16 @@ verify-errexit:
 verify-boilerplate:
 	$(__PYTHON) hack/verify_boilerplate.py
 
+.PHONY: verify-licenses
+verify-licenses: $(BINDIR)/scratch/LATEST-LICENSES
+	@diff $(BINDIR)/scratch/LATEST-LICENSES LICENSES >/dev/null || (echo -e "\033[0;33mLICENSES seem to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+
 .PHONY: verify-crds
 verify-crds: | $(DEPENDS_ON_GO) $(BINDIR)/tools/controller-gen $(BINDIR)/tools/yq
 	./hack/check-crds.sh $(GO) ./$(BINDIR)/tools/controller-gen ./$(BINDIR)/tools/yq
+
+.PHONY: update-licenses
+update-licenses: LICENSES
 
 .PHONY: update-crds
 ## Update all CRDs to the latest version based on the current checkout

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-# +skip_license_check
-
-# Copyright 2015 The Kubernetes Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,44 +18,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Checking module licenses for changes..." >&2
-elif ! command -v bazel &>/dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
-  exit 1
-else
-  (
-    set -o xtrace
-    bazel test --test_output=streamed //hack:verify-deps-licenses
-  )
-  exit 0
-fi
+# This file is kept as backwards-compatibility for people with muscle memory who
+# type "./hack/verify-deps-licenses.sh" and expect it to work, or for third party CI pipelines.
 
-tmpfiles=$TEST_TMPDIR/files
+# The replacement make target handles only licenses and doesn't verify anything relating to bazel
 
-(
-  mkdir -p "$tmpfiles"
-  rm -f bazel-*
-  cp -aL "." "$tmpfiles"
-  export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
-  export HOME=$(realpath "$TEST_TMPDIR/home")
-  unset GOPATH
-  go=$(realpath "$2")
-  export PATH=$(dirname "$go"):$PATH
-  "$@"
-)
+# This script may be removed in the future. Prefer using `make` directly.
 
-# Avoid diff -N so we handle empty files correctly
-diff=$(diff -upr \
-  -x ".git" \
-  -x "bazel-*" \
-  -x "_output" \
-  "." "$tmpfiles" 2>/dev/null || true)
-
-if [[ -n "${diff}" ]]; then
-  echo "${diff}" >&2
-  echo >&2
-  echo "ERROR: modules licenses changed. Update with ./hack/update-deps-licenses.sh" >&2
-  exit 1
-fi
-echo "SUCCESS: modules licenses up-to-date"
+make verify-licenses
