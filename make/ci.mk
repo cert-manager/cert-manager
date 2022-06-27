@@ -5,7 +5,7 @@ __PYTHON := python3
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds
 
 .PHONY: verify-imports
 verify-imports: $(BINDIR)/tools/goimports
@@ -22,6 +22,53 @@ verify-errexit:
 .PHONY: verify-boilerplate
 verify-boilerplate:
 	$(__PYTHON) hack/verify_boilerplate.py
+
+.PHONY: verify-crds
+verify-crds: | $(DEPENDS_ON_GO) $(BINDIR)/tools/controller-gen $(BINDIR)/tools/yq
+	./hack/check-crds.sh $(GO) ./$(BINDIR)/tools/controller-gen ./$(BINDIR)/tools/yq
+
+.PHONY: update-crds
+## Update all CRDs to the latest version based on the current checkout
+##
+## @category Development
+update-crds: generate-test-crds patch-crds | $(BINDIR)/tools/controller-gen
+
+.PHONY: generate-test-crds
+generate-test-crds: | $(BINDIR)/tools/controller-gen
+	./$(BINDIR)/tools/controller-gen \
+		crd \
+		paths=./pkg/webhook/handlers/testdata/apis/testgroup/v{1,2}/... \
+		output:crd:dir=./pkg/webhook/handlers/testdata/apis/testgroup/crds
+
+PATCH_CRD_OUTPUT_DIR=./deploy/crds
+.PHONY: patch-crds
+patch-crds: | $(BINDIR)/tools/controller-gen
+	./$(BINDIR)/tools/controller-gen \
+		schemapatch:manifests=./deploy/crds \
+		output:dir=$(PATCH_CRD_OUTPUT_DIR) \
+		paths=./pkg/apis/...
+
+.PHONY: verify-codegen
+verify-codegen: | k8s-codegen-tools $(DEPENDS_ON_GO)
+	VERIFY_ONLY="true" ./hack/k8s-codegen.sh \
+		$(GO) \
+		./$(BINDIR)/tools/client-gen \
+		./$(BINDIR)/tools/deepcopy-gen \
+		./$(BINDIR)/tools/informer-gen \
+		./$(BINDIR)/tools/lister-gen \
+		./$(BINDIR)/tools/defaulter-gen \
+		./$(BINDIR)/tools/conversion-gen
+
+.PHONY: update-codegen
+update-codegen: | k8s-codegen-tools $(DEPENDS_ON_GO)
+	./hack/k8s-codegen.sh \
+		$(GO) \
+		./$(BINDIR)/tools/client-gen \
+		./$(BINDIR)/tools/deepcopy-gen \
+		./$(BINDIR)/tools/informer-gen \
+		./$(BINDIR)/tools/lister-gen \
+		./$(BINDIR)/tools/defaulter-gen \
+		./$(BINDIR)/tools/conversion-gen
 
 # The targets (verify_deps, verify_chart, verify_upgrade, and cluster) are
 # temorary and exist to keep the compatibility with the following Prow jobs:

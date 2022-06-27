@@ -25,25 +25,11 @@ GOIMPORTS_VERSION=0.1.8
 GOTESTSUM_VERSION=1.7.0
 RCLONE_VERSION=1.58.1
 YTT_VERSION=0.36.0
-YQ_VERSION=4.11.2
+YQ_VERSION=4.25.3
 CRANE_VERSION=0.8.0
 GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
 
-# This is a temporary special case; k8s.io/code-generator makes its tags on
-# version-based branches (so v0.23.1 would be on a branch called release-1.23)
-# but those version-based branches don't backport changes to gomod. For module-aware
-# codegen, we need k8s.io/gengo at least version v0.0.0-20211115164449-b448ea381d54
-# but that version hasn't been used on anything except master, and there are no tags
-# on master for us to refer to. So, we refer to the latest commit on master at the time
-# of writing here; when k8s 1.24 is released, presumably the go.mod on the release-1.24
-# branch will be updated and so we'll be able to use a v0.24.x tag rather than a hash
-# of a commit on master.
-
-# A alternative workaround for this is to use "go get" to install the binaries, but that's
-# deprecated and will be removed in go 1.18. Referring to a commit on master here seems
-# a lesser evil than blocking our potential future upgrade to go 1.18 behind the release
-# of k8s 1.24
-K8S_CODEGEN_VERSION=5915ef051dfa0658ffebb9af39679e52c31762bf
+K8S_CODEGEN_VERSION=v0.24.2
 
 KUBEBUILDER_ASSETS_VERSION=1.22.0
 
@@ -360,9 +346,9 @@ $(BINDIR)/downloaded/tools/ytt_$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 # yq #
 ######
 
-YQ_linux_amd64_SHA256SUM=6b891fd5bb13820b2f6c1027b613220a690ce0ef4fc2b6c76ec5f643d5535e61
-YQ_darwin_amd64_SHA256SUM=5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46
-YQ_darwin_arm64_SHA256SUM=665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69
+YQ_linux_amd64_SHA256SUM=cb66f4382a65d0443824f0a0fcda9c5c5f7b6bd4e4346539b2f0abc647ecf0ea
+YQ_darwin_amd64_SHA256SUM=3b80429a6118defa8726629a801e0f5f49e544b7279e3dde526b99bab5b6b5bd
+YQ_darwin_arm64_SHA256SUM=db9be0f73e7fbcba1039e405abc2a834cdc64ac3f90c7b79090b242e0002193c
 
 $(BINDIR)/tools/yq: $(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/YQ_VERSION | $(BINDIR)/tools
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
@@ -444,8 +430,8 @@ MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v sha256sum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
              && ([ -n "$(findstring vendor-go,$(MAKECMDGOALS),)" ] \
-                || command -v $(GO) >/dev/null || echo $(GO)) \
-             && (command -v $(CTR) >/dev/null || echo $(CTR)))
+                || command -v $(GO) >/dev/null || echo "$(GO) (or run 'make vendor-go')") \
+             && (command -v $(CTR) >/dev/null || echo "$(CTR) (or set CTR to a docker-compatible tool)"))
 ifneq ($(MISSING),)
 $(error Missing required tools: $(MISSING))
 endif

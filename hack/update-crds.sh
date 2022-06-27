@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,33 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
-  echo "Updating generated CRDs..." >&2
-elif ! command -v bazel &>/dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
-  exit 1
-else
-  (
-    set -o xtrace
-    bazel run //hack:update-crds
-  )
-  exit 0
-fi
+# This file is kept as backwards-compatibility for people with muscle memory who
+# type "./hack/update-crds.sh" and expect it to work, or for third party CI pipelines.
 
-go=$(realpath "$1")
-controllergen="$(realpath "$2")"
-export PATH=$(dirname "$go"):$PATH
+# This script may be removed in the future. Prefer using `make update-crds` directly.
 
-# This script should be run via `bazel run //hack:update-crds`
-REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
-cd "${REPO_ROOT}"
-
-"$controllergen" \
-    crd \
-    paths=./pkg/webhook/handlers/testdata/apis/testgroup/v{1,2}/... \
-    output:crd:dir=./pkg/webhook/handlers/testdata/apis/testgroup/crds
-
-"$controllergen" \
-  schemapatch:manifests=./deploy/crds \
-  output:dir=./deploy/crds \
-  paths=./pkg/apis/...
+make update-crds
