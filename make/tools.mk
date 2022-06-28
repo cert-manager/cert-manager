@@ -22,6 +22,7 @@ COSIGN_VERSION=1.3.1
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
+GOLICENSES_VERSION=1.2.1
 GOTESTSUM_VERSION=1.7.0
 RCLONE_VERSION=1.58.1
 YTT_VERSION=0.36.0
@@ -32,6 +33,8 @@ GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
 K8S_CODEGEN_VERSION=v0.24.2
 
 KUBEBUILDER_ASSETS_VERSION=1.22.0
+
+VENDORED_GO_VERSION := 1.18.3
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
@@ -49,7 +52,7 @@ ifeq (x86_64, $(HOST_ARCH))
 endif
 
 .PHONY: tools
-tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
+tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
 
 ######
 # Go #
@@ -79,8 +82,6 @@ GOBUILD=CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
 GOTEST=CGO_ENABLED=$(CGO_ENABLED) $(GO) test
 
 GOTESTSUM=CGO_ENABLED=$(CGO_ENABLED) ./$(BINDIR)/tools/gotestsum
-
-VENDORED_GO_VERSION := 1.18.3
 
 .PHONY: vendor-go
 ## By default, this Makefile uses the system's Go. You can use a "vendored"
@@ -277,6 +278,17 @@ $(BINDIR)/tools/goimports: $(BINDIR)/downloaded/tools/goimports@$(GOIMPORTS_VERS
 $(BINDIR)/downloaded/tools/goimports@$(GOIMPORTS_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install golang.org/x/tools/cmd/goimports@v$(GOIMPORTS_VERSION)
 	@mv $(subst @$(GOIMPORTS_VERSION),,$@) $@
+
+###############
+# go-licenses #
+###############
+
+$(BINDIR)/tools/go-licenses: $(BINDIR)/downloaded/tools/go-licenses@$(GOLICENSES_VERSION) $(BINDIR)/scratch/GOLICENSES_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
+
+$(BINDIR)/downloaded/tools/go-licenses@$(GOLICENSES_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
+	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/google/go-licenses@v$(GOLICENSES_VERSION)
+	@mv $(subst @$(GOLICENSES_VERSION),,$@) $@
 
 #############
 # gotestsum #
