@@ -1,5 +1,3 @@
-__PYTHON := python3
-
 .PHONY: ci-presubmit
 ## Run all checks (but not Go tests) which should pass before any given pull
 ## request or change is merged.
@@ -19,8 +17,11 @@ verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz
 verify-errexit:
 	./hack/verify-errexit.sh
 
+__PYTHON := python3
+
 .PHONY: verify-boilerplate
 verify-boilerplate:
+	@command -v $(__PYTHON) >/dev/null || (echo "couldn't find python3 at '$(__PYTHON)', required for $@. Install python3 or set '__PYTHON'" && exit 1)
 	$(__PYTHON) hack/verify_boilerplate.py
 
 .PHONY: verify-licenses
