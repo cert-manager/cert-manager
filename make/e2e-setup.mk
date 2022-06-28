@@ -47,7 +47,7 @@ SERVICE_IP_PREFIX = 10.0.0
 ## The Kind image is pre-pulled to avoid 'kind create' from blocking other make
 ## targets.
 ##
-##	make kind [KIND_CLUSTER_NAME=name] [K8S_VERSION=<kubernetes_version>]
+##	make [KIND_CLUSTER_NAME=name] [K8S_VERSION=<kubernetes_version>] e2e-setup-kind
 ##
 ## @category Development
 e2e-setup-kind: kind-exists
