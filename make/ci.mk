@@ -93,8 +93,10 @@ verify:
 
 .PHONY: verify_deps
 verify_deps:
-	$(warning "The 'verify_deps' target is deprecated and will be removed soon. This target is not useful anymore with the new make flow.")
-	./hack/verify-deps.sh
+	@# this target can be removed once we've removed the pull-cert-manager-deps test from presubmits
+	@# for now, just make it a no-op so the tests don't fail
+	$(warning "The 'verify_deps' target is deprecated, does nothing, and will be removed soon. This target is not useful anymore with the new make flow.")
+	@true
 
 # requires docker
 .PHONY: verify_chart
