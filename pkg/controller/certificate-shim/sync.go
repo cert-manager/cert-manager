@@ -508,6 +508,65 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		return true
 	}
 
+	if a.Spec.RevisionHistoryLimit != b.Spec.RevisionHistoryLimit {
+		return true
+	}
+
+	var aAlgorithm, bAlgorithm cmapi.PrivateKeyAlgorithm
+	if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Algorithm != "" {
+		aAlgorithm = a.Spec.PrivateKey.Algorithm
+	}
+
+	if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.Algorithm != "" {
+		bAlgorithm = b.Spec.PrivateKey.Algorithm
+	}
+
+	if aAlgorithm != bAlgorithm {
+		return true
+	}
+
+	var aEncoding, bEncoding cmapi.PrivateKeyEncoding
+	if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Encoding != "" {
+		aEncoding = a.Spec.PrivateKey.Encoding
+	}
+
+	if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.Encoding != "" {
+		bEncoding = b.Spec.PrivateKey.Encoding
+	}
+
+	if aEncoding != bEncoding {
+		return true
+	}
+
+	var aRotationPolicy, bRotationPolicy cmapi.PrivateKeyRotationPolicy
+	if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.RotationPolicy != "" {
+		aRotationPolicy = a.Spec.PrivateKey.RotationPolicy
+	}
+
+	if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.RotationPolicy != "" {
+		bRotationPolicy = b.Spec.PrivateKey.RotationPolicy
+	}
+
+	if aRotationPolicy != bRotationPolicy {
+		return true
+	}
+
+	// for Ed25519 private key size is ignored
+	if aAlgorithm != cmapi.Ed25519KeyAlgorithm {
+		var aSize, bSize int
+		if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Size != 0 {
+			aSize = a.Spec.PrivateKey.Size
+		}
+
+		if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.Size != 0 {
+			bSize = b.Spec.PrivateKey.Size
+		}
+
+		if aSize != bSize {
+			return true
+		}
+	}
+
 	return false
 }
 
