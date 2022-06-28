@@ -110,5 +110,84 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		crt.Spec.RevisionHistoryLimit = pointer.Int32(int32(limit))
 	}
 
+	if privateKeyAlgorithm, found := ingLikeAnnotations[cmapi.PrivateKeyAlgorithmAnnotationKey]; found {
+		algorithm := cmapi.PrivateKeyAlgorithm(privateKeyAlgorithm)
+		switch algorithm {
+		case cmapi.RSAKeyAlgorithm,
+			cmapi.ECDSAKeyAlgorithm,
+			cmapi.Ed25519KeyAlgorithm:
+			// ok
+		default:
+			return fmt.Errorf("%w %q: invalid private key algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeyAlgorithmAnnotationKey, privateKeyAlgorithm)
+		}
+
+		if crt.Spec.PrivateKey == nil {
+			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{Algorithm: algorithm}
+		} else {
+			crt.Spec.PrivateKey.Algorithm = algorithm
+		}
+	}
+
+	if privateKeyEncoding, found := ingLikeAnnotations[cmapi.PrivateKeyEncodingAnnotationKey]; found {
+		encoding := cmapi.PrivateKeyEncoding(privateKeyEncoding)
+		if encoding != cmapi.PKCS1 &&
+			encoding != cmapi.PKCS8 {
+			return fmt.Errorf("%w %q: invalid private key encoding %q", errInvalidIngressAnnotation, cmapi.PrivateKeyEncodingAnnotationKey, privateKeyEncoding)
+		}
+
+		if crt.Spec.PrivateKey == nil {
+			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{Encoding: encoding}
+		} else {
+			crt.Spec.PrivateKey.Encoding = encoding
+		}
+	}
+
+	if privateKeySize, found := ingLikeAnnotations[cmapi.PrivateKeySizeAnnotationKey]; found {
+		size, err := strconv.Atoi(privateKeySize)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, err)
+		}
+
+		// default algorithm
+		algorithm := cmapi.RSAKeyAlgorithm
+		if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.Algorithm != "" {
+			algorithm = crt.Spec.PrivateKey.Algorithm
+		}
+
+		switch algorithm {
+		case cmapi.RSAKeyAlgorithm:
+			if size < 2048 || size > 8192 {
+				return fmt.Errorf("%w %q: invalid private key size for RSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
+			}
+		case cmapi.ECDSAKeyAlgorithm:
+			switch size {
+			case 256, 384, 521:
+				// ok
+			default:
+				return fmt.Errorf("%w %q: invalid private key size for ECDSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
+			}
+		}
+
+		if crt.Spec.PrivateKey == nil {
+			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{Size: size}
+		} else {
+			crt.Spec.PrivateKey.Size = size
+		}
+	}
+
+	if privateKeyRotationPolicy, found := ingLikeAnnotations[cmapi.PrivateKeyRotationPolicyAnnotationKey]; found {
+		rotationPolicy := cmapi.PrivateKeyRotationPolicy(privateKeyRotationPolicy)
+		if rotationPolicy != cmapi.RotationPolicyNever &&
+			rotationPolicy != cmapi.RotationPolicyAlways {
+			return fmt.Errorf("%w %q: invalid private key rotation policy %q", errInvalidIngressAnnotation, cmapi.PrivateKeyRotationPolicyAnnotationKey, privateKeyRotationPolicy)
+		}
+
+		if crt.Spec.PrivateKey == nil {
+			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{RotationPolicy: rotationPolicy}
+		} else {
+			crt.Spec.PrivateKey.RotationPolicy = rotationPolicy
+		}
+	}
+
 	return nil
 }
