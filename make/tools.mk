@@ -436,6 +436,12 @@ else
 # Although we "vendor" most tools in $(BINDIR)/tools, we still require some binaries
 # to be available on the system. The vendor-go MAKECMDGOALS trick prevents the
 # check for the presence of Go when 'make vendor-go' is run.
+
+# Gotcha warning: MAKECMDGOALS only contains what the _top level_ make invocation used, and doesn't look at target dependencies
+# i.e. if we have a target "abc: vendor-go test" and run "make abc", we'll get an error
+# about go being missing even though abc itself depends on vendor-go!
+# That means we need to pass vendor-go at the top level if go is not installed (i.e. "make vendor-go abc")
+
 MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v jq >/dev/null || echo jq) \
              && (command -v sha256sum >/dev/null || echo sha256sum) \
