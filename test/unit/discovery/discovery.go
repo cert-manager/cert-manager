@@ -17,10 +17,11 @@ limitations under the License.
 package discovery
 
 import (
-	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic/openapiv2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/openapi"
 	restclient "k8s.io/client-go/rest"
 )
 
@@ -35,6 +36,7 @@ type Discovery struct {
 	serverGroupsFn                       func() (*metav1.APIGroupList, error)
 	serverVersionFn                      func() (*version.Info, error)
 	openAPISchemaFn                      func() (*openapi_v2.Document, error)
+	openAPIV3SchemaFn                    func() openapi.Client
 	restClientFn                         func() restclient.Interface
 }
 
@@ -48,6 +50,7 @@ func NewDiscovery() *Discovery {
 		serverGroupsFn:                       func() (*metav1.APIGroupList, error) { return nil, nil },
 		serverVersionFn:                      func() (*version.Info, error) { return nil, nil },
 		openAPISchemaFn:                      func() (*openapi_v2.Document, error) { return nil, nil },
+		openAPIV3SchemaFn:                    func() openapi.Client { return nil },
 		restClientFn:                         func() restclient.Interface { return nil },
 	}
 }
@@ -92,6 +95,10 @@ func (d *Discovery) ServerVersion() (*version.Info, error) {
 
 func (d *Discovery) OpenAPISchema() (*openapi_v2.Document, error) {
 	return d.openAPISchemaFn()
+}
+
+func (d *Discovery) OpenAPIV3() openapi.Client {
+	return d.openAPIV3SchemaFn()
 }
 
 func (d *Discovery) RESTClient() restclient.Interface {
