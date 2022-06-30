@@ -17,6 +17,26 @@ CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 # Bazel file generation rules
 
 sh_binary(
+    name = "update-deps",
+    srcs = ["update-deps.sh"],
+    args = [
+        "$(location %s)" % GO,
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+        "$(location :update-bazel)",
+        "$(location :update-deps-licenses)",
+    ],
+    data = [
+        GAZELLE,
+        GO,
+        KAZEL,
+        ":update-bazel",
+        ":update-deps-licenses",
+    ],
+    tags = ["manual"],
+)
+
+sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
     args = [
@@ -27,6 +47,19 @@ sh_binary(
         GAZELLE,
         KAZEL,
     ],
+    tags = ["manual"],
+)
+
+sh_binary(
+    name = "update-deps-licenses",
+    srcs = ["update-deps-licenses.sh"],
+    args = [
+        "$(location %s)" % GO,
+    ],
+    data = [
+        GO,
+    ],
+    tags = ["manual"],
 )
 
 sh_test(
@@ -41,7 +74,10 @@ sh_test(
         GAZELLE,
         KAZEL,
     ],
-    tags = ["lint"],
+    tags = [
+        "lint",
+        "manual",
+    ],
 )
 
 filegroup(

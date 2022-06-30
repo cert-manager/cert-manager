@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # Copyright 2020 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# NB: This script requires bazel, and is no longer supported since we no longer support bazel
+# It's preserved for now but might be removed in the future
 
 # Update vendor and bazel rules to match go.mod
 #
@@ -26,7 +29,8 @@ set -o pipefail
 if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
   echo "Updating modules..." >&2
 elif ! command -v bazel &>/dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
+  echo "This script is preserved for legacy reasons and requires bazel. You shouldn't need to run this as part of your normal development workflow" >&2
+  echo "If you need to run this script, install bazel from https://bazel.build" >&2
   exit 1
 else
   (
@@ -54,39 +58,6 @@ shift 5
 
 cd "$BUILD_WORKSPACE_DIRECTORY"
 trap 'echo "FAILED" >&2' ERR
-
-export GO111MODULE=on
-export GOPROXY=https://proxy.golang.org
-export GOSUMDB=sum.golang.org
-mode="${1:-}"
-shift || true
-case "$mode" in
---minor)
-    if [[ -z "$@" ]]; then
-      "$go" get -u ./...
-    else
-      "$go" get -u "$@"
-    fi
-    ;;
---patch)
-    if [[ -z "$@" ]]; then
-      "$go" get -u=patch ./...
-    else
-      "$go" get -u=patch "$@"
-    fi
-    ;;
-"")
-    # Just validate, or maybe manual go.mod edit
-    ;;
-*)
-    echo "Usage: $(basename "$0") [--patch|--minor] [packages]" >&2
-    exit 1
-    ;;
-esac
-
-rm -rf vendor
-"$go" mod tidy
-unset GOROOT
 
 # Update hack/build/repos.bzl based of the go.mod file
 "$gazelle" update-repos \

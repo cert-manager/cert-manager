@@ -21,6 +21,6 @@ set -o pipefail
 # This file is kept as backwards-compatibility for people with muscle memory who
 # type "./hack/verify-crds.sh" and expect it to work, or for third party CI pipelines.
 
-# This script may be removed in the future. Prefer using `make verify-crds` directly.
+# This script may be removed in the future. Prefer using `make` directly.
 
 make verify-crds

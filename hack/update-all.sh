@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Copyright 2020 The cert-manager Authors.
+
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +18,16 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Runs all hack/update-*.sh scripts
+# NB: This script requires bazel, and is no longer supported since we no longer support bazel
+# It's preserved for now but might be removed in the future
 
 
 hack=$(dirname "${BASH_SOURCE[0]}")
 
+echo -e "\033[0;33mThis script is preserved for legacy reasons, and as such will also update bazel
+You shouldn't need to run this script or install bazel for normal development.
+Use 'make update-all' to do everything this script does without touching bazel\033[0m"
+
 "$hack"/update-bazel.sh
-# update-codegen is done by make now, no need to call it here
-# "$hack"/update-codegen.sh
-# update-crds is done by make now, no need to call it here
-# "$hack"/update-crds.sh
-"$hack"/update-deps.sh
-# This is already run automatically by update-deps.sh
-#"$hack"/update-deps-licenses.sh
-"$hack"/update-gofmt.sh
+
+make update-all
