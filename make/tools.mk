@@ -416,23 +416,6 @@ $(BINDIR)/downloaded/gatewayapi-v%: | $(BINDIR)/downloaded
 $(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
 	@mkdir -p $@
 
-# The targets (verify_deps, verify_chart, verify_upgrade, and cluster) are
-# temorary and exist to keep the compatibility with the following Prow jobs:
-#
-#   pull-cert-manager-chart
-#   pull-cert-manager-deps
-#   pull-cert-manager-upgrade
-#
-# Until we have removed these Bazel-based targets, we must disable the check
-# of the system tools since the Bazel targets don't rely on those, and the image
-#
-#   eu.gcr.io/jetstack-build-infra-images/bazelbuild
-#
-# doesn't have these tools.
-BAZEL_TARGET := $(filter verify verify_deps verify_chart verify_upgrade cluster,$(MAKECMDGOALS))
-ifneq ($(BAZEL_TARGET),)
-$(warning Not checking whether the system tools are present since Bazel already takes care of that in the target $(MAKECMDGOALS). .)
-else
 # Although we "vendor" most tools in $(BINDIR)/tools, we still require some binaries
 # to be available on the system. The vendor-go MAKECMDGOALS trick prevents the
 # check for the presence of Go when 'make vendor-go' is run.
@@ -451,7 +434,6 @@ MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v $(CTR) >/dev/null || echo "$(CTR) (or set CTR to a docker-compatible tool)"))
 ifneq ($(MISSING),)
 $(error Missing required tools: $(MISSING))
-endif
 endif
 
 .PHONY: update-kind-images
