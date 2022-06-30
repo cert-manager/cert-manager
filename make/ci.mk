@@ -36,9 +36,6 @@ verify-crds: | $(DEPENDS_ON_GO) $(BINDIR)/tools/controller-gen $(BINDIR)/tools/y
 update-licenses: LICENSES
 
 .PHONY: update-crds
-## Update all CRDs to the latest version based on the current checkout
-##
-## @category Development
 update-crds: generate-test-crds patch-crds | $(BINDIR)/tools/controller-gen
 
 .PHONY: generate-test-crds
@@ -77,6 +74,14 @@ update-codegen: | k8s-codegen-tools $(DEPENDS_ON_GO)
 		./$(BINDIR)/tools/lister-gen \
 		./$(BINDIR)/tools/defaulter-gen \
 		./$(BINDIR)/tools/conversion-gen
+
+.PHONY: update-all
+## Update CRDs, code generation and licenses to the latest versions.
+## This is provided as a convenience to run locally before creating a PR, to ensure
+## that everything is up-to-date.
+##
+## @category Development
+update-all: update-crds update-codegen update-licenses
 
 # The targets (verify_deps, verify_chart, verify_upgrade, and cluster) are
 # temorary and exist to keep the compatibility with the following Prow jobs:

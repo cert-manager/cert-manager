@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +18,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# This script is currently not run as part of any automated tests.
-# https://github.com/cert-manager/cert-manager/pull/3037#issue-440523030
-# It will also currently only work on linux/amd64, darwin/amd64.
+# NB: This script requires bazel, and is no longer supported since we no longer support bazel
+# We want to add something like this to make, but since this script was never part of any CI
+# pipeline it's not a priority. The script is kept for backwards compatibility for now but may
+# change or be removed in the future.
+
+# See https://github.com/cert-manager/cert-manager/pull/3037#issue-440523030
+
+# Currently only works on linux/amd64, darwin/amd64.
 
 REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" > /dev/null && pwd )"
 
