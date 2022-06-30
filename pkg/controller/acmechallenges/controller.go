@@ -28,7 +28,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/cert-manager/cert-manager/internal/ingress"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
@@ -97,11 +96,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// cache when managing pod/service/ingress resources
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
-
-	_, ingressInformer, err := ingress.NewListerInformer(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
+	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1().Ingresses()
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -111,7 +106,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		secretInformer.Informer().HasSynced,
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
-		ingressInformer.HasSynced,
+		ingressInformer.Informer().HasSynced,
 	}
 
 	if ctx.GatewaySolverEnabled {
@@ -140,6 +135,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.recorder = ctx.Recorder
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
+	var err error
 	c.httpSolver, err = http.NewSolver(ctx)
 	if err != nil {
 		return nil, nil, err
