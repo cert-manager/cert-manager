@@ -14,7 +14,6 @@ go_library(
     deps = [
         "//internal/controller/challenges:go_default_library",
         "//internal/controller/feature:go_default_library",
-        "//internal/ingress:go_default_library",
         "//pkg/acme:go_default_library",
         "//pkg/acme/accounts:go_default_library",
         "//pkg/acme/client:go_default_library",

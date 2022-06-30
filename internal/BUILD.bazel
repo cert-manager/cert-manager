@@ -20,7 +20,6 @@ filegroup(
         "//internal/controller/feature:all-srcs",
         "//internal/controller/issuers:all-srcs",
         "//internal/controller/orders:all-srcs",
-        "//internal/ingress:all-srcs",
         "//internal/plugin:all-srcs",
         "//internal/test/paths:all-srcs",
         "//internal/vault:all-srcs",

@@ -12,7 +12,6 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/pkg/issuer/acme/http",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/ingress:go_default_library",
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
@@ -27,6 +26,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/util/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
+        "@io_k8s_client_go//listers/networking/v1:go_default_library",
         "@io_k8s_client_go//util/retry:go_default_library",
         "@io_k8s_sigs_gateway_api//apis/v1alpha2:go_default_library",
         "@io_k8s_sigs_gateway_api//pkg/client/listers/gateway/apis/v1alpha2:go_default_library",
