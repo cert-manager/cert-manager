@@ -75,6 +75,10 @@ e2e: $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl $(BINDIR)/tools/ginkg
 e2e-ci: e2e-setup-kind e2e-setup
 	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || ($(MAKE) kind-logs && exit 1)
 
+.PHONY: test-upgrade
+test-upgrade: | $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+	./hack/verify-upgrade.sh $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+
 test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist
 	rm -f $(BINDIR)/scratch/versionchecker-test-manifests.tar $(BINDIR)/scratch/$(RELEASE_VERSION).yaml

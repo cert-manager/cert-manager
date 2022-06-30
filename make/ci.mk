@@ -112,9 +112,8 @@ verify_chart:
 	./hack/verify-chart-version.sh bazel-bin/deploy/charts/cert-manager/cert-manager.tgz
 
 .PHONY: verify_upgrade
-verify_upgrade:
-	$(warning "The 'verify_upgrade' target is deprecated and will be removed soon. Please use instead 'make e2e-setup-kind && ./hack/verify-upgrade.sh'.")
-	./hack/verify-upgrade.sh
+verify_upgrade: test-upgrade
+	$(warning "The 'verify_upgrade' target is deprecated and will be removed soon. Please use instead 'make test-upgrade'.")
 
 .PHONY: cluster
 cluster:
