@@ -72,7 +72,7 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 			key:          mustGenerateRSA(t, 2048),
 			expectedAlgo: cmapi.RSAKeyAlgorithm,
 			expectedSize: 4096,
-			violations:   []string{"spec.keySize"},
+			violations:   []string{"spec.privateKey.size"},
 		},
 		"should match if keySize and algorithm are correct (ECDSA)": {
 			key:          mustGenerateECDSA(t, pki.ECCurve256),
@@ -83,13 +83,13 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 			key:          mustGenerateECDSA(t, pki.ECCurve256),
 			expectedAlgo: cmapi.ECDSAKeyAlgorithm,
 			expectedSize: pki.ECCurve521,
-			violations:   []string{"spec.keySize"},
+			violations:   []string{"spec.privateKey.size"},
 		},
 		"should not match if keyAlgorithm is incorrect": {
 			key:          mustGenerateECDSA(t, pki.ECCurve256),
 			expectedAlgo: cmapi.RSAKeyAlgorithm,
 			expectedSize: 2048,
-			violations:   []string{"spec.keyAlgorithm"},
+			violations:   []string{"spec.privateKey.algorithm"},
 		},
 		"should match if keySize and algorithm are correct (Ed25519)": {
 			key:          mustGenerateEd25519(t),
