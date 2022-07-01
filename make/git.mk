@@ -13,6 +13,10 @@ gitver:
 	@echo "Is prerelease:     \"$(IS_PRERELEASE)\""
 	@echo "Git commit hash:   \"$(GITCOMMIT)\""
 
+.PHONY: release-version
+release-version:
+	@echo "$(RELEASE_VERSION)"
+
 # Lists all remote tags on the upstream, which gives tags in format:
 # "<commit> ref/tags/<tag>". Strips commit + tag prefix, filters out tags for v1+,
 # and manually removes v1.2.0-alpha.1, since that version's manifest contains
