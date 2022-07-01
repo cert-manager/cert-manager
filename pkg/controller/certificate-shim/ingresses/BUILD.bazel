@@ -6,7 +6,6 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/ingresses",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/ingress:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificate-shim:go_default_library",
@@ -14,6 +13,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
+        "@io_k8s_client_go//listers/networking/v1:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
         "@io_k8s_client_go//util/workqueue:go_default_library",
     ],

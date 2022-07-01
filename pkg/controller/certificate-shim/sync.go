@@ -27,7 +27,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -39,7 +38,6 @@ import (
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	ingress "github.com/cert-manager/cert-manager/internal/ingress"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -58,7 +56,6 @@ const (
 )
 
 var ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
-var ingressV1Beta1GVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 var gatewayGVK = gwapi.SchemeGroupVersion.WithKind("Gateway")
 
 // SyncFn is the reconciliation function passed to a certificate-shim's
@@ -351,11 +348,7 @@ func buildCertificates(
 		var controllerGVK schema.GroupVersionKind
 		switch ingLike.(type) {
 		case *networkingv1.Ingress:
-			if _, found := ingLike.GetAnnotations()[ingress.ConvertedGVKAnnotation]; found {
-				controllerGVK = ingressV1Beta1GVK
-			} else {
-				controllerGVK = ingressV1GVK
-			}
+			controllerGVK = ingressV1GVK
 		case *gwapi.Gateway:
 			controllerGVK = gatewayGVK
 		}

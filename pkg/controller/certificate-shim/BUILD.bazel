@@ -11,7 +11,6 @@ go_library(
     deps = [
         "//internal/controller/certificates:go_default_library",
         "//internal/controller/feature:go_default_library",
-        "//internal/ingress:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
@@ -24,7 +23,6 @@ go_library(
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//networking/v1:go_default_library",
-        "@io_k8s_api//networking/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",

@@ -23,10 +23,10 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/cert-manager/cert-manager/internal/ingress"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	shimhelper "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim"
@@ -38,19 +38,15 @@ const (
 )
 
 type controller struct {
-	ingressLister ingress.InternalIngressLister
+	ingressLister networkingv1listers.IngressLister
 	sync          shimhelper.SyncFn
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	cmShared := ctx.SharedInformerFactory
 
-	internalIngressLister, internalIngressInformer, err := ingress.NewListerInformer(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	c.ingressLister = internalIngressLister
+	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1().Ingresses()
+	c.ingressLister = ingressInformer.Lister()
 
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, cmShared.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
@@ -58,7 +54,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	queue := workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
 	mustSync := []cache.InformerSynced{
-		internalIngressInformer.HasSynced,
+		ingressInformer.Informer().HasSynced,
 		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
 	}
 
@@ -68,7 +64,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// to do some cleanup, we would use a finalizer, and the cleanup logic would
 	// be triggered by the "Updated" event when the object gets marked for
 	// deletion.
-	internalIngressInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{
+	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: queue,
 	})
 
@@ -139,9 +135,6 @@ func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interfac
 			return
 		}
 
-		// We don't check the apiVersion e.g. "networking.k8s.io/v1beta1"
-		// because there is no chance that another object called "Ingress" be
-		// the controller of a Certificate.
 		if ingress.Kind != "Ingress" {
 			return
 		}
