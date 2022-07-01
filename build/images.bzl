@@ -35,5 +35,5 @@ def define_base_images():
         name = "dynamic_base",
         registry = "gcr.io",
         repository = "distroless/base",
-        digest = "sha256:6010a285f9a871e8f1f33142d53e2ad6d9d102d647704ac191c191f5becc2516"
+        digest = "sha256:72e708318a85b3a712cb6e661aa13331fab8e8c315e6a1ba3799c3573bd3d0fc"
     )
