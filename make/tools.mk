@@ -377,12 +377,7 @@ $(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 
 KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=6d9f0a6ab0119c5060799b4b8cbd0a030562da70b7ad4125c218eaf028c6cc28
 KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=3367987e2b40dadb5081a92a59d82664bee923eeeea77017ec88daf735e26cae
-
-# We get our testing binaries from kubebuilder-tools, but they don't currently
-# publish darwin/arm64 binaries because of a lack of etcd / kube-apiserver support;
-# as such, we install the amd64 versions and hope that Rosetta sorts the problem
-# out for us. This means that the hash we expect is the same as the amd64 hash.
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=$(KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM)
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=4b440713e32ca496a0a96c8e6cdc531afe9f9c2cc8d7e8e4eddfb5eb9bdc779f
 
 $(BINDIR)/tools/etcd: $(BINDIR)/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) $(BINDIR)/scratch/KUBEBUILDER_ASSETS_VERSION | $(BINDIR)/tools
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
@@ -401,13 +396,7 @@ $(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSI
 	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
 
 $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
-ifeq ($(HOST_OS)-$(HOST_ARCH),darwin-arm64)
-	@$(eval KUBEBUILDER_ARCH := amd64)
-	$(warning Downloading amd64 kubebuilder-tools for integration tests since darwin/arm64 isn't currently packaged. This will require rosetta in order to work)
-else
-	@$(eval KUBEBUILDER_ARCH := $(HOST_ARCH))
-endif
-	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(KUBEBUILDER_ARCH).tar.gz > $@
+	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz > $@
 
 $(BINDIR)/downloaded/gatewayapi-v%: | $(BINDIR)/downloaded
 	@mkdir -p $@
