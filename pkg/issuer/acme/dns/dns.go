@@ -296,21 +296,22 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		// Default to the AccessKeyID literal in the configuration
 		secretAccessKeyID := strings.TrimSpace(providerConfig.Route53.AccessKeyID)
 
-		// If the AccessKeyID secret reference option is defined, override the secretAccessKeyID variable
-		if providerConfig.Route53.SecretAccessKeyID != nil && providerConfig.Route53.SecretAccessKeyID.Name != "" {
-			// For route53, you must specify either an AccessKeyID or a secret reference to an AccessKeyID
-			// but not both.
-			if providerConfig.Route53.AccessKeyID != "" && providerConfig.Route53.SecretAccessKeyID.Name != "" {
+		// If the AccessKeyID secret reference option is defined, override the
+		// secretAccessKeyID variable.
+		if providerConfig.Route53.SecretAccessKeyID != nil {
+			// For route53, you must specify either an AccessKeyID or a secret
+			// reference to an AccessKeyID, but not both.
+			if len(providerConfig.Route53.AccessKeyID) > 0 {
 				return nil, nil, fmt.Errorf("route53 accessKeyID and accessKeyIDSecretRef cannot both be specified")
 			}
 
-			// If a SecretAccessKeyID name is given, make sure we have a key specified as well
-			if providerConfig.Route53.SecretAccessKeyID.Name != "" && providerConfig.Route53.SecretAccessKeyID.Key == "" {
+			// Ensure Key specified.
+			if len(providerConfig.Route53.SecretAccessKeyID.Key) == 0 {
 				return nil, nil, fmt.Errorf("route53 accessKeyIDSecretRef requires a key field to be specified")
 			}
 
-			// If a SecretAccessKeyID key is given, make sure there is a name specified as well
-			if providerConfig.Route53.SecretAccessKeyID.Key != "" && providerConfig.Route53.SecretAccessKeyID.Name == "" {
+			// Ensure Name specified.
+			if len(providerConfig.Route53.SecretAccessKeyID.Name) == 0 {
 				return nil, nil, fmt.Errorf("route53 accessKeyIDSecretRef requires a name field to be specified")
 			}
 
@@ -321,7 +322,10 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 
 			secretAccessKeyIDBytes, ok := secretAccessKeyIDSecret.Data[providerConfig.Route53.SecretAccessKeyID.Key]
 			if !ok {
-				return nil, nil, fmt.Errorf("error getting route53 secret access key id: key '%s' not found in secret", providerConfig.Route53.SecretAccessKeyID.Key)
+				return nil, nil, fmt.Errorf("no data found in Secret %q at Key %q",
+					providerConfig.Route53.SecretAccessKeyID.Name,
+					providerConfig.Route53.SecretAccessKeyID.Key,
+				)
 			}
 			secretAccessKeyID = string(secretAccessKeyIDBytes)
 		}
