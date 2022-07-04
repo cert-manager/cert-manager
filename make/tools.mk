@@ -21,6 +21,7 @@ CONTROLLER_GEN_VERSION=0.8.0
 COSIGN_VERSION=1.3.1
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
+GATEWAY_API_VERSION = 0.4.1
 GOIMPORTS_VERSION=0.1.8
 GOLICENSES_VERSION=1.2.1
 GOTESTSUM_VERSION=1.7.0
@@ -398,9 +399,23 @@ $(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSI
 $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
 	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz > $@
 
-$(BINDIR)/downloaded/gatewayapi-v%: | $(BINDIR)/downloaded
+##############
+# gatewayapi #
+##############
+
+GATEWAY_API_SHA256SUM=0eed80ad85850a6cbd17ab705aea59e49641c7bf1e6d3fbed1fc0156ffd62734
+
+$(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION): $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION).tar.gz | $(BINDIR)/downloaded
+	./hack/util/checkhash.sh $< $(GATEWAY_API_SHA256SUM)
 	@mkdir -p $@
-	curl -sSfL https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$*.tar.gz | tar xz -C $@
+	tar xz -C $@ -f $<
+
+$(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION).tar.gz: | $(BINDIR)/downloaded
+	curl -sSfL https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$(GATEWAY_API_VERSION).tar.gz > $@
+
+#################
+# Other Targets #
+#################
 
 $(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
 	@mkdir -p $@
