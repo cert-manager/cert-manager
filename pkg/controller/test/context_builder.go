@@ -97,7 +97,7 @@ func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, 
 	return false, obj.(runtime.Object), nil
 }
 
-const informerResyncPeriod = time.Millisecond * 10
+const informerResyncPeriod = time.Second
 
 // Init will construct a new context for this builder and set default values
 // for any unset fields.
@@ -332,7 +332,7 @@ func (b *Builder) Sync() {
 	if b.additionalSyncFuncs != nil {
 		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
 	}
-	time.Sleep(informerResyncPeriod * 3)
+	time.Sleep(informerResyncPeriod)
 }
 
 // RegisterAdditionalSyncFuncs registers an additional InformerSynced function
