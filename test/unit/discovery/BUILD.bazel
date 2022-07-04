@@ -6,10 +6,11 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/test/unit/discovery",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_googleapis_gnostic//openapiv2:go_default_library",
+        "@com_github_google_gnostic//openapiv2:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/version:go_default_library",
         "@io_k8s_client_go//discovery:go_default_library",
+        "@io_k8s_client_go//openapi:go_default_library",
         "@io_k8s_client_go//rest:go_default_library",
     ],
 )

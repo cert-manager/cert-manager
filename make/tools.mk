@@ -15,7 +15,7 @@ CTR=docker
 CMREL=$(PWD)/$(BINDIR)/tools/cmrel
 
 HELM_VERSION=3.8.0
-KUBECTL_VERSION=1.22.1
+KUBECTL_VERSION=1.24.2
 KIND_VERSION=0.14.0
 CONTROLLER_GEN_VERSION=0.8.0
 COSIGN_VERSION=1.3.1
@@ -32,7 +32,7 @@ GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
 
 K8S_CODEGEN_VERSION=v0.24.2
 
-KUBEBUILDER_ASSETS_VERSION=1.22.0
+KUBEBUILDER_ASSETS_VERSION=1.24.2
 
 VENDORED_GO_VERSION := 1.18.3
 
@@ -164,9 +164,9 @@ $(BINDIR)/downloaded/tools/helm-v$(HELM_VERSION)-%: | $(BINDIR)/downloaded/tools
 # kubectl #
 ###########
 
-KUBECTL_linux_amd64_SHA256SUM=78178a8337fc6c76780f60541fca7199f0f1a2e9c41806bded280a4a5ef665c9
-KUBECTL_darwin_amd64_SHA256SUM=00bb3947ac6ff15690f90ee1a732d0a9a44360fc7743dbfee4cba5a8f6a31413
-KUBECTL_darwin_arm64_SHA256SUM=c81a314ab7f0827a5376f8ffd6d47f913df046275d44c562915a822229819d77
+KUBECTL_linux_amd64_SHA256SUM=f15fb430afd79f79ef7cf94a4e402cd212f02d8ec5a5e6a7ba9c3d5a2f954542
+KUBECTL_darwin_amd64_SHA256SUM=50598bf557113300c925e53140f53fc5d0fb8783e8033f73561d873ee6ff2fea
+KUBECTL_darwin_arm64_SHA256SUM=a9c33de9b14e565ec380e3a7034040bf9a0561937c55c859253271ff7e45813c
 
 $(BINDIR)/tools/kubectl: $(BINDIR)/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/KUBECTL_VERSION | $(BINDIR)/tools
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
@@ -375,8 +375,8 @@ $(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 # kube-apiserver / etcd    #
 ############################
 
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=25daf3c5d7e8b63ea933e11cd6ca157868d71a12885aba97d1e7e1a15510713e
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=bb27efb1d2ee43749475293408fc80b923324ab876e5da54e58594bbe2969c42
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=6d9f0a6ab0119c5060799b4b8cbd0a030562da70b7ad4125c218eaf028c6cc28
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=3367987e2b40dadb5081a92a59d82664bee923eeeea77017ec88daf735e26cae
 
 # We get our testing binaries from kubebuilder-tools, but they don't currently
 # publish darwin/arm64 binaries because of a lack of etcd / kube-apiserver support;
