@@ -48,7 +48,7 @@ const (
 	ACMEDNS01CheckViaHTTPS     = "dns-over-https"
 )
 
-const DefaultDnsOverHttpsJsonEndpoint = "https://8.8.8.8/resolve"
+const DefaultDnsOverHttpsJsonEndpoint = "https://dns.google/resolve"
 
 var defaultNameservers = []string{
 	"8.8.8.8:53",
@@ -157,7 +157,7 @@ func checkDNSPropagationWithHTTPS(fqdn, value string, dnsOverHttpsJsonEndpoint s
 	req.Header.Add("accept", "application/dns-json")
 	r, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("Unable to lookup DNS via HTTPS: %s", err)
+		return false, fmt.Errorf("Unable to lookup the DNS via HTTPS: %s", err)
 	}
 	defer r.Body.Close()
 
