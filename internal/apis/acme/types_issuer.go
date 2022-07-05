@@ -399,12 +399,25 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
-	// The AccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
+	// The AccessKeyID is used for authentication.
+	// Cannot be set when SecretAccessKeyID is set.
+	// If neither the Access Key nor Key ID are set, we fall-back to using env
+	// vars, shared credentials file or AWS Instance metadata,
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	AccessKeyID string
 
-	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
-	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	// The SecretAccessKey is used for authentication. If set, pull the AWS
+	// access key ID from a key within a Kubernetes Secret.
+	// Cannot be set when AccessKeyID is set.
+	// If neither the Access Key nor Key ID are set, we fall-back to using env
+	// vars, shared credentials file or AWS Instance metadata,
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	SecretAccessKeyID *cmmeta.SecretKeySelector
+
+	// The SecretAccessKey is used for authentication.
+	// If neither the Access Key nor Key ID are set, we fall-back to using env
+	// vars, shared credentials file or AWS Instance metadata,
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	SecretAccessKey cmmeta.SecretKeySelector
 
 	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey

@@ -711,6 +711,57 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("route53", "region"), ""),
+				field.Required(fldPath.Child("route53"), "accessKeyID or accessKeyIDSecretRef is required"),
+			},
+		},
+		"missing route53 accessKeyID and accessKeyIDSecretRef": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					Region: "valid",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("route53"), "accessKeyID or accessKeyIDSecretRef is required"),
+			},
+		},
+		"both route53 accessKeyID and accessKeyIDSecretRef specified": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					Region:            "valid",
+					AccessKeyID:       "valid",
+					SecretAccessKeyID: &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("route53"), "accessKeyID and accessKeyIDSecretRef cannot both be specified"),
+			},
+		},
+		"route53 accessKeyIDSecretRef missing name": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					Region: "valid",
+					SecretAccessKeyID: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{},
+						Key:                  "key",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("route53", "accessKeyIDSecretRef", "name"), "secret name is required"),
+			},
+		},
+		"route53 accessKeyIDSecretRef missing key": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					Region: "valid",
+					SecretAccessKeyID: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "name"},
+						Key:                  "",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("route53", "accessKeyIDSecretRef", "key"), "secret key is required"),
 			},
 		},
 		"missing provider config": {
