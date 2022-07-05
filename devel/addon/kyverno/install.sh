@@ -31,9 +31,9 @@ source "${SCRIPT_ROOT}/../../lib/lib.sh"
 check_tool kubectl
 check_tool helm
 
-CHART_VERSION="v1.3.6"
-IMAGE_TAG="v1.3.6"
-PRE_IMAGE_TAG="v1.3.6"
+CHART_VERSION="v2.5.1"
+IMAGE_TAG="v1.7.1"
+PRE_IMAGE_TAG="v1.7.1"
 
 require_image "ghcr.io/kyverno/kyverno:${IMAGE_TAG}" "//devel/addon/kyverno:bundle_${IMAGE_TAG}"
 require_image "ghcr.io/kyverno/kyvernopre:${PRE_IMAGE_TAG}" "//devel/addon/kyverno:pre_bundle_${PRE_IMAGE_TAG}"
