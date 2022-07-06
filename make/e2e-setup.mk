@@ -173,8 +173,12 @@ feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # TODO: move these commands to separate scripts for readability
+#
+# ⚠ The following components are installed *before* cert-manager:
+# * GatewayAPI: so that cert-manager can watch those CRs.
+# * Kyverno: so that it can check the cert-manager manifests against the policy in `config/kyverno/`.
 .PHONY: e2e-setup-certmanager
-e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind
+e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi e2e-setup-kyverno $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind
 	@$(eval TAG = $(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(BINDIR)/tools/helm upgrade \
 		--install \
@@ -236,7 +240,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 		ingress-nginx ingress-nginx/ingress-nginx >/dev/null
 
 .PHONY: e2e-setup-kyverno
-e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(BINDIR)/scratch/kind-exists e2e-setup-certmanager $(BINDIR)/tools/kubectl $(BINDIR)/tools/helm
+e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl $(BINDIR)/tools/helm
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(BINDIR)/tools/helm repo add kyverno --force-update https://kyverno.github.io/kyverno/ >/dev/null
 	$(BINDIR)/tools/helm upgrade \
