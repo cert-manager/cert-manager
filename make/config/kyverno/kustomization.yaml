@@ -4,7 +4,7 @@
 # Use as follows:
 #  kustomize build . > policy.yaml
 bases:
-  - https://github.com/kyverno/policies/pod-security
+  - https://github.com/kyverno/policies/pod-security/enforce
 patches:
   - patch: |-
       - op: replace

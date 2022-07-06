@@ -46,7 +46,7 @@ spec:
       message: Any capabilities added beyond the allowed list (AUDIT_WRITE, CHOWN,
         DAC_OVERRIDE, FOWNER, FSETID, KILL, MKNOD, NET_BIND_SERVICE, SETFCAP, SETGID,
         SETPCAP, SETUID, SYS_CHROOT) are disallowed.
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -110,7 +110,7 @@ spec:
               - ""
         list: request.object.spec.[ephemeralContainers, initContainers, containers][]
       message: Any capabilities added other than NET_BIND_SERVICE are disallowed.
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -146,7 +146,7 @@ spec:
           =(hostIPC): "false"
           =(hostNetwork): "false"
           =(hostPID): "false"
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -180,7 +180,7 @@ spec:
         spec:
           =(volumes):
           - X(hostPath): "null"
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -221,7 +221,7 @@ spec:
           containers:
           - =(ports):
             - =(hostPort): 0
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -268,7 +268,7 @@ spec:
           - =(securityContext):
               =(windowsOptions):
                 =(hostProcess): "false"
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -309,7 +309,7 @@ spec:
           containers:
           - securityContext:
               allowPrivilegeEscalation: "false"
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -350,7 +350,7 @@ spec:
           containers:
           - =(securityContext):
               =(privileged): "false"
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -393,7 +393,7 @@ spec:
           containers:
           - =(securityContext):
               =(procMount): Default
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -476,7 +476,7 @@ spec:
               =(seLinuxOptions):
                 X(role): "null"
                 X(user): "null"
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -520,7 +520,7 @@ spec:
           containers:
           - =(securityContext):
               =(runAsUser): '>0'
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -575,7 +575,7 @@ spec:
         must be set to `true`, or the fields spec.containers[*].securityContext.runAsNonRoot,
         spec.initContainers[*].securityContext.runAsNonRoot, and spec.ephemeralContainers[*].securityContext.runAsNonRoot
         must be set to `true`.
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -612,7 +612,7 @@ spec:
           =(annotations):
             =(container.apparmor.security.beta.kubernetes.io/*): runtime/default |
               localhost/*
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -660,7 +660,7 @@ spec:
           - =(securityContext):
               =(seccompProfile):
                 =(type): RuntimeDefault | Localhost
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -724,7 +724,7 @@ spec:
         spec.containers[*].securityContext.seccompProfile.type, spec.initContainers[*].securityContext.seccompProfile.type,
         and spec.ephemeralContainers[*].securityContext.seccompProfile.type must be
         set to `RuntimeDefault` or `Localhost`.
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -763,7 +763,7 @@ spec:
             =(sysctls):
             - =(name): kernel.shm_rmid_forced | net.ipv4.ip_local_port_range | net.ipv4.ip_unprivileged_port_start
                 | net.ipv4.tcp_syncookies | net.ipv4.ping_group_range
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: Policy
@@ -810,4 +810,4 @@ spec:
             - ""
       message: 'Only the following types of volumes may be used: configMap, csi, downwardAPI,
         emptyDir, ephemeral, persistentVolumeClaim, projected, and secret.'
-  validationFailureAction: audit
+  validationFailureAction: enforce
