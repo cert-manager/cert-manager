@@ -52,6 +52,14 @@ ifeq (x86_64, $(HOST_ARCH))
 	HOST_ARCH = amd64
 endif
 
+# --silent = don't print output like progress meters
+# --show-error = but do print errors when they happen
+# --fail = exit with a nonzero error code without the response from the server when there's an HTTP error
+# --location = follow redirects from the server
+# --retry = the number of times to retry a failed attempt to connect
+# --retry-connrefused = retry even if the initial connection was refused
+CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
+
 .PHONY: tools
 tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
 
@@ -140,7 +148,7 @@ $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot $(BINDIR)/downloa
 	mv $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/go $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
 
 $(BINDIR)/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
+	$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
 
 ########
 # Helm #
@@ -154,7 +162,7 @@ $(BINDIR)/tools/helm: $(BINDIR)/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/helm-v$(HELM_VERSION)-%: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://get.helm.sh/helm-v$(HELM_VERSION)-$*.tar.gz > $@.tar.gz
+	$(CURL) https://get.helm.sh/helm-v$(HELM_VERSION)-$*.tar.gz -o $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $@.tar.gz $*/helm > $@
@@ -173,7 +181,7 @@ $(BINDIR)/tools/kubectl: $(BINDIR)/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(BINDIR)/downloaded/tools
-	curl -sSfL https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl > $@
+	$(CURL) https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	chmod +x $@
 
@@ -189,7 +197,7 @@ $(BINDIR)/tools/kind: $(BINDIR)/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/kind_$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
-	curl -sSfL https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(subst _,-,$*) > $@
+	$(CURL) -sSfL https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
 	chmod +x $@
 
@@ -207,7 +215,7 @@ $(BINDIR)/tools/cosign: $(BINDIR)/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HO
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
 $(BINDIR)/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(subst _,-,$*) > $@
+	$(CURL) https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(COSIGN_$*_SHA256SUM)
 	chmod +x $@
 
@@ -331,7 +339,7 @@ $(BINDIR)/tools/rclone: $(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-$(R
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip > $@.zip
+	$(CURL) https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip -o $@.zip
 	./hack/util/checkhash.sh $@.zip $(RCLONE_$(subst -,_,$*)_SHA256SUM)
 	@# -p writes to stdout, the second file arg specifies the sole file we
 	@# want to extract
@@ -351,7 +359,7 @@ $(BINDIR)/tools/ytt: $(BINDIR)/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/ytt_$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(subst _,-,$*) > $@
+	$(CURL) -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(YTT_$*_SHA256SUM)
 	chmod +x $@
 
@@ -367,7 +375,7 @@ $(BINDIR)/tools/yq: $(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOS
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/yq_$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$* > $@
+	$(CURL) https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$* -o $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
 	chmod +x $@
 
@@ -397,7 +405,7 @@ $(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSI
 	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
 
 $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
-	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz > $@
+	$(CURL) https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz -o $@
 
 ##############
 # gatewayapi #
@@ -411,7 +419,7 @@ $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION): $(BINDIR)/downloaded/ga
 	tar xz -C $@ -f $<
 
 $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION).tar.gz: | $(BINDIR)/downloaded
-	curl -sSfL https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$(GATEWAY_API_VERSION).tar.gz > $@
+	$(CURL) https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$(GATEWAY_API_VERSION).tar.gz -o $@
 
 #################
 # Other Targets #
