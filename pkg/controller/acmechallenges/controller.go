@@ -29,6 +29,7 @@ import (
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -79,6 +80,8 @@ type controller struct {
 	// objectUpdater implements the updateObject function which is used to save
 	// changes to the Challenge.Status and Challenge.Finalizers
 	objectUpdater
+
+	cmClient versioned.Interface
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
@@ -152,7 +155,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// Construct an objectUpdater which is used to save changes to the Challenge
 	// object, either using Update or using Patch + Server Side Apply.
 	c.objectUpdater = newObjectUpdater(ctx.CMClient, ctx.FieldManager)
-
+	c.cmClient = ctx.CMClient
 	return c.queue, mustSync, nil
 }
 
