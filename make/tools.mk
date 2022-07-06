@@ -62,6 +62,14 @@ ifeq (x86_64, $(HOST_ARCH))
 	HOST_ARCH = amd64
 endif
 
+# --silent = don't print output like progress meters
+# --show-error = but do print errors when they happen
+# --fail = exit with a nonzero error code without the response from the server when there's an HTTP error
+# --location = follow redirects from the server
+# --retry = the number of times to retry a failed attempt to connect
+# --retry-connrefused = retry even if the initial connection was refused
+CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
+
 .PHONY: tools
 tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/controller-gen k8s-codegen-tools bin/tools/goimports bin/tools/gotestsum bin/tools/rclone bin/tools/ytt bin/tools/yq
 
@@ -145,7 +153,7 @@ bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot bin/downloaded/tools/_g
 	mv bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/go bin/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
 
 bin/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | bin/downloaded/tools
-	curl -sSfL https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
+	$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
 
 ########
 # Helm #
@@ -159,7 +167,7 @@ bin/tools/helm: bin/downloaded/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARC
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/helm-v$(HELM_VERSION)-%: | bin/downloaded/tools
-	curl -sSfL https://get.helm.sh/helm-v$(HELM_VERSION)-$*.tar.gz > $@.tar.gz
+	$(CURL) https://get.helm.sh/helm-v$(HELM_VERSION)-$*.tar.gz -o $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$(subst -,_,$*)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $@.tar.gz $*/helm > $@
@@ -178,7 +186,7 @@ bin/tools/kubectl: bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/downloaded/tools
-	curl -sSfL https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl > $@
+	$(CURL) https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	chmod +x $@
 
@@ -194,7 +202,7 @@ bin/tools/kind: bin/downloaded/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/kind_$(KIND_VERSION)_%: | bin/downloaded/tools bin/tools
-	curl -sSfL https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(subst _,-,$*) > $@
+	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
 	chmod +x $@
 
@@ -212,7 +220,7 @@ bin/tools/cosign: bin/downloaded/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOS
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
 bin/downloaded/tools/cosign_$(COSIGN_VERSION)_%: | bin/downloaded/tools
-	curl -sSfL https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(subst _,-,$*) > $@
+	$(CURL) https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(COSIGN_$*_SHA256SUM)
 	chmod +x $@
 
@@ -325,7 +333,7 @@ bin/tools/rclone: bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-$(RCLONE_OS)-$(
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | bin/downloaded/tools
-	curl -sSfL https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip > $@.zip
+	$(CURL) https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip -o $@.zip
 	./hack/util/checkhash.sh $@.zip $(RCLONE_$(subst -,_,$*)_SHA256SUM)
 	@# -p writes to stdout, the second file arg specifies the sole file we
 	@# want to extract
@@ -345,7 +353,7 @@ bin/tools/ytt: bin/downloaded/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) b
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/ytt_$(YTT_VERSION)_%: | bin/downloaded/tools
-	curl -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(subst _,-,$*) > $@
+	$(CURL) https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(YTT_$*_SHA256SUM)
 	chmod +x $@
 
@@ -361,7 +369,7 @@ bin/tools/yq: bin/downloaded/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) bin/
 	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
 
 bin/downloaded/tools/yq_$(YQ_VERSION)_%: | bin/downloaded/tools
-	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$* > $@
+	$(CURL) https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$* -o $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
 	chmod +x $@
 
@@ -402,11 +410,11 @@ ifeq ($(HOST_OS)-$(HOST_ARCH),darwin-arm64)
 else
 	@$(eval KUBEBUILDER_ARCH := $(HOST_ARCH))
 endif
-	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(KUBEBUILDER_ARCH).tar.gz > $@
+	$(CURL) https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(KUBEBUILDER_ARCH).tar.gz -o $@
 
 bin/downloaded/gatewayapi-v%: | bin/downloaded
 	@mkdir -p $@
-	curl -sSfL https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$*.tar.gz | tar xz -C $@
+	$(CURL) https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$*.tar.gz | tar xz -C $@
 
 bin bin/tools bin/downloaded bin/downloaded/tools:
 	@mkdir -p $@

@@ -328,7 +328,7 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	bin/tools/kubectl apply -f make/config/kyverno/policy.yaml >/dev/null
 
 bin/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | bin/downloaded
-	curl -sSL https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
+	$(CURL) https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 
 # We can't use GOBIN with "go install" because cross-compilation is not
 # possible with go install. That's a problem when cross-compiling for
