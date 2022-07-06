@@ -23,7 +23,10 @@ import (
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -73,6 +76,40 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
 	}
 
+	issuerFinalizer := fmt.Sprintf("%s/%s", cmacme.ACMEFinalizer, ch.UID)
+
+	updateIssuer := func() (err error) {
+		switch issuer := genericIssuer.(type) {
+		case *cmapi.ClusterIssuer:
+			_, err = c.cmClient.CertmanagerV1().ClusterIssuers().Update(ctx, issuer, v1.UpdateOptions{})
+		case *cmapi.Issuer:
+			_, err = c.cmClient.CertmanagerV1().Issuers(genericIssuer.GetNamespace()).Update(ctx, issuer, v1.UpdateOptions{})
+		default:
+			log.Error(errors.New("unknown issuer type"), "Permanent error.")
+			return nil
+		}
+		if err != nil {
+			err = fmt.Errorf("while adding issuer finalizer: %v", err)
+			if k8sErrors.IsNotFound(err) {
+				log.Error(err, "Issuer was probably deleted")
+				return nil
+			}
+			return err
+		}
+		key, err := controllerpkg.KeyFunc(ch)
+		if err != nil {
+			log.Error(err, "Permanent error. Failed to create key for object")
+			return nil
+		}
+		c.queue.Add(key)
+		return nil
+	}
+
+	if !controllerutil.ContainsFinalizer(genericIssuer, issuerFinalizer) {
+		controllerutil.AddFinalizer(genericIssuer, issuerFinalizer)
+		return updateIssuer()
+	}
+
 	defer func() {
 		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
 			if errors.Is(updateError, argumentError) {
@@ -88,12 +125,26 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// processing and presented status fields.
 	// Once the challenge reaches this final state, we always return here.
 	if challengeFinished(ch) {
-		err := handleCleanup(ctx, solver, genericIssuer, ch)
-		if err != nil {
-			ch.Status.Reason = err.Error()
-			c.recorder.Event(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
-		}
-		return err
+		return func() (err error) {
+			defer func() {
+				if err != nil {
+					ch.Status.Reason = err.Error()
+					c.recorder.Event(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
+				}
+			}()
+			log.Info("Cleaning up challenge")
+			if err := handleCleanup(ctx, solver, genericIssuer, ch); err != nil {
+				return err
+			}
+			log.Info("Cleaned up challenge")
+			log.Info("Removing issuer finalizer")
+			controllerutil.RemoveFinalizer(genericIssuer, issuerFinalizer)
+			if err := updateIssuer(); err != nil {
+				return err
+			}
+			log.Info("Removed issuer finalizer")
+			return nil
+		}()
 	}
 
 	// bail out early on if processing=false, as this challenge has not been
