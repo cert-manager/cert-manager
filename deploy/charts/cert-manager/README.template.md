@@ -99,8 +99,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `volumes` | Optional volumes for cert-manager | `[]` |
 | `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
-| `securityContext` | Optional security context. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#securitycontext-v1-core) | `{}` |
-| `containerSecurityContext` | Security context to be set on the controller component container | `{}` |
+| `securityContext` | Optional pod-level security context. The yaml block should adhere to the [PodSecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#podsecuritycontext-v1-core) | `{}` |
+| `containerSecurityContext` | Security context to be set on the controller component container. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core)| `{}` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
@@ -186,7 +186,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | `{}` |
 | `startupapicheck.enabled` | Toggles whether the startupapicheck Job should be installed | `true` |
-| `startupapicheck.securityContext` | Pod Security Context to be set on the startupapicheck component Pod | `{}` |
+| `startupapicheck.securityContext` | Security context to be set on the startupapicheck component Pod | `{}` |
+| `startupapicheck.containerSecurityContext` | Security context to be set on the startupapicheck container | `{}` |
 | `startupapicheck.timeout` | Timeout for 'kubectl check api' command | `1m` |
 | `startupapicheck.backoffLimit` | Job backoffLimit | `4` |
 | `startupapicheck.jobAnnotations` | Optional additional annotations to add to the startupapicheck Job | `{}` |
