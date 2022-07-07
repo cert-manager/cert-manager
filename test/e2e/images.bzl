@@ -50,16 +50,16 @@ def install():
         name = "io_kyverno",
         registry = "ghcr.io",
         repository = "kyverno/kyverno",
-        tag = "v1.3.6",
-        digest = "sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52",
+        tag = "v1.7.1",
+        digest = "sha256:9c73f1841ebc61b6a23c935154521cb12289a38de3422f56aa87a7d7ff9b39fe",
     )
 
     container_pull(
         name = "io_kyverno_pre",
         registry = "ghcr.io",
         repository = "kyverno/kyvernopre",
-        tag = "v1.3.6",
-        digest = "sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df",
+        tag = "v1.7.1",
+        digest = "sha256:185d2eebc60cc693056d9359f0434b7eca4152b06f21f58c6289815257c41af8",
     )
 
     ## Fetch vault for use during e2e tests
