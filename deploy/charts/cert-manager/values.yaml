@@ -41,6 +41,9 @@ global:
     # renewal of a leadership.
     # retryPeriod: 15s
 
+  # Global set of labels which get applied to all kubernetes objects
+  labels: {}
+
 installCRDs: false
 
 replicaCount: 1
