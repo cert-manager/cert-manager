@@ -99,8 +99,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `volumes` | Optional volumes for cert-manager | `[]` |
 | `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
-| `securityContext` | Optional pod-level security context. The yaml block should adhere to the [PodSecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#podsecuritycontext-v1-core) | `{}` |
-| `containerSecurityContext` | Security context to be set on the controller component container. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core)| `{}` |
+| `securityContext` | Security context for the controller pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
+| `containerSecurityContext` | Security context to be set on the controller component container | refer to [Default Security Contexts](#default-security-contexts) |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
@@ -150,8 +150,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.tag` | Webhook image tag | `{{RELEASE_VERSION}}` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
-| `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
-| `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
+| `webhook.securityContext` | Security context for webhook pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
+| `webhook.containerSecurityContext` | Security context to be set on the webhook component container | refer to [Default Security Contexts](#default-security-contexts) |
 | `webhook.hostNetwork` | If `true`, run the Webhook on the host network. | `false` |
 | `webhook.serviceType` | The type of the `Service`. | `ClusterIP` |
 | `webhook.loadBalancerIP` | The specific load balancer IP to use (when `serviceType` is `LoadBalancer`). |  |
@@ -183,11 +183,11 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `{{RELEASE_VERSION}}` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
-| `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
-| `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | `{}` |
+| `cainjector.securityContext` | Security context for cainjector pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
+| `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | refer to [Default Security Contexts](#default-security-contexts) |
 | `startupapicheck.enabled` | Toggles whether the startupapicheck Job should be installed | `true` |
-| `startupapicheck.securityContext` | Security context to be set on the startupapicheck component Pod | `{}` |
-| `startupapicheck.containerSecurityContext` | Security context to be set on the startupapicheck container | `{}` |
+| `startupapicheck.securityContext` | Security context for startupapicheck pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
+| `startupapicheck.containerSecurityContext` | Security context to be set on startupapicheck component container | refer to [Default Security Contexts](#default-security-contexts) |
 | `startupapicheck.timeout` | Timeout for 'kubectl check api' command | `1m` |
 | `startupapicheck.backoffLimit` | Job backoffLimit | `4` |
 | `startupapicheck.jobAnnotations` | Optional additional annotations to add to the startupapicheck Job | `{}` |
@@ -205,6 +205,27 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `startupapicheck.serviceAccount.name` | Service account for the startupapicheck component to be used. If not set and `startupapicheck.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `startupapicheck.serviceAccount.annotations` | Annotations to add to the service account for the startupapicheck component |  |
 | `startupapicheck.serviceAccount.automountServiceAccountToken` | Automount API credentials for the startupapicheck Service Account | `true` |
+
+### Default Security Contexts
+
+The default pod-level and container-level security contexts, below, adhere to the [restricted](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted) Pod Security Standards policies.
+
+Default pod-level securityContext:
+```yaml
+runAsNonRoot: true
+seccompProfile:
+  type: RuntimeDefault
+```
+
+Default containerSecurityContext:
+```yaml
+allowPrivilegeEscalation: false
+capabilities:
+  drop:
+  - ALL
+```
+
+### Assigning Values
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
