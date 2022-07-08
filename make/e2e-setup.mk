@@ -113,16 +113,16 @@ endef
 # get the message "warning: undefined variable 'CI'".
 .PHONY: preload-kind-image
 ifeq ($(shell printenv CI),)
-preload-kind-image: $(BINDIR)/tools/crane
+preload-kind-image: | $(BINDIR)/tools/crane
 	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
-preload-kind-image: $(call image-tar,kind) $(BINDIR)/tools/crane
+preload-kind-image: $(call image-tar,kind) | $(BINDIR)/tools/crane
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
 LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-$(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
-$(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kind
+$(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kind
 	$(BINDIR)/tools/kind load image-archive --name=$(shell cat $(BINDIR)/scratch/kind-exists) $*
 
 # We use crane instead of docker when pulling images, which saves some time
@@ -131,7 +131,7 @@ $(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kind
 # We don't pull using both the digest and tag because crane replaces the
 # tag with "i-was-a-digest". We still check that the downloaded image
 # matches the digest.
-$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,vault) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: $(BINDIR)/tools/crane
+$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,vault) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(BINDIR)/tools/crane
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
@@ -140,7 +140,7 @@ $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(
 	$(BINDIR)/tools/crane pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
 
 # Same as above, except it supports multiarch images.
-$(call image-tar,kind): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: $(BINDIR)/tools/crane
+$(call image-tar,kind): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(BINDIR)/tools/crane
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
@@ -240,7 +240,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 		ingress-nginx ingress-nginx/ingress-nginx >/dev/null
 
 .PHONY: e2e-setup-kyverno
-e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl $(BINDIR)/tools/helm
+e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/helm
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(BINDIR)/tools/helm repo add kyverno --force-update https://kyverno.github.io/kyverno/ >/dev/null
 	$(BINDIR)/tools/helm upgrade \
@@ -278,7 +278,7 @@ $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar: $(BINDIR)/downloaded/con
 	$(CTR) save local/pebble:local -o $@ >/dev/null
 
 .PHONY: e2e-setup-pebble
-e2e-setup-pebble: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/helm
+e2e-setup-pebble: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/helm
 	$(BINDIR)/tools/helm upgrade \
 		--install \
 		--wait \
@@ -300,7 +300,7 @@ $(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar: $(BINDIR)/downloa
 	$(CTR) save local/samplewebhook:local -o $@ >/dev/null
 
 .PHONY: e2e-setup-samplewebhook
-e2e-setup-samplewebhook: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar e2e-setup-certmanager $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/helm
+e2e-setup-samplewebhook: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar e2e-setup-certmanager $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/helm
 	$(BINDIR)/tools/helm upgrade \
 		--install \
 		--wait \
@@ -316,7 +316,7 @@ e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/proj
 
 .PHONY: e2e-setup-sampleexternalissuer
 ifeq ($(CRI_ARCH),amd64)
-e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl
+e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl
 	$(BINDIR)/tools/kubectl apply -n sample-external-issuer-system -f https://github.com/cert-manager/sample-external-issuer/releases/download/v0.1.1/install.yaml >/dev/null
 	$(BINDIR)/tools/kubectl patch -n sample-external-issuer-system deployments.apps sample-external-issuer-controller-manager --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/1/imagePullPolicy", "value": "Never"}]' >/dev/null
 else
@@ -331,13 +331,13 @@ endif
 # Note that the end-to-end tests are dealing with the Helm installation. We
 # do not need to Helm install here.
 .PHONY: e2e-setup-vault
-e2e-setup-vault: load-$(call image-tar,vaultretagged) $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/helm
+e2e-setup-vault: load-$(call image-tar,vaultretagged) $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/helm
 
 # Exported because it needs to flow down to make/e2e.sh.
 export ARTIFACTS ?= $(shell pwd)/$(BINDIR)/artifacts
 
 .PHONY: kind-logs
-kind-logs: $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kind
+kind-logs: $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kind
 	rm -rf $(ARTIFACTS)/cert-manager-e2e-logs
 	mkdir -p $(ARTIFACTS)/cert-manager-e2e-logs
 	$(BINDIR)/tools/kind export logs $(ARTIFACTS)/cert-manager-e2e-logs --name=$(shell cat $(BINDIR)/scratch/kind-exists)
