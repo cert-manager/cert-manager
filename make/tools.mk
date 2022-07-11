@@ -68,7 +68,6 @@ tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDI
 ######
 
 GO = go
-CGO_ENABLED ?= 0
 
 # DEPENDS_ON_GO is a target that is set as an order-only prerequisite in
 # any target that calls $(GO), e.g.:
