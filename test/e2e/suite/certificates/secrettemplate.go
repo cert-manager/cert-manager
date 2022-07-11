@@ -26,6 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
@@ -279,16 +280,26 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(secret.Labels).To(HaveKeyWithValue("foo", "bar"))
 
 		By("add those Annotations and Labels to the SecretTemplate of the Certificate")
-		crt.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{
-			Annotations: map[string]string{"an-annotation": "bar", "another-annotation": "def"},
-			Labels:      map[string]string{"abc": "123", "foo": "bar"},
-		}
+		certificateName := crt.Name
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), certificateName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			crt.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"an-annotation": "bar", "another-annotation": "def"},
+				Labels:      map[string]string{"abc": "123", "foo": "bar"},
+			}
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("waiting for those Annotation and Labels on the Secret to contain managed fields from cert-manager")
-
 		Eventually(func() bool {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
