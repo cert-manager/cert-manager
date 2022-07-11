@@ -425,7 +425,7 @@ $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION).tar.gz: | $(BINDIR)/down
 # Other Targets #
 #################
 
-$(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
+$(BINDIR) $(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
 	@mkdir -p $@
 
 # Although we "vendor" most tools in $(BINDIR)/tools, we still require some binaries
