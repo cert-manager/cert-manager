@@ -37,13 +37,26 @@ SOURCES := $(call get-sources,cat -)
 ## of GOBUILDPROCS or else you could end up running N parallel invocations of
 ## go build, each of which will spin up as many threads as are available on your
 ## system.
+## @category Build
 GOBUILDPROCS ?=
 
 include make/git.mk
 
-GOFLAGS := -trimpath -ldflags '-w -s \
+## By default, we don't link Go binaries to the libc. In some case, you might
+## want to build libc-linked binaries, in which case you can set this to "1".
+## @category Build
+CGO_ENABLED ?= 0
+
+## Extra flags passed to 'go' when building. For example, use GOFLAGS=-v to turn on the
+## verbose output.
+## @category Build
+GOFLAGS := -trimpath
+
+## Extra linking flags passed to 'go' via '-ldflags' when building.
+## @category Build
+GOLDFLAGS := -w -s \
 	-X github.com/cert-manager/cert-manager/pkg/util.AppVersion=$(RELEASE_VERSION) \
-    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)'
+    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)
 
 include make/tools.mk
 include make/ci.mk
