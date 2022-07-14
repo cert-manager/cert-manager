@@ -178,6 +178,17 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
+	// Make sure there isn't another Certificate with the same secret name in the same namespace.
+	certs, err := c.certificateLister.Certificates(namespace).List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, ct := range certs {
+		if crt.Spec.SecretName == ct.Spec.SecretName && crt.ObjectMeta.Name != ct.ObjectMeta.Name {
+			return nil
+		}
+	}
+
 	log = logf.WithResource(log, crt)
 	ctx = logf.NewContext(ctx, log)
 

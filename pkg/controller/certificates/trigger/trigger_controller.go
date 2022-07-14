@@ -199,6 +199,17 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// message.
 	log.V(logf.InfoLevel).Info("Certificate must be re-issued", "reason", reason, "message", message)
 
+	// Make sure there isn't another Certificate with the same secret name in the same namespace.
+	certs, err := c.certificateLister.Certificates(namespace).List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, ct := range certs {
+		if crt.Spec.SecretName == ct.Spec.SecretName && crt.ObjectMeta.Name != ct.ObjectMeta.Name {
+			return nil
+		}
+	}
+
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, reason, message)
 	if err := c.updateOrApplyStatus(ctx, crt); err != nil {
