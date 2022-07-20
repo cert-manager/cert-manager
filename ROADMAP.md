@@ -39,8 +39,9 @@ Enable best-practice PKI management with cert-manager.
 
 - Handle CA cert being renewed: deal with the cases where the CA cert is renewed and allow for all signed certs to be renewed
 - Make cert-manager a viable way to create and manage private PKI deployments at scale
-- Trust root distribution:handle distributing all trust roots within a cluster, allowing for certs to be verified within a cluster
-(See [cert-manager/trust](https://cert-manager.io/docs/projects/trust/))
+- Trust root distribution: handle distributing all trust roots within a cluster, allowing for certs to be verified within a cluster
+
+See also [cert-manager/trust](https://cert-manager.io/docs/projects/trust/)
 
 ### End-user experience
 
@@ -55,3 +56,11 @@ Enable best-practice PKI management with cert-manager.
 - Better user experience for installation, operation and use with applications
 - Zero test flakiness and increased testing confidence
 - Improve release process by adding more automation
+
+### Shrinking Core
+
+Minimise the surface area of cert-manager, reducing attack surface, binary size, container size and default deployment complexity
+
+- Move "core" issuers with dependencies (ACME, Vault, Venafi) into external issuers, which might still be bundled by default
+- Likewise, change all "core" DNS solvers into external solvers
+- Provide a minimal "pick and mix" distributions of cert-manager which allow users to specify exactly which issuer types / DNS solvers they want to install
