@@ -218,7 +218,7 @@ func TestProcessItem(t *testing.T) {
 				},
 			},
 		},
-		"an approved CSR but the private key references a Secret that does not exist should mark as failed": {
+		"an approved CSR but the private key references a Secret that does not exist should fire an event and return error": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -258,30 +258,9 @@ func TestProcessItem(t *testing.T) {
 							},
 						},
 					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"status",
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
-							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"experimental.cert-manager.io/private-key-secret-name": "test-secret",
-							}),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:   certificatesv1.CertificateApproved,
-								Status: corev1.ConditionTrue,
-							}),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:               certificatesv1.CertificateFailed,
-								Status:             corev1.ConditionTrue,
-								Reason:             "SecretNotFound",
-								Message:            `Referenced Secret default-unit-test-ns/test-secret not found`,
-								LastTransitionTime: metaFixedClockStart,
-								LastUpdateTime:     metaFixedClockStart,
-							}),
-						),
-					)),
 				},
 			},
+			expectedErr: true,
 		},
 		"an approved CSR but the private key references a Secret that contains bad data should be marked as failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
