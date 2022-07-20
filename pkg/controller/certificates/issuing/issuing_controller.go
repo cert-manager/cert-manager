@@ -185,6 +185,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 	for _, ct := range certs {
 		if crt.Spec.SecretName == ct.Spec.SecretName && crt.ObjectMeta.Name != ct.ObjectMeta.Name {
+			log.Error(nil, "Refusing to re-issue Certificate because it shares SecretName with another Certificate in the same namespace")
 			return nil
 		}
 	}
