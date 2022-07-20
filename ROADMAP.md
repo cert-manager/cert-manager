@@ -63,4 +63,4 @@ Minimise the surface area of cert-manager, reducing attack surface, binary size,
 
 - Move "core" issuers with dependencies (ACME, Vault, Venafi) into external issuers, which might still be bundled by default
 - Likewise, change all "core" DNS solvers into external solvers
-- Provide a minimal "pick and mix" distributions of cert-manager which allow users to specify exactly which issuer types / DNS solvers they want to install
+- Provide a minimal "pick and mix" distribution of cert-manager which allows users to specify exactly which issuer types / DNS solvers they want to install
