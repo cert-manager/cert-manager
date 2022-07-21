@@ -115,8 +115,6 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 		message := fmt.Sprintf("Referenced Secret %s/%s not found", resourceNamespace, secretName)
 		log.Error(err, message)
 		s.recorder.Event(csr, corev1.EventTypeWarning, "SecretNotFound", message)
-		util.CertificateSigningRequestSetFailed(csr, "SecretNotFound", message)
-		_, err = util.UpdateOrApplyStatus(ctx, s.certClient, csr, certificatesv1.CertificateFailed, s.fieldManager)
 		return err
 	}
 
