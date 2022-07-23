@@ -405,7 +405,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
 			}
 			// accessKeyID or accessKeyIDSecretRef must be specified, but not both
-			if len(p.Route53.AccessKeyID) == 0 && p.Route53.SecretAccessKeyID == nil {
+			if len(p.Route53.AccessKeyID) == 0 && p.Route53.SecretAccessKeyID == nil && p.Route53.Role == "" {
 				el = append(el, field.Required(fldPath.Child("route53"), "accessKeyID or accessKeyIDSecretRef is required"))
 			}
 			if len(p.Route53.AccessKeyID) > 0 && p.Route53.SecretAccessKeyID != nil {
