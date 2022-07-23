@@ -724,6 +724,15 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("route53"), "accessKeyID or accessKeyIDSecretRef is required"),
 			},
 		},
+		"missing route53 accessKeyID and accessKeyIDSecretRef, but role specified": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					Region: "valid",
+					Role:   "valid",
+				},
+			},
+			errs: []*field.Error{},
+		},
 		"both route53 accessKeyID and accessKeyIDSecretRef specified": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
