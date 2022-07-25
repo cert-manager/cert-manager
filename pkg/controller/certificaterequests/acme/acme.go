@@ -23,7 +23,9 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -38,6 +40,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/go-logr/logr"
 )
 
 const (
@@ -71,7 +74,21 @@ func init() {
 			For(certificaterequests.New(
 				apiutil.IssuerACME,
 				NewACME,
-				cmacme.SchemeGroupVersion.WithResource("orders"),
+				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+					orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
+					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
+
+					orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+						WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
+							log, queue,
+							cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind),
+							func(namespace, name string) (interface{}, error) {
+								return certificateRequestLister.CertificateRequests(namespace).Get(name)
+							},
+						),
+					})
+					return []cache.InformerSynced{orderInformer.HasSynced}, nil
+				},
 			)).
 			Complete()
 	})
