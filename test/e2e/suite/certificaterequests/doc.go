@@ -14,12 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package suite
+package certificaterequests
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificates"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/serving"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests/approval"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests/selfsigned"
 )

@@ -74,14 +74,14 @@ type CryptoBundle struct {
 
 // MustCreateCryptoBundle creates a CryptoBundle to be used with tests or fails.
 func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, clock clock.Clock) CryptoBundle {
-	c, err := createCryptoBundle(crt, clock)
+	c, err := CreateCryptoBundle(crt, clock)
 	if err != nil {
 		t.Fatalf("error generating crypto bundle: %v", err)
 	}
 	return *c
 }
 
-func createCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*CryptoBundle, error) {
+func CreateCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*CryptoBundle, error) {
 	crt := originalCert.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
