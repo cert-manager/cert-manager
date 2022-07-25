@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Copyright 2020 The cert-manager Authors.
+
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +18,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(realpath $(dirname "${BASH_SOURCE}"))
-REPO_ROOT=$(dirname "${SCRIPT_ROOT}}")
+# This script is maintained for preserving muscle memory. Prefer using make directly.
 
-bazel build //deploy/crds:crds.yaml
-bazel build //hack/bin:com_coreos_etcd
-bazel build //hack/bin:io_kubernetes_kube-apiserver
-bazel build //hack/bin:kubectl
-
-echo "Integration test environment is set up, do not forget to set the following environment variables:"
-echo export TEST_ASSET_ETCD=${REPO_ROOT}/bazel-bin/hack/bin/etcd
-echo export TEST_ASSET_KUBE_APISERVER=${REPO_ROOT}/bazel-bin/hack/bin/kube-apiserver
-echo export TEST_ASSET_KUBECTL=${REPO_ROOT}/bazel-bin/hack/bin/kubectl
-echo export BAZEL_BIN_DIR=${REPO_ROOT}/bazel-bin/
-exec "$@"
+make setup-integration-tests

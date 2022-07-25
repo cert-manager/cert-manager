@@ -42,12 +42,6 @@ var (
 
 	// BinCRDDir is the filesystem path of templated CRDs created by Makefile commands
 	BinCRDDir = filepath.Join(BinDir, "yaml", "templated-crds")
-
-	// BazelBinDir is the filesystem path to the bazel-bin directory within the
-	// root of the repository.
-	// This will not be accessible when running within the bazel sandbox, but
-	// is useful for reading bazel files when running commands with `go test`.
-	BazelBinDir = filepath.Join(ModuleRootDir, "bazel-bin")
 )
 
 // PathForCRD attempts to find a path to the named CRD.
@@ -84,31 +78,7 @@ func CRDDirectory() (string, error) {
 		return dir, nil
 	}
 
-	dir, err = bazelCRDDirectory()
-	if err == nil {
-		return dir, nil
-	}
-
-	return "", fmt.Errorf("failed to find CRDs provisioned by either bazel (under %q) or by make (at %q)", BazelBinDir, BinCRDDir)
-}
-
-func bazelCRDDirectory() (string, error) {
-	bazelDir := BazelBinDir
-
-	path := filepath.Join(bazelDir, "deploy", "crds")
-
-	// prefer RUNFILES_DIR if set
-	runfiles := os.Getenv("RUNFILES_DIR")
-	if runfiles != "" {
-		path = filepath.Join(runfiles, "com_github_jetstack_cert_manager", "deploy", "crds")
-	}
-
-	err := checkCRDDirectory(path)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return "", fmt.Errorf("failed to find CRDs provisioned by make at %q", BinCRDDir)
 }
 
 func makefileCRDDirectory() (string, error) {
