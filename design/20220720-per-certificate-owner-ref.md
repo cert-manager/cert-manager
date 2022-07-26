@@ -2,14 +2,6 @@
 
 > 🌟 This design document was written by Maël Valais on 20 July 2022 in order to facilitate Denis Romanenko's feature request presented in [#5158](https://github.com/cert-manager/cert-manager/pull/5158).
 
-<!--
-This template is adapted from Kubernetes Enchancements KEP template https://raw.githubusercontent.com/kubernetes/enhancements/a86942e8ba802d0035ec7d4a9c992f03bca7dce9/keps/NNNN-kep-template/README.md
--->
-
-# CHANGEME: Title
-
-<!-- toc -->
-
 - [Release Signoff Checklist](#release-signoff-checklist)
 - [Summary](#summary)
 - [Motivation](#motivation)
@@ -42,6 +34,70 @@ This checklist contains actions which must be completed before a PR implementing
 - [ ] User-facing documentation has been PR-ed against the release branch in [cert-manager/website]
 
 ## Summary
+
+cert-manager has the ability to set the owner reference field in generated Secret resources. The option is global, and takes the form of the flag `--enable-certificate-owner-ref` set in the cert-manager controller Deployment resource.
+
+Let us take an example of Certificate resource:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-1
+  namespace: ns-1
+  uid: 1e0adf8
+spec:
+  secretRef: cert-1
+```
+
+When `--enable-certificate-owner-ref` is passed to the cert-manager controller, when issuing the X.509 certificate, cert-manager will create a Secret resource that looks like this:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cert-1
+  namespace: ns-1
+  ownerReferences:
+    - controller: true
+      blockOwnerDeletion: false
+      uid: 1e0adf8
+      name: cert-1
+      kind: Certificate
+      apiVersion: cert-manager.io/v1
+data:
+  tls.crt: "..."
+  tls.key: "..."
+  ca.crt: "..."
+```
+
+The proposition is to add a new field `certificateOwnerRef` to the Certificate resource:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+spec:
+  secretRef: cert-1
+  cleanupPolicy: [Delete|Never] # ✨
+```
+
+The new field `cleanupPolicy` has three possible values:
+
+1. When "empty", the behavior will default to not creating an owner reference on the Secret resource, unless `--enable-certificate-owner-ref` is passed.
+2. When `Delete`, the default behavior as described in the "empty" case is overridden and the owner reference is always created on the Secret resource.
+3. When `Never`, the default behavior as described in the "empty" case is overridden and the owner reference is never created on the Secret resource.
+
+> At first, the proposed field was named `certificateOwnerRef` and was a
+> nullable boolean. James Munnelly reminded us that the Kubernetes API
+> never uses boolean fields, and instead uses the string type with
+> "meaningful values". On top of being more readable, it also makes the
+> field extensible.
+
+## Use-cases
+
+Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many left-over Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
+
+## Questions
 
 <!--
 This section is important for producing high-quality, user-focused
@@ -118,12 +174,27 @@ Kubernetes/PKI ecosystem.
 
 ## Design Details
 
-<!--
-This section should contain enough information that the specifics of your
-change are understandable. This may include API specs (though not always
-required) or even code snippets. If there's any ambiguity about HOW your
-proposal will be implemented, this is the place to discuss them.
--->
+cert-manager would have to changed in a few places.
+
+**Mutating webhook**
+
+We propose to have no "value defaulting" for `cleanupPolicy` because the
+"empty" value has a meaning for us: when `cleanupPolicy` is empty, the
+presence or not of the flag `--enable-certificate-owner-ref` takes over.
+To give more context, some other resources, such as the Pod resource,
+will mutate the object when the value is "empty", for example the
+`imagePullPolicy` value gets defaulted to `IfNotPresent`.
+
+**PostIssuancePolicyChain**
+
+In ([policies.go#L95](https://github.com/cert-manager/cert-manager/blob/b78af1ef867f8776715cae3dd6a8b83049c4d9b2/internal/controller/certificates/policies/policies.go#L95-L104)), cert-manager does a few sanity checks right after the issuer (either an
+internal or an external issue) has filled the CertificateRequest's status
+with the signed certificate.
+
+One of the checks is called
+[`SecretOwnerReferenceValueMismatch`](https://github.com/cert-manager/cert-manager/blob/b78af1ef867f8776715cae3dd6a8b83049c4d9b2/internal/controller/certificates/policies/checks.go#L511)
+and checks that the owner reference on the Secret resource matches the one
+on the Certificate resource.
 
 ### Test Plan
 
@@ -196,75 +267,10 @@ No.
 
 ## Alternatives
 
-<!--
-What other approaches did you consider, and why did you rule them out? These do
-not need to be as detailed as the proposal, but should include enough
-information to express the idea and why it was not acceptable.
--->
+It is possible to use the
+[`csi-driver`](https://github.com/cert-manager/csi-driver) to circumvent
+the problem of "too many ephemeral Secret resources stored in etcd". Using
+the CSI driver, no Secret resource is created, alliviating the issue.
 
----
-
-cert-manager has the ability to set the owner reference field in generated Secret resources. The option is global, and takes the form of the flag `--enable-certificate-owner-ref` set in the cert-manager controller Deployment resource.
-
-Let us take an example of Certificate resource:
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: cert-1
-  namespace: ns-1
-  uid: 1e0adf8
-spec:
-  secretRef: cert-1
-```
-
-When `--enable-certificate-owner-ref` is passed to the cert-manager controller, when issuing the X.509 certificate, cert-manager will create a Secret resource that looks like this:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: cert-1
-  namespace: ns-1
-  ownerReferences:
-    - controller: true
-      blockOwnerDeletion: false
-      uid: 1e0adf8
-      name: cert-1
-      kind: Certificate
-      apiVersion: cert-manager.io/v1
-data:
-  tls.crt: "..."
-  tls.key: "..."
-  ca.crt: "..."
-```
-
-The proposition is to add a new field `certificateOwnerRef` to the Certificate resource:
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: Certificate
-spec:
-  secretRef: cert-1
-  certificateOwnerRef: true # ✨
-```
-
-It has three possible values:
-
-1. When "empty", the behavior will default to not creating an owner reference on the Secret resource, unless `--enable-certificate-owner-ref` is passed.
-2. When `true`, the default behavior as described in the "empty" case is overridden and the owner reference is always created on the Secret resource.
-3. When `false`, the default behavior as described in the "empty" case is overridden and the owner reference is never created on the Secret resource.
-
-> **⁉️ Question:** the field name `certificateOwnerRef` does not reflect the behavior that it aims to enable. A more appropriate, less confusing name could be found, e.g., `deleteSecretUponDeletion`.
-
-## Use-cases
-
-Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many left-over Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
-
-## Questions
-
--
-- I assume we are going to add this to the `postIssuancePolicyChain`? I don't see that in the PR currently. Can we add a note that we are going to do this and include it in testing.
-- What happens when I upgrade or downgrade cert-manager?
-- Has the [`csi-driver`](https://github.com/cert-manager/csi-driver) been considered? If so, why is that not a good enough alternative to the use case?
+Flant relies on Certificate resources to provide X.509 certificates for
+their customers. The certificates cannot be tied to a Pod workload.
