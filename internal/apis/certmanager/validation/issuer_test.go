@@ -713,7 +713,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("route53", "region"), ""),
 			},
 		},
-		"missing route53 accessKeyID and accessKeyIDSecretRef should be valid": {
+		"missing route53 accessKeyID and accessKeyIDSecretRef should be valid because ambient credentials may be used instead": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 					Region: "valid",
