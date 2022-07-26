@@ -404,10 +404,9 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			if len(p.Route53.Region) == 0 {
 				el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
 			}
-			// accessKeyID or accessKeyIDSecretRef must be specified, but not both
-			if len(p.Route53.AccessKeyID) == 0 && p.Route53.SecretAccessKeyID == nil {
-				el = append(el, field.Required(fldPath.Child("route53"), "accessKeyID or accessKeyIDSecretRef is required"))
-			}
+			// We don't include a validation here asserting that either the
+			// AccessKeyID or SecretAccessKeyID must be specified, because it is
+			// valid to use neither when using ambient credentials.
 			if len(p.Route53.AccessKeyID) > 0 && p.Route53.SecretAccessKeyID != nil {
 				el = append(el, field.Required(fldPath.Child("route53"), "accessKeyID and accessKeyIDSecretRef cannot both be specified"))
 			}
