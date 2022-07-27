@@ -18,16 +18,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# NB: This script requires bazel, and is no longer supported since we no longer support bazel
-# It's preserved for now but might be removed in the future
-
-
-hack=$(dirname "${BASH_SOURCE[0]}")
-
-echo -e "\033[0;33mThis script is preserved for legacy reasons, and as such will also update bazel
-You shouldn't need to run this script or install bazel for normal development.
-Use 'make update-all' to do everything this script does without touching bazel\033[0m"
-
-"$hack"/update-bazel.sh
+# This script is kept only to preserve muscle memory. Prefer using make directly.
 
 make update-all
