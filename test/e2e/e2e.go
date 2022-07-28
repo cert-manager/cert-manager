@@ -20,7 +20,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 
 	"github.com/cert-manager/cert-manager/test/e2e/framework"
 	"github.com/cert-manager/cert-manager/test/e2e/framework/addon"
