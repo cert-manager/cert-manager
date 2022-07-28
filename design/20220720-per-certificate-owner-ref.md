@@ -47,7 +47,7 @@ metadata:
   namespace: ns-1
   uid: 1e0adf8
 spec:
-  secretRef: cert-1
+  secretName: cert-1
 ```
 
 When `--enable-certificate-owner-ref` is passed to the cert-manager controller, when issuing the X.509 certificate, cert-manager will create a Secret resource that looks like this:
@@ -77,7 +77,7 @@ The proposition is to add a new field `certificateOwnerRef` to the Certificate r
 apiVersion: cert-manager.io/v1
 kind: Certificate
 spec:
-  secretRef: cert-1
+  secretName: cert-1
   cleanupPolicy: [Delete|Never] # ✨
 ```
 
