@@ -18,6 +18,7 @@ package acme
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
@@ -59,7 +60,7 @@ const (
 	messageInvalidPrivateKey             = "Account private key is invalid: "
 
 	messageTemplateUpdateToV2              = "Your ACME server URL is set to a v1 endpoint (%s). You should update the spec.acme.server field to %q"
-	messageTemplateNotRSA                  = "ACME private key in %q is not of type RSA"
+	messageTemplateNotSupported            = "ACME private key in %q is not of type RSA or ECDSA"
 	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
 	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
 	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
@@ -139,10 +140,11 @@ func (a *Acme) Setup(ctx context.Context) error {
 		msg = messageAccountVerificationFailed + err.Error()
 		return fmt.Errorf(msg)
 	}
-	rsaPk, ok := pk.(*rsa.PrivateKey)
-	if !ok {
+	_, isRSA := pk.(*rsa.PrivateKey)
+	_, isECDSA := pk.(*ecdsa.PrivateKey)
+	if !isRSA && !isECDSA {
 		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf(messageTemplateNotRSA,
+		msg = fmt.Sprintf(messageTemplateNotSupported,
 			a.issuer.GetSpec().ACME.PrivateKey.Name)
 		return nil
 	}
@@ -156,7 +158,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// this function.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
 	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
-	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, pk, a.userAgent)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -211,7 +213,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		status = cmmeta.ConditionTrue
 
 		// ensure the cached client in the account registry is up to date
-		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, pk, a.userAgent)
 		return nil
 	}
 
@@ -313,7 +315,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 	// ensure the cached client in the account registry is up to date
-	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, pk, a.userAgent)
 
 	return nil
 }

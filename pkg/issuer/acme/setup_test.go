@@ -21,6 +21,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -69,6 +70,7 @@ func TestAcme_Setup(t *testing.T) {
 
 		ecdsaPrivKey = mustGenerateEDCSAKey(t)
 		rsaPrivKey   = mustGenerateRSAKey(t)
+		bogusPrivKey = mustGenerateBogusKey(t)
 
 		notFoundErr    = apierrors.NewNotFound(corev1.Resource("test"), "test")
 		invalidDataErr = errors.NewInvalidData("test")
@@ -189,6 +191,16 @@ func TestAcme_Setup(t *testing.T) {
 			addClientShouldBeCalled:    true,
 			expectedRegisteredAcc:      &acmeapi.Account{},
 		},
+		"ACME account's key is an ECDSA key": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
+			kfsKey: ecdsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition)},
+			removeClientShouldBeCalled: true,
+			addClientShouldBeCalled:    true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+		},
 		"ACME private key secret exists, but contains invalid private key": {
 			issuer: gen.IssuerFrom(baseIssuer),
 			kfsErr: invalidDataErr,
@@ -208,14 +220,14 @@ func TestAcme_Setup(t *testing.T) {
 			},
 			wantsErr: true,
 		},
-		"ACME account's key is not an RSA key": {
+		"ACME account's key is not an RSA or ECDSA key": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
-			kfsKey: ecdsaPrivKey,
+			kfsKey: bogusPrivKey,
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyFalseCondition,
 					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotRSA, issuerSecretKeyName))),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotSupported, issuerSecretKeyName))),
 			},
 		},
 		"ACME server URL is an invalid URL": {
@@ -411,7 +423,7 @@ func TestAcme_Setup(t *testing.T) {
 				RemoveClientFunc: func(string) {
 					removeClientWasCalled = true
 				},
-				AddClientFunc: func(string, cmacme.ACMEIssuer, *rsa.PrivateKey, string) {
+				AddClientFunc: func(string, cmacme.ACMEIssuer, crypto.Signer, string) {
 					addClientWasCalled = true
 				},
 			}
@@ -498,7 +510,7 @@ func keyFromSecretMockBuilder(wasCalled *bool, key crypto.Signer, err error) key
 }
 
 func clientBuilderMock(cl acmecl.Interface) accounts.NewClientFunc {
-	return func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface {
+	return func(*http.Client, cmacme.ACMEIssuer, crypto.Signer, string) acmecl.Interface {
 		return cl
 	}
 }
@@ -522,6 +534,31 @@ func mustGenerateRSAKey(t *testing.T) crypto.Signer {
 	key, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
 		t.Fatal(err)
+	}
+	return key
+}
+
+type bogusKey struct {
+	key byte
+}
+
+// It's not correct to overwrite the digest, but we just need the
+// signature anyway, it is never called
+func (k *bogusKey) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	for i, bite := range digest {
+		digest[i] = bite ^ k.key
+	}
+	return digest, nil
+}
+
+func (k *bogusKey) Public() crypto.PublicKey {
+	return k.key
+}
+
+func mustGenerateBogusKey(t *testing.T) crypto.Signer {
+	t.Helper()
+	key := &bogusKey{
+		key: 0,
 	}
 	return key
 }

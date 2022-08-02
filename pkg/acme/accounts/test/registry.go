@@ -17,7 +17,7 @@ limitations under the License.
 package test
 
 import (
-	"crypto/rsa"
+	"crypto"
 	"net/http"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -30,13 +30,13 @@ var _ accounts.Registry = &FakeRegistry{}
 
 // FakeRegistry implements the accounts.Registry interface using stub functions
 type FakeRegistry struct {
-	AddClientFunc    func(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
+	AddClientFunc    func(uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string)
 	RemoveClientFunc func(uid string)
 	GetClientFunc    func(uid string) (acmecl.Interface, error)
 	ListClientsFunc  func() map[string]acmecl.Interface
 }
 
-func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
+func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string) {
 	f.AddClientFunc(uid, config, privateKey, userAgent)
 }
 

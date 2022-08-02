@@ -17,7 +17,9 @@ limitations under the License.
 package accounts
 
 import (
+	"crypto"
 	"crypto/rsa"
+	"crypto/ecdsa"
 	"errors"
 	"net/http"
 	"sync"
@@ -35,7 +37,7 @@ var ErrNotFound = errors.New("ACME client for issuer not initialised/available")
 type Registry interface {
 	// AddClient will ensure the registry has a stored ACME client for the Issuer
 	// object with the given UID, configuration and private key.
-	AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
+	AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string)
 
 	// RemoveClient will remove a registered client using the UID of the Issuer
 	// resource that constructed it.
@@ -80,23 +82,34 @@ type stableOptions struct {
 	serverURL     string
 	skipVerifyTLS bool
 	issuerUID     string
-	publicKey     string
-	exponent      int
+	publicKey     crypto.PublicKey
 }
 
 func (c stableOptions) equalTo(c2 stableOptions) bool {
-	return c == c2
+	if  c.serverURL != c2.serverURL ||
+		c.skipVerifyTLS != c2.skipVerifyTLS ||
+		c.issuerUID != c2.issuerUID {
+		return false
+	}
+	rsaKey, ok := c.publicKey.(*rsa.PublicKey)
+	if ok {
+		return rsaKey.Equal(c2.publicKey)
+	}
+	ecdsaKey, ok := c.publicKey.(*ecdsa.PublicKey)
+	if ok {
+		return ecdsaKey.Equal(c2.publicKey)
+	}
+
+	return false
 }
 
-func newStableOptions(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) stableOptions {
+func newStableOptions(uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer) stableOptions {
 	// Encoding a big.Int cannot fail
-	publicNBytes, _ := privateKey.PublicKey.N.GobEncode()
 	return stableOptions{
 		serverURL:     config.Server,
 		skipVerifyTLS: config.SkipTLSVerify,
 		issuerUID:     uid,
-		publicKey:     string(publicNBytes),
-		exponent:      privateKey.PublicKey.E,
+		publicKey:     privateKey.Public(),
 	}
 }
 
@@ -110,7 +123,7 @@ type clientWithMeta struct {
 
 // AddClient will ensure the registry has a stored ACME client for the Issuer
 // object with the given UID, configuration and private key.
-func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
+func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string) {
 	// ensure the client is up to date for the current configuration
 	r.ensureClient(client, uid, config, privateKey, userAgent)
 }
@@ -120,7 +133,7 @@ func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACME
 // the client will NOT be mutated or replaced, allowing this method to be called
 // even if the client does not need replacing/updating without causing issues for
 // consumers of the registry.
-func (r *registry) ensureClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
+func (r *registry) ensureClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string) {
 	// acquire a read-write lock even if we hit the fast-path where the client
 	// is already present to avoid having to RLock, RUnlock and Lock again,
 	// which could itself cause a race

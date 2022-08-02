@@ -17,7 +17,7 @@ limitations under the License.
 package accounts
 
 import (
-	"crypto/rsa"
+	"crypto"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -40,12 +40,12 @@ const (
 )
 
 // NewClientFunc is a function type for building a new ACME client.
-type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface
+type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, crypto.Signer, string) acmecl.Interface
 
 var _ NewClientFunc = NewClient
 
 // NewClient is an implementation of NewClientFunc that returns a real ACME client.
-func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) acmecl.Interface {
+func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string) acmecl.Interface {
 	return middleware.NewLogger(&acmeapi.Client{
 		Key:          privateKey,
 		HTTPClient:   client,
