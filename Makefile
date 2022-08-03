@@ -60,6 +60,7 @@ include make/release.mk
 include make/manifests.mk
 include make/licenses.mk
 include make/e2e-setup.mk
+include make/scan.mk
 include make/help.mk
 
 .PHONY: clean

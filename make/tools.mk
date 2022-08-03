@@ -24,6 +24,7 @@ K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
 GOTESTSUM_VERSION=1.7.0
 RCLONE_VERSION=1.58.1
+TRIVY_VERSION=0.30.4
 YTT_VERSION=0.36.0
 YQ_VERSION=4.11.2
 CRANE_VERSION=0.8.0
@@ -71,7 +72,7 @@ endif
 CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
 
 .PHONY: tools
-tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/controller-gen k8s-codegen-tools bin/tools/goimports bin/tools/gotestsum bin/tools/rclone bin/tools/ytt bin/tools/yq
+tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/controller-gen k8s-codegen-tools bin/tools/goimports bin/tools/gotestsum bin/tools/rclone bin/tools/trivy bin/tools/ytt bin/tools/yq
 
 ######
 # Go #
@@ -339,6 +340,39 @@ bin/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | bin/downloaded/tools
 	unzip -p $@.zip $(notdir $@)/rclone > $@
 	chmod +x $@
 	rm -f $@.zip
+
+#########
+# trivy #
+#########
+
+TRIVY_OS :=
+TRIVY_ARCH :=
+
+ifeq ($(HOST_OS), darwin)
+	TRIVY_OS = macOS
+else ifeq ($(HOST_OS), linux)
+	TRIVY_OS = Linux
+endif
+
+ifeq ($(HOST_ARCH), arm64)
+	TRIVY_ARCH = ARM64
+else ifeq ($(HOST_ARCH), amd64)
+	TRIVY_ARCH = 64bit
+endif
+
+TRIVY_Linux_64bit_SHA256SUM=bf4fbf5c1c8179460070dce909dec93cf61dfbbf917f49a16ea336d1f66f3727
+TRIVY_macOS_64bit_SHA256SUM=af6a0c66fdc3fe874711ef35fc813d954d75139b32a5226d2d8162e911f02ac6
+TRIVY_macOS_ARM64_SHA256SUM=9ffb59195c6cb15e5ec9a0d8c0467595a8155c07b7616ac342b06847df1f934c
+
+bin/tools/trivy: bin/downloaded/tools/trivy_$(TRIVY_VERSION)_$(TRIVY_OS)-$(TRIVY_ARCH) bin/scratch/TRIVY_VERSION | bin/tools
+	@cd $(dir $@) && $(LN) $(patsubst bin/%,../%,$<) $(notdir $@)
+
+bin/downloaded/tools/trivy_$(TRIVY_VERSION)_%: | bin/downloaded/tools
+	$(CURL) https://github.com/aquasecurity/trivy/releases/download/v$(TRIVY_VERSION)/trivy_$(TRIVY_VERSION)_$*.tar.gz -o $@.tar.gz
+	./hack/util/checkhash.sh $@.tar.gz $(TRIVY_$(subst -,_,$*)_SHA256SUM)
+	tar xfO $@.tar.gz trivy > $@
+	chmod +x $@
+	rm $@.tar.gz
 
 #######
 # ytt #
