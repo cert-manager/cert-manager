@@ -101,6 +101,7 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
+	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
@@ -242,7 +243,13 @@ require (
 )
 
 replace (
+	// We depend on go-restful because it's a k8s dependency.
+	// v2 of go-restful has a critical CVE which we're not affected by and which k8s have fixed upstream but won't backport to the 1.24 release branch
+	// We manually patch the version here so that we don't get awful security ratings from vuln scanners like trivy.
+	github.com/emicklei/go-restful => github.com/emicklei/go-restful/v3 v3.8.0
+
 	github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
+
 	go.opentelemetry.io/contrib => go.opentelemetry.io/contrib v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0
