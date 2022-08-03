@@ -33,7 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
+	golang.org/x/net v0.0.0-20220802222814-0bcc04d9c69b
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gomodules.xyz/jsonpatch/v2 v2.2.0
@@ -208,7 +208,7 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/mod v0.5.0 // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
@@ -236,7 +236,6 @@ require (
 
 replace (
 	github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
-	golang.org/x/net => golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
 
 	// Update gengo to ensure we have the --trim-path-prefix feature in code-generator tools.
 	k8s.io/gengo => k8s.io/gengo v0.0.0-20211115164449-b448ea381d54
