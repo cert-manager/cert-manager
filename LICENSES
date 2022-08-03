@@ -128,10 +128,7 @@ github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/
 github.com/monochromegane/go-gitignore,https://github.com/monochromegane/go-gitignore/blob/205db1a8cc00/LICENSE,MIT
 github.com/morikuni/aec,https://github.com/morikuni/aec/blob/v1.0.0/LICENSE,MIT
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
-github.com/nxadm/tail,https://github.com/nxadm/tail/blob/v1.4.8/LICENSE,MIT
-github.com/nxadm/tail/ratelimiter,https://github.com/nxadm/tail/blob/v1.4.8/ratelimiter/Licence,MIT
-github.com/onsi/ginkgo,https://github.com/onsi/ginkgo/blob/v1.16.5/LICENSE,MIT
-github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable,https://github.com/onsi/ginkgo/blob/v1.16.5/reporters/stenographer/support/go-colorable/LICENSE,MIT
+github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.1.4/LICENSE,MIT
 github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.19.0/LICENSE,MIT
 github.com/opencontainers/go-digest,https://github.com/opencontainers/go-digest/blob/v1.0.0/LICENSE,Apache-2.0
 github.com/opencontainers/image-spec/specs-go,https://github.com/opencontainers/image-spec/blob/c5a74bcca799/LICENSE,Apache-2.0
@@ -201,7 +198,6 @@ gopkg.in/ini.v1,https://github.com/go-ini/ini/blob/v1.66.2/LICENSE,Apache-2.0
 gopkg.in/natefinch/lumberjack.v2,https://github.com/natefinch/lumberjack/blob/v2.0.0/LICENSE,MIT
 gopkg.in/square/go-jose.v2,https://github.com/square/go-jose/blob/v2.5.1/LICENSE,Apache-2.0
 gopkg.in/square/go-jose.v2/json,https://github.com/square/go-jose/blob/v2.5.1/json/LICENSE,BSD-3-Clause
-gopkg.in/tomb.v1,https://github.com/go-tomb/tomb/blob/dd632973f1e7/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/496545a6307b/LICENSE,MIT
 helm.sh/helm/v3,https://github.com/helm/helm/blob/v3.9.0/LICENSE,Apache-2.0

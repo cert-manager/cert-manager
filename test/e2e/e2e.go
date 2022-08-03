@@ -27,9 +27,7 @@ import (
 	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
 )
 
-var (
-	cfg = framework.DefaultConfig
-)
+var cfg = framework.DefaultConfig
 
 var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	addon.InitGlobals(cfg)
@@ -49,36 +47,33 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	}
 })
 
-var globalLogs map[string]string
+var _ = ginkgo.SynchronizedAfterSuite(func() {}, func() {
+	ginkgo.By("Retrieving logs for global addons")
+	globalLogs, err := addon.GlobalLogs()
+	if err != nil {
+		log.Logf("Failed to retrieve global addon logs: " + err.Error())
+	}
 
-var _ = ginkgo.SynchronizedAfterSuite(func() {},
-	func() {
-		ginkgo.By("Retrieving logs for global addons")
-		var err error
-		globalLogs, err = addon.GlobalLogs()
+	for k, v := range globalLogs {
+		outPath := path.Join(cfg.Ginkgo.ReportDirectory, "logs", k)
+
+		// Create a directory for the file if needed
+		err := os.MkdirAll(path.Dir(outPath), 0755)
 		if err != nil {
-			log.Logf("Failed to retrieve global addon logs: " + err.Error())
+			log.Logf("Failed to create directory for logs: %v", err)
+			continue
 		}
 
-		for k, v := range globalLogs {
-			outPath := path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, "logs", k)
-			// Create a directory for the file if needed
-			err := os.MkdirAll(path.Dir(outPath), 0755)
-			if err != nil {
-				log.Logf("Failed to create directory for logs: %v", err)
-				continue
-			}
-
-			err = os.WriteFile(outPath, []byte(v), 0644)
-			if err != nil {
-				log.Logf("Failed to write log file: %v", err)
-				continue
-			}
-		}
-
-		ginkgo.By("Cleaning up the provisioned globals")
-		err = addon.DeprovisionGlobals(cfg)
+		err = os.WriteFile(outPath, []byte(v), 0644)
 		if err != nil {
-			framework.Failf("Error deprovisioning global addons: %v", err)
+			log.Logf("Failed to write log file: %v", err)
+			continue
 		}
-	})
+	}
+
+	ginkgo.By("Cleaning up the provisioned globals")
+	err = addon.DeprovisionGlobals(cfg)
+	if err != nil {
+		framework.Failf("Error deprovisioning global addons: %v", err)
+	}
+})

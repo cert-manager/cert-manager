@@ -21,7 +21,7 @@ CONTROLLER_GEN_VERSION=0.8.0
 COSIGN_VERSION=1.3.1
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
-GATEWAY_API_VERSION = 0.4.1
+GATEWAY_API_VERSION=0.4.1
 GOIMPORTS_VERSION=0.1.8
 GOLICENSES_VERSION=1.2.1
 GOTESTSUM_VERSION=1.7.0
@@ -29,7 +29,7 @@ RCLONE_VERSION=1.58.1
 YTT_VERSION=0.36.0
 YQ_VERSION=4.25.3
 CRANE_VERSION=0.8.0
-GINKGO_VERSION=$(shell awk '/ginkgo/ {print $$2}' go.mod)
+GINKGO_VERSION=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 K8S_CODEGEN_VERSION=v0.24.2
 
@@ -226,7 +226,7 @@ $(BINDIR)/tools/ginkgo: $(BINDIR)/downloaded/tools/ginkgo@$(GINKGO_VERSION) $(BI
 	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
 
 $(BINDIR)/downloaded/tools/ginkgo@$(GINKGO_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
-	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
+	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 	@mv $(subst @$(GINKGO_VERSION),,$@) $@
 
 #########

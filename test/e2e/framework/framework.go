@@ -179,7 +179,7 @@ func (f *Framework) AfterEach() {
 }
 
 func (f *Framework) printAddonLogs() {
-	if CurrentGinkgoTestDescription().Failed {
+	if CurrentSpecReport().Failed() {
 		for _, a := range f.requiredAddons {
 			if a, ok := a.(loggableAddon); ok {
 				l, err := a.Logs()
