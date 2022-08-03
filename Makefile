@@ -21,7 +21,7 @@ SHELL := /bin/bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-SOURCES := $(shell find . -type f -name "*.go" -not -path "./bin/*" -not -path "./make/*")
+SOURCES := $(shell find . -type f -name "*.go" -not -path "./bin/*" -not -path "./make/*") go.mod go.sum
 
 ## GOBUILDPROCS is passed to GOMAXPROCS when running go build; if you're running
 ## make in parallel using "-jN" then you'll probably want to reduce the value
