@@ -30,7 +30,7 @@ include make/util.mk
 # the make dir.
 # NB: we skip `bin/` since users might have a `bin` directory left over in repos they were
 # using before the bin dir was renamed
-SOURCES := $(call get-sources,cat -)
+SOURCES := $(call get-sources,cat -) go.mod go.sum
 
 ## GOBUILDPROCS is passed to GOMAXPROCS when running go build; if you're running
 ## make in parallel using "-jN" then you'll probably want to reduce the value
