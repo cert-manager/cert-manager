@@ -23,7 +23,7 @@ global:
   logLevel: 2
 
   leaderElection:
-    # Override the namespace used to store the ConfigMap for leader election
+    # Override the namespace used for the leader election lease
     namespace: "kube-system"
 
     # The duration that non-leader candidates will wait after observing a
