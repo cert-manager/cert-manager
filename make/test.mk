@@ -3,7 +3,7 @@ export KUBEBUILDER_ASSETS=$(PWD)/$(BINDIR)/tools
 # WHAT can be used to control which unit tests are run by "make test"; defaults to running all
 # tests except e2e tests (which require more significant setup)
 # For example: make WHAT=./pkg/util/pki test-pretty to only run the PKI utils tests
-WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/...
+WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 
 .PHONY: test
 ## Test is the workhorse test command which by default runs all unit and
@@ -24,14 +24,15 @@ test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(B
 ## issues with dashboards and UIs.
 ##
 ## @category CI
-test-ci: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver
-	@# Fuzz tests are hidden from JUnit output because they can break dashboards.
-	@# They look like this:
-	@# <testcase classname="internal/controller/certificates" name="Test_serializeApplyStatus/fuzz_8358"></testcase>
+test-ci: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver $(DEPENDS_ON_GO)
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
-		--post-run-command $$'bash -c "awk \'$$1 \!~ /\\/fuzz_\\d+// { print $$2 }\' - $$GOTESTSUM_JUNITFILE >/tmp/$$$$ && mv /tmp/$$$$ $$GOTESTSUM_JUNITFILE"' \
-		--junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
+	$(GOTESTSUM) \
+		--junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
+		--junitfile-testsuite-name short \
+		--junitfile-testcase-classname relative \
+		--post-run-command $$'bash -c "$(GO) run hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' \
+		-- \
+		$(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
