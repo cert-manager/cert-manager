@@ -38,26 +38,26 @@ var (
 // translateAnnotations updates the Certificate spec using the ingress-like
 // annotations. For example, the following Ingress:
 //
-//   kind: Ingress
-//   metadata:
-//     annotations:
-//       cert-manager.io/common-name: example.com
-//       cert-manager.io/duration: 2160h
-//       cert-manager.io/renew-before: 1440h
-//       cert-manager.io/usages: "digital signature,key encipherment"
-//       cert-manager.io/revision-history-limit: 7
+//	kind: Ingress
+//	metadata:
+//	  annotations:
+//	    cert-manager.io/common-name: example.com
+//	    cert-manager.io/duration: 2160h
+//	    cert-manager.io/renew-before: 1440h
+//	    cert-manager.io/usages: "digital signature,key encipherment"
+//	    cert-manager.io/revision-history-limit: 7
 //
 // is mapped to the following Certificate:
 //
-//   kind: Certificate
-//   spec:
-//     commonName: example.com
-//     duration: 2160h
-//     renewBefore: 1440h
-//     usages:
-//       - digital signature
-//       - key encipherment
-//     revisionHistoryLimit: 7
+//	kind: Certificate
+//	spec:
+//	  commonName: example.com
+//	  duration: 2160h
+//	  renewBefore: 1440h
+//	  usages:
+//	    - digital signature
+//	    - key encipherment
+//	  revisionHistoryLimit: 7
 func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]string) error {
 	if crt == nil {
 		return errNilCertificate

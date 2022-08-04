@@ -54,7 +54,6 @@ type StubOpenDNSConfig struct {
 	FuncErrors map[string]error
 }
 
-//
 func findStubHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
 
 	return "test.example.com", nil

@@ -93,9 +93,11 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 
 // FindNearestZoneForFQDN will try to traverse the official Cloudflare API to find the nearest valid Zone.
 // It's a replacement for /pkg/issuer/acme/dns/util/wait.go#FindZoneByFqdn
-//  example.com.                                   ← Zone-Record found for the SLD (in most cases)
-//  └── foo.example.com.                           ← Zone-Record could be possibly here, but in this case not.
-//      └── _acme-challenge.foo.example.com.       ← Starting point, the FQDN.
+//
+//	example.com.                                   ← Zone-Record found for the SLD (in most cases)
+//	└── foo.example.com.                           ← Zone-Record could be possibly here, but in this case not.
+//	    └── _acme-challenge.foo.example.com.       ← Starting point, the FQDN.
+//
 // It will try to call the API for each branch (from bottom to top) and see if there's a Zone-Record returned.
 // Calling See https://api.cloudflare.com/#zone-list-zones
 func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
