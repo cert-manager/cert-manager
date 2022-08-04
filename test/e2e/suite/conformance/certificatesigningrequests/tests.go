@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -73,6 +73,7 @@ func (s *Suite) Define() {
 		})
 
 		type testCase struct {
+			name    string // ginkgo v2 does not support using map[string] to store the test names (#5345)
 			keyAlgo x509.PublicKeyAlgorithm
 			// csrModifers define the shape of the X.509 CSR which is used in the
 			// test case. We use a function to allow access to variables that are
@@ -89,8 +90,9 @@ func (s *Suite) Define() {
 			extraValidations []certificatesigningrequests.ValidationFunc
 		}
 
-		tests := map[string]testCase{
-			"should issue an RSA certificate for a single distinct DNS Name": {
+		tests := []testCase{
+			{
+				name:    "should issue an RSA certificate for a single distinct DNS Name",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))}
@@ -101,8 +103,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN},
 			},
-
-			"should issue an ECDSA certificate for a single distinct DNS Name": {
+			{
+				name:    "should issue an ECDSA certificate for a single distinct DNS Name",
 				keyAlgo: x509.ECDSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))}
@@ -113,8 +115,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.ECDSAFeature, featureset.OnlySAN},
 			},
-
-			"should issue an Ed25519 certificate for a single distinct DNS Name": {
+			{
+				name:    "should issue an Ed25519 certificate for a single distinct DNS Name",
 				keyAlgo: x509.Ed25519,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))}
@@ -125,8 +127,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.Ed25519FeatureSet, featureset.OnlySAN},
 			},
-
-			"should issue an RSA certificate for a single Common Name": {
+			{
+				name:    "should issue an RSA certificate for a single Common Name",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
@@ -137,8 +139,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
 			},
-
-			"should issue an ECDSA certificate for a single Common Name": {
+			{
+				name:    "should issue an ECDSA certificate for a single Common Name",
 				keyAlgo: x509.ECDSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
@@ -149,8 +151,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.ECDSAFeature},
 			},
-
-			"should issue an Ed25519 certificate for a single Common Name": {
+			{
+				name:    "should issue an Ed25519 certificate for a single Common Name",
 				keyAlgo: x509.Ed25519,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
@@ -161,8 +163,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.Ed25519FeatureSet},
 			},
-
-			"should issue a certificate that defines a Common Name and IP Address": {
+			{
+				name:    "should issue a certificate that defines a Common Name and IP Address",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -176,8 +178,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.IPAddressFeature},
 			},
-
-			"should issue a certificate that defines an Email Address": {
+			{
+				name:    "should issue a certificate that defines an Email Address",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -190,8 +192,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.EmailSANsFeature},
 			},
-
-			"should issue a certificate that defines a Common Name and URI SAN": {
+			{
+				name:    "should issue a certificate that defines a Common Name and URI SAN",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -205,8 +207,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.URISANsFeature},
 			},
-
-			"should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name": {
+			{
+				name:    "should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -220,8 +222,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{},
 			},
-
-			"should issue a certificate that defines a distinct DNS Name and another distinct Common Name": {
+			{
+				name:    "should issue a certificate that defines a distinct DNS Name and another distinct Common Name",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -235,8 +237,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
 			},
-
-			"should issue a certificate that defines a Common Name, DNS Name, and sets a duration": {
+			{
+				name:    "should issue a certificate that defines a Common Name, DNS Name, and sets a duration",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -253,8 +255,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.DurationFeature},
 			},
-
-			"should issue a certificate that defines a Common Name, DNS Name, and sets a duration via expiration seconds": {
+			{
+				name:    "should issue a certificate that defines a Common Name, DNS Name, and sets a duration via expiration seconds",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -269,8 +271,8 @@ func (s *Suite) Define() {
 				kubeCSRExpirationSeconds: pointer.Int32(3333),
 				requiredFeatures:         []featureset.Feature{featureset.DurationFeature},
 			},
-
-			"should issue a certificate that defines a DNS Name and sets a duration": {
+			{
+				name:    "should issue a certificate that defines a DNS Name and sets a duration",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -286,8 +288,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.DurationFeature},
 			},
-
-			"should issue a certificate which has a wildcard DNS Name defined": {
+			{
+				name:    "should issue a certificate which has a wildcard DNS Name defined",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -300,8 +302,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.WildcardsFeature, featureset.OnlySAN},
 			},
-
-			"should issue a certificate that includes only a URISANs name": {
+			{
+				name:    "should issue a certificate that includes only a URISANs name",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -314,8 +316,8 @@ func (s *Suite) Define() {
 				},
 				requiredFeatures: []featureset.Feature{featureset.URISANsFeature, featureset.OnlySAN},
 			},
-
-			"should issue a certificate that includes arbitrary key usages": {
+			{
+				name:    "should issue a certificate that includes arbitrary key usages",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -337,8 +339,8 @@ func (s *Suite) Define() {
 					certificatesigningrequests.ExpectKeyUsageUsageDataEncipherment,
 				},
 			},
-
-			"should issue a signing CA certificate that has a large duration": {
+			{
+				name:    "should issue a signing CA certificate that has a large duration",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
@@ -358,8 +360,8 @@ func (s *Suite) Define() {
 			},
 		}
 
-		defineTest := func(name string, test testCase) {
-			s.it(f, name, func(signerName string) {
+		defineTest := func(test testCase) {
+			s.it(f, test.name, func(signerName string) {
 				// Generate request CSR
 				csr, key, err := gen.CSR(test.keyAlgo, test.csrModifiers()...)
 				Expect(err).NotTo(HaveOccurred())
@@ -420,8 +422,8 @@ func (s *Suite) Define() {
 			}, test.requiredFeatures...)
 		}
 
-		for name := range tests {
-			defineTest(name, tests[name])
+		for _, tc := range tests {
+			defineTest(tc)
 		}
 	})
 }

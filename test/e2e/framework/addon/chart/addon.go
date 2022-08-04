@@ -146,9 +146,21 @@ func (c *Chart) runInstall() error {
 	}
 
 	cmd := c.buildHelmCmd(args...)
-	err := cmd.Run()
+	cmd.Stdout = nil
+	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
+	}
+	defer out.Close()
+
+	err = cmd.Run()
+	if err != nil {
+		_, err2 := io.Copy(os.Stdout, out)
+		if err2 != nil {
+			return fmt.Errorf("cmd.Run: %v: io.Copy: %v", err, err2)
+		}
+
+		return fmt.Errorf("cmd.Run: %v", err)
 	}
 
 	return nil
@@ -189,10 +201,23 @@ func (c *Chart) getHelmVersion() (string, error) {
 
 // Deprovision the deployed instance of tiller-deploy
 func (c *Chart) Deprovision() error {
-	err := c.buildHelmCmd("delete", "--namespace", c.Namespace, c.ReleaseName).Run()
+	cmd := c.buildHelmCmd("delete", "--namespace", c.Namespace, c.ReleaseName)
+	cmd.Stdout = nil
+	out, err := cmd.StdoutPipe()
 	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	err = cmd.Run()
+	if err != nil {
+		_, err2 := io.Copy(os.Stdout, out)
+		if err2 != nil {
+			return fmt.Errorf("cmd.Run: %v: io.Copy: %v", err, err2)
+		}
+
 		// Ignore deprovisioning errors
-		// TODO: only ignore failed to delete because it doesn't exist errors
+		// TODO: only ignore "failed to delete because it doesn't exist" errors
 		return nil
 	}
 

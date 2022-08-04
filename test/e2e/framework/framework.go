@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	api "k8s.io/api/core/v1"
@@ -179,7 +179,7 @@ func (f *Framework) AfterEach() {
 }
 
 func (f *Framework) printAddonLogs() {
-	if CurrentGinkgoTestDescription().Failed {
+	if CurrentSpecReport().Failed() {
 		for _, a := range f.requiredAddons {
 			if a, ok := a.(loggableAddon); ok {
 				l, err := a.Logs()
