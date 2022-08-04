@@ -79,7 +79,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		t.Fatalf("failed to create certificate: %v", err)
 	}
 
-	var req *cmapi.CertificateRequest
+	var firstReq *cmapi.CertificateRequest
 	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -94,7 +94,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 			return false, nil
 		}
 
-		req = &reqs.Items[0]
+		firstReq = &reqs.Items[0]
 		return true, nil
 	}); err != nil {
 		t.Fatal(err)
@@ -102,11 +102,11 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 
 	t.Logf("Found CertificateRequest")
 	// Remember the CSR data used for the first request so we can compare it later
-	originalCSR := req.Spec.Request
+	originalCSR := firstReq.Spec.Request
 
 	// Mark the CSR as 'Failed'
-	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionInvalidRequest, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonFailed, "manually failed")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(req.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	apiutil.SetCertificateRequestCondition(firstReq, cmapi.CertificateRequestConditionInvalidRequest, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonFailed, "manually failed")
+	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(ctx, firstReq, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("failed to mark CertificateRequest as Failed: %v", err)
 	}
@@ -138,22 +138,23 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
+	var secondReq *cmapi.CertificateRequest
 	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
 
-		if len(reqs.Items) > 1 {
-			return false, fmt.Errorf("invalid state, expected only one CR but got %d", len(reqs.Items))
+		for _, req := range reqs.Items {
+			if req.Name == firstReq.Name {
+				continue
+			}
+
+			secondReq = &req
+			return true, nil
 		}
 
-		if len(reqs.Items) == 0 {
-			return false, nil
-		}
-
-		req = &reqs.Items[0]
-		return true, nil
+		return false, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +165,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse first CSR: %v", err)
 	}
-	csr2, err := pki.DecodeX509CertificateRequestBytes(req.Spec.Request)
+	csr2, err := pki.DecodeX509CertificateRequestBytes(secondReq.Spec.Request)
 	if err != nil {
 		t.Fatalf("failed to parse first CSR: %v", err)
 	}
@@ -212,7 +213,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		t.Fatalf("failed to create certificate: %v", err)
 	}
 
-	var req *cmapi.CertificateRequest
+	var firstReq *cmapi.CertificateRequest
 	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -227,7 +228,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 			return false, nil
 		}
 
-		req = &reqs.Items[0]
+		firstReq = &reqs.Items[0]
 		return true, nil
 	}); err != nil {
 		t.Fatal(err)
@@ -235,11 +236,11 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 
 	t.Logf("Found CertificateRequest")
 	// Remember the CSR data used for the first request so we can compare it later
-	originalCSR := req.Spec.Request
+	originalCSR := firstReq.Spec.Request
 
 	// Mark the CSR as 'Failed'
-	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionFalse, cmapi.CertificateRequestReasonFailed, "manually failed")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(req.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	apiutil.SetCertificateRequestCondition(firstReq, cmapi.CertificateRequestConditionReady, cmmeta.ConditionFalse, cmapi.CertificateRequestReasonFailed, "manually failed")
+	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(ctx, firstReq, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("failed to mark CertificateRequest as Failed: %v", err)
 	}
@@ -271,22 +272,23 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
+	var secondReq *cmapi.CertificateRequest
 	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
 
-		if len(reqs.Items) > 1 {
-			return false, fmt.Errorf("invalid state, expected only one CR but got %d", len(reqs.Items))
+		for _, req := range reqs.Items {
+			if req.Name == firstReq.Name {
+				continue
+			}
+
+			secondReq = &req
+			return true, nil
 		}
 
-		if len(reqs.Items) == 0 {
-			return false, nil
-		}
-
-		req = &reqs.Items[0]
-		return true, nil
+		return false, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +299,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse first CSR: %v", err)
 	}
-	csr2, err := pki.DecodeX509CertificateRequestBytes(req.Spec.Request)
+	csr2, err := pki.DecodeX509CertificateRequestBytes(secondReq.Spec.Request)
 	if err != nil {
 		t.Fatalf("failed to parse first CSR: %v", err)
 	}
