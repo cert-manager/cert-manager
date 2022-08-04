@@ -26,7 +26,7 @@ require (
 	github.com/onsi/gomega v1.17.0
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/segmentio/encoding v0.3.3
 	github.com/sergi/go-diff v1.2.0
 	github.com/spf13/cobra v1.3.0
