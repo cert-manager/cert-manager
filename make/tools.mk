@@ -26,6 +26,7 @@ GOIMPORTS_VERSION=0.1.8
 GOLICENSES_VERSION=1.2.1
 GOTESTSUM_VERSION=1.7.0
 RCLONE_VERSION=1.58.1
+TRIVY_VERSION=0.30.4
 YTT_VERSION=0.36.0
 YQ_VERSION=4.25.3
 CRANE_VERSION=0.8.0
@@ -61,7 +62,7 @@ endif
 CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
 
 .PHONY: tools
-tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
+tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/trivy $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
 
 ######
 # Go #
@@ -345,6 +346,39 @@ $(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | $(BINDIR)/downloaded/t
 	unzip -p $@.zip $(notdir $@)/rclone > $@
 	chmod +x $@
 	rm -f $@.zip
+
+#########
+# trivy #
+#########
+
+TRIVY_OS :=
+TRIVY_ARCH :=
+
+ifeq ($(HOST_OS), darwin)
+	TRIVY_OS = macOS
+else ifeq ($(HOST_OS), linux)
+	TRIVY_OS = Linux
+endif
+
+ifeq ($(HOST_ARCH), arm64)
+	TRIVY_ARCH = ARM64
+else ifeq ($(HOST_ARCH), amd64)
+	TRIVY_ARCH = 64bit
+endif
+
+TRIVY_Linux_64bit_SHA256SUM=bf4fbf5c1c8179460070dce909dec93cf61dfbbf917f49a16ea336d1f66f3727
+TRIVY_macOS_64bit_SHA256SUM=af6a0c66fdc3fe874711ef35fc813d954d75139b32a5226d2d8162e911f02ac6
+TRIVY_macOS_ARM64_SHA256SUM=9ffb59195c6cb15e5ec9a0d8c0467595a8155c07b7616ac342b06847df1f934c
+
+$(BINDIR)/tools/trivy: $(BINDIR)/downloaded/tools/trivy_$(TRIVY_VERSION)_$(TRIVY_OS)-$(TRIVY_ARCH) $(BINDIR)/scratch/TRIVY_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
+
+$(BINDIR)/downloaded/tools/trivy_$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tools
+	$(CURL) https://github.com/aquasecurity/trivy/releases/download/v$(TRIVY_VERSION)/trivy_$(TRIVY_VERSION)_$*.tar.gz -o $@.tar.gz
+	./hack/util/checkhash.sh $@.tar.gz $(TRIVY_$(subst -,_,$*)_SHA256SUM)
+	tar xfO $@.tar.gz trivy > $@
+	chmod +x $@
+	rm $@.tar.gz
 
 #######
 # ytt #
