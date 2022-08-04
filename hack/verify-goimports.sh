@@ -32,7 +32,7 @@ common_flags=""
 
 echo "+++ running goimports" >&2
 
-output=$($goimports $common_flags -l .)
+output=$($goimports $common_flags -l cmd internal pkg test)
 
 if [ ! -z "${output}" ]; then
     echo "${output}"
