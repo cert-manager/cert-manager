@@ -47,13 +47,14 @@ func IssuerHasCondition(i cmapi.GenericIssuer, c cmapi.IssuerCondition) bool {
 }
 
 // SetIssuerCondition will set a 'condition' on the given GenericIssuer.
-// - If no condition of the same type already exists, the condition will be
-//   inserted with the LastTransitionTime set to the current time.
-// - If a condition of the same type and state already exists, the condition
-//   will be updated but the LastTransitionTime will not be modified.
-// - If a condition of the same type and different state already exists, the
-//   condition will be updated and the LastTransitionTime set to the current
-//   time.
+//   - If no condition of the same type already exists, the condition will be
+//     inserted with the LastTransitionTime set to the current time.
+//   - If a condition of the same type and state already exists, the condition
+//     will be updated but the LastTransitionTime will not be modified.
+//   - If a condition of the same type and different state already exists, the
+//     condition will be updated and the LastTransitionTime set to the current
+//     time.
+//
 // This function works with both Issuer and ClusterIssuer resources.
 func SetIssuerCondition(i cmapi.GenericIssuer, observedGeneration int64, conditionType cmapi.IssuerConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.IssuerCondition{
@@ -151,13 +152,14 @@ func GetCertificateRequestCondition(req *cmapi.CertificateRequest, conditionType
 }
 
 // SetCertificateCondition will set a 'condition' on the given Certificate.
-// - If no condition of the same type already exists, the condition will be
-//   inserted with the LastTransitionTime set to the current time.
-// - If a condition of the same type and state already exists, the condition
-//   will be updated but the LastTransitionTime will not be modified.
-// - If a condition of the same type and different state already exists, the
-//   condition will be updated with the LastTransitionTime set to the current
-//   time.
+//   - If no condition of the same type already exists, the condition will be
+//     inserted with the LastTransitionTime set to the current time.
+//   - If a condition of the same type and state already exists, the condition
+//     will be updated but the LastTransitionTime will not be modified.
+//   - If a condition of the same type and different state already exists, the
+//     condition will be updated with the LastTransitionTime set to the current
+//     time.
+//
 // The given ObservedGeneration will always set on the condition, whether the
 // lastTransitionTime is modified or not.
 func SetCertificateCondition(crt *cmapi.Certificate, observedGeneration int64, conditionType cmapi.CertificateConditionType,
@@ -217,13 +219,13 @@ func RemoveCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Cert
 }
 
 // SetCertificateRequestCondition will set a 'condition' on the given CertificateRequest.
-// - If no condition of the same type already exists, the condition will be
-//   inserted with the LastTransitionTime set to the current time.
-// - If a condition of the same type and state already exists, the condition
-//   will be updated but the LastTransitionTime will not be modified.
-// - If a condition of the same type and different state already exists, the
-//   condition will be updated and the LastTransitionTime set to the current
-//   time.
+//   - If no condition of the same type already exists, the condition will be
+//     inserted with the LastTransitionTime set to the current time.
+//   - If a condition of the same type and state already exists, the condition
+//     will be updated but the LastTransitionTime will not be modified.
+//   - If a condition of the same type and different state already exists, the
+//     condition will be updated and the LastTransitionTime set to the current
+//     time.
 func SetCertificateRequestCondition(cr *cmapi.CertificateRequest, conditionType cmapi.CertificateRequestConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.CertificateRequestCondition{
 		Type:    conditionType,
@@ -283,7 +285,7 @@ func CertificateRequestHasCondition(cr *cmapi.CertificateRequest, c cmapi.Certif
 }
 
 // This returns the status reason of a CertificateRequest. The order of reason
-// hierarchy is 'Failed' -> 'Ready' -> 'Pending' -> ''
+// hierarchy is 'Failed' -> 'Ready' -> 'Pending' -> ”
 func CertificateRequestReadyReason(cr *cmapi.CertificateRequest) string {
 	for _, reason := range []string{
 		cmapi.CertificateRequestReasonFailed,

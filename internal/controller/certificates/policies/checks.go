@@ -375,8 +375,8 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 // expected Certificate AdditionalOutputFormats.
 // Returns true (violation) if AdditionalOutputFormat(s) are present and any of
 // the following:
-//   * Secret key is missing
-//   * Secret value is incorrect
+//   - Secret key is missing
+//   - Secret value is incorrect
 func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, bool) {
 	const message = "Certificate's AdditionalOutputFormats doesn't match Secret Data"
 	for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
@@ -404,8 +404,9 @@ func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, boo
 // SecretAdditionalOutputFormatsOwnerMismatch validates that the field manager
 // owns the correct Certificate's AdditionalOutputFormats in the Secret.
 // Returns true (violation) if:
-//   * missing AdditionalOutputFormat key owned by the field manager
-//   * AdditionalOutputFormat key owned by the field manager shouldn't exist
+//   - missing AdditionalOutputFormat key owned by the field manager
+//   - AdditionalOutputFormat key owned by the field manager shouldn't exist
+//
 // A violation with the reason `ManagedFieldsParseError` should be considered a
 // non re-triable error.
 func SecretAdditionalOutputFormatsOwnerMismatch(fieldManager string) Func {

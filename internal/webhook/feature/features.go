@@ -52,7 +52,9 @@ func init() {
 // webhookFeatureGates defines all feature gates for the webhook component.
 // To add a new feature, define a key for it above and add it here.
 // To check whether a feature is enabled, use:
-//   utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
+//
+//	utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
+//
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},

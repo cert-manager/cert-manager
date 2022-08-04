@@ -300,7 +300,7 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	return b, nil
 }
 
-//RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
+// RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
 type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration) *metav1.Time
 
 // RenewalTime calculates renewal time for a certificate. Default renewal time

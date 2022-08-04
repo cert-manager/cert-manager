@@ -566,27 +566,29 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 // setIssuerSpecificConfig configures given Certificate's annotation by reading
 // two Ingress-specific annotations.
 //
-// (1) The edit-in-place Ingress annotation allows the use of Ingress
-//     controllers that map a single IP address to a single Ingress
-//     resource, such as the GCE ingress controller. The the following
-//     annotation on an Ingress named "my-ingress":
+// (1)
+// The edit-in-place Ingress annotation allows the use of Ingress
+// controllers that map a single IP address to a single Ingress
+// resource, such as the GCE ingress controller. The the following
+// annotation on an Ingress named "my-ingress":
 //
-//       acme.cert-manager.io/http01-edit-in-place: "true"
+//	acme.cert-manager.io/http01-edit-in-place: "true"
 //
-//     configures the Certificate with two annotations:
+// configures the Certificate with two annotations:
 //
-//       acme.cert-manager.io/http01-override-ingress-name: my-ingress
-//       cert-manager.io/issue-temporary-certificate: "true"
+//	acme.cert-manager.io/http01-override-ingress-name: my-ingress
+//	cert-manager.io/issue-temporary-certificate: "true"
 //
-// (2) The ingress-class Ingress annotation allows users to override the
-//     Issuer's acme.solvers[0].http01.ingress.class. For example, on the
-//     Ingress:
+// (2)
+// The ingress-class Ingress annotation allows users to override the
+// Issuer's acme.solvers[0].http01.ingress.class. For example, on the
+// Ingress:
 //
-//       acme.cert-manager.io/http01-ingress-class: traefik
+//	acme.cert-manager.io/http01-ingress-class: traefik
 //
-//     configures the Certificate using the override-ingress-class annotation:
+// configures the Certificate using the override-ingress-class annotation:
 //
-//       acme.cert-manager.io/http01-override-ingress-class: traefik
+//	acme.cert-manager.io/http01-override-ingress-class: traefik
 func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 	ingAnnotations := ingLike.GetAnnotations()
 	if ingAnnotations == nil {
@@ -620,15 +622,14 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 // hasShimAnnotation returns true if the given ingress-like resource contains
 // one of the trigger annotations:
 //
-//   cert-manager.io/issuer
-//   cert-manager.io/cluster-issuer
+//	cert-manager.io/issuer
+//	cert-manager.io/cluster-issuer
 //
 // The autoCertificateAnnotations can also be used to customize additional
 // annotations to trigger a Certificate shim. For example, for Ingress
 // resources, we default autoCertificateAnnotations to:
 //
-//   kubernetes.io/tls-acme: "true"
-//
+//	kubernetes.io/tls-acme: "true"
 func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []string) bool {
 	annotations := ingLike.GetAnnotations()
 	if annotations == nil {
@@ -655,10 +656,10 @@ func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []strin
 // the default issuer given to the controller is used. We look up the following
 // Ingress annotations:
 //
-//   cert-manager.io/cluster-issuer
-//   cert-manager.io/issuer
-//   cert-manager.io/issuer-kind
-//   cert-manager.io/issuer-group
+//	cert-manager.io/cluster-issuer
+//	cert-manager.io/issuer
+//	cert-manager.io/issuer-kind
+//	cert-manager.io/issuer-group
 func issuerForIngressLike(defaults controller.IngressShimOptions, ingLike metav1.Object) (name, kind, group string, err error) {
 	var errs []string
 
