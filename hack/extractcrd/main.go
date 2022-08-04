@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-var docSeparatorRegexp = regexp.MustCompile(`---`)
+var docSeparatorRegexp = regexp.MustCompile(`\n---`)
 
 func crdDecoder() runtime.Decoder {
 	scheme := runtime.NewScheme()
@@ -42,13 +42,18 @@ func crdDecoder() runtime.Decoder {
 func main() {
 	logger := log.New(os.Stderr, "", 0)
 
-	if len(os.Args) != 3 {
-		logger.Printf("usage: %s <path-to-templated-resources.yaml> <name-of-crd>", os.Args[0])
+	if len(os.Args) != 2 && len(os.Args) != 3 {
+		logger.Printf("usage (filter all crds): %s <path-to-templated-resources.yaml>", os.Args[0])
+		logger.Printf("usage (filter specific crd): %s <path-to-templated-resources.yaml> <name-of-crd>", os.Args[0])
 		os.Exit(1)
 	}
 
 	filename := os.Args[1]
-	wantedCRDName := strings.ToLower(os.Args[2])
+	var wantedCRDName *string
+	if len(os.Args) == 3 {
+		val := strings.ToLower(os.Args[2])
+		wantedCRDName = &val
+	}
 
 	rawYAMLBytes, err := os.ReadFile(filename)
 	if err != nil {
@@ -59,6 +64,8 @@ func main() {
 	docs := docSeparatorRegexp.Split(string(rawYAMLBytes), -1)
 
 	decoder := crdDecoder()
+
+	foundAny := false
 
 	for _, doc := range docs {
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
@@ -73,13 +80,31 @@ func main() {
 			continue
 		}
 
-		crdName := strings.ToLower(crd.Spec.Names.Plural)
-		if crdName == wantedCRDName {
+		doc = string(strings.TrimPrefix(doc, "---"))
+		doc = string(strings.TrimSpace(doc))
+
+		if wantedCRDName == nil {
+			if foundAny {
+				fmt.Println("---")
+			}
 			fmt.Println(doc)
-			return
+			foundAny = true
+			continue
+		} else {
+			crdName := strings.ToLower(crd.Spec.Names.Plural)
+			if crdName == *wantedCRDName {
+				fmt.Println(doc)
+				return
+			}
 		}
 	}
 
-	logger.Printf("couldn't find a CRD with plural name %q in %q", wantedCRDName, filename)
-	os.Exit(1)
+	if !foundAny {
+		if wantedCRDName == nil {
+			logger.Printf("couldn't find any CRDs in %q", filename)
+		} else {
+			logger.Printf("couldn't find a CRD with plural name %q in %q", *wantedCRDName, filename)
+		}
+		os.Exit(1)
+	}
 }

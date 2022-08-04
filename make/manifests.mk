@@ -1,6 +1,7 @@
 HELM_CMD=./$(BINDIR)/tools/helm
 
-ALLCRDS=deploy/crds/crd-certificaterequests.yaml deploy/crds/crd-certificates.yaml deploy/crds/crd-challenges.yaml deploy/crds/crd-clusterissuers.yaml deploy/crds/crd-issuers.yaml deploy/crds/crd-orders.yaml
+CRDS_SOURCES=$(wildcard deploy/crds/*.yaml)
+CRDS_TEMPLATED=$(CRDS_SOURCES:deploy/crds/%.yaml=$(BINDIR)/yaml/templated-crds/%.templated.yaml)
 
 HELM_TEMPLATE_SOURCES=$(wildcard deploy/charts/cert-manager/templates/*.yaml)
 HELM_TEMPLATE_TARGETS=$(patsubst deploy/charts/cert-manager/templates/%,$(BINDIR)/helm/cert-manager/templates/%,$(HELM_TEMPLATE_SOURCES))
@@ -91,9 +92,9 @@ $(BINDIR)/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/t
 $(BINDIR)/helm/cert-manager/templates/NOTES.txt: deploy/charts/cert-manager/templates/NOTES.txt | $(BINDIR)/helm/cert-manager/templates
 	cp $< $@
 
-$(BINDIR)/helm/cert-manager/templates/crds.yaml: $(BINDIR)/scratch/yaml/cert-manager-crd-templates.yaml | $(BINDIR)/helm/cert-manager/templates
+$(BINDIR)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(BINDIR)/helm/cert-manager/templates
 	echo '{{- if .Values.installCRDs }}' > $@
-	cat $< >> $@
+	./hack/concat-yaml.sh $^ >> $@
 	echo '{{- end }}' >> $@
 
 $(BINDIR)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | $(BINDIR)/helm/cert-manager
@@ -111,70 +112,41 @@ $(BINDIR)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.templat
 		'.annotations."artifacthub.io/signKey" = strenv(SIGNKEY_ANNOTATION) | .annotations."artifacthub.io/prerelease" = "$(IS_PRERELEASE)" | .version = "$(RELEASE_VERSION)" | .appVersion = "$(RELEASE_VERSION)"' \
 		$< > $@
 
-#################################
-# Targets for cert-manager.yaml #
-#################################
+############################################################
+# Targets for cert-manager.yaml and cert-manager.crds.yaml #
+############################################################
 
 # These targets depend on the cert-manager helm chart and the creation of the standalone CRDs.
 # They use `helm template` to create a single static YAML manifest containing all resources
 # with templating completed, and then concatenate with the cert-manager namespace and the CRDs.
 
-$(BINDIR)/yaml/cert-manager.yaml: $(BINDIR)/scratch/license.yaml deploy/manifests/namespace.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml $(BINDIR)/scratch/yaml/cert-manager-static-resources.yaml | $(BINDIR)/yaml
+# Renders all resources except the namespace and the CRDs
+$(BINDIR)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/tools/helm | $(BINDIR)/scratch/yaml
+	@# The sed command removes the first line but only if it matches "---", which helm adds
+	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+		sed -e "1{/^---$$/d;}" > $@
+
+$(BINDIR)/scratch/yaml/cert-manager.all.unlicensed.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/tools/helm | $(BINDIR)/scratch/yaml
+	@# The sed command removes the first line but only if it matches "---", which helm adds
+	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="installCRDs=true" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+		sed -e "1{/^---$$/d;}" > $@
+
+$(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml: $(BINDIR)/scratch/yaml/cert-manager.all.unlicensed.yaml $(DEPENDS_ON_GO) | $(BINDIR)/scratch/yaml
+	$(GO) run hack/extractcrd/main.go $< > $@
+
+$(BINDIR)/yaml/cert-manager.yaml: $(BINDIR)/scratch/license.yaml deploy/manifests/namespace.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml $(BINDIR)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml | $(BINDIR)/yaml
 	@# NB: filter-out removes the license (the first dependency, $<) from the YAML concatenation
 	./hack/concat-yaml.sh $(filter-out $<, $^) | cat $< - > $@
 
-# Renders all resources except the namespace and the CRDs
-$(BINDIR)/scratch/yaml/cert-manager-static-resources.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/tools/helm | $(BINDIR)/scratch/yaml
-	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
-		sed -e "1{/^---$$/d;}" > $@
-
-######################################
-# Targets for cert-manager.crds.yaml #
-######################################
-
-# These targets generate a dummy helm chart containing _only_ our CRDs, and then uses `helm template`
-# to create a single YAML file containing all CRDS with the templating completed
-
-# CRDs with a license
 $(BINDIR)/yaml/cert-manager.crds.yaml: $(BINDIR)/scratch/license.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml | $(BINDIR)/yaml
 	cat $^ > $@
 
-$(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml: $(BINDIR)/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/tools/helm | $(BINDIR)/scratch/yaml
-	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
-		sed -e "1{/^---$$/d;}" > $@
-
-$(BINDIR)/scratch/cert-manager-crds/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager-crds/templates/_helpers.tpl $(BINDIR)/helm/cert-manager-crds/templates/crd-templates.yaml $(BINDIR)/helm/cert-manager-crds/README.md $(BINDIR)/helm/cert-manager-crds/Chart.yaml $(BINDIR)/helm/cert-manager-crds/values.yaml $(BINDIR)/tools/helm | $(BINDIR)/scratch
-	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./$(BINDIR)/helm/cert-manager-crds
-
-# create a temporary chart containing the cert-manager CRDs in order to use helm's
-# templating engine to create usable CRDs for static installation
-$(BINDIR)/helm/cert-manager-crds/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml | $(BINDIR)/helm/cert-manager-crds
-	sed -e "s:{{IS_PRERELEASE}}:$(IS_PRERELEASE):g" \
-		-e "s:{{RELEASE_VERSION}}:$(RELEASE_VERSION):g" < $< > $@
-
-$(BINDIR)/helm/cert-manager-crds/README.md: | $(BINDIR)/helm/cert-manager-crds
-	@echo "This chart is a cert-manager build artifact, do not use" > $@
-
-$(BINDIR)/helm/cert-manager-crds/values.yaml: deploy/charts/cert-manager/values.yaml | $(BINDIR)/helm/cert-manager
-	cp $< $@
-
-$(BINDIR)/helm/cert-manager-crds/templates/_helpers.tpl: deploy/charts/cert-manager/templates/_helpers.tpl | $(BINDIR)/helm/cert-manager-crds/templates
-	cp $< $@
-
-$(BINDIR)/helm/cert-manager-crds/templates/crd-templates.yaml: $(BINDIR)/scratch/yaml/cert-manager-crd-templates.yaml | $(BINDIR)/helm/cert-manager-crds/templates
-	cp $< $@
-
-# Create a single file containing all CRDs before they've been templated.
-$(BINDIR)/scratch/yaml/cert-manager-crd-templates.yaml: $(ALLCRDS) | $(BINDIR)/scratch/yaml
-	./hack/concat-yaml.sh $^ > $@
+$(CRDS_TEMPLATED): $(BINDIR)/yaml/templated-crds/crd-%.templated.yaml: $(BINDIR)/scratch/license.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml $(DEPENDS_ON_GO) | $(BINDIR)/yaml/templated-crds
+	cat $< > $@
+	$(GO) run hack/extractcrd/main.go $(word 2,$^) $* >> $@
 
 .PHONY: templated-crds
-templated-crds: $(BINDIR)/yaml/templated-crds/crd-challenges.templated.yaml $(BINDIR)/yaml/templated-crds/crd-orders.templated.yaml $(BINDIR)/yaml/templated-crds/crd-certificaterequests.templated.yaml $(BINDIR)/yaml/templated-crds/crd-clusterissuers.templated.yaml $(BINDIR)/yaml/templated-crds/crd-issuers.templated.yaml $(BINDIR)/yaml/templated-crds/crd-certificates.templated.yaml
-
-$(BINDIR)/yaml/templated-crds/crd-challenges.templated.yaml $(BINDIR)/yaml/templated-crds/crd-orders.templated.yaml $(BINDIR)/yaml/templated-crds/crd-certificaterequests.templated.yaml $(BINDIR)/yaml/templated-crds/crd-clusterissuers.templated.yaml $(BINDIR)/yaml/templated-crds/crd-issuers.templated.yaml $(BINDIR)/yaml/templated-crds/crd-certificates.templated.yaml: $(BINDIR)/yaml/templated-crds/crd-%.templated.yaml: $(BINDIR)/yaml/cert-manager.yaml $(DEPENDS_ON_GO) | $(BINDIR)/yaml/templated-crds
-	$(GO) run hack/extractcrd/main.go $< $* > $@
+templated-crds: $(CRDS_TEMPLATED)
 
 ###############
 # Dir targets #
@@ -189,12 +161,6 @@ $(BINDIR)/helm/cert-manager:
 	@mkdir -p $@
 
 $(BINDIR)/helm/cert-manager/templates:
-	@mkdir -p $@
-
-$(BINDIR)/helm/cert-manager-crds:
-	@mkdir -p $@
-
-$(BINDIR)/helm/cert-manager-crds/templates:
 	@mkdir -p $@
 
 $(BINDIR)/scratch/yaml:
