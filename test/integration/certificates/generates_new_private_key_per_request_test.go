@@ -104,7 +104,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	// Remember the CSR data used for the first request so we can compare it later
 	originalCSR := firstReq.Spec.Request
 
-	// Mark the CSR as 'Failed'
+	// Mark the CSR as 'InvalidRequest'
 	apiutil.SetCertificateRequestCondition(firstReq, cmapi.CertificateRequestConditionInvalidRequest, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonFailed, "manually failed")
 	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(ctx, firstReq, metav1.UpdateOptions{})
 	if err != nil {
