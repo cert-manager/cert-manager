@@ -150,10 +150,10 @@ $(call image-tar,kind): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(B
 
 # Since we dynamically install Vault via Helm during the end-to-end tests,
 # we need its image to be retagged to a well-known tag "local/vault:local".
-$(call image-tar,vaultretagged): $(call image-tar,vault)
+$(call image-tar,vaultretagged): $(call image-tar,vault) | $(JQ)
 	@mkdir -p /tmp/vault $(dir $@)
 	tar xf $< -C /tmp/vault
-	cat /tmp/vault/manifest.json | jq '.[0].RepoTags |= ["local/vault:local"]' -r > /tmp/vault/temp
+	cat /tmp/vault/manifest.json | $(JQ) '.[0].RepoTags |= ["local/vault:local"]' -r > /tmp/vault/temp
 	mv /tmp/vault/temp /tmp/vault/manifest.json
 	tar cf $@ -C /tmp/vault .
 	@rm -rf /tmp/vault
@@ -178,17 +178,17 @@ feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 # * GatewayAPI: so that cert-manager can watch those CRs.
 # * Kyverno: so that it can check the cert-manager manifests against the policy in `config/kyverno/`.
 .PHONY: e2e-setup-certmanager
-e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi e2e-setup-kyverno $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind
-	@$(eval TAG = $(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi e2e-setup-kyverno $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(JQ)
+	@$(eval TAG = $(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(BINDIR)/tools/helm upgrade \
 		--install \
 		--create-namespace \
 		--wait \
 		--namespace cert-manager \
-		--set image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
-		--set cainjector.image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
-		--set webhook.image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
-		--set startupapicheck.image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1)" \
+		--set image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f1)" \
+		--set cainjector.image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f1)" \
+		--set webhook.image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f1)" \
+		--set startupapicheck.image.repository="$(shell tar xfO $(BINDIR)/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f1)" \
 		--set image.tag="$(TAG)" \
 		--set cainjector.image.tag="$(TAG)" \
 		--set webhook.image.tag="$(TAG)" \
@@ -201,8 +201,8 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controlle
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind
-e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl
-	@$(eval IMAGE = $(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r))
+e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(JQ)
+	@$(eval IMAGE = $(shell tar xfO $< manifest.json | $(JQ) '.[0].RepoTags[0]' -r))
 	$(BINDIR)/tools/kubectl get ns bind 2>/dev/null >&2 || $(BINDIR)/tools/kubectl create ns bind
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(BINDIR)/tools/kubectl apply -n bind -f - >/dev/null
 
@@ -219,8 +219,8 @@ e2e-setup-gatewayapi: $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) $(
 # don't have a class, we pass a --watch-ingress-without-class flag:
 # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
 .PHONY: e2e-setup-ingressnginx
-e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ingressnginx) | $(BINDIR)/tools/helm
-	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ingressnginx) | $(BINDIR)/tools/helm $(JQ)
+	@$(eval TAG=$(shell tar xfO $< manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(BINDIR)/tools/helm repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
 	$(BINDIR)/tools/helm upgrade \
 		--install \
@@ -240,8 +240,8 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 		ingress-nginx ingress-nginx/ingress-nginx >/dev/null
 
 .PHONY: e2e-setup-kyverno
-e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/helm
-	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(BINDIR)/scratch/kind-exists | $(BINDIR)/tools/kubectl $(BINDIR)/tools/helm $(JQ)
+	@$(eval TAG=$(shell tar xfO $< manifest.json | $(JQ) '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(BINDIR)/tools/helm repo add kyverno --force-update https://kyverno.github.io/kyverno/ >/dev/null
 	$(BINDIR)/tools/helm upgrade \
 		--install \

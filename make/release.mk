@@ -54,8 +54,8 @@ endif
 
 # Takes all metadata files in $(BINDIR)/metadata and combines them into one.
 
-$(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDIR)/release
-	jq -n \
+$(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDIR)/release $(JQ)
+	$(JQ) -n \
 		--arg releaseVersion "$(RELEASE_VERSION)" \
 		--arg buildSource "make" \
 		--arg gitCommitRef "$(GITCOMMIT)" \
@@ -91,8 +91,8 @@ $(BINDIR)/release/cert-manager-server-linux-amd64.tar.gz $(BINDIR)/release/cert-
 .PHONY: release-container-metadata
 release-container-metadata: $(BINDIR)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json
 
-$(BINDIR)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-server-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-server-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-server-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-server-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "linux" \
 		--arg architecture "$*" \

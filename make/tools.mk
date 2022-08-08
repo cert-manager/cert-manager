@@ -30,6 +30,7 @@ TRIVY_VERSION=0.30.4
 YTT_VERSION=0.36.0
 YQ_VERSION=4.25.3
 CRANE_VERSION=0.8.0
+GOJQ_VERSION=v0.12.8
 GINKGO_VERSION=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 K8S_CODEGEN_VERSION=v0.24.2
@@ -62,7 +63,7 @@ endif
 CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
 
 .PHONY: tools
-tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/trivy $(BINDIR)/tools/ytt $(BINDIR)/tools/yq
+tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/trivy $(BINDIR)/tools/ytt $(BINDIR)/tools/yq $(BINDIR)/tools/gojq
 
 ######
 # Go #
@@ -396,6 +397,21 @@ $(BINDIR)/downloaded/tools/ytt_$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $@ $(YTT_$*_SHA256SUM)
 	chmod +x $@
 
+########
+# gojq #
+########
+
+# This is an implementation of jq command written in Go language.
+
+$(BINDIR)/tools/gojq: $(BINDIR)/downloaded/tools/gojq@$(GOJQ_VERSION) $(BINDIR)/scratch/GOJQ_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
+
+$(BINDIR)/downloaded/tools/gojq@$(GOJQ_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
+	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/itchyny/gojq/cmd/gojq@$(GOJQ_VERSION)
+	@mv $(subst @$(GOJQ_VERSION),,$@) $@
+
+JQ=$(BINDIR)/tools/gojq
+
 ######
 # yq #
 ######
@@ -471,7 +487,6 @@ $(BINDIR) $(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
 # That means we need to pass vendor-go at the top level if go is not installed (i.e. "make vendor-go abc")
 
 MISSING=$(shell (command -v curl >/dev/null || echo curl) \
-             && (command -v jq >/dev/null || echo jq) \
              && (command -v sha256sum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
              && ([ -n "$(findstring vendor-go,$(MAKECMDGOALS),)" ] \

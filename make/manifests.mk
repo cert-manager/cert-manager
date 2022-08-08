@@ -63,8 +63,8 @@ $(BINDIR)/scratch/cert-manager-manifests-unsigned.tar.gz: $(BINDIR)/cert-manager
 
 # This metadata blob is constructed slightly differently and doesn't use hack/artifact-metadata.template.json directly;
 # this is because the bazel staged releases didn't include an "os" or "architecture" field for this artifact
-$(BINDIR)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-manifests.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq -n --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-manifests.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) -n --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		'.name = $$name | .sha256 = $$sha256' > $@
 

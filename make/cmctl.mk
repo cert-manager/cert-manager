@@ -35,8 +35,8 @@ $(BINDIR)/release/cert-manager-cmctl-linux-amd64.tar.gz $(BINDIR)/release/cert-m
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
-$(BINDIR)/metadata/cert-manager-cmctl-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-cmctl-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-cmctl-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-cmctl-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-cmctl-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-cmctl-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "linux" \
 		--arg architecture "$*" \
@@ -64,8 +64,8 @@ $(BINDIR)/release/cert-manager-cmctl-darwin-amd64.tar.gz $(BINDIR)/release/cert-
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
-$(BINDIR)/metadata/cert-manager-cmctl-darwin-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-darwin-arm64.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-cmctl-darwin-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-cmctl-darwin-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-cmctl-darwin-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-darwin-arm64.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-cmctl-darwin-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-cmctl-darwin-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "darwin" \
 		--arg architecture "$*" \
@@ -101,16 +101,16 @@ $(BINDIR)/release/cert-manager-cmctl-windows-amd64.tar.gz: $(BINDIR)/cmctl/cmctl
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
-$(BINDIR)/metadata/cert-manager-cmctl-windows-amd64.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-cmctl-windows-amd64.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-cmctl-windows-amd64.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-cmctl-windows-amd64.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "windows" \
 		--arg architecture "amd64" \
 		'.name = $$name | .sha256 = $$sha256 | .os = $$os | .architecture = $$architecture' \
 		hack/artifact-metadata.template.json > $@
 
-$(BINDIR)/metadata/cert-manager-cmctl-windows-amd64.zip.metadata.json: $(BINDIR)/release/cert-manager-cmctl-windows-amd64.zip hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-cmctl-windows-amd64.zip.metadata.json: $(BINDIR)/release/cert-manager-cmctl-windows-amd64.zip hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "windows" \
 		--arg architecture "amd64" \
@@ -144,8 +144,8 @@ $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz $(BINDIR)
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
-$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "linux" \
 		--arg architecture "$*" \
@@ -173,8 +173,8 @@ $(BINDIR)/release/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz $(BINDIR
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
-$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-arm64.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-darwin-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-arm64.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-darwin-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "darwin" \
 		--arg architecture "$*" \
@@ -210,16 +210,16 @@ $(BINDIR)/release/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz: $(BIND
 	find $(TARDIR) -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(TARDIR) -T -
 	rm -rf $(TARDIR)
 
-$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "windows" \
 		--arg architecture "amd64" \
 		'.name = $$name | .sha256 = $$sha256 | .os = $$os | .architecture = $$architecture' \
 		hack/artifact-metadata.template.json > $@
 
-$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-windows-amd64.zip.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-windows-amd64.zip hack/artifact-metadata.template.json | $(BINDIR)/metadata
-	jq --arg name "$(notdir $<)" \
+$(BINDIR)/metadata/cert-manager-kubectl-cert_manager-windows-amd64.zip.metadata.json: $(BINDIR)/release/cert-manager-kubectl-cert_manager-windows-amd64.zip hack/artifact-metadata.template.json | $(BINDIR)/metadata $(JQ)
+	$(JQ) --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "windows" \
 		--arg architecture "amd64" \
