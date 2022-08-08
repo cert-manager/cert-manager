@@ -78,7 +78,15 @@ e2e-ci: e2e-setup-kind e2e-setup
 
 .PHONY: test-upgrade
 test-upgrade: | $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
-	./hack/verify-upgrade.sh $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+	./hack/verify-upgrade.sh \
+		$(RELEASE_VERSION) \
+		$(GIT_COMMIT) \
+		$(shell $(MAKE) last-published-release) \
+		$(BINDIR)/tools/helm \
+		$(BINDIR)/tools/kind \
+		$(BINDIR)/tools/ytt \
+		$(BINDIR)/tools/kubectl \
+		$(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
 
 test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist

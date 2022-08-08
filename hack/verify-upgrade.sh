@@ -20,26 +20,24 @@ set -o pipefail
 
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
-source "${REPO_ROOT}/hack/build/version.sh"
-
-kube::version::last_published_release
-
-LATEST_RELEASE="${KUBE_LAST_RELEASE}"
 
 usage_and_exit() {
-	echo "usage: $0 <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl>" >&2
+	echo "usage: $0 <last-published-release> <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl>" >&2
 	exit 1
 }
 
-if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ||-z "${4:-}" || -z "${5:-}" ]]; then
+if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ||-z "${4:-}" || -z "${5:-}" || -z "${6:-}" || -z "${7:-}" || -z "${8:-}" ]]; then
 	usage_and_exit
 fi
 
-helm=$(realpath "$1")
-kind=$(realpath "$2")
-ytt=$(realpath "$3")
-kubectl=$(realpath "$4")
-cmctl=$(realpath "$5")
+RELEASE_VERSION="$1"
+GIT_COMMIT="$2"
+LATEST_RELEASE="$3"
+helm=$(realpath "$4")
+kind=$(realpath "$5")
+ytt=$(realpath "$6")
+kubectl=$(realpath "$7")
+cmctl=$(realpath "$8")
 
 # Set up a fresh kind cluster
 
@@ -61,7 +59,7 @@ HELM_URL="https://charts.jetstack.io"
 # cert-manager Helm chart location
 HELM_CHART="cmupgradetest/cert-manager"
 
-echo "+++ Testing upgrading from ${LATEST_RELEASE} to commit ${KUBE_GIT_COMMIT} with Helm"
+echo "+++ Testing upgrading from ${LATEST_RELEASE} to commit ${GIT_COMMIT} with Helm"
 
 # This will target the host's helm repository cache
 $helm repo add cmupgradetest $HELM_URL
@@ -130,7 +128,7 @@ $kubectl delete "namespace/${NAMESPACE}" --wait
 
 # 1. INSTALL THE LATEST PUBLISHED RELEASE WITH STATIC MANIFESTS
 
-echo "+++ Testing cert-manager upgrade from ${LATEST_RELEASE} to commit ${KUBE_GIT_COMMIT} using static manifests"
+echo "+++ Testing cert-manager upgrade from ${LATEST_RELEASE} to commit ${GIT_COMMIT} using static manifests"
 
 echo "+++ Installing cert-manager ${LATEST_RELEASE} using static manifests"
 
@@ -156,19 +154,17 @@ $kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 MANIFEST_LOCATION=${REPO_ROOT}/_bin/yaml/cert-manager.yaml
 
-echo "+++ Installing cert-manager commit ${KUBE_GIT_COMMIT} using static manifests"
+echo "+++ Installing cert-manager commit ${GIT_COMMIT} using static manifests"
 
 # Build the static manifests
 make release-manifests
-
-RELEASE_VERSION=$(make --silent release-version)
 
 # Overwrite image tags in the static manifests and deploy.
 $ytt -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/controller-ops.yaml" \
      -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/cainjector-ops.yaml" \
      -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/webhook-ops.yaml" \
      -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/values.yaml" \
-     -f $MANIFEST_LOCATION \
+     -f "$MANIFEST_LOCATION" \
      --data-value app_version="${RELEASE_VERSION}" \
      --ignore-unknown-comments | kubectl apply -f -
 
@@ -203,4 +199,4 @@ $kubectl wait --for=condition=Ready cert/test2 --timeout=180s
 
 echo "+++ Uninstalling cert-manager"
 
-$kubectl delete -f $MANIFEST_LOCATION --wait
+$kubectl delete -f "$MANIFEST_LOCATION" --wait

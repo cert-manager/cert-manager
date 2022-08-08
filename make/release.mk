@@ -58,7 +58,7 @@ $(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDI
 	jq -n \
 		--arg releaseVersion "$(RELEASE_VERSION)" \
 		--arg buildSource "make" \
-		--arg gitCommitRef "$(GITCOMMIT)" \
+		--arg gitCommitRef "$(GIT_COMMIT)" \
 		'.releaseVersion = $$releaseVersion | .gitCommitRef = $$gitCommitRef | .buildSource = $$buildSource | .artifacts += [inputs]' $^ > $@
 
 .PHONY: release-containers

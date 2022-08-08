@@ -56,7 +56,7 @@ GOFLAGS := -trimpath
 ## @category Build
 GOLDFLAGS := -w -s \
 	-X github.com/cert-manager/cert-manager/pkg/util.AppVersion=$(RELEASE_VERSION) \
-    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)
+    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GIT_COMMIT)
 
 include make/tools.mk
 include make/ci.mk
