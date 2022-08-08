@@ -31,6 +31,7 @@ YTT_VERSION=0.36.0
 YQ_VERSION=4.25.3
 CRANE_VERSION=0.8.0
 GOJQ_VERSION=v0.12.8
+CUE_VERSION=v0.4.3
 GINKGO_VERSION=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 K8S_CODEGEN_VERSION=v0.24.2
@@ -63,7 +64,7 @@ endif
 CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
 
 .PHONY: tools
-tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/trivy $(BINDIR)/tools/ytt $(BINDIR)/tools/yq $(BINDIR)/tools/gojq
+tools: $(BINDIR)/tools/helm $(BINDIR)/tools/kubectl $(BINDIR)/tools/kind $(BINDIR)/tools/cosign $(BINDIR)/tools/ginkgo $(BINDIR)/tools/cmrel $(BINDIR)/tools/release-notes $(BINDIR)/tools/controller-gen k8s-codegen-tools $(BINDIR)/tools/goimports $(BINDIR)/tools/go-licenses $(BINDIR)/tools/gotestsum $(BINDIR)/tools/rclone $(BINDIR)/tools/trivy $(BINDIR)/tools/ytt $(BINDIR)/tools/yq $(BINDIR)/tools/gojq $(BINDIR)/tools/cue
 
 ######
 # Go #
@@ -469,6 +470,25 @@ $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION): $(BINDIR)/downloaded/ga
 
 $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION).tar.gz: | $(BINDIR)/downloaded
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/v$(GATEWAY_API_VERSION).tar.gz -o $@
+
+#######
+# cue #
+#######
+
+CUE_linux_amd64_SHA256SUM=5e7ecb614b5926acfc36eb1258800391ab7c6e6e026fa7cacbfe92006bac895c
+CUE_darwin_amd64_SHA256SUM=1161254cf38b928b87a7ac1552dc2e12e6c5da298f9ce370d80e5518ddb6513d
+CUE_darwin_arm64_SHA256SUM=3d84b85a7288f94301a4726dcf95b2d92c8ff796c4d45c4733fbdcc04ceaf21d
+
+$(BINDIR)/tools/cue: $(BINDIR)/downloaded/tools/cue_$(CUE_VERSION)_$(HOST_OS)_$(HOST_ARCH) $(BINDIR)/scratch/CUE_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
+
+$(BINDIR)/downloaded/tools/cue_$(CUE_VERSION)_%: $(BINDIR)/downloaded/tools/cue_$(CUE_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
+	./hack/util/checkhash.sh $< $(CUE_$*_SHA256SUM)
+	@# O writes the specified file to stdout
+	tar xfO $< cue > $@ && chmod 775 $@
+
+$(BINDIR)/downloaded/tools/cue_$(CUE_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
+	$(CURL) https://github.com/cue-lang/cue/releases/download/$(CUE_VERSION)/cue_$(CUE_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz -o $@
 
 #################
 # Other Targets #

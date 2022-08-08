@@ -68,13 +68,45 @@ $(BINDIR)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(BINDIR)/releas
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		'.name = $$name | .sha256 = $$sha256' > $@
 
+###############
+# Cue Targets #
+###############
+
+# These targets provide the functionality for generating the Helm values.yaml and values.schema.json files.
+
+deploy/values/cue.mod/gen/: deploy/values/ $(DEPENDS_ON_GO) | $(BINDIR)/tools/cue
+	DIR=`realpath $(shell pwd)` && \
+	LCUE=`realpath $(BINDIR)/tools/cue` && \
+	cd $< && \
+	$$LCUE get go "k8s.io/api/core/v1" && \
+	$$LCUE get go "k8s.io/api/apps/v1"
+
+$(BINDIR)/helm/cert-manager/values.yaml: deploy/values/ deploy/values/* | $(BINDIR)/helm/cert-manager $(BINDIR)/tools/cue deploy/values/cue.mod/gen/
+	DIR=`realpath $(shell pwd)` && \
+	LCUE=`realpath $(BINDIR)/tools/cue` && \
+	cd $< && \
+	$$LCUE export --out yaml values.cue \
+	> $$DIR"/$@"
+
+$(BINDIR)/helm/cert-manager/values.schema.json: deploy/values/ deploy/values/* | $(BINDIR)/helm/cert-manager $(BINDIR)/tools/cue $(JQ) deploy/values/cue.mod/gen/
+	DIR=`realpath $(shell pwd)` && \
+	LCUE=`realpath $(BINDIR)/tools/cue` && \
+	LJQ=`realpath $(JQ)` && \
+	cd $< && \
+	$$LCUE export --out openapi values.schema.cue | \
+	$$LCUE import json: - | \
+	$$LCUE eval -e 'components.schemas.Values & {$$defs: components.schemas} & {$$schema: "http://json-schema.org/draft-07/schema#"}' - | \
+	$$LCUE export --out json - | \
+	$$LJQ 'walk(if type == "string" then sub("#/components/schemas/"; "#/$$defs/") else . end)' \
+	> $$DIR"/$@"
+
 ################
 # Helm Targets #
 ################
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager/README.md $(BINDIR)/helm/cert-manager/Chart.yaml $(BINDIR)/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) $(BINDIR)/helm/cert-manager/templates/NOTES.txt $(BINDIR)/helm/cert-manager/templates/_helpers.tpl $(BINDIR)/helm/cert-manager/templates/crds.yaml $(BINDIR)/tools/helm | $(BINDIR)/helm/cert-manager
+$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager/README.md $(BINDIR)/helm/cert-manager/Chart.yaml $(BINDIR)/helm/cert-manager/values.yaml $(BINDIR)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(BINDIR)/helm/cert-manager/templates/NOTES.txt $(BINDIR)/helm/cert-manager/templates/_helpers.tpl $(BINDIR)/helm/cert-manager/templates/crds.yaml $(BINDIR)/tools/helm | $(BINDIR)/helm/cert-manager
 	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./$(BINDIR)/helm/cert-manager
 
 $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(BINDIR)/helm/cert-manager $(BINDIR)/tools/cmrel
@@ -96,9 +128,6 @@ $(BINDIR)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(BINDIR)/hel
 	echo '{{- if .Values.installCRDs }}' > $@
 	./hack/concat-yaml.sh $^ >> $@
 	echo '{{- end }}' >> $@
-
-$(BINDIR)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | $(BINDIR)/helm/cert-manager
-	cp $< $@
 
 $(BINDIR)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | $(BINDIR)/helm/cert-manager
 	sed -e "s:{{RELEASE_VERSION}}:$(RELEASE_VERSION):g" < $< > $@
