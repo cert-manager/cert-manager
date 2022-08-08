@@ -18,7 +18,7 @@ IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:1bcec6bc85472
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.1.1@sha256:7dafe98c73d229bbac08067fccf9b2884c63c8e1412fe18f9986f59232cf3cb5
-IMAGE_projectcontour_amd64 := docker.io/projectcontour/contour:v1.20.1@sha256:10f6501cbb8514549b2ae71634152fa1a02e4ba63a9a32955d2ff027a0da1254
+IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.22.0@sha256:c8ee1e566340c1bfd11fc9a1a90d758bde562faecb722540207084330b300497
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
 
@@ -28,7 +28,7 @@ IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:141234fb74242
 IMAGE_vault_arm64 := index.docker.io/library/vault:1.2.3@sha256:226a269b83c4b28ff8a512e76f1e7b707eccea012e4c3ab4c7af7fff1777ca2d
 IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
 IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
-IMAGE_projectcontour_arm64 := docker.io/projectcontour/contour:v1.20.1@sha256:19c453cbd127e62ff24a2d5a48f4bd2567f04ebcf499df711663db7a0a275303
+IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.22.0@sha256:ca37e86e284e72b3a969c7845a56a1cfcd348f4cb75bf6312d5b11067efdd667
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
 
@@ -208,7 +208,7 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 
 .PHONY: e2e-setup-gatewayapi
 e2e-setup-gatewayapi: $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl
-	$(BINDIR)/tools/kubectl kustomize $</*/config/crd | $(BINDIR)/tools/kubectl apply -f - >/dev/null
+	$(BINDIR)/tools/kubectl kustomize $</*/config/crd/experimental | $(BINDIR)/tools/kubectl apply -f - >/dev/null
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class

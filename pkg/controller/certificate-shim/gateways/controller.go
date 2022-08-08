@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/gateway/apis/v1alpha2"
+	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"

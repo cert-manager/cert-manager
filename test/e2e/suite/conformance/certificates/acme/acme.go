@@ -387,7 +387,7 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								Labels: labels,
-								ParentRefs: []gwapi.ParentRef{
+								ParentRefs: []gwapi.ParentReference{
 									{
 										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace("projectcontour"); return &n }(),
 										Name:        "acmesolver",

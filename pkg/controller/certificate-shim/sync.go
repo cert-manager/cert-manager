@@ -257,11 +257,6 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.Erro
 	} else {
 		// check that each CertificateRef is valid
 		for i, secretRef := range l.TLS.CertificateRefs {
-			if secretRef == nil {
-				errs = append(errs, field.Required(path.Child("tls").Child("certificateRef").Index(i), "listener is missing a certificateRef"))
-				continue
-			}
-
 			if *secretRef.Group != "core" && *secretRef.Group != "" {
 				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Index(i).Child("group"),
 					*secretRef.Group, []string{"core", ""}))
@@ -448,9 +443,6 @@ func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 				continue
 			}
 			for _, certRef := range l.TLS.CertificateRefs {
-				if certRef == nil {
-					continue
-				}
 				if secretName == string(certRef.Name) {
 					return true
 				}

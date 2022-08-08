@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
+	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
