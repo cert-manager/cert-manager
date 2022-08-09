@@ -292,5 +292,9 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 
 	pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, podTempl.Spec.ImagePullSecrets...)
 
+	if podTempl.Spec.SecurityContext != nil {
+		pod.Spec.SecurityContext = podTempl.Spec.SecurityContext
+	}
+
 	return pod
 }
