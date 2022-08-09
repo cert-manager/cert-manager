@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -148,6 +149,113 @@ func TestEnsurePod(t *testing.T) {
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
 			},
 			chal: chal,
+		},
+		"should have the correct default security context": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				expectedPod := s.Solver.buildPod(s.Challenge)
+				// create a reactor that fails the test if a pod is created
+				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+					pod := action.(coretesting.CreateAction).GetObject().(*corev1.Pod)
+					// clear pod name as we don't know it yet in the expectedPod
+					pod.Name = ""
+					if !reflect.DeepEqual(pod, expectedPod) {
+						t.Errorf("Expected %v to equal %v", pod, expectedPod)
+					}
+					return false, ret, nil
+				})
+
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resp := args[0].(*corev1.Pod)
+				err := args[1]
+				if resp == nil && err == nil {
+					t.Errorf("unexpected pod = nil")
+					t.Fail()
+					return
+				}
+				expected := &corev1.PodSecurityContext{
+					RunAsNonRoot: ptr.BoolPtr(true),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: corev1.SeccompProfileTypeRuntimeDefault,
+					},
+				}
+				if !reflect.DeepEqual(resp.Spec.SecurityContext, expected) {
+					t.Errorf("Expected %v to equal %v", resp.Spec.SecurityContext, expected)
+				}
+
+			},
+		},
+		"security context should be configurable": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										SecurityContext: &corev1.PodSecurityContext{
+											RunAsUser: ptr.Int64(1020),
+											SeccompProfile: &corev1.SeccompProfile{
+												Type: corev1.SeccompProfileTypeRuntimeDefault,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				expectedPod := s.Solver.buildPod(s.Challenge)
+				// create a reactor that fails the test if a pod is created
+				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+					pod := action.(coretesting.CreateAction).GetObject().(*corev1.Pod)
+					// clear pod name as we don't know it yet in the expectedPod
+					pod.Name = ""
+					if !reflect.DeepEqual(pod, expectedPod) {
+						t.Errorf("Expected %v to equal %v", pod, expectedPod)
+					}
+					return false, ret, nil
+				})
+
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resp := args[0].(*corev1.Pod)
+				err := args[1]
+				if resp == nil && err == nil {
+					t.Errorf("unexpected pod = nil")
+					t.Fail()
+					return
+				}
+				expected := &corev1.PodSecurityContext{
+					RunAsUser: ptr.Int64(1020),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: corev1.SeccompProfileTypeRuntimeDefault,
+					},
+				}
+				if !reflect.DeepEqual(resp.Spec.SecurityContext, expected) {
+					t.Errorf("Expected %v to equal %v", resp.Spec.SecurityContext, expected)
+				}
+
+			},
 		},
 		"should clean up if multiple pods exist": {
 			builder: &testpkg.Builder{
