@@ -22,13 +22,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -76,7 +79,23 @@ func init() {
 }
 
 func controllerBuilder() *certificatesigningrequests.Controller {
-	return certificatesigningrequests.New(apiutil.IssuerACME, NewACME, cmacme.SchemeGroupVersion.WithResource("orders"))
+	return certificatesigningrequests.New(apiutil.IssuerACME, NewACME,
+		func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+			orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
+			csrLister := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests().Lister()
+
+			orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+				WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
+					log, queue,
+					certificatesv1.SchemeGroupVersion.WithKind("CertificateSigningRequest"),
+					func(_, name string) (interface{}, error) {
+						return csrLister.Get(name)
+					},
+				),
+			})
+			return []cache.InformerSynced{orderInformer.HasSynced}, nil
+		},
+	)
 }
 
 func NewACME(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
