@@ -343,6 +343,11 @@ func (in *ACMEChallengeSolverHTTP01IngressPodSpec) DeepCopyInto(out *ACMEChallen
 		*out = make([]corev1.LocalObjectReference, len(*in))
 		copy(*out, *in)
 	}
+	if in.SecurityContext != nil {
+		in, out := &in.SecurityContext, &out.SecurityContext
+		*out = new(corev1.PodSecurityContext)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
