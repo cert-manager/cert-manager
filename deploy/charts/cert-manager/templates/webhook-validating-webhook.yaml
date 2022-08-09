@@ -25,6 +25,9 @@ webhooks:
         operator: "NotIn"
         values:
         - {{ include "cert-manager.namespace" . }}
+    {{- with .Values.webhook.extraNamespaceSelector }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     rules:
       - apiGroups:
           - "cert-manager.io"

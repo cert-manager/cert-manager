@@ -365,6 +365,13 @@ webhook:
   url: {}
     # host:
 
+  # Managed cluster like AKS may enforce namespaceSelector for admission controller webhooks
+  # See: https://docs.microsoft.com/en-us/azure/aks/faq#can-i-use-admission-controller-webhooks-on-aks
+  extraNamespaceSelector: []
+    # - key: control-plane
+    #   operator: DoesNotExist
+
+
 cainjector:
   enabled: true
   replicaCount: 1

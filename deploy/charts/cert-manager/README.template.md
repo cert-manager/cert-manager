@@ -166,6 +166,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.readinessProbe.periodSeconds` | The readiness probe period (in seconds) | `5` |
 | `webhook.readinessProbe.successThreshold` | The readiness probe success threshold | `1` |
 | `webhook.readinessProbe.timeoutSeconds` | The readiness probe timeout (in seconds) | `1` |
+| `webhook.extraNamespaceSelector` | Define additional namespaceSelector for webhooks | `[]` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
