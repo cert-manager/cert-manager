@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/util/retry"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -325,10 +324,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 	injectorContext("validating webhook", &injectableTest{
 		makeInjectable: func(namePrefix string) client.Object {
 			someURL := "https://localhost:8675"
-			name := fmt.Sprintf("%s-hook-%s", namePrefix, rand.String(5))
 			return &admissionreg.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					GenerateName: fmt.Sprintf("%s-hook", namePrefix),
 					Annotations: map[string]string{
 						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
@@ -369,10 +367,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 	injectorContext("mutating webhook", &injectableTest{
 		makeInjectable: func(namePrefix string) client.Object {
 			someURL := "https://localhost:8675"
-			name := fmt.Sprintf("%s-hook-%s", namePrefix, rand.String(5))
 			return &admissionreg.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					GenerateName: fmt.Sprintf("%s-hook", namePrefix),
 					Annotations: map[string]string{
 						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
