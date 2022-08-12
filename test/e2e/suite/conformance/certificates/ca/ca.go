@@ -54,7 +54,7 @@ func (c *ca) createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a CA Issuer")
 
 	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
+	Expect(err).To(HaveOccurred(), "failed to create root signing keypair secret")
 
 	c.secretName = rootCertSecret.Name
 
