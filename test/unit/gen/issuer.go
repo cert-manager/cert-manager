@@ -276,6 +276,21 @@ func SetIssuerVaultCABundle(caBundle []byte) IssuerModifier {
 		spec.Vault.CABundle = caBundle
 	}
 }
+
+func SetIssuerVaultCABundleSecretRef(name, namespace, key string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.CABundleSecretRef = v1.VaultCaBundleSecretRef{
+			Name:      name,
+			Namespace: namespace,
+			Key:       key,
+		}
+	}
+}
+
 func SetIssuerVaultTokenAuth(keyName, tokenName string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()

@@ -205,6 +205,27 @@ type VaultIssuer struct {
 	// system root certificates are used to validate the TLS connection.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
+
+	// Like CABundle but loads the CA bundle from a Kubernetes Secret.
+	// CABundle will take precedence if also set.
+	// +optional
+	CABundleSecretRef VaultCaBundleSecretRef
+}
+
+// VaultCaBundleSecretRef configures a Vault CA bundle via a Kubernetes Secret.
+type VaultCaBundleSecretRef struct {
+	// The name of the Secret resource being referred to.
+	Name string `json:"name"`
+
+	// The namespace of the Secret resource being referred to.
+	// If omitted, it will use the namespace of the referent. If the referent
+	// is a cluster-scoped resource (e.g. a ClusterIssuer), the namespace of
+	// the configured 'cluster resource namespace' will be used. It is set as a
+	// flag on the controller component (and defaults to the namespace that cert-manager runs in).
+	Namespace string `json:"namespace,omitempty""`
+
+	// The key of the entry in the Secret resource's `data` field to be used.
+	Key string `json:"key"`
 }
 
 // Configuration used to authenticate with a Vault server.

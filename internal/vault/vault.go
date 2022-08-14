@@ -187,7 +187,15 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 
 	certs := v.issuer.GetSpec().Vault.CABundle
 	if len(certs) == 0 {
-		return cfg, nil
+		var err error
+		if v.issuer.GetSpec().Vault.CABundleSecretRef.Name != "" {
+			certs, err = v.caBundleFromSecret()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return cfg, nil
+		}
 	}
 
 	caCertPool := x509.NewCertPool()
@@ -199,6 +207,29 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
 
 	return cfg, nil
+}
+
+func (v *Vault) caBundleFromSecret() ([]byte, error) {
+	ref := v.issuer.GetSpec().Vault.CABundleSecretRef
+
+	var namespace string
+	if ref.Namespace != "" {
+		namespace = ref.Namespace
+	} else {
+		namespace = v.namespace
+	}
+
+	secret, err := v.secretsLister.Secrets(namespace).Get(ref.Name)
+	if err != nil {
+		return nil, fmt.Errorf("could not access secret '%s/%s'", namespace, ref.Name)
+	}
+
+	certBytes, ok := secret.Data[ref.Key]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", ref.Key, namespace, ref.Name)
+	}
+
+	return certBytes, nil
 }
 
 func (v *Vault) tokenRef(name, namespace, key string) (string, error) {

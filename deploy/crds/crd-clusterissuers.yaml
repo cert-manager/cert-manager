@@ -1142,6 +1142,22 @@ spec:
                       description: PEM-encoded CA bundle (base64-encoded) used to validate Vault server certificate. Only used if the Server URL is using HTTPS protocol. This parameter is ignored for plain HTTP protocol connection. If not set the system root certificates are used to validate the TLS connection.
                       type: string
                       format: byte
+                    caBundleSecretRef:
+                      description: Like CABundle but loads the CA bundle from a Kubernetes Secret. CABundle will take precedence if also set.
+                      type: object
+                      required:
+                        - key
+                        - name
+                      properties:
+                        key:
+                          description: The key of the entry in the Secret resource's `data` field to be used.
+                          type: string
+                        name:
+                          description: The name of the Secret resource being referred to.
+                          type: string
+                        namespace:
+                          description: The namespace of the Secret resource being referred to. If omitted, it will use the namespace of the referent. If the referent is a cluster-scoped resource (e.g. a ClusterIssuer), the namespace of the configured 'cluster resource namespace' will be used. It is set as a flag on the controller component (and defaults to the namespace that cert-manager runs in).
+                          type: string
                     namespace:
                       description: 'Name of the vault namespace. Namespaces is a set of features within Vault Enterprise that allows Vault environments to support Secure Multi-tenancy. e.g: "ns1" More about namespaces can be found here https://www.vaultproject.io/docs/enterprise/namespaces'
                       type: string
