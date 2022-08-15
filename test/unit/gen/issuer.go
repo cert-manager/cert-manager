@@ -283,10 +283,11 @@ func SetIssuerVaultCABundleSecretRef(name, namespace, key string) IssuerModifier
 		if spec.Vault == nil {
 			spec.Vault = &v1.VaultIssuer{}
 		}
-		spec.Vault.CABundleSecretRef = v1.VaultCaBundleSecretRef{
-			Name:      name,
-			Namespace: namespace,
-			Key:       key,
+		spec.Vault.CABundleSecretRef = &cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: name,
+			},
+			Key: key,
 		}
 	}
 }

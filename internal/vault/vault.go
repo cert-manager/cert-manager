@@ -188,7 +188,7 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 	certs := v.issuer.GetSpec().Vault.CABundle
 	if len(certs) == 0 {
 		var err error
-		if v.issuer.GetSpec().Vault.CABundleSecretRef.Name != "" {
+		if v.issuer.GetSpec().Vault.CABundleSecretRef != nil {
 			certs, err = v.caBundleFromSecret()
 			if err != nil {
 				return nil, err
@@ -212,21 +212,21 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 func (v *Vault) caBundleFromSecret() ([]byte, error) {
 	ref := v.issuer.GetSpec().Vault.CABundleSecretRef
 
-	var namespace string
-	if ref.Namespace != "" {
-		namespace = ref.Namespace
-	} else {
-		namespace = v.namespace
-	}
-
-	secret, err := v.secretsLister.Secrets(namespace).Get(ref.Name)
+	secret, err := v.secretsLister.Secrets(v.namespace).Get(ref.Name)
 	if err != nil {
-		return nil, fmt.Errorf("could not access secret '%s/%s'", namespace, ref.Name)
+		return nil, fmt.Errorf("could not access secret '%s/%s': %s", v.namespace, ref.Name, err)
 	}
 
-	certBytes, ok := secret.Data[ref.Key]
+	var key string
+	if ref.Key != "" {
+		key = ref.Key
+	} else {
+		key = "ca.crt"
+	}
+
+	certBytes, ok := secret.Data[key]
 	if !ok {
-		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", ref.Key, namespace, ref.Name)
+		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, ref.Name)
 	}
 
 	return certBytes, nil

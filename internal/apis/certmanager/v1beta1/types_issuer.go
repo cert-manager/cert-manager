@@ -205,29 +205,18 @@ type VaultIssuer struct {
 	// certificate. Only used if the Server URL is using HTTPS protocol. This
 	// parameter is ignored for plain HTTP protocol connection. If not set the
 	// system root certificates are used to validate the TLS connection.
+	// Mutually exclusive with CABundleSecretRef. If neither CABundle nor CABundleSecretRef are defined,
+	// the cert-manager controller system root certificates are used to validate the TLS connection.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
 
-	// Like CABundle but loads the CA bundle from a Kubernetes Secret.
-	// CABundle will take precedence if also set.
+	// CABundleSecretRef is a reference to a Secret which contains the CABundle which will be used when
+	// connecting to Vault when using HTTPS.
+	// Mutually exclusive with CABundle. If neither CABundleSecretRef nor CABundle are defined, the cert-manager
+	// controller system root certificates are used to validate the TLS connection.
+	// If no key for the Secret is specified, cert-manager will default to 'ca.crt'.
 	// +optional
-	CABundleSecretRef VaultCaBundleSecretRef
-}
-
-// VaultCaBundleSecretRef configures a Vault CA bundle via a Kubernetes Secret.
-type VaultCaBundleSecretRef struct {
-	// The name of the Secret resource being referred to.
-	Name string `json:"name"`
-
-	// The namespace of the Secret resource being referred to.
-	// If omitted, it will use the namespace of the referent. If the referent
-	// is a cluster-scoped resource (e.g. a ClusterIssuer), the namespace of
-	// the configured 'cluster resource namespace' will be used. It is set as a
-	// flag on the controller component (and defaults to the namespace that cert-manager runs in).
-	Namespace string `json:"namespace,omitempty""`
-
-	// The key of the entry in the Secret resource's `data` field to be used.
-	Key string `json:"key"`
+	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
 }
 
 // Configuration used to authenticate with a Vault server.

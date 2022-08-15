@@ -221,6 +221,20 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("should fail to init when both caBundle and caBundleSecretRef are set", func() {
+		By("Creating an Issuer")
+		vaultIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerVaultURL(vault.Details().Host),
+			gen.SetIssuerVaultPath(vaultPath),
+			gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
+			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"))
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("spec.vault.caBundle: Invalid value: \"\": Specified caBundle and caBundleSecretRef cannot be used together"))
+		Expect(err.Error()).To(ContainSubstring("spec.vault.caBundleSecretRef: Invalid value: \"\": Specified caBundleSecretRef and caBundle cannot be used together"))
+	})
+
 	It("should be ready with a caBundle from a Kubernetes Secret", func() {
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(vaultSecretServiceAccount, vaultSecretServiceAccount), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -255,8 +269,26 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should be ready with a valid caBundle and an invalid caBundle from a Kubernetes Secret", func() {
+	It("should be eventually ready when the CA bundle secret gets created after the Issuer", func() {
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(vaultSecretServiceAccount, vaultSecretServiceAccount), metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		vaultIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerVaultURL(vault.Details().Host),
+			gen.SetIssuerVaultPath(vaultPath),
+			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"),
+			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validate that the Issuer is not ready yet")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionFalse,
+			})
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), &corev1.Secret{
@@ -265,19 +297,9 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			},
 			Type: "Opaque",
 			Data: map[string][]byte{
-				"ca.crt": []byte("invalid CA cert"),
+				"ca.crt": vault.Details().VaultCA,
 			},
 		}, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		vaultIssuer := gen.Issuer(issuerName,
-			gen.SetIssuerNamespace(f.Namespace.Name),
-			gen.SetIssuerVaultURL(vault.Details().Host),
-			gen.SetIssuerVaultPath(vaultPath),
-			gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
-			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"),
-			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
-		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")

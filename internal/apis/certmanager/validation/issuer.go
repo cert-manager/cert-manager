@@ -243,6 +243,11 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 		}
 	}
 
+	if len(iss.CABundle) > 0 && iss.CABundleSecretRef != nil {
+		el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified caBundle and caBundleSecretRef cannot be used together"))
+		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), "", "Specified caBundleSecretRef and caBundle cannot be used together"))
+	}
+
 	return el
 	// TODO: add validation for Vault authentication types
 }
