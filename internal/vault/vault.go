@@ -31,6 +31,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -185,23 +186,22 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 	cfg := vault.DefaultConfig()
 	cfg.Address = v.issuer.GetSpec().Vault.Server
 
-	certs := v.issuer.GetSpec().Vault.CABundle
-	if len(certs) == 0 {
-		var err error
-		if v.issuer.GetSpec().Vault.CABundleSecretRef != nil {
-			certs, err = v.caBundleFromSecret()
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return cfg, nil
-		}
+	caBundle, err := v.caBundle()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load vault CA bundle: %w", err)
+	}
+
+	// If no CA bundle was loaded, return early and don't modify the vault config
+	// further. This will cause the vault client to use the system root CA
+	// bundle.
+	if len(caBundle) == 0 {
+		return cfg, nil
 	}
 
 	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(certs)
+	ok := caCertPool.AppendCertsFromPEM(caBundle)
 	if !ok {
-		return nil, fmt.Errorf("error loading Vault CA bundle")
+		return nil, fmt.Errorf("no Vault CA bundles loaded, check bundle contents")
 	}
 
 	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
@@ -209,8 +209,21 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 	return cfg, nil
 }
 
-func (v *Vault) caBundleFromSecret() ([]byte, error) {
+// caBundle returns the CA bundle for the Vault server. Can be used in Vault
+// client configs to trust the connection to the Vault server. If no custom CA
+// bundle is configured, an empty byte slice is returned.
+// Assumes the in-line and Secret CA bundles are not both defined.
+// If the `key` of the Secret CA bundle is not defined, its value defaults to
+// `ca.crt`.
+func (v *Vault) caBundle() ([]byte, error) {
+	if len(v.issuer.GetSpec().Vault.CABundle) > 0 {
+		return v.issuer.GetSpec().Vault.CABundle, nil
+	}
+
 	ref := v.issuer.GetSpec().Vault.CABundleSecretRef
+	if ref == nil {
+		return nil, nil
+	}
 
 	secret, err := v.secretsLister.Secrets(v.namespace).Get(ref.Name)
 	if err != nil {
@@ -221,7 +234,7 @@ func (v *Vault) caBundleFromSecret() ([]byte, error) {
 	if ref.Key != "" {
 		key = ref.Key
 	} else {
-		key = "ca.crt"
+		key = cmmeta.TLSCAKey
 	}
 
 	certBytes, ok := secret.Data[key]

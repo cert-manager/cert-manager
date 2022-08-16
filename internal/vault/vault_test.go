@@ -28,7 +28,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	"net/http"
 	"strings"
 	"testing"
@@ -38,6 +37,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
+	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -918,7 +918,7 @@ func TestNewConfig(t *testing.T) {
 					CABundle: []byte("a bad cert bundle"),
 				}),
 			),
-			expectedErr: errors.New("error loading Vault CA bundle"),
+			expectedErr: errors.New("no Vault CA bundles loaded, check bundle contents"),
 		},
 
 		"a good cert bundle should be added to the config": {
@@ -1028,7 +1028,7 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			expectedErr: errors.New("error loading Vault CA bundle"),
+			expectedErr: errors.New("no Vault CA bundles loaded, check bundle contents"),
 			fakeLister:  caBundleSecretRefFakeSecretLister("test-namespace", "bundle", "my-bundle.crt", "not a valid certificate"),
 		},
 	}

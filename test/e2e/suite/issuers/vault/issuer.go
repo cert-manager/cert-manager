@@ -18,12 +18,12 @@ package vault
 
 import (
 	"context"
-	corev1 "k8s.io/api/core/v1"
 	"path"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -308,6 +308,61 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("it should become not ready when the CA certificate in the secret changes and doesn't match Vault's CA anymore", func() {
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(vaultSecretServiceAccount, vaultSecretServiceAccount), metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ca-bundle",
+			},
+			Type: "Opaque",
+			Data: map[string][]byte{
+				"ca.crt": vault.Details().VaultCA,
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		vaultIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerVaultURL(vault.Details().Host),
+			gen.SetIssuerVaultPath(vaultPath),
+			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"),
+			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Updating CA bundle")
+		public, _, err := vault.GenerateCA()
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.TODO(), &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ca-bundle",
+			},
+			Data: map[string][]byte{
+				"ca.crt": public,
+			},
+		}, metav1.UpdateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validate that the issuer isn't ready anymore due to Vault still using the old certificate")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionFalse,
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})
