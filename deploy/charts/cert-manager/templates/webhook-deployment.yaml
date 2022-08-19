@@ -95,6 +95,13 @@ spec:
             {{- else }}
             containerPort: 6443
             {{- end }}
+          - name: healthcheck
+            protocol: TCP
+            {{- if $config.healthzPort }}
+            containerPort: {{ $config.healthzPort }}
+            {{- else }}
+            containerPort: 6080
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /livez
