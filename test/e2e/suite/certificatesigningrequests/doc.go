@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2022 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package suite
+package certificatesigningrequests
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/approval"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificates"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificatesigningrequests"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/serving"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificatesigningrequests/selfsigned"
 )

@@ -260,9 +260,9 @@ func TestProcessItem(t *testing.T) {
 					)),
 				},
 			},
-			expectedErr: true,
+			expectedErr: false,
 		},
-		"an approved CSR but the private key references a Secret that contains bad data should be marked as failed": {
+		"an approved CSR but the private key references a Secret that contains bad data should fire warning event.": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -312,28 +312,6 @@ func TestProcessItem(t *testing.T) {
 								},
 							},
 						},
-					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"status",
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
-							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"experimental.cert-manager.io/private-key-secret-name": "test-secret",
-							}),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:   certificatesv1.CertificateApproved,
-								Status: corev1.ConditionTrue,
-							}),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:               certificatesv1.CertificateFailed,
-								Status:             corev1.ConditionTrue,
-								Reason:             "ErrorParsingKey",
-								Message:            "Failed to parse signing key from secret default-unit-test-ns/test-secret",
-								LastTransitionTime: metaFixedClockStart,
-								LastUpdateTime:     metaFixedClockStart,
-							}),
-						),
 					)),
 				},
 			},
