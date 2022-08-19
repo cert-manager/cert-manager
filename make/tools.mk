@@ -32,6 +32,7 @@ YQ_VERSION=4.25.3
 CRANE_VERSION=0.8.0
 GOJQ_VERSION=v0.12.8
 CUE_VERSION=v0.4.3
+JSON_SCHEMA_DOCS_VERSION=v0.2.1
 GINKGO_VERSION=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 K8S_CODEGEN_VERSION=v0.24.2
@@ -412,6 +413,18 @@ $(BINDIR)/downloaded/tools/gojq@$(GOJQ_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/do
 	@mv $(subst @$(GOJQ_VERSION),,$@) $@
 
 JQ=$(BINDIR)/tools/gojq
+
+
+####################
+# json-schema-docs #
+####################
+
+$(BINDIR)/tools/json-schema-docs: $(BINDIR)/downloaded/tools/json-schema-docs@$(JSON_SCHEMA_DOCS_VERSION) $(BINDIR)/scratch/JSON_SCHEMA_DOCS_VERSION | $(BINDIR)/tools
+	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
+
+$(BINDIR)/downloaded/tools/json-schema-docs@$(JSON_SCHEMA_DOCS_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
+	GOBIN=$(PWD)/$(dir $@) $(GO) install github.com/marcusolsson/json-schema-docs@$(JSON_SCHEMA_DOCS_VERSION)
+	@mv $(subst @$(JSON_SCHEMA_DOCS_VERSION),,$@) $@
 
 ######
 # yq #

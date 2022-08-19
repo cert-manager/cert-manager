@@ -129,8 +129,10 @@ $(BINDIR)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(BINDIR)/hel
 	./hack/concat-yaml.sh $^ >> $@
 	echo '{{- end }}' >> $@
 
-$(BINDIR)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | $(BINDIR)/helm/cert-manager
-	sed -e "s:{{RELEASE_VERSION}}:$(RELEASE_VERSION):g" < $< > $@
+$(BINDIR)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md $(BINDIR)/helm/cert-manager/values.schema.json | $(BINDIR)/tools/json-schema-docs $(BINDIR)/helm/cert-manager
+	$(BINDIR)/tools/json-schema-docs -template $< -schema $(BINDIR)/helm/cert-manager/values.schema.json | \
+	sed -e "s:\$$(RELEASE_VERSION):$(RELEASE_VERSION):g" \
+	> $@
 
 $(BINDIR)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml deploy/charts/cert-manager/signkey_annotation.txt $(BINDIR)/tools/yq | $(BINDIR)/helm/cert-manager
 	@# this horrible mess is taken from the YQ manual's example of multiline string blocks from a file:

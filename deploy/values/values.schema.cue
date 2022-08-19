@@ -29,10 +29,8 @@ import (
 	// If `true`, create a new service account
 	create: bool
 
-	// Service account to be used.
-	// If not set and `serviceAccount.create` is `true`, a name is
-	// generated using
-	// the fullname template
+	// Service account to be used. If not set and `serviceAccount.create`
+	// is `true`, a name is generated using the fullname template
 	name?: string
 
 	// Optional additional labels to add to the controller's ServiceAccount
@@ -80,8 +78,7 @@ import (
 	// ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 	securityContext?: corev1.#PodSecurityContext
 
-	// Container Security Context to be set on the controller
-	// component container
+	// Container Security Context to be set on the controller component container
 	// ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 	containerSecurityContext?: corev1.#SecurityContext
 }
@@ -162,10 +159,9 @@ import (
 	serviceLabels?: {[string]: string}
 
 	// (INTERNAL) Used to determine whether the helm.sh/chart label
-	// will be added to the rendered templates.
-	// Set to static when building static manifests so that the
-	// helm.sh labels
-	// will be omitted from the output.
+	// will be added to the rendered templates. Set to static when
+	// building static manifests so that the helm.sh labels will be
+	// omitted from the output.
 	creator?: "static" | "helm"
 
 	global: {
@@ -185,31 +181,24 @@ import (
 			namespace: string
 
 			// The duration that non-leader candidates will wait after
-			// observing a
-			// leadership renewal until attempting to acquire leadership of a
-			// led but
-			// unrenewed leader slot. This is effectively the maximum duration
-			// that a
-			// leader can be stopped before it is replaced by another
-			// candidate
+			// observing a leadership renewal until attempting to acquire
+			// leadership of a led but unrenewed leader slot. This is
+			// effectively the maximum duration that a leader can be stopped
+			// before it is replaced by another candidate
 			leaseDuration?: string
 
 			// The interval between attempts by the acting master to renew a
-			// leadership
-			// slot before it stops leading. This must be less than or equal
-			// to the
-			// lease duration
+			// leadership slot before it stops leading. This must be less than
+			// or equal to the lease duration
 			renewDeadline?: string
 
 			// The duration the clients should wait between attempting
-			// acquisition and
-			// renewal of a leadership
+			// acquisition and renewal of a leadership
 			retryPeriod?: string
 		}
 
 		podSecurityPolicy: {
-			// If `true`, create and use PodSecurityPolicy (includes
-			// sub-charts)
+			// If `true`, create and use PodSecurityPolicy (includes sub-charts)
 			enabled: bool
 
 			// If `true`, use Apparmor seccomp profile in PSP
@@ -347,8 +336,7 @@ import (
 		timeoutSeconds: int
 
 		// Overrides the mutating webhook and validating webhook so they
-		// reach the webhook
-		// service using the `url` field instead of a service.
+		// reach the webhook service using the `url` field instead of a service.
 		url: {
 			// The host to use to reach the webhook, instead of using internal
 			// cluster DNS for the service.
@@ -358,8 +346,7 @@ import (
 		// Annotations to add to the webhook MutatingWebhookConfiguration
 		mutatingWebhookConfigurationAnnotations?: {[string]: string}
 
-		// Annotations to add to the webhook
-		// ValidatingWebhookConfiguration
+		// Annotations to add to the webhook ValidatingWebhookConfiguration
 		validatingWebhookConfigurationAnnotations?: {[string]: string}
 	}
 }
