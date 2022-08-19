@@ -272,5 +272,7 @@ It is possible to use the
 the problem of "too many ephemeral Secret resources stored in etcd". Using
 the CSI driver, no Secret resource is created, alliviating the issue.
 
-Flant relies on Certificate resources to provide X.509 certificates for
-their customers. The certificates cannot be tied to a Pod workload.
+Since Flant offers its customers the capability to use Certificate resources,
+and wants to keep supporting the Certificate type, switching from Certificate
+resources to the CSI driver isn't an option.
+
