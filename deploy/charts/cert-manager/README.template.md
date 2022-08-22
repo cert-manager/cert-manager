@@ -104,6 +104,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
+| `topologySpreadConstraints` | Topology spread constraints for pod assignment | `[]` |
 | `ingressShim.defaultIssuerName` | Optional default issuer to use for ingress resources |  |
 | `ingressShim.defaultIssuerKind` | Optional default issuer kind to use for ingress resources |  |
 | `ingressShim.defaultIssuerGroup` | Optional default issuer group to use for ingress resources |  |
@@ -146,6 +147,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
 | `webhook.tolerations` | Node tolerations for webhook pod assignment | `[]` |
+| `webhook.topologySpreadConstraints` | Topology spread constraints for webhook pod assignment | `[]` |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
 | `webhook.image.tag` | Webhook image tag | `{{RELEASE_VERSION}}` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
@@ -180,6 +182,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |
 | `cainjector.tolerations` | Node tolerations for cainjector pod assignment | `[]` |
+| `cainjector.topologySpreadConstraints` | Topology spread constraints for cainjector pod assignment | `[]` |
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `{{RELEASE_VERSION}}` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
