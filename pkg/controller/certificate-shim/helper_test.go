@@ -55,9 +55,6 @@ func Test_translateAnnotations(t *testing.T) {
 			cmapi.SubjectStreetAddressesAnnotationKey:     `"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`,
 			cmapi.SubjectPostalCodesAnnotationKey:         "ABC123",
 			cmapi.SubjectSerialNumberAnnotationKey:        "123456",
-			cmapi.DurationAnnotationKey:                   "168h", // 1 week
-			cmapi.RenewBeforeAnnotationKey:                "24h",
-			cmapi.UsagesAnnotationKey:                     "server auth,signing",
 		}
 	}
 
