@@ -38,10 +38,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-var (
-	certificateRequestGvk = cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)
-)
-
 func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)

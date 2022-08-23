@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -49,6 +48,13 @@ type Issuer interface {
 // Issuer Contractor builds a Issuer instance using the given controller
 // context.
 type IssuerConstructor func(*controllerpkg.Context) Issuer
+
+// RegisterExtraInformerFn is a function used by CertificateRequest controller
+// implementations to add custom workqueue functions based on informers not
+// covered in the main shared controller implementation.
+// The returned set of InformerSyncs will be waited on when the controller
+// starts.
+type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.RateLimitingInterface) ([]cache.InformerSynced, error)
 
 // Controller is an implementation of the queueingController for
 // certificate requests.
@@ -82,9 +88,9 @@ type Controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 
-	// extraInformerResources are the set of resources which should cause
-	// reconciles if owned by a CertifcateRequest.
-	extraInformerResources []schema.GroupVersionResource
+	//registerExtraInformers is a list of functions that CertificateRequest
+	//controllers can use to register custom informers.
+	registerExtraInformers []RegisterExtraInformerFn
 
 	// Issuer to call sign function
 	issuerConstructor IssuerConstructor
@@ -98,19 +104,19 @@ type Controller struct {
 
 // New will construct a new certificaterequest controller using the given
 // Issuer implementation.
-// Note: the extraInformers passed here will be 'waited' for when starting to
-// ensure their corresponding listers have synced.
-// An event handler will then be set on these informers that automatically
-// resyncs CertificateRequest resources that 'own' the objects in the informer.
-// It's the callers responsibility to ensure the Run function on the informer
-// is called in order to start the reflector. This is handled automatically
-// when the informer factory's Start method is called, if the given informer
-// was obtained using a SharedInformerFactory.
-func New(issuerType string, issuerConstructor IssuerConstructor, extraInformerResources ...schema.GroupVersionResource) *Controller {
+// Note: the registerExtraInfromers passed here will be 'waited' for when
+// starting to ensure their corresponding listers have synced.
+// The caller is responsible for ensuring the informer work functions are setup
+// correctly on any informer.
+// It's also the callers responsibility to ensure the Run function on the
+// informer is called in order to start the reflector. This is handled
+// automatically when the informer factory's Start method is called, if the
+// given informer was obtained using a SharedInformerFactory.
+func New(issuerType string, issuerConstructor IssuerConstructor, registerExtraInformers ...RegisterExtraInformerFn) *Controller {
 	return &Controller{
 		issuerType:             issuerType,
 		issuerConstructor:      issuerConstructor,
-		extraInformerResources: extraInformerResources,
+		registerExtraInformers: registerExtraInformers,
 	}
 }
 
@@ -134,30 +140,21 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// obtain references to all the informers used by this controller
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 
+	// build a list of InformerSynced functions that will be returned by the
+	// Register method. The controller will only begin processing items once all
+	// of these informers have synced.
+
 	mustSync := []cache.InformerSynced{
 		certificateRequestInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
 		secretsInformer.Informer().HasSynced,
 	}
-
-	// build a list of InformerSynced functions that will be returned by the
-	// Register method.  the controller will only begin processing items once all
-	// of these informers have synced.
-
-	// Ensure we also catch all extra informers for this CertificateRequest
-	// controller instance.
-	var extraInformers []cache.SharedIndexInformer
-	for _, i := range c.extraInformerResources {
-		// TODO (joshvanl): currently we only have an extra informer for
-		// cert-manager Orders. If extended to other informer factory sets, add a
-		// switch statement here for the group so that the correct shared informer
-		// can be selected.
-		extraInformer, err := ctx.SharedInformerFactory.ForResource(i)
+	for _, reg := range c.registerExtraInformers {
+		ms, err := reg(ctx, c.log, c.queue)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get extra informer for %v: %w", i, err)
+			return nil, nil, fmt.Errorf("failed to register extra informer: %w", err)
 		}
-		extraInformers = append(extraInformers, extraInformer.Informer())
-		mustSync = append(mustSync, extraInformer.Informer().HasSynced)
+		mustSync = append(mustSync, ms...)
 	}
 
 	// if scoped to a single namespace
@@ -177,14 +174,6 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// register handler functions
 	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
-
-	// Ensure we catch extra informers that are owned by certificate requests
-	for _, i := range extraInformers {
-		i.AddEventHandler(&controllerpkg.BlockingEventHandler{
-			WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue, certificateRequestGvk, certificateRequestGetter(c.certificateRequestLister)),
-		})
-	}
-
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
@@ -229,10 +218,4 @@ func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, cr))
 	return c.Sync(ctx, cr)
-}
-
-func certificateRequestGetter(lister cmlisters.CertificateRequestLister) func(namespace, name string) (interface{}, error) {
-	return func(namespace, name string) (interface{}, error) {
-		return lister.CertificateRequests(namespace).Get(name)
-	}
 }
