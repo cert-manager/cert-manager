@@ -1,0 +1,2270 @@
+schemaVersion: oss-license-declaration.cloud.ibm.com:v4
+name: cert-manager
+source: https://github.com/cert-manager/cert-manager
+issues: https://github.ibm.com/coligo/eventing/issues
+objectCodeOnly: true
+additionalDownloads:
+  include:
+  - go modules
+  - go get
+  exclude:
+  - name: glide
+    documentation: Falsly detected
+  - name: npm
+    documentation: Falsly detected
+  - name: yarn
+    documentation: Falsly detected
+dependencies:
+- name: bazil.org/fuse
+  version: v0.0.0-20160811212531-371fbbdaa898
+  licenses:
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - HPND
+- name: cloud.google.com/go
+  version: v0.99.0
+  licenses:
+  - Apache-2.0
+- name: cloud.google.com/go/bigquery
+  version: v1.8.0
+  licenses:
+  - Apache-2.0
+- name: cloud.google.com/go/datastore
+  version: v1.1.0
+  licenses:
+  - Apache-2.0
+- name: cloud.google.com/go/firestore
+  version: v1.1.0
+  licenses:
+  - Apache-2.0
+- name: cloud.google.com/go/pubsub
+  version: v1.3.1
+  licenses:
+  - Apache-2.0
+- name: cloud.google.com/go/storage
+  version: v1.10.0
+  licenses:
+  - Apache-2.0
+- name: dmitri.shuralyov.com/gpu/mtl
+  version: v0.0.0-20190408044501-666a987793e9
+  licenses:
+  - BSD-3-Clause
+- name: github.com/AdaLogics/go-fuzz-headers
+  version: v0.0.0-20210715213245-6c3934b029d8
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/azure-sdk-for-go
+  version: v56.3.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/Azure/go-ansiterm
+  version: v0.0.0-20210617225240-d185dfc1b5a1
+  licenses:
+  - MIT
+- name: github.com/Azure/go-autorest
+  version: v14.2.0+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/autorest
+  version: v0.11.20
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/autorest/adal
+  version: v0.9.15
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/autorest/date
+  version: v0.3.0
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/autorest/mocks
+  version: v0.4.1
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/autorest/to
+  version: v0.4.0
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/autorest/validation
+  version: v0.3.1
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/logger
+  version: v0.2.1
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-autorest/tracing
+  version: v0.6.0
+  licenses:
+  - Apache-2.0
+- name: github.com/Azure/go-ntlmssp
+  version: v0.0.0-20200615164410-66371956d46c
+  licenses:
+  - MIT
+- name: github.com/BurntSushi/toml
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/BurntSushi/xgb
+  version: v0.0.0-20160522181843-27f122750802
+  licenses:
+  - BSD-3-Clause
+  - GooglePatentClause
+- name: github.com/DATA-DOG/go-sqlmock
+  version: v1.5.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/DataDog/datadog-go
+  version: v3.2.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/MakeNowJust/heredoc
+  version: v0.0.0-20170808103936-bb23615498cd
+  licenses:
+  - MIT
+- name: github.com/Masterminds/goutils
+  version: v1.1.1
+  licenses:
+  - Apache-2.0
+- name: github.com/Masterminds/semver
+  version: v1.5.0
+  licenses:
+  - MIT
+- name: github.com/Masterminds/semver/v3
+  version: v3.1.1
+  licenses:
+  - MIT
+- name: github.com/Masterminds/sprig
+  version: v2.22.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/Masterminds/sprig/v3
+  version: v3.2.2
+  licenses:
+  - MIT
+- name: github.com/Masterminds/squirrel
+  version: v1.5.2
+  licenses:
+  - MIT
+- name: github.com/Masterminds/vcs
+  version: v1.13.3
+  licenses:
+  - MIT
+- name: github.com/Microsoft/go-winio
+  version: v0.5.2
+  licenses:
+  - MIT
+- name: github.com/Microsoft/hcsshim
+  version: v0.9.4
+  licenses:
+  - MIT
+- name: github.com/Microsoft/hcsshim/test
+  version: v0.0.0-20210227013316-43a75bb4edd3
+  licenses:
+  - MIT
+- name: github.com/NYTimes/gziphandler
+  version: v1.1.1
+  licenses:
+  - Apache-2.0
+- name: github.com/OneOfOne/xxhash
+  version: v1.2.2
+  licenses:
+  - Apache-2.0
+- name: github.com/PuerkitoBio/purell
+  version: v1.1.1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/PuerkitoBio/urlesc
+  version: v0.0.0-20170810143723-de5bf2ad4578
+  licenses:
+  - BSD-3-Clause
+- name: github.com/Shopify/logrus-bugsnag
+  version: v0.0.0-20171204204709-577dee27f20d
+  licenses:
+  - MIT
+- name: github.com/Venafi/vcert/v4
+  version: v4.14.3
+  licenses:
+  - Apache-2.0
+- name: github.com/agnivade/levenshtein
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/ahmetb/gen-crd-api-reference-docs
+  version: v0.3.0
+  licenses:
+  - Apache-2.0
+- name: github.com/akamai/AkamaiOPEN-edgegrid-golang
+  version: v1.1.1
+  licenses:
+  - Apache-2.0
+- name: github.com/alecthomas/template
+  version: v0.0.0-20190718012654-fb15b899a751
+  licenses:
+  - BSD-3-Clause
+- name: github.com/alecthomas/units
+  version: v0.0.0-20190924025748-f65c72e2690d
+  licenses:
+  - MIT
+- name: github.com/alexflint/go-filemutex
+  version: v0.0.0-20171022225611-72bdc8eae2ae
+  licenses:
+  - MIT
+- name: github.com/andreyvit/diff
+  version: v0.0.0-20170406064948-c7f18ee00883
+  licenses:
+  - MIT
+- name: github.com/antihax/optional
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/antlr/antlr4/runtime/Go/antlr
+  version: v0.0.0-20210826220005-b48c857c3a0e
+  licenses:
+  - BSD-3-Clause
+- name: github.com/armon/circbuf
+  version: v0.0.0-20150827004946-bbbad097214e
+  licenses:
+  - MIT
+- name: github.com/armon/consul-api
+  version: v0.0.0-20180202201655-eb2c6b5be1b6
+  licenses:
+  - MPL-2.0
+- name: github.com/armon/go-metrics
+  version: v0.3.3
+  licenses:
+  - MIT
+- name: github.com/armon/go-radix
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/armon/go-socks5
+  version: v0.0.0-20160902184237-e75332964ef5
+  licenses:
+  - MIT
+- name: github.com/asaskevich/govalidator
+  version: v0.0.0-20200428143746-21a406dcc535
+  licenses:
+  - MIT
+- name: github.com/aws/aws-sdk-go
+  version: v1.40.21
+  licenses:
+  - Apache-2.0
+- name: github.com/benbjohnson/clock
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/beorn7/perks
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/bgentry/speakeasy
+  version: v0.1.0
+  licenses:
+  - MIT
+- name: github.com/bitly/go-simplejson
+  version: v0.5.0
+  licenses:
+  - MIT
+- name: github.com/bits-and-blooms/bitset
+  version: v1.2.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/bketelsen/crypt
+  version: v0.0.4
+  licenses:
+  - MIT
+- name: github.com/blang/semver
+  version: v3.5.1+incompatible
+  licenses:
+  - MIT
+- name: github.com/blang/semver/v4
+  version: v4.0.0
+  licenses:
+  - MIT
+- name: github.com/bmizerany/assert
+  version: v0.0.0-20160611221934-b7ed37b82869
+  licenses:
+  - MIT
+- name: github.com/bshuster-repo/logrus-logstash-hook
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/buger/jsonparser
+  version: v1.1.1
+  licenses:
+  - MIT
+- name: github.com/bugsnag/bugsnag-go
+  version: v0.0.0-20141110184014-b1d153021fcd
+  licenses:
+  - MIT
+- name: github.com/bugsnag/osext
+  version: v0.0.0-20130617224835-0dd3f918b21b
+  licenses:
+  - Zlib
+- name: github.com/bugsnag/panicwrap
+  version: v0.0.0-20151223152923-e2c28503fcd0
+  licenses:
+  - MIT
+- name: github.com/cenkalti/backoff/v3
+  version: v3.0.0
+  licenses:
+  - MIT
+- name: github.com/cenkalti/backoff/v4
+  version: v4.1.2
+  licenses:
+  - MIT
+- name: github.com/census-instrumentation/opencensus-proto
+  version: v0.2.1
+  licenses:
+  - Apache-2.0
+- name: github.com/certifi/gocertifi
+  version: v0.0.0-20200922220541-2c3bb06c6054
+  licenses:
+  - MPL-2.0
+- name: github.com/cespare/xxhash
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/cespare/xxhash/v2
+  version: v2.1.2
+  licenses:
+  - MIT
+- name: github.com/chai2010/gettext-go
+  version: v0.0.0-20160711120539-c6fed771bfd5
+  licenses:
+  - BSD-3-Clause
+- name: github.com/checkpoint-restore/go-criu/v4
+  version: v4.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/checkpoint-restore/go-criu/v5
+  version: v5.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/chzyer/logex
+  version: v1.1.10
+  licenses:
+  - MIT
+- name: github.com/chzyer/readline
+  version: v0.0.0-20180603132655-2972be24d48e
+  licenses:
+  - MIT
+- name: github.com/chzyer/test
+  version: v0.0.0-20180213035817-a1ea475d72b1
+  licenses:
+  - MIT
+- name: github.com/cilium/ebpf
+  version: v0.7.0
+  licenses:
+  - MIT
+- name: github.com/circonus-labs/circonus-gometrics
+  version: v2.3.1+incompatible
+  licenses:
+  - BSD-3-Clause
+- name: github.com/circonus-labs/circonusllhist
+  version: v0.1.3
+  licenses:
+  - BSD-3-Clause
+- name: github.com/client9/misspell
+  version: v0.3.4
+  licenses:
+  - MIT
+- name: github.com/cloudflare/cloudflare-go
+  version: v0.20.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/cncf/udpa/go
+  version: v0.0.0-20210930031921-04548b0d99d4
+  licenses:
+  - Apache-2.0
+- name: github.com/cncf/xds/go
+  version: v0.0.0-20211011173535-cb28da3451f1
+  licenses:
+  - Apache-2.0
+- name: github.com/cockroachdb/datadriven
+  version: v0.0.0-20200714090401-bf6692d28da5
+  licenses:
+  - Apache-2.0
+- name: github.com/cockroachdb/errors
+  version: v1.2.4
+  licenses:
+  - Apache-2.0
+- name: github.com/cockroachdb/logtags
+  version: v0.0.0-20190617123548-eb05cc24525f
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/aufs
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/btrfs
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/cgroups
+  version: v1.0.4
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/console
+  version: v1.0.3
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/containerd
+  version: v1.6.6
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/continuity
+  version: v0.2.2
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/fifo
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/go-cni
+  version: v1.1.6
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/go-runc
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/imgcrypt
+  version: v1.1.4
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/nri
+  version: v0.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/stargz-snapshotter/estargz
+  version: v0.4.1
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/ttrpc
+  version: v1.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/typeurl
+  version: v1.0.2
+  licenses:
+  - Apache-2.0
+- name: github.com/containerd/zfs
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/containernetworking/cni
+  version: v1.1.1
+  licenses:
+  - Apache-2.0
+- name: github.com/containernetworking/plugins
+  version: v1.1.1
+  licenses:
+  - Apache-2.0
+- name: github.com/containers/ocicrypt
+  version: v1.1.3
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/bbolt
+  version: v1.3.2
+  licenses:
+  - MIT
+- name: github.com/coreos/etcd
+  version: v3.3.13+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/go-etcd
+  version: v2.0.0+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/go-iptables
+  version: v0.5.0
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/go-oidc
+  version: v2.1.0+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/go-semver
+  version: v0.3.0
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/go-systemd
+  version: v0.0.0-20190321100706-95778dfbb74e
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/go-systemd/v22
+  version: v22.3.2
+  licenses:
+  - Apache-2.0
+- name: github.com/coreos/pkg
+  version: v0.0.0-20180928190104-399ea9e2e55f
+  licenses:
+  - Apache-2.0
+- name: github.com/cpu/goacmedns
+  version: v0.1.1
+  licenses:
+  - MIT
+- name: github.com/cpuguy83/go-md2man
+  version: v1.0.10
+  licenses:
+  - MIT
+- name: github.com/cpuguy83/go-md2man/v2
+  version: v2.0.1
+  licenses:
+  - MIT
+- name: github.com/creack/pty
+  version: v1.1.11
+  licenses:
+  - MIT
+- name: github.com/cyphar/filepath-securejoin
+  version: v0.2.3
+  licenses:
+  - BSD-3-Clause
+- name: github.com/d2g/dhcp4
+  version: v0.0.0-20170904100407-a1d1b6c41b1c
+  licenses:
+  - BSD-3-Clause
+- name: github.com/d2g/dhcp4client
+  version: v1.0.0
+  licenses:
+  - MPL-2.0
+- name: github.com/d2g/dhcp4server
+  version: v0.0.0-20181031114812-7d4a0a7f59a5
+  licenses:
+  - MPL-2.0
+- name: github.com/d2g/hardwareaddr
+  version: v0.0.0-20190221164911-e7d9fbe030e4
+  licenses:
+  - MPL-2.0
+- name: github.com/danieljoos/wincred
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/davecgh/go-spew
+  version: v1.1.1
+  licenses:
+  - ISC
+- name: github.com/daviddengcn/go-colortext
+  version: v0.0.0-20160507010035-511bcaf42ccd
+  licenses:
+  - BSD-3-Clause
+  - MIT
+- name: github.com/denisenkom/go-mssqldb
+  version: v0.9.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/denverdino/aliyungo
+  version: v0.0.0-20190125010748-a747050bb1ba
+  licenses:
+  - Apache-2.0
+- name: github.com/dgrijalva/jwt-go
+  version: v3.2.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/dgryski/go-sip13
+  version: v0.0.0-20181026042036-e10d5fee7954
+  licenses:
+  - MIT
+- name: github.com/digitalocean/godo
+  version: v1.65.0
+  licenses:
+  - BSD-3-Clause
+  - MIT
+- name: github.com/distribution/distribution/v3
+  version: v3.0.0-20211118083504-a29a3c99a684
+  licenses:
+  - Apache-2.0
+- name: github.com/dnaeon/go-vcr
+  version: v1.0.1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/docker/cli
+  version: v20.10.11+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/distribution
+  version: v2.8.1+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/docker
+  version: v20.10.14+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/docker-credential-helpers
+  version: v0.6.4
+  licenses:
+  - MIT
+- name: github.com/docker/go-connections
+  version: v0.4.0
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/go-events
+  version: v0.0.0-20190806004212-e31b211e4f1c
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/go-metrics
+  version: v0.0.1
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/go-units
+  version: v0.4.0
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/libtrust
+  version: v0.0.0-20150114040149-fa567046d9b1
+  licenses:
+  - Apache-2.0
+- name: github.com/docker/spdystream
+  version: v0.0.0-20160310174837-449fdfce4d96
+  licenses:
+  - Apache-2.0
+- name: github.com/docopt/docopt-go
+  version: v0.0.0-20180111231733-ee0de3bc6815
+  licenses:
+  - MIT
+- name: github.com/dustin/go-humanize
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/elazarl/goproxy
+  version: v0.0.0-20180725130230-947c36da3153
+  licenses:
+  - BSD-3-Clause
+- name: github.com/emicklei/go-restful
+  version: v2.9.5+incompatible
+  licenses:
+  - MIT
+- name: github.com/emicklei/go-restful/v3
+  version: v3.9.0
+  licenses:
+  - MIT
+- name: github.com/envoyproxy/go-control-plane
+  version: v0.10.2-0.20220325020618-49ff273808a1
+  licenses:
+  - Apache-2.0
+- name: github.com/envoyproxy/protoc-gen-validate
+  version: v0.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/evanphx/json-patch
+  version: v4.12.0+incompatible
+  licenses:
+  - BSD-3-Clause
+- name: github.com/exponent-io/jsonpath
+  version: v0.0.0-20151013193312-d6023ce2651d
+  licenses:
+  - MIT
+- name: github.com/fatih/camelcase
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/fatih/color
+  version: v1.13.0
+  licenses:
+  - MIT
+- name: github.com/fatih/structs
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/felixge/httpsnoop
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/flowstack/go-jsonschema
+  version: v0.1.1
+  licenses:
+  - MIT
+- name: github.com/form3tech-oss/jwt-go
+  version: v3.2.3+incompatible
+  licenses:
+  - MIT
+- name: github.com/frankban/quicktest
+  version: v1.11.3
+  licenses:
+  - MIT
+- name: github.com/fsnotify/fsnotify
+  version: v1.5.1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/fullsailor/pkcs7
+  version: v0.0.0-20190404230743-d7302db945fa
+  licenses:
+  - MIT
+- name: github.com/fvbommel/sortorder
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/garyburd/redigo
+  version: v0.0.0-20150301180006-535138d7bcd7
+  licenses:
+  - Apache-2.0
+- name: github.com/getkin/kin-openapi
+  version: v0.76.0
+  licenses:
+  - MIT
+- name: github.com/getsentry/raven-go
+  version: v0.2.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/ghodss/yaml
+  version: v1.0.0
+  licenses:
+  - BSD-3-Clause
+  - MIT
+- name: github.com/globalsign/mgo
+  version: v0.0.0-20181015135952-eeefdecb41b8
+  licenses:
+  - BSD-2-Clause
+- name: github.com/go-asn1-ber/asn1-ber
+  version: v1.5.1
+  licenses:
+  - MIT
+- name: github.com/go-errors/errors
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/go-gl/glfw
+  version: v0.0.0-20190409004039-e6da0acd62b1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/go-gl/glfw/v3.3/glfw
+  version: v0.0.0-20200222043503-6f7a984d4dc4
+  licenses:
+  - BSD-3-Clause
+- name: github.com/go-gorp/gorp/v3
+  version: v3.0.2
+  licenses:
+  - MIT
+- name: github.com/go-ini/ini
+  version: v1.25.4
+  licenses:
+  - Apache-2.0
+- name: github.com/go-kit/kit
+  version: v0.9.0
+  licenses:
+  - MIT
+- name: github.com/go-kit/log
+  version: v0.1.0
+  licenses:
+  - MIT
+- name: github.com/go-ldap/ldap/v3
+  version: v3.4.2
+  licenses:
+  - MIT
+- name: github.com/go-logfmt/logfmt
+  version: v0.5.0
+  licenses:
+  - MIT
+- name: github.com/go-logr/logr
+  version: v1.2.2
+  licenses:
+  - Apache-2.0
+- name: github.com/go-logr/stdr
+  version: v1.2.2
+  licenses:
+  - Apache-2.0
+- name: github.com/go-logr/zapr
+  version: v1.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/analysis
+  version: v0.19.5
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/errors
+  version: v0.19.2
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/jsonpointer
+  version: v0.19.5
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/jsonreference
+  version: v0.19.5
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/loads
+  version: v0.19.4
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/runtime
+  version: v0.19.4
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/spec
+  version: v0.19.5
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/strfmt
+  version: v0.19.3
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/swag
+  version: v0.19.14
+  licenses:
+  - Apache-2.0
+- name: github.com/go-openapi/validate
+  version: v0.19.5
+  licenses:
+  - Apache-2.0
+- name: github.com/go-sql-driver/mysql
+  version: v1.5.0
+  licenses:
+  - MPL-2.0
+- name: github.com/go-stack/stack
+  version: v1.8.0
+  licenses:
+  - MIT
+- name: github.com/go-task/slim-sprig
+  version: v0.0.0-20210107165309-348f09dbbbc0
+  licenses:
+  - MIT
+- name: github.com/go-test/deep
+  version: v1.0.2
+  licenses:
+  - MIT
+- name: github.com/gobuffalo/flect
+  version: v0.2.5
+  licenses:
+  - MIT
+- name: github.com/gobuffalo/logger
+  version: v1.0.6
+  licenses:
+  - MIT
+- name: github.com/gobuffalo/packd
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/gobuffalo/packr/v2
+  version: v2.8.3
+  licenses:
+  - MIT
+- name: github.com/gobwas/glob
+  version: v0.2.3
+  licenses:
+  - MIT
+- name: github.com/godbus/dbus
+  version: v0.0.0-20190422162347-ade71ed3457e
+  licenses:
+  - BSD-2-Clause
+- name: github.com/godbus/dbus/v5
+  version: v5.0.6
+  licenses:
+  - BSD-2-Clause
+- name: github.com/godror/godror
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+  - BSD-3-Clause
+  - MIT
+  - UPL-1.0
+- name: github.com/gofrs/flock
+  version: v0.8.1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/gogo/googleapis
+  version: v1.4.0
+  licenses:
+  - Apache-2.0
+- name: github.com/gogo/protobuf
+  version: v1.3.2
+  licenses:
+  - BSD-3-Clause
+- name: github.com/golang-jwt/jwt/v4
+  version: v4.0.0
+  licenses:
+  - MIT
+- name: github.com/golang-sql/civil
+  version: v0.0.0-20190719163853-cb61b32ac6fe
+  licenses:
+  - Apache-2.0
+- name: github.com/golang/glog
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/golang/groupcache
+  version: v0.0.0-20210331224755-41bb18bfe9da
+  licenses:
+  - Apache-2.0
+- name: github.com/golang/mock
+  version: v1.6.0
+  licenses:
+  - Apache-2.0
+- name: github.com/golang/protobuf
+  version: v1.5.2
+  licenses:
+  - BSD-3-Clause
+- name: github.com/golang/snappy
+  version: v0.0.3
+  licenses:
+  - BSD-3-Clause
+- name: github.com/golangplus/testing
+  version: v0.0.0-20180327235837-af21d9c3145e
+  licenses:
+  - BSD-3-Clause
+- name: github.com/gomodule/redigo
+  version: v1.8.2
+  licenses:
+  - Apache-2.0
+- name: github.com/google/btree
+  version: v1.0.1
+  licenses:
+  - Apache-2.0
+- name: github.com/google/cel-go
+  version: v0.10.1
+  licenses:
+  - Apache-2.0
+  - BSD-3-Clause
+- name: github.com/google/cel-spec
+  version: v0.6.0
+  licenses:
+  - Apache-2.0
+- name: github.com/google/gnostic
+  version: v0.6.9
+  licenses:
+  - Apache-2.0
+- name: github.com/google/go-cmp
+  version: v0.5.6
+  licenses:
+  - BSD-3-Clause
+- name: github.com/google/go-containerregistry
+  version: v0.5.1
+  licenses:
+  - Apache-2.0
+- name: github.com/google/go-querystring
+  version: v1.0.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/google/gofuzz
+  version: v1.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/google/martian
+  version: v2.1.0+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/google/martian/v3
+  version: v3.2.1
+  licenses:
+  - Apache-2.0
+- name: github.com/google/pprof
+  version: v0.0.0-20210720184732-4bb14d4b1be1
+  licenses:
+  - Apache-2.0
+- name: github.com/google/renameio
+  version: v0.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/google/shlex
+  version: v0.0.0-20191202100458-e7afc7fbc510
+  licenses:
+  - Apache-2.0
+- name: github.com/google/uuid
+  version: v1.3.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/googleapis/gax-go/v2
+  version: v2.1.1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/googleapis/gnostic
+  version: v0.5.5
+  licenses:
+  - Apache-2.0
+- name: github.com/gophercloud/gophercloud
+  version: v0.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/gopherjs/gopherjs
+  version: v0.0.0-20181017120253-0766667cb4d1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/gorilla/handlers
+  version: v1.5.1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/gorilla/mux
+  version: v1.8.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/gorilla/websocket
+  version: v1.4.2
+  licenses:
+  - BSD-2-Clause
+- name: github.com/gosuri/uitable
+  version: v0.0.4
+  licenses:
+  - MIT
+- name: github.com/gregjones/httpcache
+  version: v0.0.0-20180305231024-9cad4c3443a7
+  licenses:
+  - MIT
+- name: github.com/grpc-ecosystem/go-grpc-middleware
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: github.com/grpc-ecosystem/go-grpc-prometheus
+  version: v1.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/grpc-ecosystem/grpc-gateway
+  version: v1.16.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/h2non/parth
+  version: v0.0.0-20190131123155-b4df798d6542
+  licenses:
+  - MIT
+- name: github.com/hashicorp/consul/api
+  version: v1.1.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/consul/sdk
+  version: v0.1.1
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/errwrap
+  version: v1.1.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-cleanhttp
+  version: v0.5.2
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-hclog
+  version: v0.16.1
+  licenses:
+  - MIT
+- name: github.com/hashicorp/go-immutable-radix
+  version: v1.1.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-kms-wrapping/entropy
+  version: v0.1.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-msgpack
+  version: v0.5.3
+  licenses:
+  - MIT
+- name: github.com/hashicorp/go-multierror
+  version: v1.1.1
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-plugin
+  version: v1.0.1
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-retryablehttp
+  version: v0.6.6
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-rootcerts
+  version: v1.0.2
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-sockaddr
+  version: v1.0.2
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-syslog
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/hashicorp/go-uuid
+  version: v1.0.2
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go-version
+  version: v1.2.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/go.net
+  version: v0.0.1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/hashicorp/golang-lru
+  version: v0.5.4
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/hcl
+  version: v1.0.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/logutils
+  version: v1.0.0
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/mdns
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/hashicorp/memberlist
+  version: v0.1.3
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/serf
+  version: v0.8.2
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/vault/api
+  version: v1.1.1
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/vault/sdk
+  version: v0.2.1
+  licenses:
+  - MPL-2.0
+- name: github.com/hashicorp/yamux
+  version: v0.0.0-20180604194846-3520598351bb
+  licenses:
+  - MPL-2.0
+- name: github.com/howeyc/gopass
+  version: v0.0.0-20170109162249-bf9dde6d0d2c
+  licenses:
+  - ISC
+- name: github.com/hpcloud/tail
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/huandu/xstrings
+  version: v1.3.2
+  licenses:
+  - MIT
+- name: github.com/ianlancetaylor/demangle
+  version: v0.0.0-20200824232613-28f6c0f3b639
+  licenses:
+  - BSD-3-Clause
+- name: github.com/imdario/mergo
+  version: v0.3.12
+  licenses:
+  - BSD-3-Clause
+- name: github.com/inconshreveable/mousetrap
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/intel/goresctrl
+  version: v0.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/j-keck/arping
+  version: v0.0.0-20160618110441-2cf9dc699c56
+  licenses:
+  - MIT
+- name: github.com/jessevdk/go-flags
+  version: v1.4.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/jmespath/go-jmespath
+  version: v0.4.0
+  licenses:
+  - Apache-2.0
+- name: github.com/jmespath/go-jmespath/internal/testify
+  version: v1.5.1
+  licenses:
+  - MIT
+- name: github.com/jmoiron/sqlx
+  version: v1.3.4
+  licenses:
+  - MIT
+- name: github.com/joefitzgerald/rainbow-reporter
+  version: v0.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/jonboulle/clockwork
+  version: v0.2.2
+  licenses:
+  - Apache-2.0
+- name: github.com/josharian/intern
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/jpillora/backoff
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/json-iterator/go
+  version: v1.1.12
+  licenses:
+  - MIT
+- name: github.com/jstemmer/go-junit-report
+  version: v0.9.1
+  licenses:
+  - MIT
+- name: github.com/jtolds/gls
+  version: v4.20.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/julienschmidt/httprouter
+  version: v1.3.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/karrick/godirwalk
+  version: v1.16.1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/kisielk/errcheck
+  version: v1.5.0
+  licenses:
+  - MIT
+- name: github.com/kisielk/gotool
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/klauspost/compress
+  version: v1.15.9
+  licenses:
+  - Apache-2.0
+  - BSD-3-Clause
+  - MIT
+- name: github.com/konsorten/go-windows-terminal-sequences
+  version: v1.0.3
+  licenses:
+  - MIT
+- name: github.com/kortschak/utter
+  version: v1.0.1
+  licenses:
+  - ISC
+- name: github.com/kr/fs
+  version: v0.1.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/kr/logfmt
+  version: v0.0.0-20140226030751-b84e30acd515
+  licenses:
+  - MIT
+- name: github.com/kr/pretty
+  version: v0.3.0
+  licenses:
+  - MIT
+- name: github.com/kr/pty
+  version: v1.1.5
+  licenses:
+  - MIT
+- name: github.com/kr/text
+  version: v0.2.0
+  licenses:
+  - MIT
+- name: github.com/lann/builder
+  version: v0.0.0-20180802200727-47ae307949d0
+  licenses:
+  - MIT
+- name: github.com/lann/ps
+  version: v0.0.0-20150810152359-62de8c46ede0
+  licenses:
+  - MIT
+- name: github.com/lib/pq
+  version: v1.10.4
+  licenses:
+  - MIT
+- name: github.com/liggitt/tabwriter
+  version: v0.0.0-20181228230101-89fcab3d43de
+  licenses:
+  - BSD-3-Clause
+- name: github.com/linuxkit/virtsock
+  version: v0.0.0-20201010232012-f8cee7dfc7a3
+  licenses:
+  - Apache-2.0
+- name: github.com/lithammer/dedent
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/magiconair/properties
+  version: v1.8.5
+  licenses:
+  - BSD-2-Clause
+- name: github.com/mailru/easyjson
+  version: v0.7.6
+  licenses:
+  - MIT
+- name: github.com/markbates/errx
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/markbates/oncer
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/markbates/safe
+  version: v1.0.1
+  licenses:
+  - MIT
+- name: github.com/marstr/guid
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/mattn/go-colorable
+  version: v0.1.12
+  licenses:
+  - MIT
+- name: github.com/mattn/go-isatty
+  version: v0.0.14
+  licenses:
+  - MIT
+- name: github.com/mattn/go-oci8
+  version: v0.1.1
+  licenses:
+  - MIT
+- name: github.com/mattn/go-runewidth
+  version: v0.0.9
+  licenses:
+  - MIT
+- name: github.com/mattn/go-shellwords
+  version: v1.0.12
+  licenses:
+  - MIT
+- name: github.com/mattn/go-sqlite3
+  version: v1.14.6
+  licenses:
+  - MIT
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: v1.0.2-0.20181231171920-c182affec369
+  licenses:
+  - Apache-2.0
+- name: github.com/maxbrunsfeld/counterfeiter/v6
+  version: v6.2.2
+  licenses:
+  - MIT
+- name: github.com/miekg/dns
+  version: v1.1.47
+  licenses:
+  - BSD-3-Clause
+- name: github.com/miekg/pkcs11
+  version: v1.1.1
+  licenses:
+  - BSD-3-Clause
+- name: github.com/mistifyio/go-zfs
+  version: v2.1.2-0.20190413222219-f784269be439+incompatible
+  licenses:
+  - Apache-2.0
+- name: github.com/mitchellh/cli
+  version: v1.1.2
+  licenses:
+  - MPL-2.0
+- name: github.com/mitchellh/copystructure
+  version: v1.2.0
+  licenses:
+  - MIT
+- name: github.com/mitchellh/go-homedir
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/mitchellh/go-testing-interface
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/mitchellh/go-wordwrap
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/mitchellh/gox
+  version: v0.4.0
+  licenses:
+  - MPL-2.0
+- name: github.com/mitchellh/iochan
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/mitchellh/mapstructure
+  version: v1.4.3
+  licenses:
+  - MIT
+- name: github.com/mitchellh/osext
+  version: v0.0.0-20151018003038-5e2d6d41470f
+  licenses:
+  - Zlib
+- name: github.com/mitchellh/reflectwalk
+  version: v1.0.2
+  licenses:
+  - MIT
+- name: github.com/moby/locker
+  version: v1.0.1
+  licenses:
+  - Apache-2.0
+- name: github.com/moby/spdystream
+  version: v0.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/moby/sys/mountinfo
+  version: v0.6.2
+  licenses:
+  - Apache-2.0
+- name: github.com/moby/sys/signal
+  version: v0.6.0
+  licenses:
+  - Apache-2.0
+- name: github.com/moby/sys/symlink
+  version: v0.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/moby/term
+  version: v0.0.0-20210619224110-3f7ff695adc6
+  licenses:
+  - Apache-2.0
+- name: github.com/modern-go/concurrent
+  version: v0.0.0-20180306012644-bacd9c7ef1dd
+  licenses:
+  - Apache-2.0
+- name: github.com/modern-go/reflect2
+  version: v1.0.2
+  licenses:
+  - Apache-2.0
+- name: github.com/monochromegane/go-gitignore
+  version: v0.0.0-20200626010858-205db1a8cc00
+  licenses:
+  - MIT
+- name: github.com/morikuni/aec
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/mrunalp/fileutils
+  version: v0.5.0
+  licenses:
+  - Apache-2.0
+- name: github.com/munnerz/crd-schema-fuzz
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/munnerz/goautoneg
+  version: v0.0.0-20191010083416-a7dc8b61c822
+  licenses:
+  - BSD-3-Clause
+- name: github.com/mwitkow/go-conntrack
+  version: v0.0.0-20190716064945-2f068394615f
+  licenses:
+  - Apache-2.0
+- name: github.com/mxk/go-flowrate
+  version: v0.0.0-20140419014527-cca7078d478f
+  licenses:
+  - BSD-3-Clause
+- name: github.com/nbio/st
+  version: v0.0.0-20140626010706-e9e8d9816f32
+  licenses:
+  - Apache-2.0
+- name: github.com/ncw/swift
+  version: v1.0.47
+  licenses:
+  - MIT
+- name: github.com/niemeyer/pretty
+  version: v0.0.0-20200227124842-a10e7caefd8e
+  licenses:
+  - MIT
+- name: github.com/nxadm/tail
+  version: v1.4.8
+  licenses:
+  - MIT
+- name: github.com/oklog/run
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/oklog/ulid
+  version: v1.3.1
+  licenses:
+  - Apache-2.0
+- name: github.com/olekukonko/tablewriter
+  version: v0.0.5
+  licenses:
+  - MIT
+- name: github.com/onsi/ginkgo
+  version: v1.16.5
+  licenses:
+  - MIT
+- name: github.com/onsi/ginkgo/v2
+  version: v2.1.4
+  licenses:
+  - MIT
+- name: github.com/onsi/gomega
+  version: v1.19.0
+  licenses:
+  - MIT
+- name: github.com/opencontainers/go-digest
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: github.com/opencontainers/image-spec
+  version: v1.0.3-0.20211202183452-c5a74bcca799
+  licenses:
+  - Apache-2.0
+- name: github.com/opencontainers/runc
+  version: v1.1.2
+  licenses:
+  - Apache-2.0
+- name: github.com/opencontainers/runtime-spec
+  version: v1.0.3-0.20210326190908-1c3f411f0417
+  licenses:
+  - Apache-2.0
+- name: github.com/opencontainers/runtime-tools
+  version: v0.0.0-20181011054405-1d69bd0f9c39
+  licenses:
+  - Apache-2.0
+- name: github.com/opencontainers/selinux
+  version: v1.10.1
+  licenses:
+  - Apache-2.0
+- name: github.com/opentracing/opentracing-go
+  version: v1.1.0
+  licenses:
+  - Apache-2.0
+- name: github.com/pascaldekloe/goe
+  version: v0.1.0
+  licenses:
+  - CC0-1.0
+- name: github.com/patrickmn/go-cache
+  version: v2.1.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/pavel-v-chernykh/keystore-go/v4
+  version: v4.2.0
+  licenses:
+  - MIT
+- name: github.com/pborman/uuid
+  version: v1.2.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/pelletier/go-toml
+  version: v1.9.3
+  licenses:
+  - Apache-2.0
+  - MIT
+- name: github.com/peterbourgon/diskv
+  version: v2.0.1+incompatible
+  licenses:
+  - MIT
+- name: github.com/phayes/freeport
+  version: v0.0.0-20180830031419-95f893ade6f2
+  licenses:
+  - BSD-3-Clause
+- name: github.com/pierrec/lz4
+  version: v2.5.2+incompatible
+  licenses:
+  - BSD-3-Clause
+- name: github.com/pkg/diff
+  version: v0.0.0-20210226163009-20ebb0f2a09e
+  licenses:
+  - BSD-3-Clause
+- name: github.com/pkg/errors
+  version: v0.9.1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/pkg/sftp
+  version: v1.10.1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/pmezard/go-difflib
+  version: v1.0.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/posener/complete
+  version: v1.1.1
+  licenses:
+  - MIT
+- name: github.com/poy/onpar
+  version: v0.0.0-20190519213022-ee068f8ea4d1
+  licenses:
+  - MIT
+- name: github.com/pquerna/cachecontrol
+  version: v0.0.0-20171018203845-0dec1b30a021
+  licenses:
+  - Apache-2.0
+- name: github.com/prometheus/client_golang
+  version: v1.12.1
+  licenses:
+  - Apache-2.0
+- name: github.com/prometheus/client_model
+  version: v0.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/prometheus/common
+  version: v0.32.1
+  licenses:
+  - Apache-2.0
+- name: github.com/prometheus/procfs
+  version: v0.7.3
+  licenses:
+  - Apache-2.0
+- name: github.com/prometheus/tsdb
+  version: v0.7.1
+  licenses:
+  - Apache-2.0
+- name: github.com/rogpeppe/fastuuid
+  version: v1.2.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/rogpeppe/go-internal
+  version: v1.8.0
+  licenses:
+  - BSD-3-Clause
+- name: github.com/rubenv/sql-migrate
+  version: v1.1.1
+  licenses:
+  - MIT
+- name: github.com/russross/blackfriday
+  version: v1.5.2
+  licenses:
+  - BSD-2-Clause
+- name: github.com/russross/blackfriday/v2
+  version: v2.1.0
+  licenses:
+  - BSD-2-Clause
+- name: github.com/ryanuber/columnize
+  version: v2.1.0+incompatible
+  licenses:
+  - MIT
+- name: github.com/ryanuber/go-glob
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/safchain/ethtool
+  version: v0.0.0-20190326074333-42ed695e3de8
+  licenses:
+  - Apache-2.0
+- name: github.com/satori/go.uuid
+  version: v1.2.0
+  licenses:
+  - MIT
+- name: github.com/sclevine/spec
+  version: v1.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/sean-/seed
+  version: v0.0.0-20170313163322-e2103e2c3529
+  licenses:
+  - BSD-3-Clause
+  - MIT
+- name: github.com/seccomp/libseccomp-golang
+  version: v0.9.1
+  licenses:
+  - BSD-2-Clause
+- name: github.com/segmentio/asm
+  version: v1.1.3
+  licenses:
+  - MIT
+- name: github.com/segmentio/encoding
+  version: v0.3.3
+  licenses:
+  - MIT
+- name: github.com/sergi/go-diff
+  version: v1.2.0
+  licenses:
+  - MIT
+- name: github.com/shopspring/decimal
+  version: v1.2.0
+  licenses:
+  - MIT
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/sirupsen/logrus
+  version: v1.9.0
+  licenses:
+  - MIT
+- name: github.com/smartystreets/assertions
+  version: v0.0.0-20180927180507-b2de0cb4f26d
+  licenses:
+  - MIT
+- name: github.com/smartystreets/goconvey
+  version: v1.6.4
+  licenses:
+  - MIT
+- name: github.com/soheilhy/cmux
+  version: v0.1.5
+  licenses:
+  - Apache-2.0
+- name: github.com/spaolacci/murmur3
+  version: v0.0.0-20180118202830-f09979ecbc72
+  licenses:
+  - BSD-3-Clause
+- name: github.com/spf13/afero
+  version: v1.6.0
+  licenses:
+  - Apache-2.0
+- name: github.com/spf13/cast
+  version: v1.4.1
+  licenses:
+  - MIT
+- name: github.com/spf13/cobra
+  version: v1.4.0
+  licenses:
+  - Apache-2.0
+- name: github.com/spf13/jwalterweatherman
+  version: v1.1.0
+  licenses:
+  - MIT
+- name: github.com/spf13/pflag
+  version: v1.0.5
+  licenses:
+  - BSD-3-Clause
+- name: github.com/spf13/viper
+  version: v1.8.1
+  licenses:
+  - MIT
+- name: github.com/stefanberger/go-pkcs11uri
+  version: v0.0.0-20201008174630-78d3cae3a980
+  licenses:
+  - Apache-2.0
+- name: github.com/stoewer/go-strcase
+  version: v1.2.0
+  licenses:
+  - MIT
+- name: github.com/stretchr/objx
+  version: v0.2.0
+  licenses:
+  - MIT
+- name: github.com/stretchr/testify
+  version: v1.7.1
+  licenses:
+  - MIT
+- name: github.com/subosito/gotenv
+  version: v1.2.0
+  licenses:
+  - MIT
+- name: github.com/syndtr/gocapability
+  version: v0.0.0-20200815063812-42c35b437635
+  licenses:
+  - BSD-2-Clause
+- name: github.com/tchap/go-patricia
+  version: v2.2.6+incompatible
+  licenses:
+  - MIT
+- name: github.com/tidwall/pretty
+  version: v1.0.0
+  licenses:
+  - MIT
+- name: github.com/tmc/grpc-websocket-proxy
+  version: v0.0.0-20201229170055-e5319fda7802
+  licenses:
+  - MIT
+- name: github.com/tv42/httpunix
+  version: v0.0.0-20150427012821-b75d8614f926
+  licenses:
+  - MIT
+- name: github.com/ugorji/go
+  version: v1.1.4
+  licenses:
+  - MIT
+- name: github.com/ugorji/go/codec
+  version: v0.0.0-20181204163529-d75b2dcb6bc8
+  licenses:
+  - MIT
+- name: github.com/urfave/cli
+  version: v1.22.2
+  licenses:
+  - MIT
+- name: github.com/urfave/cli/v2
+  version: v2.3.0
+  licenses:
+  - MIT
+- name: github.com/vektah/gqlparser
+  version: v1.1.2
+  licenses:
+  - MIT
+- name: github.com/vishvananda/netlink
+  version: v1.1.1-0.20210330154013-f5de75959ad5
+  licenses:
+  - Apache-2.0
+- name: github.com/vishvananda/netns
+  version: v0.0.0-20210104183010-2eb08e3e575f
+  licenses:
+  - Apache-2.0
+- name: github.com/willf/bitset
+  version: v1.1.11
+  licenses:
+  - BSD-3-Clause
+- name: github.com/xeipuuv/gojsonpointer
+  version: v0.0.0-20180127040702-4e3ac2762d5f
+  licenses:
+  - Apache-2.0
+- name: github.com/xeipuuv/gojsonreference
+  version: v0.0.0-20180127040603-bd5ef7bd5415
+  licenses:
+  - Apache-2.0
+- name: github.com/xeipuuv/gojsonschema
+  version: v1.2.0
+  licenses:
+  - Apache-2.0
+- name: github.com/xiang90/probing
+  version: v0.0.0-20190116061207-43a291ad63a2
+  licenses:
+  - MIT
+- name: github.com/xlab/treeprint
+  version: v0.0.0-20181112141820-a009c3971eca
+  licenses:
+  - MIT
+- name: github.com/xordataexchange/crypt
+  version: v0.0.3-0.20170626215501-b2862e3d0a77
+  licenses:
+  - MIT
+- name: github.com/yuin/goldmark
+  version: v1.4.1
+  licenses:
+  - MIT
+- name: github.com/yvasiyarov/go-metrics
+  version: v0.0.0-20140926110328-57bccd1ccd43
+  licenses:
+  - BSD-2-Clause-Views
+- name: github.com/yvasiyarov/gorelic
+  version: v0.0.0-20141212073537-a9bba5b9ab50
+  licenses:
+  - BSD-2-Clause
+- name: github.com/yvasiyarov/newrelic_platform_go
+  version: v0.0.0-20140908184405-b21fdbd4370f
+  licenses:
+  - BSD-2-Clause
+- name: github.com/ziutek/mymysql
+  version: v1.5.4
+  licenses:
+  - BSD-3-Clause
+- name: go.etcd.io/bbolt
+  version: v1.3.6
+  licenses:
+  - MIT
+- name: go.etcd.io/etcd
+  version: v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/api/v3
+  version: v3.5.1
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/client/pkg/v3
+  version: v3.5.1
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/client/v2
+  version: v2.305.0
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/client/v3
+  version: v3.5.1
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/pkg/v3
+  version: v3.5.0
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/raft/v3
+  version: v3.5.0
+  licenses:
+  - Apache-2.0
+- name: go.etcd.io/etcd/server/v3
+  version: v3.5.0
+  licenses:
+  - Apache-2.0
+- name: go.mongodb.org/mongo-driver
+  version: v1.1.2
+  licenses:
+  - Apache-2.0
+- name: go.mozilla.org/pkcs7
+  version: v0.0.0-20200128120323-432b2356ecb1
+  licenses:
+  - MIT
+- name: go.opencensus.io
+  version: v0.23.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/contrib
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
+  version: v0.28.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/exporters/otlp
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/exporters/otlp/internal/retry
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/exporters/otlp/otlptrace
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/metric
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/oteltest
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/sdk
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/sdk/export/metric
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/sdk/metric
+  version: v0.20.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/otel/trace
+  version: v1.3.0
+  licenses:
+  - Apache-2.0
+- name: go.opentelemetry.io/proto/otlp
+  version: v0.11.0
+  licenses:
+  - Apache-2.0
+- name: go.starlark.net
+  version: v0.0.0-20200306205701-8dd3e2ee1dd5
+  licenses:
+  - BSD-3-Clause
+- name: go.uber.org/atomic
+  version: v1.7.0
+  licenses:
+  - MIT
+- name: go.uber.org/goleak
+  version: v1.1.12
+  licenses:
+  - MIT
+- name: go.uber.org/multierr
+  version: v1.6.0
+  licenses:
+  - MIT
+- name: go.uber.org/zap
+  version: v1.19.1
+  licenses:
+  - MIT
+- name: golang.org/x/crypto
+  version: v0.0.0-20220411220226-7b82a4e95df4
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/exp
+  version: v0.0.0-20200224162631-6cc2880d07d6
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/image
+  version: v0.0.0-20190802002840-cff245a6509b
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/lint
+  version: v0.0.0-20210508222113-6edffad5e616
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/mobile
+  version: v0.0.0-20190719004257-d2bd2a29d028
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/mod
+  version: v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/net
+  version: v0.0.0-20220802222814-0bcc04d9c69b
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/oauth2
+  version: v0.0.0-20211104180415-d3ed0bb246c8
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/sync
+  version: v0.0.0-20220722155255-886fb9371eb4
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/sys
+  version: v0.0.0-20220731174439-a90be440212d
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/term
+  version: v0.0.0-20210927222741-03fcf44c2211
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/text
+  version: v0.3.7
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/time
+  version: v0.0.0-20220210224613-90d013bbcef8
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/tools
+  version: v0.1.10
+  licenses:
+  - BSD-3-Clause
+- name: golang.org/x/xerrors
+  version: v0.0.0-20200804184101-5ec99f83aff1
+  licenses:
+  - BSD-3-Clause
+- name: gomodules.xyz/jsonpatch/v2
+  version: v2.2.0
+  licenses:
+  - Apache-2.0
+- name: google.golang.org/api
+  version: v0.62.0
+  licenses:
+  - BSD-3-Clause
+- name: google.golang.org/appengine
+  version: v1.6.7
+  licenses:
+  - Apache-2.0
+- name: google.golang.org/cloud
+  version: v0.0.0-20151119220103-975617b05ea8
+  licenses:
+  - Apache-2.0
+- name: google.golang.org/genproto
+  version: v0.0.0-20220802133213-ce4fa296bf78
+  licenses:
+  - Apache-2.0
+- name: google.golang.org/grpc
+  version: v1.48.0
+  licenses:
+  - Apache-2.0
+- name: google.golang.org/grpc/cmd/protoc-gen-go-grpc
+  version: v1.1.0
+  licenses:
+  - Apache-2.0
+- name: google.golang.org/protobuf
+  version: v1.28.1
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/airbrake/gobrake.v2
+  version: v2.0.9
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: v2.2.6
+  licenses:
+  - MIT
+- name: gopkg.in/check.v1
+  version: v1.0.0-20201130134442-10cb98267c6c
+  licenses:
+  - BSD-2-Clause
+- name: gopkg.in/cheggaaa/pb.v1
+  version: v1.0.25
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/errgo.v2
+  version: v2.1.0
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/fsnotify.v1
+  version: v1.4.7
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/gemnasium/logrus-airbrake-hook.v2
+  version: v2.1.2
+  licenses:
+  - MIT
+- name: gopkg.in/h2non/gock.v1
+  version: v1.0.15
+  licenses:
+  - MIT
+- name: gopkg.in/inf.v0
+  version: v0.9.1
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/ini.v1
+  version: v1.66.2
+  licenses:
+  - Apache-2.0
+- name: gopkg.in/natefinch/lumberjack.v2
+  version: v2.0.0
+  licenses:
+  - MIT
+- name: gopkg.in/resty.v1
+  version: v1.12.0
+  licenses:
+  - MIT
+- name: gopkg.in/square/go-jose.v2
+  version: v2.5.1
+  licenses:
+  - Apache-2.0
+- name: gopkg.in/tomb.v1
+  version: v1.0.0-20141024135613-dd632973f1e7
+  licenses:
+  - BSD-3-Clause
+- name: gopkg.in/yaml.v2
+  version: v2.4.0
+  licenses:
+  - Apache-2.0
+- name: gopkg.in/yaml.v3
+  version: v3.0.0-20210107192922-496545a6307b
+  licenses:
+  - Apache-2.0
+  - MIT
+- name: gotest.tools
+  version: v2.2.0+incompatible
+  licenses:
+  - Apache-2.0
+- name: gotest.tools/v3
+  version: v3.0.3
+  licenses:
+  - Apache-2.0
+- name: helm.sh/helm/v3
+  version: v3.9.0
+  licenses:
+  - Apache-2.0
+- name: honnef.co/go/tools
+  version: v0.0.1-2020.1.4
+  licenses:
+  - MIT
+- name: k8s.io/api
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/apiextensions-apiserver
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/apimachinery
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/apiserver
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/cli-runtime
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/client-go
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/code-generator
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/component-base
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/component-helpers
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/cri-api
+  version: v0.23.1
+  licenses:
+  - Apache-2.0
+- name: k8s.io/gengo
+  version: v0.0.0-20211129171323-c02415ce4185
+  licenses:
+  - Apache-2.0
+- name: k8s.io/klog
+  version: v1.0.0
+  licenses:
+  - Apache-2.0
+- name: k8s.io/klog/v2
+  version: v2.70.0
+  licenses:
+  - Apache-2.0
+- name: k8s.io/kube-aggregator
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/kube-openapi
+  version: v0.0.0-20220328201542-3ee0da9b0b42
+  licenses:
+  - Apache-2.0
+- name: k8s.io/kubectl
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/kubernetes
+  version: v1.13.0
+  licenses:
+  - Apache-2.0
+- name: k8s.io/metrics
+  version: v0.24.2
+  licenses:
+  - Apache-2.0
+- name: k8s.io/utils
+  version: v0.0.0-20220210201930-3a6ce19ff2f9
+  licenses:
+  - Apache-2.0
+- name: oras.land/oras-go
+  version: v1.1.0
+  licenses:
+  - Apache-2.0
+- name: rsc.io/binaryregexp
+  version: v0.2.0
+  licenses:
+  - BSD-3-Clause
+- name: rsc.io/quote/v3
+  version: v3.1.0
+  licenses:
+  - BSD-3-Clause
+- name: rsc.io/sampler
+  version: v1.3.0
+  licenses:
+  - BSD-3-Clause
+- name: sigs.k8s.io/apiserver-network-proxy/konnectivity-client
+  version: v0.0.30
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/controller-runtime
+  version: v0.11.2
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/controller-tools
+  version: v0.9.2
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/gateway-api
+  version: v0.4.3
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/json
+  version: v0.0.0-20211208200746-9f7c6b3444d2
+  licenses:
+  - Apache-2.0
+  - BSD-3-Clause
+- name: sigs.k8s.io/kustomize/api
+  version: v0.11.4
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/kustomize/cmd/config
+  version: v0.10.6
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/kustomize/kustomize/v4
+  version: v4.5.4
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/kustomize/kyaml
+  version: v0.13.6
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/structured-merge-diff/v3
+  version: v3.0.0
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/structured-merge-diff/v4
+  version: v4.2.1
+  licenses:
+  - Apache-2.0
+- name: sigs.k8s.io/yaml
+  version: v1.3.0
+  licenses:
+  - BSD-3-Clause
+  - MIT
+- name: software.sslmate.com/src/go-pkcs12
+  version: v0.0.0-20210415151418-c5206de65a78
+  licenses:
+  - BSD-3-Clause
