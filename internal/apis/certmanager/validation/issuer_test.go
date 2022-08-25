@@ -245,7 +245,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
-								ParentRefs: []gwapi.ParentRef{
+								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
 									},
@@ -289,7 +289,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								Labels: map[string]string{
 									"a": "b",
 								},
-								ParentRefs: []gwapi.ParentRef{
+								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
 									},

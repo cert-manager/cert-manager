@@ -669,7 +669,7 @@ func Convert_acme_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP0
 func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
-	out.ParentRefs = *(*[]apisv1alpha2.ParentRef)(unsafe.Pointer(&in.ParentRefs))
+	out.ParentRefs = *(*[]apisv1alpha2.ParentReference)(unsafe.Pointer(&in.ParentRefs))
 	return nil
 }
 
@@ -681,7 +681,7 @@ func Convert_v1alpha2_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChal
 func autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1alpha2_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
-	out.ParentRefs = *(*[]apisv1alpha2.ParentRef)(unsafe.Pointer(&in.ParentRefs))
+	out.ParentRefs = *(*[]apisv1alpha2.ParentReference)(unsafe.Pointer(&in.ParentRefs))
 	return nil
 }
 
