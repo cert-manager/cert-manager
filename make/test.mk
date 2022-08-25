@@ -74,7 +74,7 @@ e2e: $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl $(BINDIR)/tools/ginkg
 
 .PHONY: e2e-ci
 e2e-ci: e2e-setup-kind e2e-setup
-	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || ($(MAKE) kind-logs && exit 1)
+	make/e2e-ci.sh
 
 .PHONY: test-upgrade
 test-upgrade: | $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
