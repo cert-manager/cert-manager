@@ -28,7 +28,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/clock"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/e2e/framework"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
@@ -60,6 +62,8 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("Issuer: the private key Secret is created after the request is created should still be signed", func() {
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+
 		var err error
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-", Namespace: f.Namespace.Name},
@@ -120,6 +124,8 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("Issuer: private key Secret is updated with a valid private key after the request is created should still be signed", func() {
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+
 		var err error
 		By("creating Secret with missing private key")
 		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), &corev1.Secret{
@@ -182,6 +188,8 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("ClusterIssuer: the private key Secret is created after the request is created should still be signed", func() {
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+
 		var err error
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-"},
@@ -242,6 +250,8 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("ClusterIssuer: private key Secret is updated with a valid private key after the request is created should still be signed", func() {
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+
 		var err error
 		By("creating Secret with missing private key")
 		secret, err = f.KubeClientSet.CoreV1().Secrets("cert-manager").Create(context.TODO(), &corev1.Secret{
@@ -302,5 +312,4 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 			return len(request.Status.Certificate) > 0
 		}, "20s", "1s").Should(BeTrue(), "request was not signed in time: %#+v", request)
 	})
-
 })
