@@ -14,5 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -o errexit
+trap 'make kind-logs' EXIT
 make --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)"
-make kind-logs
