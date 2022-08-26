@@ -79,9 +79,9 @@ include make/help.mk
 ## out everything, use `make clean-all` instead.
 ##
 ## @category Development
-clean:
+clean: | $(NEEDS_KIND)
 	@$(eval KIND_CLUSTER_NAME ?= kind)
-	$(BINDIR)/tools/kind delete cluster --name=$(shell cat $(BINDIR)/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
+	$(KIND) delete cluster --name=$(shell cat $(BINDIR)/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
 	rm -rf $(filter-out $(BINDIR)/downloaded,$(wildcard $(BINDIR)/*))
 	rm -rf bazel-bin bazel-cert-manager bazel-out bazel-testlogs
 

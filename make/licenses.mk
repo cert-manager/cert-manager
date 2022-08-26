@@ -22,5 +22,5 @@ $(BINDIR)/scratch/cert-manager.license: $(BINDIR)/scratch/license.yaml $(BINDIR)
 $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footnote.yaml | $(BINDIR)/scratch
 	cp $< $@
 
-LICENSES $(BINDIR)/scratch/LATEST-LICENSES: go.mod go.sum | $(BINDIR)/tools/go-licenses
-	$(BINDIR)/tools/go-licenses csv ./...  > $@
+LICENSES $(BINDIR)/scratch/LATEST-LICENSES: go.mod go.sum | $(NEEDS_GO-LICENSES)
+	$(GO-LICENSES) csv ./...  > $@

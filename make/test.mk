@@ -12,7 +12,7 @@ WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 ##   make test WHAT=./pkg/...
 ##
 ## @category Development
-test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver
+test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
@@ -24,7 +24,7 @@ test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(B
 ## issues with dashboards and UIs.
 ##
 ## @category CI
-test-ci: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver $(DEPENDS_ON_GO)
+test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	@mkdir -p $(ARTIFACTS)
 	$(GOTESTSUM) \
 		--junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
@@ -40,7 +40,7 @@ test-ci: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd 
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: $(BINDIR)/tools/gotestsum
+unit-test: | $(NEEDS_GOTESTSUM)
 	$(GOTESTSUM) ./cmd/... ./pkg/... ./internal/...
 
 .PHONY: setup-integration-tests
@@ -54,7 +54,7 @@ setup-integration-tests: test/integration/versionchecker/testdata/test_manifests
 ## require a full Kubernetes cluster.
 ##
 ## @category Development
-integration-test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver
+integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) ./test/...
 
 .PHONY: e2e
@@ -69,7 +69,7 @@ integration-test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/to
 ## For more information about GINKGO_FOCUS, see "make/e2e.sh --help".
 ##
 ## @category Development
-e2e: $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl $(BINDIR)/tools/ginkgo
+e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
 	make/e2e.sh
 
 .PHONY: e2e-ci
@@ -77,8 +77,8 @@ e2e-ci: e2e-setup-kind e2e-setup
 	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || ($(MAKE) kind-logs && exit 1)
 
 .PHONY: test-upgrade
-test-upgrade: | $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
-	./hack/verify-upgrade.sh $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
 
 test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist

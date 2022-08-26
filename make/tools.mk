@@ -33,6 +33,8 @@ GATEWAY_API_VERSION=v0.5.0
 K8S_CODEGEN_VERSION=v0.24.2
 
 KUBEBUILDER_ASSETS_VERSION=1.24.2
+TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
+TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
 VENDORED_GO_VERSION := 1.18.3
 
@@ -85,7 +87,7 @@ TOOL_NAMES :=
 define tool_defs
 TOOL_NAMES += $1
 $(call UC,$1)_VERSION ?= $2
-|$(call UC,$1) := $$(BINDIR)/tools/$1
+NEEDS_$(call UC,$1) := $$(BINDIR)/tools/$1
 $(call UC,$1) := $$(PWD)/$$(BINDIR)/tools/$1
 
 $$(BINDIR)/tools/$1: $$(BINDIR)/scratch/$(call UC,$1)_VERSION | $$(BINDIR)/downloaded/tools/$1@$$($(call UC,$1)_VERSION)_$$(HOST_OS)_$$(HOST_ARCH) $$(BINDIR)/tools
@@ -100,18 +102,18 @@ TOOLS_PATHS := $(TOOL_NAMES:%=$(BINDIR)/tools/%)
 # Go #
 ######
 
-# DEPENDS_ON_GO is a target that is set as an order-only prerequisite in
+# $(NEEDS_GO) is a target that is set as an order-only prerequisite in
 # any target that calls $(GO), e.g.:
 #
-#     $(BINDIR)/tools/crane: $(DEPENDS_ON_GO)
+#     $(BINDIR)/tools/crane: $(NEEDS_GO)
 #         $(GO) build -o $(BINDIR)/tools/crane
 #
-# DEPENDS_ON_GO is empty most of the time, except when running "make
-# vendor-go" or when "make vendor-go" was previously run, in which case
-# DEPENDS_ON_GO is set to $(BINDIR)/tools/go, since $(BINDIR)/tools/go is a
-# prerequisite of any target depending on Go when "make vendor-go" was run.
-DEPENDS_ON_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(BINDIR)/tools/go ] && echo yes), $(BINDIR)/tools/go,)
-ifeq ($(DEPENDS_ON_GO),)
+# $(NEEDS_GO) is empty most of the time, except when running "make vendor-go"
+# or when "make vendor-go" was previously run, in which case $(NEEDS_GO) is set
+# to $(BINDIR)/tools/go, since $(BINDIR)/tools/go is a prerequisite of
+# any target depending on Go when "make vendor-go" was run.
+NEEDS_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(BINDIR)/tools/go ] && echo yes), $(BINDIR)/tools/go,)
+ifeq ($(NEEDS_GO),)
 GO := go
 else
 export GOROOT := $(PWD)/$(BINDIR)/tools/goroot
@@ -142,7 +144,7 @@ unvendor-go: $(BINDIR)/tools/go
 .PHONY: which-go
 ## Print the version and path of go which will be used for building and
 ## testing in Makefile commands. Vendored go will have a path in ./bin
-which-go: |  $(DEPENDS_ON_GO)
+which-go: |  $(NEEDS_GO)
 	@$(GO) version
 	@echo "go binary used for above version information: $(GO)"
 
@@ -181,7 +183,7 @@ GO_DEPENDENCIES += gotestsum=gotest.tools/gotestsum
 GO_DEPENDENCIES += crane=github.com/google/go-containerregistry/cmd/crane
 
 define go_dependency
-$$(BINDIR)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(DEPENDS_ON_GO) $$(BINDIR)/downloaded/tools
+$$(BINDIR)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(NEEDS_GO) $$(BINDIR)/downloaded/tools
 	GOBIN=$$(PWD)/$$(dir $$@) $$(GO) install $2@$($(call UC,$1)_VERSION)
 	@mv $$(PWD)/$$(dir $$@)/$1 $$@
 endef
@@ -325,7 +327,7 @@ k8s-codegen-tools: $(K8S_CODEGEN_TOOLS_PATHS)
 $(K8S_CODEGEN_TOOLS_PATHS): $(BINDIR)/tools/%-gen: $(BINDIR)/scratch/K8S_CODEGEN_VERSION | $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) $(BINDIR)/tools
 	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$(word 1,$|)) $(notdir $@)
 
-$(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(DEPENDS_ON_GO) | $(BINDIR)/downloaded/tools
+$(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(NEEDS_GO) | $(BINDIR)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install k8s.io/code-generator/cmd/$(notdir $@)
 	@mv $(subst @$(K8S_CODEGEN_VERSION),,$@) $@
 
@@ -338,23 +340,17 @@ KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=6d9f0a6ab0119c5060799b4b8cbd0a030562da70
 KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=3367987e2b40dadb5081a92a59d82664bee923eeeea77017ec88daf735e26cae
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=4b440713e32ca496a0a96c8e6cdc531afe9f9c2cc8d7e8e4eddfb5eb9bdc779f
 
-$(BINDIR)/tools/etcd: $(BINDIR)/scratch/KUBEBUILDER_ASSETS_VERSION | $(BINDIR)/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) $(BINDIR)/tools
-	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$(word 1,$|)) $(notdir $@)
-
-$(BINDIR)/downloaded/tools/etcd-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | $(BINDIR)/downloaded/tools
-	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
+$(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
+	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/etcd > $@ && chmod 775 $@
 
-$(BINDIR)/tools/kube-apiserver: $(BINDIR)/scratch/KUBEBUILDER_ASSETS_VERSION | $(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH) $(BINDIR)/tools
-	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$(word 1,$|)) $(notdir $@)
-
-$(BINDIR)/downloaded/tools/kube-apiserver-kubebuilder-$(KUBEBUILDER_ASSETS_VERSION)-%: $(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-%.tar.gz | $(BINDIR)/downloaded/tools
-	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(subst -,_,$*)_SHA256SUM)
+$(BINDIR)/downloaded/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
+	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
 
-$(BINDIR)/downloaded/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
+$(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz -o $@
 
 ##############
