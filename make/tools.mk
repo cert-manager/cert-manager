@@ -81,11 +81,28 @@ endif
 UC = $(shell echo '$1' | tr a-z A-Z)
 LC = $(shell echo '$1' | tr A-Z a-z)
 
-# initialise list of tool names
 TOOL_NAMES := 
 
+# for each item `xxx` in the TOOLS variable:
+# - a $(XXX_VERSION) variable is generated
+#     -> this variable contains the version of the tool
+# - a $(NEEDS_XXX) variable is generated
+#     -> this variable contains the target name for the tool,
+#        which is the relative path of the binary, this target
+#        should be used when adding the tool as a dependency to
+#        your target, you can't use $(XXX) as a dependency because
+#        make does not support an absolute path as a dependency
+# - a $(XXX) variable is generated
+#     -> this variable contains the absolute path of the binary,
+#        the absolute path should be used when executing the binary
+#        in targets or in scripts, because it is agnostic to the
+#        working directory
+# - an unversioned target $(BINDIR)/tools/xxx is generated that
+#   creates a copy/ link to the corresponding versioned target:
+#   $(BINDIR)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 define tool_defs
 TOOL_NAMES += $1
+
 $(call UC,$1)_VERSION ?= $2
 NEEDS_$(call UC,$1) := $$(BINDIR)/tools/$1
 $(call UC,$1) := $$(PWD)/$$(BINDIR)/tools/$1
