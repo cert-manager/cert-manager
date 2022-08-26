@@ -207,7 +207,7 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(BINDIR)/tools/kubectl apply -n bind -f - >/dev/null
 
 .PHONY: e2e-setup-gatewayapi
-e2e-setup-gatewayapi: $(BINDIR)/downloaded/gatewayapi-v$(GATEWAY_API_VERSION) $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl
+e2e-setup-gatewayapi: $(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION) $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl
 	$(BINDIR)/tools/kubectl kustomize $</*/config/crd/experimental | $(BINDIR)/tools/kubectl apply -f - >/dev/null
 
 
