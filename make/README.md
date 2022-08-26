@@ -41,8 +41,8 @@ to it which starts with `##`.
 ## Bet you didn't expect that, huh?
 ##
 ## @category Development
-kind-version: | $(BINDIR)/tools/kind
-	@$(BINDIR)/tools/kind --version
+kind-version: | $(NEEDS_KIND)
+	@$(KIND) --version
 ```
 
 Categories are loosely defined; check the output of `make help` for examples of the kinds of categories we already have.
@@ -84,9 +84,9 @@ Otherwise, your dependency should be normal.
 For example:
 
 ```make
-$(BINDIR)/awesome-stuff/my-file: README.md | $(BINDIR)/awesome-stuff $(BINDIR)/tools/kind
+$(BINDIR)/awesome-stuff/my-file: README.md | $(BINDIR)/awesome-stuff $(NEEDS_KIND)
 	# write the kind version to $(BINDIR)/awesome-stuff/my-file
-	$(BINDIR)/tools/kind --version > $@
+	$(KIND) --version > $@
 	# append README.md
 	cat README.md >> $@
 ```

@@ -1,5 +1,3 @@
-HELM_CMD=./$(BINDIR)/tools/helm
-
 CRDS_SOURCES=$(wildcard deploy/crds/*.yaml)
 CRDS_TEMPLATED=$(CRDS_SOURCES:deploy/crds/%.yaml=$(BINDIR)/yaml/templated-crds/%.templated.yaml)
 
@@ -74,10 +72,10 @@ $(BINDIR)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(BINDIR)/releas
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager/README.md $(BINDIR)/helm/cert-manager/Chart.yaml $(BINDIR)/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) $(BINDIR)/helm/cert-manager/templates/NOTES.txt $(BINDIR)/helm/cert-manager/templates/_helpers.tpl $(BINDIR)/helm/cert-manager/templates/crds.yaml $(BINDIR)/tools/helm | $(BINDIR)/helm/cert-manager
-	$(HELM_CMD) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./$(BINDIR)/helm/cert-manager
+$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager/README.md $(BINDIR)/helm/cert-manager/Chart.yaml $(BINDIR)/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) $(BINDIR)/helm/cert-manager/templates/NOTES.txt $(BINDIR)/helm/cert-manager/templates/_helpers.tpl $(BINDIR)/helm/cert-manager/templates/crds.yaml | $(NEEDS_HELM) $(BINDIR)/helm/cert-manager
+	$(HELM) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./$(BINDIR)/helm/cert-manager
 
-$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(BINDIR)/helm/cert-manager $(BINDIR)/tools/cmrel
+$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(NEEDS_CMREL) $(BINDIR)/helm/cert-manager
 ifeq ($(strip $(CMREL_KEY)),)
 	$(error Trying to sign helm chart but CMREL_KEY is empty)
 endif
@@ -103,12 +101,12 @@ $(BINDIR)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml 
 $(BINDIR)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | $(BINDIR)/helm/cert-manager
 	sed -e "s:{{RELEASE_VERSION}}:$(RELEASE_VERSION):g" < $< > $@
 
-$(BINDIR)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml deploy/charts/cert-manager/signkey_annotation.txt $(BINDIR)/tools/yq | $(BINDIR)/helm/cert-manager
+$(BINDIR)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml deploy/charts/cert-manager/signkey_annotation.txt | $(NEEDS_YQ) $(BINDIR)/helm/cert-manager
 	@# this horrible mess is taken from the YQ manual's example of multiline string blocks from a file:
 	@# https://mikefarah.gitbook.io/yq/operators/string-operators#string-blocks-bash-and-newlines
 	@# we set a bash variable called SIGNKEY_ANNOTATION using read, and then use that bash variable in yq
 	IFS= read -rd '' SIGNKEY_ANNOTATION < <(cat deploy/charts/cert-manager/signkey_annotation.txt) ; \
-		SIGNKEY_ANNOTATION=$$SIGNKEY_ANNOTATION $(BINDIR)/tools/yq eval \
+		SIGNKEY_ANNOTATION=$$SIGNKEY_ANNOTATION $(YQ) eval \
 		'.annotations."artifacthub.io/signKey" = strenv(SIGNKEY_ANNOTATION) | .annotations."artifacthub.io/prerelease" = "$(IS_PRERELEASE)" | .version = "$(RELEASE_VERSION)" | .appVersion = "$(RELEASE_VERSION)"' \
 		$< > $@
 
@@ -121,17 +119,17 @@ $(BINDIR)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.templat
 # with templating completed, and then concatenate with the cert-manager namespace and the CRDs.
 
 # Renders all resources except the namespace and the CRDs
-$(BINDIR)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/tools/helm | $(BINDIR)/scratch/yaml
+$(BINDIR)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(NEEDS_HELM) $(BINDIR)/scratch/yaml
 	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+	$(HELM) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
-$(BINDIR)/scratch/yaml/cert-manager.all.unlicensed.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/tools/helm | $(BINDIR)/scratch/yaml
+$(BINDIR)/scratch/yaml/cert-manager.all.unlicensed.yaml: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(NEEDS_HELM) $(BINDIR)/scratch/yaml
 	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM_CMD) template --api-versions="" --namespace=cert-manager --set="installCRDs=true" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+	$(HELM) template --api-versions="" --namespace=cert-manager --set="installCRDs=true" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
-$(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml: $(BINDIR)/scratch/yaml/cert-manager.all.unlicensed.yaml $(DEPENDS_ON_GO) | $(BINDIR)/scratch/yaml
+$(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml: $(BINDIR)/scratch/yaml/cert-manager.all.unlicensed.yaml | $(NEEDS_GO) $(BINDIR)/scratch/yaml
 	$(GO) run hack/extractcrd/main.go $< > $@
 
 $(BINDIR)/yaml/cert-manager.yaml: $(BINDIR)/scratch/license.yaml deploy/manifests/namespace.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml $(BINDIR)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml | $(BINDIR)/yaml
@@ -141,7 +139,7 @@ $(BINDIR)/yaml/cert-manager.yaml: $(BINDIR)/scratch/license.yaml deploy/manifest
 $(BINDIR)/yaml/cert-manager.crds.yaml: $(BINDIR)/scratch/license.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml | $(BINDIR)/yaml
 	cat $^ > $@
 
-$(CRDS_TEMPLATED): $(BINDIR)/yaml/templated-crds/crd-%.templated.yaml: $(BINDIR)/scratch/license.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml $(DEPENDS_ON_GO) | $(BINDIR)/yaml/templated-crds
+$(CRDS_TEMPLATED): $(BINDIR)/yaml/templated-crds/crd-%.templated.yaml: $(BINDIR)/scratch/license.yaml $(BINDIR)/scratch/yaml/cert-manager.crds.unlicensed.yaml | $(NEEDS_GO) $(BINDIR)/yaml/templated-crds
 	cat $< > $@
 	$(GO) run hack/extractcrd/main.go $(word 2,$^) $* >> $@
 
