@@ -269,15 +269,13 @@ $(BINDIR)/downloaded/tools/cosign@$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/to
 ##########
 
 RCLONE_linux_amd64_SHA256SUM=135a4a0965cb58eafb07941f2013a82282c44c28fea9595587778e969d9ed035
-RCLONE_osx_amd64_SHA256SUM=03b104accc26d5aec14088c253ea5a6bba3263ae00fc403737cabceecad9eae9
-RCLONE_osx_arm64_SHA256SUM=eb547bd0ef2037118a01003bed6cf00a1d6e6975b6f0a73cb811f882a3c3de72
+RCLONE_darwin_amd64_SHA256SUM=03b104accc26d5aec14088c253ea5a6bba3263ae00fc403737cabceecad9eae9
+RCLONE_darwin_arm64_SHA256SUM=eb547bd0ef2037118a01003bed6cf00a1d6e6975b6f0a73cb811f882a3c3de72
 
-$(BINDIR)/tools/rclone: $(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-$(RCLONE_OS)-$(HOST_ARCH) $(BINDIR)/scratch/RCLONE_VERSION | $(BINDIR)/tools
-	@cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) $(notdir $@)
-
-$(BINDIR)/downloaded/tools/rclone-v$(RCLONE_VERSION)-%: | $(BINDIR)/downloaded/tools
-	$(CURL) https://github.com/rclone/rclone/releases/download/v$(RCLONE_VERSION)/rclone-v$(RCLONE_VERSION)-$*.zip -o $@.zip
-	./hack/util/checkhash.sh $@.zip $(RCLONE_$(subst -,_,$*)_SHA256SUM)
+$(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/tools
+	$(eval OS_AND_ARCH := $(subst darwin,osx,$*))
+	$(CURL) https://github.com/rclone/rclone/releases/download/$(RCLONE_VERSION)/rclone-$(RCLONE_VERSION)-$(subst _,-,$(OS_AND_ARCH)).zip -o $@.zip
+	./hack/util/checkhash.sh $@.zip $(RCLONE_$*_SHA256SUM)
 	@# -p writes to stdout, the second file arg specifies the sole file we
 	@# want to extract
 	unzip -p $@.zip rclone-$(RCLONE_VERSION)-$(subst _,-,$(OS_AND_ARCH))/rclone > $@
