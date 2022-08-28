@@ -173,6 +173,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 
 				_, err = crClient.Create(context.TODO(), gen.CertificateRequestFrom(basicCR,
 					gen.SetCertificateRequestCSR(csr),
+					gen.SetCertificateRequestDuration(v.inputDuration),
 				), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
