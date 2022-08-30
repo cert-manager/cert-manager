@@ -119,6 +119,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	for _, f := range c.runDurationFuncs {
+		f := f // capture range variable
 		go wait.Until(func() { f.fn(ctx) }, f.duration, stopCh)
 	}
 
