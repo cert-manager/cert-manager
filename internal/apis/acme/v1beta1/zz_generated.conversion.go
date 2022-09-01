@@ -669,7 +669,7 @@ func Convert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01
 func autoConvert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
-	out.ParentRefs = *(*[]v1alpha2.ParentRef)(unsafe.Pointer(&in.ParentRefs))
+	out.ParentRefs = *(*[]v1alpha2.ParentReference)(unsafe.Pointer(&in.ParentRefs))
 	return nil
 }
 
@@ -681,7 +681,7 @@ func Convert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChall
 func autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
-	out.ParentRefs = *(*[]v1alpha2.ParentRef)(unsafe.Pointer(&in.ParentRefs))
+	out.ParentRefs = *(*[]v1alpha2.ParentReference)(unsafe.Pointer(&in.ParentRefs))
 	return nil
 }
 
@@ -1204,6 +1204,15 @@ func Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01Provi
 
 func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
+	if in.SecretAccessKeyID != nil {
+		in, out := &in.SecretAccessKeyID, &out.SecretAccessKeyID
+		*out = new(meta.SecretKeySelector)
+		if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SecretAccessKeyID = nil
+	}
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
 	}
@@ -1220,6 +1229,15 @@ func Convert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01Provi
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
+	if in.SecretAccessKeyID != nil {
+		in, out := &in.SecretAccessKeyID, &out.SecretAccessKeyID
+		*out = new(apismetav1.SecretKeySelector)
+		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SecretAccessKeyID = nil
+	}
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
 	}

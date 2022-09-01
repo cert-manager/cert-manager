@@ -29,7 +29,7 @@ const (
 // Owner (responsible for graduating feature through to GA): @username
 // Alpha: vX.Y
 // Beta: ...
-//FeatureName featuregate.Feature = "FeatureName"
+// FeatureName featuregate.Feature = "FeatureName"
 )
 
 func init() {
@@ -39,6 +39,8 @@ func init() {
 // cainjectorFeatureGates defines all feature gates for the cainjector component.
 // To add a new feature, define a key for it above and add it here.
 // To check whether a feature is enabled, use:
-//   utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
+//
+//	utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
+//
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{}

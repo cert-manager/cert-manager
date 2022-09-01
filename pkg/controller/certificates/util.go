@@ -60,7 +60,7 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]
 func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
 	rsaPk, ok := pk.(*rsa.PrivateKey)
 	if !ok {
-		return []string{"spec.keyAlgorithm"}, nil
+		return []string{"spec.privateKey.algorithm"}, nil
 	}
 	var violations []string
 	// TODO: we should not use implicit defaulting here, and instead rely on
@@ -73,7 +73,7 @@ func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) 
 		keySize = spec.PrivateKey.Size
 	}
 	if rsaPk.N.BitLen() != keySize {
-		violations = append(violations, "spec.keySize")
+		violations = append(violations, "spec.privateKey.size")
 	}
 	return violations, nil
 }
@@ -81,7 +81,7 @@ func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) 
 func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
 	ecdsaPk, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
-		return []string{"spec.keyAlgorithm"}, nil
+		return []string{"spec.privateKey.algorithm"}, nil
 	}
 	var violations []string
 	// TODO: we should not use implicit defaulting here, and instead rely on
@@ -94,7 +94,7 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 		expectedKeySize = spec.PrivateKey.Size
 	}
 	if expectedKeySize != ecdsaPk.Curve.Params().BitSize {
-		violations = append(violations, "spec.keySize")
+		violations = append(violations, "spec.privateKey.size")
 	}
 	return violations, nil
 }
@@ -102,7 +102,7 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
 	_, ok := pk.(ed25519.PrivateKey)
 	if !ok {
-		return []string{"spec.keyAlgorithm"}, nil
+		return []string{"spec.privateKey.algorithm"}, nil
 	}
 
 	return nil, nil
@@ -300,7 +300,7 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	return b, nil
 }
 
-//RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
+// RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
 type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration) *metav1.Time
 
 // RenewalTime calculates renewal time for a certificate. Default renewal time

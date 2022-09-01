@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//Package policies provides functionality to evaluate Certificate's state
+// Package policies provides functionality to evaluate Certificate's state
 package policies
 
 import (

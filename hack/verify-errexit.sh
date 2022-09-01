@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # +skip_license_check
 
@@ -22,6 +22,8 @@
 # Usage: verify-errexit.sh [ dir | file ... ]
 # default args is the root of our source tree
 
+# Should usually be called via make: `make verify-errexit`
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -31,7 +33,7 @@ echo "+++ validating all scripts set '-o errexit'" >&2
 if [ "$*" != "" ]; then
   args="$*"
 else
-  args=$(ls "$(pwd)" | grep -v 'bazel-' | grep -v 'external/' | grep -v 'bin' )
+  args=$(ls "$(pwd)" | grep -v 'bazel-' | grep -v 'external/' | grep -v 'bin' | grep -v '_bin' )
 fi
 
 # Gather the list of files that appear to be shell scripts.

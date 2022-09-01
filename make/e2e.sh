@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ source "$here/config/lib.sh"
 cd "$here/.." || exit 1
 set -e
 
-ARTIFACTS=${ARTIFACTS:-$(pwd)/bin/artifacts}
+_default_bindir=$(make print-bindir)
+
+BINDIR=${BINDIR:-$_default_bindir}
 
 # Why do we only run 20 tests concurrently? Because we have noticed that
 # many tests start timing out when the Prow pod gets overloaded. We are
@@ -33,7 +35,7 @@ ARTIFACTS=${ARTIFACTS:-$(pwd)/bin/artifacts}
 # becomes sluggish due to slow calls to the apiserver.
 #
 # In the following table, the first column shows the various -nodes values
-# tested when running ginkgo. The "circleci.dec.yaml duration" is the time spent while
+# tested when running ginkgo. The "test duration" is the time spent while
 # running "ginkgo", and the column"timeouts" column shows the number of
 # tests that failed with a time out (including the tests that are retried;
 # tests that show in the "Flaky" column in the Prow UI are thus counted
@@ -72,6 +74,7 @@ flake_attempts=1
 ginkgo_skip=
 ginkgo_focus=
 feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true
+artifacts="./$BINDIR/artifacts"
 help() {
   cat <<EOF | color ""
 Runs the end-to-end test suite against an already configured kind cluster.
@@ -103,7 +106,7 @@ Environment variables:
       to $feature_gates
   ${green}ARTIFACTS${end}
       The path to a directory where the JUnit XML files will be stored. By
-      default, the JUnit XML files are saved to ./bin/artifacts
+      default, the JUnit XML files are saved to $artifacts
 
 Details:
   Imagine you got the following failure:
@@ -146,7 +149,7 @@ if [ $# -gt 0 ]; then
   esac
 fi
 
-for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP; do
+for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP ARTIFACTS; do
   if printenv "$v" >/dev/null && [ -n "${!v}" ]; then
     eval "$(tr '[:upper:]' '[:lower:]' <<<"$v")=\"${!v}\""
   fi
@@ -176,29 +179,35 @@ if [[ -n "$ginkgo_skip" ]]; then ginkgo_args+=(--ginkgo.skip="${ginkgo_skip}"); 
 # Ginkgo doesn't stream the logs when running in parallel (--nodes). Let's
 # disable parallelism to force Ginkgo to stream the logs when
 # --ginkgo.focus or GINKGO_FOCUS is set, since --ginkgo.focus and
-# GINKGO_FOCUS are often used to debug a specific circleci.dec.yaml.
+# GINKGO_FOCUS are often used to debug a specific test.
 if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   nodes=1
   ginkgo_args+=(--ginkgo.v --test.v)
 fi
 
-mkdir -p "${ARTIFACTS}"
-
-service_ip_prefix=$(kubectl cluster-info dump | grep ip-range | head -n1 | cut -d= -f2 | cut -d. -f1,2,3)
+mkdir -p "$artifacts"
 
 export CGO_ENABLED=0
 
 trace ginkgo \
-  -nodes "$nodes" \
-  -flakeAttempts "$flake_attempts" \
-  -tags e2e_test \
+  -tags=e2e_test \
+  -procs="$nodes" \
+  -output-dir="$artifacts" \
+  -junit-report="junit__01.xml" \
+  -flake-attempts="$flake_attempts" \
+  -timeout="24h" \
+  -v \
+  -randomize-all \
+  -progress \
+  -trace \
+  -slow-spec-threshold="${GINKGO_SLOW_SPEC_THRESHOLD:-300s}" \
   ./test/e2e/ \
   -- \
   --repo-root="$PWD" \
-  --report-dir="${ARTIFACTS}" \
-  --acme-dns-server="${service_ip_prefix}.16" \
-  --acme-ingress-ip="${service_ip_prefix}.15" \
-  --acme-gateway-ip="${service_ip_prefix}.14" \
+  --report-dir="$artifacts" \
+  --acme-dns-server="${SERVICE_IP_PREFIX}.16" \
+  --acme-ingress-ip="${SERVICE_IP_PREFIX}.15" \
+  --acme-gateway-ip="${SERVICE_IP_PREFIX}.14" \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
   --feature-gates="$feature_gates" \

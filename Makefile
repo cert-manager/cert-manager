@@ -1,4 +1,4 @@
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,27 +14,49 @@
 
 # For details on some of these "prelude" settings, see:
 # https://clarkgrubb.com/makefile-style-guide
+
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
-SHELL := /bin/bash
+SHELL := /usr/bin/env bash
 .SHELLFLAGS := -uo pipefail -c
 .DEFAULT_GOAL := help
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-SOURCES := $(shell find . -type f -name "*.go" -not -path "./bin/*" -not -path "./make/*")
+BINDIR := _bin
+
+include make/util.mk
+
+# SOURCES contains all go files except those in $(BINDIR), the old bindir `bin`, or in
+# the make dir.
+# NB: we skip `bin/` since users might have a `bin` directory left over in repos they were
+# using before the bin dir was renamed
+SOURCES := $(call get-sources,cat -) go.mod go.sum
 
 ## GOBUILDPROCS is passed to GOMAXPROCS when running go build; if you're running
 ## make in parallel using "-jN" then you'll probably want to reduce the value
 ## of GOBUILDPROCS or else you could end up running N parallel invocations of
 ## go build, each of which will spin up as many threads as are available on your
 ## system.
+## @category Build
 GOBUILDPROCS ?=
 
 include make/git.mk
 
-GOFLAGS := -trimpath -ldflags '-w -s \
+## By default, we don't link Go binaries to the libc. In some case, you might
+## want to build libc-linked binaries, in which case you can set this to "1".
+## @category Build
+CGO_ENABLED ?= 0
+
+## Extra flags passed to 'go' when building. For example, use GOFLAGS=-v to turn on the
+## verbose output.
+## @category Build
+GOFLAGS := -trimpath
+
+## Extra linking flags passed to 'go' via '-ldflags' when building.
+## @category Build
+GOLDFLAGS := -w -s \
 	-X github.com/cert-manager/cert-manager/pkg/util.AppVersion=$(RELEASE_VERSION) \
-    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)'
+    -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)
 
 include make/tools.mk
 include make/ci.mk
@@ -47,6 +69,8 @@ include make/release.mk
 include make/manifests.mk
 include make/licenses.mk
 include make/e2e-setup.mk
+include make/scan.mk
+include make/legacy.mk
 include make/help.mk
 
 .PHONY: clean
@@ -55,12 +79,16 @@ include make/help.mk
 ## out everything, use `make clean-all` instead.
 ##
 ## @category Development
-clean:
+clean: | $(NEEDS_KIND)
 	@$(eval KIND_CLUSTER_NAME ?= kind)
-	bin/tools/kind delete cluster --name=$(shell cat bin/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
-	rm -rf $(filter-out bin/downloaded,$(wildcard bin/*))
+	$(KIND) delete cluster --name=$(shell cat $(BINDIR)/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
+	rm -rf $(filter-out $(BINDIR)/downloaded,$(wildcard $(BINDIR)/*))
 	rm -rf bazel-bin bazel-cert-manager bazel-out bazel-testlogs
 
 .PHONY: clean-all
 clean-all: clean
-	rm -rf bin/
+	rm -rf $(BINDIR)/
+
+# FORCE is a helper target to force a file to be rebuilt whenever its
+# target is invoked.
+FORCE:

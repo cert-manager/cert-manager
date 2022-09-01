@@ -18,7 +18,7 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-# This script will run the end-to-end circleci.dec.yaml suite against an already configured
+# This script will run the end-to-end test suite against an already configured
 # kind cluster.
 # If a cluster does not already exist, create one with 'cluster/create-kind.sh'.
 
@@ -30,7 +30,7 @@ GINKGO_SKIP=${GINKGO_SKIP:-}
 GINKGO_FOCUS=${GINKGO_FOCUS:-}
 
 # GINKGO_FOCUS can be set to a regex matching ginkgo specs to run.
-# Example- 'export GINKGO_FOCUS='Gateway' (runs only circleci.dec.yaml cases with 'Gateway' in name).
+# Example- 'export GINKGO_FOCUS='Gateway' (runs only test cases with 'Gateway' in name).
 if [[ -n "$GINKGO_FOCUS" ]]; then GINKGO_FOCUS="--ginkgo.focus=${GINKGO_FOCUS}"; fi
 
 # GINKGO_SKIP can be set to a regex matching ginkgo specs to skip. Example-
@@ -49,7 +49,7 @@ check_bazel
 # Create output directory for JUnit output
 mkdir -p "${REPO_ROOT}/_artifacts"
 
-# Build the e2e circleci.dec.yaml binary
+# Build the e2e test binary
 bazel build //test/e2e:e2e.test
 
 # Run e2e tests

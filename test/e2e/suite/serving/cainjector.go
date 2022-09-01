@@ -18,11 +18,11 @@ package certificate
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -38,7 +39,6 @@ import (
 	"github.com/cert-manager/cert-manager/test/e2e/framework"
 	"github.com/cert-manager/cert-manager/test/e2e/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type injectableTest struct {
@@ -326,7 +326,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 			someURL := "https://localhost:8675"
 			return &admissionreg.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: namePrefix + "-hook",
+					GenerateName: fmt.Sprintf("%s-hook", namePrefix),
 					Annotations: map[string]string{
 						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
@@ -369,7 +369,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 			someURL := "https://localhost:8675"
 			return &admissionreg.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: namePrefix + "-hook",
+					GenerateName: fmt.Sprintf("%s-hook", namePrefix),
 					Annotations: map[string]string{
 						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},

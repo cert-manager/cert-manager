@@ -1,94 +1,114 @@
-# Development tooling
+# cert-manager Make Tooling
 
 This directory contains tools and scripts used to create development and
-testing environments for cert-manager.
+testing environments for cert-manager, centered around the use of [GNU Make](https://www.gnu.org/software/make/).
 
-## Tool dependencies
-
-The scripts in this directory commonly require additional tooling, such as
-access to `kubectl`, `helm`, `kind` and a bunch of other things.
-
-If you already have these tools available on your host system, the scripts
-should just work, so long as the versions you have installed are roughly
-compatible.
-
-If you are running into issues with your host-installed tools, you can
-have them downloaded in `bin/tools` with the command:
-
-```sh
-# With "-j8", the tools are downloaded in parallel.
-make -j8 tools
-```
-
-To setup your shell to use the tools, run the following from the root of
-the repository:
-
-```sh
-export PATH="$PWD/bin/tools:$PATH"
-```
-
-> **Tip:** this change of PATH won't persist between shell sessions. To get
-> this command executed automatically when you enter the cert-manager
-> folder, put this command in an `.envrc` file in the cert-manager folder
-> and install [`direnv`](https://direnv.net/docs/installation.html).
-
-## Common usages
-
-This section describes common usage patterns for development and testing.
-
-### Installing a development build of cert-manager
-
-Once you have a kind cluster running, you can install a development version of
-cert-manager by running:
-
-```sh
-make -j8 e2e-setup-certmanager
-```
-
-This will create a kind cluster, build, load and install cert-manager from
-source into your kind development cluster.
-
-Further invocations of this command will rebuild and upgrade the installed
-version of cert-manager, making it possible to iteratively work on the
-codebase and test changes.
-
-### Running end-to-end tests
-
-Before running the end-to-end tests, you must install some additional
-components used during the tests into your kind cluster.
-
-Run the following to setup cert-manager, Pebble, ingress-nginx, the sample
-DNS01 webhook and all the other components required for the end-to-end
-tests:
-
-```sh
-make -j8 e2e-setup
-```
-
-You only need to run this command once for the lifetime of your test cluster.
-
-Finally, run the end-to-test tests using:
+Most tasks that a developer might encounter day-to-day are documented in `make help`;
+you can view that documentation by changing to the root of a cert-manager checkout and simply running:
 
 ```console
-make e2e
+make help
 ```
 
-You can run this command multiple times against the same cluster without
-adverse effects.
+If you think that the documentation in `make help` is insufficient or that an important
+make target isn't documented, we'd consider that a bug. Please feel free to raise an issue!
 
-A common use-case is to run a single test case from the end-to-end tests.
-This is explained in the `--help`:
+Most of the rest of the documentation for the cert-manager build system is on the [cert-manager website](https://cert-manager.io/docs/):
 
-```sh
-./make/e2e.sh --help
+- [Building cert-manager](https://cert-manager.io/docs/contributing/building/) -
+  A guide to different commands which are useful for building cert-manager components locally.
+- [CRDs](https://cert-manager.io/docs/contributing/crds/) -
+  Information on updating, verifying and generating code centered around the cert-manager [CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).
+- [Developing with Kind](https://cert-manager.io/docs/contributing/kind/) -
+  Setting up a local development cluster using [Kind](https://kind.sigs.k8s.io)
+- [Running End-to-End Tests](https://cert-manager.io/docs/contributing/e2e/) -
+  Details on cert-manager's end-to-end test suite and how it can be run
+
+## Changing the Makefiles
+
+When adding or changing a make target, you might want to consider a few questions which could have a significant
+effect on the performance of your changes.
+
+### Should it be documented?
+
+If you want your target to appear when a user runs `make help`, you can add a documentation comment
+to it which starts with `##`.
+
+```make
+.PHONY: kind-version
+## kind-version prints the version of kind.
+##
+## Bet you didn't expect that, huh?
+##
+## @category Development
+kind-version: | $(NEEDS_KIND)
+	@$(KIND) --version
 ```
 
-### Deleting the test cluster
+Categories are loosely defined; check the output of `make help` for examples of the kinds of categories we already have.
 
-Once you have finished with your testing environment, or if you have
-encountered a strange state you cannot recover from, you can tear down the
-testing environment by using `kind` directly:
+Regular comments above a target should start with a single `#`.
 
-```sh
-kind delete cluster [--name=$KIND_CLUSTER_NAME]
+### Should it be `.PHONY`?
+
+> A phony target is one that is not really the name of a file; rather it is just a name for a recipe to be executed when you make an explicit request.
+
+The [GNU Make documentation](https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html) gives the above definition for `.PHONY` targets, and is
+worth reading if you're adding a new target since getting this wrong can lead to either spurious rebuilds or unexpected failures to execute your target.
+
+Put short: If a target doesn't create a file with the same name as the target, it should be `.PHONY`.
+
+Mark the target as `.PHONY` by adding the declaration directly above the target, with any documentation comments in between. For example:
+
+```make
+.PHONY: my-target
+## Does something awesome!
+##
+## @category Awesomeness
+my-target:
+	@echo Something awesome!
 ```
+
+### Target Dependencies / Prerequisites
+
+Make has [two types of dependency](https://www.gnu.org/software/make/manual/html_node/Prerequisite-Types.html): "normal" and "order-only".
+
+When creating or changing a target, you should choose the type based on what your dependency is.
+
+⚠️ If your dependency is a `.PHONY` target, you should think very hard about whether to include it. A `.PHONY` dependency will force your target to be rebuilt every single time. That's rarely what you want.
+
+If your dependency is a directory or a tool, it should likely be order-only since you don't want to rebuild your target when those dependencies change.
+
+Otherwise, your dependency should be normal.
+
+For example:
+
+```make
+$(BINDIR)/awesome-stuff/my-file: README.md | $(BINDIR)/awesome-stuff $(NEEDS_KIND)
+	# write the kind version to $(BINDIR)/awesome-stuff/my-file
+	$(KIND) --version > $@
+	# append README.md
+	cat README.md >> $@
+```
+
+This target will be rebuilt if `README.md` changes, but not if the installed version of kind changes or the `$(BINDIR)/awesome-stuff` folder changes.
+
+The dependencies you'll need will inevitably depend on the target you're writing. If in doubt, feel free to ask!
+
+## Tool Dependencies
+
+The scripts used by make commonly require additional tooling, such as
+access to `kubectl`, `helm`, `kind` and a bunch of other things.
+
+The build system is capable of downloading and provisioning most of these tools
+without any user interaction. For example, if an end-to-end test requires `kind`,
+then `kind` will be downloaded and that version will be used regardless of whether
+you have `kind` installed on your system.
+
+Usually, that's what you want; it ensures that you're using the exact same tools - at the
+same versions - as other developers.
+
+Some tools must be installed locally, however. The build system will alert you if a required
+tool cannot be found, and these tools are documented [on the website](https://cert-manager.io/docs/contributing/building/#prerequisites).
+
+Specifically, note that you can choose to use your system version of Go or to [download a vendored copy](https://cert-manager.io/docs/contributing/building/#go-versions).

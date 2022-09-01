@@ -1,0 +1,33 @@
+# This kind config is unversioned as we are using it to create kind clusters with a range of different versions of Kubernetes. Having the config unversioned allows kind to choose a suitable API version, see https://github.com/kubernetes-sigs/kind/issues/1839#issuecomment-1148968204
+# When making changes to this file ensure that the change works with all currently supported versions of Kubernetes.
+#
+# When making any changes to this file, make sure it works with all supported versions of Kubernetes.
+# The --unsafe-no-fsync decreases the load on the pod's filesystem [1], which in
+# turn decreases the end-to-end tests duration. It is OK for us to use this flag
+# because we are using a one-node etcd cluster. The fsync feature is used for
+# the raft consensus protocol and is thus only useful when using 3 or more etcd
+# nodes.
+#
+#  [1]: https://github.com/etcd-io/etcd/pull/11946 [2]:
+#  https://etcd.io/docs/v3.5/tuning/#disk [3]: https://etcd.io/docs/v3.5/faq/
+#
+# Custom service subnet allows us to have a fixed/predictable clusterIP for
+# various addon Services such as ingress-nginx, Gateway etc.
+# TODO: parameterize the service subnet range instead of hardcoding it so that it is defined in one place only
+# It could be interpolated with ytt like for addons i.e https://github.com/cert-manager/cert-manager/blob/134398e939bb2b1401697eaf589405ad469cd609/make/e2e-setup.mk#L379
+
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    metadata:
+      name: config
+    etcd:
+      local:
+        extraArgs:
+          unsafe-no-fsync: "true"
+    networking:
+      serviceSubnet: 10.0.0.0/16
+nodes:
+  - role: control-plane

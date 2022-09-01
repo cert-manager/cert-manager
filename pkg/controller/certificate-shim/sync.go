@@ -27,7 +27,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -39,7 +38,6 @@ import (
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	ingress "github.com/cert-manager/cert-manager/internal/ingress"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -58,7 +56,6 @@ const (
 )
 
 var ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
-var ingressV1Beta1GVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 var gatewayGVK = gwapi.SchemeGroupVersion.WithKind("Gateway")
 
 // SyncFn is the reconciliation function passed to a certificate-shim's
@@ -260,11 +257,6 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.Erro
 	} else {
 		// check that each CertificateRef is valid
 		for i, secretRef := range l.TLS.CertificateRefs {
-			if secretRef == nil {
-				errs = append(errs, field.Required(path.Child("tls").Child("certificateRef").Index(i), "listener is missing a certificateRef"))
-				continue
-			}
-
 			if *secretRef.Group != "core" && *secretRef.Group != "" {
 				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Index(i).Child("group"),
 					*secretRef.Group, []string{"core", ""}))
@@ -351,11 +343,7 @@ func buildCertificates(
 		var controllerGVK schema.GroupVersionKind
 		switch ingLike.(type) {
 		case *networkingv1.Ingress:
-			if _, found := ingLike.GetAnnotations()[ingress.ConvertedGVKAnnotation]; found {
-				controllerGVK = ingressV1Beta1GVK
-			} else {
-				controllerGVK = ingressV1GVK
-			}
+			controllerGVK = ingressV1GVK
 		case *gwapi.Gateway:
 			controllerGVK = gatewayGVK
 		}
@@ -455,9 +443,6 @@ func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 				continue
 			}
 			for _, certRef := range l.TLS.CertificateRefs {
-				if certRef == nil {
-					continue
-				}
 				if secretName == string(certRef.Name) {
 					return true
 				}
@@ -508,33 +493,94 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		return true
 	}
 
+	if a.Spec.RevisionHistoryLimit != b.Spec.RevisionHistoryLimit {
+		return true
+	}
+
+	var aAlgorithm, bAlgorithm cmapi.PrivateKeyAlgorithm
+	if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Algorithm != "" {
+		aAlgorithm = a.Spec.PrivateKey.Algorithm
+	}
+
+	if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.Algorithm != "" {
+		bAlgorithm = b.Spec.PrivateKey.Algorithm
+	}
+
+	if aAlgorithm != bAlgorithm {
+		return true
+	}
+
+	var aEncoding, bEncoding cmapi.PrivateKeyEncoding
+	if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Encoding != "" {
+		aEncoding = a.Spec.PrivateKey.Encoding
+	}
+
+	if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.Encoding != "" {
+		bEncoding = b.Spec.PrivateKey.Encoding
+	}
+
+	if aEncoding != bEncoding {
+		return true
+	}
+
+	var aRotationPolicy, bRotationPolicy cmapi.PrivateKeyRotationPolicy
+	if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.RotationPolicy != "" {
+		aRotationPolicy = a.Spec.PrivateKey.RotationPolicy
+	}
+
+	if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.RotationPolicy != "" {
+		bRotationPolicy = b.Spec.PrivateKey.RotationPolicy
+	}
+
+	if aRotationPolicy != bRotationPolicy {
+		return true
+	}
+
+	// for Ed25519 private key size is ignored
+	if aAlgorithm != cmapi.Ed25519KeyAlgorithm {
+		var aSize, bSize int
+		if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Size != 0 {
+			aSize = a.Spec.PrivateKey.Size
+		}
+
+		if b.Spec.PrivateKey != nil && b.Spec.PrivateKey.Size != 0 {
+			bSize = b.Spec.PrivateKey.Size
+		}
+
+		if aSize != bSize {
+			return true
+		}
+	}
+
 	return false
 }
 
 // setIssuerSpecificConfig configures given Certificate's annotation by reading
 // two Ingress-specific annotations.
 //
-// (1) The edit-in-place Ingress annotation allows the use of Ingress
-//     controllers that map a single IP address to a single Ingress
-//     resource, such as the GCE ingress controller. The the following
-//     annotation on an Ingress named "my-ingress":
+// (1)
+// The edit-in-place Ingress annotation allows the use of Ingress
+// controllers that map a single IP address to a single Ingress
+// resource, such as the GCE ingress controller. The the following
+// annotation on an Ingress named "my-ingress":
 //
-//       acme.cert-manager.io/http01-edit-in-place: "true"
+//	acme.cert-manager.io/http01-edit-in-place: "true"
 //
-//     configures the Certificate with two annotations:
+// configures the Certificate with two annotations:
 //
-//       acme.cert-manager.io/http01-override-ingress-name: my-ingress
-//       cert-manager.io/issue-temporary-certificate: "true"
+//	acme.cert-manager.io/http01-override-ingress-name: my-ingress
+//	cert-manager.io/issue-temporary-certificate: "true"
 //
-// (2) The ingress-class Ingress annotation allows users to override the
-//     Issuer's acme.solvers[0].http01.ingress.class. For example, on the
-//     Ingress:
+// (2)
+// The ingress-class Ingress annotation allows users to override the
+// Issuer's acme.solvers[0].http01.ingress.class. For example, on the
+// Ingress:
 //
-//       acme.cert-manager.io/http01-ingress-class: traefik
+//	acme.cert-manager.io/http01-ingress-class: traefik
 //
-//     configures the Certificate using the override-ingress-class annotation:
+// configures the Certificate using the override-ingress-class annotation:
 //
-//       acme.cert-manager.io/http01-override-ingress-class: traefik
+//	acme.cert-manager.io/http01-override-ingress-class: traefik
 func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 	ingAnnotations := ingLike.GetAnnotations()
 	if ingAnnotations == nil {
@@ -568,15 +614,14 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 // hasShimAnnotation returns true if the given ingress-like resource contains
 // one of the trigger annotations:
 //
-//   cert-manager.io/issuer
-//   cert-manager.io/cluster-issuer
+//	cert-manager.io/issuer
+//	cert-manager.io/cluster-issuer
 //
 // The autoCertificateAnnotations can also be used to customize additional
 // annotations to trigger a Certificate shim. For example, for Ingress
 // resources, we default autoCertificateAnnotations to:
 //
-//   kubernetes.io/tls-acme: "true"
-//
+//	kubernetes.io/tls-acme: "true"
 func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []string) bool {
 	annotations := ingLike.GetAnnotations()
 	if annotations == nil {
@@ -603,10 +648,10 @@ func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []strin
 // the default issuer given to the controller is used. We look up the following
 // Ingress annotations:
 //
-//   cert-manager.io/cluster-issuer
-//   cert-manager.io/issuer
-//   cert-manager.io/issuer-kind
-//   cert-manager.io/issuer-group
+//	cert-manager.io/cluster-issuer
+//	cert-manager.io/issuer
+//	cert-manager.io/issuer-kind
+//	cert-manager.io/issuer-group
 func issuerForIngressLike(defaults controller.IngressShimOptions, ingLike metav1.Object) (name, kind, group string, err error) {
 	var errs []string
 

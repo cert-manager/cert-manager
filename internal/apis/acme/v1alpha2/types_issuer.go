@@ -261,7 +261,7 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// cert-manager needs to know which parentRefs should be used when creating
 	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
 	// https://gateway-api.sigs.k8s.io/v1alpha2/api-types/httproute/#attaching-to-gateways
-	ParentRefs []gwapi.ParentRef
+	ParentRefs []gwapi.ParentReference
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -456,6 +456,11 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
 	AccessKeyID string `json:"accessKeyID,omitempty"`
+
+	// If set, pull the AWS access key ID from a key within a kubernetes secret.
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	// +optional
+	SecretAccessKeyID *cmmeta.SecretKeySelector `json:"accessKeyIDSecretRef,omitempty"`
 
 	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials

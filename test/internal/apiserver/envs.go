@@ -23,22 +23,21 @@ import (
 	"path/filepath"
 
 	"github.com/cert-manager/cert-manager/internal/test/paths"
-	"github.com/cert-manager/cert-manager/test/internal/util"
 )
 
 // setEnvTestEnv configures environment variables for controller-runtime's
 // 'envtest' package.
 func setUpEnvTestEnv() {
-	maybeSetEnv("TEST_ASSET_ETCD", "etcd", "hack", "bin", "etcd")
-	maybeSetEnv("TEST_ASSET_KUBE_APISERVER", "kube-apiserver", "hack", "bin", "kube-apiserver")
-	maybeSetEnv("TEST_ASSET_KUBECTL", "kubectl", "hack", "bin", "kubectl")
+	maybeSetEnv("TEST_ASSET_ETCD", "etcd")
+	maybeSetEnv("TEST_ASSET_KUBE_APISERVER", "kube-apiserver")
+	maybeSetEnv("TEST_ASSET_KUBECTL", "kubectl")
 }
 
-func maybeSetEnv(key, bin string, path ...string) {
+func maybeSetEnv(key, bin string) {
 	if os.Getenv(key) != "" {
 		return
 	}
-	p, err := getPath(bin, path...)
+	p, err := getPath(bin)
 	if err != nil {
 		panic(fmt.Sprintf(`Failed to find integration test dependency %q.
 Either re-run this test or set the %s environment variable.`, bin, key))
@@ -46,25 +45,10 @@ Either re-run this test or set the %s environment variable.`, bin, key))
 	os.Setenv(key, p)
 }
 
-func getPath(name string, path ...string) (string, error) {
-	// Check to see if we are running in a `bazel test` environment and if so,
-	// use the RUNFILES_DIR environment variable to find dependencies.
-	bazelPath := util.GetTestPath(path...)
-	p, err := exec.LookPath(bazelPath)
-	if err == nil {
-		return p, nil
-	}
-
-	// Check for a bazel-bin directory which may contain the test dependencies
-	nextBazelPath := filepath.Join(append([]string{paths.BazelBinDir}, path...)...)
-	p, err = exec.LookPath(nextBazelPath)
-	if err == nil {
-		return p, nil
-	}
-
-	// check in bin/tools for a file provisioned using make
+func getPath(name string) (string, error) {
+	// check in _bin/tools for a file provisioned using make
 	binToolsPath := filepath.Join(paths.BinToolsDir, name)
-	p, err = exec.LookPath(binToolsPath)
+	p, err := exec.LookPath(binToolsPath)
 	if err == nil {
 		return p, nil
 	}

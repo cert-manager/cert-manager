@@ -157,7 +157,8 @@ func NewController(
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
-	// Set context deadline for full sync in 10 seconds
+	// TODO: Change to globals.DefaultControllerContextTimeout as part of a wider effort to ensure we have
+	// failsafe timeouts in every controller
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -290,6 +291,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	if crReadyCond == nil {
 		if apiutil.CertificateRequestIsDenied(req) {
 			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionDenied))
+		}
+
+		if apiutil.CertificateRequestHasInvalidRequest(req) {
+			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionInvalidRequest))
 		}
 
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")

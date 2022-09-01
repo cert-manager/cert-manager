@@ -29,9 +29,7 @@ export K8S_VERSION=${K8S_VERSION:-1.24}
 export OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"}
 export IS_OPENSHIFT="${IS_OPENSHIFT:-"false"}"
 export OPENSHIFT_VERSION="${OPENSHIFT_VERSION:-"3.11"}"
-# kubectl cluster-info dump does not return output in format that could be
-# easily parsed with a json or yaml parser.
-export SERVICE_IP_PREFIX=$(kubectl cluster-info dump | grep ip-range | head -n1 | cut -d= -f2 | cut -d. -f1,2,3)
+export SERVICE_IP_PREFIX="10.0.0"
 export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
 export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
 export GATEWAY_IP="${SERVICE_IP_PREFIX}.14"
@@ -56,7 +54,7 @@ setup_tools() {
 }
 
 # check_tool ensures that the tool with the given name is available, or advises
-# users to setup their PATH for the circleci.dec.yaml/e3e/bin directory if not.
+# users to setup their PATH for the test/e3e/bin directory if not.
 check_tool() {
   tool="$1"
   if ! command -v "$tool" &>/dev/null; then

@@ -155,6 +155,12 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 	return pod
 }
 
+// Note: this function builds pod spec using defaults and any configuration
+// options passed via flags to cert-manager controller.
+// Solver pod configuration via flags is a now deprecated
+// mechanism- please use pod template instead when adding any new
+// configuration options
+// https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
 
@@ -175,6 +181,9 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			RestartPolicy: corev1.RestartPolicyOnFailure,
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot: pointer.BoolPtr(true),
+				SeccompProfile: &corev1.SeccompProfile{
+					Type: corev1.SeccompProfileTypeRuntimeDefault,
+				},
 			},
 			Containers: []corev1.Container{
 				{
@@ -207,6 +216,9 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 					},
 					SecurityContext: &corev1.SecurityContext{
 						AllowPrivilegeEscalation: pointer.BoolPtr(false),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+						},
 					},
 				},
 			},

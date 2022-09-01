@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"

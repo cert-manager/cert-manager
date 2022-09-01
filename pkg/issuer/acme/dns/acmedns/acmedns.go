@@ -16,9 +16,12 @@ limitations under the License.
 
 // Package acmedns implements a DNS provider for solving DNS-01 challenges using
 // Joohoi's acme-dns project. For more information see the ACME-DNS homepage:
-//    https://github.com/joohoi/acme-dns
+//
+//	https://github.com/joohoi/acme-dns
+//
 // This code was adapted from lego:
-// 	  https://github.com/xenolf/lego
+//
+//	https://github.com/xenolf/lego
 package acmedns
 
 import (

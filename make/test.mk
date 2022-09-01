@@ -1,59 +1,60 @@
-export KUBEBUILDER_ASSETS=$(PWD)/bin/tools
+export KUBEBUILDER_ASSETS=$(PWD)/$(BINDIR)/tools
 
-# WHAT can be used to control which unit tests are run by "make circleci.dec.yaml"; defaults to running all
+# WHAT can be used to control which unit tests are run by "make test"; defaults to running all
 # tests except e2e tests (which require more significant setup)
-# For example: make WHAT=./pkg/util/pki circleci.dec.yaml-pretty to only run the PKI utils tests
-WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/...
+# For example: make WHAT=./pkg/util/pki test-pretty to only run the PKI utils tests
+WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 
 .PHONY: test
-## Test is the workhorse circleci.dec.yaml command which by default runs all unit and
+## Test is the workhorse test command which by default runs all unit and
 ## integration tests. Configured through WHAT, e.g.:
 ##
-##   make circleci.dec.yaml WHAT=./pkg/...
+##   make test WHAT=./pkg/...
 ##
 ## @category Development
-test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
+test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
-## circleci.dec.yaml-ci runs all unit and integration tests and writes a JUnit report of
+## test-ci runs all unit and integration tests and writes a JUnit report of
 ## the results. WHAT can be used to limit which tests are run; see help for
-## `make circleci.dec.yaml` for more details.
+## `make test` for more details.
 ##
 ## Fuzz tests are hidden from JUnit output, because they're noisy and can cause
 ## issues with dashboards and UIs.
 ##
 ## @category CI
-test-ci: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
-	@# Fuzz tests are hidden from JUnit output because they can break dashboards.
-	@# They look like this:
-	@# <testcase classname="internal/controller/certificates" name="Test_serializeApplyStatus/fuzz_8358"></testcase>
+test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
-		--post-run-command $$'bash -c "awk \'$$1 \!~ /\\/fuzz_\\d+// { print $$2 }\' - $$GOTESTSUM_JUNITFILE >/tmp/$$$$ && mv /tmp/$$$$ $$GOTESTSUM_JUNITFILE"' \
-		--junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
+	$(GOTESTSUM) \
+		--junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
+		--junitfile-testsuite-name short \
+		--junitfile-testcase-classname relative \
+		--post-run-command $$'bash -c "$(GO) run hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' \
+		-- \
+		$(WHAT)
 
 .PHONY: unit-test
-## Same as `circleci.dec.yaml` but only runs the unit tests. By "unit tests", we mean tests
+## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
 ## that are quick to run and don't require dependencies like Kubernetes, etcd,
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: bin/tools/gotestsum
+unit-test: | $(NEEDS_GOTESTSUM)
 	$(GOTESTSUM) ./cmd/... ./pkg/... ./internal/...
 
 .PHONY: setup-integration-tests
 setup-integration-tests: test/integration/versionchecker/testdata/test_manifests.tar templated-crds
-	@$(eval GIT_TAGS_FILE := bin/scratch/git/upstream-tags.txt)
+	@$(eval GIT_TAGS_FILE := $(BINDIR)/scratch/git/upstream-tags.txt)
 	@echo -e "\033[0;33mLatest known tag for integration tests is $(shell tail -1 $(GIT_TAGS_FILE)); if that seems out-of-date,\npull latest tags, run 'rm $(GIT_TAGS_FILE)' and retest\033[0m"
 
 .PHONY: integration-test
-## Same as `circleci.dec.yaml` but only run the integration tests. By "integration tests",
+## Same as `test` but only run the integration tests. By "integration tests",
 ## we mean the tests that require a live apiserver and etcd to run, but don't
 ## require a full Kubernetes cluster.
 ##
 ## @category Development
-integration-test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
+integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) ./test/...
 
 .PHONY: e2e
@@ -61,43 +62,47 @@ integration-test: setup-integration-tests bin/tools/gotestsum bin/tools/etcd bin
 ##
 ##     make -j e2e-setup
 ##
-## To run a specific circleci.dec.yaml instead of the whole suite, run:
+## To run a specific test instead of the whole suite, run:
 ##
 ##     make e2e GINKGO_FOCUS='.*call the dummy webhook'
 ##
 ## For more information about GINKGO_FOCUS, see "make/e2e.sh --help".
 ##
 ## @category Development
-e2e: bin/scratch/kind-exists bin/tools/kubectl bin/tools/ginkgo
+e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
 	make/e2e.sh
 
 .PHONY: e2e-ci
 e2e-ci: e2e-setup-kind e2e-setup
-	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || ($(MAKE) kind-logs && exit 1)
+	make/e2e-ci.sh
 
-test/integration/versionchecker/testdata/test_manifests.tar: bin/scratch/oldcrds.tar bin/yaml/cert-manager.yaml
+.PHONY: test-upgrade
+test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+
+test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist
-	rm -f bin/scratch/versionchecker-test-manifests.tar bin/scratch/$(RELEASE_VERSION).yaml
+	rm -f $(BINDIR)/scratch/versionchecker-test-manifests.tar $(BINDIR)/scratch/$(RELEASE_VERSION).yaml
 	@# Copy the old CRDs tar and append the currentl release version to it
-	cp bin/scratch/oldcrds.tar bin/scratch/versionchecker-test-manifests.tar
-	cp bin/yaml/cert-manager.yaml bin/scratch/$(RELEASE_VERSION).yaml
-	tar --append -f bin/scratch/versionchecker-test-manifests.tar -C bin/scratch ./$(RELEASE_VERSION).yaml
-	cp bin/scratch/versionchecker-test-manifests.tar $@
+	cp $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/scratch/versionchecker-test-manifests.tar
+	cp $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/$(RELEASE_VERSION).yaml
+	tar --append -f $(BINDIR)/scratch/versionchecker-test-manifests.tar -C $(BINDIR)/scratch ./$(RELEASE_VERSION).yaml
+	cp $(BINDIR)/scratch/versionchecker-test-manifests.tar $@
 
-bin/scratch/oldcrds.tar: bin/scratch/git/upstream-tags.txt | bin/scratch/oldcrds
+$(BINDIR)/scratch/oldcrds.tar: $(BINDIR)/scratch/git/upstream-tags.txt | $(BINDIR)/scratch/oldcrds
 	@# First, download the CRDs for all releases listed in upstream-tags.txt
-	<bin/scratch/git/upstream-tags.txt xargs -I% -P5 \
+	<$(BINDIR)/scratch/git/upstream-tags.txt xargs -I% -P5 \
 		./hack/fetch-old-crd.sh \
 		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml" \
-		bin/scratch/oldcrds/%.yaml
+		$(BINDIR)/scratch/oldcrds/%.yaml
 	@# Next, tar up the old CRDs together
-	tar cf $@ -C bin/scratch/oldcrds .
+	tar cf $@ -C $(BINDIR)/scratch/oldcrds .
 
-bin/scratch/oldcrds:
+$(BINDIR)/scratch/oldcrds:
 	@mkdir -p $@
 
-bin/test:
+$(BINDIR)/test:
 	@mkdir -p $@
 
-bin/testlogs:
+$(BINDIR)/testlogs:
 	@mkdir -p $@

@@ -9,6 +9,11 @@ global:
   # - name: "image-pull-secret"
 
   ## Labels to apply to all resources
+  ## Please note that this does not add labels to the resources created dynamically by the controllers and provide at least these examples:
+  ## eg. podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress
+  ##    ref: https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress
+  ## eg. secretTemplate in CertificateSpec
+  ##    ref: https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec
   ##
   commonLabels: {}
   # team_name: dev
@@ -28,7 +33,7 @@ global:
   logLevel: 2
 
   leaderElection:
-    # Override the namespace used to store the ConfigMap for leader election
+    # Override the namespace used for the leader election lease
     namespace: "kube-system"
 
     # The duration that non-leader candidates will wait after observing a
@@ -121,14 +126,16 @@ resources: {}
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 securityContext:
   runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
 
 # Container Security Context to be set on the controller component container
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 containerSecurityContext:
   allowPrivilegeEscalation: false
-  # capabilities:
-  #   drop:
-  #   - ALL
+  capabilities:
+    drop:
+    - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
 
@@ -180,6 +187,7 @@ prometheus:
     interval: 60s
     scrapeTimeout: 30s
     labels: {}
+    annotations: {}
     honorLabels: false
 
 # Use these variables to configure the HTTP_PROXY environment variables
@@ -208,6 +216,18 @@ affinity: {}
 #     value: master
 #     effect: NoSchedule
 tolerations: []
+
+# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#topologyspreadconstraint-v1-core
+# for example:
+#   topologySpreadConstraints:
+#   - maxSkew: 2
+#     topologyKey: topology.kubernetes.io/zone
+#     whenUnsatisfiable: ScheduleAnyway
+#     labelSelector:
+#       matchLabels:
+#         app.kubernetes.io/instance: cert-manager
+#         app.kubernetes.io/component: controller
+topologySpreadConstraints: []
 
 webhook:
   replicaCount: 1
@@ -240,14 +260,16 @@ webhook:
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext:
     allowPrivilegeEscalation: false
-    # capabilities:
-    #   drop:
-    #   - ALL
+    capabilities:
+      drop:
+      - ALL
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
@@ -299,6 +321,8 @@ webhook:
   affinity: {}
 
   tolerations: []
+
+  topologySpreadConstraints: []
 
   # Optional additional labels to add to the Webhook Pods
   podLabels: {}
@@ -380,14 +404,16 @@ cainjector:
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext:
     allowPrivilegeEscalation: false
-    # capabilities:
-    #   drop:
-    #   - ALL
+    capabilities:
+      drop:
+      - ALL
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
@@ -415,6 +441,8 @@ cainjector:
   affinity: {}
 
   tolerations: []
+
+  topologySpreadConstraints: []
 
   # Optional additional labels to add to the CA Injector Pods
   podLabels: {}
@@ -464,14 +492,16 @@ startupapicheck:
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # Container Security Context to be set on the controller component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext:
     allowPrivilegeEscalation: false
-    # capabilities:
-    #   drop:
-    #   - ALL
+    capabilities:
+      drop:
+      - ALL
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
 

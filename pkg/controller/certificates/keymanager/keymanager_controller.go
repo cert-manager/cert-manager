@@ -52,9 +52,10 @@ import (
 )
 
 const (
-	ControllerName     = "certificates-key-manager"
-	reasonDecodeFailed = "DecodeFailed"
-	reasonDeleted      = "Deleted"
+	ControllerName            = "certificates-key-manager"
+	reasonDecodeFailed        = "DecodeFailed"
+	reasonCannotRegenerateKey = "CannotRegenerateKey"
+	reasonDeleted             = "Deleted"
 )
 
 var (
@@ -259,7 +260,7 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 		return c.createAndSetNextPrivateKey(ctx, crt)
 	}
 	if len(violations) > 0 {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v", crt.Spec.SecretName, violations)
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonCannotRegenerateKey, "User intervention required: existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v, but cert-manager cannot create new private key as the Certificate's .spec.privateKey.rotationPolicy is unset or set to Never. To allow cert-manager to create a new private key you can set .spec.privateKey.rotationPolicy to 'Always' (this will result in the private key being regenerated every time a cert is renewed) ", crt.Spec.SecretName, violations)
 		return nil
 	}
 

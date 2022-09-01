@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2020 The cert-manager Authors.
 #
@@ -28,7 +28,7 @@ elif ! command -v bazel &>/dev/null; then
 else
   (
     set -o xtrace
-    bazel build //circleci.dec.yaml/integration/versionchecker/testdata:test_manifests.tar
+    bazel build //test/integration/versionchecker/testdata:test_manifests.tar
     cp -f "$(bazel info bazel-bin)/test/integration/versionchecker/testdata/test_manifests.tar" "$SCRIPT_ROOT"
   )
   exit 0
@@ -49,7 +49,7 @@ for tag in $tags
 do
     # The "v1.2.0-alpha.1" manifest contains duplicate CRD resources
     # (2 CRD resources with the same name); don't download this manifest
-    # as it will cause the circleci.dec.yaml to fail when adding the CRD resources
+    # as it will cause the test to fail when adding the CRD resources
     # to the fake client
     if [[ $tag == "v1.2.0-alpha.1" ]]; then
         continue

@@ -153,7 +153,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		)
 
 		// venafiClientRequestDurationSeconds is a Prometheus summary to
-		// collect api call latencies for the the Venafi client. This
+		// collect api call latencies for the Venafi client. This
 		// metric is in alpha since cert-manager 1.9. Move it to GA once
 		// we have seen that it helps to measure Venafi call latency.
 		venafiClientRequestDurationSeconds = prometheus.NewSummaryVec(

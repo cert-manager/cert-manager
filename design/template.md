@@ -195,7 +195,7 @@ Can the feature be disabled after having been enabled?
 Consider whether any additional steps will need to be taken to start/stop using this feature, i.e change existing resources that have had new field added for the feature before disabling it.
 
 
-Do the circleci.dec.yaml cases cover both the feature being enabled and it being disabled (where relevant)?
+Do the test cases cover both the feature being enabled and it being disabled (where relevant)?
 
 -->
 

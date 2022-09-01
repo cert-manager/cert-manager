@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Copyright 2020 The cert-manager Authors.
+
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# NB: This script requires bazel, and is no longer supported since we no longer support bazel
+# It's preserved for now but might be removed in the future
+
 set -o nounset
 set -o errexit
 set -o pipefail
@@ -20,7 +24,8 @@ set -o pipefail
 if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
   echo "Checking modules for changes..." >&2
 elif ! command -v bazel &>/dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
+  echo "This script is preserved for legacy reasons and requires bazel. You shouldn't need to run this as part of your normal development workflow" >&2
+  echo "If you need to run this script, install bazel from https://bazel.build" >&2
   exit 1
 else
   (

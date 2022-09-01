@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	api "k8s.io/api/core/v1"
@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
+	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -179,7 +179,7 @@ func (f *Framework) AfterEach() {
 }
 
 func (f *Framework) printAddonLogs() {
-	if CurrentGinkgoTestDescription().Failed {
+	if CurrentSpecReport().Failed() {
 		for _, a := range f.requiredAddons {
 			if a, ok := a.(loggableAddon); ok {
 				l, err := a.Logs()

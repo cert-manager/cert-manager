@@ -55,7 +55,7 @@ spec:
       hostNetwork: true
       {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-webhook
           {{- with .Values.webhook.image }}
           image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{ .digest }}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
           {{- end }}
@@ -75,7 +75,12 @@ spec:
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}
           - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
           - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
-          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ template "cert-manager.namespace" . }},{{ template "webhook.fullname" . }}.{{ template "cert-manager.namespace" . }}.svc{{ if .Values.webhook.url.host }},{{ .Values.webhook.url.host }}{{ end }}
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}.$(POD_NAMESPACE)
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}.$(POD_NAMESPACE).svc
+          {{ if .Values.webhook.url.host }}
+          - --dynamic-serving-dns-names={{ .Values.webhook.url.host }}
+          {{- end }}
           {{- end }}
           {{- with .Values.webhook.extraArgs }}
           {{- toYaml . | nindent 10 }}
@@ -89,6 +94,13 @@ spec:
             containerPort: {{ .Values.webhook.securePort }}
             {{- else }}
             containerPort: 6443
+            {{- end }}
+          - name: healthcheck
+            protocol: TCP
+            {{- if $config.healthzPort }}
+            containerPort: {{ $config.healthzPort }}
+            {{- else }}
+            containerPort: 6080
             {{- end }}
           livenessProbe:
             httpGet:
@@ -146,6 +158,10 @@ spec:
       {{- end }}
       {{- with .Values.webhook.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with  .Values.webhook.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if .Values.webhook.config }}

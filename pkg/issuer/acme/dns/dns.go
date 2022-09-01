@@ -292,6 +292,44 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 	case providerConfig.Route53 != nil:
 		dbg.Info("preparing to create Route53 provider")
+
+		// Default to the AccessKeyID literal in the configuration
+		secretAccessKeyID := strings.TrimSpace(providerConfig.Route53.AccessKeyID)
+
+		// If the AccessKeyID secret reference option is defined, override the
+		// secretAccessKeyID variable.
+		if providerConfig.Route53.SecretAccessKeyID != nil {
+			// For route53, you must specify either an AccessKeyID or a secret
+			// reference to an AccessKeyID, but not both.
+			if len(providerConfig.Route53.AccessKeyID) > 0 {
+				return nil, nil, fmt.Errorf("route53 accessKeyID and accessKeyIDSecretRef cannot both be specified")
+			}
+
+			// Ensure Key specified.
+			if len(providerConfig.Route53.SecretAccessKeyID.Key) == 0 {
+				return nil, nil, fmt.Errorf("route53 accessKeyIDSecretRef requires a key field to be specified")
+			}
+
+			// Ensure Name specified.
+			if len(providerConfig.Route53.SecretAccessKeyID.Name) == 0 {
+				return nil, nil, fmt.Errorf("route53 accessKeyIDSecretRef requires a name field to be specified")
+			}
+
+			secretAccessKeyIDSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKeyID.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting route53 secret access key id: %s", err)
+			}
+
+			secretAccessKeyIDBytes, ok := secretAccessKeyIDSecret.Data[providerConfig.Route53.SecretAccessKeyID.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("no data found in Secret %q at Key %q",
+					providerConfig.Route53.SecretAccessKeyID.Name,
+					providerConfig.Route53.SecretAccessKeyID.Key,
+				)
+			}
+			secretAccessKeyID = string(secretAccessKeyIDBytes)
+		}
+
 		secretAccessKey := ""
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
 			secretAccessKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
@@ -307,7 +345,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 
 		impl, err = s.dnsProviderConstructors.route53(
-			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
+			secretAccessKeyID,
 			strings.TrimSpace(secretAccessKey),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,

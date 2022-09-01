@@ -22,10 +22,11 @@ import (
 	"encoding/pem"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
@@ -48,7 +49,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		secretName = "test-additional-output-formats"
 	)
 
-	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) *cmapi.Certificate {
+	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
 		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
 
 		crt := &cmapi.Certificate{
@@ -73,7 +74,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
-		return crt
+		return crt.Name, crt
 	}
 
 	f := framework.NewDefaultFramework("certificates-additional-output-formats")
@@ -131,7 +132,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 	})
 
 	It("should add additional output formats to the Secret when the Certificate's AdditionalOutputFormats is updated, then removed when removed from AdditionalOutputFormats", func() {
-		crt := createCertificate(f, nil)
+		crtName, crt := createCertificate(f, nil)
 
 		By("ensure Secret has only expected keys")
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -146,9 +147,17 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		block, _ := pem.Decode(pkPEM)
 
 		By("add Combined PEM to Certificate's Additional Output Formats")
-		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}}
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}}
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
+
 		By("ensure Secret has correct Combined PEM additional output formats")
 		Eventually(func() map[string][]byte {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -162,11 +171,17 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}))
 
 		By("add DER to Certificate's Additional Output Formats")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}}
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
-		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}}
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+
 		By("ensure Secret has correct Combined PEM and DER additional output formats")
 		Eventually(func() map[string][]byte {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -181,11 +196,17 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}))
 
 		By("remove Combined PEM from Certificate's Additional Output Formats")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "DER"}}
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
-		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "DER"}}
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+
 		By("ensure Secret has correct DER additional output formats")
 		Eventually(func() map[string][]byte {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -199,11 +220,17 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}))
 
 		By("remove DER from Certificate's Additional Output Formats")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			crt.Spec.AdditionalOutputFormats = nil
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
-		crt.Spec.AdditionalOutputFormats = nil
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+
 		By("ensure Secret has no additional output formats")
 		Eventually(func() map[string][]byte {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -253,7 +280,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 	})
 
 	It("renewing a Certificate should have output format values reflect the new certificate and private key", func() {
-		crt := createCertificate(f, []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}})
+		crtName, crt := createCertificate(f, []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}})
 
 		By("ensure Secret has only expected keys")
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -272,11 +299,17 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		By("renewing Certificate to get new signed certificate and private key")
 		oldCrtPEM := secret.Data["tls.crt"]
 		oldPKPEM := secret.Data["tls.key"]
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "e2e-testing", "Renewing for AdditionalOutputFormat e2e test")
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).UpdateStatus(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
-		apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "e2e-testing", "Renewing for AdditionalOutputFormat e2e test")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).UpdateStatus(context.Background(), crt, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+
 		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
@@ -299,7 +332,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		// This e2e test requires that the ServerSideApply feature gate is enabled.
 		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ServerSideApply)
 
-		crt := createCertificate(f, nil)
+		crtName, crt := createCertificate(f, nil)
 
 		By("add additional output formats manually to the secret")
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -313,10 +346,15 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		Expect(err).NotTo(HaveOccurred())
 
 		By("add additional output formats to Certificate")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}}
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			crt.Spec.AdditionalOutputFormats = []cmapi.CertificateAdditionalOutputFormat{{Type: "CombinedPEM"}, {Type: "DER"}}
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("wait for cert-manager to assigned ownership to the additional output format fields")
@@ -345,10 +383,15 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}).WithTimeout(5 * time.Second).WithPolling(time.Second).Should(BeTrue())
 
 		By("remove additional output formats from Certificate")
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crt.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		crt.Spec.AdditionalOutputFormats = nil
-		crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.Background(), crtName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			crt.Spec.AdditionalOutputFormats = nil
+			crt, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(context.Background(), crt, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("observe secret maintain the additional output format keys and values since they are owned by a third party")

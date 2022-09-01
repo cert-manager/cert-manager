@@ -2,7 +2,7 @@
 // +build tools
 
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2022 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ limitations under the License.
 package bin
 
 import (
-	_ "github.com/onsi/ginkgo/ginkgo"
+	_ "github.com/onsi/ginkgo/v2/ginkgo"
 	_ "k8s.io/code-generator/cmd/client-gen"
 	_ "k8s.io/code-generator/cmd/conversion-gen"
 	_ "k8s.io/code-generator/cmd/deepcopy-gen"

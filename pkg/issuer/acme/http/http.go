@@ -30,10 +30,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 	k8snet "k8s.io/utils/net"
-	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/gateway/apis/v1alpha2"
+	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 
-	"github.com/cert-manager/cert-manager/internal/ingress"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -59,11 +59,10 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister            corev1listers.PodLister
-	serviceLister        corev1listers.ServiceLister
-	ingressLister        ingress.InternalIngressLister
-	ingressCreateUpdater ingress.InternalIngressCreateUpdater
-	httpRouteLister      gwapilisters.HTTPRouteLister
+	podLister       corev1listers.PodLister
+	serviceLister   corev1listers.ServiceLister
+	ingressLister   networkingv1listers.IngressLister
+	httpRouteLister gwapilisters.HTTPRouteLister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -73,23 +72,14 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsSer
 
 // NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
-	ingressLister, _, err := ingress.NewListerInformer(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ingressCreateUpdater, err := ingress.NewCreateUpdater(ctx)
-	if err != nil {
-		return nil, err
-	}
 	return &Solver{
-		Context:              ctx,
-		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:        ingressLister,
-		ingressCreateUpdater: ingressCreateUpdater,
-		httpRouteLister:      ctx.GWShared.Gateway().V1alpha2().HTTPRoutes().Lister(),
-		testReachability:     testReachability,
-		requiredPasses:       5,
+		Context:          ctx,
+		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:    ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Lister(),
+		httpRouteLister:  ctx.GWShared.Gateway().V1alpha2().HTTPRoutes().Lister(),
+		testReachability: testReachability,
+		requiredPasses:   5,
 	}, nil
 }
 

@@ -111,6 +111,9 @@ type ControllerOptions struct {
 	// EnablePprof determines whether pprof should be enabled.
 	EnablePprof bool
 
+	// DNSO1CheckRetryPeriod is the period of time after which to check if
+	// challenge URL can be reached by cert-manager controller. This is used
+	// for both DNS-01 and HTTP-01 challenges.
 	DNS01CheckRetryPeriod time.Duration
 
 	// Annotations copied Certificate -> CertificateRequest,
@@ -142,6 +145,7 @@ const (
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
+	// default time period to wait between checking DNS01 and HTTP01 challenge propagation
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
 )
 
@@ -286,6 +290,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"'foo'.\nAll controllers: %s",
 		strings.Join(allControllers, ", ")))
 
+	// HTTP-01 solver pod configuration via flags is a now deprecated
+	// mechanism- please use pod template instead when adding any new
+	// configuration options
+	// https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
+	// These flags however will not be deprecated for backwards compatibility purposes.
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
@@ -347,7 +356,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
-		"The duration the controller should wait between checking if a ACME dns entry exists."+
+		"The duration the controller should wait between a propagation check. Despite the name, this flag is used to configure the wait period for both DNS01 and HTTP01 challenge propagation checks. For DNS01 challenges the propagation check verifies that a TXT record with the challenge token has been created. For HTTP01 challenges the propagation check verifies that the challenge token is served at the challenge URL."+
 		"This should be a valid duration string, for example 180s or 1h")
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+

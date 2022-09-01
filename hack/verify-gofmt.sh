@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,27 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Validating go source file formatting..." >&2
-elif ! command -v bazel &> /dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
-  exit 1
-else
-  (
-    set -o xtrace
-    bazel test --test_output=streamed //hack:verify-gofmt
-  )
-  exit 0
-fi
+# This file is kept as backwards-compatibility for people with muscle memory who
+# type "./hack/verify-gofmt.sh" and expect it to work, or for third party CI pipelines.
 
-gofmt=$(realpath "$1")
+# This script may be removed in the future. Prefer using `make` directly.
 
-export GO111MODULE=on
-
-echo "+++ Running gofmt"
-output=$(find . -name '*.go' | grep -v 'vendor/' | xargs "$gofmt" -s -d)
-if [ ! -z "${output}" ]; then
-    echo "${output}"
-    echo "Please run 'bazel run //hack:update-gofmt'"
-    exit 1
-fi
+make verify-imports
