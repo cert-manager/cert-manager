@@ -145,6 +145,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.serviceAccount.automountServiceAccountToken` | Automount API credentials for the webhook Service Account |  |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | `{}` |
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
+| `webhook.networkPolicy.enabled` | Enable default network policies for webhooks egress and ingress traffic | `false` |
+| `webhook.networkPolicy.ingress` | Sets ingress policy block. See NetworkPolicy documentation. See `values.yaml` for example. | `{}` |
+| `webhook.networkPolicy.egress` | Sets ingress policy block. See NetworkPolicy documentation. See `values.yaml` for example. | `{}` |
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
 | `webhook.tolerations` | Node tolerations for webhook pod assignment | `[]` |
 | `webhook.topologySpreadConstraints` | Topology spread constraints for webhook pod assignment | `[]` |
