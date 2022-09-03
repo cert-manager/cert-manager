@@ -218,6 +218,12 @@ type VaultIssuer struct {
 	// If no key for the Secret is specified, cert-manager will default to 'ca.crt'.
 	// +optional
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
+
+	// If true, TLS requests against the Vault server are not verified
+	// for authenticity.  This allows one to issue certificates in a
+	// failure scenario, or when the Vault certificate has expired, for
+	// example.
+	SkipTLSVerify bool
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The

@@ -224,6 +224,7 @@ func (v *Vault) setToken(client Client) error {
 func (v *Vault) newConfig() (*vault.Config, error) {
 	cfg := vault.DefaultConfig()
 	cfg.Address = v.issuer.GetSpec().Vault.Server
+	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = v.issuer.GetSpec().Vault.SkipTLSVerify
 
 	caBundle, err := v.caBundle()
 	if err != nil {
