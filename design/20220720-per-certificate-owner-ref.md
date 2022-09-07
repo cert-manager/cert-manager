@@ -37,7 +37,7 @@ This checklist contains actions which must be completed before a PR implementing
 
 cert-manager has the ability to set the owner reference field in generated Secret resources. The option is global, and takes the form of the flag `--enable-certificate-owner-ref` set in the cert-manager controller Deployment resource.
 
-Let us take an example of Certificate resource:
+Let us take an example Certificate resource:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -50,7 +50,7 @@ spec:
   secretName: cert-1
 ```
 
-When `--enable-certificate-owner-ref` is passed to the cert-manager controller, when issuing the X.509 certificate, cert-manager will create a Secret resource that looks like this:
+When `--enable-certificate-owner-ref` is passed to the cert-manager controller, cert-manager, when issuing the X.509 certificate, will create a Secret resource that looks like this:
 
 ```yaml
 apiVersion: v1
@@ -71,7 +71,7 @@ data:
   ca.crt: "..."
 ```
 
-The proposition is to add a new field `certificateOwnerRef` to the Certificate resource:
+The proposition is to add a new field `cleanupPolicy` to the Certificate resource:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -95,7 +95,7 @@ The new field `cleanupPolicy` has three possible values:
 
 ## Use-cases
 
-Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many left-over Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
+Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
 
 ## Questions
 
@@ -174,7 +174,7 @@ Kubernetes/PKI ecosystem.
 
 ## Design Details
 
-cert-manager would have to changed in a few places.
+cert-manager would have to change in a few places.
 
 **Mutating webhook**
 
@@ -183,7 +183,7 @@ We propose to have no "value defaulting" for `cleanupPolicy` because the
 presence or not of the flag `--enable-certificate-owner-ref` takes over.
 To give more context, some other resources, such as the Pod resource,
 will mutate the object when the value is "empty", for example the
-`imagePullPolicy` value gets defaulted to `IfNotPresent`.
+`imagePullPolicy` value will default to `IfNotPresent`.
 
 **PostIssuancePolicyChain**
 
@@ -270,7 +270,7 @@ No.
 It is possible to use the
 [`csi-driver`](https://github.com/cert-manager/csi-driver) to circumvent
 the problem of "too many ephemeral Secret resources stored in etcd". Using
-the CSI driver, no Secret resource is created, alliviating the issue.
+the CSI driver, no Secret resource is created, alleviating the issue.
 
 Since Flant offers its customers the capability to use Certificate resources,
 and wants to keep supporting the Certificate type, switching from Certificate
