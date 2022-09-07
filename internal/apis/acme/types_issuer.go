@@ -92,6 +92,11 @@ type ACMEIssuer struct {
 	// it it will create an error on the Order.
 	// Defaults to false.
 	EnableDurationFeature bool
+
+	// Prevent challenges from being presented and checked.
+	// This is useful when issuing private-SSL certs using ACME providers such as DigiCert
+	// that do require challenge acceptance, but doesn't actually check the challenges.
+	DisableChallengePresentation bool
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME

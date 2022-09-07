@@ -173,32 +173,36 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return err
 	}
 
-	if !ch.Status.Presented {
-		err := solver.Present(ctx, genericIssuer, ch)
-		if err != nil {
-			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
-			ch.Status.Reason = err.Error()
-			return err
+	if !genericIssuer.GetSpec().ACME.DisableChallengePresentation {
+		if !ch.Status.Presented {
+			err := solver.Present(ctx, genericIssuer, ch)
+			if err != nil {
+				c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
+				ch.Status.Reason = err.Error()
+				return err
+			}
+
+			ch.Status.Presented = true
+			c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 		}
 
+		err = solver.Check(ctx, genericIssuer, ch)
+		if err != nil {
+			log.Error(err, "propagation check failed")
+			ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+
+			key, err := controllerpkg.KeyFunc(ch)
+			// This is an unexpected edge case and should never occur
+			if err != nil {
+				return err
+			}
+
+			c.queue.AddAfter(key, c.DNS01CheckRetryPeriod)
+
+			return nil
+		}
+	} else {
 		ch.Status.Presented = true
-		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
-	}
-
-	err = solver.Check(ctx, genericIssuer, ch)
-	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
-
-		key, err := controllerpkg.KeyFunc(ch)
-		// This is an unexpected edge case and should never occur
-		if err != nil {
-			return err
-		}
-
-		c.queue.AddAfter(key, c.DNS01CheckRetryPeriod)
-
-		return nil
 	}
 
 	err = c.acceptChallenge(ctx, cl, ch)
