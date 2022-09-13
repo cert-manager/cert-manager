@@ -90,10 +90,10 @@ spec:
 
 The new field `cleanupPolicy` has three possible values:
 
-1. When "empty", the behavior will default to not creating an owner reference on the Secret resource, unless `--enable-certificate-owner-ref` is passed.
-2. When `Delete`, the default behavior as described in the "empty" case is overridden and the owner referencI agree, the "empty" value is often avoided in Kubernetes APIs. Let's go with Inherit then.
-
-e is always created on the Secret resource. 3. When `Never`, the default behavior as described in the "empty" case is overridden and the owner reference is never created on the Secret resource.
+1. When "empty", the Kubernetes API server defaults the value to `Inherit`.
+2. When `Inherit`, we say that this field "inherits" the value of the flag `--enable-certificate-owner-ref` .
+3. When `Delete`, the owner reference is always created on the Secret resource.
+4. When `Never`, the owner reference is never created on the Secret resource.
 
 > At first, the proposed field was named `certificateOwnerRef` and was a
 > nullable boolean. James Munnelly reminded us that the Kubernetes API
@@ -103,7 +103,7 @@ e is always created on the Secret resource. 3. When `Never`, the default behavio
 
 ## Use-cases
 
-[Flant](https://flant.com/) manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
+Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
 
 ## Questions
 
@@ -283,3 +283,4 @@ the CSI driver, no Secret resource is created, alleviating the issue.
 Since Flant offers its customers the capability to use Certificate resources,
 and wants to keep supporting the Certificate type, switching from Certificate
 resources to the CSI driver isn't an option.
+
