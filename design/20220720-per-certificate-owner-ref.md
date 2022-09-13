@@ -103,7 +103,7 @@ The new field `cleanupPolicy` has three possible values:
 
 ## Use-cases
 
-Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
+[Flant](https://flant.com) manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
 
 ## Questions
 
@@ -283,4 +283,3 @@ the CSI driver, no Secret resource is created, alleviating the issue.
 Since Flant offers its customers the capability to use Certificate resources,
 and wants to keep supporting the Certificate type, switching from Certificate
 resources to the CSI driver isn't an option.
-
