@@ -286,6 +286,7 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.DNS01CheckRetryPeriod,
 			DNS01CheckAuthoritative: !opts.DNS01RecursiveNameserversOnly,
+			DNS01PropagationTime:    opts.DNS01PropagationTime,
 
 			AccountRegistry: acmeAccountRegistry,
 		},
