@@ -4,6 +4,8 @@
 
 - [Release Signoff Checklist](#release-signoff-checklist)
 - [Summary](#summary)
+- [Use-cases](#use-cases)
+- [Questions](#questions)
 - [Motivation](#motivation)
   - [Goals](#goals)
   - [Non-Goals](#non-goals)
@@ -19,6 +21,11 @@
   - [Upgrade / Downgrade Strategy](#upgrade--downgrade-strategy)
   - [Supported Versions](#supported-versions)
 - [Production Readiness](#production-readiness)
+  - [How can this feature be enabled / disabled for an existing cert-manager installation?](#how-can-this-feature-be-enabled--disabled-for-an-existing-cert-manager-installation)
+  - [Does this feature depend on any specific services running in the cluster?](#does-this-feature-depend-on-any-specific-services-running-in-the-cluster)
+  - [Will enabling / using this feature result in new API calls (i.e to Kubernetes apiserver or external services)?](#will-enabling--using-this-feature-result-in-new-api-calls-ie-to-kubernetes-apiserver-or-external-services)
+  - [Will enabling / using this feature result in increasing size or count of the existing API objects?](#will-enabling--using-this-feature-result-in-increasing-size-or-count-of-the-existing-api-objects)
+  - [Will enabling / using this feature result in significant increase of resource usage? (CPU, RAM...)](#will-enabling--using-this-feature-result-in-significant-increase-of-resource-usage-cpu-ram)
 - [Drawbacks](#drawbacks)
 - [Alternatives](#alternatives)
 <!-- /toc -->
@@ -84,8 +91,9 @@ spec:
 The new field `cleanupPolicy` has three possible values:
 
 1. When "empty", the behavior will default to not creating an owner reference on the Secret resource, unless `--enable-certificate-owner-ref` is passed.
-2. When `Delete`, the default behavior as described in the "empty" case is overridden and the owner reference is always created on the Secret resource.
-3. When `Never`, the default behavior as described in the "empty" case is overridden and the owner reference is never created on the Secret resource.
+2. When `Delete`, the default behavior as described in the "empty" case is overridden and the owner referencI agree, the "empty" value is often avoided in Kubernetes APIs. Let's go with Inherit then.
+
+e is always created on the Secret resource. 3. When `Never`, the default behavior as described in the "empty" case is overridden and the owner reference is never created on the Secret resource.
 
 > At first, the proposed field was named `certificateOwnerRef` and was a
 > nullable boolean. James Munnelly reminded us that the Kubernetes API
@@ -95,7 +103,7 @@ The new field `cleanupPolicy` has three possible values:
 
 ## Use-cases
 
-Flant manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
+[Flant](https://flant.com/) manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
 
 ## Questions
 
@@ -275,4 +283,3 @@ the CSI driver, no Secret resource is created, alleviating the issue.
 Since Flant offers its customers the capability to use Certificate resources,
 and wants to keep supporting the Certificate type, switching from Certificate
 resources to the CSI driver isn't an option.
-
