@@ -410,7 +410,7 @@ func TestSetToken(t *testing.T) {
 			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
+				"error initializing Vault client: tokenSecretRef, tokenPath, appRoleSecretRef, or Kubernetes auth role not set",
 			),
 		},
 

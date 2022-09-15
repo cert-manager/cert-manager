@@ -195,6 +195,9 @@ type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *cmmeta.SecretKeySelector
 
+	// Path to Vault token on local file system.
+	TokenPath string
+
 	// AppRole authenticates with Vault using the App Role auth mechanism,
 	// with the role and secret stored in a Kubernetes Secret resource.
 	AppRole *VaultAppRole

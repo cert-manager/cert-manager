@@ -218,6 +218,10 @@ type VaultAuth struct {
 	// +optional
 	TokenSecretRef *cmmeta.SecretKeySelector `json:"tokenSecretRef,omitempty"`
 
+	// TokenPath is path to Vault token on local file system.
+	// +optional
+	TokenPath string `json:"tokenPath,omitempty"`
+
 	// AppRole authenticates with Vault using the App Role auth mechanism,
 	// with the role and secret stored in a Kubernetes Secret resource.
 	// +optional

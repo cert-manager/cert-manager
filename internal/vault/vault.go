@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -153,6 +154,17 @@ func (v *Vault) setToken(client Client) error {
 			return err
 		}
 		client.SetToken(token)
+
+		return nil
+	}
+
+	tokenPath := v.issuer.GetSpec().Vault.Auth.TokenPath
+	if tokenPath != "" {
+		token, err := ioutil.ReadFile(tokenPath)
+		if err != nil {
+			return err
+		}
+		client.SetToken(string(token))
 
 		return nil
 	}
