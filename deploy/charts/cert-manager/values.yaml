@@ -2,19 +2,18 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global:
-  ## Reference to one or more secrets to be used when pulling images
-  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-  ##
+  # Reference to one or more secrets to be used when pulling images
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   imagePullSecrets: []
   # - name: "image-pull-secret"
 
-  ## Labels to apply to all resources
-  ## Please note that this does not add labels to the resources created dynamically by the controllers and provide at least these examples:
-  ## eg. podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress
-  ##    ref: https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress
-  ## eg. secretTemplate in CertificateSpec
-  ##    ref: https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec
-  ##
+  # Labels to apply to all resources
+  # Please note that this does not add labels to the resources created dynamically by the controllers.
+  # For these resources, you have to add the labels in the template in the cert-manager custom resource:
+  # eg. podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress
+  #    ref: https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress
+  # eg. secretTemplate in CertificateSpec
+  #    ref: https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec
   commonLabels: {}
   # team_name: dev
 
