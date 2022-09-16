@@ -14,6 +14,7 @@
 <a href="https://goreportcard.com/report/github.com/cert-manager/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cert-manager/cert-manager" /></a>
 <br />
 <a href="https://artifacthub.io/packages/search?repo=cert-manager"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cert-manager" /></a>
+<a href="https://api.securityscorecards.dev/projects/github.com/cert-manager/cert-manager"><img src="https://api.securityscorecards.dev/projects/github.com/cert-manager/cert-manager/badge" alt="Scorecard score"/></a>
 </p>
 
 # cert-manager
