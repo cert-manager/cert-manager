@@ -75,6 +75,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `global.imagePullSecrets` | Reference to one or more secrets to be used when pulling images | `[]` |
+| `global.commonLabels` | Labels to apply to all resources | `{}` |
 | `global.rbac.create` | If `true`, create and use RBAC resources (includes sub-charts) | `true` |
 | `global.priorityClassName`| Priority class name for cert-manager and webhook pods | `""` |
 | `global.podSecurityPolicy.enabled` | If `true`, create and use PodSecurityPolicy (includes sub-charts) | `false` |
