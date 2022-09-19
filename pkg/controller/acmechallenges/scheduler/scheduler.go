@@ -200,6 +200,25 @@ func compareChallenges(l, r *cmacme.Challenge) int {
 		return 1
 	}
 
+	// Explicitly allow parallel DNS-01 reqs for the same DNSNames using Route53,
+	// as the route53 package is capable of handling these.
+	// We could assume different solvers are safe to schedule in parallel,
+	// but this might not always be true (e.g., with custom webhooks)
+	if l.Spec.Type == cmacme.ACMEChallengeTypeDNS01 &&
+		l.Spec.Solver.DNS01 != nil &&
+		l.Spec.Solver.DNS01.Route53 != nil &&
+		r.Spec.Solver.DNS01 != nil &&
+		r.Spec.Solver.DNS01.Route53 != nil {
+
+		// Use key to guarantee that different requests are never equal
+		if l.Spec.Key < r.Spec.Key {
+			return -1
+		}
+		if l.Spec.Key > r.Spec.Key {
+			return 1
+		}
+	}
+
 	// TODO: check the http01.ingressClass attribute and allow two challenges
 	// with different ingress classes specified to be scheduled at once
 

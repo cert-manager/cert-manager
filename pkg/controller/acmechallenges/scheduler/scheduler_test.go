@@ -268,6 +268,64 @@ func TestScheduleN(t *testing.T) {
 			},
 		},
 		{
+			name: "schedule parallel DNS-01 challenges when using route53",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolver(cmacme.ACMEChallengeSolver{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+						},
+					}),
+					gen.SetChallengeKey("2"),
+				),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolver(cmacme.ACMEChallengeSolver{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+						},
+					}),
+					gen.SetChallengeKey("1"),
+				),
+				gen.Challenge("test3",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolver(cmacme.ACMEChallengeSolver{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{},
+						},
+					}),
+					gen.SetChallengeCreationTimestamp(time.Unix(1, 1)),
+				),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolver(cmacme.ACMEChallengeSolver{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+						},
+					}),
+					gen.SetChallengeKey("1"),
+				),
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolver(cmacme.ACMEChallengeSolver{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+						},
+					}),
+					gen.SetChallengeKey("2"),
+				),
+			},
+		},
+		{
 			name: "don't schedule when total number of scheduled challenges exceeds global maximum",
 			n:    5,
 			challenges: append(
