@@ -100,3 +100,6 @@ func (r *REST) callSolver(req v1alpha1.ChallengeRequest) (v1alpha1.ChallengeResp
 		},
 	}, nil
 }
+
+func (r *REST) Destroy() {
+}
