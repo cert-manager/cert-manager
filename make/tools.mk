@@ -30,7 +30,7 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 GATEWAY_API_VERSION=v0.5.0
 
-K8S_CODEGEN_VERSION=v0.24.2
+K8S_CODEGEN_VERSION=v0.25.1
 
 KUBEBUILDER_ASSETS_VERSION=1.24.2
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
@@ -81,7 +81,7 @@ endif
 UC = $(shell echo '$1' | tr a-z A-Z)
 LC = $(shell echo '$1' | tr A-Z a-z)
 
-TOOL_NAMES := 
+TOOL_NAMES :=
 
 # for each item `xxx` in the TOOLS variable:
 # - a $(XXX_VERSION) variable is generated
@@ -189,7 +189,7 @@ $(BINDIR)/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | $(BINDIR)/downl
 # go dependencies #
 ###################
 
-GO_DEPENDENCIES := 
+GO_DEPENDENCIES :=
 GO_DEPENDENCIES += ginkgo=github.com/onsi/ginkgo/v2/ginkgo
 GO_DEPENDENCIES += cmrel=github.com/cert-manager/release/cmd/cmrel
 GO_DEPENDENCIES += release-notes=k8s.io/release/cmd/release-notes
