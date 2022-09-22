@@ -48,6 +48,8 @@ elif [[ "$K8S_VERSION" =~ 1\.23 ]]; then
   KIND_IMAGE=$KIND_IMAGE_K8S_123
 elif [[ "$K8S_VERSION" =~ 1\.24 ]]; then
   KIND_IMAGE=$KIND_IMAGE_K8S_124
+elif [[ "$K8S_VERSION" =~ 1\.25 ]]; then
+  KIND_IMAGE=$KIND_IMAGE_K8S_125
 else
   echo "Unrecognised/unsupported Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
