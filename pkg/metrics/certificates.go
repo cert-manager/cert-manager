@@ -101,8 +101,8 @@ func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current c
 			"namespace":    crt.Namespace,
 			"condition":    string(condition),
 			"issuer_name":  crt.Spec.IssuerRef.Name,
-		    "issuer_kind":  crt.Spec.IssuerRef.Kind,
-		    "issuer_group": crt.Spec.IssuerRef.Group,
+			"issuer_kind":  crt.Spec.IssuerRef.Kind,
+			"issuer_group": crt.Spec.IssuerRef.Group,
 		}).Set(value)
 	}
 }
