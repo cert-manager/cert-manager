@@ -30,11 +30,6 @@ spec:
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "controller"
-{{- if .Values.prometheus.podmonitoring.namespace }}
-  namespaceSelector:
-    matchNames:
-      - {{ include "cert-manager.namespace" . }}
-{{- end }}
   endpoints:
   - port: {{ .Values.prometheus.podmonitoring.portName }}
     interval: {{ .Values.prometheus.podmonitoring.interval }}
