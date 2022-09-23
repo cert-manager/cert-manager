@@ -110,7 +110,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `ingressShim.defaultIssuerKind` | Optional default issuer kind to use for ingress resources |  |
 | `ingressShim.defaultIssuerGroup` | Optional default issuer group to use for ingress resources |  |
 | `prometheus.enabled` | Enable Prometheus monitoring | `true` |
-| `prometheus.podmonitoring.enabled` | Enable Google Managed PrometheusOperator PodMonitoring monitoring | `false` |
+| `prometheus.podmonitoring.enabled` | Enable Google Managed Prometheus Operator PodMonitoring monitoring | `false` |
 | `prometheus.podmonitoring.interval` | Prometheus scrape interval | `60s` |
 | `prometheus.podmonitoring.portName` | Prometheus scrape port | `http-metrics` |
 | `prometheus.podmonitoring.prometheusInstance` | Prometheus Instance definition | `default` |
