@@ -51,8 +51,11 @@ func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *
 	}
 
 	m.certificateExpiryTimeSeconds.With(prometheus.Labels{
-		"name":      crt.Name,
-		"namespace": crt.Namespace}).Set(expiryTime)
+		"name":         crt.Name,
+		"namespace":    crt.Namespace,
+		"issuer_name":  crt.Spec.IssuerRef.Name,
+		"issuer_kind":  crt.Spec.IssuerRef.Kind,
+		"issuer_group": crt.Spec.IssuerRef.Group}).Set(expiryTime)
 }
 
 // updateCertificateRenewalTime updates the renew before duration of a certificate
@@ -64,8 +67,11 @@ func (m *Metrics) updateCertificateRenewalTime(crt *cmapi.Certificate) {
 	}
 
 	m.certificateRenewalTimeSeconds.With(prometheus.Labels{
-		"name":      crt.Name,
-		"namespace": crt.Namespace}).Set(renewalTime)
+		"name":         crt.Name,
+		"namespace":    crt.Namespace,
+		"issuer_name":  crt.Spec.IssuerRef.Name,
+		"issuer_kind":  crt.Spec.IssuerRef.Kind,
+		"issuer_group": crt.Spec.IssuerRef.Group}).Set(renewalTime)
 
 }
 
@@ -91,25 +97,28 @@ func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current c
 		}
 
 		m.certificateReadyStatus.With(prometheus.Labels{
-			"name":      crt.Name,
-			"namespace": crt.Namespace,
-			"condition": string(condition),
+			"name":         crt.Name,
+			"namespace":    crt.Namespace,
+			"condition":    string(condition),
+			"issuer_name":  crt.Spec.IssuerRef.Name,
+		    "issuer_kind":  crt.Spec.IssuerRef.Kind,
+		    "issuer_group": crt.Spec.IssuerRef.Group,
 		}).Set(value)
 	}
 }
 
 // RemoveCertificate will delete the Certificate metrics from continuing to be
 // exposed.
-func (m *Metrics) RemoveCertificate(key string) {
+func (m *Metrics) RemoveCertificate(key, issuerName, issuerKind, issuerGroup string) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		m.log.Error(err, "failed to get namespace and name from key")
 		return
 	}
 
-	m.certificateExpiryTimeSeconds.DeleteLabelValues(name, namespace)
-	m.certificateRenewalTimeSeconds.DeleteLabelValues(name, namespace)
+	m.certificateExpiryTimeSeconds.DeleteLabelValues(name, namespace, issuerName, issuerKind, issuerGroup)
+	m.certificateRenewalTimeSeconds.DeleteLabelValues(name, namespace, issuerName, issuerKind, issuerGroup)
 	for _, condition := range readyConditionStatuses {
-		m.certificateReadyStatus.DeleteLabelValues(name, namespace, string(condition))
+		m.certificateReadyStatus.DeleteLabelValues(name, namespace, string(condition), issuerName, issuerKind, issuerGroup)
 	}
 }
