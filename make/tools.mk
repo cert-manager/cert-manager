@@ -12,9 +12,9 @@ CTR=docker
 
 TOOLS :=
 TOOLS += helm=v3.8.0
-TOOLS += kubectl=v1.24.2
+TOOLS += kubectl=v1.25.2
 TOOLS += kind=v0.14.0
-TOOLS += controller-gen=v0.8.0
+TOOLS += controller-gen=v0.10.0
 TOOLS += cosign=v1.3.1
 TOOLS += cmrel=a1e2bad95be9688794fd0571c4c40e88cccf9173
 TOOLS += release-notes=v0.7.0
@@ -30,9 +30,9 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 GATEWAY_API_VERSION=v0.5.0
 
-K8S_CODEGEN_VERSION=v0.25.1
+K8S_CODEGEN_VERSION=v0.25.2
 
-KUBEBUILDER_ASSETS_VERSION=1.24.2
+KUBEBUILDER_ASSETS_VERSION=1.25.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -227,9 +227,9 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # kubectl #
 ###########
 
-KUBECTL_linux_amd64_SHA256SUM=f15fb430afd79f79ef7cf94a4e402cd212f02d8ec5a5e6a7ba9c3d5a2f954542
-KUBECTL_darwin_amd64_SHA256SUM=50598bf557113300c925e53140f53fc5d0fb8783e8033f73561d873ee6ff2fea
-KUBECTL_darwin_arm64_SHA256SUM=a9c33de9b14e565ec380e3a7034040bf9a0561937c55c859253271ff7e45813c
+KUBECTL_linux_amd64_SHA256SUM=8639f2b9c33d38910d706171ce3d25be9b19fc139d0e3d4627f38ce84f9040eb
+KUBECTL_darwin_amd64_SHA256SUM=b859766d7b47267af5cc1ee01a2d0c3c137dbfc53cd5be066181beed11ec7d34
+KUBECTL_darwin_arm64_SHA256SUM=1c37f9b7c0c92532f52c572476fd26a9349574abae8faf265fd4f8bca25b3d77
 
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
@@ -351,9 +351,9 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # kube-apiserver / etcd    #
 ############################
 
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=6d9f0a6ab0119c5060799b4b8cbd0a030562da70b7ad4125c218eaf028c6cc28
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=3367987e2b40dadb5081a92a59d82664bee923eeeea77017ec88daf735e26cae
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=4b440713e32ca496a0a96c8e6cdc531afe9f9c2cc8d7e8e4eddfb5eb9bdc779f
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=fa7e08a905c3d93d90150c7a2baa597328611a3452c89eacd08e5b80843ba0b8
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=80524d5fe2d925f1e9bf1eef89722fca0f2b43e38ea51434b835694db6eedf6a
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=53a9bc56f857831985e3e1a8746d0108b8c3e25d9b1b0f4ab2d1c673a9efc88d
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
