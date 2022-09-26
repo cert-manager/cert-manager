@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
-	jks "github.com/pavel-v-chernykh/keystore-go/v4"
+	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
