@@ -11,28 +11,28 @@ export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
 CTR=docker
 
 TOOLS :=
-TOOLS += helm=v3.8.0
-TOOLS += kubectl=v1.24.2
-TOOLS += kind=v0.14.0
-TOOLS += controller-gen=v0.8.0
-TOOLS += cosign=v1.3.1
+TOOLS += helm=v3.10.0
+TOOLS += kubectl=v1.25.2
+TOOLS += kind=v0.16.0
+TOOLS += controller-gen=v0.10.0
+TOOLS += cosign=v1.12.1
 TOOLS += cmrel=a1e2bad95be9688794fd0571c4c40e88cccf9173
-TOOLS += release-notes=v0.7.0
-TOOLS += goimports=v0.1.8
-TOOLS += go-licenses=v1.2.1
-TOOLS += gotestsum=v1.7.0
-TOOLS += rclone=v1.58.1
-TOOLS += trivy=v0.30.4
-TOOLS += ytt=v0.36.0
-TOOLS += yq=v4.25.3
-TOOLS += crane=v0.8.0
+TOOLS += release-notes=v0.14.0
+TOOLS += goimports=v0.1.12
+TOOLS += go-licenses=v1.3.1
+TOOLS += gotestsum=v1.8.2
+TOOLS += rclone=v1.59.2
+TOOLS += trivy=v0.32.0
+TOOLS += ytt=v0.43.0
+TOOLS += yq=v4.27.5
+TOOLS += crane=v0.11.0
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
 GATEWAY_API_VERSION=v0.5.0
 
-K8S_CODEGEN_VERSION=v0.25.1
+K8S_CODEGEN_VERSION=v0.25.2
 
-KUBEBUILDER_ASSETS_VERSION=1.24.2
+KUBEBUILDER_ASSETS_VERSION=1.25.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -211,9 +211,9 @@ $(foreach GO_DEPENDENCY,$(GO_DEPENDENCIES),$(eval $(call go_dependency,$(word 1,
 # Helm #
 ########
 
-HELM_linux_amd64_SHA256SUM=8408c91e846c5b9ba15eb6b1a5a79fc22dd4d33ac6ea63388e5698d1b2320c8b
-HELM_darwin_amd64_SHA256SUM=532ddd6213891084873e5c2dcafa577f425ca662a6594a3389e288fc48dc2089
-HELM_darwin_arm64_SHA256SUM=751348f1a4a876ffe089fd68df6aea310fd05fe3b163ab76aa62632e327122f3
+HELM_linux_amd64_SHA256SUM=bf56beb418bb529b5e0d6d43d56654c5a03f89c98400b409d1013a33d9586474
+HELM_darwin_amd64_SHA256SUM=1e7fd528482ac2ef2d79fe300724b3e07ff6f846a2a9b0b0fe6f5fa05691786b
+HELM_darwin_arm64_SHA256SUM=f7f6558ebc8211824032a7fdcf0d55ad064cb33ec1eeec3d18057b9fe2e04dbe
 
 $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
@@ -227,9 +227,9 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # kubectl #
 ###########
 
-KUBECTL_linux_amd64_SHA256SUM=f15fb430afd79f79ef7cf94a4e402cd212f02d8ec5a5e6a7ba9c3d5a2f954542
-KUBECTL_darwin_amd64_SHA256SUM=50598bf557113300c925e53140f53fc5d0fb8783e8033f73561d873ee6ff2fea
-KUBECTL_darwin_arm64_SHA256SUM=a9c33de9b14e565ec380e3a7034040bf9a0561937c55c859253271ff7e45813c
+KUBECTL_linux_amd64_SHA256SUM=8639f2b9c33d38910d706171ce3d25be9b19fc139d0e3d4627f38ce84f9040eb
+KUBECTL_darwin_amd64_SHA256SUM=b859766d7b47267af5cc1ee01a2d0c3c137dbfc53cd5be066181beed11ec7d34
+KUBECTL_darwin_arm64_SHA256SUM=1c37f9b7c0c92532f52c572476fd26a9349574abae8faf265fd4f8bca25b3d77
 
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
@@ -240,9 +240,9 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=af5e8331f2165feab52ec2ae07c427c7b66f4ad044d09f253004a20252524c8b
-KIND_darwin_amd64_SHA256SUM=fdf7209e5f92651ee5d55b78eb4ee5efded0d28c3f3ab8a4a163b6ffd92becfd
-KIND_darwin_arm64_SHA256SUM=bdbb6e94bc8c846b0a6a1df9f962fe58950d92b26852fd6ebdc48fabb229932c
+KIND_linux_amd64_SHA256SUM=a9438c56776bde1637ec763f3e450078258b791aaa631b8211b7ed3e4f50d089
+KIND_darwin_amd64_SHA256SUM=9936eafdcc4e34dfa3c9ad0e57162e19575c6581ab28f6780dc434bcb9245ecd
+KIND_darwin_arm64_SHA256SUM=3e8ac912f24066f8de8fbaed471b76307484afa8165193ee797b622beba54d0a
 
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) -sSfL https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
@@ -253,9 +253,9 @@ $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools 
 # cosign #
 ##########
 
-COSIGN_linux_amd64_SHA256SUM=1227b270e5d7d21d09469253cce17b72a14f6b7c9036dfc09698c853b31e8fc8
-COSIGN_darwin_amd64_SHA256SUM=bcffa19e80f3e94d70e1fb1b0f591b0dec08926b31d3609fe3d25a1cc0389a0a
-COSIGN_darwin_arm64_SHA256SUM=eda58f090d8f4f1db5a0e3a0d2d8845626181fe8aa1cea1791e0afa87fee7b5c
+COSIGN_linux_amd64_SHA256SUM=b30fdc7d9aab246bc2f6a760ed8eff063bd37935389302c963c07018e5d48a12
+COSIGN_darwin_amd64_SHA256SUM=87a7e93b1539d988fefe0d00fd5a5a0e02ef43f5f977c2a701170c502a17980d
+COSIGN_darwin_arm64_SHA256SUM=41bc69dae9f06f58e8e61446907b7e53a4db41ef341b235172d3745c937f1777
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
@@ -268,9 +268,9 @@ $(BINDIR)/downloaded/tools/cosign@$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/to
 # rclone #
 ##########
 
-RCLONE_linux_amd64_SHA256SUM=135a4a0965cb58eafb07941f2013a82282c44c28fea9595587778e969d9ed035
-RCLONE_darwin_amd64_SHA256SUM=03b104accc26d5aec14088c253ea5a6bba3263ae00fc403737cabceecad9eae9
-RCLONE_darwin_arm64_SHA256SUM=eb547bd0ef2037118a01003bed6cf00a1d6e6975b6f0a73cb811f882a3c3de72
+RCLONE_linux_amd64_SHA256SUM=81e7be456369f5957713463e3624023e9159c1cae756e807937046ebc9394383
+RCLONE_darwin_amd64_SHA256SUM=d0a70241212198566028cd3154c418e35cbe73a6cd22c2d851341e88cb650cb7
+RCLONE_darwin_arm64_SHA256SUM=8b98893fa34aa790ae23dd2417e8c9a200326c05feb26101dff09cda479aeb1f
 
 $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,osx,$*))
@@ -286,9 +286,9 @@ $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/to
 # trivy #
 #########
 
-TRIVY_linux_amd64_SHA256SUM=bf4fbf5c1c8179460070dce909dec93cf61dfbbf917f49a16ea336d1f66f3727
-TRIVY_darwin_amd64_SHA256SUM=af6a0c66fdc3fe874711ef35fc813d954d75139b32a5226d2d8162e911f02ac6
-TRIVY_darwin_arm64_SHA256SUM=9ffb59195c6cb15e5ec9a0d8c0467595a8155c07b7616ac342b06847df1f934c
+TRIVY_linux_amd64_SHA256SUM=e6e1c4767881ab1e40da5f3bb499b1c9176892021c7cb209405078fc096d94d8
+TRIVY_darwin_amd64_SHA256SUM=1cc8b2301f696b71c488d99c917a21a191ab26e1c093287c20112e8bb517ac4c
+TRIVY_darwin_arm64_SHA256SUM=41a3d4c12cd227cf95db6b30144b85e571541f587837f2f3814e2339dd81a21a
 
 $(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,macOS,$*))
@@ -306,9 +306,9 @@ $(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tool
 # ytt #
 #######
 
-YTT_linux_amd64_SHA256SUM=d81ecf6c47209f6ac527e503a6fd85e999c3c2f8369e972794047bddc7e5fbe2
-YTT_darwin_amd64_SHA256SUM=9662e3f8e30333726a03f7a5ae6231fbfb2cebb6c1aa3f545b253d7c695487e6
-YTT_darwin_arm64_SHA256SUM=c970b2c13d4059f0bee3bf3ceaa09bd0674a62c24550453d90b284d885a06b7b
+YTT_linux_amd64_SHA256SUM=29e647beeacbcc2be5f2f481e405c73bcd6d7563bd229ff924a7997b6f2edd5f
+YTT_darwin_amd64_SHA256SUM=579012ac80cc0d55c3a6dde2dfc0ff5bf8a4f74c775295be99faf691cc18595e
+YTT_darwin_arm64_SHA256SUM=bd8781e76e833c848ecc80580b3588b4ce8f38d8697802ec83c07aae7cf7a66f
 
 $(BINDIR)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/$(YTT_VERSION)/ytt-$(subst _,-,$*) -o $@
@@ -319,9 +319,9 @@ $(BINDIR)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 # yq #
 ######
 
-YQ_linux_amd64_SHA256SUM=cb66f4382a65d0443824f0a0fcda9c5c5f7b6bd4e4346539b2f0abc647ecf0ea
-YQ_darwin_amd64_SHA256SUM=3b80429a6118defa8726629a801e0f5f49e544b7279e3dde526b99bab5b6b5bd
-YQ_darwin_arm64_SHA256SUM=db9be0f73e7fbcba1039e405abc2a834cdc64ac3f90c7b79090b242e0002193c
+YQ_linux_amd64_SHA256SUM=9a54846e81720ae22814941905cd3b056ebdffb76bf09acffa30f5e90b22d615
+YQ_darwin_amd64_SHA256SUM=79a55533b683c5eabdc35b00336aa4c107d7d719db0639a31892fc35d1436cdc
+YQ_darwin_arm64_SHA256SUM=40547a5049f15a1103268fd871baaa34a31ad30136ee27a829cf697737f392be
 
 $(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$* -o $@
@@ -351,9 +351,9 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # kube-apiserver / etcd    #
 ############################
 
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=6d9f0a6ab0119c5060799b4b8cbd0a030562da70b7ad4125c218eaf028c6cc28
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=3367987e2b40dadb5081a92a59d82664bee923eeeea77017ec88daf735e26cae
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=4b440713e32ca496a0a96c8e6cdc531afe9f9c2cc8d7e8e4eddfb5eb9bdc779f
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=fa7e08a905c3d93d90150c7a2baa597328611a3452c89eacd08e5b80843ba0b8
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=80524d5fe2d925f1e9bf1eef89722fca0f2b43e38ea51434b835694db6eedf6a
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=53a9bc56f857831985e3e1a8746d0108b8c3e25d9b1b0f4ab2d1c673a9efc88d
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
