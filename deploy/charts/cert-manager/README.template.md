@@ -113,7 +113,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.podmonitoring.annotations` | Annotations to add to the PodMonitoring resource | `{}` |
 | `prometheus.podmonitoring.enabled` | Enable Google Managed Prometheus Operator PodMonitoring monitoring | `false` |
 | `prometheus.podmonitoring.interval` | Prometheus scrape interval | `60s` |
-| `prometheus.podmonitoring.labels` | Add custom labels to PodMonitoring | |
+| `prometheus.podmonitoring.labels` | Add custom labels to PodMonitoring | `{}` |
 | `prometheus.podmonitoring.namespace` | Define namespace where to deploy the PodMonitoring resource | (namespace where you are deploying) |
 | `prometheus.podmonitoring.portName` | Prometheus scrape port | `http-metrics` |
 | `prometheus.podmonitoring.prometheusInstance` | Prometheus Instance definition | `default` |

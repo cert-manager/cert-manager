@@ -189,10 +189,12 @@ prometheus:
     annotations: {}
     honorLabels: false
   podmonitoring:
-    enabled: true
+    enabled: false
     prometheusInstance: default
     interval: 60s
     portName: http-metrics
+    labels: {}
+    annotations: {}
     namespace: ~
 
 # Use these variables to configure the HTTP_PROXY environment variables
