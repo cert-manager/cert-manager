@@ -93,7 +93,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
 		// If the Certificate no longer exists, remove it's metrics from being exposed.
-		c.metrics.RemoveCertificate(key)
+		c.metrics.RemoveCertificate(key, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Kind, crt.Spec.IssuerRef.Group)
 		return nil
 	}
 	if err != nil {
