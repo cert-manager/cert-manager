@@ -323,7 +323,7 @@ func TestCertificateCache(t *testing.T) {
 	}
 
 	// Remove second certificate and check not exists
-	m.RemoveCertificate("default-unit-test-ns/crt2", "test-issuer", "test-issuer-kind", "test-issuer-group")
+	m.RemoveCertificate("default-unit-test-ns/crt2")
 	if err := testutil.CollectAndCompare(m.certificateReadyStatus,
 		strings.NewReader(readyMetadata+`
         certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 0
@@ -348,9 +348,9 @@ func TestCertificateCache(t *testing.T) {
 	}
 
 	// Remove all Certificates (even is already removed) and observe no Certificates
-	m.RemoveCertificate("default-unit-test-ns/crt1", "test-issuer", "test-issuer-kind", "test-issuer-group")
-	m.RemoveCertificate("default-unit-test-ns/crt2", "test-issuer", "test-issuer-kind", "test-issuer-group")
-	m.RemoveCertificate("default-unit-test-ns/crt3", "test-issuer", "test-issuer-kind", "test-issuer-group")
+	m.RemoveCertificate("default-unit-test-ns/crt1")
+	m.RemoveCertificate("default-unit-test-ns/crt2")
+	m.RemoveCertificate("default-unit-test-ns/crt3")
 	if err := testutil.CollectAndCompare(m.certificateReadyStatus,
 		strings.NewReader(readyMetadata),
 		"certmanager_certificate_ready_status",

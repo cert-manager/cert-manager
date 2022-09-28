@@ -109,16 +109,14 @@ func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current c
 
 // RemoveCertificate will delete the Certificate metrics from continuing to be
 // exposed.
-func (m *Metrics) RemoveCertificate(key, issuerName, issuerKind, issuerGroup string) {
+func (m *Metrics) RemoveCertificate(key string) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		m.log.Error(err, "failed to get namespace and name from key")
 		return
 	}
 
-	m.certificateExpiryTimeSeconds.DeleteLabelValues(name, namespace, issuerName, issuerKind, issuerGroup)
-	m.certificateRenewalTimeSeconds.DeleteLabelValues(name, namespace, issuerName, issuerKind, issuerGroup)
-	for _, condition := range readyConditionStatuses {
-		m.certificateReadyStatus.DeleteLabelValues(name, namespace, string(condition), issuerName, issuerKind, issuerGroup)
-	}
+	m.certificateExpiryTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
+	m.certificateRenewalTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
+	m.certificateReadyStatus.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 }
