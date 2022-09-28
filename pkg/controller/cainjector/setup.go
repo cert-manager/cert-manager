@@ -22,6 +22,7 @@ import (
 	"os"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -139,7 +141,7 @@ func newGenericInjectionController(ctx context.Context, groupName string, mgr ct
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
 			},
-			Log: log,
+			LogConstructor: func(request *reconcile.Request) logr.Logger { return log },
 		})
 	if err != nil {
 		return nil, err

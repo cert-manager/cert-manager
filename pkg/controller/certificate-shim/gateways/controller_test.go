@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
+	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"

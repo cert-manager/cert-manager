@@ -404,7 +404,7 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 				Port:     gwapiv1alpha2.PortNumber(80),
 				Hostname: (*gwapiv1alpha2.Hostname)(&dnsNames[0]),
 				TLS: &gwapiv1alpha2.GatewayTLSConfig{
-					CertificateRefs: []*gwapiv1alpha2.SecretObjectReference{
+					CertificateRefs: []gwapiv1alpha2.SecretObjectReference{
 						{
 							Kind:      func() *gwapiv1alpha2.Kind { k := gwapiv1alpha2.Kind("Secret"); return &k }(),
 							Name:      gwapiv1alpha2.ObjectName(secretName),

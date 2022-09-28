@@ -293,6 +293,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionDenied))
 		}
 
+		if apiutil.CertificateRequestHasInvalidRequest(req) {
+			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionInvalidRequest))
+		}
+
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
 	}

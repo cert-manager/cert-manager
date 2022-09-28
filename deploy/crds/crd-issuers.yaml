@@ -430,7 +430,7 @@ spec:
                                     description: 'When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute. cert-manager needs to know which parentRefs should be used when creating the HTTPRoute. Usually, the parentRef references a Gateway. See: https://gateway-api.sigs.k8s.io/v1alpha2/api-types/httproute/#attaching-to-gateways'
                                     type: array
                                     items:
-                                      description: "ParentRef identifies an API object (usually a Gateway) that can be considered a parent of this resource (usually a route). The only kind of parent resource with \"Core\" support is Gateway. This API may be extended in the future to support additional kinds of parent resources, such as HTTPRoute. \n The API object must be valid in the cluster; the Group and Kind must be registered in the cluster for this reference to be valid. \n References to objects with invalid Group and Kind are not valid, and must be rejected by the implementation, with appropriate Conditions set on the containing object."
+                                      description: "ParentReference identifies an API object (usually a Gateway) that can be considered a parent of this resource (usually a route). The only kind of parent resource with \"Core\" support is Gateway. This API may be extended in the future to support additional kinds of parent resources, such as HTTPRoute. \n The API object must be valid in the cluster; the Group and Kind must be registered in the cluster for this reference to be valid."
                                       type: object
                                       required:
                                         - name
@@ -442,7 +442,7 @@ spec:
                                           maxLength: 253
                                           pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                         kind:
-                                          description: "Kind is kind of the referent. \n Support: Core (Gateway) Support: Custom (Other Resources)"
+                                          description: "Kind is kind of the referent. \n Support: Core (Gateway) \n Support: Custom (Other Resources)"
                                           type: string
                                           default: Gateway
                                           maxLength: 63
@@ -459,8 +459,14 @@ spec:
                                           maxLength: 63
                                           minLength: 1
                                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        port:
+                                          description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
+                                          type: integer
+                                          format: int32
+                                          maximum: 65535
+                                          minimum: 1
                                         sectionName:
-                                          description: "SectionName is the name of a section within the target resource. In the following resources, SectionName is interpreted as the following: \n * Gateway: Listener Name \n Implementations MAY choose to support attaching Routes to other resources. If that is the case, they MUST clearly document how SectionName is interpreted. \n When unspecified (empty string), this will reference the entire resource. For the purpose of status, an attachment is considered successful if at least one section in the parent resource accepts it. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Core"
+                                          description: "SectionName is the name of a section within the target resource. In the following resources, SectionName is interpreted as the following: \n * Gateway: Listener Name. When both Port (experimental) and SectionName are specified, the name and port of the selected listener must match both specified values. \n Implementations MAY choose to support attaching Routes to other resources. If that is the case, they MUST clearly document how SectionName is interpreted. \n When unspecified (empty string), this will reference the entire resource. For the purpose of status, an attachment is considered successful if at least one section in the parent resource accepts it. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Core"
                                           type: string
                                           maxLength: 253
                                           minLength: 1
@@ -582,6 +588,7 @@ spec:
                                                                     type: array
                                                                     items:
                                                                       type: string
+                                                          x-kubernetes-map-type: atomic
                                                         weight:
                                                           description: Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
                                                           type: integer
@@ -641,6 +648,8 @@ spec:
                                                                     type: array
                                                                     items:
                                                                       type: string
+                                                          x-kubernetes-map-type: atomic
+                                                    x-kubernetes-map-type: atomic
                                               podAffinity:
                                                 description: Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
                                                 type: object
@@ -691,6 +700,7 @@ spec:
                                                                   type: object
                                                                   additionalProperties:
                                                                     type: string
+                                                              x-kubernetes-map-type: atomic
                                                             namespaceSelector:
                                                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                               type: object
@@ -721,6 +731,7 @@ spec:
                                                                   type: object
                                                                   additionalProperties:
                                                                     type: string
+                                                              x-kubernetes-map-type: atomic
                                                             namespaces:
                                                               description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                                               type: array
@@ -772,6 +783,7 @@ spec:
                                                               type: object
                                                               additionalProperties:
                                                                 type: string
+                                                          x-kubernetes-map-type: atomic
                                                         namespaceSelector:
                                                           description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                           type: object
@@ -802,6 +814,7 @@ spec:
                                                               type: object
                                                               additionalProperties:
                                                                 type: string
+                                                          x-kubernetes-map-type: atomic
                                                         namespaces:
                                                           description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                                           type: array
@@ -860,6 +873,7 @@ spec:
                                                                   type: object
                                                                   additionalProperties:
                                                                     type: string
+                                                              x-kubernetes-map-type: atomic
                                                             namespaceSelector:
                                                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                               type: object
@@ -890,6 +904,7 @@ spec:
                                                                   type: object
                                                                   additionalProperties:
                                                                     type: string
+                                                              x-kubernetes-map-type: atomic
                                                             namespaces:
                                                               description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                                               type: array
@@ -941,6 +956,7 @@ spec:
                                                               type: object
                                                               additionalProperties:
                                                                 type: string
+                                                          x-kubernetes-map-type: atomic
                                                         namespaceSelector:
                                                           description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                           type: object
@@ -971,6 +987,7 @@ spec:
                                                               type: object
                                                               additionalProperties:
                                                                 type: string
+                                                          x-kubernetes-map-type: atomic
                                                         namespaces:
                                                           description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                                           type: array

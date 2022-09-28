@@ -100,3 +100,10 @@ func (r *REST) callSolver(req v1alpha1.ChallengeRequest) (v1alpha1.ChallengeResp
 		},
 	}, nil
 }
+
+// This resource type isn't actually persisted anywhere, it is only submitted to the
+// DNS01 solver webhooks, so there's nothing to do to delete a resource/it doesn't
+// make sense in this context.
+// see: https://github.com/cert-manager/cert-manager/pull/5346#discussion_r959521656
+func (r *REST) Destroy() {
+}

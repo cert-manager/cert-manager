@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/gateway/apis/v1alpha2"
+	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -112,16 +112,16 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 // example, the following Certificate "cert-1" is controlled by the Gateway
 // "gateway-1":
 //
-//     kind: Certificate
-//     metadata:                                           Note that the owner
-//       namespace: cert-1                                 reference does not
-//       ownerReferences:                                  have a namespace,
-//       - controller: true                                since owner refs
-//         apiVersion: networking.x-k8s.io/v1alpha1        only work inside
-//         kind: Gateway                                   the same namespace.
-//         name: gateway-1
-//         blockOwnerDeletion: true
-//         uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
+//	kind: Certificate
+//	metadata:                                           Note that the owner
+//	  namespace: cert-1                                 reference does not
+//	  ownerReferences:                                  have a namespace,
+//	  - controller: true                                since owner refs
+//	    apiVersion: networking.x-k8s.io/v1alpha1        only work inside
+//	    kind: Gateway                                   the same namespace.
+//	    name: gateway-1
+//	    blockOwnerDeletion: true
+//	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
 func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interface{}) {
 	return func(obj interface{}) {
 		crt, ok := obj.(*cmapi.Certificate)

@@ -27,12 +27,12 @@ while (($#)); do
 	# We probably won't have any directives, so we just check for any directive and
 	# fail if there's one in any of the files
 	# https://yaml.org/spec/1.2.2/#681-yaml-directives
-	if grep -q "%YAML" $f; then
+	if grep -q "%YAML" "$f"; then
 		echo "found %YAML directive in file; this can't be handled safely by this script" 1>&2
 		exit 1
 	fi
 
-	cat $f
+	cat "$f"
 
 	shift
 

@@ -46,11 +46,11 @@ release: release-artifacts-signed
 ## RELEASE_TARGET_BUCKET
 ##
 ## @category Release
-upload-release: release | $(BINDIR)/tools/rclone
+upload-release: release | $(NEEDS_RCLONE)
 ifeq ($(strip $(RELEASE_TARGET_BUCKET)),)
 	$(error Trying to upload-release but RELEASE_TARGET_BUCKET is empty)
 endif
-	./$(BINDIR)/tools/rclone copyto ./$(BINDIR)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
+	$(RCLONE) copyto ./$(BINDIR)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
 
 # Takes all metadata files in $(BINDIR)/metadata and combines them into one.
 
@@ -114,5 +114,5 @@ $(BINDIR)/release $(BINDIR)/metadata:
 #	@# We cd into bin so that SHA256SUMS file doesn't have a prefix of `bin` on everything
 #	cd $(dir $@) && sha256sum $(patsubst $(BINDIR)/%,%,$^) > $(notdir $@)
 
-#$(BINDIR)/SHA256SUMS.sig: $(BINDIR)/SHA256SUMS $(BINDIR)/tools/cosign
-#	$(BINDIR)/tools/cosign sign-blob --key $(COSIGN_KEY) $< > $@
+#$(BINDIR)/SHA256SUMS.sig: $(BINDIR)/SHA256SUMS | $(NEEDS_COSIGN)
+#	$(COSIGN) sign-blob --key $(COSIGN_KEY) $< > $@

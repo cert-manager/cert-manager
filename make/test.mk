@@ -3,7 +3,7 @@ export KUBEBUILDER_ASSETS=$(PWD)/$(BINDIR)/tools
 # WHAT can be used to control which unit tests are run by "make test"; defaults to running all
 # tests except e2e tests (which require more significant setup)
 # For example: make WHAT=./pkg/util/pki test-pretty to only run the PKI utils tests
-WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/...
+WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 
 .PHONY: test
 ## Test is the workhorse test command which by default runs all unit and
@@ -12,7 +12,7 @@ WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/...
 ##   make test WHAT=./pkg/...
 ##
 ## @category Development
-test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver
+test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
@@ -24,14 +24,15 @@ test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(B
 ## issues with dashboards and UIs.
 ##
 ## @category CI
-test-ci: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver
-	@# Fuzz tests are hidden from JUnit output because they can break dashboards.
-	@# They look like this:
-	@# <testcase classname="internal/controller/certificates" name="Test_serializeApplyStatus/fuzz_8358"></testcase>
+test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	@mkdir -p $(ARTIFACTS)
-	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
-		--post-run-command $$'bash -c "awk \'$$1 \!~ /\\/fuzz_\\d+// { print $$2 }\' - $$GOTESTSUM_JUNITFILE >/tmp/$$$$ && mv /tmp/$$$$ $$GOTESTSUM_JUNITFILE"' \
-		--junitfile-testsuite-name short --junitfile-testcase-classname relative -- $(WHAT)
+	$(GOTESTSUM) \
+		--junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
+		--junitfile-testsuite-name short \
+		--junitfile-testcase-classname relative \
+		--post-run-command $$'bash -c "$(GO) run hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' \
+		-- \
+		$(WHAT)
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
@@ -39,7 +40,7 @@ test-ci: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd 
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: $(BINDIR)/tools/gotestsum
+unit-test: | $(NEEDS_GOTESTSUM)
 	$(GOTESTSUM) ./cmd/... ./pkg/... ./internal/...
 
 .PHONY: setup-integration-tests
@@ -53,7 +54,7 @@ setup-integration-tests: test/integration/versionchecker/testdata/test_manifests
 ## require a full Kubernetes cluster.
 ##
 ## @category Development
-integration-test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/tools/etcd $(BINDIR)/tools/kubectl $(BINDIR)/tools/kube-apiserver
+integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) ./test/...
 
 .PHONY: e2e
@@ -68,16 +69,16 @@ integration-test: setup-integration-tests $(BINDIR)/tools/gotestsum $(BINDIR)/to
 ## For more information about GINKGO_FOCUS, see "make/e2e.sh --help".
 ##
 ## @category Development
-e2e: $(BINDIR)/scratch/kind-exists $(BINDIR)/tools/kubectl $(BINDIR)/tools/ginkgo
+e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
 	make/e2e.sh
 
 .PHONY: e2e-ci
 e2e-ci: e2e-setup-kind e2e-setup
-	$(MAKE) --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)" || ($(MAKE) kind-logs && exit 1)
+	make/e2e-ci.sh
 
 .PHONY: test-upgrade
-test-upgrade: | $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
-	./hack/verify-upgrade.sh $(BINDIR)/tools/helm $(BINDIR)/tools/kind $(BINDIR)/tools/ytt $(BINDIR)/tools/kubectl $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
 
 test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist

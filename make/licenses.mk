@@ -2,7 +2,7 @@
 # It would be possible to make this more dynamic, but there's seemingly no need:
 # https://stackoverflow.com/a/2391555/1615417
 # As such, this is hardcoded to avoid needless complexity
-LICENSE_YEAR=2021
+LICENSE_YEAR=2022
 
 # Creates the boilerplate header for YAML files, assumed to be the same as the one in
 # shell scripts (hence the use of boilerplate.sh.txt)
@@ -22,5 +22,5 @@ $(BINDIR)/scratch/cert-manager.license: $(BINDIR)/scratch/license.yaml $(BINDIR)
 $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footnote.yaml | $(BINDIR)/scratch
 	cp $< $@
 
-LICENSES $(BINDIR)/scratch/LATEST-LICENSES: go.mod go.sum | $(BINDIR)/tools/go-licenses
-	$(BINDIR)/tools/go-licenses csv ./...  > $@
+LICENSES $(BINDIR)/scratch/LATEST-LICENSES: go.mod go.sum | $(NEEDS_GO-LICENSES)
+	$(GO-LICENSES) csv ./...  > $@

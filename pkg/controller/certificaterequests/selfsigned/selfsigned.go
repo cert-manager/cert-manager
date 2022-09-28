@@ -26,7 +26,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -38,6 +40,7 @@ import (
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/go-logr/logr"
 )
 
 const (
@@ -62,7 +65,29 @@ func init() {
 	// create certificate request controller for selfsigned issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
-			For(certificaterequests.New(apiutil.IssuerSelfSigned, NewSelfSigned)).
+			For(certificaterequests.New(
+				apiutil.IssuerSelfSigned,
+				NewSelfSigned,
+
+				// Handle informed Secrets which may be referenced by the
+				// "cert-manager.io/private-key-secret-name" annotation.
+				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+					secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Informer()
+					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
+					helper := issuer.NewHelper(
+						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
+						ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
+					)
+					secretInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+						WorkFunc: handleSecretReferenceWorkFunc(log, certificateRequestLister, helper, queue),
+					})
+					return []cache.InformerSynced{
+						secretInformer.HasSynced,
+						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Informer().HasSynced,
+						ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Informer().HasSynced,
+					}, nil
+				},
+			)).
 			Complete()
 	})
 }

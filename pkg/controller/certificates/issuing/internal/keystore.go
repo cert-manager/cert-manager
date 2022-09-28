@@ -28,7 +28,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	jks "github.com/pavel-v-chernykh/keystore-go/v4"
+	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"

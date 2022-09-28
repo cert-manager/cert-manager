@@ -18,6 +18,12 @@ metadata:
     {{- with .Values.prometheus.servicemonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+{{- if .Values.prometheus.servicemonitor.annotations }}
+  annotations:
+    {{- with .Values.prometheus.servicemonitor.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
 spec:
   jobLabel: {{ template "cert-manager.fullname" . }}
   selector:

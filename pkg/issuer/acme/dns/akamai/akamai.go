@@ -41,7 +41,7 @@ type OpenEdgegridDNSService interface {
 	RecordDelete(rec *dns.RecordBody, zone string) error
 }
 
-//OpenDNSConfig contains akamai's config to create authorization header.
+// OpenDNSConfig contains akamai's config to create authorization header.
 type OpenDNSConfig struct {
 	config edgegrid.Config
 }

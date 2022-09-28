@@ -17,8 +17,9 @@ limitations under the License.
 package suite
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/approval"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests"
 	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificates"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificatesigningrequests"
 	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance"
 	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers"
 	_ "github.com/cert-manager/cert-manager/test/e2e/suite/serving"

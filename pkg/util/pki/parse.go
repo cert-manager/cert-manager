@@ -321,13 +321,13 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 // following diagram, C.CheckSignatureFrom(P) is satisfied, i.e., the
 // signature ("sig") on the certificate C can be verified using the parent P:
 //
-//       head                                         tail
-//  +------+-------+      +------+-------+      +------+-------+
-//  |      |       |      |      |       |      |      |       |
-//  |      |  sig ------->|  C   |  sig ------->|  P   |       |
-//  |      |       |      |      |       |      |      |       |
-//  +------+-------+      +------+-------+      +------+-------+
-//  leaf certificate                            root certificate
+//	     head                                         tail
+//	+------+-------+      +------+-------+      +------+-------+
+//	|      |       |      |      |       |      |      |       |
+//	|      |  sig ------->|  C   |  sig ------->|  P   |       |
+//	|      |       |      |      |       |      |      |       |
+//	+------+-------+      +------+-------+      +------+-------+
+//	leaf certificate                            root certificate
 //
 // The function returns false if the chains A and B are not gluable.
 func (c *chainNode) tryMergeChain(chain *chainNode) (*chainNode, bool) {

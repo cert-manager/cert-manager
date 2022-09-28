@@ -22,12 +22,10 @@ import (
 
 type Ginkgo struct {
 	ReportDirectory string
-	ReportPrefix    string
 }
 
 func (g *Ginkgo) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&g.ReportDirectory, "report-dir", "", "Optional directory to store junit output in. If not specified, no junit file will be output")
-	fs.StringVar(&g.ReportPrefix, "report-prefix", "", "Optional prefix for JUnit XML reports. Default is empty, which doesn't prepend anything to the default name")
 }
 
 func (c *Ginkgo) Validate() []error {

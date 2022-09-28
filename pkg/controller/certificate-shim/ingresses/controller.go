@@ -110,16 +110,16 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 // example, the following Certificate "cert-1" is controlled by the Ingress
 // "ingress-1":
 //
-//     kind: Certificate
-//     metadata:                                           Note that the owner
-//       namespace: cert-1                                 reference does not
-//       ownerReferences:                                  have a namespace,
-//       - controller: true                                since owner refs
-//         apiVersion: networking.k8s.io/v1beta1           only work inside
-//         kind: Ingress                                   the same namespace.
-//         name: ingress-1
-//         blockOwnerDeletion: true
-//         uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
+//	kind: Certificate
+//	metadata:                                           Note that the owner
+//	  namespace: cert-1                                 reference does not
+//	  ownerReferences:                                  have a namespace,
+//	  - controller: true                                since owner refs
+//	    apiVersion: networking.k8s.io/v1beta1           only work inside
+//	    kind: Ingress                                   the same namespace.
+//	    name: ingress-1
+//	    blockOwnerDeletion: true
+//	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
 func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interface{}) {
 	return func(obj interface{}) {
 		cert, ok := obj.(*cmapi.Certificate)

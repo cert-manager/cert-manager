@@ -290,6 +290,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"'foo'.\nAll controllers: %s",
 		strings.Join(allControllers, ", ")))
 
+	// HTTP-01 solver pod configuration via flags is a now deprecated
+	// mechanism- please use pod template instead when adding any new
+	// configuration options
+	// https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
+	// These flags however will not be deprecated for backwards compatibility purposes.
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
