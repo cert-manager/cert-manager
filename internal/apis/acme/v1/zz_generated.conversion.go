@@ -903,6 +903,7 @@ func autoConvert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *v1.ACMEIssuer, out *acme.A
 	}
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
+	out.PrivateKeyAlgorithm = acme.AccountKeyAlgorithm(in.PrivateKeyAlgorithm)
 	return nil
 }
 
@@ -936,6 +937,7 @@ func autoConvert_acme_ACMEIssuer_To_v1_ACMEIssuer(in *acme.ACMEIssuer, out *v1.A
 	}
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
+	out.PrivateKeyAlgorithm = v1.AccountKeyAlgorithm(in.PrivateKeyAlgorithm)
 	return nil
 }
 

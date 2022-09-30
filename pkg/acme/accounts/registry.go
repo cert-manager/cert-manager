@@ -18,8 +18,8 @@ package accounts
 
 import (
 	"crypto"
-	"crypto/rsa"
 	"crypto/ecdsa"
+	"crypto/rsa"
 	"errors"
 	"net/http"
 	"sync"
@@ -86,7 +86,7 @@ type stableOptions struct {
 }
 
 func (c stableOptions) equalTo(c2 stableOptions) bool {
-	if  c.serverURL != c2.serverURL ||
+	if c.serverURL != c2.serverURL ||
 		c.skipVerifyTLS != c2.skipVerifyTLS ||
 		c.issuerUID != c2.issuerUID {
 		return false

@@ -102,7 +102,22 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	// +optional
 	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
+
+	// Specifies the algorithm of the private key. Valid choices are are `rsa`
+	// for RSA private keys, and `ec` for eliptic curve private keys. The
+	// default is `rsa`. If `privateKeySecretRef` is also set and contains
+	// a pre-existing secret, it much mach the algorithm here.
+	// +optional
+	PrivateKeyAlgorithm AccountKeyAlgorithm `json:"algorithm,omitempty"`
 }
+
+// AccountKeyAlgorithm is the name the algorithm that the account key uses
+type AccountKeyAlgorithm string
+
+const (
+	RSA AccountKeyAlgorithm = "rsa"
+	EC  AccountKeyAlgorithm = "ec"
+)
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
 // server.

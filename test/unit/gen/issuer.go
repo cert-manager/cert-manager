@@ -147,6 +147,16 @@ func SetIssuerACMEDuration(enabled bool) IssuerModifier {
 	}
 }
 
+func SetIssuerACMEAlgorithm(algo cmacme.AccountKeyAlgorithm) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.PrivateKeyAlgorithm = algo
+	}
+}
+
 func SetIssuerACMESkipTLSVerify(shouldSkip bool) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()

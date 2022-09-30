@@ -18,6 +18,7 @@ package acme
 
 import (
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"encoding/base64"
@@ -34,6 +35,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -53,14 +55,16 @@ const (
 
 	messageAccountRegistrationFailed     = "Failed to register ACME account: "
 	messageAccountVerificationFailed     = "Failed to verify ACME account: "
-	messageAccountUpdateFailed           = "Failed to update ACME account:"
+	messageAccountUpdateFailed           = "Failed to update ACME account: "
 	messageAccountRegistered             = "The ACME account was registered with the ACME server"
 	messageAccountVerified               = "The ACME account was verified with the ACME server"
 	messageNoSecretKeyGenerationDisabled = "the ACME issuer config has 'disableAccountKeyGeneration' set to true, but the secret was not found: "
 	messageInvalidPrivateKey             = "Account private key is invalid: "
+	messageInvalidPrivateKeyAlgorithm    = "Account private key algorithm is invalid: "
 
 	messageTemplateUpdateToV2              = "Your ACME server URL is set to a v1 endpoint (%s). You should update the spec.acme.server field to %q"
-	messageTemplateNotSupported            = "ACME private key in %q is not of type RSA or ECDSA"
+	messageTemplateNotRSA                  = "ACME private key in %q is not of type RSA"
+	messageTemplateNotEC                   = "ACME private key in %q is not of type EC"
 	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
 	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
 	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
@@ -140,12 +144,27 @@ func (a *Acme) Setup(ctx context.Context) error {
 		msg = messageAccountVerificationFailed + err.Error()
 		return fmt.Errorf(msg)
 	}
-	_, isRSA := pk.(*rsa.PrivateKey)
-	_, isECDSA := pk.(*ecdsa.PrivateKey)
-	if !isRSA && !isECDSA {
+	switch a.issuer.GetSpec().ACME.PrivateKeyAlgorithm {
+	case cmacme.RSA, "":
+		_, ok := pk.(*rsa.PrivateKey)
+		if !ok {
+			reason = errorAccountVerificationFailed
+			msg = fmt.Sprintf(messageTemplateNotRSA,
+				a.issuer.GetSpec().ACME.PrivateKey.Name)
+			return nil
+		}
+	case cmacme.EC:
+		_, ok := pk.(*ecdsa.PrivateKey)
+		if !ok {
+			reason = errorAccountVerificationFailed
+			msg = fmt.Sprintf(messageTemplateNotEC,
+				a.issuer.GetSpec().ACME.PrivateKey.Name)
+			return nil
+		}
+	default:
 		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf(messageTemplateNotSupported,
-			a.issuer.GetSpec().ACME.PrivateKey.Name)
+		msg = fmt.Sprintf("%s%v", messageInvalidPrivateKeyAlgorithm,
+			a.issuer.GetSpec().ACME.PrivateKeyAlgorithm)
 		return nil
 	}
 
@@ -414,20 +433,41 @@ func (a *Acme) getEABKey(ctx context.Context, ns string) ([]byte, error) {
 
 // createAccountPrivateKey will generate a new RSA private key, and create it
 // as a secret resource in the apiserver.
-func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (crypto.Signer, error) {
+	var accountPrivKey crypto.Signer
+	encodedPrivKey := make([]byte, 0)
+
 	sel = acme.PrivateKeySelector(sel)
-	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
-	if err != nil {
-		return nil, err
+	switch a.issuer.GetSpec().ACME.PrivateKeyAlgorithm {
+	case cmacme.RSA, "":
+		rsaPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
+		if err != nil {
+			return nil, err
+		}
+		encodedPrivKey = pki.EncodePKCS1PrivateKey(rsaPrivKey)
+		accountPrivKey = rsaPrivKey
+	case cmacme.EC:
+		ecPrivKey, err := pki.GenerateECPrivateKey(pki.ECCurve256)
+		if err != nil {
+			return nil, err
+		}
+		encodedPrivKey, err = pki.EncodeECPrivateKey(ecPrivKey)
+		if err != nil {
+			return nil, err
+		}
+		accountPrivKey = ecPrivKey
+	default:
+		return nil, fmt.Errorf("%s%v", messageInvalidPrivateKeyAlgorithm,
+			a.issuer.GetSpec().ACME.PrivateKeyAlgorithm)
 	}
 
-	_, err = a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
+	_, err := a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
 		},
 		Data: map[string][]byte{
-			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
+			sel.Key: encodedPrivKey,
 		},
 	}, metav1.CreateOptions{})
 

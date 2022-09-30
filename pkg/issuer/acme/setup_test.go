@@ -19,9 +19,7 @@ package acme
 import (
 	"context"
 	"crypto"
-	"crypto/rsa"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -68,9 +66,8 @@ func TestAcme_Setup(t *testing.T) {
 			gen.SetIssuerConditionLastTransitionTime(&nowMetaTime))
 		issuerSecretKeyName = "test"
 
-		ecdsaPrivKey = mustGenerateEDCSAKey(t)
+		ecdsaPrivKey = mustGenerateECDSAKey(t)
 		rsaPrivKey   = mustGenerateRSAKey(t)
-		bogusPrivKey = mustGenerateBogusKey(t)
 
 		notFoundErr    = apierrors.NewNotFound(corev1.Resource("test"), "test")
 		invalidDataErr = errors.NewInvalidData("test")
@@ -127,7 +124,7 @@ func TestAcme_Setup(t *testing.T) {
 		// Error returned when creating ACME account key.
 		acmePrivKeySecretCreateErr error
 		// ACME account key created by createAccountPrivateKey.
-		acmePrivKey *rsa.PrivateKey
+		acmePrivKey crypto.Signer
 
 		eabSecret       *corev1.Secret
 		eabSecretGetErr error
@@ -184,7 +181,39 @@ func TestAcme_Setup(t *testing.T) {
 		"ACME private key secret does not exist, account key generation is enabled, key creation succeeds": {
 			issuer:      gen.IssuerFrom(baseIssuer),
 			kfsErr:      notFoundErr,
-			acmePrivKey: rsaPrivKey.(*rsa.PrivateKey),
+			acmePrivKey: rsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition)},
+			removeClientShouldBeCalled: true,
+			addClientShouldBeCalled:    true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+		},
+		"ACME private key secret does not exist, account RSA key generation is enabled, key creation succeeds": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEAlgorithm("rsa")),
+			kfsErr:      notFoundErr,
+			acmePrivKey: rsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition)},
+			removeClientShouldBeCalled: true,
+			addClientShouldBeCalled:    true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+		},
+		"ACME private key secret does not exist, account ECDSA key generation is enabled, key creation succeeds": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEAlgorithm("ec")),
+			kfsErr:      notFoundErr,
+			acmePrivKey: ecdsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition)},
+			removeClientShouldBeCalled: true,
+			addClientShouldBeCalled:    true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+		},
+		"ACME account's key is an RSA key": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
+			kfsKey: rsaPrivKey,
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyTrueCondition)},
 			removeClientShouldBeCalled: true,
@@ -193,7 +222,8 @@ func TestAcme_Setup(t *testing.T) {
 		},
 		"ACME account's key is an ECDSA key": {
 			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAlgorithm("ec")),
 			kfsKey: ecdsaPrivKey,
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyTrueCondition)},
@@ -220,14 +250,47 @@ func TestAcme_Setup(t *testing.T) {
 			},
 			wantsErr: true,
 		},
-		"ACME account's key is not an RSA or ECDSA key": {
+		"ACME account's key is not an RSA key": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
-			kfsKey: bogusPrivKey,
+			kfsKey: ecdsaPrivKey,
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyFalseCondition,
 					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotSupported, issuerSecretKeyName))),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotRSA, issuerSecretKeyName))),
+			},
+		},
+		"ACME account's key is not an RSA key as specified": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAlgorithm("rsa")),
+			kfsKey: ecdsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotRSA, issuerSecretKeyName))),
+			},
+		},
+		"ACME account's key is not an ECDSA key as specified": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAlgorithm("ec")),
+			kfsKey: rsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotEC, issuerSecretKeyName))),
+			},
+		},
+		"ACME account's key specifieds invalid algorithm": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAlgorithm("dsa")),
+			kfsKey: rsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageInvalidPrivateKeyAlgorithm, "dsa"))),
 			},
 		},
 		"ACME server URL is an invalid URL": {
@@ -520,9 +583,9 @@ func parseURLErr(s string) error {
 	return err
 }
 
-func mustGenerateEDCSAKey(t *testing.T) crypto.Signer {
+func mustGenerateECDSAKey(t *testing.T) crypto.Signer {
 	t.Helper()
-	key, err := pki.GenerateECPrivateKey(256)
+	key, err := pki.GenerateECPrivateKey(pki.ECCurve256)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -534,31 +597,6 @@ func mustGenerateRSAKey(t *testing.T) crypto.Signer {
 	key, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
 		t.Fatal(err)
-	}
-	return key
-}
-
-type bogusKey struct {
-	key byte
-}
-
-// It's not correct to overwrite the digest, but we just need the
-// signature anyway, it is never called
-func (k *bogusKey) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
-	for i, bite := range digest {
-		digest[i] = bite ^ k.key
-	}
-	return digest, nil
-}
-
-func (k *bogusKey) Public() crypto.PublicKey {
-	return k.key
-}
-
-func mustGenerateBogusKey(t *testing.T) crypto.Signer {
-	t.Helper()
-	key := &bogusKey{
-		key: 0,
 	}
 	return key
 }

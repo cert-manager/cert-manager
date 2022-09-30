@@ -59,6 +59,9 @@ spec:
                     - privateKeySecretRef
                     - server
                   properties:
+                    algorithm:
+                      description: Specifies the algorithm of the private key. Valid choices are are `rsa` for RSA private keys, and `ec` for eliptic curve private keys. The default is `rsa`. If `privateKeySecretRef` is also set and contains a pre-existing secret, it much mach the algorithm here.
+                      type: string
                     disableAccountKeyGeneration:
                       description: Enables or disables generating a new ACME account key. If true, the Issuer resource will *not* request a new account but will expect the account key to be supplied via an existing secret. If false, the cert-manager system will generate a new ACME account key for the Issuer. Defaults to false.
                       type: boolean
