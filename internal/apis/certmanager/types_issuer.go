@@ -106,6 +106,11 @@ type IssuerConfig struct {
 	// Venafi configures this issuer to sign certificates using a Venafi TPP
 	// or Venafi Cloud policy zone.
 	Venafi *VenafiIssuer
+
+	CMP *CMPIssuer
+}
+
+type CMPIssuer struct {
 }
 
 // VenafiIssuer configures an issuer to sign certificates using a Venafi TPP

@@ -96,6 +96,14 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 			el = append(el, ValidateVenafiIssuerConfig(iss.Venafi, fldPath.Child("venafi"))...)
 		}
 	}
+	if iss.CMP != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("venafi"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateVenafiIssuerConfig(iss.Venafi, fldPath.Child("venafi"))...)
+		}
+	}
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}

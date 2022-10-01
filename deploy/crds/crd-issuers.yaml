@@ -1080,6 +1080,15 @@ spec:
                       type: array
                       items:
                         type: string
+                cmp:
+                  description: SelfSigned configures this issuer to 'self sign' certificates using the private key used to create the CertificateRequest object.
+                  type: object
+                  properties:
+                    crlDistributionPoints:
+                      description: The CRL distribution points is an X.509 v3 certificate extension which identifies the location of the CRL from which the revocation of this certificate can be checked. If not set certificate will be issued without CDP. Values are strings.
+                      type: array
+                      items:
+                        type: string
                 vault:
                   description: Vault configures this issuer to sign certificates using a HashiCorp Vault PKI backend.
                   type: object
