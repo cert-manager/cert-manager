@@ -19,6 +19,7 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
+	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -48,6 +49,8 @@ func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.O
 }
 
 func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, []string) {
+	out, _ := jsonutil.EncodeJSON(*iss)
+	fmt.Println("### ", out)
 	return ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
 }
 
