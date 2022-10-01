@@ -50,7 +50,7 @@ func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.O
 
 func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, []string) {
 	out, _ := jsonutil.EncodeJSON(*iss)
-	fmt.Println("### ", out)
+	fmt.Println("### ", string(out))
 	return ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
 }
 
