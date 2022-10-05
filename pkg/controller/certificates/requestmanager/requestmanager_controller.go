@@ -409,7 +409,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 }
 
 func (c *controller) waitForCertificateRequestToExist(namespace, name string) error {
-	return wait.Poll(time.Millisecond*100, time.Second*5, func() (bool, error) {
+	return wait.Poll(time.Millisecond*100, time.Second*60, func() (bool, error) {
 		_, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 		if apierrors.IsNotFound(err) {
 			return false, nil
