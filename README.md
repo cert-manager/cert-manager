@@ -106,3 +106,4 @@ Follow the instructions in [SECURITY.md](./SECURITY.md) to make a report.
 and we also publish release notes on [the website](https://cert-manager.io/docs/release-notes/).
 
 <sub><sup>Logo design by [Zoe Paterson](https://zoepatersonmedia.com)</sup></sub>
+
