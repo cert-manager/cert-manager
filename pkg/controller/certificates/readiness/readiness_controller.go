@@ -225,8 +225,8 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 	}
 }
 
-// policyEvaluator builds Certificate's Ready condition using the result of policy chain evaluation
-func policyEvaluator(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
+// BuildReadyConditionFromChain builds Certificate's Ready condition using the result of policy chain evaluation
+func BuildReadyConditionFromChain(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
 	reason, message, violationsFound := chain.Evaluate(input)
 	if !violationsFound {
 		return cmapi.CertificateCondition{
@@ -260,7 +260,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		policies.NewReadinessPolicyChain(ctx.Clock),
 		certificates.RenewalTime,
-		policyEvaluator,
+		BuildReadyConditionFromChain,
 		ctx.FieldManager,
 	)
 	c.controller = ctrl
