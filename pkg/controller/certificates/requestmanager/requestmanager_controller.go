@@ -409,10 +409,16 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	}
 
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonRequested, "Created new CertificateRequest resource %q", cr.Name)
-	if !utilfeature.DefaultFeatureGate.Enabled(feature.StableCertificateRequestName) {
-		if err := c.waitForCertificateRequestToExist(cr.Namespace, cr.Name); err != nil {
-			return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried. %w", err)
-		}
+
+	// If the StableCertificateRequestName feature gate is enabled, skip waiting for our informer cache/lister to
+	// observe the creation event and instead rely on an AlreadyExists error being returned if we do attempt a
+	// CREATE for the same CertificateRequest name again early.
+	if utilfeature.DefaultFeatureGate.Enabled(feature.StableCertificateRequestName) {
+		return nil
+	}
+
+	if err := c.waitForCertificateRequestToExist(cr.Namespace, cr.Name); err != nil {
+		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried. %w", err)
 	}
 	return nil
 }
