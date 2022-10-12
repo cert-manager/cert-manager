@@ -91,7 +91,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	crt, err := c.ingressLister.Ingresses(namespace).Get(name)
+	ingress, err := c.ingressLister.Ingresses(namespace).Get(name)
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
@@ -102,7 +102,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	return c.sync(ctx, crt)
+	return c.sync(ctx, ingress)
 }
 
 // Whenever a Certificate gets updated, added or deleted, we want to reconcile
