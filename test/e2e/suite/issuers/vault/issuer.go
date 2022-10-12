@@ -18,6 +18,7 @@ package vault
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"time"
 
@@ -231,8 +232,11 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"))
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("spec.vault.caBundle: Invalid value: \"\": specified caBundle and caBundleSecretRef cannot be used together"))
-		Expect(err.Error()).To(ContainSubstring("spec.vault.caBundleSecretRef: Invalid value: \"\": specified caBundleSecretRef and caBundle cannot be used together"))
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(
+			"spec.vault.caBundle: Invalid value: %#+v: specified caBundle and caBundleSecretRef cannot be used together",
+			vault.Details().VaultCA,
+		)))
+		Expect(err.Error()).To(ContainSubstring("spec.vault.caBundleSecretRef: Invalid value: \"ca-bundle\": specified caBundleSecretRef and caBundle cannot be used together"))
 	})
 
 	It("should be ready with a caBundle from a Kubernetes Secret", func() {
