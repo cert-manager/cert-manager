@@ -92,7 +92,7 @@ func (v *Vault) Setup(cfg *config.Config) error {
 
 	var err error
 	// Generate CA details before deploying the chart
-	v.details.VaultCA, v.details.VaultCAPrivateKey, err = v.generateCA()
+	v.details.VaultCA, v.details.VaultCAPrivateKey, err = v.GenerateCA()
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func (v *Vault) Logs() (map[string]string, error) {
 	return v.chart.Logs()
 }
 
-func (v *Vault) generateCA() ([]byte, []byte, error) {
+func (v *Vault) GenerateCA() ([]byte, []byte, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{

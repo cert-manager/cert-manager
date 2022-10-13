@@ -87,6 +87,12 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, erro
 					continue
 				}
 			}
+			if iss.Spec.Vault.CABundleSecretRef != nil {
+				if iss.Spec.Vault.CABundleSecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
 		}
 	}
 

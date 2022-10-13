@@ -1401,6 +1401,15 @@ func autoConvert_v1alpha2_VaultIssuer_To_certmanager_VaultIssuer(in *VaultIssuer
 	out.Path = in.Path
 	out.Namespace = in.Namespace
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CABundleSecretRef = nil
+	}
 	return nil
 }
 
@@ -1417,6 +1426,15 @@ func autoConvert_certmanager_VaultIssuer_To_v1alpha2_VaultIssuer(in *certmanager
 	out.Path = in.Path
 	out.Namespace = in.Namespace
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(metav1.SecretKeySelector)
+		if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CABundleSecretRef = nil
+	}
 	return nil
 }
 

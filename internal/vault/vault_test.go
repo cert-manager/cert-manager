@@ -37,6 +37,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
+	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -878,10 +879,29 @@ func TestTokenRef(t *testing.T) {
 type testNewConfigT struct {
 	expectedErr error
 	issuer      *cmapi.Issuer
-	checkFunc   func(cfg *vault.Config) error
+	checkFunc   func(cfg *vault.Config, err error) error
+
+	fakeLister *listers.FakeSecretLister
 }
 
 func TestNewConfig(t *testing.T) {
+	caBundleSecretRefFakeSecretLister := func(namespace, secret, key, cert string) *listers.FakeSecretLister {
+		return listers.FakeSecretListerFrom(listers.NewFakeSecretLister(), func(f *listers.FakeSecretLister) {
+			f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+				return listers.FakeSecretNamespaceListerFrom(listers.NewFakeSecretNamespaceLister(), func(fn *listers.FakeSecretNamespaceLister) {
+					fn.GetFn = func(name string) (*corev1.Secret, error) {
+						if name == secret && namespace == namespace {
+							return &corev1.Secret{
+								Data: map[string][]byte{
+									key: []byte(cert),
+								}}, nil
+						}
+						return nil, errors.New("unexpected secret name or namespace passed to FakeSecretLister")
+					}
+				})
+			}
+		})
+	}
 	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
 			issuer: gen.Issuer("vault-issuer",
@@ -898,7 +918,7 @@ func TestNewConfig(t *testing.T) {
 					CABundle: []byte("a bad cert bundle"),
 				}),
 			),
-			expectedErr: errors.New("error loading Vault CA bundle"),
+			expectedErr: errors.New("no Vault CA bundles loaded, check bundle contents"),
 		},
 
 		"a good cert bundle should be added to the config": {
@@ -908,7 +928,7 @@ func TestNewConfig(t *testing.T) {
 				}),
 			),
 			expectedErr: nil,
-			checkFunc: func(cfg *vault.Config) error {
+			checkFunc: func(cfg *vault.Config, error error) error {
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
 				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
@@ -927,26 +947,107 @@ func TestNewConfig(t *testing.T) {
 				return nil
 			},
 		},
+
+		"a good bundle from a caBundleSecretRef should be added to the config": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundleSecretRef: &cmmeta.SecretKeySelector{
+						Key: "my-bundle.crt",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+				},
+				)),
+			checkFunc: func(cfg *vault.Config, error error) error {
+				if error != nil {
+					return error
+				}
+
+				testCA := x509.NewCertPool()
+				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
+				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
+
+				err := fmt.Errorf("got unexpected root CAs in config, exp=%s got=%s",
+					testCA.Subjects(), subs)
+				if len(subs) != len(testCA.Subjects()) {
+					return err
+				}
+				for i := range subs {
+					if !bytes.Equal(subs[i], testCA.Subjects()[i]) {
+						return err
+					}
+				}
+
+				return nil
+			},
+			fakeLister: caBundleSecretRefFakeSecretLister("test-namespace", "bundle", "my-bundle.crt", testLeafCertificate),
+		},
+		"a good bundle from a caBundleSecretRef with default key should be added to the config": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundleSecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+				},
+				)),
+			checkFunc: func(cfg *vault.Config, error error) error {
+				if error != nil {
+					return error
+				}
+
+				testCA := x509.NewCertPool()
+				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
+				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
+
+				err := fmt.Errorf("got unexpected root CAs in config, exp=%s got=%s",
+					testCA.Subjects(), subs)
+				if len(subs) != len(testCA.Subjects()) {
+					return err
+				}
+				for i := range subs {
+					if !bytes.Equal(subs[i], testCA.Subjects()[i]) {
+						return err
+					}
+				}
+
+				return nil
+			},
+			fakeLister: caBundleSecretRefFakeSecretLister("test-namespace", "bundle", "ca.crt", testLeafCertificate),
+		},
+		"a bad bundle from a caBundleSecretRef should error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundleSecretRef: &cmmeta.SecretKeySelector{
+						Key: "my-bundle.crt",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+				},
+				)),
+			expectedErr: errors.New("no Vault CA bundles loaded, check bundle contents"),
+			fakeLister:  caBundleSecretRefFakeSecretLister("test-namespace", "bundle", "my-bundle.crt", "not a valid certificate"),
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			v := &Vault{
 				namespace:     "test-namespace",
-				secretsLister: nil,
+				secretsLister: test.fakeLister,
 				issuer:        test.issuer,
 			}
 
 			cfg, err := v.newConfig()
-			if ((test.expectedErr == nil) != (err == nil)) &&
-				test.expectedErr != nil &&
-				test.expectedErr.Error() != err.Error() {
-				t.Errorf("unexpected error, exp=%v got=%v",
-					test.expectedErr, err)
+			if test.expectedErr != nil && err != nil && test.expectedErr.Error() != err.Error() {
+				t.Errorf("unexpected error, exp=%v got=%v", test.expectedErr, err)
 			}
 
 			if test.checkFunc != nil {
-				if err := test.checkFunc(cfg); err != nil {
+				if err := test.checkFunc(cfg, err); err != nil {
 					t.Errorf("check function failed: %s", err)
 				}
 			}
