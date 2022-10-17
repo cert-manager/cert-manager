@@ -879,6 +879,11 @@ func (in *VaultIssuer) DeepCopyInto(out *VaultIssuer) {
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(metav1.SecretKeySelector)
+		**out = **in
+	}
 	return
 }
 

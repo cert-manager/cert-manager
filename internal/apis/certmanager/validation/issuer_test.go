@@ -24,11 +24,14 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	pubcmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	unitcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
 
 var (
@@ -62,11 +65,33 @@ var (
 )
 
 func TestValidateVaultIssuerConfig(t *testing.T) {
+	caBundle := unitcrypto.MustCreateCryptoBundle(t,
+		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
+		clock.RealClock{},
+	).CertBytes
+
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
 		spec *cmapi.VaultIssuer
 		errs []*field.Error
 	}{
+		"vault issuer defines both caBundle and caBundleSecretRef": {
+			spec: &cmapi.VaultIssuer{
+				Server:   "https://vault.example.com",
+				Path:     "secret/path",
+				CABundle: caBundle,
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key: "ca.crt",
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "test-secret",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), caBundle, "specified caBundle and caBundleSecretRef cannot be used together"),
+				field.Invalid(fldPath.Child("caBundleSecretRef"), "test-secret", "specified caBundleSecretRef and caBundle cannot be used together"),
+			},
+		},
 		"valid vault issuer": {
 			spec: &validVaultIssuer,
 		},

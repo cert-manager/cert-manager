@@ -349,11 +349,13 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 ############################
 # kubebuilder-tools assets #
 # kube-apiserver / etcd    #
+# The SHAs for the same version of kubebuilder tools can change as new versions are published for changes merged to https://github.com/kubernetes-sigs/kubebuilder/tree/tools-releases #
+# You can use ./hack/latest-kubebuilder-shas.sh <version> to get latest SHAs for a particular version of kubebuilder tools #
 ############################
 
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=fa7e08a905c3d93d90150c7a2baa597328611a3452c89eacd08e5b80843ba0b8
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=80524d5fe2d925f1e9bf1eef89722fca0f2b43e38ea51434b835694db6eedf6a
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=53a9bc56f857831985e3e1a8746d0108b8c3e25d9b1b0f4ab2d1c673a9efc88d
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=c9796a0a13ccb79b77e3d64b8d3bb85a14fc850800724c63b85bf5bacbe0b4ba
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=a232faf4551ffb1185660c5a2eb9eaaf7eb02136fa71e7ead84ee940a205d9bf
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=9a8c8526965f46256ff947303342e73499217df5c53680a03ac950d331191ffc
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)

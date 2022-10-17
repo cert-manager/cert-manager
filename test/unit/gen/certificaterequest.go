@@ -114,6 +114,12 @@ func SetCertificateRequestName(name string) CertificateRequestModifier {
 	}
 }
 
+func SetCertificateRequestGenerateName(generateName string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.ObjectMeta.GenerateName = generateName
+	}
+}
+
 func SetCertificateRequestKeyUsages(usages ...v1.KeyUsage) CertificateRequestModifier {
 	return func(cr *v1.CertificateRequest) {
 		cr.Spec.Usages = usages

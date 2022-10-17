@@ -309,10 +309,27 @@ e2e-setup-samplewebhook: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/sample
 		samplewebhook make/config/samplewebhook/chart >/dev/null
 
 .PHONY: e2e-setup-projectcontour
-e2e-setup-projectcontour: load-$(call image-tar,projectcontour) make/config/projectcontour/contour-gateway.yaml make/config/projectcontour/gateway.yaml $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_YTT)
-	$(YTT) --data-value service_ip_prefix="${SERVICE_IP_PREFIX}" \
-		--file make/config/projectcontour/contour-gateway.yaml \
-		--file make/config/projectcontour/gateway.yaml | $(KUBECTL) apply -f-
+e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar,projectcontour) make/config/projectcontour/gateway.yaml make/config/projectcontour/contour.yaml $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM) $(NEEDS_KUBECTL)
+	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	$(HELM) repo add bitnami --force-update https://charts.bitnami.com/bitnami >/dev/null
+	$(HELM) upgrade \
+		--install \
+		--wait \
+		--version 7.8.1 \
+		--namespace projectcontour \
+		--create-namespace \
+		--set contour.ingressClass.create=false \
+		--set contour.ingressClass.default=false \
+		--set image.tag=$(TAG) \
+		--set image.pullPolicy=Never \
+		--set contour.service.type=ClusterIP \
+		--set contour.service.externalTrafficPolicy="" \
+		--set envoy.service.type=ClusterIP \
+		--set envoy.service.externalTrafficPolicy="" \
+		--set envoy.service.clusterIP=${SERVICE_IP_PREFIX}.14 \
+		--set-file configInline=make/config/projectcontour/contour.yaml \
+		projectcontour bitnami/contour >/dev/null
+	$(KUBECTL) apply -f make/config/projectcontour/gateway.yaml
 
 .PHONY: e2e-setup-sampleexternalissuer
 ifeq ($(CRI_ARCH),amd64)
