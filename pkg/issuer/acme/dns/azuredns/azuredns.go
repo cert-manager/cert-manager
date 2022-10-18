@@ -13,6 +13,8 @@ package azuredns
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -71,6 +73,31 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
+func getWorkloadIdentity(env azure.Environment) (*adal.ServicePrincipalToken, error) {
+
+	awiClientId := os.Getenv("AZURE_CLIENT_ID")
+	awiTenantId := os.Getenv("AZURE_TENANT_ID")
+
+	jwtBytes, err := ioutil.ReadFile(os.Getenv("AZURE_FEDERATED_TOKEN_FILE"))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Azure Workload Identity token for file: %v", err)
+	}
+
+	jwt := string(jwtBytes)
+
+	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, awiTenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+	}
+
+	spt, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, awiClientId, jwt, env.ResourceManagerEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return spt, err
+}
+
 func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*adal.ServicePrincipalToken, error) {
 	if clientID != "" {
 		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
@@ -84,11 +111,18 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		}
 		return spt, nil
 	}
-	logf.Log.V(logf.InfoLevel).Info("No ClientID found:  authenticating azuredns with managed identity (MSI)")
+	logf.Log.V(logf.InfoLevel).Info("No ClientID found: attempting to authenticate with ambient credentials (Azure Workload Identity or Azure Managed Identity, in that order)")
+
 	if !ambient {
-		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
+		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable ambient credentials")
 	}
 
+	spt, err := getWorkloadIdentity(env)
+	if spt != nil {
+		return spt, nil
+	}
+
+	logf.Log.V(logf.InfoLevel).Info("No Azure Workload Identity found: attempting to authenticate with an Azure Managed Identity (MSI)")
 	opt := adal.ManagedIdentityOptions{}
 
 	if managedIdentity != nil {
@@ -96,7 +130,7 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		opt.IdentityResourceID = managedIdentity.ResourceID
 	}
 
-	spt, err := adal.NewServicePrincipalTokenFromManagedIdentity(env.ServiceManagementEndpoint, &opt)
+	spt, err = adal.NewServicePrincipalTokenFromManagedIdentity(env.ServiceManagementEndpoint, &opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 	}
