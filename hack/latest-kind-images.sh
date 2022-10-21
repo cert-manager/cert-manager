@@ -63,7 +63,7 @@ LATEST_123_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_123_TAG)
 LATEST_124_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_124_TAG)
 LATEST_125_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_125_TAG)
 
-cat << EOF | tee ./devel/cluster/kind_cluster_node_versions.sh > ./make/kind_images.sh
+cat << EOF > ./make/kind_images.sh
 # Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
