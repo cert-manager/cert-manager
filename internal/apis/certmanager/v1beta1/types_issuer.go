@@ -235,6 +235,13 @@ type VaultAuth struct {
 	// token stored in the named Secret resource to the Vault server.
 	// +optional
 	Kubernetes *VaultKubernetesAuth `json:"kubernetes,omitempty"`
+
+	// Env authenticates with Vault by using standard Vault env vars set on
+	// the pod as described here https://www.vaultproject.io/docs/commands#environment-variables.
+	// All standard vault environment variables can be used except VAULT_SERVER
+	// that will be overwritten by the mandatory server vault configuration option.
+	// +optional
+	Env *VaultEnvAuth `json:"env,omitempty"`
 }
 
 // VaultAppRole authenticates with Vault using the App Role auth mechanism,
@@ -273,6 +280,19 @@ type VaultKubernetesAuth struct {
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.
 	Role string `json:"role"`
+}
+
+// Env authenticates with Vault by using standard Vault env vars set on
+// the pod as described here https://www.vaultproject.io/docs/commands#environment-variables.
+// All standard vault environment variables can be used except VAULT_SERVER
+// that will be overwritten by the mandatory server vault configuration option.
+type VaultEnvAuth struct {
+	// Mount path to use when authenticating with Vault. For example `/v1/auth/foo`,
+	// will use the path `/v1/auth/foo/login` to authenticate with Vault.
+	Path string `json:"mountPath"`
+
+	// Additional data as key value pairs needed for the login method specified in Path.
+	AdditionalData map[string]string `json:"additionalData"`
 }
 
 type CAIssuer struct {
