@@ -356,7 +356,9 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 
 		// NXDOMAIN tells us that we did not climb far enough up the DNS tree. We
 		// thus continue climbing to find the SOA record.
-		if in.Rcode == dns.RcodeNameError {
+		// CoreDNS always gives back ServFail as response when no SOA record is found.
+		// We need to continue climbing to find SOA record.
+		if in.Rcode == dns.RcodeNameError || in.Rcode == dns.RcodeServerFailure {
 			continue
 		}
 
