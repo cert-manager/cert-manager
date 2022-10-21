@@ -20,12 +20,9 @@
 
 cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.
 
-It can issue certificates from a variety of supported sources, including Let's Encrypt, HashiCorp Vault, and Venafi as well as private PKI, and it ensures certificates remain
-valid and up to date, attempting to renew certificates at an appropriate time before expiry.
+It supports issuing certificates from a variety of sources, including Let's Encrypt (ACME), HashiCorp Vault, and Venafi TPP / TLS Protect Cloud, as well as local in-cluster issuance.
 
-It is loosely based upon the work of [kube-lego](https://github.com/jetstack/kube-lego)
-and has borrowed some wisdom from other similar projects such as
-[kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
+cert-manager also ensures certificates remain valid and up to date, attempting to renew certificates at an appropriate time before expiry to reduce the risk of outages and remove toil.
 
 ![cert-manager high level overview diagram](https://cert-manager.io/images/high-level-overview.svg)
 
@@ -33,14 +30,14 @@ and has borrowed some wisdom from other similar projects such as
 
 Documentation for cert-manager can be found at [cert-manager.io](https://cert-manager.io/docs/).
 
-Issues and PRs for documentation should be filed in the [website repo](https://github.com/cert-manager/website/).
-
 For the common use-case of automatically issuing TLS certificates for
 Ingress resources, see the [cert-manager nginx-ingress quick start guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
+For a more comprensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
+
 ### Installation
 
-We document [installation](https://cert-manager.io/docs/installation/) on the website.
+[Installation](https://cert-manager.io/docs/installation/) is documented on the website, with a variety of supported methods.
 
 ## Troubleshooting
 
@@ -50,7 +47,7 @@ If you encounter any issues whilst using cert-manager, we have a number of ways 
 - Our official [Kubernetes Slack channel](https://cert-manager.io/docs/contributing/#slack) - the quickest way to ask!
 - [Searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
 
-If you believe you've found a bug, and cannot find an existing issue, feel free to [open a new issue](https://github.com/cert-manager/cert-manager/issues)!
+If you believe you've found a bug and cannot find an existing issue, feel free to [open a new issue](https://github.com/cert-manager/cert-manager/issues)!
 Be sure to include as much information as you can about your environment.
 
 ## Community
@@ -104,5 +101,11 @@ Follow the instructions in [SECURITY.md](./SECURITY.md) to make a report.
 
 [Every release](https://github.com/cert-manager/cert-manager/releases) on GitHub has a changelog,
 and we also publish release notes on [the website](https://cert-manager.io/docs/release-notes/).
+
+## History
+
+cert-manager is loosely based upon the work of [kube-lego](https://github.com/jetstack/kube-lego)
+and has borrowed some wisdom from other similar projects such as [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
+
 
 <sub><sup>Logo design by [Zoe Paterson](https://zoepatersonmedia.com)</sup></sub>
