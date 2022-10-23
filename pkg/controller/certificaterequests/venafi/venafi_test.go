@@ -280,6 +280,9 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
 			},
 		},
 		"a CertificateRequest with a denied condition should update Ready condition with 'Denied'": {

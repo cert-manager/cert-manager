@@ -186,8 +186,10 @@ func TestSync(t *testing.T) {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents:     []string{},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
+				ExpectedActions: []testpkg.Action{},
 			},
 		},
 		"should update Ready condition with 'Denied' if certificate request is denied": {
@@ -376,8 +378,10 @@ func TestSync(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents:     []string{},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
+				ExpectedActions: []testpkg.Action{},
 			},
 		},
 		"should return nil (no action) if certificate request is ready and reason Issued": {
