@@ -37,7 +37,7 @@ IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
 
 PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
-# TODO: move the installation commands in this file to separate scripts like those in https://github.com/cert-manager/cert-manager/tree/master/devel/addon for readability
+# TODO: considering moving the installation commands in this file to separate scripts for readability
 # Once that is done, we can consume this variable from ./make/config/lib.sh
 SERVICE_IP_PREFIX = 10.0.0
 
