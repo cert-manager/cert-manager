@@ -1,0 +1,20 @@
+{{- range $name, $options := .Values.issuers }}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "cert-manager.namespace" $ }}
+  labels:
+    app: {{ template "cert-manager.name" $ }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" $ }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" $ | nindent 4 }}
+  {{- with $options.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- toYaml $options.spec | nindent 4 }}
+{{- end }}

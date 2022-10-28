@@ -1,0 +1,22 @@
+global:
+  commonLabels: {}
+
+clusterIssuers: {}
+  # letsencrypt-staging:
+  #   spec:
+  #     acme:
+  #       email: example@invalid
+  #       server: https://acme-staging-v02.api.letsencrypt.org/directory
+  #       privateKeySecretRef:
+  #         name: letsencrypt-issuer-account-key
+
+issuers: {}
+  # letsencrypt-staging:
+  #   spec:
+  #     acme:
+  #       email: example@invalid
+  #       server: https://acme-staging-v02.api.letsencrypt.org/directory
+  #       privateKeySecretRef:
+  #         name: letsencrypt-issuer-account-key
+
+certificates: {}
