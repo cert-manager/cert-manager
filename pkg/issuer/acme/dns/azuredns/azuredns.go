@@ -13,6 +13,7 @@ package azuredns
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -71,6 +72,30 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
+func getWIToken(env azure.Environment, options adal.ManagedIdentityOptions) (*adal.ServicePrincipalToken, error) {
+	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, os.Getenv("AZURE_TENANT_ID"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+	}
+
+	jwt, err := os.ReadFile(os.Getenv("AZURE_FEDERATED_TOKEN_FILE"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read a file with a federated token: %v", err)
+	}
+
+	clientID := os.Getenv("AZURE_CLIENT_ID")
+	if options.ClientID != "" {
+		clientID = options.ClientID
+	}
+
+	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, clientID, string(jwt), env.ResourceManagerEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a workload identity token: %v", err)
+	}
+
+	return token, nil
+}
+
 func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*adal.ServicePrincipalToken, error) {
 	if clientID != "" {
 		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
@@ -84,7 +109,7 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		}
 		return spt, nil
 	}
-	logf.Log.V(logf.InfoLevel).Info("No ClientID found:  authenticating azuredns with managed identity (MSI)")
+	logf.Log.V(logf.InfoLevel).Info("No ClientID found: attempting to authenticate with ambient credentials (Azure Workload Identity or Azure Managed Service Identity, in that order)")
 	if !ambient {
 		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
 	}
@@ -95,6 +120,39 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		opt.ClientID = managedIdentity.ClientID
 		opt.IdentityResourceID = managedIdentity.ResourceID
 	}
+
+	// Use Workload Identity if present
+	if os.Getenv("AZURE_FEDERATED_TOKEN_FILE") != "" {
+		token, err := getWIToken(env, opt)
+		if err != nil {
+			return nil, err
+		}
+
+		// adal does not offer methods to dynamically replace a federated token, thus we need to have a wrapper to make sure
+		// we're using up-to-date secret while requesting an access token
+		var refreshFunc adal.TokenRefresh = func(context context.Context, resource string) (*adal.Token, error) {
+			newWIToken, err := getWIToken(env, opt)
+			if err != nil {
+				return nil, err
+			}
+
+			// Need to call Refresh(), otherwise .Token() will be empty
+			err = newWIToken.Refresh()
+			if err != nil {
+				return nil, err
+			}
+
+			accessToken := newWIToken.Token()
+
+			return &accessToken, nil
+		}
+
+		token.SetCustomRefreshFunc(refreshFunc)
+
+		return token, nil
+	}
+
+	logf.Log.V(logf.InfoLevel).Info("No Azure Workload Identity found: attempting to authenticate with an Azure Managed Service Identity (MSI)")
 
 	spt, err := adal.NewServicePrincipalTokenFromManagedIdentity(env.ServiceManagementEndpoint, &opt)
 	if err != nil {
