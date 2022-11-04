@@ -68,6 +68,17 @@ type Chart struct {
 	// before installing.
 	// This should only be set to true when the ChartName is a local path on disk.
 	UpdateDeps bool
+
+	// repository source of this Chart
+	Repo Repo
+}
+
+type Repo struct {
+	// name of the repository
+	Name string
+
+	// source URL of the repository
+	Url string
 }
 
 // StringTuple is a tuple of strings, used to create ordered maps
@@ -103,6 +114,13 @@ func (c *Chart) Setup(cfg *config.Config) error {
 
 // Provision an instance of tiller-deploy
 func (c *Chart) Provision() error {
+	if len(c.Repo.Name) > 0 && len(c.Repo.Url) > 0 {
+		err := c.addRepo()
+		if err != nil {
+			return fmt.Errorf("error adding helm repo: %v", err)
+		}
+	}
+
 	if c.UpdateDeps {
 		err := c.runDepUpdate()
 		if err != nil {
@@ -296,4 +314,12 @@ func (c *Chart) Logs() (map[string]string, error) {
 	}
 
 	return out, nil
+}
+
+func (c *Chart) addRepo() error {
+	err := c.buildHelmCmd("repo", "add", c.Repo.Name, c.Repo.Url).Run()
+	if err != nil {
+		return err
+	}
+	return nil
 }

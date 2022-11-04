@@ -24,13 +24,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"math/big"
 	"net"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/test/e2e/framework/addon/base"
@@ -38,11 +38,18 @@ import (
 	"github.com/cert-manager/cert-manager/test/e2e/framework/config"
 )
 
+const (
+	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
+	vaultHelmChartVersion = "0.22.0"
+	vaultImageRepository  = "index.docker.io/library/vault"
+	vaultImageTag         = "1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
+)
+
 // Vault describes the configuration details for an instance of Vault
 // deployed to the test cluster
 type Vault struct {
-	config *config.Config
-	chart  *chart.Chart
+	chart     *chart.Chart
+	tlsSecret corev1.Secret
 
 	Base *base.Base
 
@@ -105,20 +112,101 @@ func (v *Vault) Setup(cfg *config.Config) error {
 	}
 	v.details.Kubectl = cfg.Kubectl
 	v.chart = &chart.Chart{
-		Base:        v.Base,
-		ReleaseName: "chart-vault-" + v.Name,
-		Namespace:   v.Namespace,
-		ChartName:   cfg.RepoRoot + "/test/e2e/charts/vault",
-		// doesn't matter when installing from disk
-		ChartVersion: "0",
+		Base:         v.Base,
+		ReleaseName:  "chart-vault-" + v.Name,
+		Namespace:    v.Namespace,
+		ChartName:    "hashicorp/vault",
+		ChartVersion: vaultHelmChartVersion,
+		Repo: chart.Repo{
+			Name: "hashicorp",
+			Url:  vaultHelmChartRepo,
+		},
 		Vars: []chart.StringTuple{
 			{
-				Key:   "vault.publicKey",
-				Value: base64.StdEncoding.EncodeToString(v.details.VaultCert),
+				Key:   "injector.enabled",
+				Value: "false",
 			},
 			{
-				Key:   "vault.privateKey",
-				Value: base64.StdEncoding.EncodeToString(v.details.VaultCertPrivateKey),
+				Key:   "server.authDelegator.enabled",
+				Value: "false",
+			},
+			{
+				Key:   "server.dataStorage.enabled",
+				Value: "false",
+			},
+			{
+				Key:   "server.standalone.enabled",
+				Value: "true",
+			},
+			// configure dev mode
+			// we cannot use the 'server.dev.enabled' Helm value here, because as soon
+			// as you enable 'server.dev' you cannot specify a config file anymore
+			{
+				Key:   "server.extraArgs",
+				Value: "-dev -dev-listen-address=[::]:8202",
+			},
+			// configure root token
+			{
+				Key:   "server.extraEnvironmentVars.VAULT_DEV_ROOT_TOKEN_ID",
+				Value: "vault-root-token",
+			},
+			// configure tls certificate
+			{
+				Key:   "global.tlsDisable",
+				Value: "false",
+			},
+			{
+				Key: "server.standalone.config",
+				Value: `
+				listener "tcp" {
+					address = "[::]:8200"
+					cluster_address = "[::]:8201"
+					tls_disable = false
+					tls_cert_file = "/vault/tls/server.crt"
+					tls_key_file = "/vault/tls/server.key"
+				}`,
+			},
+			{
+				Key:   "server.volumes[0].name",
+				Value: "vault-tls",
+			},
+			{
+				Key:   "server.volumes[0].secret.secretName",
+				Value: "vault-tls",
+			},
+			{
+				Key:   "server.volumeMounts[0].name",
+				Value: "vault-tls",
+			},
+			{
+				Key:   "server.volumeMounts[0].mountPath",
+				Value: "/vault/tls",
+			},
+			// configure image and repo
+			{
+				Key:   "server.image.repository",
+				Value: vaultImageRepository,
+			},
+			{
+				Key:   "server.image.tag",
+				Value: vaultImageTag,
+			},
+			// configure resource requests and limits
+			{
+				Key:   "server.resources.requests.cpu",
+				Value: "50m",
+			},
+			{
+				Key:   "server.resources.requests.memory",
+				Value: "64Mi",
+			},
+			{
+				Key:   "server.resources.limits.cpu",
+				Value: "200m",
+			},
+			{
+				Key:   "server.resources.limits.memory",
+				Value: "256Mi",
 			},
 		},
 	}
@@ -126,23 +214,44 @@ func (v *Vault) Setup(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+
+	v.tlsSecret = corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "vault-tls",
+			Namespace: v.Namespace,
+		},
+		StringData: map[string]string{
+			"server.crt": string(v.details.VaultCert),
+			"server.key": string(v.details.VaultCertPrivateKey),
+		},
+	}
+
 	return nil
 }
 
 // Provision will actually deploy this instance of Vault to the cluster.
 func (v *Vault) Provision() error {
-	err := v.chart.Provision()
+	kubeClient := v.Base.Details().KubeClient
+
+	_, err := kubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), &v.tlsSecret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	// otherwise lookup the newly created pods name
-	kubeClient := v.Base.Details().KubeClient
+	err = v.chart.Provision()
+	if err != nil {
+		return err
+	}
 
+	// lookup the newly created pods name
 	retries := 5
 	for {
 		pods, err := kubeClient.CoreV1().Pods(v.Namespace).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: "app=vault",
+			LabelSelector: "app.kubernetes.io/name=vault",
 		})
 		if err != nil {
 			return err
@@ -168,7 +277,7 @@ func (v *Vault) Provision() error {
 	}
 
 	v.details.Namespace = v.Namespace
-	v.details.Host = fmt.Sprintf("https://vault.%s:8200", v.Namespace)
+	v.details.Host = fmt.Sprintf("https://%s:8200", "chart-vault-"+v.Name+"."+v.Namespace)
 
 	return nil
 }
@@ -180,6 +289,13 @@ func (v *Vault) Details() *Details {
 
 // Deprovision will destroy this instance of Vault
 func (v *Vault) Deprovision() error {
+	kubeClient := v.Base.Details().KubeClient
+
+	err := kubeClient.CoreV1().Secrets(v.Namespace).Delete(context.TODO(), v.tlsSecret.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
 	return v.chart.Deprovision()
 }
 
@@ -239,7 +355,7 @@ func (v *Vault) generateCert() ([]byte, []byte, error) {
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
-		DNSNames:     []string{"vault." + v.Namespace},
+		DNSNames:     []string{"chart-vault-" + v.Name + "." + v.Namespace},
 	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
