@@ -417,3 +417,7 @@ tools: $(TOOLS_PATHS) $(K8S_CODEGEN_TOOLS_PATHS) ## install all tools
 .PHONY: update-kind-images
 update-kind-images: $(BINDIR)/tools/crane
 	CRANE=./$(BINDIR)/tools/crane ./hack/latest-kind-images.sh
+
+.PHONY: update-base-images
+update-base-images: $(BINDIR)/tools/crane
+	CRANE=./$(BINDIR)/tools/crane ./hack/latest-base-images.sh
