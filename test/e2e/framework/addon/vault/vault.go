@@ -38,10 +38,16 @@ import (
 	"github.com/cert-manager/cert-manager/test/e2e/framework/config"
 )
 
+const (
+	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
+	vaultHelmChartVersion = "0.22.0"
+	vaultImageRepository  = "index.docker.io/library/vault"
+	vaultImageTag         = "1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
+)
+
 // Vault describes the configuration details for an instance of Vault
 // deployed to the test cluster
 type Vault struct {
-	config    *config.Config
 	chart     *chart.Chart
 	tlsSecret corev1.Secret
 
@@ -110,12 +116,41 @@ func (v *Vault) Setup(cfg *config.Config) error {
 		ReleaseName:  "chart-vault-" + v.Name,
 		Namespace:    v.Namespace,
 		ChartName:    "hashicorp/vault",
-		ChartVersion: "0.22.0",
+		ChartVersion: vaultHelmChartVersion,
 		Repo: chart.Repo{
 			Name: "hashicorp",
-			Url:  "https://helm.releases.hashicorp.com",
+			Url:  vaultHelmChartRepo,
 		},
 		Vars: []chart.StringTuple{
+			{
+				Key:   "injector.enabled",
+				Value: "false",
+			},
+			{
+				Key:   "server.authDelegator.enabled",
+				Value: "false",
+			},
+			{
+				Key:   "server.dataStorage.enabled",
+				Value: "false",
+			},
+			{
+				Key:   "server.standalone.enabled",
+				Value: "true",
+			},
+			// configure dev mode
+			// we cannot use the 'server.dev.enabled' Helm value here, because as soon
+			// as you enable 'server.dev' you cannot specify a config file anymore
+			{
+				Key:   "server.extraArgs",
+				Value: "-dev -dev-listen-address=[::]:8202",
+			},
+			// configure root token
+			{
+				Key:   "server.extraEnvironmentVars.VAULT_DEV_ROOT_TOKEN_ID",
+				Value: "vault-root-token",
+			},
+			// configure tls certificate
 			{
 				Key:   "global.tlsDisable",
 				Value: "false",
@@ -124,20 +159,12 @@ func (v *Vault) Setup(cfg *config.Config) error {
 				Key: "server.standalone.config",
 				Value: `
 				listener "tcp" {
-							address = "[::]:8200"
-							cluster_address= "[::]:8201"
-							tls_disable = false
-							tls_cert_file = "/vault/tls/server.crt"
-							tls_key_file = "/vault/tls/server.key"
+					address = "[::]:8200"
+					cluster_address = "[::]:8201"
+					tls_disable = false
+					tls_cert_file = "/vault/tls/server.crt"
+					tls_key_file = "/vault/tls/server.key"
 				}`,
-			},
-			{
-				Key:   "server.extraArgs",
-				Value: "-dev -dev-listen-address=[::]:8202",
-			},
-			{
-				Key:   "server.extraEnvironmentVars.VAULT_DEV_ROOT_TOKEN_ID",
-				Value: "vault-root-token",
 			},
 			{
 				Key:   "server.volumes[0].name",
@@ -147,7 +174,6 @@ func (v *Vault) Setup(cfg *config.Config) error {
 				Key:   "server.volumes[0].secret.secretName",
 				Value: "vault-tls",
 			},
-
 			{
 				Key:   "server.volumeMounts[0].name",
 				Value: "vault-tls",
@@ -156,26 +182,16 @@ func (v *Vault) Setup(cfg *config.Config) error {
 				Key:   "server.volumeMounts[0].mountPath",
 				Value: "/vault/tls",
 			},
+			// configure image and repo
 			{
 				Key:   "server.image.repository",
-				Value: "index.docker.io/library/vault",
+				Value: vaultImageRepository,
 			},
 			{
 				Key:   "server.image.tag",
-				Value: "1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01",
+				Value: vaultImageTag,
 			},
-			{
-				Key:   "server.authDelegator.enabled",
-				Value: "false",
-			},
-			{
-				Key:   "injector.enabled",
-				Value: "false",
-			},
-			{
-				Key:   "server.datastorage.enabled",
-				Value: "false",
-			},
+			// configure resource requests and limits
 			{
 				Key:   "server.resources.requests.cpu",
 				Value: "50m",
