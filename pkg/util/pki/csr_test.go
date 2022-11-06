@@ -416,6 +416,32 @@ func TestGenerateCSR(t *testing.T) {
 		},
 	}
 
+	basicConstraintsValue, err := asn1.Marshal(struct {
+		IsCA bool
+	}{
+		IsCA: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 0xa0 = DigitalSignature, Encipherment and KeyCertSign usage
+	asn1KeyUsageWithCa, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa4}, BitLength: asn1BitLength([]byte{0xa4})})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	basicConstraintsExtensions := []pkix.Extension{
+		{
+			Id:    OIDExtensionKeyUsage,
+			Value: asn1KeyUsageWithCa,
+		},
+		{
+			Id:    OIDExtensionBasicConstraints,
+			Value: basicConstraintsValue,
+		},
+	}
+
 	exampleLiteralSubject := "CN=actual-cn, OU=FooLong, OU=Bar, O=example.org"
 	rawExampleLiteralSubject, err := ParseSubjectStringToRawDerBytes(exampleLiteralSubject)
 	if err != nil {
@@ -455,6 +481,17 @@ func TestGenerateCSR(t *testing.T) {
 				PublicKeyAlgorithm: x509.RSA,
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions:    defaultExtraExtensions,
+			},
+		},
+		{
+			name: "Generate CSR from certificate with isCA set",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", IsCA: true}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions:    basicConstraintsExtensions,
 			},
 		},
 		{
