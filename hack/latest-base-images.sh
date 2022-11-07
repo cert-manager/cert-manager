@@ -22,6 +22,8 @@ set -eu -o pipefail
 # This in turn allows us to easily update all base images to their latest versions, while mantaining the use
 # of digests rather than tags when we refer to these base images.
 
+CRANE=crane
+
 TARGET=make/base_images.mk
 
 STATIC_BASE=gcr.io/distroless/static
