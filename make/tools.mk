@@ -35,7 +35,7 @@ K8S_CODEGEN_VERSION=v0.24.2
 
 KUBEBUILDER_ASSETS_VERSION=1.24.2
 
-VENDORED_GO_VERSION := 1.18.3
+VENDORED_GO_VERSION := 1.18.8
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
