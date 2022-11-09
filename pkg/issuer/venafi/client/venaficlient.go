@@ -247,10 +247,10 @@ func httpClientForVcertTPP(caBundle []byte) *http.Client {
 
 	// Copy vcert's initialization of the TLS client config
 	tlsClientConfig := http.DefaultTransport.(*http.Transport).TLSClientConfig.Clone()
+	if tlsClientConfig == nil {
+		tlsClientConfig = &tls.Config{}
+	}
 	if len(caBundle) > 0 {
-		if tlsClientConfig == nil {
-			tlsClientConfig = &tls.Config{}
-		}
 		rootCAs := x509.NewCertPool()
 		rootCAs.AppendCertsFromPEM(caBundle)
 		tlsClientConfig.RootCAs = rootCAs
