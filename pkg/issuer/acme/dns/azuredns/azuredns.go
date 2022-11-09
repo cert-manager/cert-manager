@@ -72,7 +72,9 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
-func getWIToken(env azure.Environment, options adal.ManagedIdentityOptions) (*adal.ServicePrincipalToken, error) {
+// getFederatedSPT prepares an SPT for a Workload Identity-enabled setup
+func getFederatedSPT(env azure.Environment, options adal.ManagedIdentityOptions) (*adal.ServicePrincipalToken, error) {
+	// NOTE: all related environment variables are described here: https://azure.github.io/azure-workload-identity/docs/installation/mutating-admission-webhook.html
 	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, os.Getenv("AZURE_TENANT_ID"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
@@ -83,6 +85,9 @@ func getWIToken(env azure.Environment, options adal.ManagedIdentityOptions) (*ad
 		return nil, fmt.Errorf("failed to read a file with a federated token: %v", err)
 	}
 
+	// AZURE_CLIENT_ID will be empty in case azure.workload.identity/client-id annotation is not set
+	// Also, some users might want to use a different MSI for a particular DNS zone
+	// Thus, it's important to offer optional ClientID overrides
 	clientID := os.Getenv("AZURE_CLIENT_ID")
 	if options.ClientID != "" {
 		clientID = options.ClientID
@@ -123,7 +128,7 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 
 	// Use Workload Identity if present
 	if os.Getenv("AZURE_FEDERATED_TOKEN_FILE") != "" {
-		token, err := getWIToken(env, opt)
+		spt, err := getFederatedSPT(env, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -131,25 +136,25 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		// adal does not offer methods to dynamically replace a federated token, thus we need to have a wrapper to make sure
 		// we're using up-to-date secret while requesting an access token
 		var refreshFunc adal.TokenRefresh = func(context context.Context, resource string) (*adal.Token, error) {
-			newWIToken, err := getWIToken(env, opt)
+			newSPT, err := getFederatedSPT(env, opt)
 			if err != nil {
 				return nil, err
 			}
 
 			// Need to call Refresh(), otherwise .Token() will be empty
-			err = newWIToken.Refresh()
+			err = newSPT.Refresh()
 			if err != nil {
 				return nil, err
 			}
 
-			accessToken := newWIToken.Token()
+			accessToken := newSPT.Token()
 
 			return &accessToken, nil
 		}
 
-		token.SetCustomRefreshFunc(refreshFunc)
+		spt.SetCustomRefreshFunc(refreshFunc)
 
-		return token, nil
+		return spt, nil
 	}
 
 	logf.Log.V(logf.InfoLevel).Info("No Azure Workload Identity found: attempting to authenticate with an Azure Managed Service Identity (MSI)")
