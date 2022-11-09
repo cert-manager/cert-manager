@@ -145,7 +145,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// We also need to re-reconcile all other Certificates which have the same
 	// Secret name set so their conditions can be evaluated.
 	for _, duplicate := range duplicates {
-		c.queue.AddRateLimited(crt.Namespace + "/" + duplicate)
+		c.queue.Add(crt.Namespace + "/" + duplicate)
 	}
 
 	return nil
