@@ -194,8 +194,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 //
 // Here's why:
 //
-//  1. The TPP API server served by Microsoft Windows Server + IIS.
-//  2. IIS uses TLS 1.2 by default[1] and it uses a
+//  1. The TPP API server is served by Microsoft Windows Server and IIS.
+//  2. IIS uses TLS-1.2 by default[1] and it uses a
 //     TLS-1.2 feature called "renegotiation" to allow client certificate
 //     settings to be configured at the folder level. e.g.
 //     https://tpp.example.com/vedauth may Require or Accept client
@@ -212,17 +212,17 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 //     "site" (i.e. part of the server, in IIS terminology) is to be
 //     used."
 //  4. In this scenario, the Go HTTP client MUST be configured to
-//     renegotiate. By default it will refuse to renegotiate. We use
-//     RenegotiateOnceAsClient rather than RenegotiateFreelyAsClient
-//     because cert-manager establishes a new HTTPS connection for each
-//     API request and therefore should only ever need to renegotiate
-//     once in this scenario.
-//  5. But overriding the HTTP client like this causes vcert to ignore
-//     the `vcert.Config.ConnectionTrust` field, so we also have to set
-//     up the root CA trust pool ourselves.
-//  6. And the value of RootCAs MUST be nil unless the user has supplied
-//     custom CA, because a nil value causes the Go HTTP client to load
-//     the system default root CAs.
+//     renegotiate (by default it will refuse to renegotiate).
+//     We use RenegotiateOnceAsClient rather than RenegotiateFreelyAsClient
+//     because cert-manager establishes a new HTTPS connection for each API
+//     request and therefore should only ever need to renegotiate once in this
+//     scenario.
+//  5. But overriding the HTTP client causes vcert to ignore the
+//     `vcert.Config.ConnectionTrust` field, so we also have to set up the root
+//     CA trust pool ourselves.
+//  6. And the value of RootCAs MUST be nil unless the user has supplied a
+//     custom CA, because a nil value causes the Go HTTP client to load the
+//     system default root CAs.
 //
 // [1] TLS protocol version support in Microsoft Windows: https://learn.microsoft.com/en-us/windows/win32/secauthn/protocols-in-tls-ssl--schannel-ssp-#tls-protocol-version-support
 // [2] Should I use SSL/TLS renegotiation?: https://security.stackexchange.com/a/24569
