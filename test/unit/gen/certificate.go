@@ -201,6 +201,12 @@ func SetCertificateNamespace(namespace string) CertificateModifier {
 	}
 }
 
+func SetCertificateName(name string) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.ObjectMeta.Name = name
+	}
+}
+
 func SetCertificateKeyUsages(usages ...v1.KeyUsage) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.Usages = usages

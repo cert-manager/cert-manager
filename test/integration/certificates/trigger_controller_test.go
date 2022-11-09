@@ -365,6 +365,107 @@ func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Cont
 		t.Fatal(err)
 	}
 }
+
+// Test_TriggerController_DuplicateSecretName ensures that if a Certificate was
+// failed because of a DuplicateSecretName, but this is no longer the case, the
+// trigger controller will set the Issuing condition.
+func Test_TriggerController_DuplicateSecretName(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
+
+	fakeClock := &fakeclock.FakeClock{}
+	// Build, instantiate and run the trigger controller.
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory,
+		cmFactory, framework.NewEventRecorder(t), fakeClock, shouldReissue,
+		"cert-manager-certificates-trigger-duplicatesecrets-test")
+	c := controllerpkg.NewController(
+		ctx,
+		"trigger_test",
+		metrics.New(logf.Log, clock.RealClock{}),
+		ctrl.ProcessItem,
+		mustSync,
+		nil,
+		queue,
+	)
+	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopController()
+
+	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
+	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
+		Spec: cmapi.CertificateSpec{
+			SecretName: "example",
+			CommonName: "example.com",
+			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, cert.Name)
+
+	// Update the Certificate to have a DuplicateSecretName condition and a
+	// Failed issuance with a DuplicateSecretName reason condition.
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, cert.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert.Status.Conditions = []cmapi.CertificateCondition{
+		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: cmapi.CertificateIssuingReasonDuplicateSecretName},
+		{Type: cmapi.CertificateConditionDuplicateSecretName, Status: cmmeta.ConditionTrue},
+	}
+	cert.Status.LastFailureTime = &metav1.Time{Time: fakeClock.Now().Add(-time.Minute)}
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Ensure that the Certificate keeps the Issuing condition set to false.
+	<-time.After(time.Second)
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, cert.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !apiutil.CertificateHasCondition(cert, cmapi.CertificateCondition{
+		Type:   cmapi.CertificateConditionIssuing,
+		Status: cmmeta.ConditionFalse,
+		Reason: cmapi.CertificateIssuingReasonDuplicateSecretName,
+	}) {
+		t.Errorf("expected Certificate to have Issuing condition with reason %q, got=%#v", cmapi.CertificateIssuingReasonDuplicateSecretName, apiutil.GetCertificateCondition(cert, cmapi.CertificateConditionIssuing))
+	}
+
+	// Update the Certificate to no longer have a DuplicateSecretName condition.
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, cert.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert.Status.Conditions = []cmapi.CertificateCondition{
+		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: cmapi.CertificateIssuingReasonDuplicateSecretName},
+	}
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Ensure that the Certificate has the Issuing condition set to true.
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, cert.Name)
+}
+
 func ensureCertificateHasIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
 	t.Helper()
 
