@@ -1369,6 +1369,156 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+		"if the Certificate is in Issuing state but has a DuplicateSecretName set condition, fail the issuance with a duplicate secret name Reason": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+							Type:    "DuplicateSecretName",
+							Status:  "True",
+							Reason:  "DuplicateSecretName",
+							Message: "Duplicate Secret name",
+						}),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:    cmapi.CertificateConditionIssuing,
+								Status:  cmmeta.ConditionFalse,
+								Reason:  "DuplicateSecretName",
+								Message: "Certificate references the same spec.secretName as Certificate(s) in Namespace \"default-unit-test-ns\". Blocking issuance until there is no longer a Secret name duplicate to prevent CertificateRequest creation runaway. Please use a unique spec.secretName for all Certificates in the same Namespace.",
+
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:    "DuplicateSecretName",
+								Status:  "True",
+								Reason:  "DuplicateSecretName",
+								Message: "Duplicate Secret name",
+							}),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning DuplicateSecretName Certificate references the same spec.secretName as Certificate(s) in Namespace \"default-unit-test-ns\". Blocking issuance until there is no longer a Secret name duplicate to prevent CertificateRequest creation runaway. Please use a unique spec.secretName for all Certificates in the same Namespace.",
+				},
+			},
+			expectedErr: false,
+		},
+		"if the Certificate is in Issuing state but there exists another Certificate in the same Namespace with the same spec.secretName, do nothing (so we wait for the DuplicateSecretName condition": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateFrom(issuingCert,
+						gen.SetCertificateName("duplicate-secret-name"),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
+			},
+			expectedErr: false,
+		},
+		"if the Certificate is in a False issuing state with a DuplicateSecretName reason, and there is a DuplicateSecretName condition. Do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+							Type:    "DuplicateSecretName",
+							Status:  "True",
+							Reason:  "DuplicateSecretName",
+							Message: "Duplicate Secret name",
+						}),
+						gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+							Type:    "Issuing",
+							Status:  "False",
+							Reason:  "DuplicateSecretName",
+							Message: "Duplicate Secret name",
+						}),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
+			},
+			expectedErr: false,
+		},
+		"if the Certificate is in a False issuing state with a DuplicateSecretName reason, and there is _no_ DuplicateSecretName condition, remove the Issuing condition": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(exampleBundle.Certificate,
+						gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+							Type:    "Issuing",
+							Status:  "False",
+							Reason:  "DuplicateSecretName",
+							Message: "Duplicate Secret name",
+						}),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate),
+					)),
+				},
+				ExpectedEvents: []string{},
+			},
+			expectedErr: false,
+		},
 	}
 
 	for name, test := range tests {
