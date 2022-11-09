@@ -1221,7 +1221,7 @@ func Test_IssuingController_DuplicateSecretName(t *testing.T) {
 			return false, nil
 		}
 
-		return crt.Status.LastFailureTime != nil && crt.Status.FailedIssuanceAttempts != nil, nil
+		return crt.Status.LastFailureTime == nil && crt.Status.FailedIssuanceAttempts == nil, nil
 	})
 	if err != nil {
 		t.Fatal(err)

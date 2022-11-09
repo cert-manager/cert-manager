@@ -77,13 +77,38 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 
 	BeforeEach(func() {
 		By("creating a self-signing issuer")
-		issuer := gen.Issuer(issuerName,
+		issuer := gen.Issuer("self-signed",
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}))
 		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
 		err := e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			"self-signed", cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Here we use a CA issuer because if we didn't, we would often get a
+		// CertificateRequest failure because private keys do not match on
+		// duplicate target Secret names. This failure fails Certificates.
+		// This failure is not the point of this test, and the DuplicateSecretName
+		// condition isn't attempting to catch this case.
+		By("creating a CA Issuer")
+		crt := gen.Certificate(issuerName,
+			gen.SetCertificateNamespace(f.Namespace.Name),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "self-signed"}),
+			gen.SetCertificateDNSNames("example.com"),
+			gen.SetCertificateIsCA(true),
+			gen.SetCertificateSecretName("ca-issuer"),
+		)
+		Expect(f.CRClient.Create(context.Background(), crt)).To(Succeed())
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Second*10)
+		Expect(err).NotTo(HaveOccurred())
+		issuer = gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "ca-issuer"}),
+		)
+		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
+		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -117,7 +142,12 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 				Expect(err).NotTo(HaveOccurred())
 
 				cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName)
-				return cond != nil && cond.Status == cmmeta.ConditionTrue
+				if !(cond != nil && cond.Status == cmmeta.ConditionTrue) {
+					return false
+				}
+
+				cond = apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+				return cond != nil && cond.Status == cmmeta.ConditionFalse
 			}, "10s", "1s").Should(BeTrue(), "expected Certificate to reach duplicate SecretName in time")
 		}
 
@@ -125,9 +155,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		for i, crtName := range []string{crt1, crt2, crt3} {
 			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-
 			crt.Spec.SecretName = fmt.Sprintf("unique-secret-%d", i)
-
 			_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(ctx, crt, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}

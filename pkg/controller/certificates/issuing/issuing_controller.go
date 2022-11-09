@@ -198,7 +198,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// ourselves, we exit early and wait for that condition to be set.
 	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
 		condition.Status == cmmeta.ConditionTrue {
-		return c.failIssueCertificateDuplicateSecretName(ctx, log, crt, *condition)
+		return c.stopIssueCertificateDuplicateSecretName(ctx, log, crt, *condition)
 	}
 	duplicates, err := internalcertificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
 	if err != nil {
@@ -403,20 +403,10 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	return nil
 }
 
-// failIssueCertificateDuplicateSecretName fails the given Certificate because
-// is references the same SecretName as the Certificate `duplicateCrtName`
-// which resides in the same Namespace. The Certificate will be given an
-// Issuing condition with the Reason "DuplicateSecretName", Status "False".
-func (c *controller) failIssueCertificateDuplicateSecretName(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, dupeSecretNameCondition cmapi.CertificateCondition) error {
-	nowTime := metav1.NewTime(c.clock.Now())
-	crt.Status.LastFailureTime = &nowTime
-
-	failedIssuanceAttempts := 1
-	if crt.Status.FailedIssuanceAttempts != nil {
-		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts + 1
-	}
-	crt.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
-
+// stopIssueCertificateDuplicateSecretName sets the Issuing condition to False
+// on the given Certificate because is references the same SecretName as the
+// Certificate `duplicateCrtName` which resides in the same Namespace.
+func (c *controller) stopIssueCertificateDuplicateSecretName(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, dupeSecretNameCondition cmapi.CertificateCondition) error {
 	log.V(logf.DebugLevel).Info("Certificate spec.secretName matches that of others in the same Namespace, failing issuance")
 
 	reason := cmapi.CertificateIssuingReasonDuplicateSecretName
