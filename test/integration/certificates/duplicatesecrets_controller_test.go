@@ -37,8 +37,9 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-// TestIssuingController performs a basic test to ensure that the issuing
-// TODO:
+// TestIssuingController performs a basic test to ensure that the
+// DuplicateSecretName condition will be set on Certificates which share the
+// same spec.secretName as that of another Certificate in the same Namespace.
 func Test_DuplicateSecrets(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
