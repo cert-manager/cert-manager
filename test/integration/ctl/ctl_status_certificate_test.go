@@ -18,11 +18,6 @@ package ctl
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
 	"fmt"
 	"regexp"
 	"strings"
@@ -54,19 +49,13 @@ func generateCSR(t *testing.T) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject: asn1Subj,
-	}
 
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, skRSA)
+	csr, err := gen.CSRWithSigner(skRSA,
+		gen.SetCSRCommonName("test"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
 }
