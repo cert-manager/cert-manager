@@ -216,8 +216,8 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		}
 	}
 
-	if crt.Spec.IsCA {
-		extension, err := buildBasicConstraintsExtensionsForCertificate()
+	if utilfeature.DefaultFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints) {
+		extension, err := buildBasicConstraintsExtensionsForCertificate(crt.Spec.IsCA)
 		if err != nil {
 			return nil, err
 		}
@@ -306,7 +306,7 @@ func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extensi
 	return extraExtensions, nil
 }
 
-func buildBasicConstraintsExtensionsForCertificate() (pkix.Extension, error) {
+func buildBasicConstraintsExtensionsForCertificate(isCA bool) (pkix.Extension, error) {
 
 	basicConstraints := pkix.Extension{
 		Id: OIDExtensionBasicConstraints,
@@ -315,7 +315,7 @@ func buildBasicConstraintsExtensionsForCertificate() (pkix.Extension, error) {
 	constraint := struct {
 		IsCA bool
 	}{
-		IsCA: true,
+		IsCA: isCA,
 	}
 
 	var err error
