@@ -18,18 +18,12 @@ package selfsigned
 
 import (
 	"crypto"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
-	"net"
-	"net/url"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var rootRSAKeySigner, rootECKeySigner, rootEd25519Signer crypto.Signer
@@ -107,7 +101,7 @@ func newPrivateKeySecret(name, namespace string, keyData []byte) *corev1.Secret 
 }
 
 func generateRSACSR() ([]byte, error) {
-	csr, err := generateCSR(rootRSAKeySigner, x509.SHA256WithRSA)
+	csr, err := generateCSR(rootRSAKeySigner)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +110,7 @@ func generateRSACSR() ([]byte, error) {
 }
 
 func generateECCSR() ([]byte, error) {
-	csr, err := generateCSR(rootECKeySigner, x509.ECDSAWithSHA256)
+	csr, err := generateCSR(rootECKeySigner)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +119,7 @@ func generateECCSR() ([]byte, error) {
 }
 
 func generateEd25519CSR() ([]byte, error) {
-	csr, err := generateCSR(rootEd25519Signer, x509.PureEd25519)
+	csr, err := generateCSR(rootEd25519Signer)
 	if err != nil {
 		return nil, err
 	}
@@ -133,40 +127,16 @@ func generateEd25519CSR() ([]byte, error) {
 	return csr, nil
 }
 
-func generateCSR(privateKey crypto.Signer, alg x509.SignatureAlgorithm) ([]byte, error) {
-	var uris []*url.URL
-	for _, uri := range []string{
-		"spiffe://foo.foo.example.net",
-		"spiffe://foo.bar.example.net",
-	} {
-		parsed, err := url.Parse(uri)
-		if err != nil {
-			return nil, err
-		}
-		uris = append(uris, parsed)
-	}
-
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "my-common-name",
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
-		SignatureAlgorithm: alg,
-		URIs:               uris,
-
-		DNSNames: []string{"dnsName1.co", "dnsName2.ninja"},
-		IPAddresses: []net.IP{
-			[]byte{8, 8, 8, 8},
-			[]byte{1, 1, 1, 1},
-		},
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)
+func generateCSR(secretKey crypto.Signer) ([]byte, error) {
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName("my-common-name"),
+		gen.SetCSRURIsFromStrings("spiffe://foo.foo.example.net", "spiffe://foo.bar.example.net"),
+		gen.SetCSRDNSNames("dnsName1.co", "dnsName2.ninja"),
+		gen.SetCSRIPAddresses([]byte{8, 8, 8, 8}, []byte{1, 1, 1, 1}),
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr, nil
 }
