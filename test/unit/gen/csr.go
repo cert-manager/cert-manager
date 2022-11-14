@@ -136,7 +136,11 @@ func SetCSRIPAddressesFromStrings(ips ...string) CSRModifier {
 	return func(c *x509.CertificateRequest) error {
 		var certIPs []net.IP
 		for _, ip := range ips {
-			certIPs = append(certIPs, net.ParseIP(ip))
+			if certIP := net.ParseIP(ip); certIP == nil {
+				return fmt.Errorf("invalid ip: %s", ip)
+			} else {
+				certIPs = append(certIPs, certIP)
+			}
 		}
 		c.IPAddresses = certIPs
 		return nil
