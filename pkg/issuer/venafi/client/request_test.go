@@ -18,10 +18,6 @@ package client
 
 import (
 	"crypto"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"errors"
 	"testing"
 	"time"
@@ -34,6 +30,7 @@ import (
 	internalfake "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/fake"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func checkCertificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
@@ -77,22 +74,15 @@ func checkCertificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
 	}
 }
 
-func generateCSR(t *testing.T, sk crypto.Signer, commonName string, dnsNames []string) []byte {
-	template := x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName: commonName,
-		},
-		SignatureAlgorithm: x509.SHA256WithRSA,
-		DNSNames:           dnsNames,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, sk)
+func generateCSR(t *testing.T, secretKey crypto.Signer, commonName string, dnsNames []string) []byte {
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName(commonName),
+		gen.SetCSRDNSNames(dnsNames...),
+	)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 	return csr
 }
 

@@ -23,7 +23,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"errors"
 	"math"
 	"math/big"
@@ -59,19 +58,13 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlgorithm) []byte {
-	template := x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName: "test",
-		},
-		SignatureAlgorithm: sigAlg,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName("test"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
 }
@@ -124,7 +117,7 @@ func TestSign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
+	testCSR := generateCSR(t, testpk)
 
 	baseCSRNotApproved := gen.CertificateSigningRequest("test-cr",
 		gen.SetCertificateSigningRequestIsCA(true),
@@ -606,7 +599,7 @@ func TestCA_Sign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
+	testCSR := generateCSR(t, testpk)
 
 	tests := map[string]struct {
 		givenCASecret    *corev1.Secret
