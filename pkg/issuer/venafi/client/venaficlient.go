@@ -17,7 +17,11 @@ limitations under the License.
 package client
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"net"
+	"net/http"
 	"time"
 
 	vcert "github.com/Venafi/vcert/v4"
@@ -135,28 +139,27 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
-		caBundle := string(tpp.CABundle)
 
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
 			BaseUrl:       tpp.URL,
 			Zone:          venCfg.Zone,
 			// always enable verbose logging for now
-			LogVerbose:      true,
-			ConnectionTrust: caBundle,
+			LogVerbose: true,
+			// We supply the CA bundle here, to trigger the vcert's builtin
+			// validation of the supplied PEM content.
+			// This is somewhat redundant because the value (if valid) will be
+			// ignored by vcert since we also supply a custom HTTP client,
+			// below. But we want to retain the CA bundle validation errors that
+			// were returned in previous versions of this code.
+			// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/client.go#L55-L61
+			ConnectionTrust: string(tpp.CABundle),
 			Credentials: &endpoint.Authentication{
 				User:        username,
 				Password:    password,
 				AccessToken: accessToken,
 			},
-			// this is needed for local development when tunneling to the TPP server
-			//Client: &http.Client{
-			//	Transport: &http.Transport{
-			//		TLSClientConfig: &tls.Config{
-			//			Renegotiation: tls.RenegotiateOnceAsClient,
-			//		},
-			//	},
-			//},
+			Client: httpClientForVcertTPP(tpp.CABundle),
 		}, nil
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
@@ -185,6 +188,84 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 	// API validation in webhook and in the ClusterIssuer and Issuer controller
 	// Sync functions should make this unreachable in production.
 	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
+}
+
+// httpClientForVcertTPP creates an HTTP client and customises it to allow client TLS renegotiation.
+//
+// Here's why:
+//
+//  1. The TPP API server is served by Microsoft Windows Server and IIS.
+//  2. IIS uses TLS-1.2 by default[1] and it uses a
+//     TLS-1.2 feature called "renegotiation" to allow client certificate
+//     settings to be configured at the folder level. e.g.
+//     https://tpp.example.com/vedauth may Require or Accept client
+//     certificates while https://tpp.example.com/vedsdk may Ignore
+//     client certificates.
+//  3. When IIS is configured this way it behaves as follows[2]:
+//     "Server receives a connection request on port 443; it begins a
+//     handshake. The server does not ask for a client certificate. Once
+//     the handshake is completed, the client sends the actual target URL
+//     as a HTTP request in the SSL tunnel. Up to that point, the server
+//     did not know which page was targeted; it only knew, at best, the
+//     intended server name (through the Server Name Indication). Now
+//     that the server knows which page is targeted, he knows which
+//     "site" (i.e. part of the server, in IIS terminology) is to be
+//     used."
+//  4. In this scenario, the Go HTTP client MUST be configured to
+//     renegotiate (by default it will refuse to renegotiate).
+//     We use RenegotiateOnceAsClient rather than RenegotiateFreelyAsClient
+//     because cert-manager establishes a new HTTPS connection for each API
+//     request and therefore should only ever need to renegotiate once in this
+//     scenario.
+//  5. But overriding the HTTP client causes vcert to ignore the
+//     `vcert.Config.ConnectionTrust` field, so we also have to set up the root
+//     CA trust pool ourselves.
+//  6. And the value of RootCAs MUST be nil unless the user has supplied a
+//     custom CA, because a nil value causes the Go HTTP client to load the
+//     system default root CAs.
+//
+// [1] TLS protocol version support in Microsoft Windows: https://learn.microsoft.com/en-us/windows/win32/secauthn/protocols-in-tls-ssl--schannel-ssp-#tls-protocol-version-support
+// [2] Should I use SSL/TLS renegotiation?: https://security.stackexchange.com/a/24569
+func httpClientForVcertTPP(caBundle []byte) *http.Client {
+	// Copy vcert's default HTTP transport, which is mostly identical to the
+	// http.DefaultTransport settings in Go's stdlib.
+	// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/pkg/venafi/tpp/tpp.go#L481-L513
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			// Note: This DualStack setting is copied from vcert but
+			// deviates from the http.DefaultTransport in Go's stdlib.
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	// Copy vcert's initialization of the TLS client config
+	tlsClientConfig := http.DefaultTransport.(*http.Transport).TLSClientConfig.Clone()
+	if tlsClientConfig == nil {
+		tlsClientConfig = &tls.Config{}
+	}
+	if len(caBundle) > 0 {
+		rootCAs := x509.NewCertPool()
+		rootCAs.AppendCertsFromPEM(caBundle)
+		tlsClientConfig.RootCAs = rootCAs
+	}
+	transport.TLSClientConfig = tlsClientConfig
+
+	// Enable TLS 1.2 renegotiation (see earlier comment for justification).
+	transport.TLSClientConfig.Renegotiation = tls.RenegotiateOnceAsClient
+
+	// Copy vcert's initialization of the HTTP client, which overrides the default timeout.
+	// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/pkg/venafi/tpp/tpp.go#L481-L513
+	return &http.Client{
+		Transport: transport,
+		Timeout:   time.Second * 30,
+	}
 }
 
 func (v *Venafi) Ping() error {
