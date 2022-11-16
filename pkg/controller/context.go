@@ -170,6 +170,9 @@ type ACMEOptions struct {
 	// HTTP01SolverResourceLimitsMemory defines the ACME pod's resource limits Memory size
 	HTTP01SolverResourceLimitsMemory resource.Quantity
 
+	// ACMEHTTP01SolverRunAsNonRoot sets the ACME pod's ability to run as root
+	ACMEHTTP01SolverRunAsNonRoot bool
+
 	// HTTP01SolverNameservers is a list of nameservers to use when performing self-checks
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string

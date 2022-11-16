@@ -80,6 +80,7 @@ type ControllerOptions struct {
 	ACMEHTTP01SolverResourceRequestMemory string
 	ACMEHTTP01SolverResourceLimitsCPU     string
 	ACMEHTTP01SolverResourceLimitsMemory  string
+	ACMEHTTP01SolverRunAsNonRoot          bool
 	// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
 	ACMEHTTP01SolverNameservers []string
 
@@ -155,6 +156,7 @@ var (
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
 	defaultACMEHTTP01SolverResourceLimitsCPU     = "100m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
+	defaultACMEHTTP01SolverRunAsNonRoot          = true
 
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
@@ -310,6 +312,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.ACMEHTTP01SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", defaultACMEHTTP01SolverResourceLimitsMemory, ""+
 		"Defines the resource limits Memory size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.BoolVar(&s.ACMEHTTP01SolverRunAsNonRoot, "acme-http01-solver-run-as-non-root", defaultACMEHTTP01SolverRunAsNonRoot, ""+
+		"Defines the ability to run the http01 solver as root for troubleshooting issues")
 
 	fs.StringSliceVar(&s.ACMEHTTP01SolverNameservers, "acme-http01-solver-nameservers",
 		[]string{}, "A list of comma separated dns server endpoints used for "+
