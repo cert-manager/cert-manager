@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"os"
 
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	admissionreg "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,6 +38,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // injectorSet describes a particular setup of the injector controller
@@ -180,8 +183,8 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // indices.
 // The registered controllers require the cert-manager API to be available
 // in order to run.
-func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
-	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
+func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager, secretsFieldSelector string) error {
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr, secretsFieldSelector)
 	if err != nil {
 		return err
 	}
@@ -202,8 +205,8 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 // indices.
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
-func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
-	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
+func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager, secretsFieldSelector string) error {
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr, secretsFieldSelector)
 	if err != nil {
 		return err
 	}
@@ -226,10 +229,15 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 // cert-manager Certificates CRDs have been installed and before the CA bundles
 // have been injected into the cert-manager CRDs, by the secrets based injector,
 // which is running in a separate goroutine.
-func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, client.Client, error) {
+func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager, secretsFieldSelector string) (cache.Cache, client.Client, error) {
+	selector, err := selectorFromFieldSelectorExpressions(secretsFieldSelector)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid field selector expression %s: %w", secretsFieldSelector, err)
+	}
 	cacheOptions := cache.Options{
-		Scheme: mgr.GetScheme(),
-		Mapper: mgr.GetRESTMapper(),
+		Scheme:            mgr.GetScheme(),
+		Mapper:            mgr.GetRESTMapper(),
+		SelectorsByObject: selector,
 	}
 	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
 	if err != nil {
@@ -246,4 +254,15 @@ func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, clie
 		return nil, nil, err
 	}
 	return ca, client, nil
+}
+
+func selectorFromFieldSelectorExpressions(expression string) (cache.SelectorsByObject, error) {
+	if expression == "" {
+		return nil, nil
+	}
+	selector, err := fields.ParseSelector(expression)
+	if err != nil {
+		return nil, fmt.Errorf("invalid field selector expression %s: %w", expression, err)
+	}
+	return map[client.Object]cache.ObjectSelector{&corev1.Secret{}: {Field: selector}}, nil
 }

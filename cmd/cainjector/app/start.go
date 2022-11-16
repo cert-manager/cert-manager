@@ -44,6 +44,7 @@ import (
 // InjectorControllerOptions is a struct having injector controller options values
 type InjectorControllerOptions struct {
 	Namespace               string
+	SecretsFieldSelector    string
 	LeaderElect             bool
 	LeaderElectionNamespace string
 	LeaseDuration           time.Duration
@@ -69,6 +70,9 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"If set, this limits the scope of cainjector to a single namespace. "+
 		"If set, cainjector will not update resources with certificates outside of the "+
 		"configured namespace.")
+	fs.StringVar(&o.SecretsFieldSelector, "secrets-field-selector", "", ""+
+		"If set, this restricts the secrets watch list to the objects that match the given field expression. "+
+		"Example value is type!=helm.sh/release.v1.")
 	fs.BoolVar(&o.LeaderElect, "leader-elect", cmdutil.DefaultLeaderElect, ""+
 		"If true, cainjector will perform leader election between instances to ensure no more "+
 		"than one instance of cainjector operates at a time")
@@ -215,7 +219,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// Never retry if the controller exits cleanly.
 	g.Go(func() (err error) {
 		for {
-			err = cainjector.RegisterCertificateBased(gctx, mgr)
+			err = cainjector.RegisterCertificateBased(gctx, mgr, o.SecretsFieldSelector)
 			if err == nil {
 				return
 			}
@@ -234,7 +238,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// We do not retry this controller because it only interacts with core APIs
 	// which should always be in a working state.
 	g.Go(func() (err error) {
-		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
+		if err = cainjector.RegisterSecretBased(gctx, mgr, o.SecretsFieldSelector); err != nil {
 			return fmt.Errorf("error registering secret controller: %v", err)
 		}
 		return
