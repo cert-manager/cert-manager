@@ -261,6 +261,7 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %w", err)
 	}
 
+	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01SolverRunAsNonRoot
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
@@ -279,6 +280,7 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 			HTTP01SolverResourceRequestMemory: http01SolverResourceRequestMemory,
 			HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
 			HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
+			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
 			HTTP01SolverNameservers: opts.ACMEHTTP01SolverNameservers,
