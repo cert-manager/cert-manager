@@ -373,8 +373,8 @@ var OIDConstants = struct {
 	Locality           []int
 	Province           []int
 	StreetAddress      []int
-	DomainComponent []int
-	UniqueIdentifier []int
+	DomainComponent    []int
+	UniqueIdentifier   []int
 }{
 	Country:            []int{2, 5, 4, 6},
 	Organization:       []int{2, 5, 4, 10},
@@ -384,8 +384,8 @@ var OIDConstants = struct {
 	Locality:           []int{2, 5, 4, 7},
 	Province:           []int{2, 5, 4, 8},
 	StreetAddress:      []int{2, 5, 4, 9},
-	DomainComponent:    []int{0,9,2342,19200300,100,1,25},
-	UniqueIdentifier: []int{0,9,2342,19200300,100,1,1},
+	DomainComponent:    []int{0, 9, 2342, 19200300, 100, 1, 25},
+	UniqueIdentifier:   []int{0, 9, 2342, 19200300, 100, 1, 1},
 }
 
 // Copied from pkix.attributeTypeNames and inverted. (Sadly it is private.)
@@ -400,8 +400,8 @@ var attributeTypeNames = map[string][]int{
 	"L":            OIDConstants.Locality,
 	"ST":           OIDConstants.Province,
 	"STREET":       OIDConstants.StreetAddress,
-	"DC": OIDConstants.DomainComponent,
-	"UID": OIDConstants.UniqueIdentifier,
+	"DC":           OIDConstants.DomainComponent,
+	"UID":          OIDConstants.UniqueIdentifier,
 }
 
 func ParseSubjectStringToRdnSequence(subject string) (pkix.RDNSequence, error) {
