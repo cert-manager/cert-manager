@@ -55,10 +55,21 @@ type Interface interface {
 // Client implements functionality to talk to a Vault server.
 type Client interface {
 	NewRequest(method, requestPath string) *vault.Request
-	RawRequest(r *vault.Request) (*vault.Response, error)
+	NamespacedRawRequest(vaultIssuer *v1.VaultIssuer, r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
 	Token() string
 	Sys() *vault.Sys
+}
+
+type vaultClientWrapper struct {
+	*vault.Client
+}
+
+func (w vaultClientWrapper) NamespacedRawRequest(vaultIssuer *v1.VaultIssuer, r *vault.Request) (*vault.Response, error) {
+	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
+		return w.Client.WithNamespace(vaultIssuer.Namespace).RawRequest(r)
+	}
+	return w.Client.RawRequest(r)
 }
 
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
@@ -92,11 +103,11 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.Gen
 		return nil, fmt.Errorf("error initializing Vault client: %s", err.Error())
 	}
 
-	if err := v.setToken(client); err != nil {
+	if err := v.setToken(vaultClientWrapper{Client: client}); err != nil {
 		return nil, err
 	}
 
-	v.client = client
+	v.client = vaultClientWrapper{Client: client}
 
 	return v, nil
 }
@@ -121,16 +132,13 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 
 	vaultIssuer := v.issuer.GetSpec().Vault
 	url := path.Join("/v1", vaultIssuer.Path)
-
 	request := v.client.NewRequest("POST", url)
-
-	v.addVaultNamespaceToRequest(request)
 
 	if err := request.SetJSONBody(parameters); err != nil {
 		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
 	}
 
-	resp, err := v.client.RawRequest(request)
+	resp, err := v.client.NamespacedRawRequest(v.issuer.GetSpec().Vault, request)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
 	}
@@ -312,9 +320,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
-	v.addVaultNamespaceToRequest(request)
-
-	resp, err := client.RawRequest(request)
+	resp, err := client.NamespacedRawRequest(v.issuer.GetSpec().Vault, request)
 	if err != nil {
 		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
 	}
@@ -373,9 +379,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
-	v.addVaultNamespaceToRequest(request)
-
-	resp, err := client.RawRequest(request)
+	resp, err := client.NamespacedRawRequest(v.issuer.GetSpec().Vault, request)
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
 	}
@@ -426,7 +430,7 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
 	healthRequest := v.client.NewRequest("GET", healthURL)
-	healthResp, err := v.client.RawRequest(healthRequest)
+	healthResp, err := v.client.NamespacedRawRequest(nil, healthRequest)
 
 	if healthResp != nil {
 		defer healthResp.Body.Close()
@@ -447,17 +451,4 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	}
 
 	return nil
-}
-
-func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
-	vaultIssuer := v.issuer.GetSpec().Vault
-	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
-		if request.Headers != nil {
-			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		} else {
-			vaultReqHeaders := http.Header{}
-			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-			request.Headers = vaultReqHeaders
-		}
-	}
 }

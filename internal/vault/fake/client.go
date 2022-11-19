@@ -19,6 +19,7 @@ package fake
 import (
 	"errors"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	vault "github.com/hashicorp/vault/api"
 )
 
@@ -61,7 +62,7 @@ func (c *Client) Token() string {
 	return c.token
 }
 
-func (c *Client) RawRequest(r *vault.Request) (*vault.Response, error) {
+func (c *Client) NamespacedRawRequest(vaultIssuer *v1.VaultIssuer, r *vault.Request) (*vault.Response, error) {
 	return c.RawRequestFn(r)
 }
 
