@@ -1203,7 +1203,6 @@ func TestNamespacedRequest(t *testing.T) {
 	config := vault.DefaultConfig()
 	config.Address = fmt.Sprintf("http://%s", server.Listener.Addr())
 
-	// set up a client with a namespace
 	vaultClient, err := vault.NewClient(config)
 	if err != nil {
 		t.Errorf("error initializing vault client: %s", err)
