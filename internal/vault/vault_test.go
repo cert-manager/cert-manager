@@ -1199,11 +1199,10 @@ func TestNamespacedRequest(t *testing.T) {
 		ns = req.Header.Get("X-Vault-Namespace")
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	ln := server.Listener
-	defer ln.Close()
+	defer server.Close()
 
 	config := vault.DefaultConfig()
-	config.Address = fmt.Sprintf("http://%s", ln.Addr())
+	config.Address = fmt.Sprintf("http://%s", server.Listener.Addr())
 
 	// set up a client with a namespace
 	vaultClient, err := vault.NewClient(config)
