@@ -1178,7 +1178,6 @@ type testNamespacedRequestT struct {
 }
 
 func TestNamespacedRequest(t *testing.T) {
-
 	tests := map[string]testNamespacedRequestT{
 		"request should include the namespace when present on the issuer": {
 			expectedNamespace: "test-namespace",
