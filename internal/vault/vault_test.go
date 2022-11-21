@@ -24,8 +24,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -1177,21 +1177,6 @@ type testNamespacedRequestT struct {
 	issuer *cmapi.VaultIssuer
 }
 
-func testHTTPServer(t *testing.T, handler http.Handler) (*vault.Config, net.Listener) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	server := &http.Server{Handler: handler}
-	go server.Serve(ln)
-
-	config := vault.DefaultConfig()
-	config.Address = fmt.Sprintf("http://%s", ln.Addr())
-
-	return config, ln
-}
-
 func TestNamespacedRequest(t *testing.T) {
 
 	tests := map[string]testNamespacedRequestT{
@@ -1213,8 +1198,12 @@ func TestNamespacedRequest(t *testing.T) {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		ns = req.Header.Get("X-Vault-Namespace")
 	}
-	config, ln := testHTTPServer(t, http.HandlerFunc(handler))
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	ln := server.Listener
 	defer ln.Close()
+
+	config := vault.DefaultConfig()
+	config.Address = fmt.Sprintf("http://%s", ln.Addr())
 
 	// set up a client with a namespace
 	vaultClient, err := vault.NewClient(config)
