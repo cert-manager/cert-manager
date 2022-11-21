@@ -1201,7 +1201,7 @@ func TestNamespacedRequest(t *testing.T) {
 	defer server.Close()
 
 	config := vault.DefaultConfig()
-	config.Address = fmt.Sprintf("http://%s", server.Listener.Addr())
+	config.Address = server.URL
 
 	vaultClient, err := vault.NewClient(config)
 	if err != nil {
