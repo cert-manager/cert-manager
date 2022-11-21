@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -1165,6 +1166,74 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			if test.expectedToken != token {
 				t.Errorf("got unexpected token, exp=%s got=%s",
 					test.expectedToken, token)
+			}
+		})
+	}
+}
+
+type testNamespacedRequestT struct {
+	expectedNamespace string
+
+	issuer *cmapi.VaultIssuer
+}
+
+func testHTTPServer(t *testing.T, handler http.Handler) (*vault.Config, net.Listener) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	server := &http.Server{Handler: handler}
+	go server.Serve(ln)
+
+	config := vault.DefaultConfig()
+	config.Address = fmt.Sprintf("http://%s", ln.Addr())
+
+	return config, ln
+}
+
+func TestNamespacedRequest(t *testing.T) {
+
+	tests := map[string]testNamespacedRequestT{
+		"request should include the namespace when present on the issuer": {
+			expectedNamespace: "test-namespace",
+			issuer:            &cmapi.VaultIssuer{Namespace: "test-namespace"},
+		},
+		"request should not include the namespace header when namespace field is empty": {
+			expectedNamespace: "",
+			issuer:            &cmapi.VaultIssuer{},
+		},
+		"request should not include the namespace header when passed a nil issuer": {
+			expectedNamespace: "",
+			issuer:            nil,
+		},
+	}
+
+	var ns string
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		ns = req.Header.Get("X-Vault-Namespace")
+	}
+	config, ln := testHTTPServer(t, http.HandlerFunc(handler))
+	defer ln.Close()
+
+	// set up a client with a namespace
+	vaultClient, err := vault.NewClient(config)
+	if err != nil {
+		t.Errorf("error initializing vault client: %s", err)
+		t.FailNow()
+	}
+
+	client := vaultClientWrapper{Client: vaultClient}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err = client.NamespacedRawRequest(test.issuer, client.NewRequest("GET", "/some/test/path"))
+			if err != nil {
+				t.Errorf("error making request: %s", err)
+				t.FailNow()
+			}
+			if ns != test.expectedNamespace {
+				t.Errorf("namespace header does not match expected value, exp=%s got=%s", test.expectedNamespace, ns)
 			}
 		})
 	}
