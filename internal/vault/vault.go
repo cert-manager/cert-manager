@@ -68,7 +68,22 @@ type Vault struct {
 	issuer        v1.GenericIssuer
 	namespace     string
 
+	// The pattern below, of namespaced and non-namespaced Vault clients, is copied from Hashicorp Nomad:
+	// https://github.com/hashicorp/nomad/blob/6e4410a9b13ce167bc7ef53da97c621b5c9dcd12/nomad/vault.go#L180-L190
+
+	// client is the Vault API client used for Namespace-relative integrations
+	// with the Vault API (anything except `/v1/sys`).
+	// The namespace feature is only available in Vault Enterprise.
+	// The namespace HTTP header (X-Vault-Namespace) is ignored by the open source version of Vault.
+	// See https://www.vaultproject.io/docs/enterprise/namespaces
 	client Client
+
+	// clientSys is the Vault API client used for non-Namespace-relative integrations
+	// with the Vault API (anything involving `/v1/sys`). This client is never configured
+	// with a Vault namespace, because these endpoints may return errors if a namespace
+	// header is provided
+	// See https://developer.hashicorp.com/vault/docs/enterprise/namespaces#root-only-api-paths
+	clientSys Client
 }
 
 // New returns a new Vault instance with the given namespace, issuer and
@@ -87,16 +102,21 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.Gen
 		return nil, err
 	}
 
-	client, err := vault.NewClient(cfg)
+	clientSys, err := vault.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing Vault client: %s", err.Error())
 	}
 
-	if err := v.setToken(client); err != nil {
+	// Set the Vault namespace.
+	// An empty namespace string will cause the client to not send the namespace related HTTP headers to Vault.
+	clientNS := clientSys.WithNamespace(issuer.GetSpec().Vault.Namespace)
+
+	if err := v.setToken(clientNS); err != nil {
 		return nil, err
 	}
 
-	v.client = client
+	v.client = clientNS
+	v.clientSys = clientSys
 
 	return v, nil
 }
@@ -123,8 +143,6 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	url := path.Join("/v1", vaultIssuer.Path)
 
 	request := v.client.NewRequest("POST", url)
-
-	v.addVaultNamespaceToRequest(request)
 
 	if err := request.SetJSONBody(parameters); err != nil {
 		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
@@ -312,8 +330,6 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
-	v.addVaultNamespaceToRequest(request)
-
 	resp, err := client.RawRequest(request)
 	if err != nil {
 		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
@@ -373,8 +389,6 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
-	v.addVaultNamespaceToRequest(request)
-
 	resp, err := client.RawRequest(request)
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
@@ -425,8 +439,8 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
-	healthRequest := v.client.NewRequest("GET", healthURL)
-	healthResp, err := v.client.RawRequest(healthRequest)
+	healthRequest := v.clientSys.NewRequest("GET", healthURL)
+	healthResp, err := v.clientSys.RawRequest(healthRequest)
 
 	if healthResp != nil {
 		defer healthResp.Body.Close()
@@ -447,17 +461,4 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	}
 
 	return nil
-}
-
-func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
-	vaultIssuer := v.issuer.GetSpec().Vault
-	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
-		if request.Headers != nil {
-			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		} else {
-			vaultReqHeaders := http.Header{}
-			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-			request.Headers = vaultReqHeaders
-		}
-	}
 }
