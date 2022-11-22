@@ -20,7 +20,6 @@ package fake
 import (
 	"time"
 
-	vault "github.com/hashicorp/vault/api"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -78,11 +77,6 @@ func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer
 	}
 
 	return v, nil
-}
-
-// Sys returns an empty `vault.Sys`.
-func (v *Vault) Sys() *vault.Sys {
-	return new(vault.Sys)
 }
 
 // IsVaultInitializedAndUnsealed always returns nil
