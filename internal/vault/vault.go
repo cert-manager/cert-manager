@@ -45,10 +45,8 @@ type ClientBuilder func(namespace string, secretsLister corelisters.SecretLister
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
 // Vault's certificate.
-// TODO: Sys() is duplicated here and in Client interface
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
-	Sys() *vault.Sys
 	IsVaultInitializedAndUnsealed() error
 }
 
@@ -58,7 +56,6 @@ type Client interface {
 	RawRequest(r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
 	Token() string
-	Sys() *vault.Sys
 }
 
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
@@ -407,10 +404,6 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 	}
 
 	return token, nil
-}
-
-func (v *Vault) Sys() *vault.Sys {
-	return v.client.Sys()
 }
 
 func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
