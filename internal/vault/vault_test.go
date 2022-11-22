@@ -32,11 +32,15 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -1166,6 +1170,69 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 				t.Errorf("got unexpected token, exp=%s got=%s",
 					test.expectedToken, token)
 			}
+		})
+	}
+}
+
+// TestNewWithVaultNamespaces demonstrates that New initializes two Vault
+// clients, one with a namespace and one without a namespace which is used for
+// interacting with root-only APIs.
+func TestNewWithVaultNamespaces(t *testing.T) {
+	type testCase struct {
+		name    string
+		vaultNS string
+	}
+
+	tests := []testCase{
+		{
+			name:    "without-namespace",
+			vaultNS: "",
+		},
+		{
+			name:    "with-namespace",
+			vaultNS: "vault-ns-1",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := New(
+				"k8s-ns1",
+				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+					listers.SetFakeSecretNamespaceListerGet(
+						&corev1.Secret{
+							Data: map[string][]byte{
+								"key1": []byte("not-used"),
+							},
+						}, nil),
+				),
+				&cmapi.Issuer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "issuer1",
+						Namespace: "k8s-ns1",
+					},
+					Spec: v1.IssuerSpec{
+						IssuerConfig: v1.IssuerConfig{
+							Vault: &v1.VaultIssuer{
+								Namespace: tc.vaultNS,
+								Auth: cmapi.VaultAuth{
+									TokenSecretRef: &cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "secret1",
+										},
+										Key: "key1",
+									},
+								},
+							},
+						},
+					},
+				})
+			require.NoError(t, err)
+			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vault.Client).Namespace(),
+				"The vault client should have the namespace provided in the Issuer recource")
+			assert.Equal(t, "", c.(*Vault).clientSys.(*vault.Client).Namespace(),
+				"The vault sys client should never have a namespace")
 		})
 	}
 }
