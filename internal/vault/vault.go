@@ -65,6 +65,15 @@ type vaultClientWrapper struct {
 	*vault.Client
 }
 
+// Sends a RawRequest with a Vault namespace if it exists on the issuer. When no namespace is set on the issuer or
+// if the issuer is nil, then no vault namespace header will be sent with the request.
+//
+// Certain requests cannot be successfully made with a namespace header set even if namespaces are enabled in Vault
+// Enterprise. Root only API paths will return a 404 if requested with a namespace.
+// see: https://developer.hashicorp.com/vault/docs/enterprise/namespaces#root-only-api-paths
+//
+// Namespaces is a set of features within Vault Enterprise that allows Vault environments to support Secure Multi-tenancy.
+// More about namespaces can be found here https://www.vaultproject.io/docs/enterprise/namespaces
 func (w vaultClientWrapper) NamespacedRawRequest(vaultIssuer *v1.VaultIssuer, r *vault.Request) (*vault.Response, error) {
 	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
 		return w.Client.WithNamespace(vaultIssuer.Namespace).RawRequest(r)
