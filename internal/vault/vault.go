@@ -55,7 +55,6 @@ type Client interface {
 	NewRequest(method, requestPath string) *vault.Request
 	RawRequest(r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
-	Token() string
 }
 
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
