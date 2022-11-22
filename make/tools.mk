@@ -376,13 +376,9 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 
 GATEWAY_API_SHA256SUM=c45f8806883014f7f75a2084c612fc62eb00d5c1915a906f8ca5ecda5450b163
 
-$(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION): $(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION).tar.gz | $(BINDIR)/downloaded
-	./hack/util/checkhash.sh $< $(GATEWAY_API_SHA256SUM)
-	@mkdir -p $@
-	tar xz -C $@ -f $<
-
-$(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION).tar.gz: | $(BINDIR)/downloaded
-	$(CURL) https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/$(GATEWAY_API_VERSION).tar.gz -o $@
+$(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
+	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
+	./hack/util/checkhash.sh $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(GATEWAY_API_SHA256SUM)
 
 #################
 # Other Targets #

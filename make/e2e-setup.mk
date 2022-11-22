@@ -207,8 +207,8 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(KUBECTL) apply -n bind -f - >/dev/null
 
 .PHONY: e2e-setup-gatewayapi
-e2e-setup-gatewayapi: $(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION) $(BINDIR)/scratch/kind-exists $(NEEDS_KUBECTL)
-	$(KUBECTL) kustomize $</*/config/crd/experimental | $(KUBECTL) apply -f - >/dev/null
+e2e-setup-gatewayapi: $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(BINDIR)/scratch/kind-exists $(NEEDS_KUBECTL)
+	$(KUBECTL) apply -f $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
