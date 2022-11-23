@@ -98,21 +98,31 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.Gen
 		return nil, err
 	}
 
-	clientSys, err := vault.NewClient(cfg)
+	client, err := vault.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing Vault client: %s", err.Error())
 	}
 
 	// Set the Vault namespace.
 	// An empty namespace string will cause the client to not send the namespace related HTTP headers to Vault.
-	clientNS := clientSys.WithNamespace(issuer.GetSpec().Vault.Namespace)
+	clientNS := client.WithNamespace(issuer.GetSpec().Vault.Namespace)
 
+	// Use the (maybe) namespaced client to authenticate.
+	// If a Vault namespace is configured, then the authentication endpoints are
+	// expected to be in that namespace.
 	if err := v.setToken(clientNS); err != nil {
 		return nil, err
 	}
 
+	// A client for use with namespaced API paths
 	v.client = clientNS
-	v.clientSys = clientSys
+
+	// Create duplicate Vault client without a namespace, for interacting with root-only API paths.
+	// For backwards compatibility, this client will use the token from the namespaced client,
+	// although this is probably unnecessary / bad practice, since we only
+	// interact with the sys/health endpoint which is an unauthenticated endpoint:
+	// https://github.com/hashicorp/vault/issues/209#issuecomment-102485565.
+	v.clientSys = clientNS.WithNamespace("")
 
 	return v, nil
 }

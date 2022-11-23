@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -1235,4 +1236,56 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 				"The vault sys client should never have a namespace")
 		})
 	}
+}
+
+// TestIsVaultInitiatedAndUnsealedIntegration demonstrates that it interacts only with the
+// sys/health endpoint and that it supplies the Vault token but not a Vault namespace header.
+func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
+
+	const vaultToken = "token1"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/sys/health", func(response http.ResponseWriter, request *http.Request) {
+		assert.Empty(t, request.Header.Values("X-Vault-Namespace"), "Unexpected Vault namespace header for root-only API path")
+		assert.Equal(t, vaultToken, request.Header.Get("X-Vault-Token"), "Expected the Vault token for root-only API path")
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	v, err := New(
+		"k8s-ns1",
+		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+			listers.SetFakeSecretNamespaceListerGet(
+				&corev1.Secret{
+					Data: map[string][]byte{
+						"key1": []byte(vaultToken),
+					},
+				}, nil),
+		),
+		&cmapi.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "issuer1",
+				Namespace: "k8s-ns1",
+			},
+			Spec: v1.IssuerSpec{
+				IssuerConfig: v1.IssuerConfig{
+					Vault: &v1.VaultIssuer{
+						Server:    server.URL,
+						Namespace: "ns1",
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret1",
+								},
+								Key: "key1",
+							},
+						},
+					},
+				},
+			},
+		})
+	require.NoError(t, err)
+
+	err = v.IsVaultInitializedAndUnsealed()
+	require.NoError(t, err)
 }
