@@ -64,7 +64,3 @@ func (c *Client) Token() string {
 func (c *Client) RawRequest(r *vault.Request) (*vault.Response, error) {
 	return c.RawRequestFn(r)
 }
-
-func (c *Client) Sys() *vault.Sys {
-	return nil
-}
