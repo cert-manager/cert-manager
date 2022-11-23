@@ -1302,3 +1302,70 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 	err = v.IsVaultInitializedAndUnsealed()
 	require.NoError(t, err)
 }
+
+// TestSignIntegration demonstrates that it interacts only with the API endpoint
+// path supplied in the Issuer resource and that it supplies the Vault namespace
+// and token to that endpoint.
+func TestSignIntegration(t *testing.T) {
+	const (
+		vaultToken     = "token1"
+		vaultNamespace = "vault-ns-1"
+		vaultPath      = "my_pki_mount/sign/my-role-name"
+	)
+
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	rootBundleData, err := bundlePEM(testIntermediateCa, testRootCa)
+	require.NoError(t, err)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(fmt.Sprintf("/v1/%s", vaultPath), func(response http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, vaultNamespace, request.Header.Get("X-Vault-Namespace"), "Expected Vault namespace header for namespaced API path")
+		assert.Equal(t, vaultToken, request.Header.Get("X-Vault-Token"), "Expected the Vault token for root-only API path")
+		_, err := response.Write(rootBundleData)
+		require.NoError(t, err)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	v, err := New(
+		"k8s-ns1",
+		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+			listers.SetFakeSecretNamespaceListerGet(
+				&corev1.Secret{
+					Data: map[string][]byte{
+						"key1": []byte(vaultToken),
+					},
+				}, nil),
+		),
+		&cmapi.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "issuer1",
+				Namespace: "k8s-ns1",
+			},
+			Spec: v1.IssuerSpec{
+				IssuerConfig: v1.IssuerConfig{
+					Vault: &v1.VaultIssuer{
+						Server:    server.URL,
+						Path:      vaultPath,
+						Namespace: vaultNamespace,
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret1",
+								},
+								Key: "key1",
+							},
+						},
+					},
+				},
+			},
+		})
+	require.NoError(t, err)
+
+	certPEM, caPEM, err := v.Sign(csrPEM, time.Hour)
+	require.NoError(t, err)
+	require.NotEmpty(t, certPEM)
+	require.NotEmpty(t, caPEM)
+}
