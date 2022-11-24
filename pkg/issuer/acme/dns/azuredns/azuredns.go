@@ -134,14 +134,20 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		}
 
 		// adal does not offer methods to dynamically replace a federated token, thus we need to have a wrapper to make sure
-		// we're using up-to-date secret while requesting an access token
+		// we're using up-to-date secret while requesting an access token.
+		// NOTE: There's no RefreshToken in the whole process (in fact, it's absent in AAD responses). An AccessToken can be
+		// received only in exchange for a federated token.
 		var refreshFunc adal.TokenRefresh = func(context context.Context, resource string) (*adal.Token, error) {
 			newSPT, err := getFederatedSPT(env, opt)
 			if err != nil {
 				return nil, err
 			}
 
-			// Need to call Refresh(), otherwise .Token() will be empty
+			// An AccessToken gets populated into an spt only when .Refresh() is called. Normally, it's something that happens implicitly when
+			// a first request to manipulate Azure resources is made. Since our goal here is only to receive a fresh AccessToken, we need to make
+			// an explicit call.
+			// .Refresh() itself results in a call to Oauth endpoint. During the process, a federated token is exchanged for an AccessToken.
+			// RefreshToken is absent from responses.
 			err = newSPT.Refresh()
 			if err != nil {
 				return nil, err
