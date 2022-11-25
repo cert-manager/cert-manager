@@ -67,7 +67,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 type kubernetes struct {
 	testWithRootCA bool
-	role           string
+	vaultRole      string
 
 	addon       *vault.Vault
 	initializer *vault.VaultInitializer
@@ -120,7 +120,7 @@ func (k *kubernetes) delete(f *framework.Framework, signerName string) {
 		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		k.initializer.CleanKubernetesRole(f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.role, k.role)
+		k.initializer.CleanKubernetesRole(f.KubeClientSet, k.vaultRole, f.Config.Addons.CertManager.ClusterResourceNamespace, k.vaultRole)
 	}
 
 	Expect(k.initializer.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
@@ -128,7 +128,7 @@ func (k *kubernetes) delete(f *framework.Framework, signerName string) {
 
 }
 
-func (k *kubernetes) initVault(f *framework.Framework, ns string) {
+func (k *kubernetes) initVault(f *framework.Framework, boundNS string) {
 	By("Configuring the Vault server")
 	k.addon = &vault.Vault{
 		Base:      addon.Base,
@@ -136,7 +136,7 @@ func (k *kubernetes) initVault(f *framework.Framework, ns string) {
 		Namespace: f.Namespace.Name,
 	}
 
-	k.role = "vault-issuer-" + util.RandStringRunes(5)
+	k.vaultRole = "vault-issuer-" + util.RandStringRunes(5)
 
 	Expect(k.addon.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup vault")
 	Expect(k.addon.Provision()).NotTo(HaveOccurred(), "failed to provision vault")
@@ -153,7 +153,7 @@ func (k *kubernetes) initVault(f *framework.Framework, ns string) {
 		IntermediateMount:  intermediateMount,
 		ConfigureWithRoot:  k.testWithRootCA,
 		KubernetesAuthPath: "kubernetes",
-		Role:               k.role,
+		Role:               k.vaultRole,
 		APIServerURL:       apiHost,
 		APIServerCA:        caCert,
 	}
@@ -161,16 +161,17 @@ func (k *kubernetes) initVault(f *framework.Framework, ns string) {
 	Expect(k.initializer.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
 
 	By("Creating a ServiceAccount for Vault authentication")
-	err := k.initializer.CreateKubernetesRole(f.KubeClientSet, ns, k.role, k.role)
+	boundSA := k.vaultRole
+	err := k.initializer.CreateKubernetesRole(f.KubeClientSet, k.vaultRole, boundNS, boundSA)
 	Expect(err).NotTo(HaveOccurred())
-	_, err = f.KubeClientSet.CoreV1().Secrets(ns).Create(context.TODO(), vault.NewVaultKubernetesSecret(k.role, k.role), metav1.CreateOptions{})
+	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(context.TODO(), vault.NewVaultKubernetesSecret(k.vaultRole, k.vaultRole), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	_, _, err = k.initializer.CreateAppRole()
 	Expect(err).NotTo(HaveOccurred())
 }
 
 func (k *kubernetes) issuerSpec(f *framework.Framework) cmapi.IssuerSpec {
-	vaultPath := path.Join(intermediateMount, "sign", k.role)
+	vaultPath := path.Join(intermediateMount, "sign", k.vaultRole)
 
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
@@ -181,10 +182,10 @@ func (k *kubernetes) issuerSpec(f *framework.Framework) cmapi.IssuerSpec {
 				Auth: cmapi.VaultAuth{
 					Kubernetes: &cmapi.VaultKubernetesAuth{
 						Path: "/v1/auth/kubernetes",
-						Role: k.role,
+						Role: k.vaultRole,
 						SecretRef: cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: k.role,
+								Name: k.vaultRole,
 							},
 						},
 					},
