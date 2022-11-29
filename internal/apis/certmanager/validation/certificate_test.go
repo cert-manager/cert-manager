@@ -944,6 +944,18 @@ func Test_validateLiteralSubject(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
+		"valid with a `literalSubject` containing CN with special characters, multiple DC and well-known rfc4514 and rfc5280 RDN OIDs": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Subject:        &internalcmapi.X509Subject{SerialNumber: "1"},
+					LiteralSubject: "CN=James \\\"Jim\\\" Smith\\, III,DC=dc,DC=net,UID=jamessmith,STREET=La Rambla,L=Barcelona,C=Spain,O=Acme,OU=IT,OU=Admins",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+		},
 		"invalid with a `literalSubject` without CN and no dnsNames, ipAddresses, or emailAddress": {
 			featureEnabled: true,
 			cfg: &internalcmapi.Certificate{

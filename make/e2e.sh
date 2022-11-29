@@ -73,7 +73,7 @@ nodes=20
 flake_attempts=1
 ginkgo_skip=
 ginkgo_focus=
-feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true
+feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,LiteralCertificateSubject=true
 artifacts="./$BINDIR/artifacts"
 help() {
   cat <<EOF | color ""
