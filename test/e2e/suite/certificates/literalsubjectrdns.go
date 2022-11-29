@@ -32,7 +32,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 
 	f := framework.NewDefaultFramework("certificate-literalsubject-rdns")
 
-	createCertificate := func(f *framework.Framework, literalSubject string) (string, *cmapi.Certificate) {
+	createCertificate := func(f *framework.Framework, literalSubject string) (*cmapi.Certificate, error) {
 		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
@@ -49,14 +49,11 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 			},
 		}
 
-		By("creating Certificate with AdditionalOutputFormats")
-		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
-		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
+		By("creating Certificate with LiteralSubject")
+		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
 
-		return crt.Name, crt
 	}
+
 	BeforeEach(func() {
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer(issuerName,
@@ -74,8 +71,14 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.Background(), issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
-	FIt("Should create CSR reflecting most common RDNs", func() {
-		createCertificate(f, "CN=James \\\"Jim\\\" Smith\\, III,DC=dc,DC=net,UID=jamessmith,STREET=La Rambla,L=Barcelona,C=Spain,O=Acme,OU=IT,OU=Admins")
+	// The parsed RDNSequence should be in REVERSE order as RDNs in String format are expected to be written in reverse order.
+	// Meaning, a string of "CN=Foo,OU=Bar,O=Baz" actually should have "O=Baz" as the first element in the RDNSequence.
+	It("Should create a certificate with all the supplied RDNs as subject names in reverse string order, including DC and UID", func() {
+		crt, err := createCertificate(f, "CN=James \\\"Jim\\\" Smith\\, III,UID=jamessmith,SERIALNUMBER=1234512345,OU=Admins,OU=IT,DC=net,DC=dc,O=Acme,STREET=La Rambla,L=Barcelona,C=Spain")
+		Expect(err).NotTo(HaveOccurred())
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
+		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
+
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})
 		Expect(err).To(BeNil())
 		Expect(secret.Data).To(HaveKey("tls.crt"))
@@ -84,19 +87,25 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
 		Expect(err).To(BeNil())
 
-		// TODO: the sequence seems to come out 'reversed' in cert.Subject.Names, investigate ordering
 		Expect(cert.Subject.Names).To(Equal([]pkix.AttributeTypeAndValue{
-			{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "Admins"},
-			{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "IT"},
-			{Type: asn1.ObjectIdentifier{2, 5, 4, 10}, Value: "Acme"},
 			{Type: asn1.ObjectIdentifier{2, 5, 4, 6}, Value: "Spain"},
 			{Type: asn1.ObjectIdentifier{2, 5, 4, 7}, Value: "Barcelona"},
 			{Type: asn1.ObjectIdentifier{2, 5, 4, 9}, Value: "La Rambla"},
-			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 1}, Value: "jamessmith"},
-			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "net"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 10}, Value: "Acme"},
 			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "dc"},
+			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "net"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "IT"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "Admins"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 5}, Value: "1234512345"},
+			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 1}, Value: "jamessmith"},
 			{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: "James \"Jim\" Smith, III"},
 		}))
-
 	})
+
+	It("Should not allow unknown RDN component", func() {
+		_, err := createCertificate(f, "UNKNOWN=blah")
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("Literal subject contains unrecognized key with value [blah]"))
+	})
+
 })
