@@ -83,19 +83,20 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		pemBlock, _ := pem.Decode(crtPEM)
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
 		Expect(err).To(BeNil())
+
 		// TODO: the sequence seems to come out 'reversed' in cert.Subject.Names, investigate ordering
-		Expect(cert.Subject.Names).To(ContainElements(
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "Admins"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "IT"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 10}, Value: "Acme"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 6}, Value: "Spain"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 7}, Value: "Barcelona"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 9}, Value: "La Rambla"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 1}, Value: "jamessmith"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "net"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "dc"},
-			pkix.AttributeTypeAndValue{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: "James \"Jim\" Smith, III"},
-		))
+		Expect(cert.Subject.Names).To(Equal([]pkix.AttributeTypeAndValue{
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "Admins"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "IT"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 10}, Value: "Acme"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 6}, Value: "Spain"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 7}, Value: "Barcelona"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 9}, Value: "La Rambla"},
+			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 1}, Value: "jamessmith"},
+			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "net"},
+			{Type: asn1.ObjectIdentifier{0, 9, 2342, 19200300, 100, 1, 25}, Value: "dc"},
+			{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: "James \"Jim\" Smith, III"},
+		}))
 
 	})
 })
