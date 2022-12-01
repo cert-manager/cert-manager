@@ -239,7 +239,7 @@ func validateIngressTLSBlock(path *field.Path, tlsBlock networkingv1.IngressTLS)
 	return errs
 }
 
-func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.ErrorList {
+func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike metav1.Object) field.ErrorList {
 	var errs field.ErrorList
 
 	if l.Hostname == nil || *l.Hostname == "" {
@@ -265,6 +265,11 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener) field.Erro
 			if *secretRef.Kind != "Secret" && *secretRef.Kind != "" {
 				errs = append(errs, field.NotSupported(path.Child("tls").Child("certificateRef").Index(i).Child("kind"),
 					*secretRef.Kind, []string{"Secret", ""}))
+			}
+
+			if secretRef.Namespace != nil && string(*secretRef.Namespace) != ingLike.GetNamespace() {
+				errs = append(errs, field.Invalid(path.Child("tls").Child("certificateRef").Index(i).Child("namespace"),
+					*secretRef.Namespace, "cross-namespace secret references are not allowed in listeners"))
 			}
 		}
 	}
@@ -310,7 +315,7 @@ func buildCertificates(
 		}
 	case *gwapi.Gateway:
 		for i, l := range ingLike.Spec.Listeners {
-			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l).ToAggregate()
+			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
 				continue
