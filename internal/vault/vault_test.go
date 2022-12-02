@@ -19,16 +19,13 @@ package vault
 import (
 	"bytes"
 	"crypto"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -36,11 +33,15 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -157,21 +158,12 @@ func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
 }
 
 func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
-		SignatureAlgorithm: x509.SHA256WithRSA,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName("test"),
+	)
 	if err != nil {
-		t.Errorf("failed to create CSR: %s", err)
-		t.FailNow()
+		t.Fatal(err)
 	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
 }
@@ -1181,4 +1173,186 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestNewWithVaultNamespaces demonstrates that New initializes two Vault
+// clients, one with a namespace and one without a namespace which is used for
+// interacting with root-only APIs.
+func TestNewWithVaultNamespaces(t *testing.T) {
+	type testCase struct {
+		name    string
+		vaultNS string
+	}
+
+	tests := []testCase{
+		{
+			name:    "without-namespace",
+			vaultNS: "",
+		},
+		{
+			name:    "with-namespace",
+			vaultNS: "vault-ns-1",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := New(
+				"k8s-ns1",
+				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+					listers.SetFakeSecretNamespaceListerGet(
+						&corev1.Secret{
+							Data: map[string][]byte{
+								"key1": []byte("not-used"),
+							},
+						}, nil),
+				),
+				&cmapi.Issuer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "issuer1",
+						Namespace: "k8s-ns1",
+					},
+					Spec: v1.IssuerSpec{
+						IssuerConfig: v1.IssuerConfig{
+							Vault: &v1.VaultIssuer{
+								Namespace: tc.vaultNS,
+								Auth: cmapi.VaultAuth{
+									TokenSecretRef: &cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "secret1",
+										},
+										Key: "key1",
+									},
+								},
+							},
+						},
+					},
+				})
+			require.NoError(t, err)
+			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vault.Client).Namespace(),
+				"The vault client should have the namespace provided in the Issuer recource")
+			assert.Equal(t, "", c.(*Vault).clientSys.(*vault.Client).Namespace(),
+				"The vault sys client should never have a namespace")
+		})
+	}
+}
+
+// TestIsVaultInitiatedAndUnsealedIntegration demonstrates that it interacts only with the
+// sys/health endpoint and that it supplies the Vault token but not a Vault namespace header.
+func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
+
+	const vaultToken = "token1"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/sys/health", func(response http.ResponseWriter, request *http.Request) {
+		assert.Empty(t, request.Header.Values("X-Vault-Namespace"), "Unexpected Vault namespace header for root-only API path")
+		assert.Equal(t, vaultToken, request.Header.Get("X-Vault-Token"), "Expected the Vault token for root-only API path")
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	v, err := New(
+		"k8s-ns1",
+		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+			listers.SetFakeSecretNamespaceListerGet(
+				&corev1.Secret{
+					Data: map[string][]byte{
+						"key1": []byte(vaultToken),
+					},
+				}, nil),
+		),
+		&cmapi.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "issuer1",
+				Namespace: "k8s-ns1",
+			},
+			Spec: v1.IssuerSpec{
+				IssuerConfig: v1.IssuerConfig{
+					Vault: &v1.VaultIssuer{
+						Server:    server.URL,
+						Namespace: "ns1",
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret1",
+								},
+								Key: "key1",
+							},
+						},
+					},
+				},
+			},
+		})
+	require.NoError(t, err)
+
+	err = v.IsVaultInitializedAndUnsealed()
+	require.NoError(t, err)
+}
+
+// TestSignIntegration demonstrates that it interacts only with the API endpoint
+// path supplied in the Issuer resource and that it supplies the Vault namespace
+// and token to that endpoint.
+func TestSignIntegration(t *testing.T) {
+	const (
+		vaultToken     = "token1"
+		vaultNamespace = "vault-ns-1"
+		vaultPath      = "my_pki_mount/sign/my-role-name"
+	)
+
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	rootBundleData, err := bundlePEM(testIntermediateCa, testRootCa)
+	require.NoError(t, err)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(fmt.Sprintf("/v1/%s", vaultPath), func(response http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, vaultNamespace, request.Header.Get("X-Vault-Namespace"), "Expected Vault namespace header for namespaced API path")
+		assert.Equal(t, vaultToken, request.Header.Get("X-Vault-Token"), "Expected the Vault token for root-only API path")
+		_, err := response.Write(rootBundleData)
+		require.NoError(t, err)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	v, err := New(
+		"k8s-ns1",
+		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+			listers.SetFakeSecretNamespaceListerGet(
+				&corev1.Secret{
+					Data: map[string][]byte{
+						"key1": []byte(vaultToken),
+					},
+				}, nil),
+		),
+		&cmapi.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "issuer1",
+				Namespace: "k8s-ns1",
+			},
+			Spec: v1.IssuerSpec{
+				IssuerConfig: v1.IssuerConfig{
+					Vault: &v1.VaultIssuer{
+						Server:    server.URL,
+						Path:      vaultPath,
+						Namespace: vaultNamespace,
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret1",
+								},
+								Key: "key1",
+							},
+						},
+					},
+				},
+			},
+		})
+	require.NoError(t, err)
+
+	certPEM, caPEM, err := v.Sign(csrPEM, time.Hour)
+	require.NoError(t, err)
+	require.NotEmpty(t, certPEM)
+	require.NotEmpty(t, caPEM)
 }

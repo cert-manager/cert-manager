@@ -61,7 +61,7 @@ strategy: {}
   #   maxUnavailable: 1
 
 # Comma separated list of feature gates that should be enabled on the
-# controller pod.
+# controller pod & webhook pod.
 featureGates: ""
 
 image:

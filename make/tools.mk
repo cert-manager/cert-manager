@@ -36,7 +36,7 @@ KUBEBUILDER_ASSETS_VERSION=1.25.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.19.1
+VENDORED_GO_VERSION := 1.19.3
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
@@ -417,3 +417,7 @@ tools: $(TOOLS_PATHS) $(K8S_CODEGEN_TOOLS_PATHS) ## install all tools
 .PHONY: update-kind-images
 update-kind-images: $(BINDIR)/tools/crane
 	CRANE=./$(BINDIR)/tools/crane ./hack/latest-kind-images.sh
+
+.PHONY: update-base-images
+update-base-images: $(BINDIR)/tools/crane
+	CRANE=./$(BINDIR)/tools/crane ./hack/latest-base-images.sh

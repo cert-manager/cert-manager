@@ -37,7 +37,7 @@ IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
 
 PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
-# TODO: move the installation commands in this file to separate scripts like those in https://github.com/cert-manager/cert-manager/tree/master/devel/addon for readability
+# TODO: considering moving the installation commands in this file to separate scripts for readability
 # Once that is done, we can consume this variable from ./make/config/lib.sh
 SERVICE_IP_PREFIX = 10.0.0
 
@@ -158,7 +158,7 @@ $(call image-tar,vaultretagged): $(call image-tar,vault)
 	tar cf $@ -C /tmp/vault .
 	@rm -rf /tmp/vault
 
-FEATURE_GATES ?= AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true
+FEATURE_GATES ?= AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true
 
 # In make, there is no way to escape commas or spaces. So we use the
 # variables $(space) and $(comma) instead.
@@ -168,7 +168,7 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ValidateCAA=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ValidateCAA=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=%,   $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 

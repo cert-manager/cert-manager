@@ -23,8 +23,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
 	"errors"
 	"math"
 	"math/big"
@@ -58,21 +56,13 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlgorithm) []byte {
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
-		SignatureAlgorithm: sigAlg,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName("test"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
 }
@@ -124,7 +114,7 @@ func TestSign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
+	testCSR := generateCSR(t, testpk)
 
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
@@ -186,6 +176,9 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
 			},
 		},
 		"a CertificateRequest with a denied condition should update Ready condition with 'Denied'": {
@@ -473,7 +466,7 @@ func TestCA_Sign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
+	testCSR := generateCSR(t, testpk)
 
 	tests := map[string]struct {
 		givenCASecret    *corev1.Secret

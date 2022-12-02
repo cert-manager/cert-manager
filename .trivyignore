@@ -1,0 +1,7 @@
+# These vulns relate to issues with v1 of the AWS Golang SDK
+# These issues relate to S3 encryption issues which cert-manager is unlikely to hit
+# Fixing them requires upgrading to v2 of the AWS Golang SDK which is a potentially large task
+CVE-2020-8911
+CVE-2020-8912
+GHSA-7f33-f4f5-xwgw
+GHSA-f5pg-7wfw-84q9

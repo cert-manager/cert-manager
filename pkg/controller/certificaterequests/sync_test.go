@@ -22,8 +22,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"testing"
@@ -52,23 +50,13 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {
-	t.Helper()
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
-		SignatureAlgorithm: alg,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName("test"),
+	)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
 }
@@ -115,8 +103,8 @@ func TestSync(t *testing.T) {
 		t.FailNow()
 	}
 
-	csrRSAPEM := generateCSR(t, skRSA, x509.SHA256WithRSA)
-	csrECPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256)
+	csrRSAPEM := generateCSR(t, skRSA)
+	csrECPEM := generateCSR(t, skEC)
 
 	baseIssuer := gen.Issuer("test-issuer",
 		gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
@@ -186,8 +174,10 @@ func TestSync(t *testing.T) {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents:     []string{},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
+				ExpectedActions: []testpkg.Action{},
 			},
 		},
 		"should update Ready condition with 'Denied' if certificate request is denied": {
@@ -376,8 +366,10 @@ func TestSync(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents:     []string{},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
+				ExpectedActions: []testpkg.Action{},
 			},
 		},
 		"should return nil (no action) if certificate request is ready and reason Issued": {

@@ -22,6 +22,7 @@ import (
 	"reflect"
 
 	"github.com/kr/pretty"
+	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +66,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	// If CertificateRequest has not been approved, exit early.
 	if !apiutil.CertificateRequestIsApproved(cr) {
 		dbg.Info("certificate request has not been approved")
+		c.recorder.Event(cr, corev1.EventTypeNormal, "WaitingForApproval", "Not signing CertificateRequest until it is Approved")
 		return nil
 	}
 

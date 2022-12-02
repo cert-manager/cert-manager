@@ -71,6 +71,9 @@ spec:
           {{ if not $config.securePort -}}
           - --secure-port={{ .Values.webhook.securePort }}
           {{- end }}
+          {{- if .Values.featureGates }}
+          - --feature-gates={{ .Values.featureGates }}
+          {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}
           - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)

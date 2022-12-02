@@ -19,10 +19,7 @@ package selfsigned
 import (
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"errors"
 	"math"
 	"testing"
@@ -69,18 +66,10 @@ func mustCryptoBundle(t *testing.T) cryptoBundle {
 		t.Fatal(err)
 	}
 
-	template := x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName: "test",
-		},
-		SignatureAlgorithm: x509.ECDSAWithSHA256,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
+	csrPEM, err := gen.CSRWithSigner(key, gen.SetCSRCommonName("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	keyPEM, err := pki.EncodePKCS8PrivateKey(key)
 	if err != nil {

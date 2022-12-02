@@ -216,6 +216,14 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		}
 	}
 
+	if utilfeature.DefaultFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints) {
+		extension, err := buildBasicConstraintsExtensionsForCertificate(crt.Spec.IsCA)
+		if err != nil {
+			return nil, err
+		}
+		extraExtensions = append(extraExtensions, extension)
+	}
+
 	if isLiteralCertificateSubjectEnabled() && len(crt.Spec.LiteralSubject) > 0 {
 		rawSubject, err := ParseSubjectStringToRawDerBytes(crt.Spec.LiteralSubject)
 		if err != nil {
@@ -296,6 +304,27 @@ func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extensi
 		extraExtensions = append(extraExtensions, extendedUsage)
 	}
 	return extraExtensions, nil
+}
+
+func buildBasicConstraintsExtensionsForCertificate(isCA bool) (pkix.Extension, error) {
+
+	basicConstraints := pkix.Extension{
+		Id: OIDExtensionBasicConstraints,
+	}
+
+	constraint := struct {
+		IsCA bool
+	}{
+		IsCA: isCA,
+	}
+
+	var err error
+	basicConstraints.Value, err = asn1.Marshal(constraint)
+	if err != nil {
+		return pkix.Extension{}, err
+	}
+
+	return basicConstraints, nil
 }
 
 // GenerateTemplate will create a x509.Certificate for the given Certificate resource.

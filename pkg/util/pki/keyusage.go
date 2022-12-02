@@ -26,6 +26,7 @@ import (
 var (
 	OIDExtensionKeyUsage         = []int{2, 5, 29, 15}
 	OIDExtensionExtendedKeyUsage = []int{2, 5, 29, 37}
+	OIDExtensionBasicConstraints = []int{2, 5, 29, 19}
 )
 
 // RFC 5280, 4.2.1.12  Extended Key Usage

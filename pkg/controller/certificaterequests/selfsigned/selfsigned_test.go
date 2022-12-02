@@ -19,11 +19,7 @@ package selfsigned
 import (
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"testing"
@@ -53,22 +49,13 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm, commonName string) []byte {
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: commonName,
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
-		SignatureAlgorithm: alg,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+func generateCSR(t *testing.T, secretKey crypto.Signer, commonName string) []byte {
+	csr, err := gen.CSRWithSigner(secretKey,
+		gen.SetCSRCommonName(commonName),
+	)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
 }
@@ -108,7 +95,7 @@ func TestSign(t *testing.T) {
 			corev1.TLSPrivateKeyKey: []byte("this is a bad key"),
 		},
 	}
-	csrRSAPEM := generateCSR(t, skRSA, x509.SHA256WithRSA, "test-rsa")
+	csrRSAPEM := generateCSR(t, skRSA, "test-rsa")
 
 	skEC, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
@@ -129,9 +116,9 @@ func TestSign(t *testing.T) {
 			corev1.TLSPrivateKeyKey: skECPEM,
 		},
 	}
-	csrECPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256, "test-ec")
+	csrECPEM := generateCSR(t, skEC, "test-ec")
 
-	csrEmptyCertPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256, "")
+	csrEmptyCertPEM := generateCSR(t, skEC, "")
 
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestAnnotations(
@@ -211,6 +198,9 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingForApproval Not signing CertificateRequest until it is Approved",
+				},
 			},
 		},
 		"a CertificateRequest with a denied condition should update Ready condition with 'Denied'": {

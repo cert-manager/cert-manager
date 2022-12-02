@@ -416,6 +416,30 @@ func TestGenerateCSR(t *testing.T) {
 		},
 	}
 
+	basicConstraintsGenerator := func(isCA bool) ([]byte, error) {
+		return asn1.Marshal(struct {
+			IsCA bool
+		}{
+			IsCA: isCA,
+		})
+	}
+
+	basicConstraintsWithCA, err := basicConstraintsGenerator(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	basicConstraintsWithoutCA, err := basicConstraintsGenerator(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 0xa0 = DigitalSignature, Encipherment and KeyCertSign usage
+	asn1KeyUsageWithCa, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa4}, BitLength: asn1BitLength([]byte{0xa4})})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	exampleLiteralSubject := "CN=actual-cn, OU=FooLong, OU=Bar, O=example.org"
 	rawExampleLiteralSubject, err := ParseSubjectStringToRawDerBytes(exampleLiteralSubject)
 	if err != nil {
@@ -434,6 +458,7 @@ func TestGenerateCSR(t *testing.T) {
 		want                                    *x509.CertificateRequest
 		wantErr                                 bool
 		literalCertificateSubjectFeatureEnabled bool
+		basicConstraintsFeatureEnabled          bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
@@ -456,6 +481,64 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions:    defaultExtraExtensions,
 			},
+		},
+		{
+			name: "Generate CSR from certificate with isCA set",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", IsCA: true}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:    OIDExtensionKeyUsage,
+						Value: asn1KeyUsageWithCa,
+					},
+				},
+			},
+		},
+		{
+			name: "Generate CSR from certificate with isCA not set and with UseCertificateRequestBasicConstraints flag enabled",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org"}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:    OIDExtensionKeyUsage,
+						Value: asn1KeyUsage,
+					},
+					{
+						Id:    OIDExtensionBasicConstraints,
+						Value: basicConstraintsWithoutCA,
+					},
+				},
+			},
+			basicConstraintsFeatureEnabled: true,
+		},
+		{
+			name: "Generate CSR from certificate with isCA set and with UseCertificateRequestBasicConstraints flag enabled",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", IsCA: true}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:    OIDExtensionKeyUsage,
+						Value: asn1KeyUsageWithCa,
+					},
+					{
+						Id:    OIDExtensionBasicConstraints,
+						Value: basicConstraintsWithCA,
+					},
+				},
+			},
+			basicConstraintsFeatureEnabled: true,
 		},
 		{
 			name: "Generate CSR from certificate with extended key usages",
@@ -518,6 +601,7 @@ func TestGenerateCSR(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, tt.literalCertificateSubjectFeatureEnabled)()
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.UseCertificateRequestBasicConstraints, tt.basicConstraintsFeatureEnabled)()
 			got, err := GenerateCSR(tt.crt)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)

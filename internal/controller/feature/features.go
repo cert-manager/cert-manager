@@ -64,6 +64,12 @@ const (
 	// This feature gate will disable auto-generated CertificateRequest name
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/4956
 	StableCertificateRequestName featuregate.Feature = "StableCertificateRequestName"
+
+	// Alpha: v1.11
+	// UseCertificateRequestBasicConstraints will add Basic Constraints section in the Extension Request of the Certificate Signing Request
+	// This feature will add BasicConstraints section with CA field defaulting to false; CA field will be set true if the Certificate resource spec has isCA as true
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/5539
+	UseCertificateRequestBasicConstraints featuregate.Feature = "UseCertificateRequestBasicConstraints"
 )
 
 func init() {
@@ -81,4 +87,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	StableCertificateRequestName:                     {Default: false, PreRelease: featuregate.Alpha},
+	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 }
