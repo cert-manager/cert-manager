@@ -94,6 +94,64 @@ func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 	return "", "", false
 }
 
+// SecretKeystoreFormatMatchesSpec - When the keystore is not defined, the keystore
+// related fields are removed from the secret.
+// When one or more key stores are defined, re-issuance ensure that the
+// corresponding secrets are generated.
+// If the private key rotation is set to "Never", the key store related values are re-encoded
+// as per the certificate specification
+func SecretKeystoreFormatMatchesSpec(input Input) (string, string, bool) {
+	if input.Certificate.Spec.Keystores == nil {
+		if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) != 0 ||
+			len(input.Secret.Data[cmapi.JksSecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.JksTruststoreKey]) != 0 {
+			return SecretMismatch, "Keystore is not defined", true
+		}
+		return "", "", false
+	}
+
+	if input.Certificate.Spec.Keystores.JKS != nil {
+		if input.Certificate.Spec.Keystores.JKS.Create {
+			if len(input.Secret.Data[cmapi.JksSecretKey]) == 0 ||
+				len(input.Secret.Data[cmapi.JksTruststoreKey]) == 0 {
+				return SecretMismatch, "JKS Keystore keys does not contain data", true
+			}
+		} else {
+			if len(input.Secret.Data[cmapi.JksSecretKey]) != 0 ||
+				len(input.Secret.Data[cmapi.JksTruststoreKey]) != 0 {
+				return SecretMismatch, "JKS Keystore create disabled", true
+			}
+		}
+	} else {
+		if len(input.Secret.Data[cmapi.JksSecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.JksTruststoreKey]) != 0 {
+			return SecretMismatch, "JKS Keystore not defined", true
+		}
+	}
+
+	if input.Certificate.Spec.Keystores.PKCS12 != nil {
+		if input.Certificate.Spec.Keystores.PKCS12.Create {
+			if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) == 0 ||
+				len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) == 0 {
+				return SecretMismatch, "PKCS12 Keystore keys does not contain data", true
+			}
+		} else {
+			if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) != 0 ||
+				len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) != 0 {
+				return SecretMismatch, "PKCS12 Keystore create disabled", true
+			}
+		}
+	} else {
+		if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) != 0 {
+			return SecretMismatch, "PKCS12 Keystore not defined", true
+		}
+	}
+
+	return "", "", false
+}
+
 func SecretIssuerAnnotationsNotUpToDate(input Input) (string, string, bool) {
 	name := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
 	kind := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
