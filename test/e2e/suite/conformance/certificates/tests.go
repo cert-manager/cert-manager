@@ -897,7 +897,7 @@ func (s *Suite) Define() {
 				"cert-manager.io/renew-before": renewBefore.String(),
 			}, domain)
 
-			gw, err := f.GWClientSet.GatewayV1alpha2().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
+			gw, err := f.GWClientSet.GatewayV1beta1().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// XXX(Mael): the CertificateRef seems to contain the Gateway name
