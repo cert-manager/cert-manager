@@ -3039,11 +3039,18 @@ func ptrMode(mode gwapi.TLSModeType) *gwapi.TLSModeType {
 func Test_validateGatewayListenerBlock(t *testing.T) {
 	tests := []struct {
 		name     string
+		ingLike  metav1.Object
 		listener gwapi.Listener
 		wantErr  string
 	}{
 		{
 			name: "empty TLS block",
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway",
+					Namespace: "default",
+				},
+			},
 			listener: gwapi.Listener{
 				Hostname: ptrHostname("example.com"),
 				Port:     gwapi.PortNumber(443),
@@ -3053,6 +3060,12 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 		},
 		{
 			name: "empty hostname",
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway",
+					Namespace: "default",
+				},
+			},
 			listener: gwapi.Listener{
 				Hostname: ptrHostname(""),
 				Port:     gwapi.PortNumber(443),
@@ -3072,6 +3085,12 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 		},
 		{
 			name: "empty group",
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example",
+					Namespace: "default",
+				},
+			},
 			listener: gwapi.Listener{
 				Hostname: ptrHostname("example.com"),
 				Port:     gwapi.PortNumber(443),
@@ -3128,10 +3147,62 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 			},
 			wantErr: "spec.listeners[0].tls.certificateRef[0].kind: Unsupported value: \"SomeOtherKind\": supported values: \"Secret\", \"\"",
 		},
+		{
+			name: "cross-namespace secret ref",
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example",
+					Namespace: "default",
+				},
+			},
+			listener: gwapi.Listener{
+				Hostname: ptrHostname("example.com"),
+				Port:     gwapi.PortNumber(443),
+				Protocol: gwapi.HTTPSProtocolType,
+				TLS: &gwapi.GatewayTLSConfig{
+					Mode: ptrMode(gwapi.TLSModeTerminate),
+					CertificateRefs: []gwapi.SecretObjectReference{
+						{
+							Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
+							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:      "example-com",
+							Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("another-namespace"); return &n }(),
+						},
+					},
+				},
+			},
+			wantErr: "spec.listeners[0].tls.certificateRef[0].namespace: Invalid value: \"another-namespace\": cross-namespace secret references are not allowed in listeners",
+		},
+		{
+			name: "same namespace secret ref",
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example",
+					Namespace: "another-namespace",
+				},
+			},
+			listener: gwapi.Listener{
+				Hostname: ptrHostname("example.com"),
+				Port:     gwapi.PortNumber(443),
+				Protocol: gwapi.HTTPSProtocolType,
+				TLS: &gwapi.GatewayTLSConfig{
+					Mode: ptrMode(gwapi.TLSModeTerminate),
+					CertificateRefs: []gwapi.SecretObjectReference{
+						{
+							Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
+							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:      "example-com",
+							Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("another-namespace"); return &n }(),
+						},
+					},
+				},
+			},
+			wantErr: "",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotErr := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(0), test.listener).ToAggregate()
+			gotErr := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(0), test.listener, test.ingLike).ToAggregate()
 			if test.wantErr == "" {
 				assert.NoError(t, gotErr)
 			} else {
