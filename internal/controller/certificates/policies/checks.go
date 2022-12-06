@@ -96,7 +96,7 @@ func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 
 // SecretKeystoreFormatMatchesSpec - When the keystore is not defined, the keystore
 // related fields are removed from the secret.
-// When one or more key stores are defined, re-issuance ensure that the
+// When one or more key stores are defined,  the
 // corresponding secrets are generated.
 // If the private key rotation is set to "Never", the key store related values are re-encoded
 // as per the certificate specification
