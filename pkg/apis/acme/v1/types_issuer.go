@@ -263,7 +263,7 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute.
 	// cert-manager needs to know which parentRefs should be used when creating
 	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
-	// https://gateway-api.sigs.k8s.io/v1alpha2/api-types/httproute/#attaching-to-gateways
+	// https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
 	ParentRefs []gwapi.ParentReference `json:"parentRefs,omitempty"`
 }
 

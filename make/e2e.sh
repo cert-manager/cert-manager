@@ -155,21 +155,6 @@ for v in FEATURE_GATES FLAKE_ATTEMPTS NODES GINKGO_FOCUS GINKGO_SKIP ARTIFACTS; 
   fi
 done
 
-# Skip Gateway tests for Kubernetes below v1.19.
-k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .minor' -)
-case "$k8s_version" in
-1.16* | 1.17* | 1.18*)
-  printf "${yel}${warn}Warning${end}: Kubernetes version ${k8s_version}, skipping Gateway tests.\n" >&2
-
-  if [[ -z "$ginkgo_skip" ]]; then
-    ginkgo_skip="Gateway"
-  else
-    # duplicates are ok
-    ginkgo_skip="${ginkgo_skip}|Gateway"
-  fi
-  ;;
-esac
-
 ginkgo_args=("$@")
 
 if [[ -n "$ginkgo_focus" ]]; then ginkgo_args+=(--ginkgo.focus="${ginkgo_focus}"); fi

@@ -28,7 +28,8 @@ TOOLS += yq=v4.27.5
 TOOLS += crane=v0.11.0
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 
-GATEWAY_API_VERSION=v0.5.0
+# Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
+GATEWAY_API_VERSION=v0.5.1
 
 K8S_CODEGEN_VERSION=v0.25.2
 
@@ -374,15 +375,11 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 # gatewayapi #
 ##############
 
-GATEWAY_API_SHA256SUM=c45f8806883014f7f75a2084c612fc62eb00d5c1915a906f8ca5ecda5450b163
+GATEWAY_API_SHA256SUM=b84972572a104012e7fbea5651a113ac872f6ffeb0b037b4505d664383c932a3
 
-$(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION): $(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION).tar.gz | $(BINDIR)/downloaded
-	./hack/util/checkhash.sh $< $(GATEWAY_API_SHA256SUM)
-	@mkdir -p $@
-	tar xz -C $@ -f $<
-
-$(BINDIR)/downloaded/gateway-api@$(GATEWAY_API_VERSION).tar.gz: | $(BINDIR)/downloaded
-	$(CURL) https://github.com/kubernetes-sigs/gateway-api/archive/refs/tags/$(GATEWAY_API_VERSION).tar.gz -o $@
+$(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
+	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
+	./hack/util/checkhash.sh $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(GATEWAY_API_SHA256SUM)
 
 #################
 # Other Targets #
