@@ -235,17 +235,17 @@ const (
 
 // Keystore specific secret keys
 const (
-	// Pkcs12SecretKey is the name of the data entry in the Secret resource
+	// PKCS12SecretKey is the name of the data entry in the Secret resource
 	// used to store the p12 file.
-	Pkcs12SecretKey = "keystore.p12"
+	PKCS12SecretKey = "keystore.p12"
 	// Data Entry Name in the Secret resource for PKCS12 containing Certificate Authority
-	Pkcs12TruststoreKey = "truststore.p12"
+	PKCS12TruststoreKey = "truststore.p12"
 
-	// JksSecretKey is the name of the data entry in the Secret resource
+	// JKSSecretKey is the name of the data entry in the Secret resource
 	// used to store the jks file.
-	JksSecretKey = "keystore.jks"
+	JKSSecretKey = "keystore.jks"
 	// Data Entry Name in the Secret resource for JKS containing Certificate Authority
-	JksTruststoreKey = "truststore.jks"
+	JKSTruststoreKey = "truststore.jks"
 )
 
 // DefaultKeyUsages contains the default list of key usages

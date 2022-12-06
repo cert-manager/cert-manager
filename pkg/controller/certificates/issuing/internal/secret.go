@@ -235,7 +235,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 			return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
 		}
 		// always overwrite the keystore entry for now
-		secret.Data[cmapi.Pkcs12SecretKey] = keystoreData
+		secret.Data[cmapi.PKCS12SecretKey] = keystoreData
 
 		if len(data.CA) > 0 {
 			truststoreData, err := encodePKCS12Truststore(string(pw), data.CA)
@@ -243,7 +243,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 				return fmt.Errorf("error encoding PKCS12 trust store bundle: %w", err)
 			}
 			// always overwrite the truststore entry
-			secret.Data[cmapi.Pkcs12TruststoreKey] = truststoreData
+			secret.Data[cmapi.PKCS12TruststoreKey] = truststoreData
 		}
 	}
 
@@ -263,7 +263,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 			return fmt.Errorf("error encoding JKS bundle: %w", err)
 		}
 		// always overwrite the keystore entry
-		secret.Data[cmapi.JksSecretKey] = keystoreData
+		secret.Data[cmapi.JKSSecretKey] = keystoreData
 
 		if len(data.CA) > 0 {
 			truststoreData, err := encodeJKSTruststore(pw, data.CA)
@@ -271,7 +271,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 				return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
 			}
 			// always overwrite the keystore entry
-			secret.Data[cmapi.JksTruststoreKey] = truststoreData
+			secret.Data[cmapi.JKSTruststoreKey] = truststoreData
 		}
 	}
 

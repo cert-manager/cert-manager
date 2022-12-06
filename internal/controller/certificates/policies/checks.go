@@ -102,10 +102,10 @@ func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 // as per the certificate specification
 func SecretKeystoreFormatMatchesSpec(input Input) (string, string, bool) {
 	if input.Certificate.Spec.Keystores == nil {
-		if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) != 0 ||
-			len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) != 0 ||
-			len(input.Secret.Data[cmapi.JksSecretKey]) != 0 ||
-			len(input.Secret.Data[cmapi.JksTruststoreKey]) != 0 {
+		if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 ||
+			len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.JKSTruststoreKey]) != 0 {
 			return SecretMismatch, "Keystore is not defined", true
 		}
 		return "", "", false
@@ -113,38 +113,38 @@ func SecretKeystoreFormatMatchesSpec(input Input) (string, string, bool) {
 
 	if input.Certificate.Spec.Keystores.JKS != nil {
 		if input.Certificate.Spec.Keystores.JKS.Create {
-			if len(input.Secret.Data[cmapi.JksSecretKey]) == 0 ||
-				len(input.Secret.Data[cmapi.JksTruststoreKey]) == 0 {
+			if len(input.Secret.Data[cmapi.JKSSecretKey]) == 0 ||
+				len(input.Secret.Data[cmapi.JKSTruststoreKey]) == 0 {
 				return SecretMismatch, "JKS Keystore keys does not contain data", true
 			}
 		} else {
-			if len(input.Secret.Data[cmapi.JksSecretKey]) != 0 ||
-				len(input.Secret.Data[cmapi.JksTruststoreKey]) != 0 {
+			if len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
+				len(input.Secret.Data[cmapi.JKSTruststoreKey]) != 0 {
 				return SecretMismatch, "JKS Keystore create disabled", true
 			}
 		}
 	} else {
-		if len(input.Secret.Data[cmapi.JksSecretKey]) != 0 ||
-			len(input.Secret.Data[cmapi.JksTruststoreKey]) != 0 {
+		if len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.JKSTruststoreKey]) != 0 {
 			return SecretMismatch, "JKS Keystore not defined", true
 		}
 	}
 
 	if input.Certificate.Spec.Keystores.PKCS12 != nil {
 		if input.Certificate.Spec.Keystores.PKCS12.Create {
-			if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) == 0 ||
-				len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) == 0 {
+			if len(input.Secret.Data[cmapi.PKCS12SecretKey]) == 0 ||
+				len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) == 0 {
 				return SecretMismatch, "PKCS12 Keystore keys does not contain data", true
 			}
 		} else {
-			if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) != 0 ||
-				len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) != 0 {
+			if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
+				len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 {
 				return SecretMismatch, "PKCS12 Keystore create disabled", true
 			}
 		}
 	} else {
-		if len(input.Secret.Data[cmapi.Pkcs12SecretKey]) != 0 ||
-			len(input.Secret.Data[cmapi.Pkcs12TruststoreKey]) != 0 {
+		if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
+			len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 {
 			return SecretMismatch, "PKCS12 Keystore not defined", true
 		}
 	}
