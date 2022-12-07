@@ -34,20 +34,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-const (
-	// pkcs12SecretKey is the name of the data entry in the Secret resource
-	// used to store the p12 file.
-	pkcs12SecretKey = "keystore.p12"
-	// Data Entry Name in the Secret resource for PKCS12 containing Certificate Authority
-	pkcs12TruststoreKey = "truststore.p12"
-
-	// jksSecretKey is the name of the data entry in the Secret resource
-	// used to store the jks file.
-	jksSecretKey = "keystore.jks"
-	// Data Entry Name in the Secret resource for JKS containing Certificate Authority
-	jksTruststoreKey = "truststore.jks"
-)
-
 // encodePKCS12Keystore will encode a PKCS12 keystore using the password provided.
 // The key, certificate and CA data must be provided in PKCS1 or PKCS8 PEM format.
 // If the certificate data contains multiple certificates, the first will be used
