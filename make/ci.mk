@@ -3,7 +3,7 @@
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-licenses
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds
 
 .PHONY: verify-imports
 verify-imports: | $(NEEDS_GOIMPORTS)
@@ -25,6 +25,9 @@ verify-boilerplate:
 	$(__PYTHON) hack/verify_boilerplate.py
 
 .PHONY: verify-licenses
+## Check that the LICENSES file is up to date; must pass before a change to go.mod can be merged
+##
+## @category CI
 verify-licenses: $(BINDIR)/scratch/LATEST-LICENSES
 	@diff $(BINDIR)/scratch/LATEST-LICENSES LICENSES >/dev/null || (echo -e "\033[0;33mLICENSES seem to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
 
