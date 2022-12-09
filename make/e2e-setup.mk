@@ -257,8 +257,9 @@ e2e-setup-gatewayapi: $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).ya
 # don't have a class, we pass a --watch-ingress-without-class flag:
 # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
 .PHONY: e2e-setup-ingressnginx
-e2e-setup-ingressnginx: $(call image-tar,ingressnginx) $(push)-$(call image-tar,ingressnginx) | $(NEEDS_HELM)
+e2e-setup-ingressnginx: $(call image-tar,ingressnginx) $(push)-$(call image-tar,ingressnginx) $(e2e_setup_kind_prerequisites) | $(NEEDS_HELM)
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	@$(eval REPOSITORY=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r |  cut -d: -f1))
 	$(HELM) repo add ingress-nginx --force-update https://kubernetes.github.io/ingress-nginx >/dev/null
 	$(HELM) upgrade \
 		--install \
@@ -267,8 +268,9 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) $(push)-$(call image-tar,
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
+		--set controller.image.repository="$(OCI_REGISTRY_BASE)$(REPOSITORY)" \
 		--set controller.image.digest= \
-		--set controller.image.pullPolicy=Never \
+		--set controller.image.pullPolicy=IfNotPresent \
 		--set controller.service.clusterIP=${SERVICE_IP_PREFIX}.15 \
 		--set controller.service.type=ClusterIP \
 		--set controller.config.no-tls-redirect-locations= \
