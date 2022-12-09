@@ -23,7 +23,11 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/discovery"
+	memory "k8s.io/client-go/discovery/cached"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
@@ -148,9 +152,30 @@ func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interfac
 	}
 }
 
+func preStartCheck(context *controllerpkg.Context) error {
+	gvk := schema.GroupVersionKind{
+		Group:   "gateway.networking.k8s.io",
+		Version: "v1beta1",
+		Kind:    "Gateway",
+	}
+
+	dc, err := discovery.NewDiscoveryClientForConfig(context.RESTConfig)
+	if err != nil {
+		return err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	_, err = mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, ControllerName).
+			WithPreStartCheck(preStartCheck).
 			For(&controller{queue: workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)}).
 			Complete()
 	})

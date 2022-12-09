@@ -203,6 +203,7 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+		shimgatewaycontroller.ControllerName,
 	}
 
 	experimentalCertificateSigningRequestControllers = []string{

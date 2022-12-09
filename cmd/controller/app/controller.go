@@ -191,6 +191,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 
 		iface, err := fn(ctxFactory)
 		if err != nil {
+			if _, ok := err.(controller.PreStartError); ok {
+				log.V(logf.InfoLevel).Info(fmt.Sprintf("not starting controller as pre-start check failed - %v", err.Error()))
+				continue
+			}
+
 			err = fmt.Errorf("error starting controller: %v", err)
 
 			cancelContext()

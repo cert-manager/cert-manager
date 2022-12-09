@@ -45,6 +45,8 @@ type Builder struct {
 	// runDurationFuncs are a list of functions that will be called every
 	// 'duration'
 	runDurationFuncs []runDurationFunc
+
+	preStartCheck func(*Context) error
 }
 
 // New creates a basic Builder, setting the sync call to the one given
@@ -57,6 +59,11 @@ func NewBuilder(controllerctx *ContextFactory, name string) *Builder {
 
 func (b *Builder) For(ctrl queueingController) *Builder {
 	b.impl = ctrl
+	return b
+}
+
+func (b *Builder) WithPreStartCheck(preStartCheck func(*Context) error) *Builder {
+	b.preStartCheck = preStartCheck
 	return b
 }
 
@@ -90,10 +97,32 @@ func (b *Builder) Complete() (Interface, error) {
 	if b.impl == nil {
 		return nil, fmt.Errorf("controller implementation must be non-nil")
 	}
+
+	if b.preStartCheck != nil {
+		err = b.preStartCheck(controllerctx)
+		if err != nil {
+			return nil, NewPreStartError(err)
+		}
+	}
+
 	queue, mustSync, err := b.impl.Register(controllerctx)
 	if err != nil {
 		return nil, fmt.Errorf("error registering controller: %v", err)
 	}
 
 	return NewController(ctx, b.name, controllerctx.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
+}
+
+type PreStartError struct {
+	err error
+}
+
+func NewPreStartError(err error) PreStartError {
+	return PreStartError{
+		err: err,
+	}
+}
+
+func (p PreStartError) Error() string {
+	return p.err.Error()
 }
