@@ -323,12 +323,17 @@ $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar: $(BINDIR)/downloaded/con
 	$(CTR) save local/pebble:local -o $@ >/dev/null
 
 .PHONY: e2e-setup-pebble
-e2e-setup-pebble: $(push)-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(e2e_setup_kind_prerequisites) | $(NEEDS_HELM)
+e2e-setup-pebble: $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(push)-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(e2e_setup_kind_prerequisites) | $(NEEDS_HELM)
+	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	@$(eval REPOSITORY=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1))
 	$(HELM) upgrade \
 		--install \
 		--wait \
 		--namespace pebble \
 		--create-namespace \
+		--set image.repository=$(OCI_REGISTRY_BASE)$(REPOSITORY) \
+		--set image.tag=$(TAG) \
+		--set image.pullPolicy=IfNotPresent \
 		pebble make/config/pebble/chart >/dev/null
 
 $(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook/samplewebhook: make/config/samplewebhook/sample/main.go | $(NEEDS_GO)
