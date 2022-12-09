@@ -282,6 +282,9 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) $(push)-$(call image-tar,
 .PHONY: e2e-setup-kyverno
 e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(push)-$(call image-tar,kyverno) $(push)-$(call image-tar,kyvernopre) make/config/kyverno/policy.yaml $(e2e_setup_kind_prerequisites) | $(NEEDS_KUBECTL) $(NEEDS_HELM)
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	@$(eval REPOSITORY=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1))
+	@$(eval TAG_PRE=$(shell tar xfO $(call image-tar,kyvernopre) manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	@$(eval REPOSITORY_PRE=$(shell tar xfO $(call image-tar,kyvernopre) manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f1))
 	$(HELM) repo add kyverno --force-update https://kyverno.github.io/kyverno/ >/dev/null
 	$(HELM) upgrade \
 		--install \
@@ -289,10 +292,10 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(push
 		--namespace kyverno \
 		--create-namespace \
 		--version v2.5.1 \
-		--set image.registry=$(OCI_REGISTRY_BASE) \
-		--set initImage.registry=$(OCI_REGISTRY_BASE) \
-		--set image.tag=v1.7.1 \
-		--set initImage.tag=v1.7.1 \
+		--set image.repository=$(OCI_REGISTRY_BASE)$(REPOSITORY) \
+		--set initImage.repository=$(OCI_REGISTRY_BASE)$(REPOSITORY_PRE) \
+		--set image.tag=$(TAG) \
+		--set initImage.tag=$(TAG_PRE) \
 		--set image.pullPolicy=IfNotPresent \
 		--set initImage.pullPolicy=IfNotPresent \
 		kyverno kyverno/kyverno
