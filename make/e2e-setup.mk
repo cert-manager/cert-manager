@@ -51,7 +51,7 @@ PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
 # TODO: considering moving the installation commands in this file to separate scripts for readability
 # Once that is done, we can consume this variable from ./make/config/lib.sh
-SERVICE_IP_PREFIX = 10.0.0
+SERVICE_IP_PREFIX ?= 10.0.0
 
 .PHONY: e2e-setup-kind
 ## Create a Kubernetes cluster using Kind, which is required for `make e2e`.
@@ -241,7 +241,7 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(BINDIR)/containers/cert-mana
 
 .PHONY: e2e-setup-bind
 e2e-setup-bind: $(call image-tar,bind) $(push)-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) $(e2e_setup_kind_prerequisites) | $(NEEDS_KUBECTL)
-	@$(eval IMAGE = $(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r))
+	@$(eval IMAGE = $(OCI_REGISTRY_BASE)$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r))
 	$(KUBECTL) get ns bind 2>/dev/null >&2 || $(KUBECTL) create ns bind
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(KUBECTL) apply -n bind -f - >/dev/null
 
