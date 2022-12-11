@@ -88,14 +88,14 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 spec:
   secretName: cert-1
-  cleanupPolicy: [Delete|Never] # ✨
+  cleanupPolicy: [OnDelete|Never] # ✨ Can be left empty.
 ```
 
 The new field `cleanupPolicy` has three possible values:
 
-1. When not set, the value set by `--default-secret-cleanup-policy` is used.
-3. When `OnDelete`, the owner reference is always created on the Secret resource.
-4. When `Never`, the owner reference is never created on the Secret resource.
+1. When not set, the value set by `--default-secret-cleanup-policy` is inherited.
+2. When `OnDelete`, the owner reference is always created on the Secret resource.
+3. When `Never`, the owner reference is never created on the Secret resource.
 
 > At first, the proposed field was named `certificateOwnerRef` and was a
 > nullable boolean. James Munnelly reminded us that the Kubernetes API
