@@ -42,7 +42,9 @@ This checklist contains actions which must be completed before a PR implementing
 
 ## Summary
 
-cert-manager has the ability to set the owner reference field in generated Secret resources. The option is global, and takes the form of the flag `--enable-certificate-owner-ref` set in the cert-manager controller Deployment resource.
+cert-manager has the ability to set the owner reference field in generated Secret resources.
+The option is global, and takes the form of the flag `--enable-certificate-owner-ref` set in
+the cert-manager controller Deployment resource.
 
 Let us take an example Certificate resource:
 
@@ -57,7 +59,8 @@ spec:
   secretName: cert-1
 ```
 
-When `--enable-certificate-owner-ref` is passed to the cert-manager controller, cert-manager, when issuing the X.509 certificate, will create a Secret resource that looks like this:
+When `--enable-certificate-owner-ref` is passed to the cert-manager controller, cert-manager,
+when issuing the X.509 certificate, will create a Secret resource that looks like this:
 
 ```yaml
 apiVersion: v1
@@ -91,8 +94,8 @@ spec:
 The new field `cleanupPolicy` has three possible values:
 
 1. When "empty", the Kubernetes API server defaults the value to `Inherit`.
-2. When `Inherit`, we say that this field "inherits" the value of the flag `--enable-certificate-owner-ref` .
-3. When `Delete`, the owner reference is always created on the Secret resource.
+2. When `Inherit`, we say that this field "inherits" the value of the flag `--enable-certificate-owner-ref`.
+3. When `OnDelete`, the owner reference is always created on the Secret resource.
 4. When `Never`, the owner reference is never created on the Secret resource.
 
 > At first, the proposed field was named `certificateOwnerRef` and was a
@@ -100,6 +103,46 @@ The new field `cleanupPolicy` has three possible values:
 > never uses boolean fields, and instead uses the string type with
 > "meaningful values". On top of being more readable, it also makes the
 > field extensible.
+
+When changing the value of the field `cleanupPolicy` from `OnDelete` to `Never`,
+the associated Secret resource immediately loses its owner reference. The user
+doesn't need to wait until the certificate is renewed. Similarly, when `cleanupPolicy`
+is changed from `OnDelete` to `Never`, the associated Secret resource loses its
+owner reference.
+
+Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`,
+and introduce a new flag `--default-secret-cleanup-strategy` that can take the following
+values:
+
+- `--default-secret-cleanup-strategy=Never` means that a Certificate created with an
+  empty `cleanupPolicy` will be defaulted to `cleanupPolicy: Never` by the cert-manager
+  webhook.
+- `--default-secret-cleanup-strategy=OnDelete` means that a Certificate created with an
+  empty `cleanupPolicy` will be defaulted to `cleanupPolicy: OnDelete` by the cert-manager
+  webhook.
+
+The default value for `--default-secret-cleanup-strategy` is `Never`. Changing the flag
+value from `Never` to `OnDelete`, the existing Certificate resources are not changed.
+Only the newly created Certificates will get the new value in their `cleanupPolicy`
+field. Similarly, when changing the flag value from `OnDelete` to `Never`, the existing
+Certificate's `cleanupPolicy` fields aren't changed. It is necessary for the user to
+manually change each individual `cleanupPolicy` fields in order to migrate all the
+Certificate resources from `Never` to `OnDelete`, or from `OnDelete` to `Never`.
+
+The reason we decided to deprecate `--enable-certificate-owner-ref` is because this
+flag had a global impact: when switching from `false` to `true`, the user would see
+that the existing Secret resources associated to Certificate resources would
+immediately be updated with an owner reference. Conversely, changing `true` to
+`false` would immediately update the existing Secret resources to loose their
+owner reference. The new flag `--default-secret-cleanup-strategy` doesn't work this
+way: instead of acting globally, the flag acts on the newly created Certificate
+resources through the "defaulting" mechanism.
+
+The deprecated flag `--enable-certificate-owner-ref` keeps precendence over the new flag
+in order to keep backwards compatibility.
+
+TODO: talk about the semantic mapping between `--enable-certificate-owner-ref`
+and `--default-secret-cleanup-strategy`.
 
 ## Use-cases
 
@@ -206,9 +249,8 @@ on the Certificate resource.
 
 ### Test Plan
 
-<!---
-Describe how the new functionality will be tested (unit tests, integration tests (if applicable), e2e tests)
--->
+- Unit tests for the changes in the secret manager controller.
+
 
 ### Graduation Criteria
 
