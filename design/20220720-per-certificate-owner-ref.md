@@ -93,8 +93,7 @@ spec:
 
 The new field `cleanupPolicy` has three possible values:
 
-1. When "empty", the Kubernetes API server defaults the value to `Inherit`.
-2. When `Inherit`, we say that this field "inherits" the value of the flag `--enable-certificate-owner-ref`.
+1. When not set, the value set by `--default-secret-cleanup-policy` is used.
 3. When `OnDelete`, the owner reference is always created on the Secret resource.
 4. When `Never`, the owner reference is never created on the Secret resource.
 
@@ -110,39 +109,37 @@ doesn't need to wait until the certificate is renewed. Similarly, when `cleanupP
 is changed from `OnDelete` to `Never`, the associated Secret resource loses its
 owner reference.
 
-Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`,
-and introduce a new flag `--default-secret-cleanup-strategy` that can take the following
-values:
+Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`
+and introduce the new flag `--default-secret-cleanup-policy`. Its values are as follows:
 
-- `--default-secret-cleanup-strategy=Never` means that a Certificate created with an
-  empty `cleanupPolicy` will be defaulted to `cleanupPolicy: Never` by the cert-manager
-  webhook.
-- `--default-secret-cleanup-strategy=OnDelete` means that a Certificate created with an
+- `--default-secret-cleanup-policy=Never` means that a Certificate resource that
+  doesn't have `cleanupPolicy` set will 
+- `--default-secret-cleanup-policy=OnDelete` means that a Certificate created with an
   empty `cleanupPolicy` will be defaulted to `cleanupPolicy: OnDelete` by the cert-manager
   webhook.
 
-The default value for `--default-secret-cleanup-strategy` is `Never`. Changing the flag
-value from `Never` to `OnDelete`, the existing Certificate resources are not changed.
-Only the newly created Certificates will get the new value in their `cleanupPolicy`
-field. Similarly, when changing the flag value from `OnDelete` to `Never`, the existing
-Certificate's `cleanupPolicy` fields aren't changed. It is necessary for the user to
-manually change each individual `cleanupPolicy` fields in order to migrate all the
-Certificate resources from `Never` to `OnDelete`, or from `OnDelete` to `Never`.
+The default value for `--default-secret-cleanup-policy` is `Never`.
+
+When changing the flag from `Never` to `OnDelete`, the existing Certificate resources
+that don't have `cleanupPolicy` set are immediately affected, meaning that their
+associated Secrets will gain a new owner reference. When changing the flag from
+`OnDelete` to `Never`, the Secrets associated to Certificates that have no `cleanupPolicy`
+set will see their owner reference immediately removed.
 
 The reason we decided to deprecate `--enable-certificate-owner-ref` is because this
-flag had a global impact: when switching from `false` to `true`, the user would see
-that the existing Secret resources associated to Certificate resources would
-immediately be updated with an owner reference. Conversely, changing `true` to
-`false` would immediately update the existing Secret resources to loose their
-owner reference. The new flag `--default-secret-cleanup-strategy` doesn't work this
-way: instead of acting globally, the flag acts on the newly created Certificate
-resources through the "defaulting" mechanism.
+flag kicks in on the next issuance of Certificate resources. On the other hand,
+`cleanupStrategy` and `--default-secret-cleanup-policy` take effect immediately.
 
 The deprecated flag `--enable-certificate-owner-ref` keeps precendence over the new flag
 in order to keep backwards compatibility.
 
-TODO: talk about the semantic mapping between `--enable-certificate-owner-ref`
-and `--default-secret-cleanup-strategy`.
+When upgrading to the new flag, users can refer to the following table:
+
+| If... | then they should replace it with... |
+|-----|-----|
+| `--enable-certificate-owner-ref` not passed to the controller | No change needed |
+| `--enable-certificate-owner-ref=false` | Replace with `--default-secret-cleanup-policy=Never` |
+| `--enable-certificate-owner-ref=true` | Replace with `--default-secret-cleanup-policy=OnDelete` |
 
 ## Use-cases
 
