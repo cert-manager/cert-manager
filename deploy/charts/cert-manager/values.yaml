@@ -236,7 +236,7 @@ webhook:
   # This allows setting options that'd usually be provided via flags.
   # An APIVersion and Kind must be specified in your values.yaml file.
   # Flags will override options that are set here.
-  config:
+  # config:
     # apiVersion: webhook.config.cert-manager.io/v1alpha1
     # kind: WebhookConfiguration
 

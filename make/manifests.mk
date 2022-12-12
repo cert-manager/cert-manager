@@ -70,9 +70,29 @@ $(BINDIR)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(BINDIR)/releas
 # Helm Targets #
 ################
 
+helm_values_source_dir := deploy/charts/cert-manager/values
+helm_values_sources := $(shell find $(helm_values_source_dir) -type f)
+helm_generated_openapi_go := hack/helm_jsonschema/openapi/zz_generated.openapi.go
+$(helm_generated_openapi_go): $(helm_values_sources) | k8s-codegen-tools
+	rm -rf $(helm_generated_openapi_go)
+
+	$(BINDIR)/tools/openapi-gen \
+		--go-header-file hack/boilerplate/boilerplate.go.txt \
+		\
+		--input-dirs "github.com/cert-manager/cert-manager/deploy/charts/cert-manager/values" \
+		--input-dirs "k8s.io/apimachinery/pkg/apis/meta/v1" \
+		--input-dirs "k8s.io/api/core/v1" \
+		--input-dirs "k8s.io/api/apps/v1" \
+		--input-dirs "k8s.io/api/networking/v1" \
+		\
+		--trim-path-prefix "github.com/jetstack/cert-manager" \
+		--output-package "github.com/jetstack/cert-manager/hack/helm_jsonschema/openapi" \
+		--output-base ./ \
+		-O zz_generated.openapi
+
 # These targets provide for building and signing the cert-manager helm chart.
 
-$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager/README.md $(BINDIR)/helm/cert-manager/Chart.yaml $(BINDIR)/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) $(BINDIR)/helm/cert-manager/templates/NOTES.txt $(BINDIR)/helm/cert-manager/templates/_helpers.tpl $(BINDIR)/helm/cert-manager/templates/crds.yaml | $(NEEDS_HELM) $(BINDIR)/helm/cert-manager
+$(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz: $(BINDIR)/helm/cert-manager/README.md $(BINDIR)/helm/cert-manager/Chart.yaml $(BINDIR)/helm/cert-manager/values.yaml $(BINDIR)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(BINDIR)/helm/cert-manager/templates/NOTES.txt $(BINDIR)/helm/cert-manager/templates/_helpers.tpl $(BINDIR)/helm/cert-manager/templates/crds.yaml | $(NEEDS_HELM) $(BINDIR)/helm/cert-manager
 	$(HELM) package --app-version=$(RELEASE_VERSION) --version=$(RELEASE_VERSION) --destination "$(dir $@)" ./$(BINDIR)/helm/cert-manager
 
 $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(NEEDS_CMREL) $(BINDIR)/helm/cert-manager
@@ -97,6 +117,11 @@ $(BINDIR)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(BINDIR)/hel
 
 $(BINDIR)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | $(BINDIR)/helm/cert-manager
 	cp $< $@
+
+$(BINDIR)/helm/cert-manager/values.schema.json: $(helm_generated_openapi_go) | $(NEEDS_GO)
+	$(eval TEMP_STDIN := "$(shell mktemp)")
+	$(GO) run ./hack/helm_jsonschema/main.go | jq > $(TEMP_STDIN)
+	mv $(TEMP_STDIN) $@
 
 $(BINDIR)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | $(BINDIR)/helm/cert-manager
 	sed -e "s:{{RELEASE_VERSION}}:$(RELEASE_VERSION):g" < $< > $@
