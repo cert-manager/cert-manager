@@ -49,7 +49,7 @@ github.com/docker/docker-credential-helpers,https://github.com/docker/docker-cre
 github.com/docker/go-connections,https://github.com/docker/go-connections/blob/v0.4.0/LICENSE,Apache-2.0
 github.com/docker/go-metrics,https://github.com/docker/go-metrics/blob/v0.0.1/LICENSE,Apache-2.0
 github.com/docker/go-units,https://github.com/docker/go-units/blob/v0.4.0/LICENSE,Apache-2.0
-github.com/emicklei/go-restful,https://github.com/emicklei/go-restful/blob/v2.9.5/LICENSE,MIT
+github.com/emicklei/go-restful,https://github.com/emicklei/go-restful/blob/v2.16.0/LICENSE,MIT
 github.com/evanphx/json-patch,https://github.com/evanphx/json-patch/blob/v4.12.0/LICENSE,BSD-3-Clause
 github.com/exponent-io/jsonpath,https://github.com/exponent-io/jsonpath/blob/d6023ce2651d/LICENSE,MIT
 github.com/fatih/camelcase,https://github.com/fatih/camelcase/blob/v1.0.0/LICENSE.md,MIT
@@ -182,12 +182,12 @@ go.uber.org/atomic,https://github.com/uber-go/atomic/blob/v1.7.0/LICENSE.txt,MIT
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.6.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.19.1/LICENSE.txt,MIT
 golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/7b82a4e9:LICENSE,BSD-3-Clause
-golang.org/x/net,https://cs.opensource.google/go/x/net/+/3d97a244:LICENSE,BSD-3-Clause
+golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.4.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/d3ed0bb2:LICENSE,BSD-3-Clause
-golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/036812b2:LICENSE,BSD-3-Clause
-golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/a9b59b02:LICENSE,BSD-3-Clause
-golang.org/x/term,https://cs.opensource.google/go/x/term/+/03fcf44c:LICENSE,BSD-3-Clause
-golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.3.7:LICENSE,BSD-3-Clause
+golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/886fb937:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.3.0:LICENSE,BSD-3-Clause
+golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.3.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.5.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/90d013bb:LICENSE,BSD-3-Clause
 gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.2.0/v2/LICENSE,Apache-2.0
 google.golang.org/api,https://github.com/googleapis/google-api-go-client/blob/v0.62.0/LICENSE,BSD-3-Clause
