@@ -112,11 +112,18 @@ owner reference.
 Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`
 and introduce the new flag `--default-secret-cleanup-policy`. Its values are as follows:
 
-- `--default-secret-cleanup-policy=Never` means that a Certificate resource that
-  doesn't have `cleanupPolicy` set will 
-- `--default-secret-cleanup-policy=OnDelete` means that a Certificate created with an
-  empty `cleanupPolicy` will be defaulted to `cleanupPolicy: OnDelete` by the cert-manager
-  webhook.
+- When `--default-secret-cleanup-policy` is set to `Never`, the Certificate resources
+  that don't have the `cleanupPolicy` field set will have their associated Secret
+  resources updated (i.e., the owner reference gets removed) on the next issuance of
+  the Certificate.
+- When `--default-secret-cleanup-policy` is set to `OnDelete`, the Certificate resources
+  that don't have the `cleanupPolicy` field set will have their associated Secret
+  resources updated (i.e., the owner reference gets added) on the next issuance of
+  the Certificate.
+  
+The effect of changing `--default-secret-cleanup-policy` from `Never` to `OnDelete`
+or from `OnDelete` to `Never` is not immediate: the change requires a re-issuance
+of the Certificate resources.
 
 The default value for `--default-secret-cleanup-policy` is `Never`.
 
@@ -127,8 +134,16 @@ associated Secrets will gain a new owner reference. When changing the flag from
 set will see their owner reference immediately removed.
 
 The reason we decided to deprecate `--enable-certificate-owner-ref` is because this
-flag kicks in on the next issuance of Certificate resources. On the other hand,
-`cleanupStrategy` and `--default-secret-cleanup-policy` take effect immediately.
+flat behaves differently to how the new `cleanupPolicy` behaves:
+
+- When `--enable-certificate-owner-ref` is not passed (or is set to false), the existing
+  Secret resources that have an owner reference are not changed even after a re-issuance.
+  With `--default-secret-cleanup-policy` and given that `cleanupPolicy` is not set, the
+  behavior is slightly different: unlike with the old flag, the existing Secret resources
+  will have their owner references removed.
+- When `--enable-certificate-owner-ref` is set to true, the behavior is the same as
+  when `--default-secret-cleanup-policy` is set to `OnDelete` and `cleanupPolicy` is not
+  set.  
 
 The deprecated flag `--enable-certificate-owner-ref` keeps precendence over the new flag
 in order to keep backwards compatibility.
