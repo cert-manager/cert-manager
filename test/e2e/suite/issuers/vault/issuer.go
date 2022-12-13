@@ -93,7 +93,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("creating a service account for Vault authentication")
-		err = vaultInit.CreateKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultKubernetesRoleName, vaultSecretServiceAccount)
+		err = vaultInit.CreateKubernetesRole(f.KubeClientSet, vaultKubernetesRoleName, f.Namespace.Name, vaultSecretServiceAccount)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -104,7 +104,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		vaultInit.CleanAppRole()
 
 		By("Cleaning up Kubernetes")
-		vaultInit.CleanKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultKubernetesRoleName, vaultSecretServiceAccount)
+		vaultInit.CleanKubernetesRole(f.KubeClientSet, vaultKubernetesRoleName, f.Namespace.Name, vaultSecretServiceAccount)
 
 		By("Cleaning up Vault")
 		Expect(vaultInit.Clean()).NotTo(HaveOccurred())

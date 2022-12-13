@@ -40,9 +40,9 @@ import (
 
 const (
 	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
-	vaultHelmChartVersion = "0.22.0"
+	vaultHelmChartVersion = "0.22.1"
 	vaultImageRepository  = "index.docker.io/library/vault"
-	vaultImageTag         = "1.2.3@sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
+	vaultImageTag         = "1.12.1@sha256:08dd1cb922624c51a5aefd4d9ce0ac5ed9688d96d8a5ad94664fa10e84702ed6"
 )
 
 // Vault describes the configuration details for an instance of Vault
@@ -72,8 +72,11 @@ type Details struct {
 	// PodName is the name of the Vault pod
 	PodName string
 
-	// Namespace is the namespace vault has been deployed into
-	Namespace string
+	// PodNS is the namespace that the Vault pod is deployed into.
+	PodNS string
+
+	// PodSA is the service accoutn that gets auto-mounted in the Vault pod.
+	PodSA string
 
 	// VaultCA is the CA used to sign the vault serving certificate
 	VaultCA           []byte
@@ -273,10 +276,12 @@ func (v *Vault) Provision() error {
 			continue
 		}
 		v.details.PodName = vaultPod.Name
+		v.details.PodNS = vaultPod.Namespace
+		v.details.PodSA = vaultPod.Spec.ServiceAccountName
+
 		break
 	}
 
-	v.details.Namespace = v.Namespace
 	v.details.Host = fmt.Sprintf("https://%s:8200", "chart-vault-"+v.Name+"."+v.Namespace)
 
 	return nil

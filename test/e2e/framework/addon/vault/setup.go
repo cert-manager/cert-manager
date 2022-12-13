@@ -142,7 +142,7 @@ func (v *VaultInitializer) Init() error {
 		v.KubernetesAuthPath = "kubernetes"
 	}
 
-	v.proxy = newProxy(v.Namespace, v.PodName, v.Kubectl, v.VaultCA)
+	v.proxy = newProxy(v.PodNS, v.PodName, v.Kubectl, v.VaultCA)
 	client, err := v.proxy.init()
 	if err != nil {
 		return err
@@ -446,36 +446,40 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 	return nil
 }
 
-// CreateKubernetesRole creates a service account and ClusterRoleBinding for Kubernetes auth delegation
-func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, namespace, roleName, serviceAccountName string) error {
-	serviceAccount := NewVaultServiceAccount(serviceAccountName)
-	_, err := client.CoreV1().ServiceAccounts(namespace).Create(context.TODO(), serviceAccount, metav1.CreateOptions{})
-
-	if err != nil {
-		return fmt.Errorf("error creating ServiceAccount for Kubernetes auth: %s", err.Error())
-	}
-
-	role := NewVaultServiceAccountRole(namespace, serviceAccountName)
-	_, err = client.RbacV1().ClusterRoles().Create(context.TODO(), role, metav1.CreateOptions{})
+// CreateKubernetesRole creates a service account and ClusterRoleBinding for
+// Kubernetes auth delegation. The name "boundSA" refers to the Vault param
+// "bound_service_account_names".
+func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, vaultRole, boundNS, boundSA string) error {
+	// Watch out, we refer to two different namespaces here:
+	//  - v.PodNS = the pod's service account used by Vault's pod to
+	//    authenticate with Kubernetes for the token review.
+	//  - boundSA = the service account used to login using the Vault Kubernetes
+	//    auth.
+	clusterRole := NewVaultServiceAccountRole(v.PodNS, v.PodSA)
+	_, err := client.RbacV1().ClusterRoles().Create(context.TODO(), clusterRole, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
-
-	roleBinding := NewVaultServiceAccountClusterRoleBinding(role.Name, namespace, serviceAccountName)
+	roleBinding := NewVaultServiceAccountClusterRoleBinding(clusterRole.Name, v.PodNS, v.PodSA)
 	_, err = client.RbacV1().ClusterRoleBindings().Create(context.TODO(), roleBinding, metav1.CreateOptions{})
 
 	if err != nil {
 		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
 
+	_, err = client.CoreV1().ServiceAccounts(boundNS).Create(context.TODO(), NewVaultServiceAccount(boundSA), metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("error creating ServiceAccount for Kubernetes auth: %s", err.Error())
+	}
+
 	// vault write auth/kubernetes/role/<roleName>
 	roleParams := map[string]string{
-		"bound_service_account_names":      serviceAccountName,
-		"bound_service_account_namespaces": namespace,
+		"bound_service_account_names":      boundSA,
+		"bound_service_account_namespaces": boundNS,
 		"policies":                         "[" + v.Role + "]",
 	}
 
-	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), roleName)
+	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), vaultRole)
 	_, err = v.proxy.callVault("POST", url, "", roleParams)
 	if err != nil {
 		return fmt.Errorf("error configuring kubernetes auth role: %s", err.Error())
@@ -489,8 +493,8 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 		"allowed_uri_sans":                 "spiffe://cluster.local/*",
 		"enforce_hostnames":                "false",
 		"allow_bare_domains":               "true",
-		"bound_service_account_names":      serviceAccountName,
-		"bound_service_account_namespaces": namespace,
+		"bound_service_account_names":      boundSA,
+		"bound_service_account_namespaces": boundNS,
 	}
 	url = path.Join("/v1", v.IntermediateMount, "roles", v.Role)
 
@@ -511,8 +515,8 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 	params = map[string]string{
 		"period":                           "24h",
 		"policies":                         v.Role,
-		"bound_service_account_names":      serviceAccountName,
-		"bound_service_account_namespaces": namespace,
+		"bound_service_account_names":      boundSA,
+		"bound_service_account_namespaces": boundNS,
 	}
 
 	baseUrl := path.Join("/v1", "auth", v.KubernetesAuthPath, "role", v.Role)
@@ -525,21 +529,21 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 }
 
 // CleanKubernetesRole cleans up the ClusterRoleBinding and ServiceAccount for Kubernetes auth delegation
-func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, namespace, roleName, serviceAccountName string) error {
-	if err := client.RbacV1().RoleBindings(namespace).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
+func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, vaultRole, boundNS, boundSA string) error {
+	clusterRole := NewVaultServiceAccountRole(v.PodNS, v.PodSA) // Just for getting the name.
+	if err := client.RbacV1().ClusterRoleBindings().Delete(context.TODO(), clusterRole.Name, metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := client.RbacV1().ClusterRoles().Delete(context.TODO(), clusterRole.Name, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	if err := client.RbacV1().Roles(namespace).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
-		return err
-	}
-
-	if err := client.CoreV1().ServiceAccounts(namespace).Delete(context.TODO(), serviceAccountName, metav1.DeleteOptions{}); err != nil {
+	if err := client.CoreV1().ServiceAccounts(boundNS).Delete(context.TODO(), boundSA, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
 	// vault delete auth/kubernetes/role/<roleName>
-	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), roleName)
+	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), vaultRole)
 	_, err := v.proxy.callVault("DELETE", url, "", nil)
 	if err != nil {
 		return fmt.Errorf("error cleaning up kubernetes auth role: %s", err.Error())
