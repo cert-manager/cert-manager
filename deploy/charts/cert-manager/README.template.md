@@ -212,6 +212,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `startupapicheck.serviceAccount.name` | Service account for the startupapicheck component to be used. If not set and `startupapicheck.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `startupapicheck.serviceAccount.annotations` | Annotations to add to the service account for the startupapicheck component |  |
 | `startupapicheck.serviceAccount.automountServiceAccountToken` | Automount API credentials for the startupapicheck Service Account | `true` |
+| `maxConcurrentChallenges` | The maximum number of challenges that can be scheduled as 'processing' at once | `60` |
 
 ### Default Security Contexts
 

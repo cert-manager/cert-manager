@@ -107,6 +107,9 @@ spec:
           {{- if .Values.featureGates }}
           - --feature-gates={{ .Values.featureGates }}
           {{- end }}
+          {{- if .Values.maxConcurrentChallenges }}
+          - --max-concurrent-challenges={{ .Values.maxConcurrentChallenges }}
+          {{- end }}
           ports:
           - containerPort: 9402
             name: http-metrics
