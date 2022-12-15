@@ -27,6 +27,7 @@ TOOLS += ytt=v0.43.0
 TOOLS += yq=v4.27.5
 TOOLS += crane=v0.11.0
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
+TOOLS += ko=v0.12.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.5.1
@@ -328,6 +329,25 @@ $(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$* -o $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
 	chmod +x $@
+
+######
+# ko #
+######
+
+KO_linux_amd64_SHA256SUM=05aa77182fa7c55386bd2a210fd41298542726f33bbfc9c549add3a66f7b90ad
+KO_darwin_amd64_SHA256SUM=8679d0d74fc75f24e044649c6a961dad0a3ef03bedbdece35e2f3f29eb7876af
+KO_darwin_arm64_SHA256SUM=cfef98db8ad0e1edaa483fa5c6af89eb573a8434abd372b510b89005575de702
+
+$(BINDIR)/downloaded/tools/ko@$(KO_VERSION)_%: | $(BINDIR)/downloaded/tools
+	$(eval OS_AND_ARCH := $(subst darwin,Darwin,$*))
+	$(eval OS_AND_ARCH := $(subst linux,Linux,$(OS_AND_ARCH)))
+	$(eval OS_AND_ARCH := $(subst amd64,x86_64,$(OS_AND_ARCH)))
+
+	$(CURL) https://github.com/ko-build/ko/releases/download/$(KO_VERSION)/ko_$(patsubst v%,%,$(KO_VERSION))_$(OS_AND_ARCH).tar.gz -o $@.tar.gz
+	./hack/util/checkhash.sh $@.tar.gz $(KO_$*_SHA256SUM)
+	tar xfO $@.tar.gz ko > $@
+	chmod +x $@
+	rm $@.tar.gz
 
 #####################
 # k8s codegen tools #
