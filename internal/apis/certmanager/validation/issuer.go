@@ -105,10 +105,24 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 
 func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, []string) {
 	var warnings []string
+
 	el := field.ErrorList{}
+
+	if len(iss.CABundle) > 0 && iss.SkipTLSVerify {
+		el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"))
+		el = append(el, field.Invalid(fldPath.Child("skipTLSVerify"), iss.SkipTLSVerify, "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"))
+	}
+
+	if len(iss.CABundle) > 0 {
+		if err := validateCABundleNotEmpty(iss.CABundle); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", err.Error()))
+		}
+	}
+
 	if len(iss.PrivateKey.Name) == 0 {
 		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
 	}
+
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
 	}

@@ -19,6 +19,7 @@ package accounts
 import (
 	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
 	"time"
@@ -55,15 +56,36 @@ func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.Pr
 	})
 }
 
-// BuildHTTPClient returns a instrumented HTTP client to be used by the ACME
-// client.
-// For the time being, we construct a new HTTP client on each invocation.
-// This is because we need to set the 'skipTLSVerify' flag on the HTTP client
-// itself.
-// In future, we may change to having two global HTTP clients - one that ignores
-// TLS connection errors, and the other that does not.
+// BuildHTTPClient returns a instrumented HTTP client to be used by an ACME client.
+// For the time being, we construct a new HTTP client on each invocation, because we need
+// to set the 'skipTLSVerify' flag on the HTTP client itself distinct from the ACME client
 func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client {
-	return acmecl.NewInstrumentedClient(metrics,
+	return BuildHTTPClientWithCABundle(metrics, skipTLSVerify, nil)
+}
+
+// BuildHTTPClientWithCABundle returns a instrumented HTTP client to be used by an ACME
+// client, with an optional custom CA bundle set.
+// For the time being, we construct a new HTTP client on each invocation, because we need
+// to set the 'skipTLSVerify' flag and the CA bundle on the HTTP client itself, distinct
+// from the ACME client
+func BuildHTTPClientWithCABundle(metrics *metrics.Metrics, skipTLSVerify bool, caBundle []byte) *http.Client {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: skipTLSVerify,
+	}
+
+	// len also checks if the bundle is nil
+	if len(caBundle) > 0 {
+		pool := x509.NewCertPool()
+
+		// We only want tlsConfig.RootCAs to be non-nil if we added at least one custom
+		// CA to "pool".
+		if ok := pool.AppendCertsFromPEM(caBundle); ok {
+			tlsConfig.RootCAs = pool
+		}
+	}
+
+	return acmecl.NewInstrumentedClient(
+		metrics,
 		&http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
@@ -71,12 +93,13 @@ func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client 
 					Timeout:   30 * time.Second,
 					KeepAlive: 30 * time.Second,
 				}).DialContext,
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: skipTLSVerify},
+				TLSClientConfig:       tlsConfig,
 				MaxIdleConns:          100,
 				IdleConnTimeout:       90 * time.Second,
 				TLSHandshakeTimeout:   10 * time.Second,
 				ExpectContinueTimeout: 1 * time.Second,
 			},
 			Timeout: defaultACMEHTTPTimeout,
-		})
+		},
+	)
 }

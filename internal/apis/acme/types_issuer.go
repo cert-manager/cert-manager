@@ -49,12 +49,22 @@ type ACMEIssuer struct {
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	PreferredChain string
 
-	// Enables or disables validation of the ACME server TLS certificate.
-	// If true, requests to the ACME server will not have their TLS certificate
-	// validated (i.e. insecure connections will be allowed).
+	// Base64-encoded bundle of PEM CAs which can be used to validate the certificate
+	// chain presented by the ACME server.
+	// Mutually exclusive with SkipTLSVerify; prefer using CABundle to prevent various
+	// kinds of security vulnerabilities.
+	// If CABundle and SkipTLSVerify are unset, the system certificate bundle inside
+	// the container is used to validate the TLS connection.
+	CABundle []byte
+
+	// INSECURE: Enables or disables validation of the ACME server TLS certificate.
+	// If true, requests to the ACME server will not have the TLS certificate chain
+	// validated.
+	// Mutually exclusive with CABundle; prefer using CABundle to prevent various
+	// kinds of security vulnerabilities.
 	// Only enable this option in development environments.
-	// The cert-manager system installed roots will be used to verify connections
-	// to the ACME server if this is false.
+	// If CABundle and SkipTLSVerify are unset, the system certificate bundle inside
+	// the container is used to validate the TLS connection.
 	// Defaults to false.
 	SkipTLSVerify bool
 
