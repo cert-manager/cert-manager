@@ -31,7 +31,7 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.5.1
 
-K8S_CODEGEN_VERSION=v0.25.2
+K8S_CODEGEN_VERSION=v0.26.0
 
 KUBEBUILDER_ASSETS_VERSION=1.25.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)

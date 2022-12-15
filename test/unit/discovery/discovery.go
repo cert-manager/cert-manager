@@ -101,6 +101,12 @@ func (d *Discovery) OpenAPIV3() openapi.Client {
 	return d.openAPIV3SchemaFn()
 }
 
+func (d *Discovery) WithLegacy() discovery.DiscoveryInterface {
+	// setting the discovery client to legacy mode (not using the aggregated discovery client) doesn't
+	// make any difference for our testing purposes here, so we just return the same discovery client
+	return d
+}
+
 func (d *Discovery) RESTClient() restclient.Interface {
 	return d.restClientFn()
 }
