@@ -63,6 +63,12 @@ LATEST_123_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_123_TAG)
 LATEST_124_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_124_TAG)
 LATEST_125_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_125_TAG)
 
+# k8s 1.26 is manually added for now, pending a wider rethink of how we can automate bumping of kind images
+# given that kind release notes say there are specific digests which should be used with specific kind releases
+
+LATEST_126_TAG=v1.26.0
+LATEST_126_DIGEST=sha256:691e24bd2417609db7e589e1a479b902d2e209892a10ce375fab60a8407c7352
+
 cat << EOF > ./make/kind_images.sh
 # Copyright 2022 The cert-manager Authors.
 #
@@ -87,6 +93,9 @@ KIND_IMAGE_K8S_123=$KIND_IMAGE_REPO@$LATEST_123_DIGEST
 KIND_IMAGE_K8S_124=$KIND_IMAGE_REPO@$LATEST_124_DIGEST
 KIND_IMAGE_K8S_125=$KIND_IMAGE_REPO@$LATEST_125_DIGEST
 
+# Manually set - see hack/latest-kind-images.sh for details
+KIND_IMAGE_K8S_126=$KIND_IMAGE_REPO@$LATEST_126_DIGEST
+
 # $KIND_IMAGE_REPO:$LATEST_120_TAG
 KIND_IMAGE_SHA_K8S_120=$LATEST_120_DIGEST
 
@@ -105,6 +114,10 @@ KIND_IMAGE_SHA_K8S_124=$LATEST_124_DIGEST
 # $KIND_IMAGE_REPO:$LATEST_125_TAG
 KIND_IMAGE_SHA_K8S_125=$LATEST_125_DIGEST
 
+# Manually set - see hack/latest-kind-images.sh for details
+# $KIND_IMAGE_REPO:$LATEST_126_TAG
+KIND_IMAGE_SHA_K8S_126=$LATEST_126_DIGEST
+
 # note that these 'full' digests should be avoided since not all tools support them
 # prefer KIND_IMAGE_K8S_*** instead
 KIND_IMAGE_FULL_K8S_120=$KIND_IMAGE_REPO:$LATEST_120_TAG@$LATEST_120_DIGEST
@@ -113,6 +126,9 @@ KIND_IMAGE_FULL_K8S_122=$KIND_IMAGE_REPO:$LATEST_122_TAG@$LATEST_122_DIGEST
 KIND_IMAGE_FULL_K8S_123=$KIND_IMAGE_REPO:$LATEST_123_TAG@$LATEST_123_DIGEST
 KIND_IMAGE_FULL_K8S_124=$KIND_IMAGE_REPO:$LATEST_124_TAG@$LATEST_124_DIGEST
 KIND_IMAGE_FULL_K8S_125=$KIND_IMAGE_REPO:$LATEST_125_TAG@$LATEST_125_DIGEST
+
+# Manually set - see hack/latest-kind-images.sh for details
+KIND_IMAGE_FULL_K8S_126=$KIND_IMAGE_REPO:$LATEST_126_TAG@$LATEST_126_DIGEST
 
 EOF
 
