@@ -88,7 +88,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("caBundle"), caBundle, "specified caBundle and caBundleSecretRef cannot be used together"),
+				field.Invalid(fldPath.Child("caBundle"), "<snip>", "specified caBundle and caBundleSecretRef cannot be used together"),
 				field.Invalid(fldPath.Child("caBundleSecretRef"), "test-secret", "specified caBundleSecretRef and caBundle cannot be used together"),
 			},
 		},
@@ -102,14 +102,14 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("path"), ""),
 			},
 		},
-		"vault issuer with invalid fields": {
+		"vault issuer with a CA bundle containing no valid certificates": {
 			spec: &cmapi.VaultIssuer{
 				Server:   "something",
 				Path:     "a/b/c",
 				CABundle: []byte("invalid"),
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"),
+				field.Invalid(fldPath.Child("caBundle"), "<snip>", "cert bundle didn't contain any valid certificates"),
 			},
 		},
 	}
