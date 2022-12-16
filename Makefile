@@ -71,6 +71,7 @@ include make/licenses.mk
 include make/e2e-setup.mk
 include make/scan.mk
 include make/legacy.mk
+include make/ko.mk
 include make/help.mk
 
 .PHONY: clean
