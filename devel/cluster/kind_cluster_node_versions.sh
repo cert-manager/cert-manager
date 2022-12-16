@@ -21,6 +21,9 @@ KIND_IMAGE_K8S_123=docker.io/kindest/node@sha256:9402cf1330bbd3a0d097d2033fa489b
 KIND_IMAGE_K8S_124=docker.io/kindest/node@sha256:97e8d00bc37a7598a0b32d1fabd155a96355c49fa0d4d4790aab0f161bf31be1
 KIND_IMAGE_K8S_125=docker.io/kindest/node@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace
 
+# Manually set - see hack/latest-kind-images.sh for details
+KIND_IMAGE_K8S_126=docker.io/kindest/node@sha256:691e24bd2417609db7e589e1a479b902d2e209892a10ce375fab60a8407c7352
+
 # docker.io/kindest/node:v1.20.15
 KIND_IMAGE_SHA_K8S_120=sha256:d67de8f84143adebe80a07672f370365ec7d23f93dc86866f0e29fa29ce026fe
 
@@ -39,6 +42,9 @@ KIND_IMAGE_SHA_K8S_124=sha256:97e8d00bc37a7598a0b32d1fabd155a96355c49fa0d4d4790a
 # docker.io/kindest/node:v1.25.2
 KIND_IMAGE_SHA_K8S_125=sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace
 
+# Manually set - see hack/latest-kind-images.sh for details
+KIND_IMAGE_SHA_K8S_126=sha256:691e24bd2417609db7e589e1a479b902d2e209892a10ce375fab60a8407c7352
+
 # note that these 'full' digests should be avoided since not all tools support them
 # prefer KIND_IMAGE_K8S_*** instead
 KIND_IMAGE_FULL_K8S_120=docker.io/kindest/node:v1.20.15@sha256:d67de8f84143adebe80a07672f370365ec7d23f93dc86866f0e29fa29ce026fe
@@ -48,3 +54,5 @@ KIND_IMAGE_FULL_K8S_123=docker.io/kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d
 KIND_IMAGE_FULL_K8S_124=docker.io/kindest/node:v1.24.6@sha256:97e8d00bc37a7598a0b32d1fabd155a96355c49fa0d4d4790aab0f161bf31be1
 KIND_IMAGE_FULL_K8S_125=docker.io/kindest/node:v1.25.2@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace
 
+# Manually set - see hack/latest-kind-images.sh for details
+KIND_IMAGE_FULL_K8S_126=docker.io/kindest/node:v1.26.0@sha256:691e24bd2417609db7e589e1a479b902d2e209892a10ce375fab60a8407c7352
