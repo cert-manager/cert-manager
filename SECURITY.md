@@ -25,6 +25,24 @@ All that said, **if you're unsure** please reach out using this process before
 raising your issue through another channel. We'd rather err on the side of
 caution!
 
+### Explicitly Not Covered: Vulnerability Scanner Reports
+
+We do not accept reports which amount to copy and pasted output from a vulnerability
+scanning tool **unless** work has specifically been done to confirm that a vulnerability
+reported by the tool _actually exists_ in cert-manager or a cert-manager subproject.
+
+We make use of these tools ourselves and try to act on the output they produce; they
+can be useful! We tend to find, however, that when these reports are sent to our security
+mailing list they almost always represent false positives, since these tools tend to check
+for the presence of a library without considering how the library is used in context.
+
+If we receive a report which seems to simply be a vulnerability list from a scanner we
+reserve the right to ignore it.
+
+This applies especially when tools produce vulnerability identifiers which are not publicly
+visible or which are proprietary in some way. We can look up CVEs or other publicly-available
+identifiers for further details, but cannot do the same for proprietary identifiers.
+
 ## Security Contacts
 
 The people who should have access to read your security report are listed in
