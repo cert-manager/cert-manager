@@ -315,7 +315,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 7.8.1 \
+		--version 10.0.1 \
 		--namespace projectcontour \
 		--create-namespace \
 		--set contour.ingressClass.create=false \
