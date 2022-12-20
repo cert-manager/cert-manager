@@ -38,7 +38,7 @@ require (
 	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.97.0
-	helm.sh/helm/v3 v3.10.0
+	helm.sh/helm/v3 v3.10.3
 	k8s.io/api v0.26.0
 	k8s.io/apiextensions-apiserver v0.26.0
 	k8s.io/apimachinery v0.26.0
