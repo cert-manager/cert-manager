@@ -88,7 +88,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("caBundle"), caBundle, "specified caBundle and caBundleSecretRef cannot be used together"),
+				field.Invalid(fldPath.Child("caBundle"), "<snip>", "specified caBundle and caBundleSecretRef cannot be used together"),
 				field.Invalid(fldPath.Child("caBundleSecretRef"), "test-secret", "specified caBundleSecretRef and caBundle cannot be used together"),
 			},
 		},
@@ -102,14 +102,14 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("path"), ""),
 			},
 		},
-		"vault issuer with invalid fields": {
+		"vault issuer with a CA bundle containing no valid certificates": {
 			spec: &cmapi.VaultIssuer{
 				Server:   "something",
 				Path:     "a/b/c",
 				CABundle: []byte("invalid"),
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"),
+				field.Invalid(fldPath.Child("caBundle"), "<snip>", "cert bundle didn't contain any valid certificates"),
 			},
 		},
 	}
@@ -132,6 +132,12 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 
 func TestValidateACMEIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("")
+
+	caBundle := unitcrypto.MustCreateCryptoBundle(t,
+		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
+		clock.RealClock{},
+	).CertBytes
+
 	scenarios := map[string]struct {
 		spec     *cmacme.ACMEIssuer
 		errs     []*field.Error
@@ -145,6 +151,44 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"),
 				field.Required(fldPath.Child("server"), "acme server URL is a required field"),
+			},
+		},
+		"acme issuer with an invalid CA bundle": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				CABundle:   []byte("abc123"),
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "", "cert bundle didn't contain any valid certificates"),
+			},
+		},
+		"acme issuer with both a CA bundle and SkipTLSVerify": {
+			spec: &cmacme.ACMEIssuer{
+				Email:         "valid-email",
+				Server:        "valid-server",
+				CABundle:      caBundle,
+				SkipTLSVerify: true,
+				PrivateKey:    validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "", "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"),
+				field.Invalid(fldPath.Child("skipTLSVerify"), true, "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"),
 			},
 		},
 		"acme solver without any config": {

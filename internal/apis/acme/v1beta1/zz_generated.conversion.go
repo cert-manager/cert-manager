@@ -876,6 +876,7 @@ func autoConvert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(in *ACMEIssuer, out *acme
 	out.Email = in.Email
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
@@ -909,6 +910,7 @@ func autoConvert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(in *acme.ACMEIssuer, out 
 	out.Email = in.Email
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding

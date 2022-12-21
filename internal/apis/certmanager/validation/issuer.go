@@ -105,10 +105,24 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 
 func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, []string) {
 	var warnings []string
+
 	el := field.ErrorList{}
+
+	if len(iss.CABundle) > 0 && iss.SkipTLSVerify {
+		el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"))
+		el = append(el, field.Invalid(fldPath.Child("skipTLSVerify"), iss.SkipTLSVerify, "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"))
+	}
+
+	if len(iss.CABundle) > 0 {
+		if err := validateCABundleNotEmpty(iss.CABundle); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", err.Error()))
+		}
+	}
+
 	if len(iss.PrivateKey.Name) == 0 {
 		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
 	}
+
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
 	}
@@ -226,36 +240,40 @@ func ValidateSelfSignedIssuerConfig(iss *certmanager.SelfSignedIssuer, fldPath *
 
 func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
+
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), ""))
 	}
+
 	if len(iss.Path) == 0 {
 		el = append(el, field.Required(fldPath.Child("path"), ""))
 	}
 
-	// check if caBundle is valid
-	certs := iss.CABundle
-	if len(certs) > 0 {
-		caCertPool := x509.NewCertPool()
-		ok := caCertPool.AppendCertsFromPEM(certs)
-		if !ok {
-			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+	if len(iss.CABundle) > 0 {
+		if err := validateCABundleNotEmpty(iss.CABundle); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "<snip>", err.Error()))
 		}
 	}
 
 	if len(iss.CABundle) > 0 && iss.CABundleSecretRef != nil {
-		el = append(el, field.Invalid(fldPath.Child("caBundle"), iss.CABundle, "specified caBundle and caBundleSecretRef cannot be used together"))
+		// We don't use iss.CABundle for the "value interface{}" argument to field.Invalid for caBundle
+		// since printing the whole bundle verbatim won't help diagnose any issues
+		el = append(el, field.Invalid(fldPath.Child("caBundle"), "<snip>", "specified caBundle and caBundleSecretRef cannot be used together"))
 		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), iss.CABundleSecretRef.Name, "specified caBundleSecretRef and caBundle cannot be used together"))
 	}
 
-	return el
 	// TODO: add validation for Vault authentication types
+
+	return el
 }
 
 func ValidateVenafiTPP(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el field.ErrorList) {
 	if tpp.URL == "" {
 		el = append(el, field.Required(fldPath.Child("url"), ""))
 	}
+
+	// TODO: validate CABundle using validateCABundleNotEmpty
+
 	return el
 }
 
@@ -499,4 +517,23 @@ func ValidateSecretKeySelector(sks *cmmeta.SecretKeySelector, fldPath *field.Pat
 		el = append(el, field.Required(fldPath.Child("key"), "secret key is required"))
 	}
 	return el
+}
+
+// validateCABundleNotEmpty performs a soft check on the CA bundle to see if there's at least one
+// valid CA certificate inside.
+// This uses the standard library crypto/x509.CertPool.AppendCertsFromPEM function, which
+// skips over invalid certificates rather than rejecting them.
+func validateCABundleNotEmpty(bundle []byte) error {
+	// TODO: Change this function to actually validate certificates so that invalid certs
+	// are rejected or at least warned on.
+	// For example, something like: https://github.com/cert-manager/trust-manager/blob/21c839ff1128990e049eaf23000a9a8d6716c89e/pkg/util/pem.go#L26-L81
+
+	pool := x509.NewCertPool()
+
+	ok := pool.AppendCertsFromPEM(bundle)
+	if !ok {
+		return fmt.Errorf("cert bundle didn't contain any valid certificates")
+	}
+
+	return nil
 }

@@ -155,7 +155,9 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// We could therefore move the removing of the client up to the start of
 	// this function.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
-	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
+
+	httpClient := accounts.BuildHTTPClientWithCABundle(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify, a.issuer.GetSpec().ACME.CABundle)
+
 	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
 
 	// TODO: perform a complex check to determine whether we need to verify
