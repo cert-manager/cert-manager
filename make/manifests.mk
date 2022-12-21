@@ -41,23 +41,23 @@ release-manifests: $(BINDIR)/scratch/cert-manager-manifests-unsigned.tar.gz
 ## @category Release
 release-manifests-signed: $(BINDIR)/release/cert-manager-manifests.tar.gz $(BINDIR)/metadata/cert-manager-manifests.tar.gz.metadata.json
 
-$(BINDIR)/release/cert-manager-manifests.tar.gz: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov | $(BINDIR)/scratch/manifests $(BINDIR)/release
-	mkdir -p $(BINDIR)/scratch/manifests/deploy/chart/
-	mkdir -p $(BINDIR)/scratch/manifests/deploy/manifests/
-	cp $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov $(BINDIR)/scratch/manifests/deploy/chart/
-	cp $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/manifests/deploy/manifests/
+$(BINDIR)/release/cert-manager-manifests.tar.gz: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov | $(BINDIR)/scratch/manifests-signed $(BINDIR)/release
+	mkdir -p $(BINDIR)/scratch/manifests-signed/deploy/chart/
+	mkdir -p $(BINDIR)/scratch/manifests-signed/deploy/manifests/
+	cp $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz.prov $(BINDIR)/scratch/manifests-signed/deploy/chart/
+	cp $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/manifests-signed/deploy/manifests/
 	# removes leading ./ from archived paths
-	find $(BINDIR)/scratch/manifests -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(BINDIR)/scratch/manifests -T -
-	rm -rf $(BINDIR)/scratch/manifests
+	find $(BINDIR)/scratch/manifests-signed -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(BINDIR)/scratch/manifests-signed -T -
+	rm -rf $(BINDIR)/scratch/manifests-signed
 
-$(BINDIR)/scratch/cert-manager-manifests-unsigned.tar.gz: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml | $(BINDIR)/scratch/manifests
-	mkdir -p $(BINDIR)/scratch/manifests/deploy/chart/
-	mkdir -p $(BINDIR)/scratch/manifests/deploy/manifests/
-	cp $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/scratch/manifests/deploy/chart/
-	cp $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/manifests/deploy/manifests/
+$(BINDIR)/scratch/cert-manager-manifests-unsigned.tar.gz: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml | $(BINDIR)/scratch/manifests-unsigned
+	mkdir -p $(BINDIR)/scratch/manifests-unsigned/deploy/chart/
+	mkdir -p $(BINDIR)/scratch/manifests-unsigned/deploy/manifests/
+	cp $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz $(BINDIR)/scratch/manifests-unsigned/deploy/chart/
+	cp $(BINDIR)/yaml/cert-manager.crds.yaml $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/manifests-unsigned/deploy/manifests/
 	# removes leading ./ from archived paths
-	find $(BINDIR)/scratch/manifests -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(BINDIR)/scratch/manifests -T -
-	rm -rf $(BINDIR)/scratch/manifests
+	find $(BINDIR)/scratch/manifests-unsigned -maxdepth 1 -mindepth 1 | sed 's|.*/||' | tar czf $@ -C $(BINDIR)/scratch/manifests-unsigned -T -
+	rm -rf $(BINDIR)/scratch/manifests-unsigned
 
 # This metadata blob is constructed slightly differently and doesn't use hack/artifact-metadata.template.json directly;
 # this is because the bazel staged releases didn't include an "os" or "architecture" field for this artifact
@@ -164,7 +164,10 @@ $(BINDIR)/helm/cert-manager/templates:
 $(BINDIR)/scratch/yaml:
 	@mkdir -p $@
 
-$(BINDIR)/scratch/manifests:
+$(BINDIR)/scratch/manifests-unsigned:
+	@mkdir -p $@
+
+$(BINDIR)/scratch/manifests-signed:
 	@mkdir -p $@
 
 $(BINDIR)/yaml/templated-crds:
