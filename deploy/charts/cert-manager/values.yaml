@@ -501,6 +501,20 @@ cainjector:
   # Automounting API credentials for a particular pod
   # automountServiceAccountToken: true
 
+acmesolver:
+  image:
+    repository: quay.io/jetstack/cert-manager-acmesolver
+    # You can manage a registry with
+    # registry: quay.io
+    # repository: jetstack/cert-manager-acmesolver
+
+    # Override the image tag to deploy by setting this variable.
+    # If no value is set, the chart's appVersion will be used.
+    # tag: canary
+
+    # Setting a digest will override any tag
+    # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+
 # This startupapicheck is a Helm post-install hook that waits for the webhook
 # endpoints to become available.
 # The check is implemented using a Kubernetes Job- if you are injecting mesh

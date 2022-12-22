@@ -192,6 +192,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | refer to [Default Security Contexts](#default-security-contexts) |
+| `acmesolver.image.repository` | acmesolver image repository | `quay.io/jetstack/cert-manager-acmesolver` |
+| `acmesolver.image.tag` | acmesolver image tag | `{{RELEASE_VERSION}}` |
+| `acmesolver.image.pullPolicy` | acmesolver image pull policy | `IfNotPresent` |
 | `startupapicheck.enabled` | Toggles whether the startupapicheck Job should be installed | `true` |
 | `startupapicheck.securityContext` | Security context for startupapicheck pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
 | `startupapicheck.containerSecurityContext` | Security context to be set on startupapicheck component container | refer to [Default Security Contexts](#default-security-contexts) |
