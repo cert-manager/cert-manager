@@ -92,7 +92,7 @@ spec:
           {{- end }}
           {{- with .Values.cainjector.volumeMounts }}
           volumeMounts:
-            {{- toYaml . | nindent 10 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
       {{- with .Values.cainjector.nodeSelector }}
       nodeSelector:

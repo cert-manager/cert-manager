@@ -153,7 +153,7 @@ spec:
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- if (gt (len .Values.webhook.volumeMounts) 0) }}
-            {{- toYaml .Values.webhook.volumeMounts | nindent 10 }}
+            {{- toYaml .Values.webhook.volumeMounts | nindent 12 }}
             {{- end }}
           {{- end }}
       {{- with .Values.webhook.nodeSelector }}
