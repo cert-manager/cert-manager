@@ -1,0 +1,81 @@
+{{- if .Values.global.rbac.create }}
+# Challenges controller role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-challenges
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  # Use to update challenge resource status
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges", "challenges/status"]
+    verbs: ["update", "patch"]
+  # Used to watch challenge resources
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges"]
+    verbs: ["get", "list", "watch"]
+  # Used to watch challenges, issuer and clusterissuer resources
+  - apiGroups: ["cert-manager.io"]
+    resources: ["issuers", "clusterissuers"]
+    verbs: ["get", "list", "watch"]
+  # Need to be able to retrieve ACME account private key to complete challenges
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  # Used to create events
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # HTTP01 rules
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+  - apiGroups: [ "gateway.networking.k8s.io" ]
+    resources: [ "httproutes" ]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+  # We require the ability to specify a custom hostname when we are creating
+  # new ingress resources.
+  # See: https://github.com/openshift/origin/blob/21f191775636f9acadb44fa42beeb4f75b255532/pkg/route/apiserver/admission/ingress_admission.go#L84-L148
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes/custom-host"]
+    verbs: ["create"]
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges/finalizers"]
+    verbs: ["update"]
+  # DNS01 rules (duplicated above)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-challenges
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-challenges
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+    kind: ServiceAccount
+{{- end }}

@@ -1,0 +1,39 @@
+{{- if .Values.global.rbac.create }}
+# Permission to approve CertificateRequests referencing cert-manager.io Issuers and ClusterIssuers
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-approve:cert-manager-io
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cert-manager"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["signers"]
+    verbs: ["approve"]
+    resourceNames: ["issuers.cert-manager.io/*", "clusterissuers.cert-manager.io/*"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-approve:cert-manager-io
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cert-manager"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-approve:cert-manager-io
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+    kind: ServiceAccount
+{{- end }}

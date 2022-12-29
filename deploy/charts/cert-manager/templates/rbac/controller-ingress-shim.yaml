@@ -1,0 +1,59 @@
+{{- if .Values.global.rbac.create }}
+# ingress-shim controller role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests"]
+    verbs: ["create", "update", "delete"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways", "httproutes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways/finalizers", "httproutes/finalizers"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+    kind: ServiceAccount
+{{- end }}

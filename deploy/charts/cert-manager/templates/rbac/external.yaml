@@ -1,0 +1,52 @@
+{{- if .Values.global.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-view
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+    {{- if .Values.global.rbac.aggregateClusterRoles }}
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    {{- end }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests", "issuers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges", "orders"]
+    verbs: ["get", "list", "watch"]
+
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-edit
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+    {{- if .Values.global.rbac.aggregateClusterRoles }}
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    {{- end }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests", "issuers"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates/status"]
+    verbs: ["update"]
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges", "orders"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+{{- end }}

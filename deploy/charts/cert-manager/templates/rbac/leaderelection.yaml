@@ -1,0 +1,46 @@
+{{- if .Values.global.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "cert-manager.fullname" . }}:leaderelection
+  namespace: {{ .Values.global.leaderElection.namespace }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["cert-manager-controller"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+
+---
+
+# grant cert-manager permission to manage the leaderelection configmap in the
+# leader election namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cert-manager.fullname" . }}:leaderelection
+  namespace: {{ .Values.global.leaderElection.namespace }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "cert-manager.fullname" . }}:leaderelection
+subjects:
+  - apiGroup: ""
+    kind: ServiceAccount
+    name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}

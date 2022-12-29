@@ -1,0 +1,47 @@
+{{- if .Values.global.rbac.create }}
+# Issuer controller role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-issuers
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["issuers", "issuers/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["issuers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-issuers
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-issuers
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+    kind: ServiceAccount
+{{- end }}

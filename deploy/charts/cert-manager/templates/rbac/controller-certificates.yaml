@@ -1,0 +1,56 @@
+{{- if .Values.global.rbac.create }}
+# Certificates controller role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-certificates
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificates/status", "certificaterequests", "certificaterequests/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests", "clusterissuers", "issuers"]
+    verbs: ["get", "list", "watch"]
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates/finalizers", "certificaterequests/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["orders"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-certificates
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-certificates
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+    kind: ServiceAccount
+{{- end }}
