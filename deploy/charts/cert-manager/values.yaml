@@ -424,6 +424,9 @@ webhook:
       - ipBlock:
           cidr: 0.0.0.0/0
 
+  volumes: []
+  volumeMounts: []
+
 cainjector:
   enabled: true
   replicaCount: 1
@@ -511,6 +514,9 @@ cainjector:
 
   # Automounting API credentials for a particular pod
   # automountServiceAccountToken: true
+
+  volumes: []
+  volumeMounts: []
 
 acmesolver:
   image:
@@ -609,6 +615,9 @@ startupapicheck:
       helm.sh/hook-weight: "-5"
       helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 
+  # Automounting API credentials for a particular pod
+  # automountServiceAccountToken: true
+
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
@@ -628,3 +637,6 @@ startupapicheck:
 
     # Optional additional labels to add to the startupapicheck's ServiceAccount
     # labels: {}
+
+  volumes: []
+  volumeMounts: []

@@ -146,10 +146,15 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.webhook.config }}
+          {{- if or .Values.webhook.config (gt (len .Values.webhook.volumeMounts) 0) }}
           volumeMounts:
+            {{- if .Values.webhook.config }}
             - name: config
               mountPath: /var/cert-manager/config
+            {{- end }}
+            {{- if (gt (len .Values.webhook.volumeMounts) 0) }}
+            {{- toYaml .Values.webhook.volumeMounts | nindent 10 }}
+            {{- end }}
           {{- end }}
       {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
@@ -167,9 +172,14 @@ spec:
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.webhook.config }}
+      {{- if or .Values.webhook.config (gt (len .Values.webhook.volumes) 0) }}
       volumes:
+        {{- if .Values.webhook.config }}
         - name: config
           configMap:
             name: {{ include "webhook.fullname" . }}
+        {{- end }}
+        {{- if (gt (len .Values.webhook.volumes) 0) }}
+        {{- toYaml .Values.webhook.volumes | nindent 8 }}
+        {{- end }}
       {{- end }}
