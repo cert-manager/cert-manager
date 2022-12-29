@@ -93,6 +93,9 @@ spec:
           {{- with .Values.acmesolver.image }}
           - --acme-http01-solver-image={{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{ .digest }}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}
           {{- end }}
+          {{- if gt (len .Values.disableControllers) 0 }}
+          - --controllers=*,-{{ join ",-" .Values.disableControllers }}
+          {{- end }}
           {{- with .Values.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}

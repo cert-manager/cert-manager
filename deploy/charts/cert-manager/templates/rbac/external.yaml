@@ -18,9 +18,16 @@ rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "issuers"]
     verbs: ["get", "list", "watch"]
+{{- if not (has "orders" .Values.disableControllers) }}
   - apiGroups: ["acme.cert-manager.io"]
-    resources: ["challenges", "orders"]
+    resources: ["orders"]
     verbs: ["get", "list", "watch"]
+{{- end }}
+{{- if not (has "challenges" .Values.disableControllers) }}
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges"]
+    verbs: ["get", "list", "watch"]
+{{- end }}
 
 
 ---
@@ -46,7 +53,14 @@ rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates/status"]
     verbs: ["update"]
+{{- if not (has "orders" .Values.disableControllers) }}
   - apiGroups: ["acme.cert-manager.io"]
-    resources: ["challenges", "orders"]
+    resources: ["orders"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
+{{- end }}
+{{- if not (has "challenges" .Values.disableControllers) }}
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["challenges"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+{{- end }}
 {{- end }}

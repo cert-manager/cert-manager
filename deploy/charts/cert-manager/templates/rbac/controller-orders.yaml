@@ -1,4 +1,4 @@
-{{- if .Values.global.rbac.create }}
+{{- if and .Values.global.rbac.create (not (has "orders" .Values.disableControllers)) }}
 # Orders controller role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

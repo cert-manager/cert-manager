@@ -67,6 +67,12 @@ featureGates: ""
 # The maximum number of challenges that can be scheduled as 'processing' at once
 maxConcurrentChallenges: 60
 
+# Use to disable specific controllers, including any of the following also affects RBAC:
+# * ingress-shim
+# * challenges
+# * orders
+disableControllers: []
+
 image:
   repository: quay.io/jetstack/cert-manager-controller
   # You can manage a registry with

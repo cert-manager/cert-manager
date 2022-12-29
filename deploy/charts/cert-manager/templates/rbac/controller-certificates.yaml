@@ -23,9 +23,11 @@ rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates/finalizers", "certificaterequests/finalizers"]
     verbs: ["update"]
+{{- if not (has "orders" .Values.disableControllers) }}
   - apiGroups: ["acme.cert-manager.io"]
     resources: ["orders"]
     verbs: ["create", "delete", "get", "list", "watch"]
+{{- end }}
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
