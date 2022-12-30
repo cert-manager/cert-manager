@@ -124,6 +124,22 @@ resources: {}
   #   cpu: 10m
   #   memory: 32Mi
 
+## Liveness and readiness probe values
+## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+livenessProbe: {}
+  # httpGet:
+  #   path: /
+  #   port: http-metrics
+  # initialDelaySeconds: 10
+  # periodSeconds: 5
+readinessProbe: {}
+  # httpGet:
+  #   path: /
+  #   port: http-metrics
+  # initialDelaySeconds: 10
+  # periodSeconds: 5
+
 # Pod Security Context
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 securityContext:
@@ -422,6 +438,13 @@ cainjector:
     # rollingUpdate:
     #   maxSurge: 0
     #   maxUnavailable: 1
+
+  ## Liveness and readiness probe values
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  livenessProbe: {}
+
+  readinessProbe: {}
 
   # Pod Security Context to be set on the cainjector component Pod
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/

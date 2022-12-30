@@ -100,6 +100,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `volumes` | Optional volumes for cert-manager | `[]` |
 | `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
+| `livenessProbe` | Define livenessProbe for cert-manager | `{}` |
+| `readinessProbe` | Define readinessProbe for cert-manager | `{}` |
 | `securityContext` | Security context for the controller pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
 | `containerSecurityContext` | Security context to be set on the controller component container | refer to [Default Security Contexts](#default-security-contexts) |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
@@ -190,6 +192,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `{{RELEASE_VERSION}}` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
+| `cainjector.livenessProbe` | Define livenessProbe for cainjector | `{}` |
+| `cainjector.readinessProbe` | Define readinessProbe for cainjector | `{}` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | refer to [Default Security Contexts](#default-security-contexts) |
 | `acmesolver.image.repository` | acmesolver image repository | `quay.io/jetstack/cert-manager-acmesolver` |
