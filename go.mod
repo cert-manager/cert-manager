@@ -7,7 +7,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/Venafi/vcert/v4 v4.22.1
+	github.com/Venafi/vcert/v4 v4.23.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.1
 	github.com/aws/aws-sdk-go v1.44.105
 	github.com/cloudflare/cloudflare-go v0.50.0
