@@ -69,12 +69,18 @@ BINDIR=${BINDIR:-$_default_bindir}
 #  [5]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507011895024947200
 #  [6]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507019887451574272
 #  [7]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507040653668782080
+
 nodes=20
+
 flake_attempts=1
+
 ginkgo_skip=
 ginkgo_focus=
+
 feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,LiteralCertificateSubject=true
+
 artifacts="./$BINDIR/artifacts"
+
 help() {
   cat <<EOF | color ""
 Runs the end-to-end test suite against an already configured kind cluster.
@@ -170,22 +176,28 @@ if [[ "${ginkgo_args[*]}" =~ ginkgo.focus ]]; then
   ginkgo_args+=(--ginkgo.v --test.v)
 fi
 
+ginkgo_color=
+
+if ! should_color; then
+	ginkgo_color="--no-color"
+fi
+
 mkdir -p "$artifacts"
 
 export CGO_ENABLED=0
 
 trace ginkgo \
-  -tags=e2e_test \
-  -procs="$nodes" \
-  -output-dir="$artifacts" \
-  -junit-report="junit__01.xml" \
-  -flake-attempts="$flake_attempts" \
-  -timeout="24h" \
+  --tags=e2e_test \
+  --procs="$nodes" \
+  --output-dir="$artifacts" \
+  --junit-report="junit__01.xml" \
+  --flake-attempts="$flake_attempts" \
+  --timeout="1h" \
+  $ginkgo_color \
   -v \
-  -randomize-all \
-  -progress \
-  -trace \
-  -slow-spec-threshold="${GINKGO_SLOW_SPEC_THRESHOLD:-300s}" \
+  --randomize-all \
+  --trace \
+  --poll-progress-after=60s \
   ./test/e2e/ \
   -- \
   --repo-root="$PWD" \

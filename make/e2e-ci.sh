@@ -15,5 +15,13 @@
 # limitations under the License.
 
 set -o errexit
+
 trap 'make kind-logs' EXIT
-make --no-print-directory e2e FLAKE_ATTEMPTS=2 K8S_VERSION="$(K8S_VERSION)"
+
+# Note: We set CI here, even though it should be set by Prow, which is the cert-manager CI test runner
+# See the list of defined variables here: https://docs.prow.k8s.io/docs/jobs/#job-environment-variables
+# We explicitly set CI here because it helps with local testing
+# (i.e. "I want to run the exact same e2e test that will be run in CI")
+# and because it allows us to be explicit about where it's getting set when we call "make e2e-ci"
+
+make --no-print-directory e2e FLAKE_ATTEMPTS=2 CI=true K8S_VERSION="$(K8S_VERSION)"
