@@ -65,4 +65,4 @@ ko-deploy-certmanager: $(BINDIR)/cert-manager.tgz $(KO_IMAGE_REFS)
 		--set startupapicheck.image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/ctl.yaml)" \
 		--set startupapicheck.image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/ctl.yaml)" \
 		--set installCRDs=true \
-		--set "extraArgs={--acme-http01-solver-image=$(ACME_HTTP01_SOLVER_IMAGE)}" \
+		--set "extraArgs={--acme-http01-solver-image=$(ACME_HTTP01_SOLVER_IMAGE)}"
