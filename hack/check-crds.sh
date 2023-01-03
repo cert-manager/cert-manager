@@ -41,7 +41,7 @@ fi
 
 echo "+++ verifying that generated CRDs are up-to-date..." >&2
 
-tmpdir="$(mktemp -d)"
+tmpdir="$(mktemp -d tmp-CHECKCRD-XXXXXXXXX --tmpdir)"
 trap 'rm -r $tmpdir' EXIT
 
 make PATCH_CRD_OUTPUT_DIR=$tmpdir patch-crds
