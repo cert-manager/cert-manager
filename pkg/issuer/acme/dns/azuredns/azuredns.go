@@ -13,6 +13,7 @@ package azuredns
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -70,6 +71,41 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		zoneName:          zoneName,
 		log:               logf.Log.WithName("azure-dns"),
 	}, nil
+}
+
+// Implements adal.TokenRefreshError
+type tokenRefreshError struct {
+	Message string
+	Resp    *http.Response
+}
+
+func (tre tokenRefreshError) Error() string {
+	return tre.Message
+}
+
+func (tre tokenRefreshError) Response() *http.Response {
+	return tre.Resp
+}
+
+// suppressMessageInTokenRefreshError can be used to suppress error message contents in adal.TokenRefreshError to prevent early
+// reconciliations in controller due to CR status updates with unique data (such as timestamp, Trace ID) present in response body
+func suppressMessageInTokenRefreshError(originalError error) error {
+	if originalError == nil {
+		return nil
+	}
+
+	// No need to overwrite errors of another type
+	tre, ok := originalError.(adal.TokenRefreshError)
+	if !ok {
+		return originalError
+	}
+
+	err := tokenRefreshError{
+		Message: "failed to refresh token",
+		Resp:    tre.Response(),
+	}
+
+	return err
 }
 
 // getFederatedSPT prepares an SPT for a Workload Identity-enabled setup
@@ -150,7 +186,8 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 			// RefreshToken is absent from responses.
 			err = newSPT.Refresh()
 			if err != nil {
-				return nil, err
+				logf.Log.V(logf.ErrorLevel).Error(err, "failed to refresh token")
+				return nil, suppressMessageInTokenRefreshError(err)
 			}
 
 			accessToken := newSPT.Token()
