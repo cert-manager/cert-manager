@@ -46,7 +46,7 @@ $(KO_IMAGE_REFS): _bin/scratch/ko/%.yaml: FORCE | $(NEEDS_KO) $(NEEDS_YQ)
 ## @category Experimental/ko
 ko-images-push: $(KO_IMAGE_REFS)
 
-.PHONY: ko-deploy-cert-manager
+.PHONY: ko-deploy-certmanager
 ## Deploy cert-manager after pushing docker images to an OCI registry using ko.
 ## @category Experimental/ko
 ko-deploy-certmanager: $(BINDIR)/cert-manager.tgz $(KO_IMAGE_REFS)
