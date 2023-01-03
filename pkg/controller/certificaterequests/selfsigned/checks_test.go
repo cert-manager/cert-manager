@@ -225,6 +225,20 @@ func Test_certificatesRequestsForSecret(t *testing.T) {
 			},
 			expectedAffected: []*cmapi.CertificateRequest{},
 		},
+		"if issuer has different group, do nothing": {
+			existingCRs: []runtime.Object{
+				gen.CertificateRequest("a",
+					gen.SetCertificateRequestNamespace("test-namespace"),
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						"cert-manager.io/private-key-secret-name": "test-secret",
+					}), gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+						Name: "a", Kind: "Keith", Group: "not-cert-manager.io",
+					}),
+				),
+			},
+			existingIssuers:  []runtime.Object{},
+			expectedAffected: []*cmapi.CertificateRequest{},
+		},
 		"should not return requests which are in a different namespace": {
 			existingCRs: []runtime.Object{
 				gen.CertificateRequest("a",

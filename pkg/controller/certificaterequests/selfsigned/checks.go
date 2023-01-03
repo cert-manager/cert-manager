@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmdoc "github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientv1 "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -85,6 +86,11 @@ func certificateRequestsForSecret(log logr.Logger,
 	dbg.Info("checking if self signed certificate requests reference secret")
 	var affected []*cmapi.CertificateRequest
 	for _, request := range requests {
+		if request.Spec.IssuerRef.Group != cmdoc.GroupName {
+			dbg.Info("skipping SelfSigned secret reference checks since issuer has external group", "group", request.Spec.IssuerRef.Group)
+			continue
+		}
+
 		issuerObj, err := helper.GetGenericIssuer(request.Spec.IssuerRef, request.Namespace)
 		if k8sErrors.IsNotFound(err) {
 			dbg.Info("issuer not found, skipping")
