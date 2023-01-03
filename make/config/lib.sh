@@ -36,7 +36,18 @@ warn=
 wait=
 greencheck=
 redcross=
-if ! printenv NO_COLOR >/dev/null; then
+
+should_color() {
+	if [[ "${CI:-}" == "true" ]]; then
+		return 1
+	elif [[ "${NO_COLOR:-}" ]]; then
+		return 1
+	fi
+
+	return 0
+}
+
+if should_color >/dev/null; then
   red="\033[0;31m"
   green="\033[0;32m"
   yel="\033[0;33m"
