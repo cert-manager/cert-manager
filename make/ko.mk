@@ -46,7 +46,7 @@ $(KO_IMAGE_REFS): _bin/scratch/ko/%.yaml: FORCE | $(NEEDS_KO) $(NEEDS_YQ)
 ## @category Experimental/ko
 ko-images-push: $(KO_IMAGE_REFS)
 
-.PHONY: ko-deploy-cert-manager
+.PHONY: ko-deploy-certmanager
 ## Deploy cert-manager after pushing docker images to an OCI registry using ko.
 ## @category Experimental/ko
 ko-deploy-certmanager: $(BINDIR)/cert-manager.tgz $(KO_IMAGE_REFS)
@@ -65,4 +65,4 @@ ko-deploy-certmanager: $(BINDIR)/cert-manager.tgz $(KO_IMAGE_REFS)
 		--set startupapicheck.image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/ctl.yaml)" \
 		--set startupapicheck.image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/ctl.yaml)" \
 		--set installCRDs=true \
-		--set "extraArgs={--acme-http01-solver-image=$(ACME_HTTP01_SOLVER_IMAGE)}" \
+		--set "extraArgs={--acme-http01-solver-image=$(ACME_HTTP01_SOLVER_IMAGE)}"
