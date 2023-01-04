@@ -6,7 +6,7 @@
 ##  make ko-images-push KO_REGISTRY=<my-oci-registry>
 ##
 ##  # Build and Push images to an OCI registry and deploy cert-manager to the current cluster in KUBECONFIG
-##  make ko-deploy-certmanager KO_REGISTRY=<my-oci-registry>
+##  make ko-deploy-certmanager KO_REGISTRY=<my-oci-registry> [KO_HELM_VALUES_FILES=path/to/values.yaml]
 ##
 ## @category Experimental/ko
 
@@ -27,6 +27,11 @@ KO_PLATFORM ?= linux/amd64
 ## (optional) Which cert-manager images to build.
 ## @category Experimental/ko
 KO_BINS ?= controller acmesolver cainjector webhook ctl
+
+## (optional) Paths of Helm values files which will be supplied to `helm install
+## --values` flag by make ko-deploy-certmanager.
+## @category Experimental/ko
+KO_HELM_VALUES_FILES ?=
 
 export KOCACHE = $(BINDIR)/scratch/ko/cache
 
@@ -56,6 +61,7 @@ ko-deploy-certmanager: $(BINDIR)/cert-manager.tgz $(KO_IMAGE_REFS)
 		--create-namespace \
 		--wait \
 		--namespace cert-manager \
+		$(and $(KO_HELM_VALUES_FILES),--values $(KO_HELM_VALUES_FILES)) \
 		--set image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/controller.yaml)" \
 		--set image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/controller.yaml)" \
 		--set cainjector.image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/cainjector.yaml)" \
