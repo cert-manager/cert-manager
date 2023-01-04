@@ -28,9 +28,12 @@ spec:
   - 'downwardAPI'
   hostNetwork: {{ .Values.webhook.hostNetwork }}
   {{- if .Values.webhook.hostNetwork }}
+  {{- $config := default .Values.webhook.config "" }}
   hostPorts:
   - max: {{ .Values.webhook.securePort }}
     min: {{ .Values.webhook.securePort }}
+  - max: {{ $config.healthzPort | default 6080 }}
+    min: {{ $config.healthzPort | default 6080 }}
   {{- end }}
   hostIPC: false
   hostPID: false
