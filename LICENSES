@@ -145,8 +145,8 @@ github.com/monochromegane/go-gitignore,https://github.com/monochromegane/go-giti
 github.com/morikuni/aec,https://github.com/morikuni/aec/blob/v1.0.0/LICENSE,MIT
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/oklog/run,https://github.com/oklog/run/blob/v1.0.0/LICENSE,Apache-2.0
-github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.6.0/LICENSE,MIT
-github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.24.1/LICENSE,MIT
+github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.6.1/LICENSE,MIT
+github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.24.2/LICENSE,MIT
 github.com/opencontainers/go-digest,https://github.com/opencontainers/go-digest/blob/v1.0.0/LICENSE,Apache-2.0
 github.com/opencontainers/image-spec/specs-go,https://github.com/opencontainers/image-spec/blob/c5a74bcca799/LICENSE,Apache-2.0
 github.com/patrickmn/go-cache,https://github.com/patrickmn/go-cache/blob/v2.1.0/LICENSE,MIT
@@ -169,7 +169,7 @@ github.com/sergi/go-diff/diffmatchpatch,https://github.com/sergi/go-diff/blob/v1
 github.com/shopspring/decimal,https://github.com/shopspring/decimal/blob/v1.2.0/LICENSE,MIT
 github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.8.1/LICENSE,MIT
 github.com/spf13/cast,https://github.com/spf13/cast/blob/v1.4.1/LICENSE,MIT
-github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.6.0/LICENSE.txt,Apache-2.0
+github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.6.1/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 github.com/stoewer/go-strcase,https://github.com/stoewer/go-strcase/blob/v1.2.0/LICENSE,MIT
 github.com/xeipuuv/gojsonpointer,https://github.com/xeipuuv/gojsonpointer/blob/4e3ac2762d5f/LICENSE-APACHE-2.0.txt,Apache-2.0
@@ -198,7 +198,7 @@ go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.24.0/LICENSE.txt,MIT
 golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.1.0:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.4.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/f2134210:LICENSE,BSD-3-Clause
-golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/7f9b1623:LICENSE,BSD-3-Clause
+golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.1.0:LICENSE,BSD-3-Clause
 golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.3.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.3.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.5.0:LICENSE,BSD-3-Clause
@@ -237,8 +237,8 @@ k8s.io/utils,https://github.com/kubernetes/utils/blob/99ec85e7a448/LICENSE,Apach
 k8s.io/utils/internal/third_party/forked/golang,https://github.com/kubernetes/utils/blob/99ec85e7a448/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
 oras.land/oras-go/pkg,https://github.com/oras-project/oras-go/blob/v1.2.0/LICENSE,Apache-2.0
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,https://github.com/kubernetes-sigs/apiserver-network-proxy/blob/konnectivity-client/v0.0.33/konnectivity-client/LICENSE,Apache-2.0
-sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.14.0/LICENSE,Apache-2.0
-sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v0.5.0/LICENSE,Apache-2.0
+sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.14.1/LICENSE,Apache-2.0
+sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v0.6.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/f223a00ba0e2/LICENSE,Apache-2.0
 sigs.k8s.io/kustomize/api,https://github.com/kubernetes-sigs/kustomize/blob/api/v0.12.1/api/LICENSE,Apache-2.0
 sigs.k8s.io/kustomize/kyaml,https://github.com/kubernetes-sigs/kustomize/blob/kyaml/v0.13.9/kyaml/LICENSE,Apache-2.0

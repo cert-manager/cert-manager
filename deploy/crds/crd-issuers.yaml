@@ -440,13 +440,13 @@ spec:
                                         - name
                                       properties:
                                         group:
-                                          description: "Group is the group of the referent. \n Support: Core"
+                                          description: "Group is the group of the referent. When unspecified, \"gateway.networking.k8s.io\" is inferred. To set the core API group (such as for a \"Service\" kind referent), Group must be explicitly set to \"\" (empty string). \n Support: Core"
                                           type: string
                                           default: gateway.networking.k8s.io
                                           maxLength: 253
                                           pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                         kind:
-                                          description: "Kind is kind of the referent. \n Support: Core (Gateway) \n Support: Custom (Other Resources)"
+                                          description: "Kind is kind of the referent. \n Support: Core (Gateway) \n Support: Implementation-specific (Other Resources)"
                                           type: string
                                           default: Gateway
                                           maxLength: 63
@@ -458,7 +458,7 @@ spec:
                                           maxLength: 253
                                           minLength: 1
                                         namespace:
-                                          description: "Namespace is the namespace of the referent. When unspecified (or empty string), this refers to the local namespace of the Route. \n Support: Core"
+                                          description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n Support: Core"
                                           type: string
                                           maxLength: 63
                                           minLength: 1
