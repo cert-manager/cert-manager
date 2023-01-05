@@ -50,6 +50,12 @@ func WithNamespace(ns string) Option {
 	}
 }
 
+func WithSecretsLister(secretLister corelisters.SecretLister) Option {
+	return func(s *Solver) {
+		s.secretLister = secretLister
+	}
+}
+
 func New(opts ...Option) *Solver {
 	s := &Solver{}
 	for _, o := range opts {
@@ -91,17 +97,21 @@ func (s *Solver) CleanUp(ch *whapi.ChallengeRequest) error {
 }
 
 func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
-	cl, err := kubernetes.NewForConfig(kubeClientConfig)
-	if err != nil {
-		return err
-	}
+	// Only start a secrets informerfactory if it is needed (if the solver
+	// is not already initialized with a secrets lister)
+	if s.secretLister == nil {
+		cl, err := kubernetes.NewForConfig(kubeClientConfig)
+		if err != nil {
+			return err
+		}
 
-	// obtain a secret lister and start the informer factory to populate the
-	// secret cache
-	factory := informers.NewSharedInformerFactoryWithOptions(cl, time.Minute*5, informers.WithNamespace(s.namespace))
-	s.secretLister = factory.Core().V1().Secrets().Lister()
-	factory.Start(stopCh)
-	factory.WaitForCacheSync(stopCh)
+		// obtain a secret lister and start the informer factory to populate the
+		// secret cache
+		factory := informers.NewSharedInformerFactoryWithOptions(cl, time.Minute*5, informers.WithNamespace(s.namespace))
+		s.secretLister = factory.Core().V1().Secrets().Lister()
+		factory.Start(stopCh)
+		factory.WaitForCacheSync(stopCh)
+	}
 
 	return nil
 }

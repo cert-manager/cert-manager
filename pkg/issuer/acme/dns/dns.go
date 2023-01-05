@@ -488,9 +488,10 @@ func (s *Solver) dns01SolverForConfig(config *cmacme.ACMEChallengeSolverDNS01) (
 // NewSolver creates a Solver which can instantiate the appropriate DNS
 // provider.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
+	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
 	webhookSolvers := []webhook.Solver{
 		&webhookslv.Webhook{},
-		rfc2136.New(rfc2136.WithNamespace(ctx.Namespace)),
+		rfc2136.New(rfc2136.WithNamespace(ctx.Namespace), rfc2136.WithSecretsLister(secretsLister)),
 	}
 
 	initialized := make(map[string]webhook.Solver)
