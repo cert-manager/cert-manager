@@ -77,10 +77,10 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
+func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache, namespace string) error {
 	controllers := make([]controller.Controller, len(injectorSetups))
 	for i, setup := range injectorSetups {
-		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client)
+		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client, namespace)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -126,7 +126,7 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 // * https://github.com/kubernetes-sigs/controller-runtime/issues/764
 func newGenericInjectionController(ctx context.Context, groupName string, mgr ctrl.Manager,
 	setup injectorSetup, sources []caDataSource, ca cache.Cache,
-	client client.Client) (controller.Controller, error) {
+	client client.Client, namespace string) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
@@ -140,6 +140,7 @@ func newGenericInjectionController(ctx context.Context, groupName string, mgr ct
 				log:          log.WithName("generic-inject-reconciler"),
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
+				namespace:    namespace,
 			},
 			LogConstructor: func(request *reconcile.Request) logr.Logger { return log },
 		})
@@ -194,6 +195,7 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager, namespace s
 		},
 		client,
 		cache,
+		namespace,
 	)
 }
 
@@ -217,6 +219,7 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager, namespace string
 		},
 		client,
 		cache,
+		namespace,
 	)
 }
 

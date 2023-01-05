@@ -106,6 +106,9 @@ type genericInjectReconciler struct {
 	log logr.Logger
 	client.Client
 
+	// if set, the reconciler is namespace scoped
+	namespace string
+
 	resourceName string // just used for logging
 }
 
@@ -157,11 +160,16 @@ func (r *genericInjectReconciler) Reconcile(_ context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	caData, err := dataSource.ReadCA(ctx, log, metaObj)
+	caData, err := dataSource.ReadCA(ctx, log, metaObj, r.namespace)
+	if apierrors.IsForbidden(err) {
+		log.V(logf.InfoLevel).Info("cainjector was forbidden to retrieve the ca data source")
+		return ctrl.Result{}, nil
+	}
 	if err != nil {
 		log.Error(err, "failed to read CA from data source")
 		return ctrl.Result{}, err
 	}
+
 	if caData == nil {
 		log.V(logf.InfoLevel).Info("could not find any ca data in data source for target")
 		return ctrl.Result{}, nil
