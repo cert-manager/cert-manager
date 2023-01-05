@@ -180,8 +180,8 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // indices.
 // The registered controllers require the cert-manager API to be available
 // in order to run.
-func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
-	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
+func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager, namespace string) error {
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr, namespace)
 	if err != nil {
 		return err
 	}
@@ -202,8 +202,8 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 // indices.
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
-func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
-	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
+func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager, namespace string) error {
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr, namespace)
 	if err != nil {
 		return err
 	}
@@ -226,10 +226,13 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 // cert-manager Certificates CRDs have been installed and before the CA bundles
 // have been injected into the cert-manager CRDs, by the secrets based injector,
 // which is running in a separate goroutine.
-func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, client.Client, error) {
+func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager, namespace string) (cache.Cache, client.Client, error) {
 	cacheOptions := cache.Options{
 		Scheme: mgr.GetScheme(),
 		Mapper: mgr.GetRESTMapper(),
+	}
+	if namespace != "" {
+		cacheOptions.Namespace = namespace
 	}
 	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
 	if err != nil {

@@ -215,7 +215,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// Never retry if the controller exits cleanly.
 	g.Go(func() (err error) {
 		for {
-			err = cainjector.RegisterCertificateBased(gctx, mgr)
+			err = cainjector.RegisterCertificateBased(gctx, mgr, o.Namespace)
 			if err == nil {
 				return
 			}
@@ -234,7 +234,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// We do not retry this controller because it only interacts with core APIs
 	// which should always be in a working state.
 	g.Go(func() (err error) {
-		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
+		if err = cainjector.RegisterSecretBased(gctx, mgr, o.Namespace); err != nil {
 			return fmt.Errorf("error registering secret controller: %v", err)
 		}
 		return
