@@ -33,6 +33,8 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+const SolverName = "rfc2136"
+
 type Solver struct {
 	secretLister corelisters.SecretLister
 
@@ -65,7 +67,7 @@ func New(opts ...Option) *Solver {
 }
 
 func (s *Solver) Name() string {
-	return "rfc2136"
+	return SolverName
 }
 
 func (s *Solver) Present(ch *whapi.ChallengeRequest) error {
@@ -112,7 +114,6 @@ func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan s
 		factory.Start(stopCh)
 		factory.WaitForCacheSync(stopCh)
 	}
-
 	return nil
 }
 

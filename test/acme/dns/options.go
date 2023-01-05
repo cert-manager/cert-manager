@@ -24,8 +24,6 @@ import (
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
-	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 )
 
 // Option applies a configuration option to the test fixture being built
@@ -33,9 +31,9 @@ type Option func(*fixture)
 
 // NewFixture constructs a new *fixture, applying the given Options before
 // returning.
-func NewFixture(solver webhook.Solver, opts ...Option) *fixture {
+func NewFixture(solverType string, opts ...Option) *fixture {
 	f := &fixture{
-		testSolver: solver,
+		testSolverType: solverType,
 	}
 	for _, o := range opts {
 		o(f)
