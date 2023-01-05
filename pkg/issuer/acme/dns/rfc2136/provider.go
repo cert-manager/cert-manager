@@ -100,7 +100,11 @@ func (s *Solver) CleanUp(ch *whapi.ChallengeRequest) error {
 
 func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
 	// Only start a secrets informerfactory if it is needed (if the solver
-	// is not already initialized with a secrets lister)
+	// is not already initialized with a secrets lister) This is legacy
+	// functionality. If you have a secrets watcher already available in the
+	// caller, you probably want to use that to avoid double caching the
+	// Secrets
+	// TODO: refactor and remove this functionality
 	if s.secretLister == nil {
 		cl, err := kubernetes.NewForConfig(kubeClientConfig)
 		if err != nil {
