@@ -82,7 +82,8 @@ func TestProcessItem(t *testing.T) {
 			Namespace: namespace,
 			Name:      name,
 			Labels: map[string]string{
-				cmapi.IsNextPrivateKeySecretLabelKey: "true",
+				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+				cmapi.PartOfCertManagerControllerLabelKey: "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(&cmapi.Certificate{
@@ -181,7 +182,7 @@ func TestProcessItem(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace:       "testns",
 							GenerateName:    "test-",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true"},
+							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
 							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
 						},
 						Data: map[string][]byte{"tls.key": nil},
@@ -211,7 +212,7 @@ func TestProcessItem(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace:       "testns",
 							Name:            "fixed-name",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true"},
+							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
 							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
 						},
 						Data: map[string][]byte{"tls.key": nil},
@@ -243,7 +244,7 @@ func TestProcessItem(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace:       "testns",
 							Name:            "fixed-name",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true"},
+							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
 							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
 						},
 						Data: map[string][]byte{"tls.key": nil},
