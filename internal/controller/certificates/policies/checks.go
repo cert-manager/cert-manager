@@ -388,6 +388,10 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 			managedAnnotations = managedAnnotations.Delete(k)
 		}
 
+		// Remove the base label from the managed Labels so we can
+		// compare 1 to 1 against the SecretTemplate
+		managedLabels.Delete(cmapi.PartOfCertManagerControllerLabelKey)
+
 		// Check early for Secret Template being nil, and whether managed
 		// labels/annotations are not.
 		if input.Certificate.Spec.SecretTemplate == nil {

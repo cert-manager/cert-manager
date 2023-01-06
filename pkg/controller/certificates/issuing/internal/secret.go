@@ -165,6 +165,8 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Labels = make(map[string]string)
 	}
 
+	secret.Labels[cmapi.PartOfCertManagerControllerLabelKey] = "true"
+
 	if crt.Spec.SecretTemplate != nil {
 		for k, v := range crt.Spec.SecretTemplate.Labels {
 			secret.Labels[k] = v
