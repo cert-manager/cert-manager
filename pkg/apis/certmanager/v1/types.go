@@ -16,8 +16,15 @@ limitations under the License.
 
 package v1
 
-// Common annotation keys added to resources.
 const (
+
+	// Common label keys added to resources
+
+	// Label key that indicates that a resource is of interest to cert-manager controller
+	PartOfCertManagerControllerLabelKey = "controller.cert-manager.io/fao"
+
+	// Common annotation keys added to resources
+
 	// Annotation key for DNS subjectAltNames.
 	AltNamesAnnotationKey = "cert-manager.io/alt-names"
 
