@@ -77,10 +77,10 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
+func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache, namespace string) error {
 	controllers := make([]controller.Controller, len(injectorSetups))
 	for i, setup := range injectorSetups {
-		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client)
+		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client, namespace)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -126,7 +126,7 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 // * https://github.com/kubernetes-sigs/controller-runtime/issues/764
 func newGenericInjectionController(ctx context.Context, groupName string, mgr ctrl.Manager,
 	setup injectorSetup, sources []caDataSource, ca cache.Cache,
-	client client.Client) (controller.Controller, error) {
+	client client.Client, namespace string) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
@@ -140,6 +140,7 @@ func newGenericInjectionController(ctx context.Context, groupName string, mgr ct
 				log:          log.WithName("generic-inject-reconciler"),
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
+				namespace:    namespace,
 			},
 			LogConstructor: func(request *reconcile.Request) logr.Logger { return log },
 		})
@@ -180,8 +181,8 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // indices.
 // The registered controllers require the cert-manager API to be available
 // in order to run.
-func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
-	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
+func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager, namespace string) error {
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr, namespace)
 	if err != nil {
 		return err
 	}
@@ -194,6 +195,7 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 		},
 		client,
 		cache,
+		namespace,
 	)
 }
 
@@ -202,8 +204,8 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 // indices.
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
-func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
-	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
+func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager, namespace string) error {
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr, namespace)
 	if err != nil {
 		return err
 	}
@@ -217,6 +219,7 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 		},
 		client,
 		cache,
+		namespace,
 	)
 }
 
@@ -226,10 +229,13 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 // cert-manager Certificates CRDs have been installed and before the CA bundles
 // have been injected into the cert-manager CRDs, by the secrets based injector,
 // which is running in a separate goroutine.
-func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, client.Client, error) {
+func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager, namespace string) (cache.Cache, client.Client, error) {
 	cacheOptions := cache.Options{
 		Scheme: mgr.GetScheme(),
 		Mapper: mgr.GetRESTMapper(),
+	}
+	if namespace != "" {
+		cacheOptions.Namespace = namespace
 	}
 	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
 	if err != nil {

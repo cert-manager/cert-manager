@@ -18,11 +18,11 @@ package cainjector
 
 import (
 	"context"
-
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,6 +34,7 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // caDataSource knows how to extract CA data given a provided InjectTarget.
@@ -52,7 +53,7 @@ type caDataSource interface {
 	// In this case, the caller should not retry the operation.
 	// It is up to the ReadCA implementation to inform the user why the CA
 	// failed to read.
-	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error)
+	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) (ca []byte, err error)
 
 	// ApplyTo applies any required watchers to the given controller.
 	ApplyTo(ctx context.Context, mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error
@@ -69,7 +70,7 @@ func (c *kubeconfigDataSource) Configured(log logr.Logger, metaObj metav1.Object
 	return metaObj.GetAnnotations()[cmapi.WantInjectAPIServerCAAnnotation] == "true"
 }
 
-func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error) {
+func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) (ca []byte, err error) {
 	return c.apiserverCABundle, nil
 }
 
@@ -99,14 +100,21 @@ func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Objec
 	return true
 }
 
-func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error) {
+func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) (ca []byte, err error) {
 	certNameRaw := metaObj.GetAnnotations()[cmapi.WantInjectAnnotation]
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
 	if certName.Namespace == "" {
 		log.Error(nil, "invalid certificate name; needs a namespace/ prefix")
+		// TODO: should an error be returned here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
+	}
+	if namespace != "" && certName.Namespace != namespace {
+		err := fmt.Errorf("cannot read CA data from Certificate in namespace %s, cainjector is scoped to namespace %s", certName.Namespace, namespace)
+		forbidenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
+		log.Error(forbidenErr, "cannot read data source")
+		return nil, forbidenErr
 	}
 
 	var cert cmapi.Certificate
@@ -185,14 +193,22 @@ func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bo
 	return true
 }
 
-func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) ([]byte, error) {
+func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) ([]byte, error) {
 	secretNameRaw := metaObj.GetAnnotations()[cmapi.WantInjectFromSecretAnnotation]
 	secretName := splitNamespacedName(secretNameRaw)
 	log = log.WithValues("secret", secretName)
 	if secretName.Namespace == "" {
 		log.Error(nil, "invalid certificate name")
+		// TODO: should we return error here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
+	}
+
+	if namespace != "" && secretName.Namespace != namespace {
+		err := fmt.Errorf("cannot read CA data from Secret in namespace %s, cainjector is scoped to namespace %s", secretName.Namespace, namespace)
+		forbidenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
+		log.Error(forbidenErr, "cannot read data source")
+		return nil, forbidenErr
 	}
 
 	// grab the associated secret
