@@ -433,6 +433,29 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 	}
 }
 
+func SecretBaseLabelsAreMissing(input Input) (string, string, bool) {
+	// If certificate has not been issued yet or is in invalid state, do not attempt to update metadata
+	if len(input.Secret.Data[corev1.TLSCertKey]) > 0 {
+		var err error
+		_, err = pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
+		if err != nil {
+			// This case should never happen as it should always be caught by the
+			// secretPublicKeysMatch function beforehand, but handle it just in case.
+			return InvalidCertificate, fmt.Sprintf("Failed to decode stored certificate: %v", err), true
+		}
+	}
+
+	// check if Secret has the base labels. Currently there is only one base label
+	if input.Secret.Labels == nil {
+		return SecretBaseLabelsMissing, fmt.Sprintf("missing base label %s", cmapi.PartOfCertManagerControllerLabelKey), true
+	}
+	if _, ok := input.Secret.Labels[cmapi.PartOfCertManagerControllerLabelKey]; !ok {
+		return SecretBaseLabelsMissing, fmt.Sprintf("missing base label %s", cmapi.PartOfCertManagerControllerLabelKey), true
+	}
+
+	return "", "", false
+}
+
 // SecretAdditionalOutputFormatsDataMismatch validates that the Secret has the
 // expected Certificate AdditionalOutputFormats.
 // Returns true (violation) if AdditionalOutputFormat(s) are present and any of
