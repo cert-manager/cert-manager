@@ -68,7 +68,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error
+type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsServers []string, hostEndpoint, userAgent string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
@@ -161,7 +161,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 	log.V(logf.DebugLevel).Info("running self check multiple times to ensure challenge has propagated", "required_passes", s.requiredPasses)
 	for i := 0; i < s.requiredPasses; i++ {
-		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers, s.Context.RESTConfig.UserAgent)
+		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers, s.HTTP01SolverHostEndpoint, s.Context.RESTConfig.UserAgent)
 		if err != nil {
 			return err
 		}
@@ -200,15 +200,24 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error {
+func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string, hostEndpoint, userAgent string) error {
 	log := logf.FromContext(ctx)
-	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	clusterEndpoint := url.String()
+	clusterHost := url.Host
+	if hostEndpoint != "" {
+		clusterEndpoint = fmt.Sprintf("%s://%s%s", url.Scheme, hostEndpoint, url.Path)
+		log.V(logf.DebugLevel).Info("overriding HTTP01 reachability endpoint", clusterEndpoint)
+	}
+
+	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, clusterEndpoint, nil)
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set("User-Agent", userAgent)
+	req.Host = clusterHost
 
 	// The ACME spec says that a verifier should try on http port 80 first, but to follow any
 	// redirects which may be returned. Let's Encrypt, in practice, follows redirects for HTTP

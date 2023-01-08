@@ -35,9 +35,9 @@ import (
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
 // of calls to a reachabilityTest.
 func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTest {
-	return func(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error {
+	return func(ctx context.Context, url *url.URL, key string, dnsServers []string, hostEndpoint, userAgent string) error {
 		*counter++
-		return t(ctx, url, key, dnsServers, userAgent)
+		return t(ctx, url, key, dnsServers, hostEndpoint, userAgent)
 	}
 }
 
@@ -51,14 +51,14 @@ func TestCheck(t *testing.T) {
 	tests := []testT{
 		{
 			name: "should pass",
-			reachabilityTest: func(context.Context, *url.URL, string, []string, string) error {
+			reachabilityTest: func(context.Context, *url.URL, string, []string, string, string) error {
 				return nil
 			},
 			expectedErr: false,
 		},
 		{
 			name: "should error",
-			reachabilityTest: func(context.Context, *url.URL, string, []string, string) error {
+			reachabilityTest: func(context.Context, *url.URL, string, []string, string, string) error {
 				return fmt.Errorf("failed")
 			},
 			expectedErr: true,
@@ -176,7 +176,7 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 
 	for _, tt := range tests {
 		atomic.StoreInt32(&dnsServerCalled, 0)
-		err = testReachability(context.Background(), u, key, tt.dnsServers, "cert-manager-test")
+		err = testReachability(context.Background(), u, key, tt.dnsServers, "", "cert-manager-test")
 		switch {
 		case err == nil:
 			t.Errorf("Expected error for testReachability, but got none")

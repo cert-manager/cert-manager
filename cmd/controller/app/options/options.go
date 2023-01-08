@@ -83,6 +83,8 @@ type ControllerOptions struct {
 	ACMEHTTP01SolverRunAsNonRoot          bool
 	// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
 	ACMEHTTP01SolverNameservers []string
+	// Overrides the host endpoint to perform HTTP01 checks on.
+	ACMEHTTP01SolverHostEndpoint string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -148,6 +150,8 @@ const (
 
 	// default time period to wait between checking DNS01 and HTTP01 challenge propagation
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
+
+	defaultACMEHTTP01SolverHostEndpoint = ""
 )
 
 var (
@@ -242,6 +246,7 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultIssuerGroup:                defaultTLSACMEIssuerGroup,
 		DefaultAutoCertificateAnnotations: defaultAutoCertificateAnnotations,
 		ACMEHTTP01SolverNameservers:       []string{},
+		ACMEHTTP01SolverHostEndpoint:      defaultACMEHTTP01SolverHostEndpoint,
 		DNS01RecursiveNameservers:         []string{},
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
@@ -320,6 +325,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		[]string{}, "A list of comma separated dns server endpoints used for "+
 			"ACME HTTP01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
+
+	fs.StringVar(&s.ACMEHTTP01SolverHostEndpoint, "acme-http01-solver-host-endpoint", defaultACMEHTTP01SolverHostEndpoint, ""+
+		"Allows to override the endpoint of the ACME HTTP01 challenge solver pods without changing the host. "+
+		"This is useful when there are issues in carrying out the ACME HTTP01 challenge in internal networks that do not implement a hairpin NAT.")
 
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+

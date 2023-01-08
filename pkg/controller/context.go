@@ -177,6 +177,9 @@ type ACMEOptions struct {
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string
 
+	// HTTP01SolverHostEndpoint defines the override endpoint of the ACME pod
+	HTTP01SolverHostEndpoint string
+
 	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
 	// for checking propagation of an RR. This is the ideal scenario
 	DNS01CheckAuthoritative bool

@@ -283,7 +283,8 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-			HTTP01SolverNameservers: opts.ACMEHTTP01SolverNameservers,
+			HTTP01SolverNameservers:  opts.ACMEHTTP01SolverNameservers,
+			HTTP01SolverHostEndpoint: opts.ACMEHTTP01SolverHostEndpoint,
 
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.DNS01CheckRetryPeriod,
