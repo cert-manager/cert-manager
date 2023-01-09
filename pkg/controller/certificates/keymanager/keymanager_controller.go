@@ -128,7 +128,7 @@ func NewController(
 var isNextPrivateKeyLabelSelector labels.Selector
 
 func init() {
-	r, err := labels.NewRequirement("cert-manager.io/next-private-key", selection.Equals, []string{"true"})
+	r, err := labels.NewRequirement(cmapi.IsNextPrivateKeySecretLabelKey, selection.Equals, []string{"true"})
 	if err != nil {
 		panic(err)
 	}
@@ -351,7 +351,8 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 			Name:            name,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 			Labels: map[string]string{
-				"cert-manager.io/next-private-key": "true",
+				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+				cmapi.PartOfCertManagerControllerLabelKey: "true",
 			},
 		},
 		Data: map[string][]byte{
