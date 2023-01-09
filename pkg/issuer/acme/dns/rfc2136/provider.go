@@ -33,6 +33,8 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+const SolverName = "rfc2136"
+
 type Solver struct {
 	secretLister corelisters.SecretLister
 
@@ -50,6 +52,12 @@ func WithNamespace(ns string) Option {
 	}
 }
 
+func WithSecretsLister(secretLister corelisters.SecretLister) Option {
+	return func(s *Solver) {
+		s.secretLister = secretLister
+	}
+}
+
 func New(opts ...Option) *Solver {
 	s := &Solver{}
 	for _, o := range opts {
@@ -59,7 +67,7 @@ func New(opts ...Option) *Solver {
 }
 
 func (s *Solver) Name() string {
-	return "rfc2136"
+	return SolverName
 }
 
 func (s *Solver) Present(ch *whapi.ChallengeRequest) error {
@@ -91,18 +99,25 @@ func (s *Solver) CleanUp(ch *whapi.ChallengeRequest) error {
 }
 
 func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
-	cl, err := kubernetes.NewForConfig(kubeClientConfig)
-	if err != nil {
-		return err
+	// Only start a secrets informerfactory if it is needed (if the solver
+	// is not already initialized with a secrets lister) This is legacy
+	// functionality. If you have a secrets watcher already available in the
+	// caller, you probably want to use that to avoid double caching the
+	// Secrets
+	// TODO: refactor and remove this functionality
+	if s.secretLister == nil {
+		cl, err := kubernetes.NewForConfig(kubeClientConfig)
+		if err != nil {
+			return err
+		}
+
+		// obtain a secret lister and start the informer factory to populate the
+		// secret cache
+		factory := informers.NewSharedInformerFactoryWithOptions(cl, time.Minute*5, informers.WithNamespace(s.namespace))
+		s.secretLister = factory.Core().V1().Secrets().Lister()
+		factory.Start(stopCh)
+		factory.WaitForCacheSync(stopCh)
 	}
-
-	// obtain a secret lister and start the informer factory to populate the
-	// secret cache
-	factory := informers.NewSharedInformerFactoryWithOptions(cl, time.Minute*5, informers.WithNamespace(s.namespace))
-	s.secretLister = factory.Core().V1().Secrets().Lister()
-	factory.Start(stopCh)
-	factory.WaitForCacheSync(stopCh)
-
 	return nil
 }
 
