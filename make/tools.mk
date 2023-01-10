@@ -12,8 +12,8 @@ CTR=docker
 
 TOOLS :=
 TOOLS += helm=v3.10.0
-TOOLS += kubectl=v1.25.2
-TOOLS += kind=v0.16.0
+TOOLS += kubectl=v1.26.0
+TOOLS += kind=v0.17.0
 TOOLS += controller-gen=v0.11.1
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=a1e2bad95be9688794fd0571c4c40e88cccf9173
@@ -229,9 +229,9 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # kubectl #
 ###########
 
-KUBECTL_linux_amd64_SHA256SUM=8639f2b9c33d38910d706171ce3d25be9b19fc139d0e3d4627f38ce84f9040eb
-KUBECTL_darwin_amd64_SHA256SUM=b859766d7b47267af5cc1ee01a2d0c3c137dbfc53cd5be066181beed11ec7d34
-KUBECTL_darwin_arm64_SHA256SUM=1c37f9b7c0c92532f52c572476fd26a9349574abae8faf265fd4f8bca25b3d77
+KUBECTL_linux_amd64_SHA256SUM=b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae
+KUBECTL_darwin_amd64_SHA256SUM=be9dc0782a7b257d9cfd66b76f91081e80f57742f61e12cd29068b213ee48abc
+KUBECTL_darwin_arm64_SHA256SUM=cc7542dfe67df1982ea457cc6e15c171e7ff604a93b41796a4f3fa66bd151f76
 
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
@@ -242,9 +242,9 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=a9438c56776bde1637ec763f3e450078258b791aaa631b8211b7ed3e4f50d089
-KIND_darwin_amd64_SHA256SUM=9936eafdcc4e34dfa3c9ad0e57162e19575c6581ab28f6780dc434bcb9245ecd
-KIND_darwin_arm64_SHA256SUM=3e8ac912f24066f8de8fbaed471b76307484afa8165193ee797b622beba54d0a
+KIND_linux_amd64_SHA256SUM=a8c045856db33f839908b6acb90dc8ec397253ffdaef7baf058f5a542e009b9c
+KIND_darwin_amd64_SHA256SUM=a4e9f4cf18ec762934f4acd68752fe085bcded3a736258de0367085525180342
+KIND_darwin_arm64_SHA256SUM=b9afee2707e711fb5d39049a361972f8c44ee7ce6145cafd0f7e4b47ceec1409
 
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) -sSfL https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
