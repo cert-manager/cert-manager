@@ -22,8 +22,8 @@ chart_tarball=${1:-}
 DOCKER=${DOCKER:-docker}
 
 if [ -z "${chart_tarball}" ]; then
-	echo "usage: $0 <path to helm chart tarball>"
-	exit 1
+    echo "usage: $0 <path to helm chart tarball>"
+    exit 1
 fi
 
 chart_dir="deploy/charts/cert-manager"
@@ -36,12 +36,12 @@ trap "rm -rf ${tmpdir}" EXIT
 tar -C "${tmpdir}" -xvf $chart_tarball
 
 if ! ${DOCKER} run -v "${tmpdir}":/workspace --workdir /workspace \
-    quay.io/helmpack/chart-testing:v3.5.1 \
+    quay.io/helmpack/chart-testing:v3.7.1 \
     ct lint \
-        --check-version-increment=false \
-        --validate-maintainers=false \
-        --charts "/workspace/cert-manager" \
-        --debug; then
+    --check-version-increment=false \
+    --validate-maintainers=false \
+    --charts "/workspace/cert-manager" \
+    --debug; then
     echo "Linting failed"
     exit 1
 fi

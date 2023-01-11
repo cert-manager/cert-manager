@@ -11,7 +11,7 @@ export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
 CTR=docker
 
 TOOLS :=
-TOOLS += helm=v3.10.0
+TOOLS += helm=v3.10.3
 TOOLS += kubectl=v1.26.0
 TOOLS += kind=v0.17.0
 TOOLS += controller-gen=v0.11.1
@@ -34,7 +34,7 @@ GATEWAY_API_VERSION=v0.5.1
 
 K8S_CODEGEN_VERSION=v0.26.0
 
-KUBEBUILDER_ASSETS_VERSION=1.25.0
+KUBEBUILDER_ASSETS_VERSION=1.26.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -213,9 +213,9 @@ $(foreach GO_DEPENDENCY,$(GO_DEPENDENCIES),$(eval $(call go_dependency,$(word 1,
 # Helm #
 ########
 
-HELM_linux_amd64_SHA256SUM=bf56beb418bb529b5e0d6d43d56654c5a03f89c98400b409d1013a33d9586474
-HELM_darwin_amd64_SHA256SUM=1e7fd528482ac2ef2d79fe300724b3e07ff6f846a2a9b0b0fe6f5fa05691786b
-HELM_darwin_arm64_SHA256SUM=f7f6558ebc8211824032a7fdcf0d55ad064cb33ec1eeec3d18057b9fe2e04dbe
+HELM_linux_amd64_SHA256SUM=950439759ece902157cf915b209b8d694e6f675eaab5099fb7894f30eeaee9a2
+HELM_darwin_amd64_SHA256SUM=77a94ebd37eab4d14aceaf30a372348917830358430fcd7e09761eed69f08be5
+HELM_darwin_arm64_SHA256SUM=4f3490654349d6fee8d4055862efdaaf9422eca1ffd2a15393394fd948ae3377
 
 $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
@@ -374,9 +374,9 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # You can use ./hack/latest-kubebuilder-shas.sh <version> to get latest SHAs for a particular version of kubebuilder tools #
 ############################
 
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=c9796a0a13ccb79b77e3d64b8d3bb85a14fc850800724c63b85bf5bacbe0b4ba
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=a232faf4551ffb1185660c5a2eb9eaaf7eb02136fa71e7ead84ee940a205d9bf
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=e5ae7aaead02af274f840693131f24aa0506b0b44ccecb5f073847b39bef2ce2
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=0467f408d9ce38bd6188270a34a5e97207a310b53bfd1e44982d44bb177d147c
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=7ff8022a4022e76d2e7450db97232c0be77567064d8c116100d910e9b7b510d1
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=9483d95d1f53907b9bbe9deb0642b7731c5aa122a4598b5759fa77c50102b797
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
