@@ -137,8 +137,19 @@ See issue description here https://github.com/cert-manager/cert-manager/issues/4
 
 ### Risks and Mitigations
 
-Risk of slowing down issuance in cases where cert-manager needs to retrieve unlabelled `Secret`s, such as CA issuer's `Secret`.
-Users could mitigate this by labelling the `Secret`s.
+- Risk of slowing down issuance in cases where cert-manager needs to retrieve unlabelled `Secret`s, such as CA issuer's `Secret`.
+  Users could mitigate this by labelling the `Secret`s.
+
+- Risk of unintentionally or intentionally overwhelming kube apiserver with the additional requests.
+  A default cert-manager installation uses rate limiting (default 50 QPS with a burst of 20). This should be sufficient to ensure that in case of a large number of additional requests from cert-manager controller, the kube apiserver is not slowed down. Cert-manager controller allows to configure rate limiting QPS and burst (there is no upper limit). Since 1.20, Kubernetes by default uses [API Priority and Fairness](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) for fine grained server side rate limiting, which should prevent clients that don't sufficiently rate limit themselves from overwhelming the kube apiserver.
+  In a cluster where API Priority and Fairness is disabled and cert-manager's rate limiter has been configured with a very high QPS and burst, it might be possible to overwhelm kube apiserver. However, this is already possible today, if a user has the rights to configure cert-manager installation, i.e by creating a large number of cert-manager resources in a tight loop.
+  To limit the possibility of overwhelming the kube apiserver:
+  - we should ensure that control loops that access secrets do not unnecessarily retry on errors (i.e if a secret is not found or has invalid data).
+    This should already be the case today, but worth reading through all possible paths
+  - we could store initialized clients for all issuers as we already do for ACME issuer instead of retrieving credential secrets every time a certificate request needs to be signed
+  - recommend that users label `Secret` resources
+  - start with a non-GA implementation (this design suggests that the implementation starts as an alpha feature) to catch any potential edge cases and gate GA on user feedback from larger installations
+
 
 ## Design details
 ### Implementation
@@ -464,11 +475,12 @@ A number of optional secrets that will always be created by users with no labell
 
 The ACME account key secret and, if configured, the secret with EAB key will be returned once per issuer reconcile (on events against issuer or the account key or EAB key secret). The ACME client initialized with the credentials is then stored in a registry shared with orders controller, so the secrets are _not_ retrieved again when a certificate request for the issuer needs to be signed.
 For a DNS-01 challenge, one (possibly two in case of AWS) calls for secrets will be made during issuance to retrieve the relevant credentials secret.
+
 **CA**
 
 - the secret referenced by `issuer.spec.ca.secretName`. This will always be created by user. No labelling is currently enforced.
 
-This will be retrieved twice when the isser is reconciled (on events against the issuer or its `Secret`) and once when a certificate request for it is being signed.
+This will be retrieved twice when the issuer is reconciled (when an event occurs against the issuer or its secret) and once when a certificate request for the issuer is being signed.
 
 **Vault**
 
