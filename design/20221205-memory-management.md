@@ -362,6 +362,8 @@ Run a modified version of the same script, but [with CA `Secret`s labelled](http
 
 ![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partiallabels.png?raw=true)
 
+For CA issuers, normally a `Secret` will be retrieved once per issuer reconcile and once per certificate request signing. In some cases, two `Secret`s might be retrieved during certificate request signing see [secrets for issuers](#secrets-for-clusterissuers). We could look into improving this, by initializing a client with credentials and sharing with certificate request controllers, similarly to how it's currently done with [ACME clients](https://github.com/cert-manager/cert-manager/blob/v1.11.0/pkg/controller/context.go#L188-L190).
+
 ### Pros
 
 - In most setups in majority of cases where a control loop needs a `Secret` it would still be retrieved from cache (as it is certificate secrets that get parsed most frequently and those will be labelled in practically all cases)
@@ -435,15 +437,14 @@ The issuers and clusterissuers controllers set up watches for all events on all 
 
 A number of optional secrets that will always be created by users with no labelling enforced:
 
-- the secret referenced by `issuer.spec.acme.solvers.dns01.acmeDNS.accountSecretRef`.
 
 - the secret referenced in `issuer.spec.acme.externalAccountBinding`.
 
-- the secret referenced in `issuer.spec.acme.solvers.dns01.akamai.accessTokenSecretRef`
+- the secret referenced by `issuer.spec.acme.solvers.dns01.acmeDNS.accountSecretRef`.
 
 - the secret referenced in `issuer.spec.acme.solvers.dns01.akamai.clientSecretSecretRef`
 
-- the secret referenced in `issuer.spec.acme.solvers.dns01.akamai.clientTokenSecretRef`
+- the secret referenced in `issuer.spec.acme.solvers.dns01.akamai.accessTokenSecretRef`
 
 - the secret referenced in `issuer.spec.acme.solvers.dns01.azureDNS.clientSecretSecretRef`
 
@@ -461,25 +462,37 @@ A number of optional secrets that will always be created by users with no labell
 
 - the secret referenced in `issuer.spec.acme.solvers.dns01.route53.secretAccessKeySecretRef`
 
+The ACME account key secret and, if configured, the secret with EAB key will be returned once per issuer reconcile (on events against issuer or the account key or EAB key secret). The ACME client initialized with the credentials is then stored in a registry shared with orders controller, so the secrets are _not_ retrieved again when a certificate request for the issuer needs to be signed.
+For a DNS-01 challenge, one (possibly two in case of AWS) calls for secrets will be made during issuance to retrieve the relevant credentials secret.
 **CA**
 
 - the secret referenced by `issuer.spec.ca.secretName`. This will always be created by user. No labelling is currently enforced.
 
+This will be retrieved twice when the isser is reconciled (on events against the issuer or its `Secret`) and once when a certificate request for it is being signed.
+
 **Vault**
-
-- the optional secret referenced by `issuers.spec.vault.auth.appRole.secretRef`. Always created by user with no labelling enforced
-
-- the optional secret referenced by `issuers.spec.vault.auth.kubernetes.secretRef`. Always created by user with no labelling enforced
-
-- the optional secret referenced by `issuers.spec.vault.auth.tokenSecretRef`. Always created by user with no labelling enforced
 
 - the optional secret referenced by `issuers.spec.vault.caBundleSecretRef`. Always created by user with no labelling enforced
 
+One of the following credentials secrets:
+
+  - secret referenced by `issuers.spec.vault.auth.appRole.secretRef`. Always created by user with no labelling enforced
+
+  - secret referenced by `issuers.spec.vault.auth.kubernetes.secretRef`. Always created by user with no labelling enforced
+
+  - secret referenced by `issuers.spec.vault.auth.tokenSecretRef`. Always created by user with no labelling enforced
+
+The configured credentials `Secret`s and, if configured, CA bundle `Secret` will be retrieved every time the issuer is reconciled (on events against the issuer and either of the `Secret`s) and every time a certificate request needs to be signed.
+
 **Venafi**
+
+One of:
 
 - the secret referenced by `issuers.spec.venafi.tpp.secretRef`. Always created by user with no labelling enforced
 
 - the secret referenced by `issuers.spec.venafi.cloud.secretRef`. Always created by user with no labelling enforced
+
+The configured `Secret` will be retrieved when the issuer is reconciled (events against issuer and its secret) and when a certificate request is signed.
 
 #### Upstream mechanisms
 
