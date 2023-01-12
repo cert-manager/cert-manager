@@ -29,6 +29,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
@@ -191,12 +192,22 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	}
 
 	// Dryrun template generation (used for rendering the CRDs in /templates)
-	o.client.DryRun = true                  // Do not apply install
-	o.client.ClientOnly = true              // Do not validate against cluster (otherwise double CRDs can cause error)
+	o.client.DryRun = true     // Do not apply install
+	o.client.ClientOnly = true // Do not validate against cluster (otherwise double CRDs can cause error)
+	// Kube version to be used in dry run template generation which does not
+	// talk to kube apiserver. This is to ensure that template generation
+	// does not fail because our Kubernetes minimum version requirement is
+	// higher than that hardcoded in Helm codebase for client-only runs
+	o.client.KubeVersion = &chartutil.KubeVersion{
+		Version: "v999.999.999",
+		Major:   "999",
+		Minor:   "999",
+	}
 	chartValues[installCRDsFlagName] = true // Make sure to render CRDs
 	dryRunResult, err := o.client.Run(chart, chartValues)
 	if err != nil {
 		return nil, err
+
 	}
 
 	if o.DryRun {
@@ -239,6 +250,7 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	// Install chart
 	o.client.DryRun = false     // Apply DryRun cli flags
 	o.client.ClientOnly = false // Perform install against cluster
+	o.client.KubeVersion = nil
 
 	o.client.Wait = o.Wait // Wait for resources to be ready
 	// If part of the install fails and the Atomic option is set to True,
