@@ -150,7 +150,7 @@ github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.24.2/LICENSE,MIT
 github.com/opencontainers/go-digest,https://github.com/opencontainers/go-digest/blob/v1.0.0/LICENSE,Apache-2.0
 github.com/opencontainers/image-spec/specs-go,https://github.com/opencontainers/image-spec/blob/c5a74bcca799/LICENSE,Apache-2.0
 github.com/patrickmn/go-cache,https://github.com/patrickmn/go-cache/blob/v2.1.0/LICENSE,MIT
-github.com/pavlo-v-chernykh/keystore-go/v4,https://github.com/pavlo-v-chernykh/keystore-go/blob/v4.4.0/LICENSE,MIT
+github.com/pavlo-v-chernykh/keystore-go/v4,https://github.com/pavlo-v-chernykh/keystore-go/blob/v4.4.1/LICENSE,MIT
 github.com/peterbourgon/diskv,https://github.com/peterbourgon/diskv/blob/v2.0.1/LICENSE,MIT
 github.com/pierrec/lz4,https://github.com/pierrec/lz4/blob/v2.5.2/LICENSE,BSD-3-Clause
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
