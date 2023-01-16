@@ -113,6 +113,15 @@ spec:
           {{- if .Values.maxConcurrentChallenges }}
           - --max-concurrent-challenges={{ .Values.maxConcurrentChallenges }}
           {{- end }}
+          {{- if .Values.enableCertificateOwnerRef }}
+          - --enable-certificate-owner-ref=true
+          {{- end }}
+          {{- if .Values.dns01RecursiveNameserversOnly }}
+          - --dns01-recursive-nameservers-only=true
+          {{- end }}
+          {{- with .Values.dns01RecursiveNameservers }}
+          - --dns01-recursive-nameservers={{ . }}
+          {{- end }}
           ports:
           - containerPort: 9402
             name: http-metrics

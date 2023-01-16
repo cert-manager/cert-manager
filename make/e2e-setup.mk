@@ -199,7 +199,8 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controlle
 		--set featureGates="$(feature_gates_controller)" \
 		--set "webhook.extraArgs={--feature-gates=$(feature_gates_webhook)}" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
-		--set "extraArgs={--dns01-recursive-nameservers=$(SERVICE_IP_PREFIX).16:53,--dns01-recursive-nameservers-only=true}" \
+		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
+		--set "dns01RecursiveNameserversOnly=true" \
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind

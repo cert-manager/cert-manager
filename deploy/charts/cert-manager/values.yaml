@@ -107,11 +107,22 @@ serviceAccount:
 # Automounting API credentials for a particular pod
 # automountServiceAccountToken: true
 
+# When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted
+enableCertificateOwnerRef: false
+
+# Setting Nameservers for DNS01 Self Check
+# See: https://cert-manager.io/docs/configuration/acme/dns01/#setting-nameservers-for-dns01-self-check
+
+# Comma separated string with host and port of the recursive nameservers cert-manager should query
+dns01RecursiveNameservers: ""
+
+# Forces cert-manager to only use the recursive nameservers for verification.
+# Enabling this option could cause the DNS01 self check to take longer due to caching performed by the recursive nameservers
+dns01RecursiveNameserversOnly: false
+
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run docker run quay.io/jetstack/cert-manager-controller:<version> --help
 extraArgs: []
-  # When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted
-  # - --enable-certificate-owner-ref=true
   # Use this flag to enable or disable arbitrary controllers, for example, disable the CertificiateRequests approver
   # - --controllers=*,-certificaterequests-approver
 
