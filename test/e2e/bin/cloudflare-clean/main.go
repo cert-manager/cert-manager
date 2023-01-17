@@ -60,7 +60,7 @@ func main() {
 		log.Fatalf("found multiple zones for name %q", *zoneName)
 	}
 	zone := zones[0]
-	rrs, err := cl.DNSRecords(ctx, zone.ID, cf.DNSRecord{
+	rrs, _, err := cl.ListDNSRecords(ctx, cf.ZoneIdentifier(zone.ID), cf.ListDNSRecordsParams{
 		Type: "TXT",
 	})
 	if err != nil {
@@ -84,7 +84,7 @@ func main() {
 			continue
 		}
 
-		err := cl.DeleteDNSRecord(ctx, rr.ZoneID, rr.ID)
+		err := cl.DeleteDNSRecord(ctx, cf.ZoneIdentifier(rr.ZoneID), rr.ID)
 		if err != nil {
 			log.Printf("Error deleting record: %v", err)
 			errs = append(errs, err)
