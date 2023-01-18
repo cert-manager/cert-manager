@@ -2,6 +2,8 @@ ARG BASE_IMAGE
 
 FROM $BASE_IMAGE
 
+LABEL org.opencontainers.image.source="https://github.com/cert-manager/cert-manager"
+
 USER 1000
 
 COPY controller /app/cmd/controller/controller
