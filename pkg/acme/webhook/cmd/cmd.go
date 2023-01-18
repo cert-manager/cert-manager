@@ -29,6 +29,11 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+// RunWebhookServer creates and starts a new apiserver that acts as a external
+// webhook server for solving DNS challenges using the provided solver
+// implementations. This can be used as an entry point by external webhook
+// implementations, see
+// https://github.com/cert-manager/webhook-example/blob/899c408751425f8d0842b61c0e62fd8035d00316/main.go#L23-L31
 func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
 	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
