@@ -59,7 +59,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 		TSIGKeyName: rfc2136TestTsigKeyName,
 	}
 
-	fixture := dns.NewFixture(rfc2136.SolverName,
+	fixture := dns.NewFixture(rfc2136.New(rfc2136.InitializeResetLister()),
 		dns.SetResolvedZone(rfc2136TestZone),
 		dns.SetResolvedFQDN(rfc2136TestFqdn),
 		dns.SetAllowAmbientCredentials(false),
@@ -91,7 +91,7 @@ func TestRunSuiteNoTSIG(t *testing.T) {
 		Nameserver: server.ListenAddr(),
 	}
 
-	fixture := dns.NewFixture(rfc2136.SolverName,
+	fixture := dns.NewFixture(rfc2136.New(rfc2136.InitializeResetLister()),
 		dns.SetResolvedZone(rfc2136TestZone),
 		dns.SetResolvedFQDN(rfc2136TestFqdn),
 		dns.SetAllowAmbientCredentials(false),

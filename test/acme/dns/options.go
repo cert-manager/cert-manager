@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
@@ -30,10 +31,13 @@ import (
 type Option func(*fixture)
 
 // NewFixture constructs a new *fixture, applying the given Options before
-// returning.
-func NewFixture(solverType string, opts ...Option) *fixture {
+// returning. Solver is an implementation of
+// https://github.com/cert-manager/cert-manager/blob/v1.11.0/pkg/acme/webhook/webhook.go#L27-L45
+// and could be RFC2136 solver or any of external solvers that run these
+// conformance tests.
+func NewFixture(solver webhook.Solver, opts ...Option) *fixture {
 	f := &fixture{
-		testSolverType: solverType,
+		testSolver: solver,
 	}
 	for _, o := range opts {
 		o(f)
