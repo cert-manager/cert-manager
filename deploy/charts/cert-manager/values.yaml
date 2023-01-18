@@ -553,6 +553,12 @@ startupapicheck:
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
+  # Additional volumes for the startupapicheck pod
+  volumes: []
+
+  # Additional volumes fro the startupapicheck container
+  volumeMounts: []
+
   # Timeout for 'kubectl check api' command
   timeout: 1m
 
@@ -608,6 +614,9 @@ startupapicheck:
       helm.sh/hook: post-install
       helm.sh/hook-weight: "-5"
       helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+
+  # Automount API credentials for a Service Account.
+  automountServiceAccountToken: true
 
   serviceAccount:
     # Specifies whether a service account should be created
