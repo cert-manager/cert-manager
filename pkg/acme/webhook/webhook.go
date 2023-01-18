@@ -24,7 +24,9 @@ import (
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 )
 
-// Solver has the functionality to solve ACME challenges.
+// Solver has the functionality to solve ACME challenges. This interface is
+// implemented internally by RFC2136 DNS provider and by external webhook solver
+// implementations see https://github.com/cert-manager/webhook-example
 type Solver interface {
 	// Name is the name of this ACME solver as part of the API group.
 	// This must match what you configure in the ACME Issuer's DNS01 config.
@@ -41,5 +43,6 @@ type Solver interface {
 	CleanUp(ch *whapi.ChallengeRequest) error
 
 	// Initialize is called as a post-start hook when the apiserver starts.
+	// https://github.com/kubernetes/apiserver/blob/release-1.26/pkg/server/hooks.go#L32-L42
 	Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error
 }
