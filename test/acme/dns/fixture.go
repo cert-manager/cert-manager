@@ -24,12 +24,10 @@ import (
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/cert-manager/cert-manager/test/internal/apiserver"
 )
 
@@ -44,9 +42,7 @@ func init() {
 type fixture struct {
 	// testSolver is the actual DNS solver that is under test.
 	// It is set when calling the NewFixture function.
-	testSolver     webhook.Solver
-	testSolverType string
-
+	testSolver              webhook.Solver
 	resolvedFQDN            string
 	resolvedZone            string
 	allowAmbientCredentials bool
@@ -126,27 +122,7 @@ func (f *fixture) setup(t *testing.T) func() {
 
 	stopCh := make(chan struct{})
 
-	var testSolver webhook.Solver
-	switch f.testSolverType {
-	case rfc2136.SolverName:
-		cl, err := kubernetes.NewForConfig(env.Config)
-		if err != nil {
-			t.Errorf("error initializing solver: %#+v", err)
-		}
-
-		// obtain a secret lister and start the informer factory to populate the
-		// secret cache
-		factory := informers.NewSharedInformerFactoryWithOptions(cl, time.Minute*5)
-		secretLister := factory.Core().V1().Secrets().Lister()
-		factory.Start(stopCh)
-		factory.WaitForCacheSync(stopCh)
-		testSolver = rfc2136.New(rfc2136.WithSecretsLister(secretLister))
-		f.testSolver = testSolver
-	default:
-		t.Errorf("unknown solver type: %s", f.testSolverType)
-	}
-
-	testSolver.Initialize(env.Config, stopCh)
+	f.testSolver.Initialize(env.Config, stopCh)
 
 	return func() {
 		close(stopCh)
