@@ -81,6 +81,32 @@ type fixture struct {
 	propagationLimit time.Duration
 }
 
+// RunConformance will execute all conformance tests using the supplied
+// configuration These conformance tests should be run by all external DNS
+// solver webhook implementations, see
+// https://github.com/cert-manager/webhook-example
+func (f *fixture) RunConformance(t *testing.T) {
+	defer f.setup(t)()
+	t.Run("Conformance", func(t *testing.T) {
+		f.RunBasic(t)
+		f.RunExtended(t)
+	})
+}
+
+func (f *fixture) RunBasic(t *testing.T) {
+	defer f.setup(t)()
+	t.Run("Basic", func(t *testing.T) {
+		t.Run("PresentRecord", f.TestBasicPresentRecord)
+	})
+}
+
+func (f *fixture) RunExtended(t *testing.T) {
+	defer f.setup(t)()
+	t.Run("Extended", func(t *testing.T) {
+		t.Run("DeletingOneRecordRetainsOthers", f.TestExtendedDeletingOneRecordRetainsOthers)
+	})
+}
+
 func (f *fixture) setup(t *testing.T) func() {
 	f.setupLock.Lock()
 	defer f.setupLock.Unlock()
@@ -126,28 +152,4 @@ func (f *fixture) setup(t *testing.T) func() {
 		close(stopCh)
 		stopFunc()
 	}
-}
-
-// RunConformance will execute all conformance tests using the supplied
-// configuration
-func (f *fixture) RunConformance(t *testing.T) {
-	defer f.setup(t)()
-	t.Run("Conformance", func(t *testing.T) {
-		f.RunBasic(t)
-		f.RunExtended(t)
-	})
-}
-
-func (f *fixture) RunBasic(t *testing.T) {
-	defer f.setup(t)()
-	t.Run("Basic", func(t *testing.T) {
-		t.Run("PresentRecord", f.TestBasicPresentRecord)
-	})
-}
-
-func (f *fixture) RunExtended(t *testing.T) {
-	defer f.setup(t)()
-	t.Run("Extended", func(t *testing.T) {
-		t.Run("DeletingOneRecordRetainsOthers", f.TestExtendedDeletingOneRecordRetainsOthers)
-	})
 }
