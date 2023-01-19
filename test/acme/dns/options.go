@@ -23,8 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 )
 
 // Option applies a configuration option to the test fixture being built
