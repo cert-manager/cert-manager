@@ -97,6 +97,9 @@ func (o *WebhookServerOptions) Complete() error {
 	return nil
 }
 
+// Config creates a new webhook server config that includes generic upstream
+// apiserver options, rest client config and the Solvers configured for this
+// webhook server
 func (o WebhookServerOptions) Config() (*apiserver.Config, error) {
 	// TODO have a "real" external address
 	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
@@ -118,6 +121,8 @@ func (o WebhookServerOptions) Config() (*apiserver.Config, error) {
 	return config, nil
 }
 
+// RunWebhookServer creates a new apiserver, registers an API Group for each of
+// the configured solvers and runs the new apiserver.
 func (o WebhookServerOptions) RunWebhookServer(stopCh <-chan struct{}) error {
 	config, err := o.Config()
 	if err != nil {
