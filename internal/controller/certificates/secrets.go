@@ -24,6 +24,7 @@ import (
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -32,23 +33,64 @@ import (
 // information about the Issuer and Certificate.
 // If the X.509 certificate is not-nil, additional annotations will be added
 // relating to its Common Name and Subject Alternative Names.
-func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.Certificate) map[string]string {
+func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.Certificate) (map[string]string, error) {
 	annotations := make(map[string]string)
-
-	annotations[cmapi.CertificateNameKey] = crt.Name
-	annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
-	annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
 
 	// Only add certificate data if certificate is non-nil.
 	if certificate != nil {
+		var err error
+
+		var errList []error
+		annotations[cmapi.SubjectOrganizationsAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Organization)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectOrganizationalUnitsAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.OrganizationalUnit)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectCountriesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Country)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectProvincesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Province)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectLocalitiesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Locality)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectPostalCodesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.PostalCode)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectStreetAddressesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.StreetAddress)
+		errList = append(errList, err)
+
+		annotations[cmapi.SubjectSerialNumberAnnotationKey] = certificate.Subject.SerialNumber
+		annotations[cmapi.EmailsAnnotationKey] = strings.Join(certificate.EmailAddresses, ",")
+
+		// return first error
+		for _, v := range errList {
+			if v != nil {
+				return nil, err
+			}
+		}
+
+		// remove empty subject annotations
+		for k, v := range annotations {
+			if v == "" {
+				delete(annotations, k)
+			}
+		}
+
 		annotations[cmapi.CommonNameAnnotationKey] = certificate.Subject.CommonName
 		annotations[cmapi.AltNamesAnnotationKey] = strings.Join(certificate.DNSNames, ",")
 		annotations[cmapi.IPSANAnnotationKey] = strings.Join(utilpki.IPAddressesToString(certificate.IPAddresses), ",")
 		annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(certificate.URIs), ",")
 	}
 
-	return annotations
+	annotations[cmapi.CertificateNameKey] = crt.Name
+	annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
+	annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
+
+	return annotations, nil
 }
 
 // OutputFormatDER returns the byte slice of the private key in DER format. To

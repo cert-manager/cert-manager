@@ -17,10 +17,14 @@ limitations under the License.
 package util
 
 import (
+	"bytes"
+	"encoding/csv"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -181,4 +185,45 @@ func Subset(set, subset []string) bool {
 	}
 
 	return true
+}
+
+// JoinWithEscapeCSV returns the given list as a single line of CSV that
+// is escaped with quotes if necessary
+func JoinWithEscapeCSV(in []string) (string, error) {
+	b := new(bytes.Buffer)
+	writer := csv.NewWriter(b)
+	writer.Write(in)
+	writer.Flush()
+
+	if err := writer.Error(); err != nil {
+		return "", fmt.Errorf("failed to write %q as CSV: %w", in, err)
+	}
+
+	s := b.String()
+	// CSV writer adds a trailing new line, we need to clean it up
+	s = strings.TrimSuffix(s, "\n")
+	return s, nil
+}
+
+// SplitWithEscapeCSV parses the given input as a single line of CSV, which allows
+// a comma-separated list of strings to be parsed while allowing commas to be present
+// in each field. For example, a user can specify:
+// "10 Downing Street, Westminster",Manchester
+// to produce []string{"10 Downing Street, Westminster", "Manchester"}, keeping the comma
+// in the first address. Empty lines or multiple CSV records are both rejected.
+func SplitWithEscapeCSV(in string) ([]string, error) {
+	reader := csv.NewReader(strings.NewReader(in))
+
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %q as CSV: %w", in, err)
+	}
+
+	if len(records) == 0 {
+		return nil, fmt.Errorf("no values found after parsing %q", in)
+	} else if len(records) > 1 {
+		return nil, fmt.Errorf("refusing to use %q as input as it parses as multiple lines of CSV", in)
+	}
+
+	return records[0], nil
 }

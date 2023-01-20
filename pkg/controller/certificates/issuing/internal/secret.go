@@ -160,7 +160,12 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		}
 	}
 
-	secret.Annotations = certificates.AnnotationsForCertificateSecret(crt, certificate)
+	var err error
+	secret.Annotations, err = certificates.AnnotationsForCertificateSecret(crt, certificate)
+	if err != nil {
+		return err
+	}
+
 	if secret.Labels == nil {
 		secret.Labels = make(map[string]string)
 	}

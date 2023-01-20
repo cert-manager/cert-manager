@@ -49,21 +49,39 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 			),
 			certificate: &x509.Certificate{
 				Subject: pkix.Name{
-					CommonName: "cert-manager",
+					CommonName:         "cert-manager",
+					Organization:       []string{"Example Organization 1", "Example Organization 2"},
+					OrganizationalUnit: []string{"Example Organizational Unit 1", "Example Organizational Unit 2"},
+					Country:            []string{"Country 1", "Country 2"},
+					Province:           []string{"Province 1", "Province 2"},
+					Locality:           []string{"City 1", "City 2"},
+					StreetAddress:      []string{"1725 Slough Avenue, Suite 200, Scranton Business Park", "123 Example St"},
+					PostalCode:         []string{"55555", "12345"},
+					SerialNumber:       "12345678",
 				},
-				DNSNames:    []string{"example.com", "cert-manager.io"},
-				IPAddresses: []net.IP{{1, 1, 1, 1}, {1, 2, 3, 4}},
-				URIs:        urls,
+				DNSNames:       []string{"example.com", "cert-manager.io"},
+				IPAddresses:    []net.IP{{1, 1, 1, 1}, {1, 2, 3, 4}},
+				URIs:           urls,
+				EmailAddresses: []string{"test1@example.com", "test2@cert-manager.io"},
 			},
 			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "another-test-issuer",
-				"cert-manager.io/issuer-kind":      "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":     "my-group.hello.world",
-				"cert-manager.io/common-name":      "cert-manager",
-				"cert-manager.io/alt-names":        "example.com,cert-manager.io",
-				"cert-manager.io/ip-sans":          "1.1.1.1,1.2.3.4",
-				"cert-manager.io/uri-sans":         "spiffe.io//cert-manager.io/test,spiffe.io//hello.world",
+				"cert-manager.io/certificate-name":            "test-certificate",
+				"cert-manager.io/issuer-name":                 "another-test-issuer",
+				"cert-manager.io/issuer-kind":                 "GoogleCASIssuer",
+				"cert-manager.io/issuer-group":                "my-group.hello.world",
+				"cert-manager.io/common-name":                 "cert-manager",
+				"cert-manager.io/alt-names":                   "example.com,cert-manager.io",
+				"cert-manager.io/ip-sans":                     "1.1.1.1,1.2.3.4",
+				"cert-manager.io/uri-sans":                    "spiffe.io//cert-manager.io/test,spiffe.io//hello.world",
+				"cert-manager.io/email-sans":                  "test1@example.com,test2@cert-manager.io",
+				"cert-manager.io/subject-organizations":       "Example Organization 1,Example Organization 2",
+				"cert-manager.io/subject-organizationalunits": "Example Organizational Unit 1,Example Organizational Unit 2",
+				"cert-manager.io/subject-countries":           "Country 1,Country 2",
+				"cert-manager.io/subject-provinces":           "Province 1,Province 2",
+				"cert-manager.io/subject-localities":          "City 1,City 2",
+				"cert-manager.io/subject-streetaddresses":     "\"1725 Slough Avenue, Suite 200, Scranton Business Park\",123 Example St",
+				"cert-manager.io/subject-postalcodes":         "55555,12345",
+				"cert-manager.io/subject-serialnumber":        "12345678",
 			},
 		},
 		"if pass non-nil certificate with only CommonName, expect all Annotations to be present": {
@@ -156,8 +174,9 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotAnnotations := AnnotationsForCertificateSecret(test.crt, test.certificate)
+			gotAnnotations, err := AnnotationsForCertificateSecret(test.crt, test.certificate)
 			assert.Equal(t, test.expAnnotations, gotAnnotations)
+			assert.Equal(t, nil, err)
 		})
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -40,11 +41,20 @@ func Test_translateAnnotations(t *testing.T) {
 
 	validAnnotations := func() map[string]string {
 		return map[string]string{
-			cmapi.CommonNameAnnotationKey:           "www.example.com",
-			cmapi.DurationAnnotationKey:             "168h", // 1 week
-			cmapi.RenewBeforeAnnotationKey:          "24h",
-			cmapi.UsagesAnnotationKey:               "server auth,signing",
-			cmapi.RevisionHistoryLimitAnnotationKey: "7",
+			cmapi.CommonNameAnnotationKey:                 "www.example.com",
+			cmapi.DurationAnnotationKey:                   "168h", // 1 week
+			cmapi.RenewBeforeAnnotationKey:                "24h",
+			cmapi.UsagesAnnotationKey:                     "server auth,signing",
+			cmapi.RevisionHistoryLimitAnnotationKey:       "7",
+			cmapi.EmailsAnnotationKey:                     "test@example.com",
+			cmapi.SubjectOrganizationsAnnotationKey:       "Test Organization",
+			cmapi.SubjectOrganizationalUnitsAnnotationKey: "Test Organizational Unit",
+			cmapi.SubjectCountriesAnnotationKey:           "Country",
+			cmapi.SubjectProvincesAnnotationKey:           "Province",
+			cmapi.SubjectLocalitiesAnnotationKey:          "City",
+			cmapi.SubjectStreetAddressesAnnotationKey:     `"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`,
+			cmapi.SubjectPostalCodesAnnotationKey:         "ABC123",
+			cmapi.SubjectSerialNumberAnnotationKey:        "123456",
 		}
 	}
 
@@ -58,6 +68,15 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
 				a.Equal(pointer.Int32(7), crt.Spec.RevisionHistoryLimit)
+				a.Equal("123456", crt.Spec.Subject.SerialNumber)
+
+				splitAddresses, splitErr := cmutil.SplitWithEscapeCSV(`"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`)
+				a.Equal(nil, splitErr)
+				a.Equal(splitAddresses, crt.Spec.Subject.StreetAddresses)
+
+				joinedAddresses, joinErr := cmutil.JoinWithEscapeCSV(crt.Spec.Subject.StreetAddresses)
+				a.Equal(nil, joinErr)
+				a.Equal(`"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`, joinedAddresses)
 			},
 		},
 		"success rsa private key algorithm": {
@@ -243,6 +262,14 @@ func Test_translateAnnotations(t *testing.T) {
 			mutate: func(tc *testCase) {
 				tc.annotations[cmapi.PrivateKeyAlgorithmAnnotationKey] = "ECDSA"
 				tc.annotations[cmapi.PrivateKeySizeAnnotationKey] = "128"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"bad street addresses": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.SubjectStreetAddressesAnnotationKey] = "invalid csv\","
 			},
 			expectedError: errInvalidIngressAnnotation,
 		},
