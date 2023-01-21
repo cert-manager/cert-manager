@@ -30,6 +30,8 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	shimhelper "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	issuer "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -48,15 +50,30 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1().Ingresses()
 	c.ingressLister = ingressInformer.Lister()
 
-	log := logf.FromContext(ctx.RootContext, ControllerName)
-	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, cmShared.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
-
-	queue := workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+	issuerInformer := cmShared.Certmanager().V1().Issuers()
 
 	mustSync := []cache.InformerSynced{
 		ingressInformer.Informer().HasSynced,
 		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
+		issuerInformer.Informer().HasSynced,
 	}
+	
+	issuerLister := issuerInformer.Lister()
+	// If we are running in non-namespaced mode, we also
+	// register event handlers and obtain a lister for ClusterIssuers.
+	var clusterIssuerLister cmlisters.ClusterIssuerLister
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := cmShared.Certmanager().V1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
+	log := logf.FromContext(ctx.RootContext, ControllerName)
+	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, cmShared.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager, issuer.NewHelper(issuerLister, clusterIssuerLister))
+
+	queue := workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+
+	
 
 	// We still requeue on "Deleted" for consistency with the rest of the
 	// controllers, but we don't actually need to. "Deleted" is only emitted

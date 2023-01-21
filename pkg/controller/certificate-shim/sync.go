@@ -44,6 +44,8 @@ import (
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
+	acmeorders "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
+	issuer "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
@@ -76,6 +78,7 @@ func SyncFnFor(
 	cmLister cmlisters.CertificateLister,
 	defaults controller.IngressShimOptions,
 	fieldManager string,
+	issuerHelper issuer.Helper,
 ) SyncFn {
 	return func(ctx context.Context, ingLike metav1.Object) error {
 		log := logf.WithResource(log, ingLike)
@@ -116,7 +119,7 @@ func SyncFnFor(
 			return nil
 		}
 
-		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup)
+		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, issuerHelper)
 		if err != nil {
 			return err
 		}
@@ -293,6 +296,7 @@ func buildCertificates(
 	cmLister cmlisters.CertificateLister,
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
+	issuerHelper issuer.Helper,
 ) (new, update []*cmapi.Certificate, _ error) {
 
 	var newCrts []*cmapi.Certificate
@@ -339,6 +343,11 @@ func buildCertificates(
 		return nil, nil, fmt.Errorf("buildCertificates: expected ingress or gateway, got %T", ingLike)
 	}
 
+	ingAnnotations := ingLike.GetAnnotations()
+	if ingAnnotations == nil {
+		ingAnnotations = map[string]string{}
+	}
+
 	for secretRef, hosts := range tlsHosts {
 		existingCrt, err := cmLister.Certificates(secretRef.Namespace).Get(secretRef.Name)
 		if !apierrors.IsNotFound(err) && err != nil {
@@ -353,21 +362,63 @@ func buildCertificates(
 			controllerGVK = gatewayGVK
 		}
 
+		issuerRef := cmmeta.ObjectReference{
+			Name:  issuerName,
+			Kind:  issuerKind,
+			Group: issuerGroup,
+		}
+
+		objectMeta := metav1.ObjectMeta{
+			Name:            secretRef.Name,
+			Namespace:       secretRef.Namespace,
+			Labels:          ingLike.GetLabels(),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
+		}
+
+		// Check wheter we should filter the given hosts lists by available ACME Challenge solvers
+		// to avoid later errors.
+		if ingAnnotations[cmacme.IgnoreUnmatchedDNSNamesKey] == "true" {
+			genericIssuer, err := issuerHelper.GetGenericIssuer(issuerRef, secretRef.Namespace)
+
+			if (err != nil){
+				log.Error(err, "failed to find issuer referred in ingress resource")
+				rec.Eventf(ingLike.(runtime.Object), corev1.EventTypeWarning, reasonBadConfig, "Could not find issuer %s for ingress. Please create the referred issuer as Issuer in this namespace or as ClusterIssuer.",
+				issuerName)
+				continue
+			}
+
+			if genericIssuer.GetSpec().ACME != nil {
+				filteredHosts := []string{}
+				solvers := genericIssuer.GetSpec().ACME.Solvers
+
+				for _, host := range hosts {
+					for _, solver := range solvers{
+						found, _, _, _, _, _, _ := acmeorders.FindSolverForDNSName(host, solver, objectMeta)
+
+						if found {
+							filteredHosts = append(filteredHosts, host)
+							break
+						}
+					}
+				}
+	
+				if len(filteredHosts) == 0 {
+					rec.Eventf(ingLike.(runtime.Object), corev1.EventTypeWarning, reasonBadConfig, "Failed to find a solver for any given DNS Names.")
+					continue
+				}
+	
+				hosts = filteredHosts
+			}else{
+				rec.Eventf(ingLike.(runtime.Object), corev1.EventTypeWarning, reasonBadConfig, "Got %s annotation but found not an ACME Issuer therefore skipping DNS Name filtering now.", cmacme.IgnoreUnmatchedDNSNamesKey)
+			}		
+		}
+
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            secretRef.Name,
-				Namespace:       secretRef.Namespace,
-				Labels:          ingLike.GetLabels(),
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
-			},
+			ObjectMeta: objectMeta,
 			Spec: cmapi.CertificateSpec{
 				DNSNames:   hosts,
 				SecretName: secretRef.Name,
-				IssuerRef: cmmeta.ObjectReference{
-					Name:  issuerName,
-					Kind:  issuerKind,
-					Group: issuerGroup,
-				},
+				IssuerRef: issuerRef,
 				Usages: cmapi.DefaultKeyUsages(),
 			},
 		}

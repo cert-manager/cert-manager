@@ -40,6 +40,7 @@ import (
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 )
 
 func Test_hasShimAnnotation(t *testing.T) {
@@ -78,6 +79,17 @@ func TestSync(t *testing.T) {
 		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	acmeClusterIssuer := gen.ClusterIssuer("issuer-name",
 		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
+
+	solvers := []cmacme.ACMEChallengeSolver{
+		{
+			Selector: &cmacme.CertificateDNSNameSelector{
+				DNSZones: []string{ "example.com" },
+			},
+		},
+	}
+	acmeClusterIssuerLimitedSolver := gen.ClusterIssuer("issuer-name",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}), gen.SetIssuerACMESolvers(solvers))
+	
 	type testT struct {
 		Name                string
 		IngressLike         metav1.Object
@@ -1458,6 +1470,182 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
+			},
+		},
+		{
+			Name:   "should filter the DNS Names by solvers specified in Issuer",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+						"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+						cmacme.IgnoreUnmatchedDNSNamesKey: "true",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com", "example.org"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuerLimitedSolver},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: []cmapi.KeyUsage{
+							cmapi.UsageSigning,
+							cmapi.UsageDigitalSignature,
+							cmapi.UsageContentCommitment,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "should return an error if filter the DNS Names by solvers specified in Issuer returns an empty list",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+						"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+						cmacme.IgnoreUnmatchedDNSNamesKey: "true",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"www.example.org", "example.org"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuerLimitedSolver},
+			ExpectedEvents:      []string{`Warning BadConfig Failed to find a solver for any given DNS Names.`},
+			ExpectedCreate: []*cmapi.Certificate{
+			},
+		},
+		{
+			Name:   "should do not filter DNS names if not given an ACME solver",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+						"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+						cmacme.IgnoreUnmatchedDNSNamesKey: "true",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"www.example.org", "example.org"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{clusterIssuer},
+			ExpectedEvents:      []string{fmt.Sprintf("Warning BadConfig Got %s annotation but found not an ACME Issuer therefore skipping DNS Name filtering now.", cmacme.IgnoreUnmatchedDNSNamesKey), `Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"www.example.org", "example.org"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: []cmapi.KeyUsage{
+							cmapi.UsageSigning,
+							cmapi.UsageDigitalSignature,
+							cmapi.UsageContentCommitment,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "should return an eror if not given an exiting Issuer name",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "i-do-not-exist",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+						"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+						cmacme.IgnoreUnmatchedDNSNamesKey: "true",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"www.example.org", "example.org"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuerLimitedSolver},
+			ExpectedEvents:      []string{`Warning BadConfig Could not find issuer i-do-not-exist for ingress. Please create the referred issuer as Issuer in this namespace or as ClusterIssuer.`},
+			ExpectedCreate: []*cmapi.Certificate{
 			},
 		},
 	}
@@ -2841,12 +3029,16 @@ func TestSync(t *testing.T) {
 			}
 			b.Init()
 			defer b.Stop()
+
+			issuerLister := b.FakeCMInformerFactory().Certmanager().V1().Issuers().Lister()
+			clusterIssuerLister := b.FakeCMInformerFactory().Certmanager().V1().ClusterIssuers().Lister()
+
 			sync := SyncFnFor(b.Recorder, logr.Discard(), b.CMClient, b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), controller.IngressShimOptions{
 				DefaultIssuerName:                 test.DefaultIssuerName,
 				DefaultIssuerKind:                 test.DefaultIssuerKind,
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,
 				DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
-			}, "cert-manager-test")
+			}, "cert-manager-test", issuerpkg.NewHelper(issuerLister, clusterIssuerLister))
 			b.Start()
 
 			err := sync(context.Background(), test.IngressLike)

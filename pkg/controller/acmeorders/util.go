@@ -78,6 +78,19 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 	}, nil
 }
 
+func FindSolverForDNSName(domainToFind string, solver cmacme.ACMEChallengeSolver, metadata metav1.ObjectMeta) (bool, bool, int, bool, int, bool, int){
+	if solver.Selector == nil {
+		// No selector is specified
+		return true, true, 0, true, 0, true, 0
+	}
+	
+	labelsMatch, numLabelsMatch := selectors.Labels(*solver.Selector).Matches(metadata, domainToFind)
+	dnsNamesMatch, numDNSNamesMatch := selectors.DNSNames(*solver.Selector).Matches(metadata, domainToFind)
+	dnsZonesMatch, numDNSZonesMatch := selectors.DNSZones(*solver.Selector).Matches(metadata, domainToFind)
+
+	return labelsMatch && dnsNamesMatch && dnsZonesMatch, labelsMatch, numLabelsMatch, dnsNamesMatch, numDNSNamesMatch, dnsZonesMatch, numDNSZonesMatch
+}
+
 func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.ChallengeSpec, error) {
 	log := logf.FromContext(ctx, "challengeSpecForAuthorization")
 	dbg := log.V(logf.DebugLevel)
@@ -131,11 +144,9 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 			continue
 		}
 
-		labelsMatch, numLabelsMatch := selectors.Labels(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
-		dnsNamesMatch, numDNSNamesMatch := selectors.DNSNames(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
-		dnsZonesMatch, numDNSZonesMatch := selectors.DNSZones(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
+		selectorMatch, labelsMatch, numLabelsMatch, dnsNamesMatch, numDNSNamesMatch, dnsZonesMatch, numDNSZonesMatch := FindSolverForDNSName(domainToFind, cfg, o.ObjectMeta)
 
-		if !labelsMatch || !dnsNamesMatch || !dnsZonesMatch {
+		if !selectorMatch {
 			dbg.Info("not selecting solver", "labels_match", labelsMatch, "dnsnames_match", dnsNamesMatch, "dnszones_match", dnsZonesMatch)
 			continue
 		}

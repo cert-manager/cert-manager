@@ -31,6 +31,8 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	shimhelper "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	issuer "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -53,9 +55,27 @@ type controller struct {
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	cmShared := ctx.SharedInformerFactory
 	c.gatewayLister = ctx.GWShared.Gateway().V1beta1().Gateways().Lister()
 	log := logf.FromContext(ctx.RootContext, ControllerName)
-	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
+
+	mustSync := []cache.InformerSynced{
+		ctx.GWShared.Gateway().V1beta1().Gateways().Informer().HasSynced,
+		ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().HasSynced,
+	}
+
+	issuerInformer := cmShared.Certmanager().V1().Issuers()
+	issuerLister := issuerInformer.Lister()
+	// If we are running in non-namespaced mode, we also
+	// register event handlers and obtain a lister for ClusterIssuers.
+	var clusterIssuerLister cmlisters.ClusterIssuerLister
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := cmShared.Certmanager().V1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
+	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager, issuer.NewHelper(issuerLister, clusterIssuerLister))
 
 	// We don't need to requeue Gateways on "Deleted" events, since our Sync
 	// function does nothing when the Gateway lister returns "not found". But we
@@ -78,10 +98,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		WorkFunc: certificateHandler(c.queue),
 	})
 
-	mustSync := []cache.InformerSynced{
-		ctx.GWShared.Gateway().V1beta1().Gateways().Informer().HasSynced,
-		ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().HasSynced,
-	}
+	
 
 	return c.queue, mustSync, nil
 }

@@ -38,6 +38,11 @@ const (
 	// of ingress on the created Certificate resource
 	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
 
+	// IgnoreUnmatchedDNSNames will ignore DNS names in a given Certificate Request if no matching Solver is configured, and IgnoreUnmatchedDNSNames is set to true.
+	// Issuing a certificate will fail if there is a DNS name not matched by a Solver, and IgnoreUnmatchedDNSNames is set to false.
+	// Defaults to false.
+	IgnoreUnmatchedDNSNamesKey = "acme.cert-manager.io/ignore-dns-names-with-missing-solver"
+
 	// DomainLabelKey is added to the labels of a Pod serving an ACME challenge.
 	// Its value will be the hash of the domain name that is being verified.
 	DomainLabelKey = "acme.cert-manager.io/http-domain"
