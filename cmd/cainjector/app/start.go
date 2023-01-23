@@ -187,58 +187,13 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		})
 	}
 
-	g.Go(func() (err error) {
-		defer func() {
-			o.log.Error(err, "manager goroutine exited")
-		}()
-
-		if err = mgr.Start(gctx); err != nil {
-			return fmt.Errorf("error running manager: %v", err)
-		}
-		return nil
-	})
-
-	select {
-	case <-gctx.Done(): // Exit early if we are shutting down or if the manager has exited with an error
-		// Wait for error group to complete and return
-		return g.Wait()
-	case <-mgr.Elected(): // Don't launch the controllers unless we have been elected leader
-		// Continue with setting up controller
+	// TODO: make the controllers to be started optional and make it possible to parameterize whether certs are watched
+	err = cainjector.RegisterAllInjectors(gctx, mgr, o.Namespace)
+	if err != nil {
+		o.log.Error(err, "failed to register controllers", err)
 	}
-
-	// Retry the start up of the certificate based controller in case the
-	// cert-manager CRDs have not been installed yet or in case the CRD API is
-	// not working. E.g. The conversion webhook has not yet had its CA bundle
-	// injected by the secret based controller, which is launched in its own
-	// goroutine.
-	// When shutting down, return the last error if there is one.
-	// Never retry if the controller exits cleanly.
-	g.Go(func() (err error) {
-		for {
-			err = cainjector.RegisterCertificateBased(gctx, mgr, o.Namespace)
-			if err == nil {
-				return
-			}
-			o.log.Error(err, "Error registering certificate based controllers. Retrying after 5 seconds.")
-			select {
-			case <-time.After(time.Second * 5):
-			case <-gctx.Done():
-				return
-			}
-		}
-	})
-
-	// Secrets based controller is started in its own goroutine so that it can
-	// perform injection of the CA bundle into any webhooks required by the
-	// cert-manager CRD API.
-	// We do not retry this controller because it only interacts with core APIs
-	// which should always be in a working state.
-	g.Go(func() (err error) {
-		if err = cainjector.RegisterSecretBased(gctx, mgr, o.Namespace); err != nil {
-			return fmt.Errorf("error registering secret controller: %v", err)
-		}
-		return
-	})
-
-	return g.Wait()
+	if err = mgr.Start(gctx); err != nil {
+		return fmt.Errorf("error running manager: %v", err)
+	}
+	return nil
 }
