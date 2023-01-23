@@ -146,7 +146,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if or .Values.webhook.config (gt (len .Values.webhook.volumeMounts) 0) }}
+          {{- if or .Values.webhook.config .Values.webhook.volumeMounts }}
           volumeMounts:
             {{- if .Values.webhook.config }}
             - name: config
