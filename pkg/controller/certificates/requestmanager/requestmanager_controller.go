@@ -321,7 +321,7 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 	var remaining []*cmapi.CertificateRequest
 	for _, req := range reqs {
 		log := logf.WithRelatedResource(log, req)
-		violations, err := certificates.RequestMatchesSpec(req, crt.Spec)
+		violations, err := pki.RequestMatchesSpec(req, crt.Spec)
 		if err != nil {
 			log.Error(err, "Failed to check if CertificateRequest matches spec, deleting CertificateRequest")
 			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {

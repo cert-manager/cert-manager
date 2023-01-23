@@ -349,7 +349,7 @@ func buildCertificateSigningRequest(crt *cmapi.Certificate, pk []byte, crName, s
 		return nil, err
 	}
 
-	ku, eku, err := pki.BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	ku, eku, err := pki.KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}

@@ -220,7 +220,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return c.deleteSecretResources(ctx, secrets)
 	}
 
-	violations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
+	violations, err := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if err != nil {
 		log.Error(err, "Internal error verifying if private key matches spec - please open an issue.")
 		return nil
@@ -254,7 +254,7 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Failed to decode private key stored in Secret %q - generating new key", crt.Spec.SecretName)
 		return c.createAndSetNextPrivateKey(ctx, crt)
 	}
-	violations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
+	violations, err := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if err != nil {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Failed to check if private key stored in Secret %q is up to date - generating new key", crt.Spec.SecretName)
 		return c.createAndSetNextPrivateKey(ctx, crt)

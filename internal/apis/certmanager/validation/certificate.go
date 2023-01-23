@@ -55,7 +55,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
 		}
 
-		sequence, err := pki.ParseSubjectStringToRdnSequence(crt.LiteralSubject)
+		sequence, err := pki.UnmarshalSubjectStringToRDNSequence(crt.LiteralSubject)
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("literalSubject"), crt.LiteralSubject, err.Error()))
 		}

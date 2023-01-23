@@ -22,7 +22,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -110,20 +109,6 @@ func URLsToString(uris []*url.URL) []string {
 	return uriStrs
 }
 
-func removeDuplicates(in []string) []string {
-	var found []string
-Outer:
-	for _, i := range in {
-		for _, i2 := range found {
-			if i2 == i {
-				continue Outer
-			}
-		}
-		found = append(found, i)
-	}
-	return found
-}
-
 // OrganizationForCertificate will return the Organization to set for the
 // Certificate resource.
 // If an Organization is not specifically set, a default will be used.
@@ -145,14 +130,18 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
 	if isCA {
 		ku |= x509.KeyUsageCertSign
 	}
+
+	// If no usages are specified, default to the ones specified in the
+	// Kubernetes API.
 	if len(usages) == 0 {
-		usages = append(usages, v1.DefaultKeyUsages()...)
+		usages = v1.DefaultKeyUsages()
 	}
+
 	for _, u := range usages {
 		if kuse, ok := apiutil.KeyUsageType(u); ok {
 			ku |= kuse
@@ -217,114 +206,72 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints) {
-		extension, err := buildBasicConstraintsExtensionsForCertificate(crt.Spec.IsCA)
+		extension, err := MarshalBasicConstraints(crt.Spec.IsCA)
 		if err != nil {
 			return nil, err
 		}
 		extraExtensions = append(extraExtensions, extension)
 	}
 
+	cr := &x509.CertificateRequest{
+		// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
+		// This value isn't used by Go at the time of writing.
+		// https://datatracker.ietf.org/doc/html/rfc2986#section-4
+		Version:            0,
+		SignatureAlgorithm: sigAlgo,
+		PublicKeyAlgorithm: pubKeyAlgo,
+		DNSNames:           dnsNames,
+		IPAddresses:        iPAddresses,
+		URIs:               uriNames,
+		EmailAddresses:     crt.Spec.EmailAddresses,
+		ExtraExtensions:    extraExtensions,
+	}
+
 	if isLiteralCertificateSubjectEnabled() && len(crt.Spec.LiteralSubject) > 0 {
-		rawSubject, err := ParseSubjectStringToRawDerBytes(crt.Spec.LiteralSubject)
+		rawSubject, err := ParseSubjectStringToRawDERBytes(crt.Spec.LiteralSubject)
 		if err != nil {
 			return nil, err
 		}
 
-		return &x509.CertificateRequest{
-			// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc2986#section-4
-			Version:            0,
-			SignatureAlgorithm: sigAlgo,
-			PublicKeyAlgorithm: pubKeyAlgo,
-			RawSubject:         rawSubject,
-			DNSNames:           dnsNames,
-			IPAddresses:        iPAddresses,
-			URIs:               uriNames,
-			EmailAddresses:     crt.Spec.EmailAddresses,
-			ExtraExtensions:    extraExtensions,
-		}, nil
+		cr.RawSubject = rawSubject
 	} else {
-		return &x509.CertificateRequest{
-			// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc2986#section-4
-			Version:            0,
-			SignatureAlgorithm: sigAlgo,
-			PublicKeyAlgorithm: pubKeyAlgo,
-
-			Subject: pkix.Name{
-				Country:            subject.Countries,
-				Organization:       organization,
-				OrganizationalUnit: subject.OrganizationalUnits,
-				Locality:           subject.Localities,
-				Province:           subject.Provinces,
-				StreetAddress:      subject.StreetAddresses,
-				PostalCode:         subject.PostalCodes,
-				SerialNumber:       subject.SerialNumber,
-				CommonName:         commonName,
-			},
-			DNSNames:        dnsNames,
-			IPAddresses:     iPAddresses,
-			URIs:            uriNames,
-			EmailAddresses:  crt.Spec.EmailAddresses,
-			ExtraExtensions: extraExtensions,
-		}, nil
+		cr.Subject = pkix.Name{
+			Country:            subject.Countries,
+			Organization:       organization,
+			OrganizationalUnit: subject.OrganizationalUnits,
+			Locality:           subject.Localities,
+			Province:           subject.Provinces,
+			StreetAddress:      subject.StreetAddresses,
+			PostalCode:         subject.PostalCodes,
+			SerialNumber:       subject.SerialNumber,
+			CommonName:         commonName,
+		}
 	}
 
+	return cr, nil
 }
 
 func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
-	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	ku, ekus, err := KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build key usages: %w", err)
 	}
 
-	usage, err := buildASN1KeyUsageRequest(ku)
+	usage, err := MarshalKeyUsage(ku)
 	if err != nil {
 		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
 	}
-	asn1ExtendedUsages := []asn1.ObjectIdentifier{}
-	for _, eku := range ekus {
-		if oid, ok := OIDFromExtKeyUsage(eku); ok {
-			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
-		}
+
+	// if no extended usages are specified, return early
+	if len(ekus) == 0 {
+		return []pkix.Extension{usage}, nil
 	}
 
-	extraExtensions := []pkix.Extension{usage}
-	if len(ekus) > 0 {
-		extendedUsage := pkix.Extension{
-			Id: OIDExtensionExtendedKeyUsage,
-		}
-		extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
-		if err != nil {
-			return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
-		}
-
-		extraExtensions = append(extraExtensions, extendedUsage)
-	}
-	return extraExtensions, nil
-}
-
-func buildBasicConstraintsExtensionsForCertificate(isCA bool) (pkix.Extension, error) {
-
-	basicConstraints := pkix.Extension{
-		Id: OIDExtensionBasicConstraints,
-	}
-
-	constraint := struct {
-		IsCA bool
-	}{
-		IsCA: isCA,
-	}
-
-	var err error
-	basicConstraints.Value, err = asn1.Marshal(constraint)
+	extendedUsages, err := MarshalExtKeyUsage(ekus, nil)
 	if err != nil {
-		return pkix.Extension{}, err
+		return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
 	}
-
-	return basicConstraints, nil
+	return []pkix.Extension{usage, extendedUsages}, nil
 }
 
 // GenerateTemplate will create a x509.Certificate for the given Certificate resource.
@@ -345,7 +292,7 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	keyUsages, extKeyUsages, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	keyUsages, extKeyUsages, err := KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}
@@ -366,74 +313,56 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 		return nil, err
 	}
 
+	cert := &x509.Certificate{
+		// Version must be 2 according to RFC5280.
+		// A version value of 2 confusingly means version 3.
+		// This value isn't used by Go at the time of writing.
+		// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
+		Version:               2,
+		BasicConstraintsValid: true,
+		SerialNumber:          serialNumber,
+		PublicKeyAlgorithm:    pubKeyAlgo,
+		IsCA:                  crt.Spec.IsCA,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(certDuration),
+		// see http://golang.org/pkg/crypto/x509/#KeyUsage
+		KeyUsage:       keyUsages,
+		ExtKeyUsage:    extKeyUsages,
+		DNSNames:       dnsNames,
+		IPAddresses:    ipAddresses,
+		URIs:           uris,
+		EmailAddresses: crt.Spec.EmailAddresses,
+	}
+
 	if isLiteralCertificateSubjectEnabled() && len(crt.Spec.LiteralSubject) > 0 {
-		rawSubject, err := ParseSubjectStringToRawDerBytes(crt.Spec.LiteralSubject)
+		rawSubject, err := ParseSubjectStringToRawDERBytes(crt.Spec.LiteralSubject)
 		if err != nil {
 			return nil, err
 		}
 
-		return &x509.Certificate{
-			// Version must be 2 according to RFC5280.
-			// A version value of 2 confusingly means version 3.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-			Version:               2,
-			BasicConstraintsValid: true,
-			SerialNumber:          serialNumber,
-			PublicKeyAlgorithm:    pubKeyAlgo,
-			IsCA:                  crt.Spec.IsCA,
-			RawSubject:            rawSubject,
-			NotBefore:             time.Now(),
-			NotAfter:              time.Now().Add(certDuration),
-			// see http://golang.org/pkg/crypto/x509/#KeyUsage
-			KeyUsage:       keyUsages,
-			ExtKeyUsage:    extKeyUsages,
-			DNSNames:       dnsNames,
-			IPAddresses:    ipAddresses,
-			URIs:           uris,
-			EmailAddresses: crt.Spec.EmailAddresses,
-		}, nil
+		cert.RawSubject = rawSubject
 	} else {
-
-		return &x509.Certificate{
-			// Version must be 2 according to RFC5280.
-			// A version value of 2 confusingly means version 3.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-			Version:               2,
-			BasicConstraintsValid: true,
-			SerialNumber:          serialNumber,
-			PublicKeyAlgorithm:    pubKeyAlgo,
-			IsCA:                  crt.Spec.IsCA,
-			Subject: pkix.Name{
-				Country:            subject.Countries,
-				Organization:       organization,
-				OrganizationalUnit: subject.OrganizationalUnits,
-				Locality:           subject.Localities,
-				Province:           subject.Provinces,
-				StreetAddress:      subject.StreetAddresses,
-				PostalCode:         subject.PostalCodes,
-				SerialNumber:       subject.SerialNumber,
-				CommonName:         commonName,
-			},
-			NotBefore: time.Now(),
-			NotAfter:  time.Now().Add(certDuration),
-			// see http://golang.org/pkg/crypto/x509/#KeyUsage
-			KeyUsage:       keyUsages,
-			ExtKeyUsage:    extKeyUsages,
-			DNSNames:       dnsNames,
-			IPAddresses:    ipAddresses,
-			URIs:           uris,
-			EmailAddresses: crt.Spec.EmailAddresses,
-		}, nil
+		cert.Subject = pkix.Name{
+			Country:            subject.Countries,
+			Organization:       organization,
+			OrganizationalUnit: subject.OrganizationalUnits,
+			Locality:           subject.Localities,
+			Province:           subject.Provinces,
+			StreetAddress:      subject.StreetAddresses,
+			PostalCode:         subject.PostalCodes,
+			SerialNumber:       subject.SerialNumber,
+			CommonName:         commonName,
+		}
 	}
+
+	return cert, nil
 }
 
 // GenerateTemplate will create a x509.Certificate for the given
 // CertificateRequest resource
 func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	keyUsage, extKeyUsage, err := BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}
@@ -650,7 +579,7 @@ func extractCommonName(spec v1.CertificateSpec) (string, error) {
 	var commonName = spec.CommonName
 	if isLiteralCertificateSubjectEnabled() && len(spec.LiteralSubject) > 0 {
 		commonName = ""
-		sequence, err := ParseSubjectStringToRdnSequence(spec.LiteralSubject)
+		sequence, err := UnmarshalSubjectStringToRDNSequence(spec.LiteralSubject)
 		if err != nil {
 			return "", err
 		}

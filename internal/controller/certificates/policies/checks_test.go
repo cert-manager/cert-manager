@@ -214,7 +214,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			reissue: true,
 		},
 		// we only have a basic test here for this as unit tests for the
-		// `certificates.RequestMatchesSpec` function cover all other cases.
+		// `pki.RequestMatchesSpec` function cover all other cases.
 		"trigger issuance when CertificateRequest does not match certificate spec": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "new.example.com",

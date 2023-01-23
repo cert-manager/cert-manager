@@ -14,27 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificates
+package pki
 
 import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
-	"crypto/x509/pkix"
-	"encoding/asn1"
 
 	"fmt"
 	"reflect"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // PrivateKeyMatchesSpec returns an error if the private key bit size
@@ -68,7 +63,7 @@ func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) 
 	//  This requires careful handling in order to not interrupt users upgrading
 	//  from older versions.
 	// The default RSA keySize is set to 2048.
-	keySize := pki.MinRSAKeySize
+	keySize := MinRSAKeySize
 	if spec.PrivateKey.Size > 0 {
 		keySize = spec.PrivateKey.Size
 	}
@@ -89,7 +84,7 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 	//  This requires careful handling in order to not interrupt users upgrading
 	//  from older versions.
 	// The default EC curve type is EC256
-	expectedKeySize := pki.ECCurve256
+	expectedKeySize := ECCurve256
 	if spec.PrivateKey.Size > 0 {
 		expectedKeySize = spec.PrivateKey.Size
 	}
@@ -113,7 +108,7 @@ func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSp
 // counterpart fields on the CertificateRequest.
 // If decoding the x509 certificate request fails, an error will be returned.
 func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec) ([]string, error) {
-	x509req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.Request)
+	x509req, err := DecodeX509CertificateRequestBytes(req.Spec.Request)
 	if err != nil {
 		return nil, err
 	}
@@ -125,21 +120,25 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	}
 
 	var violations []string
+
 	if spec.LiteralSubject == "" {
-		if x509req.Subject.CommonName != spec.CommonName {
-			violations = append(violations, "spec.commonName")
-		}
-		if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
-			violations = append(violations, "spec.dnsNames")
-		}
-		if !util.EqualUnsorted(pki.IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
+		// TODO: also check these fields if LiteralSubject is set
+		if !util.EqualUnsorted(IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
 			violations = append(violations, "spec.ipAddresses")
 		}
-		if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URIs) {
+		if !util.EqualUnsorted(URLsToString(x509req.URIs), spec.URIs) {
 			violations = append(violations, "spec.uris")
 		}
 		if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
 			violations = append(violations, "spec.emailAddresses")
+		}
+		if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
+			violations = append(violations, "spec.dnsNames")
+		}
+
+		// Comparing Subject fields
+		if x509req.Subject.CommonName != spec.CommonName {
+			violations = append(violations, "spec.commonName")
 		}
 		if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
 			violations = append(violations, "spec.subject.serialNumber")
@@ -165,30 +164,33 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		if !util.EqualUnsorted(x509req.Subject.StreetAddress, spec.Subject.StreetAddresses) {
 			violations = append(violations, "spec.subject.streetAddresses")
 		}
+
+		// TODO: also check these fields if LiteralSubject is set
 		if req.Spec.IsCA != spec.IsCA {
 			violations = append(violations, "spec.isCA")
 		}
 		if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
 			violations = append(violations, "spec.usages")
 		}
-		if spec.Duration != nil && req.Spec.Duration != nil &&
-			spec.Duration.Duration != req.Spec.Duration.Duration {
+		if req.Spec.Duration != nil && spec.Duration != nil &&
+			req.Spec.Duration.Duration != spec.Duration.Duration {
 			violations = append(violations, "spec.duration")
 		}
-		if !reflect.DeepEqual(spec.IssuerRef, req.Spec.IssuerRef) {
+		if !reflect.DeepEqual(req.Spec.IssuerRef, spec.IssuerRef) {
 			violations = append(violations, "spec.issuerRef")
 		}
+
+		// TODO: check spec.EncodeBasicConstraintsInRequest and spec.EncodeUsagesInRequest
 	} else {
 		// we have a LiteralSubject
 		// parse the subject of the csr in the same way as we parse LiteralSubject and see whether the RDN Sequences match
 
-		var rdnSequenceFromCertificateRequest pkix.RDNSequence
-		_, err2 := asn1.Unmarshal(x509req.RawSubject, &rdnSequenceFromCertificateRequest)
-		if err2 != nil {
-			return nil, err2
+		rdnSequenceFromCertificateRequest, err := UnmarshalRawDerBytesToRDNSequence(x509req.RawSubject)
+		if err != nil {
+			return nil, err
 		}
 
-		rdnSequenceFromCertificate, err := pki.ParseSubjectStringToRdnSequence(spec.LiteralSubject)
+		rdnSequenceFromCertificate, err := UnmarshalSubjectStringToRDNSequence(spec.LiteralSubject)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +209,7 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 // This is a purposely less comprehensive check than RequestMatchesSpec as some
 // issuers override/force certain fields.
 func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSpec) ([]string, error) {
-	x509cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	x509cert, err := DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
 		return nil, err
 	}
@@ -238,10 +240,10 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 		}
 	}
 
-	if !util.EqualUnsorted(pki.IPAddressesToString(x509cert.IPAddresses), spec.IPAddresses) {
+	if !util.EqualUnsorted(IPAddressesToString(x509cert.IPAddresses), spec.IPAddresses) {
 		violations = append(violations, "spec.ipAddresses")
 	}
-	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URIs) {
+	if !util.EqualUnsorted(URLsToString(x509cert.URIs), spec.URIs) {
 		violations = append(violations, "spec.uris")
 	}
 	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailAddresses) {
@@ -249,91 +251,4 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	}
 
 	return violations, nil
-}
-
-// staticTemporarySerialNumber is a fixed serial number we use for temporary certificates
-const staticTemporarySerialNumber = "1234567890"
-
-// GenerateLocallySignedTemporaryCertificate signs a temporary certificate for
-// the given certificate resource using a one-use temporary CA that is then
-// discarded afterwards.
-// This is to mitigate a potential attack against x509 certificates that use a
-// predictable serial number and weak MD5 hashing algorithms.
-// In practice, this shouldn't really be a concern anyway.
-func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []byte) ([]byte, error) {
-	// generate a throwaway self-signed root CA
-	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
-	if err != nil {
-		return nil, err
-	}
-	caCertTemplate, err := pki.GenerateTemplate(&cmapi.Certificate{
-		Spec: cmapi.CertificateSpec{
-			CommonName: "cert-manager.local",
-			IsCA:       true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	_, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
-	if err != nil {
-		return nil, err
-	}
-
-	// sign a temporary certificate using the root CA
-	template, err := pki.GenerateTemplate(crt)
-	if err != nil {
-		return nil, err
-	}
-	template.Subject.SerialNumber = staticTemporarySerialNumber
-
-	signeeKey, err := pki.DecodePrivateKeyBytes(pkData)
-	if err != nil {
-		return nil, err
-	}
-
-	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-// RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
-type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration) *metav1.Time
-
-// RenewalTime calculates renewal time for a certificate. Default renewal time
-// is 2/3 through certificate's lifetime. If user has configured
-// spec.renewBefore, renewal time will be renewBefore period before expiry
-// (unless that is after the expiry).
-func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Duration) *metav1.Time {
-
-	// 1. Calculate how long before expiry a cert should be renewed
-
-	actualDuration := notAfter.Sub(notBefore)
-
-	renewBefore := actualDuration / 3
-
-	// If spec.renewBefore was set (and is less than duration)
-	// respect that. We don't want to prevent users from renewing
-	// longer lived certs more frequently.
-	if renewBeforeOverride != nil && renewBeforeOverride.Duration < actualDuration {
-		renewBefore = renewBeforeOverride.Duration
-	}
-
-	// 2. Calculate when a cert should be renewed
-
-	// Truncate the renewal time to nearest second. This is important
-	// because the renewal time also gets stored on Certificate's status
-	// where it is truncated to the nearest second. We use the renewal time
-	// from Certificate's status to determine when the Certificate will be
-	// added to the queue to be renewed, but then re-calculate whether it
-	// needs to be renewed _now_ using this function- so returning a
-	// non-truncated value here would potentially cause Certificates to be
-	// re-queued for renewal earlier than the calculated renewal time thus
-	// causing Certificates to not be automatically renewed. See
-	// https://github.com/cert-manager/cert-manager/pull/4399.
-	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore).Truncate(time.Second))
-	return &rt
 }
