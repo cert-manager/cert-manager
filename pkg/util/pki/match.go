@@ -121,21 +121,20 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 
 	var violations []string
 
-	if spec.LiteralSubject == "" {
-		// TODO: also check these fields if LiteralSubject is set
-		if !util.EqualUnsorted(IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
-			violations = append(violations, "spec.ipAddresses")
-		}
-		if !util.EqualUnsorted(URLsToString(x509req.URIs), spec.URIs) {
-			violations = append(violations, "spec.uris")
-		}
-		if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
-			violations = append(violations, "spec.emailAddresses")
-		}
-		if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
-			violations = append(violations, "spec.dnsNames")
-		}
+	if !util.EqualUnsorted(IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
+		violations = append(violations, "spec.ipAddresses")
+	}
+	if !util.EqualUnsorted(URLsToString(x509req.URIs), spec.URIs) {
+		violations = append(violations, "spec.uris")
+	}
+	if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
+		violations = append(violations, "spec.emailAddresses")
+	}
+	if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
+		violations = append(violations, "spec.dnsNames")
+	}
 
+	if spec.LiteralSubject == "" {
 		// Comparing Subject fields
 		if x509req.Subject.CommonName != spec.CommonName {
 			violations = append(violations, "spec.commonName")
@@ -165,22 +164,6 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 			violations = append(violations, "spec.subject.streetAddresses")
 		}
 
-		// TODO: also check these fields if LiteralSubject is set
-		if req.Spec.IsCA != spec.IsCA {
-			violations = append(violations, "spec.isCA")
-		}
-		if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
-			violations = append(violations, "spec.usages")
-		}
-		if req.Spec.Duration != nil && spec.Duration != nil &&
-			req.Spec.Duration.Duration != spec.Duration.Duration {
-			violations = append(violations, "spec.duration")
-		}
-		if !reflect.DeepEqual(req.Spec.IssuerRef, spec.IssuerRef) {
-			violations = append(violations, "spec.issuerRef")
-		}
-
-		// TODO: check spec.EncodeBasicConstraintsInRequest and spec.EncodeUsagesInRequest
 	} else {
 		// we have a LiteralSubject
 		// parse the subject of the csr in the same way as we parse LiteralSubject and see whether the RDN Sequences match
@@ -199,6 +182,22 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 			violations = append(violations, "spec.literalSubject")
 		}
 	}
+
+	if req.Spec.IsCA != spec.IsCA {
+		violations = append(violations, "spec.isCA")
+	}
+	if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
+		violations = append(violations, "spec.usages")
+	}
+	if req.Spec.Duration != nil && spec.Duration != nil &&
+		req.Spec.Duration.Duration != spec.Duration.Duration {
+		violations = append(violations, "spec.duration")
+	}
+	if !reflect.DeepEqual(req.Spec.IssuerRef, spec.IssuerRef) {
+		violations = append(violations, "spec.issuerRef")
+	}
+
+	// TODO: check spec.EncodeBasicConstraintsInRequest and spec.EncodeUsagesInRequest
 
 	return violations, nil
 }
