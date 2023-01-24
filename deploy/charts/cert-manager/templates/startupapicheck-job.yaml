@@ -34,6 +34,9 @@ spec:
     spec:
       restartPolicy: OnFailure
       serviceAccountName: {{ template "startupapicheck.serviceAccountName" . }}
+      {{- if hasKey .Values.startupapicheck "automountServiceAccountToken" }}
+      automountServiceAccountToken: {{ .Values.startupapicheck.automountServiceAccountToken }}
+      {{- end }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
@@ -62,6 +65,10 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.startupapicheck.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       {{- with .Values.startupapicheck.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -72,6 +79,10 @@ spec:
       {{- end }}
       {{- with .Values.startupapicheck.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.startupapicheck.volumes }}
+      volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}
