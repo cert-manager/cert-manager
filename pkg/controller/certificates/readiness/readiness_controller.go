@@ -66,7 +66,7 @@ type controller struct {
 	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
 	policyEvaluator policyEvaluatorFunc
 	// renewalTimeCalculator calculates renewal time of a certificate
-	renewalTimeCalculator certificates.RenewalTimeFunc
+	renewalTimeCalculator pki.RenewalTimeFunc
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -84,7 +84,7 @@ func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	chain policies.Chain,
-	renewalTimeCalculator certificates.RenewalTimeFunc,
+	renewalTimeCalculator pki.RenewalTimeFunc,
 	policyEvaluator policyEvaluatorFunc,
 	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
@@ -259,7 +259,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		policies.NewReadinessPolicyChain(ctx.Clock),
-		certificates.RenewalTime,
+		pki.RenewalTime,
 		BuildReadyConditionFromChain,
 		ctx.FieldManager,
 	)

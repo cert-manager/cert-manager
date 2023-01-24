@@ -116,7 +116,6 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 
 // GenerateEd25519PrivateKey will generate an Ed25519 private key
 func GenerateEd25519PrivateKey() (ed25519.PrivateKey, error) {
-
 	_, prvkey, err := ed25519.GenerateKey(rand.Reader)
 
 	return prvkey, err

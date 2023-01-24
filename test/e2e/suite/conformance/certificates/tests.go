@@ -266,7 +266,7 @@ func (s *Suite) Define() {
 					return err
 				}
 
-				rdnSeq, err2 := pki.ParseSubjectStringToRdnSequence(literalSubject)
+				rdnSeq, err2 := pki.UnmarshalSubjectStringToRDNSequence(literalSubject)
 
 				if err2 != nil {
 					return err2

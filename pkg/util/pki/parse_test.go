@@ -366,7 +366,7 @@ func TestParseSingleCertificateChain(t *testing.T) {
 
 func TestMustParseRDN(t *testing.T) {
 	subject := "SERIALNUMBER=42, L=some-locality, ST=some-state-or-province, STREET=some-street, CN=foo-long.com, OU=FooLong, OU=Barq, OU=Baz, OU=Dept., O=Corp., C=US"
-	rdnSeq, err := ParseSubjectStringToRdnSequence(subject)
+	rdnSeq, err := UnmarshalSubjectStringToRDNSequence(subject)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +413,7 @@ func TestMustParseRDN(t *testing.T) {
 
 func TestMustKeepOrderInRawDerBytes(t *testing.T) {
 	subject := "CN=foo-long.com,OU=FooLong,OU=Barq,OU=Baz,OU=Dept.,O=Corp.,C=US"
-	bytes, err := ParseSubjectStringToRawDerBytes(subject)
+	bytes, err := ParseSubjectStringToRawDERBytes(subject)
 	if err != nil {
 		t.Fatal(err)
 	}

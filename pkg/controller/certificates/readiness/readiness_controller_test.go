@@ -30,8 +30,8 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -44,7 +44,7 @@ func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
 }
 
 // renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController.
-func renewalTimeBuilder(rt *metav1.Time) certificates.RenewalTimeFunc {
+func renewalTimeBuilder(rt *metav1.Time) pki.RenewalTimeFunc {
 	return func(notBefore, notAfter time.Time, cert *metav1.Duration) *metav1.Time {
 		return rt
 	}
