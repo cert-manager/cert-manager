@@ -175,7 +175,6 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.PodSpec{
-			AutomountServiceAccountToken: pointer.Bool(false),
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
