@@ -76,7 +76,7 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace string) error {
+func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace string, watchCerts bool) error {
 	// TODO: refactor
 	sds := &secretDataSource{
 		client: mgr.GetClient(),
@@ -119,34 +119,34 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 			return err
 		}
 
-		certTyp := setup.injector.NewTarget().AsObject()
-		if err := mgr.GetFieldIndexer().IndexField(ctx, certTyp, injectFromPath, injectableCAFromIndexer); err != nil {
-			err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
-			return err
-		}
-
-		if err := ctrl.NewControllerManagedBy(mgr).
+		b := ctrl.NewControllerManagedBy(mgr).
 			For(setup.objType).
 			Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForInjectableMapper{
 				Client:             mgr.GetClient(),
 				log:                log,
 				secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
-			}).Map)).
-			Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForCertificateMapper{
+			}).Map))
+		if watchCerts {
+			certTyp := setup.injector.NewTarget().AsObject()
+			if err := mgr.GetFieldIndexer().IndexField(ctx, certTyp, injectFromPath, injectableCAFromIndexer); err != nil {
+				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
+				return err
+			}
+			b.Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForCertificateMapper{
 				Client:                  mgr.GetClient(),
 				log:                     log,
 				certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 			}).Map)).
-			// TODO: make this bit optional
-			Watches(&source.Kind{Type: new(cmapi.Certificate)},
-				handler.EnqueueRequestsFromMapFunc((&certMapper{
-					Client:       mgr.GetClient(),
-					log:          log,
-					toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
-				}).Map)).
-			Complete(r); err != nil {
+				Watches(&source.Kind{Type: new(cmapi.Certificate)},
+					handler.EnqueueRequestsFromMapFunc((&certMapper{
+						Client:       mgr.GetClient(),
+						log:          log,
+						toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
+					}).Map))
+		}
+		err := b.Complete(r)
+		if err != nil {
 			err = fmt.Errorf("error registering controller for %s: %w", setup.objType.GetName(), err)
-			return err
 		}
 	}
 	return nil
