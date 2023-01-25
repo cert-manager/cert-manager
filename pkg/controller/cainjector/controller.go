@@ -36,6 +36,7 @@ import (
 
 // dropNotFound ignores the given error if it's a not-found error,
 // but otherwise just returns the argument.
+// TODO: we don't use this pattern anywhere else in this project so probably doesn't make sense here either
 func dropNotFound(err error) error {
 	if apierrors.IsNotFound(err) {
 		return nil
@@ -73,6 +74,7 @@ type InjectTarget interface {
 
 // Injectable is a point in a Kubernetes API object that represents a Kubernetes Service
 // reference with a corresponding spot for a CA bundle.
+// TODO: either add some actual functionality or remove this empty interface
 type Injectable interface {
 }
 
@@ -85,8 +87,6 @@ type Injectable interface {
 type CertInjector interface {
 	// NewTarget creates a new InjectTarget containing an empty underlying object.
 	NewTarget() InjectTarget
-	// IsAlpha tells the client to disregard "no matching kind" type of errors
-	IsAlpha() bool
 }
 
 // genericInjectReconciler is a reconciler that knows how to check if a given object is
@@ -127,6 +127,7 @@ func splitNamespacedName(nameStr string) types.NamespacedName {
 func (r *genericInjectReconciler) Reconcile(_ context.Context, req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.log.WithValues(r.resourceName, req.NamespacedName)
+	log.V(logf.DebugLevel).Info("Parsing injectable")
 
 	// fetch the target object
 	target := r.injector.NewTarget()

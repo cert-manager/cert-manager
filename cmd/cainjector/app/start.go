@@ -28,9 +28,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/api"
@@ -58,6 +63,10 @@ type InjectorControllerOptions struct {
 	// PprofAddr is the address at which Go profiler will be run if enabled.
 	// The profiler should never be exposed on a public address.
 	PprofAddr string
+
+	// WatchCerts detemines whether cainjector's control loops will watch
+	// cert-manager Certificate resources as potential sources of CA data.
+	WatchCerts bool
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -89,6 +98,7 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"of a leadership. This is only applicable if leader election is enabled.")
 
 	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, "Enable profiling for cainjector")
+	fs.BoolVar(&o.WatchCerts, "watch-certificates", true, "Watch cert-manager.io Certificate resources as potential sources for CA data. Requires cert-manager.io Certificate CRD to be installed. It is not required to watch Certificates if you only use cainjector as cert-manager's internal components and in that case setting this flag to false might slightly reduce memory consumption.")
 	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
 
 	utilfeature.DefaultMutableFeatureGate.AddFlag(fs)
@@ -187,58 +197,45 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		})
 	}
 
-	g.Go(func() (err error) {
-		defer func() {
-			o.log.Error(err, "manager goroutine exited")
-		}()
-
-		if err = mgr.Start(gctx); err != nil {
-			return fmt.Errorf("error running manager: %v", err)
+	// If cainjector has been configured to watch Certificate CRDs
+	// (--watch-certificates=true), poll kubeapiserver for 5 minutes or till
+	// certificate CRD is found.
+	if o.WatchCerts {
+		directClient, err := client.New(mgr.GetConfig(), client.Options{
+			Scheme: mgr.GetScheme(),
+			Mapper: mgr.GetRESTMapper(),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create client: %w", err)
 		}
-		return nil
-	})
-
-	select {
-	case <-gctx.Done(): // Exit early if we are shutting down or if the manager has exited with an error
-		// Wait for error group to complete and return
-		return g.Wait()
-	case <-mgr.Elected(): // Don't launch the controllers unless we have been elected leader
-		// Continue with setting up controller
+		err = wait.PollImmediate(time.Second, time.Minute*5, func() (bool, error) {
+			certsCRDName := types.NamespacedName{Name: "certificates.cert-manager.io"}
+			certsCRD := apiext.CustomResourceDefinition{}
+			err := directClient.Get(ctx, certsCRDName, &certsCRD)
+			if apierrors.IsNotFound(err) {
+				o.log.Info("cainjector has been configured to watch certificates, but certificates.cert-manager.io CRD not found, retrying with a backoff...")
+				return false, nil
+			} else if err != nil {
+				o.log.Error(err, "error checking if certificates.cert-manager.io CRD is installed")
+				return false, err
+			}
+			o.log.V(logf.DebugLevel).Info("certificates.cert-manager.io CRD found")
+			return true, nil
+		})
+		if err != nil {
+			o.log.Error(err, "error retrieving certificate.cert-manager.io CRDs")
+			return err
+		}
 	}
 
-	// Retry the start up of the certificate based controller in case the
-	// cert-manager CRDs have not been installed yet or in case the CRD API is
-	// not working. E.g. The conversion webhook has not yet had its CA bundle
-	// injected by the secret based controller, which is launched in its own
-	// goroutine.
-	// When shutting down, return the last error if there is one.
-	// Never retry if the controller exits cleanly.
-	g.Go(func() (err error) {
-		for {
-			err = cainjector.RegisterCertificateBased(gctx, mgr, o.Namespace)
-			if err == nil {
-				return
-			}
-			o.log.Error(err, "Error registering certificate based controllers. Retrying after 5 seconds.")
-			select {
-			case <-time.After(time.Second * 5):
-			case <-gctx.Done():
-				return
-			}
-		}
-	})
-
-	// Secrets based controller is started in its own goroutine so that it can
-	// perform injection of the CA bundle into any webhooks required by the
-	// cert-manager CRD API.
-	// We do not retry this controller because it only interacts with core APIs
-	// which should always be in a working state.
-	g.Go(func() (err error) {
-		if err = cainjector.RegisterSecretBased(gctx, mgr, o.Namespace); err != nil {
-			return fmt.Errorf("error registering secret controller: %v", err)
-		}
-		return
-	})
-
-	return g.Wait()
+	// TODO: make the controllers to be started optional
+	err = cainjector.RegisterAllInjectors(gctx, mgr, o.Namespace, o.WatchCerts)
+	if err != nil {
+		o.log.Error(err, "failed to register controllers", err)
+		return err
+	}
+	if err = mgr.Start(gctx); err != nil {
+		return fmt.Errorf("error running manager: %v", err)
+	}
+	return nil
 }

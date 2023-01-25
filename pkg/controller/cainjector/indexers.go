@@ -139,11 +139,12 @@ func injectableCAFromIndexer(rawObj client.Object) []string {
 // (webhooks, api services, etc) that reference it.
 type secretToInjectableFunc func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request
 
-// buildSecretToInjectableFunc creates a certificateToInjectableFunc that maps from certificates to the given type of injectable.
+// buildSecretToInjectableFunc creates a certificateToInjectableFunc that maps from secrets to the given type of injectable.
 func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) secretToInjectableFunc {
 	return func(log logr.Logger, cl client.Reader, secretName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject().(client.ObjectList)
+		// TODO: ensure that this is cache lister, not a direct client
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with secret")
 			return nil
