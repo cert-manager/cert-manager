@@ -67,10 +67,29 @@ featureGates: ""
 # The maximum number of challenges that can be scheduled as 'processing' at once
 maxConcurrentChallenges: 60
 
-# Use to disable specific controllers, including any of the following also affects RBAC:
+# Use to disable specific controllers
+# Including any of the following also affects RBAC:
 # * ingress-shim
 # * challenges
 # * orders
+# Including any of the following does not affect RBAC:
+# * issuers
+# * clusterissuers
+# * certificates-metrics
+# * gateway-shim
+# * certificaterequests-issuer-acme
+# * certificaterequests-approver
+# * certificaterequests-issuer-ca
+# * certificaterequests-issuer-selfsigned
+# * certificaterequests-issuer-vault
+# * certificaterequests-issuer-venafi
+# * certificates-trigger
+# * certificates-issuing
+# * certificates-key-manager
+# * certificates-request-manager
+# * certificates-readiness
+# * certificates-revision-manager
+# An up-to-date list can be found in the cert manager repo in cmd/controller/app/options/options.go, search for allControllers
 disableControllers: []
 
 image:

@@ -1,9 +1,9 @@
-{{- if and .Values.global.rbac.create (not (has "ingress-shim" .Values.disableControllers)) }}
+{{- if and .Values.global.rbac.create (not (has "ingress-shim" .Values.disableControllers)) (not (has "challenges" .Values.disableControllers)) }}
 # ingress-shim controller role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -41,7 +41,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -51,7 +51,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress
 subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
