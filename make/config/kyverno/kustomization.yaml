@@ -1,10 +1,13 @@
 # This Kustomization is used to adapt the upstream Pod security policy for use
 # specifically in the cert-manager namespace.
-# Changes ClusterPolicy resources to namespaced Policy.
+# * Changes ClusterPolicy resources to namespaced Policy.
+# * Changes the failure action of the restrict_automount_sa_token policy from Audit to Enforce.
+#
 # Use as follows:
 #  kustomize build . > policy.yaml
 bases:
   - https://github.com/kyverno/policies/pod-security/enforce
+  - https://raw.githubusercontent.com/kyverno/policies/main/other/restrict_automount_sa_token/restrict_automount_sa_token.yaml
 patches:
   - patch: |-
       - op: replace
@@ -13,5 +16,8 @@ patches:
       - op: add
         path: /metadata/namespace
         value: cert-manager
+      - op: replace
+        path: /spec/validationFailureAction
+        value: enforce
     target:
       kind: ClusterPolicy
