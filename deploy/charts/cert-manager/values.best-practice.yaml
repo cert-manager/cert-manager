@@ -1,0 +1,116 @@
+# Helm chart values which make cert-manager comply with CIS, BSI and NSA
+# security benchmarks.
+#
+# Copied from https://cert-manager.io/docs/installation/best-practice/values.best-practice.yaml.
+#
+# See https://cert-manager.io/docs/installation/best-practice/
+automountServiceAccountToken: false
+serviceAccount:
+  automountServiceAccountToken: false
+volumes:
+- name: serviceaccount-token
+  projected:
+    defaultMode: 0444
+    sources:
+    - serviceAccountToken:
+        expirationSeconds: 3607
+        path: token
+    - configMap:
+        name: kube-root-ca.crt
+        items:
+        - key: ca.crt
+          path: ca.crt
+    - downwardAPI:
+        items:
+        - path: namespace
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+volumeMounts:
+- mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+  name: serviceaccount-token
+  readOnly: true
+
+webhook:
+  automountServiceAccountToken: false
+  serviceAccount:
+    automountServiceAccountToken: false
+  volumes:
+  - name: serviceaccount-token
+    projected:
+      defaultMode: 0444
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          name: kube-root-ca.crt
+          items:
+          - key: ca.crt
+            path: ca.crt
+      - downwardAPI:
+          items:
+          - path: namespace
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+  volumeMounts:
+  - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    name: serviceaccount-token
+    readOnly: true
+
+cainjector:
+  automountServiceAccountToken: false
+  serviceAccount:
+    automountServiceAccountToken: false
+  volumes:
+  - name: serviceaccount-token
+    projected:
+      defaultMode: 0444
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          name: kube-root-ca.crt
+          items:
+          - key: ca.crt
+            path: ca.crt
+      - downwardAPI:
+          items:
+          - path: namespace
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+  volumeMounts:
+  - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    name: serviceaccount-token
+    readOnly: true
+
+startupapicheck:
+  automountServiceAccountToken: false
+  serviceAccount:
+    automountServiceAccountToken: false
+  volumes:
+  - name: serviceaccount-token
+    projected:
+      defaultMode: 0444
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          name: kube-root-ca.crt
+          items:
+          - key: ca.crt
+            path: ca.crt
+      - downwardAPI:
+          items:
+          - path: namespace
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+  volumeMounts:
+  - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    name: serviceaccount-token
+    readOnly: true

@@ -172,6 +172,10 @@ feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=%,   $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
+# Install cert-manager with E2E specific images and deployment settings.
+# The values.best-practice.yaml file is applied for compliance with the
+# Kyverno policy which has been installed in a pre-requisite target.
+#
 # TODO: move these commands to separate scripts for readability
 #
 # ⚠ The following components are installed *before* cert-manager:
@@ -201,6 +205,7 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controlle
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
 		--set "dns01RecursiveNameserversOnly=true" \
+		--values deploy/charts/cert-manager/values.best-practice.yaml \
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind
