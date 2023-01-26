@@ -175,6 +175,11 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.PodSpec{
+			// The HTTP01 solver process does not need access to the
+			// Kubernetes API server, so we turn off automounting of
+			// the Kubernetes ServiceAccount token.
+			// See https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting
+			AutomountServiceAccountToken: pointer.Bool(false),
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
