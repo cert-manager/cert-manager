@@ -388,7 +388,7 @@ func TestSetToken(t *testing.T) {
 		expectedToken string
 		expectedErr   error
 
-		issuer          *cmapi.Issuer
+		issuer          cmapi.GenericIssuer
 		fakeLister      *listers.FakeSecretLister
 		mockCreateToken func(t *testing.T) CreateToken
 
@@ -641,17 +641,15 @@ func TestSetToken(t *testing.T) {
 			expectedErr:   nil,
 		},
 
-		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token": {
+		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token (Issuer)": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
 						Kubernetes: &cmapi.VaultKubernetesAuth{
 							Role: "kube-vault-role",
-							ServiceAccountRef: v1.ServiceAccountRef{
-								Name:              "my-service-account",
-								Audience:          "my-audience",
-								ExpirationSeconds: 100,
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-service-account",
 							},
 							Path: "my-path",
 						},
@@ -661,8 +659,45 @@ func TestSetToken(t *testing.T) {
 			mockCreateToken: func(t *testing.T) CreateToken {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
-					assert.Equal(t, "my-audience", req.Spec.Audiences[0])
-					assert.Equal(t, int64(100), *req.Spec.ExpirationSeconds)
+					assert.Equal(t, "vault://default-unit-test-ns/vault-issuer", req.Spec.Audiences[0])
+					assert.Equal(t, int64(60), *req.Spec.ExpirationSeconds)
+					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+						Token: "kube-sa-token",
+					}}, nil
+				}
+			},
+			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
+				// Vault exhanges the Kubernetes token with a Vault token.
+				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
+				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
+				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
+					`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"vault-token"}}`,
+				))}}, nil
+			}),
+			expectedToken: "vault-token",
+			expectedErr:   nil,
+		},
+
+		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token (ClusterIssuer)": {
+			issuer: gen.ClusterIssuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						Kubernetes: &cmapi.VaultKubernetesAuth{
+							Role: "kube-vault-role",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-service-account",
+							},
+							Path: "my-path",
+						},
+					},
+				}),
+			),
+			mockCreateToken: func(t *testing.T) CreateToken {
+				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
+					assert.Equal(t, "my-service-account", saName)
+					assert.Equal(t, "vault://vault-issuer", req.Spec.Audiences[0])
+					assert.Equal(t, int64(60), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",
 					}}, nil
@@ -692,6 +727,7 @@ func TestSetToken(t *testing.T) {
 			if test.mockCreateToken != nil {
 				mockCreateToken = test.mockCreateToken(t)
 			}
+
 			v := &Vault{
 				namespace:     "test-namespace",
 				secretsLister: test.fakeLister,
@@ -1076,10 +1112,8 @@ func TestNewConfig(t *testing.T) {
 					Auth: cmapi.VaultAuth{
 						Kubernetes: &cmapi.VaultKubernetesAuth{
 							Role: "my-role",
-							ServiceAccountRef: v1.ServiceAccountRef{
-								Name:              "my-sa",
-								Audience:          "my-audience",
-								ExpirationSeconds: 100,
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-sa",
 							},
 						},
 					}})),

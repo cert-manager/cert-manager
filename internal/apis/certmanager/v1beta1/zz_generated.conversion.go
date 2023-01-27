@@ -1467,14 +1467,8 @@ func Convert_certmanager_VaultIssuer_To_v1beta1_VaultIssuer(in *certmanager.Vaul
 
 func autoConvert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *VaultKubernetesAuth, out *certmanager.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	if in.SecretRef != nil {
-		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(meta.SecretKeySelector)
-		if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.SecretRef = nil
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
+		return err
 	}
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
@@ -1488,14 +1482,8 @@ func Convert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *
 
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1beta1_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	if in.SecretRef != nil {
-		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(metav1.SecretKeySelector)
-		if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.SecretRef = nil
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
+		return err
 	}
 	out.ServiceAccountRef = (*ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role

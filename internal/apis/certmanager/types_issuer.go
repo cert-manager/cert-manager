@@ -245,7 +245,7 @@ type VaultKubernetesAuth struct {
 	// for authenticating with Vault. Use of 'ambient credentials' is not
 	// supported. This field should not be set if serviceAccountRef is set.
 	// +optional
-	SecretRef *cmmeta.SecretKeySelector
+	SecretRef cmmeta.SecretKeySelector
 
 	// A reference to a service account that will be used to request a bound
 	// token (also known as "projected token"). Compared to using "secretRef",

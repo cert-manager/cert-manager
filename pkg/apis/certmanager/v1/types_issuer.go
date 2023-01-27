@@ -270,7 +270,9 @@ type VaultKubernetesAuth struct {
 	// for authenticating with Vault. Use of 'ambient credentials' is not
 	// supported.
 	// +optional
-	SecretRef *cmmeta.SecretKeySelector `json:"secretRef,omitempty"`
+	SecretRef cmmeta.SecretKeySelector `json:"secretRef,omitempty"`
+	// Note: it should be a pointer because it is optional. However, for
+	// backward compatibility, we cannot change it to a pointer.
 
 	// A reference to a service account that will be used to request a bound
 	// token (also known as "projected token"). Compared to using "secretRef",

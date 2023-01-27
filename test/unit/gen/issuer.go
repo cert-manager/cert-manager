@@ -354,10 +354,8 @@ func SetIssuerVaultKubernetesAuthServiceAccount(serviceAccount, role, path strin
 		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
 			Path: path,
 			Role: role,
-			ServiceAccountRef: v1.ServiceAccountRef{
-				Name:              serviceAccount,
-				Audience:          "vault",
-				ExpirationSeconds: 600,
+			ServiceAccountRef: &v1.ServiceAccountRef{
+				Name: serviceAccount,
 			},
 		}
 
