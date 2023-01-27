@@ -1289,8 +1289,6 @@ func Convert_certmanager_SelfSignedIssuer_To_v1_SelfSignedIssuer(in *certmanager
 
 func autoConvert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *v1.ServiceAccountRef, out *certmanager.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
-	out.Audience = in.Audience
-	out.ExpirationSeconds = in.ExpirationSeconds
 	return nil
 }
 
@@ -1301,8 +1299,6 @@ func Convert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *v1.Servic
 
 func autoConvert_certmanager_ServiceAccountRef_To_v1_ServiceAccountRef(in *certmanager.ServiceAccountRef, out *v1.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
-	out.Audience = in.Audience
-	out.ExpirationSeconds = in.ExpirationSeconds
 	return nil
 }
 
@@ -1463,12 +1459,16 @@ func Convert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.VaultIssu
 
 func autoConvert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *v1.VaultKubernetesAuth, out *certmanager.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
-		return err
+	if in.SecretRef != nil {
+		in, out := &in.SecretRef, &out.SecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SecretRef = nil
 	}
-	if err := Convert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(&in.ServiceAccountRef, &out.ServiceAccountRef, s); err != nil {
-		return err
-	}
+	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
 	return nil
 }
@@ -1480,12 +1480,16 @@ func Convert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *v1.Va
 
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *v1.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
-		return err
+	if in.SecretRef != nil {
+		in, out := &in.SecretRef, &out.SecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SecretRef = nil
 	}
-	if err := Convert_certmanager_ServiceAccountRef_To_v1_ServiceAccountRef(&in.ServiceAccountRef, &out.ServiceAccountRef, s); err != nil {
-		return err
-	}
+	out.ServiceAccountRef = (*v1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
 	return nil
 }
