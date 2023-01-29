@@ -19,6 +19,7 @@ package shimhelper
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ import (
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 var (
@@ -65,6 +67,83 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if commonName, found := ingLikeAnnotations[cmapi.CommonNameAnnotationKey]; found {
 		crt.Spec.CommonName = commonName
+	}
+
+	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
+		crt.Spec.EmailAddresses = strings.Split(emailAddresses, ",")
+	}
+
+	subject := &cmapi.X509Subject{}
+	if organizations, found := ingLikeAnnotations[cmapi.SubjectOrganizationsAnnotationKey]; found {
+		organizations, err := util.SplitWithEscapeCSV(organizations)
+		subject.Organizations = organizations
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectOrganizationsAnnotationKey, err)
+		}
+	}
+
+	if organizationalUnits, found := ingLikeAnnotations[cmapi.SubjectOrganizationalUnitsAnnotationKey]; found {
+		organizationalUnits, err := util.SplitWithEscapeCSV(organizationalUnits)
+		subject.OrganizationalUnits = organizationalUnits
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectOrganizationsAnnotationKey, err)
+		}
+	}
+
+	if countries, found := ingLikeAnnotations[cmapi.SubjectCountriesAnnotationKey]; found {
+		countries, err := util.SplitWithEscapeCSV(countries)
+		subject.Countries = countries
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectCountriesAnnotationKey, err)
+		}
+	}
+
+	if provinces, found := ingLikeAnnotations[cmapi.SubjectProvincesAnnotationKey]; found {
+		provinces, err := util.SplitWithEscapeCSV(provinces)
+		subject.Provinces = provinces
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectProvincesAnnotationKey, err)
+		}
+	}
+
+	if localities, found := ingLikeAnnotations[cmapi.SubjectLocalitiesAnnotationKey]; found {
+		localities, err := util.SplitWithEscapeCSV(localities)
+		subject.Localities = localities
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectLocalitiesAnnotationKey, err)
+		}
+	}
+
+	if postalCodes, found := ingLikeAnnotations[cmapi.SubjectPostalCodesAnnotationKey]; found {
+		postalCodes, err := util.SplitWithEscapeCSV(postalCodes)
+		subject.PostalCodes = postalCodes
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectPostalCodesAnnotationKey, err)
+		}
+	}
+
+	if streetAddresses, found := ingLikeAnnotations[cmapi.SubjectStreetAddressesAnnotationKey]; found {
+		streetAddresses, err := util.SplitWithEscapeCSV(streetAddresses)
+		subject.StreetAddresses = streetAddresses
+
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectStreetAddressesAnnotationKey, err)
+		}
+	}
+
+	if serialNumber, found := ingLikeAnnotations[cmapi.SubjectSerialNumberAnnotationKey]; found {
+		subject.SerialNumber = serialNumber
+	}
+
+	emptySubject := &cmapi.X509Subject{}
+	if !reflect.DeepEqual(emptySubject, subject) {
+		crt.Spec.Subject = subject
 	}
 
 	if duration, found := ingLikeAnnotations[cmapi.DurationAnnotationKey]; found {

@@ -15,4 +15,4 @@ rules:
   verbs:     ['use']
   resourceNames:
   - {{ template "webhook.fullname" . }}
-{{- end }} 
+{{- end }}

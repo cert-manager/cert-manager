@@ -139,7 +139,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		expectedDNSName = expectedDNSNames[0]
 	}
 
-	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	certificateKeyUsages, certificateExtKeyUsages, err := pki.KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}

@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// TODO: consider Go generics for all this stuff
 // this contains implementations of CertInjector (and dependents)
 // for various Kubernetes types that contain CA bundles.
 // This allows us to build a generic "injection" controller, and parameterize
@@ -31,10 +32,6 @@ import (
 
 // mutatingWebhookInjector knows how to create an InjectTarget a MutatingWebhookConfiguration.
 type mutatingWebhookInjector struct{}
-
-func (i mutatingWebhookInjector) IsAlpha() bool {
-	return false
-}
 
 func (i mutatingWebhookInjector) NewTarget() InjectTarget {
 	return &mutatingWebhookTarget{}
@@ -62,10 +59,6 @@ func (i validatingWebhookInjector) NewTarget() InjectTarget {
 	return &validatingWebhookTarget{}
 }
 
-func (i validatingWebhookInjector) IsAlpha() bool {
-	return false
-}
-
 // validatingWebhookTarget knows how to set CA data for all the webhooks
 // in a validatingWebhookConfiguration.
 type validatingWebhookTarget struct {
@@ -89,10 +82,6 @@ func (i apiServiceInjector) NewTarget() InjectTarget {
 	return &apiServiceTarget{}
 }
 
-func (i apiServiceInjector) IsAlpha() bool {
-	return false
-}
-
 // apiServiceTarget knows how to set CA data for the CA bundle in
 // the APIService.
 type apiServiceTarget struct {
@@ -113,10 +102,6 @@ type crdConversionInjector struct{}
 
 func (i crdConversionInjector) NewTarget() InjectTarget {
 	return &crdConversionTarget{}
-}
-
-func (i crdConversionInjector) IsAlpha() bool {
-	return false
 }
 
 // crdConversionTarget knows how to set CA data for the conversion webhook in CRDs

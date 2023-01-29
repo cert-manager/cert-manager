@@ -33,7 +33,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/keymanager"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/readiness"
@@ -325,7 +324,7 @@ func runAllControllers(t *testing.T, ctx context.Context, config *rest.Config) f
 	revCtrl, revQueue, revMustSync := revisionmanager.NewController(log, cmCl, cmFactory)
 	revisionManager := controllerpkg.NewController(ctx, "revisionmanager_controller", metrics, revCtrl.ProcessItem, revMustSync, nil, revQueue)
 
-	readyCtrl, readyQueue, readyMustSync := readiness.NewController(log, cmCl, factory, cmFactory, policies.NewReadinessPolicyChain(clock), certificates.RenewalTime, readiness.BuildReadyConditionFromChain, "readiness")
+	readyCtrl, readyQueue, readyMustSync := readiness.NewController(log, cmCl, factory, cmFactory, policies.NewReadinessPolicyChain(clock), pki.RenewalTime, readiness.BuildReadyConditionFromChain, "readiness")
 	readinessManager := controllerpkg.NewController(ctx, "readiness_controller", metrics, readyCtrl.ProcessItem, readyMustSync, nil, readyQueue)
 
 	issueCtrl, issueQueue, issueMustSync := issuing.NewController(log, kubeClient, cmCl, factory, cmFactory, &testpkg.FakeRecorder{}, clock, controllerpkg.CertificateOptions{}, "issuing")

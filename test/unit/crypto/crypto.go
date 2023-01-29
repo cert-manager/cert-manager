@@ -30,7 +30,6 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -179,7 +178,7 @@ func CreateCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*Cr
 		}),
 	)
 
-	tempCertBytes, err := certificates.GenerateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
+	tempCertBytes, err := pki.GenerateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}

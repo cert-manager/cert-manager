@@ -46,7 +46,7 @@ func buildCertificate(cn string, dnsNames ...string) *cmapi.Certificate {
 	}
 }
 
-func TestBuildUsages(t *testing.T) {
+func TestKeyUsagesForCertificate(t *testing.T) {
 	type testT struct {
 		name                string
 		usages              []cmapi.KeyUsage
@@ -101,7 +101,7 @@ func TestBuildUsages(t *testing.T) {
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			ku, eku, err := BuildKeyUsages(test.usages, test.isCa)
+			ku, eku, err := KeyUsagesForCertificateOrCertificateRequest(test.usages, test.isCa)
 			if err != nil && !test.expectedError {
 				t.Errorf("got unexpected error generating cert: %q", err)
 				return
@@ -388,6 +388,20 @@ func TestRemoveDuplicates(t *testing.T) {
 	}
 }
 
+func removeDuplicates(in []string) []string {
+	var found []string
+Outer:
+	for _, i := range in {
+		for _, i2 := range found {
+			if i2 == i {
+				continue Outer
+			}
+		}
+		found = append(found, i)
+	}
+	return found
+}
+
 func TestGenerateCSR(t *testing.T) {
 	// 0xa0 = DigitalSignature and Encipherment usage
 	asn1KeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
@@ -441,13 +455,13 @@ func TestGenerateCSR(t *testing.T) {
 	}
 
 	exampleLiteralSubject := "CN=actual-cn, OU=FooLong, OU=Bar, O=example.org"
-	rawExampleLiteralSubject, err := ParseSubjectStringToRawDerBytes(exampleLiteralSubject)
+	rawExampleLiteralSubject, err := ParseSubjectStringToRawDERBytes(exampleLiteralSubject)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	exampleMultiValueRDNLiteralSubject := "CN=actual-cn, OU=FooLong+OU=Bar, O=example.org"
-	rawExampleMultiValueRDNLiteralSubject, err := ParseSubjectStringToRawDerBytes(exampleMultiValueRDNLiteralSubject)
+	rawExampleMultiValueRDNLiteralSubject, err := ParseSubjectStringToRawDERBytes(exampleMultiValueRDNLiteralSubject)
 	if err != nil {
 		t.Fatal(err)
 	}
