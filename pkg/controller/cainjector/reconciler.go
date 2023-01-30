@@ -41,9 +41,9 @@ import (
 
 // reconciler syncs CA data from source to injectable.
 type reconciler struct {
-	// injector is responsible for the logic of actually setting a CA -- it's the component
-	// that contains type-specific logic.
-	injector CertInjector
+	// newInjectableTarget knows how to create a new injectable targt for
+	// the injectable being reconciled.
+	newInjectableTarget NewInjectableTarget
 	// sources is a list of available 'data sources' that can be used to extract
 	// caBundles from various source.
 	// This is defined as a variable to allow an instance of the secret-based
@@ -64,7 +64,7 @@ type reconciler struct {
 // it has requested.
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// fetch the target object
-	target := r.injector.NewTarget()
+	target := r.newInjectableTarget()
 
 	log := r.log.WithValues("kind", r.resourceName, "name", req.Name)
 	log.V(logf.DebugLevel).Info("Parsing injectable")
@@ -145,9 +145,9 @@ func dropNotFound(err error) error {
 	return err
 }
 
-// OwningCertForSecret gets the name of the owning certificate for a
+// owningCertForSecret gets the name of the owning certificate for a
 // given secret, returning nil if no such object exists.
-func OwningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
+func owningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
 	val, ok := secret.Annotations[certmanager.CertificateNameKey]
 	if !ok {
 		return nil
