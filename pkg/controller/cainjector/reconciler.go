@@ -34,63 +34,13 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// dropNotFound ignores the given error if it's a not-found error,
-// but otherwise just returns the argument.
-// TODO: we don't use this pattern anywhere else in this project so probably doesn't make sense here either
-func dropNotFound(err error) error {
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	return err
-}
+// This file contains logic to create reconcilers. By default a
+// reconciler is created for each of the injectables- CustomResourceDefinition,
+// Validating/MutatingWebhookConfiguration, APIService and gets triggered for
+// events on those resources as well as on Secrets and Certificates.
 
-// OwningCertForSecret gets the name of the owning certificate for a
-// given secret, returning nil if no such object exists.
-func OwningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
-	val, ok := secret.Annotations[certmanager.CertificateNameKey]
-	if !ok {
-		return nil
-	}
-	return &types.NamespacedName{
-		Name:      val,
-		Namespace: secret.Namespace,
-	}
-}
-
-// InjectTarget is a Kubernetes API object that has one or more references to Kubernetes
-// Services with corresponding fields for CA bundles.
-type InjectTarget interface {
-	// AsObject returns this injectable as an object.
-	// It should be a pointer suitable for mutation.
-	AsObject() client.Object
-
-	// SetCA sets the CA of this target to the given certificate data (in the standard
-	// PEM format used across Kubernetes).  In cases where multiple CA fields exist per
-	// target (like admission webhook configs), all CAs are set to the given value.
-	SetCA(data []byte)
-}
-
-// Injectable is a point in a Kubernetes API object that represents a Kubernetes Service
-// reference with a corresponding spot for a CA bundle.
-// TODO: either add some actual functionality or remove this empty interface
-type Injectable interface {
-}
-
-// CertInjector knows how to create an instance of an InjectTarget for some particular type
-// of inject target.  For instance, an implementation might create a InjectTarget
-// containing an empty MutatingWebhookConfiguration.  The underlying API object can
-// be populated (via AsObject) using client.Client#Get, and then CAs can be injected with
-// Injectables (representing the various individual webhooks in the config) retrieved with
-// Services.
-type CertInjector interface {
-	// NewTarget creates a new InjectTarget containing an empty underlying object.
-	NewTarget() InjectTarget
-}
-
-// genericInjectReconciler is a reconciler that knows how to check if a given object is
-// marked as requiring a CA, chase down the corresponding Service, Certificate, Secret, and
-// inject that into the object.
-type genericInjectReconciler struct {
+// reconciler syncs CA data from source to injectable.
+type reconciler struct {
 	// injector is responsible for the logic of actually setting a CA -- it's the component
 	// that contains type-specific logic.
 	injector CertInjector
@@ -110,24 +60,14 @@ type genericInjectReconciler struct {
 	resourceName string // just used for logging
 }
 
-// splitNamespacedName turns the string form of a namespaced name
-// (<namespace>/<name>) back into a types.NamespacedName.
-func splitNamespacedName(nameStr string) types.NamespacedName {
-	splitPoint := strings.IndexRune(nameStr, types.Separator)
-	if splitPoint == -1 {
-		return types.NamespacedName{Name: nameStr}
-	}
-	return types.NamespacedName{Namespace: nameStr[:splitPoint], Name: nameStr[splitPoint+1:]}
-}
-
-// Reconcile attempts to ensure that a particular object has all the CAs injected that
+// Reconcile attempts to ensure that a particular injectable has all the CAs injected that
 // it has requested.
-func (r *genericInjectReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// fetch the target object
 	target := r.injector.NewTarget()
 
-	log := r.log.WithValues("kind", r.resourceName)
-	log.V(logf.DebugLevel).Info("Parsing injectable", "name", req.Name)
+	log := r.log.WithValues("kind", r.resourceName, "name", req.Name)
+	log.V(logf.DebugLevel).Info("Parsing injectable")
 
 	if err := r.Client.Get(ctx, req.NamespacedName, target.AsObject()); err != nil {
 		if dropNotFound(err) == nil {
@@ -144,7 +84,6 @@ func (r *genericInjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Error(err, "unable to get metadata for object")
 		return ctrl.Result{}, err
 	}
-	log = logf.WithResource(r.log, metaObj)
 
 	// ignore resources that are being deleted
 	if !metaObj.GetDeletionTimestamp().IsZero() {
@@ -182,16 +121,49 @@ func (r *genericInjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Error(err, "unable to update target object with new CA data")
 		return ctrl.Result{}, err
 	}
-	log.V(logf.InfoLevel).Info("updated object")
+	log.V(logf.InfoLevel).Info("Updated object")
 
 	return ctrl.Result{}, nil
 }
 
-func (r *genericInjectReconciler) caDataSourceFor(log logr.Logger, metaObj metav1.Object) (caDataSource, error) {
+func (r *reconciler) caDataSourceFor(log logr.Logger, metaObj metav1.Object) (caDataSource, error) {
 	for _, s := range r.sources {
 		if s.Configured(log, metaObj) {
 			return s, nil
 		}
 	}
 	return nil, fmt.Errorf("could not determine ca data source for resource")
+}
+
+// dropNotFound ignores the given error if it's a not-found error,
+// but otherwise just returns the argument.
+// TODO: we don't use this pattern anywhere else in this project so probably doesn't make sense here either
+func dropNotFound(err error) error {
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+// OwningCertForSecret gets the name of the owning certificate for a
+// given secret, returning nil if no such object exists.
+func OwningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
+	val, ok := secret.Annotations[certmanager.CertificateNameKey]
+	if !ok {
+		return nil
+	}
+	return &types.NamespacedName{
+		Name:      val,
+		Namespace: secret.Namespace,
+	}
+}
+
+// splitNamespacedName turns the string form of a namespaced name
+// (<namespace>/<name>) back into a types.NamespacedName.
+func splitNamespacedName(nameStr string) types.NamespacedName {
+	splitPoint := strings.IndexRune(nameStr, types.Separator)
+	if splitPoint == -1 {
+		return types.NamespacedName{Name: nameStr}
+	}
+	return types.NamespacedName{Namespace: nameStr[:splitPoint], Name: nameStr[splitPoint+1:]}
 }
