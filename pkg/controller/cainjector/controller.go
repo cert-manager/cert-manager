@@ -46,15 +46,13 @@ func dropNotFound(err error) error {
 
 // OwningCertForSecret gets the name of the owning certificate for a
 // given secret, returning nil if no such object exists.
-// Right now, this actually uses a label instead of owner refs,
-// since certmanager doesn't set owner refs on secrets.
 func OwningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
-	lblVal, hasLbl := secret.Annotations[certmanager.CertificateNameKey]
-	if !hasLbl {
+	val, ok := secret.Annotations[certmanager.CertificateNameKey]
+	if !ok {
 		return nil
 	}
 	return &types.NamespacedName{
-		Name:      lblVal,
+		Name:      val,
 		Namespace: secret.Namespace,
 	}
 }
@@ -124,13 +122,13 @@ func splitNamespacedName(nameStr string) types.NamespacedName {
 
 // Reconcile attempts to ensure that a particular object has all the CAs injected that
 // it has requested.
-func (r *genericInjectReconciler) Reconcile(_ context.Context, req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.log.WithValues(r.resourceName, req.NamespacedName)
-	log.V(logf.DebugLevel).Info("Parsing injectable")
-
+func (r *genericInjectReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// fetch the target object
 	target := r.injector.NewTarget()
+
+	log := r.log.WithValues("kind", r.resourceName)
+	log.V(logf.DebugLevel).Info("Parsing injectable", "name", req.Name)
+
 	if err := r.Client.Get(ctx, req.NamespacedName, target.AsObject()); err != nil {
 		if dropNotFound(err) == nil {
 			// don't requeue on deletions, which yield a non-found object

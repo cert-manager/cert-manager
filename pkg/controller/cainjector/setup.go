@@ -95,13 +95,14 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 	// Registers a c/r controller for each of APIService, CustomResourceDefinition, Mutating/ValidatingWebhookConfiguration
 	// TODO: add a flag to allow users to configure which of these controllers should be registered
 	for _, setup := range injectorSetups {
-		log := ctrl.Log.WithName(setup.objType.GetName())
-		log.Info("Registering new controller")
+		log := ctrl.Log.WithValues("kind", setup.resourceName)
+		log.Info("Registering a reconciler for injectable")
 		r := &genericInjectReconciler{
-			injector:  setup.injector,
-			namespace: namespace,
-			log:       log,
-			Client:    mgr.GetClient(),
+			injector:     setup.injector,
+			namespace:    namespace,
+			resourceName: setup.resourceName,
+			log:          log,
+			Client:       mgr.GetClient(),
 			// TODO: refactor
 			sources: []caDataSource{
 				sds,
@@ -110,9 +111,10 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 			},
 		}
 
-		// This code does some magic to make it possible to filter
-		// injectables by whether they have the annotations we're
-		// interested in when determining whether to trigger reconcilers
+		// Index injectable with a new field. If the injectable's CA is
+		// to be sourced from a Secret, the field's value will be the
+		// namespaced name of the Secret.
+		// This field can then be used as a field selector when listing injectables of this type.
 		secretTyp := setup.injector.NewTarget().AsObject()
 		if err := mgr.GetFieldIndexer().IndexField(ctx, secretTyp, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
 			err := fmt.Errorf("error making injectable indexable by inject-ca-from-secret annotation: %w", err)
@@ -127,6 +129,10 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 				secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
 			}).Map))
 		if watchCerts {
+			// Index injectable with a new field. If the injectable's CA is
+			// to be sourced from a Certificate's Secret, the field's value will be the
+			// namespaced name of the Certificate.
+			// This field can then be used as a field selector when listing injectables of this type.
 			certTyp := setup.injector.NewTarget().AsObject()
 			if err := mgr.GetFieldIndexer().IndexField(ctx, certTyp, injectFromPath, injectableCAFromIndexer); err != nil {
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
