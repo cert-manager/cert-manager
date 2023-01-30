@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -211,4 +213,34 @@ func injectableCAFromSecretIndexer(rawObj client.Object) []string {
 	}
 
 	return []string{secretNameRaw}
+}
+
+// isInjectable returns predicates that determine whether an object is a
+// cainjector injectable by looking at whether it has one of the three
+// annotations used to mark injectables.
+func isInjectable() predicate.Funcs {
+	f := func(o client.Object) bool {
+		annots := o.GetAnnotations()
+		if _, ok := annots[cmapi.WantInjectAPIServerCAAnnotation]; ok {
+			return true
+		}
+		if _, ok := annots[cmapi.WantInjectAnnotation]; ok {
+			return true
+		}
+		if _, ok := annots[cmapi.WantInjectFromSecretAnnotation]; ok {
+			return true
+		}
+		return false
+	}
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return f(e.ObjectOld)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return f(e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return f(e.Object)
+		},
+	}
 }

@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -122,7 +123,17 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 		}
 
 		b := ctrl.NewControllerManagedBy(mgr).
-			For(setup.objType).
+			For(setup.objType,
+				// We watch all CRDs,
+				// Validating/MutatingWebhookConfigurations,
+				// APIServices because the only way how to tell
+				// if an object is an injectable is from
+				// annotation value and this cannot be used to
+				// filter List/Watch. The earliest point where
+				// we can use the annotation to filter
+				// injectables is here where we define which
+				// objects' events should trigger a reconcile.
+				builder.WithPredicates(isInjectable())).
 			Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForInjectableMapper{
 				Client:             mgr.GetClient(),
 				log:                log,
