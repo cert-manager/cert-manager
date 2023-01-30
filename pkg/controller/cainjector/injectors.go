@@ -30,6 +30,36 @@ import (
 // it with these.
 // Ideally, we'd have some generic way to express this as well.
 
+// CertInjector knows how to create an instance of an InjectTarget for some particular type
+// of inject target.  For instance, an implementation might create a InjectTarget
+// containing an empty MutatingWebhookConfiguration.  The underlying API object can
+// be populated (via AsObject) using client.Client#Get, and then CAs can be injected with
+// Injectables (representing the various individual webhooks in the config) retrieved with
+// Services.
+type CertInjector interface {
+	// NewTarget creates a new InjectTarget containing an empty underlying object.
+	NewTarget() InjectTarget
+}
+
+// InjectTarget is a Kubernetes API object that has one or more references to Kubernetes
+// Services with corresponding fields for CA bundles.
+type InjectTarget interface {
+	// AsObject returns this injectable as an object.
+	// It should be a pointer suitable for mutation.
+	AsObject() client.Object
+
+	// SetCA sets the CA of this target to the given certificate data (in the standard
+	// PEM format used across Kubernetes).  In cases where multiple CA fields exist per
+	// target (like admission webhook configs), all CAs are set to the given value.
+	SetCA(data []byte)
+}
+
+// Injectable is a point in a Kubernetes API object that represents a Kubernetes Service
+// reference with a corresponding spot for a CA bundle.
+// TODO: either add some actual functionality or remove this empty interface
+type Injectable interface {
+}
+
 // mutatingWebhookInjector knows how to create an InjectTarget a MutatingWebhookConfiguration.
 type mutatingWebhookInjector struct{}
 

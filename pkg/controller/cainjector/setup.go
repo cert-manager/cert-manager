@@ -100,7 +100,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 	for _, setup := range injectorSetups {
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
 		log.Info("Registering a reconciler for injectable")
-		r := &genericInjectReconciler{
+		r := &reconciler{
 			injector:     setup.injector,
 			namespace:    namespace,
 			resourceName: setup.resourceName,
