@@ -37,44 +37,48 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
-// injectorSet describes a particular setup of the injector controller
-type injectorSetup struct {
+// this file contains the logic to set up the different reconcile loops run by cainjector
+// each reconciler corresponds to a type of injectable
+
+// setup is setup for a reconciler for a particular injectable type
+type setup struct {
 	resourceName string
-	injector     CertInjector
-	listType     runtime.Object
-	objType      client.Object
+	// newInjectableTarget knows how to create an an InjectableTarget for a particular injectable type
+	newInjectableTarget NewInjectableTarget
+	listType            runtime.Object
+	objType             client.Object
 }
 
 var (
-	MutatingWebhookSetup = injectorSetup{
-		resourceName: "mutatingwebhookconfiguration",
-		injector:     mutatingWebhookInjector{},
-		listType:     &admissionreg.MutatingWebhookConfigurationList{},
-		objType:      &admissionreg.MutatingWebhookConfiguration{},
+	MutatingWebhookSetup = setup{
+		resourceName:        "mutatingwebhookconfiguration",
+		newInjectableTarget: newMutatingWebhookInjectable,
+		listType:            &admissionreg.MutatingWebhookConfigurationList{},
+		objType:             &admissionreg.MutatingWebhookConfiguration{},
 	}
 
-	ValidatingWebhookSetup = injectorSetup{
-		resourceName: "validatingwebhookconfiguration",
-		injector:     validatingWebhookInjector{},
-		listType:     &admissionreg.ValidatingWebhookConfigurationList{},
-		objType:      &admissionreg.ValidatingWebhookConfiguration{},
+	ValidatingWebhookSetup = setup{
+		resourceName:        "validatingwebhookconfiguration",
+		newInjectableTarget: newValidatingWebhookInjectable,
+		listType:            &admissionreg.ValidatingWebhookConfigurationList{},
+		objType:             &admissionreg.ValidatingWebhookConfiguration{},
 	}
 
-	APIServiceSetup = injectorSetup{
-		resourceName: "apiservice",
-		injector:     apiServiceInjector{},
-		listType:     &apireg.APIServiceList{},
-		objType:      &apireg.APIService{},
+	APIServiceSetup = setup{
+		resourceName:        "apiservice",
+		newInjectableTarget: newAPIServiceInjectable,
+		listType:            &apireg.APIServiceList{},
+		objType:             &apireg.APIService{},
 	}
 
-	CRDSetup = injectorSetup{
-		resourceName: "customresourcedefinition",
-		injector:     crdConversionInjector{},
-		listType:     &apiext.CustomResourceDefinitionList{},
-		objType:      &apiext.CustomResourceDefinition{},
+	CRDSetup = setup{
+		resourceName:        "customresourcedefinition",
+		newInjectableTarget: newCRDConversionInjectable,
+		listType:            &apiext.CustomResourceDefinitionList{},
+		objType:             &apiext.CustomResourceDefinition{},
 	}
 
-	injectorSetups = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
+	injectorSetups = []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 )
 
 // registerAllInjectors registers all injectors and based on the
@@ -101,11 +105,12 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
 		log.Info("Registering a reconciler for injectable")
 		r := &reconciler{
-			injector:     setup.injector,
-			namespace:    namespace,
-			resourceName: setup.resourceName,
-			log:          log,
-			Client:       mgr.GetClient(),
+			// injector:     setup.injector,
+			namespace:           namespace,
+			resourceName:        setup.resourceName,
+			newInjectableTarget: setup.newInjectableTarget,
+			log:                 log,
+			Client:              mgr.GetClient(),
 			// TODO: refactor
 			sources: []caDataSource{
 				sds,
@@ -118,7 +123,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 		// to be sourced from a Secret, the field's value will be the
 		// namespaced name of the Secret.
 		// This field can then be used as a field selector when listing injectables of this type.
-		secretTyp := setup.injector.NewTarget().AsObject()
+		secretTyp := setup.newInjectableTarget().AsObject()
 		if err := mgr.GetFieldIndexer().IndexField(ctx, secretTyp, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
 			err := fmt.Errorf("error making injectable indexable by inject-ca-from-secret annotation: %w", err)
 			return err
@@ -157,7 +162,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 			// to be sourced from a Certificate's Secret, the field's value will be the
 			// namespaced name of the Certificate.
 			// This field can then be used as a field selector when listing injectables of this type.
-			certTyp := setup.injector.NewTarget().AsObject()
+			certTyp := setup.newInjectableTarget().AsObject()
 			if err := mgr.GetFieldIndexer().IndexField(ctx, certTyp, injectFromPath, injectableCAFromIndexer); err != nil {
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
 				return err

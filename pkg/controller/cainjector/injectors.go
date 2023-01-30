@@ -23,26 +23,39 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// TODO: consider Go generics for all this stuff
-// this contains implementations of CertInjector (and dependents)
-// for various Kubernetes types that contain CA bundles.
-// This allows us to build a generic "injection" controller, and parameterize
-// it with these.
-// Ideally, we'd have some generic way to express this as well.
+// This file contains logic for dealing with injectables, such as injecting CA
+// data to an instance of an injectable.
 
-// CertInjector knows how to create an instance of an InjectTarget for some particular type
-// of inject target.  For instance, an implementation might create a InjectTarget
-// containing an empty MutatingWebhookConfiguration.  The underlying API object can
-// be populated (via AsObject) using client.Client#Get, and then CAs can be injected with
-// Injectables (representing the various individual webhooks in the config) retrieved with
-// Services.
-type CertInjector interface {
-	// NewTarget creates a new InjectTarget containing an empty underlying object.
-	NewTarget() InjectTarget
+// NewInjectableTarget knows how to create InjectTarget for a particular type of
+// injectable.
+type NewInjectableTarget func() InjectTarget
+
+var _ NewInjectableTarget = newMutatingWebhookInjectable
+
+func newMutatingWebhookInjectable() InjectTarget {
+	return &mutatingWebhookTarget{}
 }
 
-// InjectTarget is a Kubernetes API object that has one or more references to Kubernetes
-// Services with corresponding fields for CA bundles.
+var _ NewInjectableTarget = newValidatingWebhookInjectable
+
+func newValidatingWebhookInjectable() InjectTarget {
+	return &validatingWebhookTarget{}
+}
+
+var _ NewInjectableTarget = newAPIServiceInjectable
+
+func newAPIServiceInjectable() InjectTarget {
+	return &apiServiceTarget{}
+}
+
+var _ NewInjectableTarget = newCRDConversionInjectable
+
+func newCRDConversionInjectable() InjectTarget {
+	return &crdConversionTarget{}
+}
+
+// InjectTarget knows how to set CA data to a particular instance of injectable,
+// for example an instance of ValidatingWebhookConfiguration.
 type InjectTarget interface {
 	// AsObject returns this injectable as an object.
 	// It should be a pointer suitable for mutation.
@@ -52,19 +65,6 @@ type InjectTarget interface {
 	// PEM format used across Kubernetes).  In cases where multiple CA fields exist per
 	// target (like admission webhook configs), all CAs are set to the given value.
 	SetCA(data []byte)
-}
-
-// Injectable is a point in a Kubernetes API object that represents a Kubernetes Service
-// reference with a corresponding spot for a CA bundle.
-// TODO: either add some actual functionality or remove this empty interface
-type Injectable interface {
-}
-
-// mutatingWebhookInjector knows how to create an InjectTarget a MutatingWebhookConfiguration.
-type mutatingWebhookInjector struct{}
-
-func (i mutatingWebhookInjector) NewTarget() InjectTarget {
-	return &mutatingWebhookTarget{}
 }
 
 // mutatingWebhookTarget knows how to set CA data for all the webhooks
@@ -80,13 +80,6 @@ func (t *mutatingWebhookTarget) SetCA(data []byte) {
 	for ind := range t.obj.Webhooks {
 		t.obj.Webhooks[ind].ClientConfig.CABundle = data
 	}
-}
-
-// validatingWebhookInjector knows how to create an InjectTarget a ValidatingWebhookConfiguration.
-type validatingWebhookInjector struct{}
-
-func (i validatingWebhookInjector) NewTarget() InjectTarget {
-	return &validatingWebhookTarget{}
 }
 
 // validatingWebhookTarget knows how to set CA data for all the webhooks
@@ -105,15 +98,8 @@ func (t *validatingWebhookTarget) SetCA(data []byte) {
 	}
 }
 
-// apiServiceInjector knows how to create an InjectTarget for APICAReferences
-type apiServiceInjector struct{}
-
-func (i apiServiceInjector) NewTarget() InjectTarget {
-	return &apiServiceTarget{}
-}
-
 // apiServiceTarget knows how to set CA data for the CA bundle in
-// the APIService.
+// the APIService spec.
 type apiServiceTarget struct {
 	obj apireg.APIService
 }
@@ -124,14 +110,6 @@ func (t *apiServiceTarget) AsObject() client.Object {
 
 func (t *apiServiceTarget) SetCA(data []byte) {
 	t.obj.Spec.CABundle = data
-}
-
-// TODO(directxman12): conversion webhooks
-// crdConversionInjector knows how to create an InjectTarget for CRD conversion webhooks
-type crdConversionInjector struct{}
-
-func (i crdConversionInjector) NewTarget() InjectTarget {
-	return &crdConversionTarget{}
 }
 
 // crdConversionTarget knows how to set CA data for the conversion webhook in CRDs

@@ -117,7 +117,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
 	}
-	owner := OwningCertForSecret(&secret)
+	owner := owningCertForSecret(&secret)
 	if owner == nil || *owner != certName {
 		log.V(logf.WarnLevel).Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
 		return nil, nil
