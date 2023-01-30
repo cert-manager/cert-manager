@@ -105,7 +105,6 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
 		log.Info("Registering a reconciler for injectable")
 		r := &reconciler{
-			// injector:     setup.injector,
 			namespace:           namespace,
 			resourceName:        setup.resourceName,
 			newInjectableTarget: setup.newInjectableTarget,
