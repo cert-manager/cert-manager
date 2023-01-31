@@ -40,6 +40,13 @@ import (
 // this file contains the logic to set up the different reconcile loops run by cainjector
 // each reconciler corresponds to a type of injectable
 
+const (
+	MutatingWebhookConfigurationName   = "mutatingwebhookconfiguration"
+	ValidatingWebhookConfigurationName = "validatingwebhookconfiguration"
+	APIServiceName                     = "apiservice"
+	CustomResourceDefinitionName       = "customresourcedefinition"
+)
+
 // setup is setup for a reconciler for a particular injectable type
 type setup struct {
 	resourceName string
@@ -47,6 +54,12 @@ type setup struct {
 	newInjectableTarget NewInjectableTarget
 	listType            runtime.Object
 	objType             client.Object
+}
+
+type SetupOptions struct {
+	Namespace                    string
+	EnableCertificatesDataSource bool
+	EnabledReconcilersFor        map[string]bool
 }
 
 var (
@@ -83,7 +96,7 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace string, watchCerts bool) error {
+func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptions) error {
 	// TODO: refactor
 	sds := &secretDataSource{
 		client: mgr.GetClient(),
@@ -99,13 +112,18 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 	kds := &kubeconfigDataSource{
 		apiserverCABundle: caBundle,
 	}
+	injectorSetups := []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 	// Registers a c/r controller for each of APIService, CustomResourceDefinition, Mutating/ValidatingWebhookConfiguration
 	// TODO: add a flag to allow users to configure which of these controllers should be registered
 	for _, setup := range injectorSetups {
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
+		if !opts.EnabledReconcilersFor[setup.resourceName] {
+			log.Info("Not registering a reconcile for injectable kind as it's disabled")
+			continue
+		}
 		log.Info("Registering a reconciler for injectable")
 		r := &reconciler{
-			namespace:           namespace,
+			namespace:           opts.Namespace,
 			resourceName:        setup.resourceName,
 			newInjectableTarget: setup.newInjectableTarget,
 			log:                 log,
@@ -156,7 +174,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 				log:                log,
 				secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
 			}).Map))
-		if watchCerts {
+		if opts.EnableCertificatesDataSource {
 			// Index injectable with a new field. If the injectable's CA is
 			// to be sourced from a Certificate's Secret, the field's value will be the
 			// namespaced name of the Certificate.
