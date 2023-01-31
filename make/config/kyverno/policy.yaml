@@ -74,7 +74,7 @@ spec:
     name: require-drop-all
     preconditions:
       all:
-      - key: '{{ request.operation }}'
+      - key: '{{ request.operation || ''BACKGROUND'' }}'
         operator: NotEquals
         value: DELETE
     validate:
@@ -84,7 +84,7 @@ spec:
             all:
             - key: ALL
               operator: AnyNotIn
-              value: '{{ element.securityContext.capabilities.drop || '''' }}'
+              value: '{{ element.securityContext.capabilities.drop[] || `[]` }}'
         list: request.object.spec.[ephemeralContainers, initContainers, containers][]
       message: Containers must drop `ALL` capabilities.
   - match:
@@ -95,7 +95,7 @@ spec:
     name: adding-capabilities-strict
     preconditions:
       all:
-      - key: '{{ request.operation }}'
+      - key: '{{ request.operation || ''BACKGROUND'' }}'
         operator: NotEquals
         value: DELETE
     validate:
@@ -103,7 +103,7 @@ spec:
       - deny:
           conditions:
             all:
-            - key: '{{ element.securityContext.capabilities.add[] || '''' }}'
+            - key: '{{ element.securityContext.capabilities.add[] || `[]` }}'
               operator: AnyNotIn
               value:
               - NET_BIND_SERVICE
@@ -552,25 +552,25 @@ spec:
       - spec:
           =(ephemeralContainers):
           - =(securityContext):
-              =(runAsNonRoot): true
+              =(runAsNonRoot): "true"
           =(initContainers):
           - =(securityContext):
-              =(runAsNonRoot): true
+              =(runAsNonRoot): "true"
           containers:
           - =(securityContext):
-              =(runAsNonRoot): true
+              =(runAsNonRoot): "true"
           securityContext:
-            runAsNonRoot: true
+            runAsNonRoot: "true"
       - spec:
           =(ephemeralContainers):
           - securityContext:
-              runAsNonRoot: true
+              runAsNonRoot: "true"
           =(initContainers):
           - securityContext:
-              runAsNonRoot: true
+              runAsNonRoot: "true"
           containers:
           - securityContext:
-              runAsNonRoot: true
+              runAsNonRoot: "true"
       message: Running as root is not allowed. Either the field spec.securityContext.runAsNonRoot
         must be set to `true`, or the fields spec.containers[*].securityContext.runAsNonRoot,
         spec.initContainers[*].securityContext.runAsNonRoot, and spec.ephemeralContainers[*].securityContext.runAsNonRoot
@@ -612,6 +612,45 @@ spec:
           =(annotations):
             =(container.apparmor.security.beta.kubernetes.io/*): runtime/default |
               localhost/*
+  validationFailureAction: enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Sample, EKS Best Practices
+    policies.kyverno.io/description: Kubernetes automatically mounts ServiceAccount
+      credentials in each Pod. The ServiceAccount may be assigned roles allowing Pods
+      to access API resources. Blocking this ability is an extension of the least
+      privilege best practice and should be followed if Pods do not need to speak
+      to the API server to function. This policy ensures that mounting of these ServiceAccount
+      tokens is blocked.
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod,ServiceAccount
+    policies.kyverno.io/title: Restrict Auto-Mount of Service Account Tokens
+  name: restrict-automount-sa-token
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: validate-automountServiceAccountToken
+    preconditions:
+      all:
+      - key: '{{ request."object".metadata.labels."app.kubernetes.io/part-of" || ''''
+          }}'
+        operator: NotEquals
+        value: policy-reporter
+    validate:
+      message: Auto-mounting of Service Account tokens is not allowed.
+      pattern:
+        spec:
+          automountServiceAccountToken: "false"
   validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
