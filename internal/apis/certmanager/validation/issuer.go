@@ -262,7 +262,52 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), iss.CABundleSecretRef.Name, "specified caBundleSecretRef and caBundle cannot be used together"))
 	}
 
-	// TODO: add validation for Vault authentication types
+	el = append(el, ValidateVaultIssuerAuth(&iss.Auth, fldPath.Child("auth"))...)
+
+	return el
+}
+
+func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	unionCount := 0
+	if auth.TokenSecretRef != nil {
+		unionCount++
+	}
+
+	if auth.AppRole != nil {
+		unionCount++
+	}
+
+	if auth.Kubernetes != nil {
+		unionCount++
+
+		kubeCount := 0
+		if len(auth.Kubernetes.SecretRef.Name) > 0 || len(auth.Kubernetes.SecretRef.Key) > 0 {
+			kubeCount++
+		}
+
+		if auth.Kubernetes.ServiceAccountRef != nil {
+			kubeCount++
+			if len(auth.Kubernetes.ServiceAccountRef.Name) == 0 {
+				el = append(el, field.Required(fldPath.Child("kubernetes", "serviceAccountRef", "name"), ""))
+			}
+		}
+
+		if kubeCount == 0 {
+			el = append(el, field.Required(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"))
+		}
+		if kubeCount > 1 {
+			el = append(el, field.Forbidden(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"))
+		}
+	}
+
+	if unionCount == 0 {
+		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef"))
+	}
+	// Because of backwards compatibility, we allow multiple auth methods to be specified.
+	// This is not ideal, but we can't break existing users.
+	// The order of precedence is: tokenSecretRef, appRole, kubernetes
 
 	return el
 }
