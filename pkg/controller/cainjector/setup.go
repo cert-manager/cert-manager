@@ -29,7 +29,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -121,6 +123,17 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 			err := fmt.Errorf("error making injectable indexable by inject-ca-from-secret annotation: %w", err)
 			return err
 		}
+		predicates := predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				return hasInjectableAnnotation(e.ObjectNew)
+			},
+			CreateFunc: func(e event.CreateEvent) bool {
+				return hasInjectableAnnotation(e.Object)
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return hasInjectableAnnotation(e.Object)
+			},
+		}
 
 		b := ctrl.NewControllerManagedBy(mgr).
 			For(setup.objType,
@@ -133,7 +146,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 				// we can use the annotation to filter
 				// injectables is here where we define which
 				// objects' events should trigger a reconcile.
-				builder.WithPredicates(isInjectable())).
+				builder.WithPredicates(predicates)).
 			Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForInjectableMapper{
 				Client:             mgr.GetClient(),
 				log:                log,
