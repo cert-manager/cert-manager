@@ -64,9 +64,29 @@ type InjectorControllerOptions struct {
 	// The profiler should never be exposed on a public address.
 	PprofAddr string
 
-	// WatchCerts detemines whether cainjector's control loops will watch
+	// EnableCertificateDataSource detemines whether cainjector's control loops will watch
 	// cert-manager Certificate resources as potential sources of CA data.
-	WatchCerts bool
+	EnableCertificateDataSource bool
+
+	// EnableValidatingWebhookConfigurationsInjectable determines whether cainjector
+	// will spin up a control loop to inject CA data to annotated
+	// ValidatingWebhookConfigurations
+	EnableValidatingWebhookConfigurationsInjectable bool
+
+	// EnableMutatingWebhookConfigurationsInjectable determines whether cainjector
+	// will spin up a control loop to inject CA data to annotated
+	// MutatingWebhookConfigurations
+	EnableMutatingWebhookConfigurationsInjectable bool
+
+	// EnableMutatingWebhookConfigurationsInjectable determines whether cainjector
+	// will spin up a control loop to inject CA data to annotated
+	// CustomResourceDefinitions
+	EnableCustomResourceDefinitionsInjectable bool
+
+	// EnableMutatingWebhookConfigurationsInjectable determines whether cainjector
+	// will spin up a control loop to inject CA data to annotated
+	// APIServices
+	EnableAPIServicesInjectable bool
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -98,7 +118,11 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"of a leadership. This is only applicable if leader election is enabled.")
 
 	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, "Enable profiling for cainjector")
-	fs.BoolVar(&o.WatchCerts, "watch-certificates", true, "Watch cert-manager.io Certificate resources as potential sources for CA data. Requires cert-manager.io Certificate CRD to be installed. It is not required to watch Certificates if you only use cainjector as cert-manager's internal components and in that case setting this flag to false might slightly reduce memory consumption.")
+	fs.BoolVar(&o.EnableCertificateDataSource, "enable-certificates-data-source", true, "Enable configuring cert-manager.io Certificate resources as potential sources for CA data. Requires cert-manager.io Certificate CRD to be installed. It is not required to watch Certificates if you only use cainjector as cert-manager's internal components and in that case setting this flag to false might slightly reduce memory consumption")
+	fs.BoolVar(&o.EnableValidatingWebhookConfigurationsInjectable, "enable-validatingwebhookconfigurations-injectable", true, "Inject CA data to annotated ValidatingWebhookConfigurations. This functionality is required for cainjector to correctly function as cert-manager's internal component")
+	fs.BoolVar(&o.EnableMutatingWebhookConfigurationsInjectable, "enable-mutatingwebhookconfigurations-injectable", true, "Inject CA data to annotated MutatingWebhookConfigurations. This functionality is required for cainjector to work correctly as cert-manager's internal component")
+	fs.BoolVar(&o.EnableCustomResourceDefinitionsInjectable, "enable-customresourcedefinitions-injectable", true, "Inject CA data to annotated CustomResourceDefinitions. This functionality is not required if cainjecor is only used as cert-manager's internal component and setting it to false might slightly reduce memory consumption")
+	fs.BoolVar(&o.EnableAPIServicesInjectable, "enable-apiservices-injectable", true, "Inject CA data to annotated APIServices. This functionality is not required if cainjector is only used as cert-manager's internal component and setting it to false might reduce memory consumption")
 	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
 
 	utilfeature.DefaultMutableFeatureGate.AddFlag(fs)
@@ -200,7 +224,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// If cainjector has been configured to watch Certificate CRDs
 	// (--watch-certificates=true), poll kubeapiserver for 5 minutes or till
 	// certificate CRD is found.
-	if o.WatchCerts {
+	if o.EnableCertificateDataSource {
 		directClient, err := client.New(mgr.GetConfig(), client.Options{
 			Scheme: mgr.GetScheme(),
 			Mapper: mgr.GetRESTMapper(),
@@ -228,8 +252,17 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		}
 	}
 
-	// TODO: make the controllers to be started optional
-	err = cainjector.RegisterAllInjectors(gctx, mgr, o.Namespace, o.WatchCerts)
+	opts := cainjector.SetupOptions{
+		Namespace:                    o.Namespace,
+		EnableCertificatesDataSource: o.EnableCertificateDataSource,
+		EnabledReconcilersFor: map[string]bool{
+			cainjector.MutatingWebhookConfigurationName:   o.EnableMutatingWebhookConfigurationsInjectable,
+			cainjector.ValidatingWebhookConfigurationName: o.EnableValidatingWebhookConfigurationsInjectable,
+			cainjector.APIServiceName:                     o.EnableAPIServicesInjectable,
+			cainjector.CustomResourceDefinitionName:       o.EnableCustomResourceDefinitionsInjectable,
+		},
+	}
+	err = cainjector.RegisterAllInjectors(gctx, mgr, opts)
 	if err != nil {
 		o.log.Error(err, "failed to register controllers", err)
 		return err
