@@ -30,7 +30,7 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 TOOLS += ko=v0.12.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
-GATEWAY_API_VERSION=v0.5.1
+GATEWAY_API_VERSION=v0.6.0
 
 K8S_CODEGEN_VERSION=v0.26.0
 
