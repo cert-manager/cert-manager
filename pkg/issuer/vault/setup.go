@@ -106,7 +106,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 
 	// When using the Kubernetes auth, you must either set secretRef or
 	// serviceAccountRef.
-	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) == 0 && len(kubeAuth.ServiceAccountRef.Name) == 0) {
+	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) == 0 && kubeAuth.ServiceAccountRef != nil) {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthEitherRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthEitherRequired)
 		return nil
@@ -114,7 +114,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 
 	// When using the Kubernetes auth, you can't use secretRef and
 	// serviceAccountRef simultaneously.
-	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) != 0 && len(kubeAuth.ServiceAccountRef.Name) != 0) {
+	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) != 0 && kubeAuth.ServiceAccountRef != nil) {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthSingleRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthSingleRequired)
 		return nil

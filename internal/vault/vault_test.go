@@ -660,7 +660,7 @@ func TestSetToken(t *testing.T) {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
 					assert.Equal(t, "vault://default-unit-test-ns/vault-issuer", req.Spec.Audiences[0])
-					assert.Equal(t, int64(60), *req.Spec.ExpirationSeconds)
+					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",
 					}}, nil
@@ -697,7 +697,7 @@ func TestSetToken(t *testing.T) {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
 					assert.Equal(t, "vault://vault-issuer", req.Spec.Audiences[0])
-					assert.Equal(t, int64(60), *req.Spec.ExpirationSeconds)
+					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",
 					}}, nil

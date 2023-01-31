@@ -396,7 +396,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 		jwt = string(keyBytes)
 
-	case kubernetesAuth.ServiceAccountRef.Name != "":
+	case kubernetesAuth.ServiceAccountRef != nil:
 		aud := "vault://"
 		if v.issuer.GetNamespace() != "" {
 			aud += v.issuer.GetNamespace() + "/"
@@ -424,7 +424,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 		jwt = tokenrequest.Status.Token
 	default:
-		return "", fmt.Errorf("programmer mistake: both serviceAccountRef.name and tokenRef.name are empty")
+		return "", fmt.Errorf("programmer mistake: both serviceAccountRef and tokenRef.name are empty")
 	}
 
 	parameters := map[string]string{
