@@ -412,10 +412,10 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 				Audiences: []string{aud},
 
 				// Since the JWT is only used to authenticate with Vault and is
-				// immediately discarded, 1 minute is more than enough. Note
-				// that all Kubernetes API servers won't accept that duration,
-				// they may return a JWT with a longer lifetime.
-				ExpirationSeconds: pointer.Int64(60),
+				// immediately discarded, let's use the minimal duration
+				// possible. 10 minutes is the minimum allowed by the Kubernetes
+				// API.
+				ExpirationSeconds: pointer.Int64(600),
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
