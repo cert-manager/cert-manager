@@ -199,8 +199,8 @@ type VaultIssuer struct {
 	CABundleSecretRef *cmmeta.SecretKeySelector
 }
 
-// VaultAuth is configuration used to authenticate with a Vault server.
-// Only one of `tokenSecretRef`, `appRole` or `kubernetes` may be specified.
+// VaultAuth is configuration used to authenticate with a Vault server. The
+// order of precedence is [`tokenSecretRef`, `appRole` or `kubernetes`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *cmmeta.SecretKeySelector
