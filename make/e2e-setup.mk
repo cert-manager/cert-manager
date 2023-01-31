@@ -82,7 +82,7 @@ kind-exists: $(BINDIR)/scratch/kind-exists
 ## created.
 ##
 ## @category Development
-e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-kyverno e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
+e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
 
 # The function "image-tar" returns the path to the image tarball for a given
 # image name. For example:
@@ -160,6 +160,37 @@ $(call image-tar,vaultretagged): $(call image-tar,vault)
 
 FEATURE_GATES ?= AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true
 
+## Set this environment variable to a non empty string to cause cert-manager to
+## be installed using best-practice configuration settings, and to install
+## Kyverno with a policy that will cause cert-manager installation to fail
+## unless it conforms to the documented best-practices.
+## See https://cert-manager.io/docs/installation/best-practice/ for context.
+##
+##	make E2E_SETUP_OPTION_BESTPRACTICE=true e2e-setup
+##
+## @category Development
+E2E_SETUP_OPTION_BESTPRACTICE ?=
+## The URL of the Helm values file containing best-practice configuration values
+## which will allow cert-manager to be installed and used in a cluster where
+## Kyverno and the policies in make/config/kyverno have been applied.
+##
+## @category Development
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/f0cc0f3b88846969dd7e9894cddd43391a3135d1/public/docs/installation/best-practice/values.best-practice.yaml
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL_SUM := $(shell sha256sum <<<$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) | cut -d ' ' -f 1)
+
+## A local Helm values file containing best-practice configuration values.
+## It will be downloaded from E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL if
+## it does not exist.
+##
+## @category Development
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE ?= $(BINDIR)/scratch/values-bestpractice-$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL_SUM).yaml
+$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE): | $(BINDIR)/scratch
+	$(CURL) $(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) -o $@
+
+## Dependencies which will be added to e2e-setup-certmanager depending on the
+## supplied E2E_SETUP_OPTION_ variables.
+E2E_SETUP_OPTION_DEPENDENCIES := $(if $(E2E_SETUP_OPTION_BESTPRACTICE),e2e-setup-kyverno $(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE))
+
 # In make, there is no way to escape commas or spaces. So we use the
 # variables $(space) and $(comma) instead.
 null  =
@@ -180,9 +211,10 @@ feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 #
 # ⚠ The following components are installed *before* cert-manager:
 # * GatewayAPI: so that cert-manager can watch those CRs.
-# * Kyverno: so that it can check the cert-manager manifests against the policy in `config/kyverno/`.
+# * Kyverno: so that it can check the cert-manager manifests against the policy in `config/kyverno/`
+#		(only installed if E2E_SETUP_OPTION_BESTPRACTICE is set).
 .PHONY: e2e-setup-certmanager
-e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi e2e-setup-kyverno $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_KIND) $(NEEDS_HELM)
+e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_KIND) $(NEEDS_HELM)
 	@$(eval TAG = $(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(HELM) upgrade \
 		--install \
@@ -205,7 +237,7 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controlle
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
 		--set "dns01RecursiveNameserversOnly=true" \
-		--values deploy/charts/cert-manager/values.best-practice.yaml \
+		$(if $(E2E_SETUP_OPTION_BESTPRACTICE),--values=$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE)) \
 		cert-manager $< >/dev/null
 
 .PHONY: e2e-setup-bind
