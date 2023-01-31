@@ -305,9 +305,13 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 	if unionCount == 0 {
 		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef"))
 	}
-	// Because of backwards compatibility, we allow multiple auth methods to be specified.
-	// This is not ideal, but we can't break existing users.
-	// The order of precedence is: tokenSecretRef, appRole, kubernetes
+
+	// Due to the fact that there has not been any "oneOf" validation on
+	// tokenSecretRef, appRole, and kubernetes, people may already have created
+	// Issuer resources in which they have set two of these fields instead of
+	// one. To avoid breaking these manifests, we don't check that the user has
+	// set a single field among these three. Instead, we documented in the API
+	// that it is the first field that is set gets used.
 
 	return el
 }
