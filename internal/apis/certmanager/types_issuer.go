@@ -246,6 +246,7 @@ type VaultKubernetesAuth struct {
 	// supported. This field should not be set if serviceAccountRef is set.
 	// +optional
 	SecretRef cmmeta.SecretKeySelector
+	// Note: we don't use a pointer here for backwards compatibility.
 
 	// A reference to a service account that will be used to request a bound
 	// token (also known as "projected token"). Compared to using "secretRef",

@@ -271,8 +271,7 @@ type VaultKubernetesAuth struct {
 	// supported.
 	// +optional
 	SecretRef cmmeta.SecretKeySelector `json:"secretRef,omitempty"`
-	// Note: it should be a pointer because it is optional. However, for
-	// backward compatibility, we cannot change it to a pointer.
+	// Note: we don't use a pointer here for backwards compatibility.
 
 	// A reference to a service account that will be used to request a bound
 	// token (also known as "projected token"). Compared to using "secretRef",
