@@ -87,7 +87,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
 	if certName.Namespace == "" {
-		log.Error(nil, "invalid certificate name; needs a namespace/ prefix")
+		log.Error(nil, "invalid certificate name: needs a namespace/ prefix")
 		// TODO: should an error be returned here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
@@ -153,7 +153,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	secretName := splitNamespacedName(secretNameRaw)
 	log = log.WithValues("secret", secretName)
 	if secretName.Namespace == "" {
-		log.Error(nil, "invalid certificate name")
+		log.Error(nil, "invalid secret source: missing namespace/ prefix")
 		// TODO: should we return error here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
