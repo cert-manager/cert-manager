@@ -234,7 +234,7 @@ func isInjectable() predicate.Funcs {
 	}
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			return f(e.ObjectOld)
+			return f(e.ObjectNew)
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
 			return f(e.Object)
