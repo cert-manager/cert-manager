@@ -212,3 +212,20 @@ func injectableCAFromSecretIndexer(rawObj client.Object) []string {
 
 	return []string{secretNameRaw}
 }
+
+// hasInjectableAnnotation returns predicates that determine whether an object is a
+// cainjector injectable by looking at whether it has one of the three
+// annotations used to mark injectables.
+func hasInjectableAnnotation(o client.Object) bool {
+	annots := o.GetAnnotations()
+	if _, ok := annots[cmapi.WantInjectAPIServerCAAnnotation]; ok {
+		return true
+	}
+	if _, ok := annots[cmapi.WantInjectAnnotation]; ok {
+		return true
+	}
+	if _, ok := annots[cmapi.WantInjectFromSecretAnnotation]; ok {
+		return true
+	}
+	return false
+}

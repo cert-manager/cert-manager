@@ -18,6 +18,7 @@ package cainjector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -87,7 +88,8 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
 	if certName.Namespace == "" {
-		log.Error(nil, "invalid certificate name; needs a namespace/ prefix")
+		err := errors.New("invalid annotation")
+		log.Error(err, "invalid certificate name: needs a namespace/ prefix")
 		// TODO: should an error be returned here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
@@ -124,7 +126,8 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	// inject the CA data
 	caData, hasCAData := secret.Data[cmmeta.TLSCAKey]
 	if !hasCAData {
-		log.Error(nil, "certificate has no CA data")
+		err := errors.New("invalid CA source")
+		log.Error(err, "certificate has no CA data")
 		// don't requeue, we'll get called when the secret gets updated
 		return nil, nil
 	}
@@ -153,7 +156,8 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	secretName := splitNamespacedName(secretNameRaw)
 	log = log.WithValues("secret", secretName)
 	if secretName.Namespace == "" {
-		log.Error(nil, "invalid certificate name")
+		err := errors.New("invalid annotation")
+		log.Error(err, "invalid secret source: missing namespace/ prefix")
 		// TODO: should we return error here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
@@ -182,7 +186,8 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	// inject the CA data
 	caData, hasCAData := secret.Data[cmmeta.TLSCAKey]
 	if !hasCAData {
-		log.Error(nil, "certificate has no CA data")
+		err := errors.New("invalid CA source")
+		log.Error(err, "secret contains no CA data")
 		// don't requeue, we'll get called when the secret gets updated
 		return nil, nil
 	}

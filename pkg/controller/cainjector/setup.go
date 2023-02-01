@@ -27,8 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -95,13 +98,14 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 	// Registers a c/r controller for each of APIService, CustomResourceDefinition, Mutating/ValidatingWebhookConfiguration
 	// TODO: add a flag to allow users to configure which of these controllers should be registered
 	for _, setup := range injectorSetups {
-		log := ctrl.Log.WithName(setup.objType.GetName())
-		log.Info("Registering new controller")
+		log := ctrl.Log.WithValues("kind", setup.resourceName)
+		log.Info("Registering a reconciler for injectable")
 		r := &genericInjectReconciler{
-			injector:  setup.injector,
-			namespace: namespace,
-			log:       log,
-			Client:    mgr.GetClient(),
+			injector:     setup.injector,
+			namespace:    namespace,
+			resourceName: setup.resourceName,
+			log:          log,
+			Client:       mgr.GetClient(),
 			// TODO: refactor
 			sources: []caDataSource{
 				sds,
@@ -110,23 +114,49 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, namespace strin
 			},
 		}
 
-		// This code does some magic to make it possible to filter
-		// injectables by whether they have the annotations we're
-		// interested in when determining whether to trigger reconcilers
+		// Index injectable with a new field. If the injectable's CA is
+		// to be sourced from a Secret, the field's value will be the
+		// namespaced name of the Secret.
+		// This field can then be used as a field selector when listing injectables of this type.
 		secretTyp := setup.injector.NewTarget().AsObject()
 		if err := mgr.GetFieldIndexer().IndexField(ctx, secretTyp, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
 			err := fmt.Errorf("error making injectable indexable by inject-ca-from-secret annotation: %w", err)
 			return err
 		}
+		predicates := predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				return hasInjectableAnnotation(e.ObjectNew)
+			},
+			CreateFunc: func(e event.CreateEvent) bool {
+				return hasInjectableAnnotation(e.Object)
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return hasInjectableAnnotation(e.Object)
+			},
+		}
 
 		b := ctrl.NewControllerManagedBy(mgr).
-			For(setup.objType).
+			For(setup.objType,
+				// We watch all CRDs,
+				// Validating/MutatingWebhookConfigurations,
+				// APIServices because the only way how to tell
+				// if an object is an injectable is from
+				// annotation value and this cannot be used to
+				// filter List/Watch. The earliest point where
+				// we can use the annotation to filter
+				// injectables is here where we define which
+				// objects' events should trigger a reconcile.
+				builder.WithPredicates(predicates)).
 			Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForInjectableMapper{
 				Client:             mgr.GetClient(),
 				log:                log,
 				secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
 			}).Map))
 		if watchCerts {
+			// Index injectable with a new field. If the injectable's CA is
+			// to be sourced from a Certificate's Secret, the field's value will be the
+			// namespaced name of the Certificate.
+			// This field can then be used as a field selector when listing injectables of this type.
 			certTyp := setup.injector.NewTarget().AsObject()
 			if err := mgr.GetFieldIndexer().IndexField(ctx, certTyp, injectFromPath, injectableCAFromIndexer); err != nil {
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
