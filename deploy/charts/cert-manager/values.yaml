@@ -193,15 +193,55 @@ ingressShim: {}
 prometheus:
   enabled: true
   servicemonitor:
-    enabled: false
+    enabled: true
     prometheusInstance: default
     targetPort: 9402
     path: /metrics
-    interval: 60s
-    scrapeTimeout: 30s
+
+    # force namespace
+    # namespace: monitoring
+
+    # Fallback to the prometheus default unless specified
+    # interval: 10s
+
+    ## scheme: HTTP scheme to use for scraping. Can be used with `tlsConfig` for example if using istio mTLS.
+    # scheme: ""
+
+    ## tlsConfig: TLS configuration to use when scraping the endpoint. For example if using istio mTLS.
+    ## Of type: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#tlsconfig
+    # tlsConfig: {}
+
+    # bearerTokenFile:
+    # Fallback to the prometheus default unless specified
+    # scrapeTimeout: 30s
+
+    ## Used to pass Labels that are used by the Prometheus installed in your cluster to select Service Monitors to work with
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#prometheusspec
     labels: {}
+
+    ## Used to pass annotations that are used by the Prometheus installed in your cluster to select Service Monitors to work with
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#prometheusspec
     annotations: {}
-    honorLabels: false
+
+    ## Metric relabel configs to apply to samples before ingestion.
+    ## [Metric Relabeling](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs)
+    metricRelabelings: []
+    # - action: keep
+    #   regex: 'kube_(daemonset|deployment|pod|namespace|node|statefulset).+'
+    #   sourceLabels: [__name__]
+
+    ## Relabel configs to apply to samples before ingestion.
+    ## [Relabeling](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config)
+    relabelings: []
+    # - sourceLabels: [__meta_kubernetes_pod_node_name]
+    #   separator: ;
+    #   regex: ^(.*)$
+    #   targetLabel: nodename
+    #   replacement: $1
+    #   action: replace
+
+    ## Attach kubernetes service labels to prometheus metrics
+    targetLabels: []
 
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"

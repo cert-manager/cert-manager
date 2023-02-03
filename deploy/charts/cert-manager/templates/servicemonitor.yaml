@@ -37,9 +37,35 @@ spec:
       - {{ include "cert-manager.namespace" . }}
 {{- end }}
   endpoints:
-  - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+  - port: {{ .Values.prometheus.servicemonitor.path }}
+    targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+    {{- with .Values.prometheus.servicemonitor.interval }}
+    interval: {{ . }}
+    {{- end }}
+    {{- with .Values.prometheus.servicemonitor.scheme }}
+    scheme: {{ . }}
+    {{- end }}
+    {{- with .Values.prometheus.servicemonitor.bearerTokenFile }}
+    bearerTokenFile: {{ . }}
+    {{- end }}
+    {{- with .Values.prometheus.servicemonitor.tlsConfig }}
+    tlsConfig:
+      {{- toYaml .| nindent 6 }}
+    {{- end }}
+    {{- with .Values.prometheus.servicemonitor.scrapeTimeout }}
+    scrapeTimeout: {{ . }}
+    {{- end }}
     path: {{ .Values.prometheus.servicemonitor.path }}
-    interval: {{ .Values.prometheus.servicemonitor.interval }}
-    scrapeTimeout: {{ .Values.prometheus.servicemonitor.scrapeTimeout }}
-    honorLabels: {{ .Values.prometheus.servicemonitor.honorLabels }}
+    {{- with .Values.prometheus.servicemonitor.metricRelabelings }}
+    metricRelabelings:
+      {{- tpl (toYaml . | nindent 6) $ }}
+    {{- end }}
+    {{- with .Values.prometheus.servicemonitor.relabelings }}
+    relabelings:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- with .Values.prometheus.servicemonitor.targetLabels }}
+  targetLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
