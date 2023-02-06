@@ -45,6 +45,7 @@ const (
 	messageKubeAuthSingleRequired    = "Vault Kubernetes auth cannot be used with both secretRef.name and serviceAccountRef.name"
 	messageTokenAuthNameRequired     = "Vault Token auth requires tokenSecretRef.name"
 	messageAppRoleAuthFieldsRequired = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
+	messageAppRoleAuthKeyRequired    = "Vault AppRole auth requires secretRef.key"
 )
 
 // Setup creates a new Vault client and attempts to authenticate with the Vault instance and sets the issuer's conditions to reflect the success of the setup.
@@ -96,6 +97,11 @@ func (v *Vault) Setup(ctx context.Context) error {
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthFieldsRequired)
 		return nil
 	}
+	if appRoleAuth != nil && len(appRoleAuth.SecretRef.Key) == 0 {
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageTokenAuthNameRequired)
+		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthKeyRequired)
+		return nil
+	}
 
 	// When using the Kubernetes auth, giving a role is mandatory.
 	if kubeAuth != nil && len(kubeAuth.Role) == 0 {
@@ -106,7 +112,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 
 	// When using the Kubernetes auth, you must either set secretRef or
 	// serviceAccountRef.
-	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) == 0 && kubeAuth.ServiceAccountRef != nil) {
+	if kubeAuth != nil && (kubeAuth.SecretRef.Name == "" && kubeAuth.ServiceAccountRef == nil) {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthEitherRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthEitherRequired)
 		return nil
@@ -114,14 +120,13 @@ func (v *Vault) Setup(ctx context.Context) error {
 
 	// When using the Kubernetes auth, you can't use secretRef and
 	// serviceAccountRef simultaneously.
-	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) != 0 && kubeAuth.ServiceAccountRef != nil) {
+	if kubeAuth != nil && (kubeAuth.SecretRef.Name != "" && kubeAuth.ServiceAccountRef != nil) {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthSingleRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthSingleRequired)
 		return nil
 	}
 
-	createTokenFn := func(ns string) vaultinternal.CreateToken { return v.Client.CoreV1().ServiceAccounts(ns).CreateToken }
-	client, err := vaultinternal.New(v.resourceNamespace, createTokenFn, v.secretsLister, v.issuer)
+	client, err := vaultinternal.New(v.resourceNamespace, v.createTokenFn, v.secretsLister, v.issuer)
 	if err != nil {
 		s := messageVaultClientInitFailed + err.Error()
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)

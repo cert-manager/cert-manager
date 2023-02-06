@@ -276,14 +276,25 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 	}
 
 	if auth.AppRole != nil {
+		if auth.AppRole.RoleId == "" {
+			el = append(el, field.Required(fldPath.Child("appRole", "roleId"), ""))
+		}
+
+		if auth.AppRole.SecretRef.Name == "" {
+			el = append(el, field.Required(fldPath.Child("appRole", "secretRef", "name"), ""))
+		}
 		unionCount++
 	}
 
 	if auth.Kubernetes != nil {
 		unionCount++
 
+		if auth.Kubernetes.Role == "" {
+			el = append(el, field.Required(fldPath.Child("kubernetes", "role"), ""))
+		}
+
 		kubeCount := 0
-		if len(auth.Kubernetes.SecretRef.Name) > 0 || len(auth.Kubernetes.SecretRef.Key) > 0 {
+		if len(auth.Kubernetes.SecretRef.Name) > 0 {
 			kubeCount++
 		}
 

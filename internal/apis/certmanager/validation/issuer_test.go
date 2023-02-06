@@ -145,7 +145,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 	}{
 		// For backwards compatibility, we allow the user to set all auth types.
 		// We have documented in the API the order of precedence.
-		"spec.auth accepts all three auth types for backwards compatibility": {
+		"valid auth: all three auth types can be set simultaneously": {
 			auth: &cmapi.VaultAuth{
 				AppRole: &cmapi.VaultAppRole{
 					RoleId: "role-id",
@@ -165,7 +165,29 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 			},
 		},
-		"valid appRole": {
+		"valid auth.tokenSecretRef": {
+			auth: &cmapi.VaultAuth{
+				TokenSecretRef: &cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "secret",
+					},
+					Key: "key",
+				},
+			},
+		},
+		// The default value for auth.tokenSecretRef.key is 'token'. This
+		// behavior is not documented in the API reference, but we keep it for
+		// backward compatibility.
+		"invalid auth.tokenSecretRef: key can be omitted": {
+			auth: &cmapi.VaultAuth{
+				TokenSecretRef: &cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "secret",
+					},
+				},
+			},
+		},
+		"valid auth.appRole": {
 			auth: &cmapi.VaultAuth{
 				AppRole: &cmapi.VaultAppRole{
 					RoleId: "role-id",
@@ -177,16 +199,48 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 			},
 		},
-		"valid spec.auth.kubernetes.secretRef: key, role and path can be left empty": {
+		// TODO(mael): The reason we allow the user to omit the key but we say
+		// in the documentation that "key must be specified" is because the
+		// controller-side validation doesn't check that the key is empty. We
+		// should add a check for that.
+		"valid auth.appRole: key can be omitted": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+					},
+					Path: "path",
+				},
+			},
+		},
+		"invalid auth.appRole: roleId is required": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "path",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("appRole").Child("roleId"), ""),
+			},
+		},
+		// The field auth.kubernetes.secretRef.key defaults to 'token' if
+		// not specified.
+		"valid auth.kubernetes.secretRef: key can be left empty": {
 			auth: &cmapi.VaultAuth{
 				Kubernetes: &cmapi.VaultKubernetesAuth{
 					SecretRef: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
 					},
+					Role: "role",
 				},
 			},
 		},
-		"valid spec.auth.kubernetes.serviceAccountRef": {
+		"valid auth.kubernetes.serviceAccountRef": {
 			auth: &cmapi.VaultAuth{
 				Kubernetes: &cmapi.VaultKubernetesAuth{
 					Path: "path",
@@ -197,7 +251,20 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 			},
 		},
-		"invalid spec.auth.kubernetes: secretRef and serviceAccountRef mutually exclusive": {
+		"invalid auth.kubernetes: role is required": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "path",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("kubernetes").Child("role"), ""),
+			},
+		},
+		"invalid auth.kubernetes: secretRef and serviceAccountRef mutually exclusive": {
 			auth: &cmapi.VaultAuth{
 				Kubernetes: &cmapi.VaultKubernetesAuth{
 					SecretRef: cmmeta.SecretKeySelector{
@@ -206,6 +273,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},
+					Role: "role",
 				},
 			},
 			errs: []*field.Error{

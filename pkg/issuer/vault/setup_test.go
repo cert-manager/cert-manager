@@ -25,9 +25,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	internalapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	internalv1 "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation"
+	vaultinternal "github.com/cert-manager/cert-manager/internal/vault"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
@@ -52,6 +58,7 @@ func TestVault_Setup(t *testing.T) {
 		givenIssuer      v1.IssuerConfig
 		expectCond       string
 		expectErr        string
+		webhookReject    bool
 		mockGetSecret    *corev1.Secret
 		mockGetSecretErr error
 	}{
@@ -60,7 +67,8 @@ func TestVault_Setup(t *testing.T) {
 			givenIssuer: v1.IssuerConfig{
 				Vault: nil,
 			},
-			expectCond: "Ready False: VaultError: Vault config cannot be empty",
+			expectCond:    "Ready False: VaultError: Vault config cannot be empty",
+			webhookReject: true,
 		},
 		{
 			name: "path is missing",
@@ -69,7 +77,8 @@ func TestVault_Setup(t *testing.T) {
 					Server: "https://vault.example.com",
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault server and path are required fields",
+			expectCond:    "Ready False: VaultError: Vault server and path are required fields",
+			webhookReject: true,
 		},
 		{
 			name: "server is missing",
@@ -78,7 +87,8 @@ func TestVault_Setup(t *testing.T) {
 					Path: "pki_int",
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault server and path are required fields",
+			expectCond:    "Ready False: VaultError: Vault server and path are required fields",
+			webhookReject: true,
 		},
 		{
 			name: "auth.appRole, auth.kubernetes, and auth.tokenSecretRef are mutually exclusive",
@@ -113,7 +123,8 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready False: VaultError: Multiple auth methods cannot be set on the same Vault issuer",
+			expectCond:    "Ready False: VaultError: Multiple auth methods cannot be set on the same Vault issuer",
+			webhookReject: true,
 		},
 		{
 			name: "valid auth.appRole",
@@ -138,7 +149,7 @@ func TestVault_Setup(t *testing.T) {
 			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
-			name: "auth.appRole.secretRef.key can be left empty, but an error will show",
+			name: "invalid auth.appRole: secretRef.key can be omitted",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -156,10 +167,10 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectErr: `no data for "" in secret 'test-namespace/cert-manager'`,
+			expectCond: "Ready False: VaultError: Vault AppRole auth requires secretRef.key",
 		},
 		{
-			name: "auth.appRole.roleId is missing",
+			name: "invalid auth.appRole: roleId is missing",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -175,10 +186,11 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault AppRole auth requires both roleId and tokenSecretRef.name",
+			expectCond:    "Ready False: VaultError: Vault AppRole auth requires both roleId and tokenSecretRef.name",
+			webhookReject: true,
 		},
 		{
-			name: "auth.appRole.secretRef.name is missing",
+			name: "invalid auth.appRole: secretRef.name is missing",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -190,10 +202,11 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault AppRole auth requires both roleId and tokenSecretRef.name",
+			expectCond:    "Ready False: VaultError: Vault AppRole auth requires both roleId and tokenSecretRef.name",
+			webhookReject: true,
 		},
 		{
-			name: "valid auth.kubernetes",
+			name: "valid auth.kubernetes.secretRef",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -214,7 +227,7 @@ func TestVault_Setup(t *testing.T) {
 			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
-			name: "auth.kubernetes.secretRef.name is missing",
+			name: "invalid auth.kubernetes.secretRef: name is missing",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -226,10 +239,13 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault Kubernetes auth requires both role and secretRef.name",
+			expectCond:    "Ready False: VaultError: Vault Kubernetes auth requires either secretRef.name or serviceAccountRef.name to be set",
+			webhookReject: true,
 		},
 		{
-			name: "auth.kubernetes.secretRef.key can be left empty and defaults to 'token'",
+			// The field auth.kubernetes.secretRef.key defaults to 'token' if
+			// not set.
+			name: "valid auth.kubernetes.secretRef: key can be left empty and defaults to 'token'",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -249,13 +265,16 @@ func TestVault_Setup(t *testing.T) {
 			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
-			name: "auth.kubernetes.role is missing",
+			name: "invalid auth.kubernetes: role is missing",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
 					Server: "https://vault.example.com",
 					Auth: v1.VaultAuth{
 						Kubernetes: &v1.VaultKubernetesAuth{
+							Role: "",
+							// We set secretRef.name just for the purpose of
+							// testing whether the "role" is properly checked.
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "cert-manager",
@@ -265,7 +284,50 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault Kubernetes auth requires both role and secretRef.name",
+			expectCond:    "Ready False: VaultError: Vault Kubernetes auth requires a role to be set",
+			webhookReject: true,
+		},
+		{
+			name: "valid auth.kubernetes.serviceAccountRef",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: vaultServer.URL,
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
+							Role: "cert-manager",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "cert-manager",
+							},
+						},
+					},
+				},
+			},
+			expectCond: "Ready True: VaultVerified: Vault verified",
+		},
+		{
+			name: "invalid auth.kubernetes: serviceAccountRef and secretRef are both set",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: vaultServer.URL,
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
+							Role: "cert-manager",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "cert-manager",
+							},
+							SecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "cert-manager",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectCond:    "Ready False: VaultError: Vault Kubernetes auth cannot be used with both secretRef.name and serviceAccountRef.name",
+			webhookReject: true,
 		},
 		{
 			name: "valid auth.tokenSecretRef",
@@ -286,7 +348,10 @@ func TestVault_Setup(t *testing.T) {
 			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
-			name: "auth.tokenSecretRef.key can be left empty and defaults to 'token'",
+			// The default value for auth.tokenSecretRef.key is 'token'. This
+			// behavior is not documented in the API reference, but we keep it
+			// for backward compatibility.
+			name: "valid auth.tokenSecretRef: key can be omitted",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
@@ -296,6 +361,7 @@ func TestVault_Setup(t *testing.T) {
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "cert-manager",
 							},
+							Key: "",
 						},
 					},
 				},
@@ -320,6 +386,13 @@ func TestVault_Setup(t *testing.T) {
 				issuer:            givenIssuer,
 				Context:           &controller.Context{CMClient: cmclient},
 				resourceNamespace: "test-namespace",
+				createTokenFn: func(ns string) vaultinternal.CreateToken {
+					return func(ctx context.Context, saName string, req *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error) {
+						return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+							Token: "token",
+						}}, nil
+					}
+				},
 				secretsLister: &testlisters.FakeSecretLister{
 					SecretsFn: func(namespace string) corelisters.SecretNamespaceLister {
 						return &testlisters.FakeSecretNamespaceLister{
@@ -342,6 +415,23 @@ func TestVault_Setup(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+
+			// The webhook-side validation of the Vault issuer configuration
+			// didn't exist for a long time. The only validation that was done
+			// was the controller-side validation (i.e., the validation that we
+			// do in setup.go). To prevent the breakage of existing Issuer or
+			// ClusterIssuers resources due to the webhook-side validation
+			// suddently becoming stricter than the controller-side validation,
+			// we perform the webhook validation too and check that it passes.
+			converted := internalapi.IssuerConfig{}
+			err = internalv1.Convert_v1_IssuerConfig_To_certmanager_IssuerConfig(&tt.givenIssuer, &converted, nil)
+			assert.NoError(t, err)
+			errlist, _ := validation.ValidateIssuerConfig(&converted, field.NewPath("spec", "vault"))
+			if tt.webhookReject {
+				assert.Error(t, errlist.ToAggregate())
+			} else {
+				assert.NoError(t, errlist.ToAggregate())
+			}
 
 			if tt.expectCond != "" {
 				require.Len(t, givenIssuer.Status.Conditions, 1)
