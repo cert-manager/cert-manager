@@ -374,7 +374,7 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # You can use ./hack/latest-kubebuilder-shas.sh <version> to get latest SHAs for a particular version of kubebuilder tools #
 ############################
 
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=0467f408d9ce38bd6188270a34a5e97207a310b53bfd1e44982d44bb177d147c
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=e4aa555f4f23f031f89128aaf8eae60e305e1f4fadec2db5731b2415d1a8957d
 KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=7ff8022a4022e76d2e7450db97232c0be77567064d8c116100d910e9b7b510d1
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=9483d95d1f53907b9bbe9deb0642b7731c5aa122a4598b5759fa77c50102b797
 
