@@ -513,16 +513,3 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 
 	return nil
 }
-
-func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
-	vaultIssuer := v.issuer.GetSpec().Vault
-	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
-		if request.Headers != nil {
-			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		} else {
-			vaultReqHeaders := http.Header{}
-			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-			request.Headers = vaultReqHeaders
-		}
-	}
-}
