@@ -70,7 +70,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 		clock.RealClock{},
 	).CertBytes
 
-	fldPath := field.NewPath("")
+	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
 		spec *cmapi.VaultIssuer
 		errs []*field.Error
@@ -86,6 +86,9 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 						Name: "test-secret",
 					},
 				},
+				Auth: cmapi.VaultAuth{
+					TokenSecretRef: &validSecretKeyRef,
+				},
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("caBundle"), "<snip>", "specified caBundle and caBundleSecretRef cannot be used together"),
@@ -100,6 +103,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), ""),
 				field.Required(fldPath.Child("path"), ""),
+				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef"),
 			},
 		},
 		"vault issuer with a CA bundle containing no valid certificates": {
@@ -107,6 +111,9 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				Server:   "something",
 				Path:     "a/b/c",
 				CABundle: []byte("invalid"),
+				Auth: cmapi.VaultAuth{
+					TokenSecretRef: &validSecretKeyRef,
+				},
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("caBundle"), "<snip>", "cert bundle didn't contain any valid certificates"),
@@ -116,6 +123,167 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVaultIssuerConfig(s.spec, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Errorf("Expected %v but got %v", s.errs, errs)
+				return
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateVaultIssuerAuth(t *testing.T) {
+	fldPath := field.NewPath("spec.auth")
+	scenarios := map[string]struct {
+		auth *cmapi.VaultAuth
+		errs []*field.Error
+	}{
+		// For backwards compatibility, we allow the user to set all auth types.
+		// We have documented in the API the order of precedence.
+		"valid auth: all three auth types can be set simultaneously": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "path",
+				},
+				TokenSecretRef: &validSecretKeyRef,
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "path",
+					Role: "role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+		},
+		"valid auth.tokenSecretRef": {
+			auth: &cmapi.VaultAuth{
+				TokenSecretRef: &cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "secret",
+					},
+					Key: "key",
+				},
+			},
+		},
+		// The default value for auth.tokenSecretRef.key is 'token'. This
+		// behavior is not documented in the API reference, but we keep it for
+		// backward compatibility.
+		"invalid auth.tokenSecretRef: key can be omitted": {
+			auth: &cmapi.VaultAuth{
+				TokenSecretRef: &cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "secret",
+					},
+				},
+			},
+		},
+		"valid auth.appRole": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "path",
+				},
+			},
+		},
+		// TODO(mael): The reason we allow the user to omit the key but we say
+		// in the documentation that "key must be specified" is because the
+		// controller-side validation doesn't check that the key is empty. We
+		// should add a check for that.
+		"valid auth.appRole: key can be omitted": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+					},
+					Path: "path",
+				},
+			},
+		},
+		"invalid auth.appRole: roleId is required": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "path",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("appRole").Child("roleId"), ""),
+			},
+		},
+		// The field auth.kubernetes.secretRef.key defaults to 'token' if
+		// not specified.
+		"valid auth.kubernetes.secretRef: key can be left empty": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+					},
+					Role: "role",
+				},
+			},
+		},
+		"valid auth.kubernetes.serviceAccountRef": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "path",
+					Role: "role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+		},
+		"invalid auth.kubernetes: role is required": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "path",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("kubernetes").Child("role"), ""),
+			},
+		},
+		"invalid auth.kubernetes: secretRef and serviceAccountRef mutually exclusive": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+					},
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+					Role: "role",
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"),
+			},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateVaultIssuerAuth(s.auth, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return

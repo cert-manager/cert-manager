@@ -434,6 +434,15 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 	params := map[string]string{
 		"kubernetes_host":    v.APIServerURL,
 		"kubernetes_ca_cert": v.APIServerCA,
+		// Since Vault 1.9, HashiCorp recommends disabling the iss validation.
+		// If we don't disable the iss validation, we can't use the same
+		// Kubernetes auth config for both testing the "secretRef" Kubernetes
+		// auth and the "serviceAccountRef" Kubernetes auth because the former
+		// relies on static tokens for which "iss" is
+		// "kubernetes/serviceaccount", and the later relies on bound tokens for
+		// which "iss" is "https://kubernetes.default.svc.cluster.local".
+		// https://www.vaultproject.io/docs/auth/kubernetes#kubernetes-1-21
+		"disable_iss_validation": "true",
 	}
 
 	url := fmt.Sprintf("/v1/auth/%s/config", v.KubernetesAuthPath)
@@ -547,6 +556,72 @@ func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, vaul
 	_, err := v.proxy.callVault("DELETE", url, "", nil)
 	if err != nil {
 		return fmt.Errorf("error cleaning up kubernetes auth role: %s", err.Error())
+	}
+
+	return nil
+}
+
+func RoleAndBindingForServiceAccountRefAuth(roleName, namespace, serviceAccount string) (*rbacv1.Role, *rbacv1.RoleBinding) {
+	return &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      roleName,
+				Namespace: namespace,
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups:     []string{""},
+					Resources:     []string{"serviceaccounts/token"},
+					ResourceNames: []string{serviceAccount},
+					Verbs:         []string{"create"},
+				},
+			},
+		},
+		&rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: roleName,
+			},
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     roleName,
+			},
+			Subjects: []rbacv1.Subject{
+				{
+					Name:      "cert-manager",
+					Namespace: "cert-manager",
+					Kind:      "ServiceAccount",
+				},
+			},
+		}
+}
+
+// CreateKubernetesRoleForServiceAccountRefAuth creates a service account and a
+// role for using the "serviceAccountRef" field.
+func CreateKubernetesRoleForServiceAccountRefAuth(client kubernetes.Interface, roleName, saNS, saName string) error {
+	role, binding := RoleAndBindingForServiceAccountRefAuth(roleName, saNS, saName)
+	_, err := client.RbacV1().Roles(saNS).Create(context.TODO(), role, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount with serviceAccountRef: %s", err.Error())
+	}
+	_, err = client.RbacV1().RoleBindings(saNS).Create(context.TODO(), binding, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount with serviceAccountRef: %s", err.Error())
+	}
+
+	return nil
+}
+
+func CleanKubernetesRoleForServiceAccountRefAuth(client kubernetes.Interface, roleName, saNS, saName string) error {
+	if err := client.RbacV1().RoleBindings(saNS).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+
+	if err := client.RbacV1().Roles(saNS).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+
+	if err := client.CoreV1().ServiceAccounts(saNS).Delete(context.TODO(), saName, metav1.DeleteOptions{}); err != nil {
+		return err
 	}
 
 	return nil

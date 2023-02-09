@@ -18,6 +18,7 @@ package vault
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
@@ -35,6 +36,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
@@ -171,7 +173,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 type testSignT struct {
 	issuer     *cmapi.Issuer
 	fakeLister *listers.FakeSecretLister
-	fakeClient *vaultfake.Client
+	fakeClient *vaultfake.FakeClient
 
 	csrPEM       []byte
 	expectedErr  error
@@ -364,15 +366,6 @@ func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 	}
 }
 
-type testSetTokenT struct {
-	expectedToken string
-	expectedErr   error
-
-	issuer     *cmapi.Issuer
-	fakeLister *listers.FakeSecretLister
-	fakeClient *vaultfake.Client
-}
-
 func TestSetToken(t *testing.T) {
 	tokenSecret := &corev1.Secret{
 		Data: map[string][]byte{
@@ -391,7 +384,16 @@ func TestSetToken(t *testing.T) {
 			"my-kube-key": []byte("my-secret-kube-token"),
 		},
 	}
-	tests := map[string]testSetTokenT{
+	tests := map[string]struct {
+		expectedToken string
+		expectedErr   error
+
+		issuer          cmapi.GenericIssuer
+		fakeLister      *listers.FakeSecretLister
+		mockCreateToken func(t *testing.T) CreateToken
+
+		fakeClient *vaultfake.FakeClient
+	}{
 		"if neither token secret ref, app role secret ref, or kube auth then not found then error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
@@ -400,7 +402,6 @@ func TestSetToken(t *testing.T) {
 				}),
 			),
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
-			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr: errors.New(
 				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
@@ -423,7 +424,6 @@ func TestSetToken(t *testing.T) {
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret does not exists")),
 			),
-			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr:   errors.New("secret does not exists"),
 		},
@@ -445,7 +445,7 @@ func TestSetToken(t *testing.T) {
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(tokenSecret, nil),
 			),
-			fakeClient:    vaultfake.NewFakeClient(),
+
 			expectedToken: "my-secret-token",
 			expectedErr:   nil,
 		},
@@ -470,7 +470,6 @@ func TestSetToken(t *testing.T) {
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret not found")),
 			),
-			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr:   errors.New("secret not found"),
 		},
@@ -527,7 +526,6 @@ func TestSetToken(t *testing.T) {
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret does not exists")),
 			),
-			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr:   errors.New("error reading Kubernetes service account token from secret-ref-name: secret does not exists"),
 		},
@@ -552,7 +550,6 @@ func TestSetToken(t *testing.T) {
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{}, nil),
 			),
-			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr:   errors.New(`error reading Kubernetes service account token from secret-ref-name: no data for "my-kube-key" in secret 'test-namespace/secret-ref-name'`),
 		},
@@ -614,7 +611,7 @@ func TestSetToken(t *testing.T) {
 			expectedErr:   nil,
 		},
 
-		"if app role secret ref and token secret set, take preference on token secret": {
+		"if appRole.secretRef, tokenSecretRef set, take preference on tokenSecretRef": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
@@ -640,17 +637,101 @@ func TestSetToken(t *testing.T) {
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(tokenSecret, nil),
 			),
-			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "my-secret-token",
+			expectedErr:   nil,
+		},
+
+		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token (Issuer)": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						Kubernetes: &cmapi.VaultKubernetesAuth{
+							Role: "kube-vault-role",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-service-account",
+							},
+							Path: "my-path",
+						},
+					},
+				}),
+			),
+			mockCreateToken: func(t *testing.T) CreateToken {
+				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
+					assert.Equal(t, "my-service-account", saName)
+					assert.Equal(t, "vault://default-unit-test-ns/vault-issuer", req.Spec.Audiences[0])
+					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
+					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+						Token: "kube-sa-token",
+					}}, nil
+				}
+			},
+			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
+				// Vault exhanges the Kubernetes token with a Vault token.
+				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
+				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
+				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
+					`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"vault-token"}}`,
+				))}}, nil
+			}),
+			expectedToken: "vault-token",
+			expectedErr:   nil,
+		},
+
+		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token (ClusterIssuer)": {
+			issuer: gen.ClusterIssuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						Kubernetes: &cmapi.VaultKubernetesAuth{
+							Role: "kube-vault-role",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-service-account",
+							},
+							Path: "my-path",
+						},
+					},
+				}),
+			),
+			mockCreateToken: func(t *testing.T) CreateToken {
+				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
+					assert.Equal(t, "my-service-account", saName)
+					assert.Equal(t, "vault://vault-issuer", req.Spec.Audiences[0])
+					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
+					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+						Token: "kube-sa-token",
+					}}, nil
+				}
+			},
+			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
+				// Vault exhanges the Kubernetes token with a Vault token.
+				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
+				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
+				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
+					`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"vault-token"}}`,
+				))}}, nil
+			}),
+			expectedToken: "vault-token",
 			expectedErr:   nil,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			if test.fakeClient == nil {
+				test.fakeClient = &vaultfake.FakeClient{T: t}
+			} else {
+				test.fakeClient.T = t
+			}
+			var mockCreateToken CreateToken
+			if test.mockCreateToken != nil {
+				mockCreateToken = test.mockCreateToken(t)
+			}
+
 			v := &Vault{
 				namespace:     "test-namespace",
 				secretsLister: test.fakeLister,
+				createToken:   mockCreateToken,
 				issuer:        test.issuer,
 			}
 
@@ -662,9 +743,9 @@ func TestSetToken(t *testing.T) {
 					test.expectedErr, err)
 			}
 
-			if test.fakeClient.Token() != test.expectedToken {
+			if test.fakeClient.GotToken != test.expectedToken {
 				t.Errorf("got unexpected client token, exp=%s got=%s",
-					test.expectedToken, test.fakeClient.Token())
+					test.expectedToken, test.fakeClient.GotToken)
 			}
 		})
 	}
@@ -873,7 +954,8 @@ type testNewConfigT struct {
 	issuer      *cmapi.Issuer
 	checkFunc   func(cfg *vault.Config, err error) error
 
-	fakeLister *listers.FakeSecretLister
+	fakeLister      *listers.FakeSecretLister
+	fakeCreateToken func(t *testing.T) CreateToken
 }
 
 func TestNewConfig(t *testing.T) {
@@ -1023,6 +1105,28 @@ func TestNewConfig(t *testing.T) {
 			expectedErr: errors.New("no Vault CA bundles loaded, check bundle contents"),
 			fakeLister:  caBundleSecretRefFakeSecretLister("test-namespace", "bundle", "my-bundle.crt", "not a valid certificate"),
 		},
+		"the tokenCreate func should be called with the correct namespace": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Path: "my-path",
+					Auth: cmapi.VaultAuth{
+						Kubernetes: &cmapi.VaultKubernetesAuth{
+							Role: "my-role",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-sa",
+							},
+						},
+					}})),
+			fakeCreateToken: func(t *testing.T) CreateToken {
+				return func(_ context.Context, saName string, req *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error) {
+					assert.Equal(t, "test-namespace", req.Namespace)
+					assert.Equal(t, "my-sa", saName)
+					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+						Token: "foo",
+					}}, nil
+				}
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -1079,7 +1183,6 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 
 	tests := map[string]requestTokenWithAppRoleRefT{
 		"a secret reference that does not exist should error": {
-			client:  vaultfake.NewFakeClient(),
 			appRole: basicAppRoleRef,
 			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret not found")),
@@ -1200,6 +1303,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := New(
 				"k8s-ns1",
+				func(ns string) CreateToken { return nil },
 				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 					listers.SetFakeSecretNamespaceListerGet(
 						&corev1.Secret{
@@ -1254,6 +1358,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 
 	v, err := New(
 		"k8s-ns1",
+		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 			listers.SetFakeSecretNamespaceListerGet(
 				&corev1.Secret{
@@ -1318,6 +1423,7 @@ func TestSignIntegration(t *testing.T) {
 
 	v, err := New(
 		"k8s-ns1",
+		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 			listers.SetFakeSecretNamespaceListerGet(
 				&corev1.Secret{

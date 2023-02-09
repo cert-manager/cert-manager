@@ -262,7 +262,67 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), iss.CABundleSecretRef.Name, "specified caBundleSecretRef and caBundle cannot be used together"))
 	}
 
-	// TODO: add validation for Vault authentication types
+	el = append(el, ValidateVaultIssuerAuth(&iss.Auth, fldPath.Child("auth"))...)
+
+	return el
+}
+
+func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	unionCount := 0
+	if auth.TokenSecretRef != nil {
+		unionCount++
+	}
+
+	if auth.AppRole != nil {
+		if auth.AppRole.RoleId == "" {
+			el = append(el, field.Required(fldPath.Child("appRole", "roleId"), ""))
+		}
+
+		if auth.AppRole.SecretRef.Name == "" {
+			el = append(el, field.Required(fldPath.Child("appRole", "secretRef", "name"), ""))
+		}
+		unionCount++
+	}
+
+	if auth.Kubernetes != nil {
+		unionCount++
+
+		if auth.Kubernetes.Role == "" {
+			el = append(el, field.Required(fldPath.Child("kubernetes", "role"), ""))
+		}
+
+		kubeCount := 0
+		if len(auth.Kubernetes.SecretRef.Name) > 0 {
+			kubeCount++
+		}
+
+		if auth.Kubernetes.ServiceAccountRef != nil {
+			kubeCount++
+			if len(auth.Kubernetes.ServiceAccountRef.Name) == 0 {
+				el = append(el, field.Required(fldPath.Child("kubernetes", "serviceAccountRef", "name"), ""))
+			}
+		}
+
+		if kubeCount == 0 {
+			el = append(el, field.Required(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"))
+		}
+		if kubeCount > 1 {
+			el = append(el, field.Forbidden(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"))
+		}
+	}
+
+	if unionCount == 0 {
+		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef"))
+	}
+
+	// Due to the fact that there has not been any "oneOf" validation on
+	// tokenSecretRef, appRole, and kubernetes, people may already have created
+	// Issuer resources in which they have set two of these fields instead of
+	// one. To avoid breaking these manifests, we don't check that the user has
+	// set a single field among these three. Instead, we documented in the API
+	// that it is the first field that is set gets used.
 
 	return el
 }
