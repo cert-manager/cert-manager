@@ -420,6 +420,8 @@ webhook:
         protocol: TCP
       - port: 53
         protocol: UDP
+      - port: 6443
+        protocol: TCP
       to:
       - ipBlock:
           cidr: 0.0.0.0/0
