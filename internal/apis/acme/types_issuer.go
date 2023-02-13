@@ -292,6 +292,10 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's service account
 	// +optional
 	ServiceAccountName string
+
+	// If specified, the pod's imagePullSecrets
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {

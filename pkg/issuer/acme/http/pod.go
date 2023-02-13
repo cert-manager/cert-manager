@@ -279,5 +279,11 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.ServiceAccountName = podTempl.Spec.ServiceAccountName
 	}
 
+	if pod.Spec.ImagePullSecrets == nil {
+		pod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
+	}
+
+	pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, podTempl.Spec.ImagePullSecrets...)
+
 	return pod
 }

@@ -266,7 +266,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
-		"should use labels and annotations from template": {
+		"should use labels, annotations and spec fields from template": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
@@ -297,6 +297,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											},
 										},
 										ServiceAccountName: "cert-manager",
+										ImagePullSecrets:   []corev1.LocalObjectReference{{Name: "cred"}},
 									},
 								},
 							},
@@ -329,6 +330,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				}
 				resultingPod.Spec.PriorityClassName = "high"
 				resultingPod.Spec.ServiceAccountName = "cert-manager"
+				resultingPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "cred"}}
 				s.testResources[createdPodKey] = resultingPod
 
 				s.Builder.Sync()

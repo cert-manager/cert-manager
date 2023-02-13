@@ -486,7 +486,7 @@ spec:
                                       additionalProperties:
                                         type: string
                                 spec:
-                                  description: PodSpec defines overrides for the HTTP01 challenge solver pod. Only the 'priorityClassName', 'nodeSelector', 'affinity', 'serviceAccountName' and 'tolerations' fields are supported currently. All other fields will be ignored.
+                                  description: PodSpec defines overrides for the HTTP01 challenge solver pod. Check ACMEChallengeSolverHTTP01IngressPodSpec to find out currently supported fields. All other fields will be ignored.
                                   type: object
                                   properties:
                                     affinity:
@@ -961,6 +961,17 @@ spec:
                                                   topologyKey:
                                                     description: This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
                                                     type: string
+                                    imagePullSecrets:
+                                      description: If specified, the pod's imagePullSecrets
+                                      type: array
+                                      items:
+                                        description: LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
+                                        type: object
+                                        properties:
+                                          name:
+                                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
+                                            type: string
+                                        x-kubernetes-map-type: atomic
                                     nodeSelector:
                                       description: 'NodeSelector is a selector which must be true for the pod to fit on a node. Selector which must match a node''s labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/'
                                       type: object
