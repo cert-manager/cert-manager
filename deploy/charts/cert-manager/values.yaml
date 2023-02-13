@@ -420,6 +420,10 @@ webhook:
         protocol: TCP
       - port: 53
         protocol: UDP
+      # On OpenShift and OKD, the Kubernetes API server listens on
+      # port 6443.
+      - port: 6443
+        protocol: TCP
       to:
       - ipBlock:
           cidr: 0.0.0.0/0
