@@ -769,6 +769,7 @@ func autoConvert_v1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChalleng
 	out.Tolerations = *(*[]corev1.Toleration)(unsafe.Pointer(&in.Tolerations))
 	out.PriorityClassName = in.PriorityClassName
 	out.ServiceAccountName = in.ServiceAccountName
+	out.ImagePullSecrets = *(*[]corev1.LocalObjectReference)(unsafe.Pointer(&in.ImagePullSecrets))
 	return nil
 }
 
@@ -783,6 +784,7 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1_ACMEChalleng
 	out.Tolerations = *(*[]corev1.Toleration)(unsafe.Pointer(&in.Tolerations))
 	out.PriorityClassName = in.PriorityClassName
 	out.ServiceAccountName = in.ServiceAccountName
+	out.ImagePullSecrets = *(*[]corev1.LocalObjectReference)(unsafe.Pointer(&in.ImagePullSecrets))
 	return nil
 }
 
