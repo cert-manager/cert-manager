@@ -187,8 +187,8 @@ E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE ?= $(BINDIR)/scratch/values-bestp
 $(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE): | $(BINDIR)/scratch
 	$(CURL) $(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) -o $@
 
-## Dependencies which will be added to e2e-setup-certmanager depending on the
-## supplied E2E_SETUP_OPTION_ variables.
+# Dependencies which will be added to e2e-setup-certmanager depending on the
+# supplied E2E_SETUP_OPTION_ variables.
 E2E_SETUP_OPTION_DEPENDENCIES := $(if $(E2E_SETUP_OPTION_BESTPRACTICE),e2e-setup-kyverno $(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE))
 
 # In make, there is no way to escape commas or spaces. So we use the
