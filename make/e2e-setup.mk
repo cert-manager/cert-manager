@@ -82,7 +82,7 @@ kind-exists: $(BINDIR)/scratch/kind-exists
 ## created.
 ##
 ## @category Development
-e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
+e2e-setup: e2e-setup-gatewayapi e2e-setup-prometheus-operator-crds e2e-setup-certmanager e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
 
 # The function "image-tar" returns the path to the image tarball for a given
 # image name. For example:
@@ -214,7 +214,7 @@ feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 # * Kyverno: so that it can check the cert-manager manifests against the policy in `config/kyverno/`
 #		(only installed if E2E_SETUP_OPTION_BESTPRACTICE is set).
 .PHONY: e2e-setup-certmanager
-e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_KIND) $(NEEDS_HELM)
+e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook ctl,$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook ctl,load-$(BINDIR)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi e2e-setup-prometheus-operator-crds $(E2E_SETUP_OPTION_DEPENDENCIES) $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_KIND) $(NEEDS_HELM)
 	@$(eval TAG = $(shell tar xfO $(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	$(HELM) upgrade \
 		--install \
@@ -237,6 +237,15 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controlle
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
 		--set "dns01RecursiveNameserversOnly=true" \
+		--set "prometheus.servicemonitor.enabled=true" \
+		--set "prometheus.servicemonitor.interval=60s" \
+		--set "prometheus.servicemonitor.scheme=http" \
+		--set "prometheus.servicemonitor.scrapeTimeout=30s" \
+		--set "prometheus.servicemonitor.metricRelabelings[0].action=keep" \
+		--set "prometheus.servicemonitor.metricRelabelings[0].regex=.+" \
+		--set "prometheus.servicemonitor.metricRelabelings[0].sourceLabels[0]=__name__" \
+		--set "prometheus.servicemonitor.relabelings[0].targetLabel=cluster" \
+		--set "prometheus.servicemonitor.relabelings[0].replacement=default" \
 		$(if $(E2E_SETUP_OPTION_BESTPRACTICE),--values=$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE)) \
 		cert-manager $< >/dev/null
 
@@ -250,6 +259,16 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 e2e-setup-gatewayapi: $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(BINDIR)/scratch/kind-exists $(NEEDS_KUBECTL)
 	$(KUBECTL) apply -f $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
 
+
+.PHONY: e2e-setup-prometheus-operator-crds
+e2e-setup-prometheus-operator-crds: $(NEEDS_HELM)
+	$(HELM) repo add prometheus-community --force-update https://prometheus-community.github.io/helm-charts >/dev/null
+	$(HELM) upgrade \
+		--install \
+		--wait \
+		--version 2.0.0 \
+		--namespace kube-system \
+		prometheus-operator-crds prometheus-community/prometheus-operator-crds >/dev/null
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
 # defined. When configuring solver block for ACME HTTTP01 challenge on an

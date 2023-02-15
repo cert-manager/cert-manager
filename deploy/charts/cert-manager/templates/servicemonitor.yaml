@@ -37,8 +37,7 @@ spec:
       - {{ include "cert-manager.namespace" . }}
 {{- end }}
   endpoints:
-  - port: {{ .Values.prometheus.servicemonitor.path }}
-    targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+  - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
     {{- with .Values.prometheus.servicemonitor.interval }}
     interval: {{ . }}
     {{- end }}
