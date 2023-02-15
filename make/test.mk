@@ -76,6 +76,34 @@ e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
 e2e-ci: e2e-setup-kind e2e-setup
 	make/e2e-ci.sh
 
+$(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
+	$(GINKGO) build --tags e2e_test test/e2e
+	mv test/e2e/e2e.test $(BINDIR)/test/e2e.test
+
+.PHONY: e2e-build
+## Build an end-to-end test binary
+##
+## The resulting binary can be used to execute the end-to-end tests on a
+## computer without the test source files and without Go or Ginkgo installed.
+##
+## For example, the binary can be copied to an OpenShift CRC virtual machine and
+## used to run end-to-end tests against cert-manager that has been installed
+## using OperatorHub.
+##
+## Most of the tests require some other dependencies such as an ingress controller or an ACME server,
+## so you will need to use --ginkgo.skip and / or  --ginkgo.focus to select a subset of the tests.
+##
+## The tests will use the current context in your KUBECONFIG file
+## and create namespaces and resources in that cluster.
+##
+## Here's an example of how you might run a subset of the end-to-end tests
+## which only require cert-manager to be installed:
+##
+##  ./e2e --repo-root=/dev/null --ginkgo.focus="CA\ Issuer" --ginkgo.skip="Gateway"
+##
+## @category Development
+e2e-build: $(BINDIR)/test/e2e.test
+
 .PHONY: test-upgrade
 test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
 	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
