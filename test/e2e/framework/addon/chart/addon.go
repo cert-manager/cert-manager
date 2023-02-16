@@ -17,6 +17,7 @@ limitations under the License.
 package chart
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -164,16 +165,12 @@ func (c *Chart) runInstall() error {
 	}
 
 	cmd := c.buildHelmCmd(args...)
-	cmd.Stdout = nil
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	defer out.Close()
+	stdoutBuf := &bytes.Buffer{}
+	cmd.Stdout = stdoutBuf
 
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
-		_, err2 := io.Copy(os.Stdout, out)
+		_, err2 := io.Copy(os.Stdout, stdoutBuf)
 		if err2 != nil {
 			return fmt.Errorf("cmd.Run: %v: io.Copy: %v", err, err2)
 		}
@@ -197,19 +194,15 @@ func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 
 func (c *Chart) getHelmVersion() (string, error) {
 	cmd := c.buildHelmCmd("version", "--template", "{{.Client.Version}}")
-	cmd.Stdout = nil
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
+	stdoutBuf := &bytes.Buffer{}
+	cmd.Stdout = stdoutBuf
 
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
-	outBytes, err := io.ReadAll(out)
+	outBytes, err := io.ReadAll(stdoutBuf)
 	if err != nil {
 		return "", err
 	}
@@ -220,16 +213,12 @@ func (c *Chart) getHelmVersion() (string, error) {
 // Deprovision the deployed instance of tiller-deploy
 func (c *Chart) Deprovision() error {
 	cmd := c.buildHelmCmd("delete", "--namespace", c.Namespace, c.ReleaseName)
-	cmd.Stdout = nil
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	defer out.Close()
+	stdoutBuf := &bytes.Buffer{}
+	cmd.Stdout = stdoutBuf
 
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
-		_, err2 := io.Copy(os.Stdout, out)
+		_, err2 := io.Copy(os.Stdout, stdoutBuf)
 		if err2 != nil {
 			return fmt.Errorf("cmd.Run: %v: io.Copy: %v", err, err2)
 		}
