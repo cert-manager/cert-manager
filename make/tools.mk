@@ -51,8 +51,11 @@ $(BINDIR)/scratch/%_VERSION: FORCE | $(BINDIR)/scratch
 # and Intel).
 HOST_OS := $(shell uname -s | tr A-Z a-z)
 HOST_ARCH = $(shell uname -m)
+
 ifeq (x86_64, $(HOST_ARCH))
 	HOST_ARCH = amd64
+else ifeq (aarch64, $(HOST_ARCH))
+	HOST_ARCH = arm64
 endif
 
 # --silent = don't print output like progress meters
