@@ -426,7 +426,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 	}
 
 	parameters := map[string]string{
-		"role": clientCertificateAuth.Role,
+		"name": clientCertificateAuth.Name,
 	}
 
 	mountPath := clientCertificateAuth.Path

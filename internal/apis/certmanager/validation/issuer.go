@@ -301,10 +301,6 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 
 	if auth.ClientCertificate != nil {
 		unionCount++
-
-		if auth.ClientCertificate.Role == "" {
-			el = append(el, field.Required(fldPath.Child("clientCertificate", "role"), ""))
-		}
 	}
 
 	if auth.Kubernetes != nil {

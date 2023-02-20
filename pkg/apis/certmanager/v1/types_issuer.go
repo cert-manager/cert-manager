@@ -221,7 +221,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole` or `kubernetes`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	// +optional
@@ -276,10 +276,12 @@ type VaultClientCertificateAuth struct {
 	// tls.crt and tls.key) used to authenticate to Vault using TLS client
 	// authentication.
 	// +optional
-	SecretName string `json:"secretName"`
+	SecretName string `json:"secretName,omitempty"`
 
-	// A required field containing the Vault Role to assume.
-	Role string `json:"role"`
+	// Name of the certificate role to authenticate against.
+	// If not set, matching any certificate role, if available.
+	// +optional
+	Name string `json:"name,omitempty"`
 }
 
 // Authenticate against Vault using a Kubernetes ServiceAccount token stored in

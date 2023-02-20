@@ -369,39 +369,17 @@ func TestVault_Setup(t *testing.T) {
 			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
-			name: "valid auth.clientCertificate: mountPath and secretName can be omitted",
+			name: "valid auth.clientCertificate: All fields can be omitted",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
 					Server: vaultServer.URL,
 					Auth: v1.VaultAuth{
-						ClientCertificate: &v1.VaultClientCertificateAuth{
-							Path:       "",
-							SecretName: "",
-							Role:       "cert-manager",
-						},
+						ClientCertificate: &v1.VaultClientCertificateAuth{},
 					},
 				},
 			},
 			expectCond: "Ready True: VaultVerified: Vault verified",
-		},
-		{
-			name: "invalid auth.clientCertificate: role is not set",
-			givenIssuer: v1.IssuerConfig{
-				Vault: &v1.VaultIssuer{
-					Path:   "pki_int",
-					Server: vaultServer.URL,
-					Auth: v1.VaultAuth{
-						ClientCertificate: &v1.VaultClientCertificateAuth{
-							Path:       "",
-							SecretName: "",
-							Role:       "",
-						},
-					},
-				},
-			},
-			expectCond:    "Ready False: VaultError: Vault client certificate auth requires a role to be set",
-			webhookReject: true,
 		},
 	}
 	for _, tt := range tests {

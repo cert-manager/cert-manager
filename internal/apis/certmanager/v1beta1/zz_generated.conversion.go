@@ -1430,7 +1430,7 @@ func Convert_certmanager_VaultAuth_To_v1beta1_VaultAuth(in *certmanager.VaultAut
 func autoConvert_v1beta1_VaultClientCertificateAuth_To_certmanager_VaultClientCertificateAuth(in *VaultClientCertificateAuth, out *certmanager.VaultClientCertificateAuth, s conversion.Scope) error {
 	out.Path = in.Path
 	out.SecretName = in.SecretName
-	out.Role = in.Role
+	out.Name = in.Name
 	return nil
 }
 
@@ -1442,7 +1442,7 @@ func Convert_v1beta1_VaultClientCertificateAuth_To_certmanager_VaultClientCertif
 func autoConvert_certmanager_VaultClientCertificateAuth_To_v1beta1_VaultClientCertificateAuth(in *certmanager.VaultClientCertificateAuth, out *VaultClientCertificateAuth, s conversion.Scope) error {
 	out.Path = in.Path
 	out.SecretName = in.SecretName
-	out.Role = in.Role
+	out.Name = in.Name
 	return nil
 }
 

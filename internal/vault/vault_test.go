@@ -512,7 +512,6 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
 						ClientCertificate: &cmapi.VaultClientCertificateAuth{
-							Role:       "cert-vault-role",
 							SecretName: "secret-ref-name",
 						},
 					},
@@ -532,7 +531,6 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
 						ClientCertificate: &cmapi.VaultClientCertificateAuth{
-							Role:       "cert-vault-role",
 							SecretName: "secret-ref-name",
 						},
 					},
@@ -556,7 +554,6 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
 						ClientCertificate: &cmapi.VaultClientCertificateAuth{
-							Role:       "cert-vault-role",
 							SecretName: "secret-ref-name",
 						},
 					},
@@ -579,9 +576,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
-						ClientCertificate: &cmapi.VaultClientCertificateAuth{
-							Role: "cert-vault-role",
-						},
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{},
 					},
 				}),
 			),

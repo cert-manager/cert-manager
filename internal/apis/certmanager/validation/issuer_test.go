@@ -228,12 +228,9 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				field.Required(fldPath.Child("appRole").Child("roleId"), ""),
 			},
 		},
-		"invalid auth.clientCertificate: role is required": {
+		"valid auth.clientCertificate: all fields can be empty": {
 			auth: &cmapi.VaultAuth{
 				ClientCertificate: &cmapi.VaultClientCertificateAuth{},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("clientCertificate").Child("role"), ""),
 			},
 		},
 		// The field auth.kubernetes.secretRef.key defaults to 'token' if

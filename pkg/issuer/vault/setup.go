@@ -40,13 +40,12 @@ const (
 	messageAuthFieldsRequired            = "Vault tokenSecretRef, appRole, clientCertificate, or kubernetes is required"
 	messageMultipleAuthFieldsSet         = "Multiple auth methods cannot be set on the same Vault issuer"
 
-	messageKubeAuthRoleRequired                = "Vault Kubernetes auth requires a role to be set"
-	messageKubeAuthEitherRequired              = "Vault Kubernetes auth requires either secretRef.name or serviceAccountRef.name to be set"
-	messageKubeAuthSingleRequired              = "Vault Kubernetes auth cannot be used with both secretRef.name and serviceAccountRef.name"
-	messageTokenAuthNameRequired               = "Vault Token auth requires tokenSecretRef.name"
-	messageAppRoleAuthFieldsRequired           = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
-	messageAppRoleAuthKeyRequired              = "Vault AppRole auth requires secretRef.key"
-	messageClientCertificateAuthFieldsRequired = "Vault client certificate auth requires a role to be set"
+	messageKubeAuthRoleRequired      = "Vault Kubernetes auth requires a role to be set"
+	messageKubeAuthEitherRequired    = "Vault Kubernetes auth requires either secretRef.name or serviceAccountRef.name to be set"
+	messageKubeAuthSingleRequired    = "Vault Kubernetes auth cannot be used with both secretRef.name and serviceAccountRef.name"
+	messageTokenAuthNameRequired     = "Vault Token auth requires tokenSecretRef.name"
+	messageAppRoleAuthFieldsRequired = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
+	messageAppRoleAuthKeyRequired    = "Vault AppRole auth requires secretRef.key"
 )
 
 // Setup creates a new Vault client and attempts to authenticate with the Vault instance and sets the issuer's conditions to reflect the success of the setup.
@@ -126,13 +125,6 @@ func (v *Vault) Setup(ctx context.Context) error {
 	if kubeAuth != nil && (kubeAuth.SecretRef.Name != "" && kubeAuth.ServiceAccountRef != nil) {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthSingleRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthSingleRequired)
-		return nil
-	}
-
-	// check if all mandatory Vault clientCertificate fields are set.
-	if clientCertificateAuth != nil && len(clientCertificateAuth.Role) == 0 {
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageClientCertificateAuthFieldsRequired)
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageClientCertificateAuthFieldsRequired)
 		return nil
 	}
 
