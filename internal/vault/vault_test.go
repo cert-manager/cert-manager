@@ -394,7 +394,7 @@ func TestSetToken(t *testing.T) {
 
 		fakeClient *vaultfake.FakeClient
 	}{
-		"if neither token secret ref, app role secret ref, or kube auth then not found then error": {
+		"if neither token secret ref, app role secret ref, clientCertificate auth or kube auth not found then error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
@@ -404,7 +404,7 @@ func TestSetToken(t *testing.T) {
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
+				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
 			),
 		},
 
@@ -736,9 +736,14 @@ func TestSetToken(t *testing.T) {
 			}
 
 			err := v.setToken(test.fakeClient)
-			if ((test.expectedErr == nil) != (err == nil)) &&
-				test.expectedErr != nil &&
-				test.expectedErr.Error() != err.Error() {
+			if test.expectedErr == nil && err != nil {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			} else if test.expectedErr != nil && err == nil {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			} else if (test.expectedErr != nil && err != nil) &&
+				(test.expectedErr.Error() != err.Error()) {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}
