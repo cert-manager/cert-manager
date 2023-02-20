@@ -67,9 +67,13 @@ global:
     # +docs:property
     # retryPeriod: 15s
 
-# Install the cert-manager CRDs, it is recommended to not use Helm to manage
-# the CRDs.
+# This method of CRDs installation will be deprecated in future releases
+# It is mutually exclusive with crds.install and crds.keep=true
 installCRDs: false
+
+crds:
+  install: false
+  keep: false
 
 # +docs:section=Controller
 

@@ -170,7 +170,17 @@ The duration the clients should wait between attempting acquisition and renewal 
 > false
 > ```
 
-Install the cert-manager CRDs, it is recommended to not use Helm to manage the CRDs.
+This method of CRDs installation will be deprecated in future releases. It is mutually exclusive with crds.install and crds.keep=true
+#### **crds.install** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+#### **crds.keep** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
 ### Controller
 
 #### **replicaCount** ~ `number`

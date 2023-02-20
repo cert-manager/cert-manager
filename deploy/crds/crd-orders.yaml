@@ -3,6 +3,9 @@ kind: CustomResourceDefinition
 metadata:
   name: orders.acme.cert-manager.io
   labels:
+    {{- if .Values.crds.keep }}
+    "helm.sh/resource-policy": keep
+    {{- end }}
     app: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/instance: '{{ .Release.Name }}'
