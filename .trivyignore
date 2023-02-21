@@ -5,3 +5,10 @@ CVE-2020-8911
 CVE-2020-8912
 GHSA-7f33-f4f5-xwgw
 GHSA-f5pg-7wfw-84q9
+
+# This vuln affects malicious helm charts using DNS
+# Fixing this requires a huge amount of upgrades because the underlying helm upgrade itself
+# had so many dependencies.
+# The vulnerability is likely to be more dangerous in the underlying Helm tool which we can
+# upgrade, but the library dependency doesn't seem worth it to upgrade.
+CVE-2023-25165
