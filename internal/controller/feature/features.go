@@ -70,6 +70,17 @@ const (
 	// This feature will add BasicConstraints section with CA field defaulting to false; CA field will be set true if the Certificate resource spec has isCA as true
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/5539
 	UseCertificateRequestBasicConstraints featuregate.Feature = "UseCertificateRequestBasicConstraints"
+
+	// Owner: @irbekrm
+	// Alpha v1.12
+	// SecretsFilteredCaching reduces controller's memory consumption by
+	// filtering which Secrets are cached in full using
+	// `controller.cert-manager.io/fao` label. By default all Certificate
+	// Secrets are labelled with controller.cert-manager.io/fao label. Users
+	// can also label other Secrets, such as issuer credentials Secrets that
+	// they know cert-manager will need access to to speed up issuance.
+	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md
+	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
 )
 
 func init() {
@@ -88,4 +99,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	StableCertificateRequestName:                     {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
+	SecretsFilteredCaching:                           {Default: false, PreRelease: featuregate.Alpha},
 }
