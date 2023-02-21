@@ -11,7 +11,7 @@ export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
 CTR=docker
 
 TOOLS :=
-TOOLS += helm=v3.10.0
+TOOLS += helm=v3.11.1
 TOOLS += kubectl=v1.25.2
 TOOLS += kind=v0.16.0
 TOOLS += controller-gen=v0.11.1
@@ -38,7 +38,7 @@ KUBEBUILDER_ASSETS_VERSION=1.25.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.19.5
+VENDORED_GO_VERSION := 1.19.6
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
@@ -213,9 +213,9 @@ $(foreach GO_DEPENDENCY,$(GO_DEPENDENCIES),$(eval $(call go_dependency,$(word 1,
 # Helm #
 ########
 
-HELM_linux_amd64_SHA256SUM=bf56beb418bb529b5e0d6d43d56654c5a03f89c98400b409d1013a33d9586474
-HELM_darwin_amd64_SHA256SUM=1e7fd528482ac2ef2d79fe300724b3e07ff6f846a2a9b0b0fe6f5fa05691786b
-HELM_darwin_arm64_SHA256SUM=f7f6558ebc8211824032a7fdcf0d55ad064cb33ec1eeec3d18057b9fe2e04dbe
+HELM_linux_amd64_SHA256SUM=0b1be96b66fab4770526f136f5f1a385a47c41923d33aab0dcb500e0f6c1bf7c
+HELM_darwin_amd64_SHA256SUM=2548a90e5cc957ccc5016b47060665a9d2cd4d5b4d61dcc32f5de3144d103826
+HELM_darwin_arm64_SHA256SUM=43d0198a7a2ea2639caafa81bb0596c97bee2d4e40df50b36202343eb4d5c46b
 
 $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
