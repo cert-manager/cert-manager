@@ -1,3 +1,4 @@
+{{- if .Values.webhook.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -185,3 +186,4 @@ spec:
         {{- toYaml .Values.webhook.volumes | nindent 8 }}
         {{- end }}
       {{- end }}
+{{- end }}

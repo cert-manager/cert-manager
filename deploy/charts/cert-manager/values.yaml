@@ -1,3 +1,7 @@
+# Disables Cert Manager deployment rendering
+certManager:
+  enabled: true
+
 # Default values for cert-manager.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -296,6 +300,8 @@ livenessProbe:
 enableServiceLinks: false
 
 webhook:
+  # Disables Cert Manager webhook resources rendering
+  enabled: true
   replicaCount: 1
   timeoutSeconds: 10
 
