@@ -395,7 +395,7 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 # gatewayapi #
 ##############
 
-GATEWAY_API_SHA256SUM=b84972572a104012e7fbea5651a113ac872f6ffeb0b037b4505d664383c932a3
+GATEWAY_API_SHA256SUM=7a6f00833ba23617d6b938cffc6f9cb7faddcc0997d0bd91f34614e42fe2d35d
 
 $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
