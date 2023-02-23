@@ -1,3 +1,4 @@
+{{- if .Values.certManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -181,3 +182,4 @@ spec:
       dnsConfig:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

@@ -7,6 +7,7 @@
     {{- fail "webhook.config.kind must be set" -}}
   {{- end -}}
 {{- end -}}
+{{- if .Values.webhook.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -23,3 +24,4 @@ data:
   config.yaml: |
     {{ .Values.webhook.config | toYaml | nindent 4 }}
   {{- end }}
+{{- end }}
