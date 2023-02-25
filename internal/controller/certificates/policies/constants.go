@@ -64,4 +64,6 @@ const (
 	// a missing owner reference to the Certificate, or has an owner reference it
 	// shouldn't have.
 	SecretOwnerRefMismatch string = "SecretOwnerRefMismatch"
+
+	ExpiredOCSPStaple string = "ExpiredOCSPStaple"
 )

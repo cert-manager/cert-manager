@@ -59,7 +59,7 @@ type SecretsManager struct {
 
 // SecretData is a structure wrapping private key, Certificate and CA data
 type SecretData struct {
-	PrivateKey, Certificate, CA []byte
+	PrivateKey, Certificate, CA, OCSPStaple []byte
 }
 
 // NewSecretsManager returns a new SecretsManager. Setting
@@ -148,6 +148,9 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	secret.Data[corev1.TLSCertKey] = data.Certificate
 	if len(data.CA) > 0 {
 		secret.Data[cmmeta.TLSCAKey] = data.CA
+	}
+	if len(data.OCSPStaple) > 0 {
+		secret.Data[cmmeta.TLSOCSPKey] = data.OCSPStaple
 	}
 
 	var certificate *x509.Certificate

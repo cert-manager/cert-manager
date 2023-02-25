@@ -35,6 +35,7 @@ import (
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -57,6 +58,14 @@ func SecretIsMissingData(input Input) (string, string, bool) {
 	if len(certData) == 0 {
 		return MissingData, "Issuing certificate as Secret does not contain a certificate", true
 	}
+
+	if _, ok := input.Certificate.Labels[internalcertificates.OCSPLabel]; !ok {
+		return "", "", false
+	}
+	if ocspStaple, ok := input.Secret.Data[cmmeta.TLSOCSPKey]; !ok || len(ocspStaple) == 0 {
+		return MissingData, "Issuing certificate as Secret does not contain an OCSP staple", true
+	}
+
 	return "", "", false
 }
 
@@ -626,6 +635,26 @@ func SecretOwnerReferenceValueMismatch(ownerRefEnabled bool) Func {
 		if !hasOwnerRefMatchingCertificate {
 			return SecretOwnerRefMismatch,
 				fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+		}
+
+		return "", "", false
+	}
+}
+
+func OCSPStapleIsNearingExpiry(c clock.Clock) Func {
+
+	return func(input Input) (string, string, bool) {
+		ocspManager := internalcertificates.NewOcspManager()
+
+		if _, ok := input.Certificate.Labels[internalcertificates.OCSPLabel]; !ok {
+			return "", "", false
+		}
+
+		certificateBytes := input.Secret.Data[corev1.TLSCertKey]
+		ocspStapleBytes := input.Secret.Data[cmmeta.TLSOCSPKey]
+		if !ocspManager.IsOcspStapleValid(certificateBytes, ocspStapleBytes) {
+			return ExpiredOCSPStaple, "Issuing Ceriticate as the OCSP staple for the certificate has expired", true
+
 		}
 
 		return "", "", false

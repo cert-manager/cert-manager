@@ -69,6 +69,7 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 		PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
 		Certificate: secret.Data[corev1.TLSCertKey],
 		CA:          secret.Data[cmmeta.TLSCAKey],
+		OCSPStaple:  secret.Data[cmmeta.TLSOCSPKey],
 	}
 
 	// Check whether the Certificate's Secret has correct output format and
