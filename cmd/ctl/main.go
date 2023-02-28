@@ -22,7 +22,7 @@ import (
 	"os"
 
 	ctlcmd "github.com/cert-manager/cert-manager/cmd/ctl/cmd"
-	"github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/internal/cmd/util"
 )
 
 func main() {

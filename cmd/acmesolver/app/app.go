@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
