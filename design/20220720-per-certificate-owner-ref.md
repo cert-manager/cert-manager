@@ -6,27 +6,12 @@
 - [Summary](#summary)
 - [Use-cases](#use-cases)
 - [Questions](#questions)
-- [Motivation](#motivation)
-  - [Goals](#goals)
-  - [Non-Goals](#non-goals)
 - [Proposal](#proposal)
-  - [User Stories (Optional)](#user-stories-optional)
-    - [Story 1](#story-1)
-    - [Story 2](#story-2)
-  - [Notes/Constraints/Caveats (Optional)](#notesconstraintscaveats-optional)
-  - [Risks and Mitigations](#risks-and-mitigations)
 - [Design Details](#design-details)
   - [Test Plan](#test-plan)
   - [Graduation Criteria](#graduation-criteria)
   - [Upgrade / Downgrade Strategy](#upgrade--downgrade-strategy)
   - [Supported Versions](#supported-versions)
-- [Production Readiness](#production-readiness)
-  - [How can this feature be enabled / disabled for an existing cert-manager installation?](#how-can-this-feature-be-enabled--disabled-for-an-existing-cert-manager-installation)
-  - [Does this feature depend on any specific services running in the cluster?](#does-this-feature-depend-on-any-specific-services-running-in-the-cluster)
-  - [Will enabling / using this feature result in new API calls (i.e to Kubernetes apiserver or external services)?](#will-enabling--using-this-feature-result-in-new-api-calls-ie-to-kubernetes-apiserver-or-external-services)
-  - [Will enabling / using this feature result in increasing size or count of the existing API objects?](#will-enabling--using-this-feature-result-in-increasing-size-or-count-of-the-existing-api-objects)
-  - [Will enabling / using this feature result in significant increase of resource usage? (CPU, RAM...)](#will-enabling--using-this-feature-result-in-significant-increase-of-resource-usage-cpu-ram)
-- [Drawbacks](#drawbacks)
 - [Alternatives](#alternatives)
 <!-- /toc -->
 
@@ -38,9 +23,49 @@ This checklist contains actions which must be completed before a PR implementing
 - [ ] Test plan has been agreed upon and the tests implemented
 - [ ] Feature gate status has been agreed upon (whether the new functionality will be placed behind a feature gate or not)
 - [ ] Graduation criteria is in place if required (if the new functionality is placed behind a feature gate, how will it graduate between stages)
-- [ ] User-facing documentation has been PR-ed against the release branch in [cert-manager/website]
+- [ ] User-facing documentation has been PR-ed against the release branch in [cert-manager/website](https://github.com/cert-manager/website)
 
 ## Summary
+
+The flag `--enable-certificate-owner-ref` allows you to configure cert-manager to delete Secret resources when the associated Certificate is removed. 
+
+We propose to introduce the same setting at the Certificate level so that users of the Certificate resource can decide whether the Secret resource should be removed or not.
+
+## Use-cases
+
+**Use-case 1: managed cert-manager installations**
+
+[Flant](https://flant.com) manages Kubernetes clusters for their customers. The installation of cert-manager is managed by Flant. Flant uses `--enable-certificate-owner-ref=false` to lower the chance of outages of their managed components. On the other hand, customers are relying on long-lived “dev” namespaces in which they install and uninstall their applications over and over with random names. The Certificate resources are correctly removed, but the Secret resources stay and accumulate.
+
+Source: https://github.com/deckhouse/deckhouse/pull/1601
+
+## Questions
+
+**Is this feature too niche?**
+
+I think that the user of the Certificate resource should be deciding on the fate of the Secret resource, not the person operating the cert-manager installation.
+
+**What happens when I upgrade cert-manager?**
+
+The flag `--enable-certificate-owner-ref` will still continue to function as before. No action is needed to upgrade.
+
+**What happens when I downgrade cert-manager?**
+
+Downgrading requires two actions: (1) removing the new flag `--default-secret-cleanup-policy` from the Deployment, adding the corresponding `--enable-certificate-owner-ref` and (2) emptying the `cleanupPolicy` field from every Certificate in the cluster.
+
+**Why is there a new "duplicate" flag `--default-secret-cleanup-policy` that does the same thing as `--enable-certificate-owner-ref`?**
+
+The existing flag `--enable-certificate-owner-ref` does not match the new API (`OnDelete` and `Never`), that is why we decided to add a new flag to reflect the new API.
+
+**Do we intend to add more to `OnDelete` and `Never`?**
+
+No, I don't think there will be another value. The intent of these two values (as opposed to using a boolean) is to make the API more explicit, but a boolean could have done the trick.
+
+**Will `--default-secret-cleanup-policy` be removed?**
+
+We intend to remove `--default-secret-cleanup-policy` within 3 to 6 releases.
+
+## Proposal
 
 cert-manager has the ability to set the owner reference field in generated Secret resources.
 The option is global, and takes the form of the flag `--enable-certificate-owner-ref` set in
@@ -134,7 +159,7 @@ associated Secrets will gain a new owner reference. When changing the flag from
 set will see their owner reference immediately removed.
 
 The reason we decided to deprecate `--enable-certificate-owner-ref` is because this
-flat behaves differently to how the new `cleanupPolicy` behaves:
+flag behaves differently from how the new `cleanupPolicy` behaves:
 
 - When `--enable-certificate-owner-ref` is not passed (or is set to false), the existing
   Secret resources that have an owner reference are not changed even after a re-issuance.
@@ -155,85 +180,6 @@ When upgrading to the new flag, users can refer to the following table:
 | `--enable-certificate-owner-ref` not passed to the controller | No change needed |
 | `--enable-certificate-owner-ref=false` | Replace with `--default-secret-cleanup-policy=Never` |
 | `--enable-certificate-owner-ref=true` | Replace with `--default-secret-cleanup-policy=OnDelete` |
-
-## Use-cases
-
-[Flant](https://flant.com) manages certificates for users, and has hit a Kubernetes apiserver limitation where too many leftover Secret resources were slowing the apiserver down. This issue has happened because Certificate resources are created using auto-generated names, and Certificate resources are often deleted shortly after being created.
-
-## Questions
-
-<!--
-This section is important for producing high-quality, user-focused
-documentation such as release notes.
-
-A good summary is probably around a paragraph in length.
-
-[documentation style guide]: https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md
--->
-
-## Motivation
-
-<!--
-This section is for explicitly listing the motivation, goals, and non-goals of
-the proposed enhancement.  Describe why the change is important and the benefits to users. The
-motivation section can optionally provide links to
-demonstrate the interest in this functionality amongst the community.
--->
-
-### Goals
-
-<!--
-List specific goals. What is this proposal trying to achieve? How will we
-know that this has succeeded?
--->
-
-### Non-Goals
-
-<!--
-What is out of scope for this proposal? Listing non-goals helps to focus discussion
-and make progress.
--->
-
-## Proposal
-
-<!--
-This is where we get down to the specifics of what the proposal actually is.
-What is the desired outcome and how do we measure success?
-This should have enough detail that reviewers can understand exactly what
-you're proposing, but should not include things like API designs or
-implementation- those should go into "Design Details" below.
--->
-
-### User Stories (Optional)
-
-<!--
-Detail the things that people will be able to do if this proposal gets implemented.
-Include as much detail as possible so that people can understand the "how" of
-the system. The goal here is to make this feel real for users without getting
-bogged down.
--->
-
-#### Story 1
-
-#### Story 2
-
-### Notes/Constraints/Caveats (Optional)
-
-<!--
-What are the caveats to the proposal?
-What are some important details that didn't come across above?
-Go into as much detail as necessary here.
-This might be a good place to talk about core concepts and how they relate.
--->
-
-### Risks and Mitigations
-
-<!--
-What are the risks of this proposal, and how do we mitigate? Think broadly.
-For example, consider both security and how this will impact the larger
-Kubernetes/PKI ecosystem.
-
--->
 
 ## Design Details
 
@@ -262,7 +208,7 @@ on the Certificate resource.
 ### Test Plan
 
 - Unit tests for the changes in the secret manager controller.
-
+- Integration tests (either fake client or envtest) checking various API behaviours.
 
 ### Graduation Criteria
 
@@ -287,53 +233,27 @@ introduced.
 
 ### Supported Versions
 
-This feature will be supported in all the versions of Kubernetes that are
-supported by cert-manager.
-
-## Production Readiness
-
-<!--
-This section should confirm that the feature can be safely operated in production environment and can be disabled or rolled back in case it is found to increase failures.
--->
-
-### How can this feature be enabled / disabled for an existing cert-manager installation?
-
-<!--
-
-Can the feature be disabled after having been enabled?
-
-Consider whether any additional steps will need to be taken to start/stop using this feature, i.e change existing resources that have had new field added for the feature before disabling it.
-
-
-Do the test cases cover both the feature being enabled and it being disabled (where relevant)?
-
--->
-
-### Does this feature depend on any specific services running in the cluster?
-
-No.
-
-### Will enabling / using this feature result in new API calls (i.e to Kubernetes apiserver or external services)?
-
-No.
-
-### Will enabling / using this feature result in increasing size or count of the existing API objects?
-
-No.
-
-### Will enabling / using this feature result in significant increase of resource usage? (CPU, RAM...)
-
-No.
-
-## Drawbacks
+This feature will be supported in all the versions of Kubernetes that are supported by cert-manager.
 
 ## Alternatives
+
+**CSI driver**
 
 It is possible to use the
 [`csi-driver`](https://github.com/cert-manager/csi-driver) to circumvent
 the problem of "too many ephemeral Secret resources stored in etcd". Using
-the CSI driver, no Secret resource is created, alleviating the issue.
-
-Since Flant offers its customers the capability to use Certificate resources,
+the CSI driver, no Secret resource is created, alleviating the issue. Since Flant offers its customers the capability to use Certificate resources,
 and wants to keep supporting the Certificate type, switching from Certificate
 resources to the CSI driver isn't an option.
+
+**Ad-hoc tool to delete orphaned Secrets**
+
+It would be possible to develop a custom tool that removes Secret resources that aren’t referenced by any Certificate resource, possibly using an annotation.
+
+**Multiple installations of cert-manager**
+
+Another solution would be to install cert-manager twice: once with `--enable-certificate-owner-ref=true`, and the other without. But running multiple instances of cert-manager is not supported.
+
+**Removal of the ephemeral dev namespace**
+
+Flant reported that developers are using long-term dev namespaces, meaning that they can't rely on the removal of the dev namespace in order to have the leftover Secrets removed.
