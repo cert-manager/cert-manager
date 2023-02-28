@@ -35,7 +35,7 @@ import (
 	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/cmd/controller/app/options"
-	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
+	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"

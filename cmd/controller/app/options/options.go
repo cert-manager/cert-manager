@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
+	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cm "github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	challengescontroller "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"

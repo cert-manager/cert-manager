@@ -26,9 +26,9 @@ import (
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
 
-	cmdutil "github.com/cert-manager/cert-manager/cmd/util"
 	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
