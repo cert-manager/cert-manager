@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
 	acmeinstall "github.com/cert-manager/cert-manager/internal/apis/acme/install"
 	cminstall "github.com/cert-manager/cert-manager/internal/apis/certmanager/install"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
@@ -54,7 +53,7 @@ func WithConversionHandler(handler handlers.ConversionHook) func(*server.Server)
 
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
-func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
+func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
 	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err

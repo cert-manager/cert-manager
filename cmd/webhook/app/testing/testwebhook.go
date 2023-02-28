@@ -99,7 +99,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	webhookConfig.HealthzPort = pointer.Int(0)
 
 	errCh := make(chan error)
-	srv, err := webhook.NewCertManagerWebhookServer(log, *webhookFlags, *webhookConfig, argumentsForNewServerWithOptions...)
+	srv, err := webhook.NewCertManagerWebhookServer(log, *webhookConfig, argumentsForNewServerWithOptions...)
 	if err != nil {
 		t.Fatal(err)
 	}
