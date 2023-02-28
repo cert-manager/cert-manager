@@ -117,7 +117,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				}
 			}
 
-			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookFlags, *webhookConfig)
+			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookConfig)
 			if err != nil {
 				log.Error(err, "Failed initialising server")
 				os.Exit(1)
