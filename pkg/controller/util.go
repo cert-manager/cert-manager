@@ -205,7 +205,7 @@ func ToSecret(obj interface{}) (*corev1.Secret, bool) {
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
 		meta, ok := obj.(*metav1.PartialObjectMetadata)
-		if !ok || meta.GroupVersionKind() != corev1.SchemeGroupVersion.WithKind("Secret") {
+		if !ok {
 			// TODO: I wasn't able to get GVK from PartialMetadata,
 			// however perhaps this should be possible and then we
 			// could verify that this really is a Secret. At the
