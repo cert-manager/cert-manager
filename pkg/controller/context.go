@@ -267,7 +267,12 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(clients.cmClient, resyncPeriod, informers.WithNamespace(opts.Namespace))
 
-	kubeSharedInformerFactory := internalinformers.NewBaseKubeInformerFactory(clients.kubeClient, resyncPeriod, opts.Namespace)
+	var kubeSharedInformerFactory internalinformers.KubeInformerFactory
+	if utilfeature.DefaultFeatureGate.Enabled(feature.SecretsFilteredCaching) {
+		kubeSharedInformerFactory = internalinformers.NewFilteredSecretsKubeInformerFactory(ctx, clients.kubeClient, clients.metadataOnlyClient, resyncPeriod, opts.Namespace)
+	} else {
+		kubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(clients.kubeClient, resyncPeriod, opts.Namespace)
+	}
 
 	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(clients.gwClient, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
