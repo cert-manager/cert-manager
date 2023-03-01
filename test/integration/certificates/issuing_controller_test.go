@@ -69,10 +69,20 @@ func TestIssuingController(t *testing.T) {
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-issuing-test",
+	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient,
-		cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
-		controllerOptions, "cert-manage-certificates-issuing-test")
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -275,10 +285,20 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-issuing-test",
+	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient,
-		cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
-		controllerOptions, "cert-manage-certificates-issuing-test")
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -490,10 +510,20 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-issuing-test",
+	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient,
-		cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
-		controllerOptions, "cert-manage-certificates-issuing-test")
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -726,7 +756,20 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions, "cert-manager-issuing-test")
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-issuing-test",
+	}
+
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -949,10 +992,19 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: false,
 	}
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmClient,
-		factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
-		controllerOptions, fieldManager,
-	)
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmClient,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: fieldManager,
+	}
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerNoOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer func() {
@@ -1036,10 +1088,19 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 	kubeClient, factory, cmClient, cmFactory = framework.NewClients(t, config)
 	stopControllerNoOwnerRef = nil
 	controllerOptions.EnableOwnerRef = true
-	ctrl, queue, mustSync = issuing.NewController(logf.Log, kubeClient, cmClient,
-		factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{},
-		controllerOptions, fieldManager,
-	)
+	controllerContext = controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmClient,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: fieldManager,
+	}
+	ctrl, queue, mustSync = issuing.NewController(logf.Log, &controllerContext)
 	c = controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopControllerOwnerRef()

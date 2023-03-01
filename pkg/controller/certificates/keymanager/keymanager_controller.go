@@ -76,20 +76,14 @@ type controller struct {
 }
 
 func NewController(
-	log logr.Logger,
-	client cmclient.Interface,
-	coreClient kubernetes.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory,
-	recorder record.EventRecorder,
-	fieldManager string,
+	log logr.Logger, ctx *controllerpkg.Context,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := cmFactory.Certmanager().V1().Certificates()
-	secretsInformer := factory.Core().V1().Secrets()
+	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
+	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
 
@@ -116,10 +110,10 @@ func NewController(
 	return &controller{
 		certificateLister: certificateInformer.Lister(),
 		secretLister:      secretsInformer.Lister(),
-		client:            client,
-		coreClient:        coreClient,
-		recorder:          recorder,
-		fieldManager:      fieldManager,
+		client:            ctx.CMClient,
+		coreClient:        ctx.Client,
+		recorder:          ctx.Recorder,
+		fieldManager:      ctx.FieldManager,
 	}, queue, mustSync
 }
 
@@ -380,14 +374,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync := NewController(log,
-		ctx.CMClient,
-		ctx.Client,
-		ctx.KubeSharedInformerFactory,
-		ctx.SharedInformerFactory,
-		ctx.Recorder,
-		ctx.FieldManager,
-	)
+	ctrl, queue, mustSync := NewController(log, ctx)
 	c.controller = ctrl
 
 	return queue, mustSync, nil

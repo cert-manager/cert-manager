@@ -69,9 +69,18 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory,
-		cmFactory, framework.NewEventRecorder(t), fakeClock, shouldReissue,
-		"cert-manage-certificates-trigger-test")
+	controllerContext := &controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock: fakeClock,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-trigger-test",
+	}
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
 	c := controllerpkg.NewController(
 		ctx,
 		"trigger_test",
@@ -165,10 +174,19 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	controllerContext := &controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock: fakeClock,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-trigger-test",
+	}
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory,
-		cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue,
-		"cert-manage-certificates-trigger-test")
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
 	c := controllerpkg.NewController(
 		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
@@ -251,8 +269,20 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		},
 	}
 
+	controllerContext := &controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock: fakeClock,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-trigger-test",
+	}
+
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue, "cert-manger-certificates-trigger-test")
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
 	c := controllerpkg.NewController(
 		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",

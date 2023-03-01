@@ -53,7 +53,12 @@ func TestRevisionManagerController(t *testing.T) {
 	// Build, instantiate and run the revision manager controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 
-	ctrl, queue, mustSync := revisionmanager.NewController(logf.Log, cmCl, cmFactory)
+	controllerContext := controllerpkg.Context{
+		CMClient:              cmCl,
+		SharedInformerFactory: cmFactory,
+	}
+
+	ctrl, queue, mustSync := revisionmanager.NewController(logf.Log, &controllerContext)
 
 	c := controllerpkg.NewController(
 		ctx,

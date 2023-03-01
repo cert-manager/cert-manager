@@ -118,17 +118,27 @@ func TestAcmeOrdersController(t *testing.T) {
 		},
 	}
 
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock: clock.RealClock{},
+			ACMEOptions: controllerpkg.ACMEOptions{
+				AccountRegistry: accountRegistry,
+			},
+		},
+
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-orders-test",
+	}
+
 	// Create a new orders controller.
 	ctrl, queue, mustSync := acmeorders.NewController(
 		logf.Log,
-		cmCl,
-		factory,
-		cmFactory,
-		accountRegistry,
-		framework.NewEventRecorder(t),
-		clock.RealClock{},
+		&controllerContext,
 		false,
-		"cert-manager-test",
 	)
 	c := controllerpkg.NewController(
 		ctx,

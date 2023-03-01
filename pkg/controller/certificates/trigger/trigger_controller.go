@@ -86,21 +86,16 @@ type controller struct {
 
 func NewController(
 	log logr.Logger,
-	client cmclient.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory,
-	recorder record.EventRecorder,
-	clock clock.Clock,
+	ctx *controllerpkg.Context,
 	shouldReissue policies.Func,
-	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := cmFactory.Certmanager().V1().Certificates()
-	certificateRequestInformer := cmFactory.Certmanager().V1().CertificateRequests()
-	secretsInformer := factory.Core().V1().Secrets()
+	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
+	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
+	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
 
@@ -127,13 +122,13 @@ func NewController(
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
-		client:                   client,
-		recorder:                 recorder,
-		scheduledWorkQueue:       scheduler.NewScheduledWorkQueue(clock, queue.Add),
-		fieldManager:             fieldManager,
+		client:                   ctx.CMClient,
+		recorder:                 ctx.Recorder,
+		scheduledWorkQueue:       scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
+		fieldManager:             ctx.FieldManager,
 
 		// The following are used for testing purposes.
-		clock:         clock,
+		clock:         ctx.Clock,
 		shouldReissue: shouldReissue,
 		dataForCertificate: (&policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
@@ -340,13 +335,8 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
 	ctrl, queue, mustSync := NewController(log,
-		ctx.CMClient,
-		ctx.KubeSharedInformerFactory,
-		ctx.SharedInformerFactory,
-		ctx.Recorder,
-		ctx.Clock,
+		ctx,
 		policies.NewTriggerPolicyChain(ctx.Clock).Evaluate,
-		ctx.FieldManager,
 	)
 	c.controller = ctrl
 

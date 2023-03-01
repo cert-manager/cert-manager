@@ -80,21 +80,18 @@ type policyEvaluatorFunc func(policies.Chain, policies.Input) cmapi.CertificateC
 // NewController returns a new certificate readiness controller.
 func NewController(
 	log logr.Logger,
-	client cmclient.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory,
+	ctx *controllerpkg.Context,
 	chain policies.Chain,
 	renewalTimeCalculator pki.RenewalTimeFunc,
 	policyEvaluator policyEvaluatorFunc,
-	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := cmFactory.Certmanager().V1().Certificates()
-	certificateRequestInformer := cmFactory.Certmanager().V1().CertificateRequests()
-	secretsInformer := factory.Core().V1().Secrets()
+	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
+	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
+	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
 
@@ -122,14 +119,14 @@ func NewController(
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
-		client:                   client,
+		client:                   ctx.CMClient,
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
 		},
 		policyEvaluator:       policyEvaluator,
 		renewalTimeCalculator: renewalTimeCalculator,
-		fieldManager:          fieldManager,
+		fieldManager:          ctx.FieldManager,
 	}, queue, mustSync
 }
 
@@ -255,13 +252,10 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
 	ctrl, queue, mustSync := NewController(log,
-		ctx.CMClient,
-		ctx.KubeSharedInformerFactory,
-		ctx.SharedInformerFactory,
+		ctx,
 		policies.NewReadinessPolicyChain(ctx.Clock),
 		pki.RenewalTime,
 		BuildReadyConditionFromChain,
-		ctx.FieldManager,
 	)
 	c.controller = ctrl
 
