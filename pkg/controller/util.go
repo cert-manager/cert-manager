@@ -199,3 +199,24 @@ func BuildAnnotationsToCopy(allAnnotations map[string]string, prefixes []string)
 	}
 	return filteredAnnotations
 }
+
+func ToSecret(obj interface{}) (*corev1.Secret, bool) {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		meta, ok := obj.(*metav1.PartialObjectMetadata)
+		if !ok || meta.GroupVersionKind() != corev1.SchemeGroupVersion.WithKind("Secret") {
+			// TODO: I wasn't able to get GVK from PartialMetadata,
+			// however perhaps this should be possible and then we
+			// could verify that this really is a Secret. At the
+			// moment this is okay as there is no path how any
+			// reconcile loop would receive PartialObjectMetadata
+			// for any other type.
+			return nil, false
+		}
+		secret = &corev1.Secret{}
+		secret.SetName(meta.Name)
+		secret.SetNamespace(meta.Namespace)
+	}
+	return secret, true
+
+}

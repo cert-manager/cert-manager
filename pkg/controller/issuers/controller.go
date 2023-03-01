@@ -99,14 +99,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 // TODO: replace with generic handleObject function (like Navigator)
 func (c *controller) secretDeleted(obj interface{}) {
 	log := c.log.WithName("secretDeleted")
-
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
+	secret, ok := controllerpkg.ToSecret(obj)
 	if !ok {
-		log.Error(nil, "object was not a secret object")
+		log.Error(nil, "object is not a secret", "object", obj)
 		return
 	}
+
 	log = logf.WithResource(log, secret)
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {
