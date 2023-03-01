@@ -102,7 +102,7 @@ func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Sol
 	b.InitWithRESTConfig()
 	s := &Solver{
 		Context:                 b.Context,
-		secretLister:            b.Context.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretLister:            b.Context.KubeSharedInformerFactory.Secrets().Lister(),
 		dnsProviderConstructors: dnsProviders,
 	}
 	b.Start()

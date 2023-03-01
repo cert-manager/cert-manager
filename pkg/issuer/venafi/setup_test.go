@@ -27,10 +27,9 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 
-	corelisters "k8s.io/client-go/listers/core/v1"
-
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	internalvenafifake "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/fake"
@@ -41,12 +40,12 @@ import (
 func TestSetup(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer")
 
-	failingClientBuilder := func(string, corelisters.SecretLister,
+	failingClientBuilder := func(string, internalinformers.SecretLister,
 		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return nil, errors.New("this is an error")
 	}
 
-	failingPingClient := func(string, corelisters.SecretLister,
+	failingPingClient := func(string, internalinformers.SecretLister,
 		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
@@ -55,7 +54,7 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
-	pingClient := func(string, corelisters.SecretLister,
+	pingClient := func(string, internalinformers.SecretLister,
 		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
@@ -64,7 +63,7 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
-	verifyCredentialsClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+	verifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return nil
@@ -75,7 +74,7 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
-	failingVerifyCredentialsClient := func(string, corelisters.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+	failingVerifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return nil
@@ -169,7 +168,7 @@ func (s *testSetupT) runTest(t *testing.T) {
 
 	v := &Venafi{
 		resourceNamespace: "test-namespace",
-		Context: &controller.Context{
+		Context: &controllerpkg.Context{
 			Recorder: rec,
 		},
 		issuer:        s.iss,

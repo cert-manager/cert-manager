@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	coretesting "k8s.io/client-go/testing"
@@ -38,6 +37,7 @@ import (
 	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
@@ -141,7 +141,7 @@ func (b *Builder) Init() {
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeGWClient().PrependReactor("create", "*", b.generateNameReactor)
-	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
+	b.KubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(b.Client, informerResyncPeriod, "")
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.GWShared = gwinformers.NewSharedInformerFactory(b.GWClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
@@ -169,7 +169,7 @@ func (b *Builder) FakeKubeClient() *kubefake.Clientset {
 	return b.Context.Client.(*kubefake.Clientset)
 }
 
-func (b *Builder) FakeKubeInformerFactory() kubeinformers.SharedInformerFactory {
+func (b *Builder) FakeKubeInformerFactory() internalinformers.KubeInformerFactory {
 	return b.Context.KubeSharedInformerFactory
 }
 
@@ -320,7 +320,7 @@ func (b *Builder) Start() {
 }
 
 func (b *Builder) Sync() {
-	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
+	if err := mustAllSyncString(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
@@ -353,6 +353,19 @@ func (b *Builder) Events() []string {
 }
 
 func mustAllSync(in map[reflect.Type]bool) error {
+	var errs []error
+	for t, started := range in {
+		if !started {
+			errs = append(errs, fmt.Errorf("informer for %v not synced", t))
+		}
+	}
+	return utilerrors.NewAggregate(errs)
+}
+
+// We need two functions to parse map[reflect.Type]bool, map[string]bool
+// arguments- we cannot use generics here as reflect.Type is not a valid map key
+// for a generic parameter because it does not implement comparable.
+func mustAllSyncString(in map[string]bool) error {
 	var errs []error
 	for t, started := range in {
 		if !started {

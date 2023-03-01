@@ -27,10 +27,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/discovery"
-	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
@@ -42,6 +42,7 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
@@ -91,13 +92,14 @@ type Context struct {
 
 	// KubeSharedInformerFactory can be used to obtain shared
 	// SharedIndexInformer instances for Kubernetes types
-	KubeSharedInformerFactory kubeinformers.SharedInformerFactory
+	KubeSharedInformerFactory internalinformers.KubeInformerFactory
+
 	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
-	// instances
+	// instances for cert-manager.io types
 	SharedInformerFactory informers.SharedInformerFactory
 
-	// The Gateway API is an external CRD, which means its shared informers are
-	// not available in controllerpkg.Context.
+	// GWShared can be used to obtain SharedIndexInformer instances for
+	// gateway.networking.k8s.io types
 	GWShared             gwinformers.SharedInformerFactory
 	GatewaySolverEnabled bool
 
@@ -264,7 +266,9 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 	}
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(clients.cmClient, resyncPeriod, informers.WithNamespace(opts.Namespace))
-	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(clients.kubeClient, resyncPeriod, kubeinformers.WithNamespace(opts.Namespace))
+
+	kubeSharedInformerFactory := internalinformers.NewBaseKubeInformerFactory(clients.kubeClient, resyncPeriod, opts.Namespace)
+
 	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(clients.gwClient, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
 	return &ContextFactory{
@@ -317,10 +321,11 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 
 // contextClients is a helper struct containing API clients.
 type contextClients struct {
-	kubeClient       kubernetes.Interface
-	cmClient         clientset.Interface
-	gwClient         gwclient.Interface
-	gatewayAvailable bool
+	kubeClient         kubernetes.Interface
+	cmClient           clientset.Interface
+	gwClient           gwclient.Interface
+	metadataOnlyClient metadata.Interface
+	gatewayAvailable   bool
 }
 
 // buildClients builds all required clients for the context using the given
@@ -337,6 +342,9 @@ func buildClients(restConfig *rest.Config) (contextClients, error) {
 	if err != nil {
 		return contextClients{}, fmt.Errorf("error creating kubernetes client: %w", err)
 	}
+
+	// create a metadata-only client
+	metadataOnlyClient := metadata.NewForConfigOrDie(restConfig)
 
 	var gatewayAvailable bool
 	// Check if the Gateway API feature gate was enabled
@@ -365,5 +373,5 @@ func buildClients(restConfig *rest.Config) (contextClients, error) {
 		return contextClients{}, fmt.Errorf("error creating kubernetes client: %w", err)
 	}
 
-	return contextClients{kubeClient, cmClient, gwClient, gatewayAvailable}, nil
+	return contextClients{kubeClient, cmClient, gwClient, metadataOnlyClient, gatewayAvailable}, nil
 }

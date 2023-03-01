@@ -23,15 +23,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
@@ -43,7 +44,6 @@ import (
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/go-logr/logr"
 )
 
 const (
@@ -57,7 +57,7 @@ type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, inte
 // using SelfSigning Issuers.
 type SelfSigned struct {
 	issuerOptions controllerpkg.IssuerOptions
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	certClient certificatesclient.CertificateSigningRequestInterface
 
@@ -80,8 +80,8 @@ func init() {
 				// Handle informed Secrets which may be referenced by the
 				// "experimental.cert-manager.io/private-key-secret-name" annotation.
 				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
-					secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Informer()
-					certificateSigningRequestLister := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests().Lister()
+					secretInformer := ctx.KubeSharedInformerFactory.Secrets().Informer()
+					certificateSigningRequestLister := ctx.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 					helper := issuer.NewHelper(
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 						ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
@@ -104,7 +104,7 @@ func init() {
 func NewSelfSigned(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 	return &SelfSigned{
 		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		fieldManager:  ctx.FieldManager,
 		recorder:      ctx.Recorder,

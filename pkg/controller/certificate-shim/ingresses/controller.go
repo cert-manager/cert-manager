@@ -45,7 +45,7 @@ type controller struct {
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	cmShared := ctx.SharedInformerFactory
 
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1().Ingresses()
+	ingressInformer := ctx.KubeSharedInformerFactory.Ingresses()
 	c.ingressLister = ingressInformer.Lister()
 
 	log := logf.FromContext(ctx.RootContext, ControllerName)

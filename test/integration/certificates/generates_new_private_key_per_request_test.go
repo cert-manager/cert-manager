@@ -39,7 +39,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/revisionmanager"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
-	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"

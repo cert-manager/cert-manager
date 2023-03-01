@@ -27,10 +27,10 @@ import (
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -45,7 +45,7 @@ var (
 // SecretsManager creates and updates secrets with certificate and key data.
 type SecretsManager struct {
 	secretClient coreclient.SecretsGetter
-	secretLister corelisters.SecretLister
+	secretLister internalinformers.SecretLister
 
 	// fieldManager is the manager name used for the Apply operations on Secrets.
 	fieldManager string
@@ -67,7 +67,7 @@ type SecretData struct {
 // when the corresponding Certificate is deleted.
 func NewSecretsManager(
 	secretClient coreclient.SecretsGetter,
-	secretLister corelisters.SecretLister,
+	secretLister internalinformers.SecretLister,
 	fieldManager string,
 	enableSecretOwnerReferences bool,
 ) *SecretsManager {

@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -47,7 +48,7 @@ func checkZone(t *testing.T, zone string, cnf *vcert.Config) {
 	}
 }
 
-func generateSecretLister(s *corev1.Secret, err error) corelisters.SecretLister {
+func generateSecretLister(s *corev1.Secret, err error) internalinformers.SecretLister {
 	return &testlisters.FakeSecretLister{
 		SecretsFn: func(string) corelisters.SecretNamespaceLister {
 			return &testlisters.FakeSecretNamespaceLister{
@@ -214,7 +215,7 @@ func TestConfigForIssuerT(t *testing.T) {
 
 type testConfigForIssuerT struct {
 	iss           cmapi.GenericIssuer
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	expectedErr bool
 

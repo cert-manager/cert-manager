@@ -31,9 +31,9 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/utils/pointer"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -43,7 +43,7 @@ var _ Interface = &Vault{}
 
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
-type ClientBuilder func(namespace string, _ func(ns string) CreateToken, _ corelisters.SecretLister, _ v1.GenericIssuer) (Interface, error)
+type ClientBuilder func(namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -67,7 +67,7 @@ type CreateToken func(ctx context.Context, saName string, req *authv1.TokenReque
 // Vault client.
 type Vault struct {
 	createToken   CreateToken // Uses the same namespace as below.
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 	issuer        v1.GenericIssuer
 	namespace     string
 
@@ -93,7 +93,7 @@ type Vault struct {
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(namespace string, createTokenFn func(ns string) CreateToken, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
+func New(namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
 	v := &Vault{
 		createToken:   createTokenFn(namespace),
 		secretsLister: secretsLister,

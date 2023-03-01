@@ -27,9 +27,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
@@ -53,7 +53,7 @@ const (
 // Issuer or ClusterIssuer
 type Venafi struct {
 	issuerOptions controllerpkg.IssuerOptions
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 	certClient    certificatesclient.CertificateSigningRequestInterface
 	recorder      record.EventRecorder
 
@@ -76,7 +76,7 @@ func init() {
 func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 	return &Venafi{
 		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		recorder:      ctx.Recorder,
 		clientBuilder: venaficlient.New,

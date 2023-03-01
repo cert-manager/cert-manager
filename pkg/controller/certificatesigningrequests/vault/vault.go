@@ -27,9 +27,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	internalvault "github.com/cert-manager/cert-manager/internal/vault"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -51,7 +51,7 @@ type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, inte
 type Vault struct {
 	issuerOptions controllerpkg.IssuerOptions
 	kclient       kubernetes.Interface
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	recorder record.EventRecorder
 
@@ -74,7 +74,7 @@ func NewVault(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 	return &Vault{
 		issuerOptions: ctx.IssuerOptions,
 		kclient:       ctx.Client,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		recorder:      ctx.Recorder,
 		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		clientBuilder: internalvault.New,

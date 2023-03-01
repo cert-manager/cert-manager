@@ -30,8 +30,8 @@ import (
 	"github.com/Venafi/vcert/v4/pkg/venafi/cloud"
 	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
 	"github.com/go-logr/logr"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
@@ -45,7 +45,7 @@ const (
 	defaultAPIKeyKey = "api-key"
 )
 
-type VenafiClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
+type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister,
 	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error)
 
 // Interface implements a Venafi client
@@ -64,7 +64,7 @@ type Venafi struct {
 	// For Issuers, this will be the namespace of the Issuer.
 	// For ClusterIssuers, this will be the cluster resource namespace.
 	namespace     string
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	vcertClient connector
 	tppClient   *tpp.Connector
@@ -85,7 +85,7 @@ type connector interface {
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
+func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
-func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLister, namespace string) (*vcert.Config, error) {
+func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
 	switch {
 	case venCfg.TPP != nil:

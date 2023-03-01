@@ -31,17 +31,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	internalvault "github.com/cert-manager/cert-manager/internal/vault"
 	fakevault "github.com/cert-manager/cert-manager/internal/vault/fake"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -518,7 +518,7 @@ func runTest(t *testing.T, test testT) {
 	vault := NewVault(test.builder.Context).(*Vault)
 
 	if test.fakeVault != nil {
-		vault.vaultClientBuilder = func(ns string, _ func(ns string) internalvault.CreateToken, sl corelisters.SecretLister,
+		vault.vaultClientBuilder = func(ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
 			iss cmapi.GenericIssuer) (internalvault.Interface, error) {
 			return test.fakeVault.New(ns, sl, iss)
 		}
@@ -526,7 +526,7 @@ func runTest(t *testing.T, test testT) {
 
 	controller := certificaterequests.New(
 		apiutil.IssuerVault,
-		func(*controller.Context) certificaterequests.Issuer { return vault },
+		func(*controllerpkg.Context) certificaterequests.Issuer { return vault },
 	)
 
 	if _, _, err := controller.Register(test.builder.Context); err != nil {

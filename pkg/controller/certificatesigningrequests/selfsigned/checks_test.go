@@ -120,7 +120,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 			defer builder.Stop()
 			builder.Init()
 
-			lister := builder.Context.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests().Lister()
+			lister := builder.Context.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 			helper := issuer.NewHelper(
 				builder.Context.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 				builder.Context.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
@@ -330,7 +330,7 @@ func Test_certificatesRequestsForSecret(t *testing.T) {
 			defer builder.Stop()
 			builder.Init()
 
-			lister := builder.Context.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests().Lister()
+			lister := builder.Context.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 			helper := issuer.NewHelper(
 				builder.Context.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 				builder.Context.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),

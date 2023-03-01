@@ -20,8 +20,8 @@ import (
 	"context"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	vaultinternal "github.com/cert-manager/cert-manager/internal/vault"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -42,7 +42,7 @@ const (
 type Vault struct {
 	issuerOptions controllerpkg.IssuerOptions
 	createTokenFn func(ns string) vaultinternal.CreateToken
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 	reporter      *crutil.Reporter
 
 	vaultClientBuilder vaultinternal.ClientBuilder
@@ -64,7 +64,7 @@ func NewVault(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		createTokenFn: func(ns string) vaultinternal.CreateToken {
 			return ctx.Client.CoreV1().ServiceAccounts(ns).CreateToken
 		},
-		secretsLister:      ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister:      ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:           crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		vaultClientBuilder: vaultinternal.New,
 	}

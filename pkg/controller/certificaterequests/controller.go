@@ -22,12 +22,12 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
@@ -72,7 +72,7 @@ type Controller struct {
 	// we need to wait for Secrets to be synced to avoid a situation where CA issuer's Secret
 	// is not yet in cached at a time when issuance is attempted,
 	// more details at https://github.com/cert-manager/cert-manager/issues/5216
-	secretLister corelisters.SecretLister
+	secretLister internalinformers.SecretLister
 
 	queue workqueue.RateLimitingInterface
 
@@ -132,7 +132,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// create a queue used to queue up items to be processed
 	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), componentName)
 
-	secretsInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	c.issuerLister = issuerInformer.Lister()
 	c.secretLister = secretsInformer.Lister()

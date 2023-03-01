@@ -19,15 +19,13 @@ package venafi
 import (
 	"github.com/go-logr/logr"
 
-	corelisters "k8s.io/client-go/listers/core/v1"
-
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
@@ -35,7 +33,7 @@ type Venafi struct {
 	issuer cmapi.GenericIssuer
 	*controller.Context
 
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -44,15 +42,13 @@ type Venafi struct {
 
 	clientBuilder client.VenafiClientBuilder
 
-	metrics *metrics.Metrics
-
 	log logr.Logger
 }
 
 func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Interface, error) {
 	return &Venafi{
 		issuer:            issuer,
-		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
 		clientBuilder:     client.New,
 		Context:           ctx,

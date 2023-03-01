@@ -22,8 +22,8 @@ import (
 	"crypto/x509"
 
 	corev1 "k8s.io/api/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -32,7 +32,7 @@ import (
 // SecretTLSKeyRef will decode a PKCS1/SEC1 (in effect, a RSA or ECDSA) private key stored in a
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
-func SecretTLSKeyRef(ctx context.Context, secretLister corelisters.SecretLister, namespace, name, keyName string) (crypto.Signer, error) {
+func SecretTLSKeyRef(ctx context.Context, secretLister internalinformers.SecretLister, namespace, name, keyName string) (crypto.Signer, error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func SecretTLSKeyRef(ctx context.Context, secretLister corelisters.SecretLister,
 // SecretTLSKey will decode a PKCS1/SEC1 (in effect, a RSA or ECDSA) private key stored in a
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
-func SecretTLSKey(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) (crypto.Signer, error) {
+func SecretTLSKey(ctx context.Context, secretLister internalinformers.SecretLister, namespace, name string) (crypto.Signer, error) {
 	return SecretTLSKeyRef(ctx, secretLister, namespace, name, corev1.TLSPrivateKeyKey)
 }
 
@@ -69,7 +69,7 @@ func ParseTLSKeyFromSecret(secret *corev1.Secret, keyName string) (crypto.Signer
 	return key, keyBytes, nil
 }
 
-func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, error) {
+func SecretTLSCertChain(ctx context.Context, secretLister internalinformers.SecretLister, namespace, name string) ([]*x509.Certificate, error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretList
 // SecretTLSKeyPairAndCA returns the X.509 certificate chain and private key of
 // the leaf certificate contained in the target Secret. If the ca.crt field exists
 // on the Secret, it is parsed and added to the end of the certificate chain.
-func SecretTLSKeyPairAndCA(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
+func SecretTLSKeyPairAndCA(ctx context.Context, secretLister internalinformers.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
 	certs, key, err := SecretTLSKeyPair(ctx, secretLister, namespace, name)
 	if err != nil {
 		return nil, nil, err
@@ -114,7 +114,7 @@ func SecretTLSKeyPairAndCA(ctx context.Context, secretLister corelisters.SecretL
 	return append(certs, ca), key, nil
 }
 
-func SecretTLSKeyPair(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
+func SecretTLSKeyPair(ctx context.Context, secretLister internalinformers.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, nil, err
@@ -141,7 +141,7 @@ func SecretTLSKeyPair(ctx context.Context, secretLister corelisters.SecretLister
 	return cert, key, nil
 }
 
-func SecretTLSCert(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) (*x509.Certificate, error) {
+func SecretTLSCert(ctx context.Context, secretLister internalinformers.SecretLister, namespace, name string) (*x509.Certificate, error) {
 	certs, err := SecretTLSCertChain(ctx, secretLister, namespace, name)
 	if err != nil {
 		return nil, err

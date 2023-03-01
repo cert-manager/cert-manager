@@ -213,8 +213,8 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
@@ -226,7 +226,7 @@ import (
 // its current readiness/state by applying policy functions to it.
 type Gatherer struct {
 	CertificateRequestLister cmlisters.CertificateRequestLister
-	SecretLister             corelisters.SecretLister
+	SecretLister             internalinformers.SecretLister
 }
 
 // DataForCertificate returns the secret as well as the "current" and "next"

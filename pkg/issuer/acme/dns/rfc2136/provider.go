@@ -27,6 +27,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	restclient "k8s.io/client-go/rest"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -36,7 +37,7 @@ import (
 const SolverName = "rfc2136"
 
 type Solver struct {
-	secretLister corelisters.SecretLister
+	secretLister internalinformers.SecretLister
 	// options to apply when the lister gets initialized
 	initOpts []Option
 
@@ -54,7 +55,7 @@ func WithNamespace(ns string) Option {
 	}
 }
 
-func WithSecretsLister(secretLister corelisters.SecretLister) Option {
+func WithSecretsLister(secretLister internalinformers.SecretLister) Option {
 	return func(s *Solver) {
 		s.secretLister = secretLister
 	}

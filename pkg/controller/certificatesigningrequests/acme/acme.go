@@ -82,7 +82,7 @@ func controllerBuilder() *certificatesigningrequests.Controller {
 	return certificatesigningrequests.New(apiutil.IssuerACME, NewACME,
 		func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
 			orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
-			csrLister := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests().Lister()
+			csrLister := ctx.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 
 			orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 				WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
