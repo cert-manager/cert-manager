@@ -27,13 +27,13 @@ This checklist contains actions which must be completed before a PR implementing
 
 ## Summary
 
-The flag `--enable-certificate-owner-ref` allows you to configure cert-manager to delete Secret resources when the associated Certificate is removed. 
+The existing flag `--enable-certificate-owner-ref` allows you to configure cert-manager to delete Secret resources when the associated Certificate is removed. 
 
 We propose to introduce the same setting at the Certificate level so that users of the Certificate resource can decide whether the Secret resource should be removed or not.
 
-## Use-cases
+## Stories
 
-**Use-case 1: managed cert-manager installations**
+**Story 1: managed cert-manager installations**
 
 [Flant](https://flant.com) manages Kubernetes clusters for their customers. The installation of cert-manager is managed by Flant. Flant uses `--enable-certificate-owner-ref=false` to lower the chance of outages of their managed components. On the other hand, customers are relying on long-lived “dev” namespaces in which they install and uninstall their applications over and over with random names. The Certificate resources are correctly removed, but the Secret resources stay and accumulate.
 
@@ -221,7 +221,7 @@ in the PR.
 
 We don't think this feature needs to be [feature gated][feature gate].
 
-[feature gate]: https://git.k8s.io/community/contributors/devel/sig-architecture/feature-gates.md
+[feature gate]: https://cert-manager.io/docs/installation/featureflags/#list-of-current-feature-gates
 
 ### Upgrade / Downgrade Strategy
 
