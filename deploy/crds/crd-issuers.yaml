@@ -483,7 +483,10 @@ spec:
                                 type: object
                                 properties:
                                   class:
-                                    description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
+                                    description: This field configures the annotation `kubernetes.io/ingress.class` when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of `class`, `name` or `ingressClassName` may be specified.
+                                    type: string
+                                  ingressClassName:
+                                    description: This field configures the field `ingressClassName` on the created Ingress resources used to solve ACME challenges that use this challenge solver. This is the recommended way of configuring the ingress class. Only one of `class`, `name` or `ingressClassName` may be specified.
                                     type: string
                                   ingressTemplate:
                                     description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.

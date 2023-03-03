@@ -177,9 +177,6 @@ type ACMEOptions struct {
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string
 
-	// HTTP01SolverUseIngressClass indicates whether to use the ingressClassName of IngressV1 resources.
-	HTTP01SolverUseIngressClass bool
-
 	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
 	// for checking propagation of an RR. This is the ideal scenario
 	DNS01CheckAuthoritative bool

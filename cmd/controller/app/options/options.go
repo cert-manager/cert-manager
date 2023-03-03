@@ -82,8 +82,7 @@ type ControllerOptions struct {
 	ACMEHTTP01SolverResourceLimitsMemory  string
 	ACMEHTTP01SolverRunAsNonRoot          bool
 	// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-	ACMEHTTP01SolverNameservers         []string
-	ACMEHTTP01SolverUseIngressClassName bool
+	ACMEHTTP01SolverNameservers []string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -140,8 +139,6 @@ const (
 	defaultTLSACMEIssuerKind         = "Issuer"
 	defaultTLSACMEIssuerGroup        = cm.GroupName
 	defaultEnableCertificateOwnerRef = false
-
-	defaultACMEHTTP01SolverUseIngressClassName = false
 
 	defaultDNS01RecursiveNameserversOnly = false
 
@@ -323,10 +320,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		[]string{}, "A list of comma separated dns server endpoints used for "+
 			"ACME HTTP01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
-
-	fs.BoolVar(&s.ACMEHTTP01SolverUseIngressClassName, "acme-http01-solver-use-ingress-class-name", defaultACMEHTTP01SolverUseIngressClassName, ""+
-		"Whether ACME HTTP01 Ingress resources should use the new ingressClassName "+
-		"or the deprecated annotation.")
 
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
