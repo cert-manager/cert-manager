@@ -269,6 +269,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
+		--set controller.image.registry=registry.k8s.io \
 		--set controller.image.digest= \
 		--set controller.image.pullPolicy=Never \
 		--set controller.service.clusterIP=${SERVICE_IP_PREFIX}.15 \
