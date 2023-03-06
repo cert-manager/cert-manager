@@ -35,38 +35,8 @@ Create the name of the service account to use
 {{- end -}}
 
 {{/*
-Create the default PodDisruptionBudget to use
-*/}}
-{{- define "podDisruptionBudget.spec" -}}
-{{- if and (not .Values.podDisruptionBudget.minAvailable) (not .Values.podDisruptionBudget.maxUnavailable) }}
-minAvailable: 1
-{{- end }}
-{{- if .Values.podDisruptionBudget.minAvailable }}
-minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
-{{- end }}
-{{- if .Values.podDisruptionBudget.maxUnavailable }}
-maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
-{{- end }}
-{{- end }}
-
-{{/*
 Webhook templates
 */}}
-
-{{/*
-Create the PodDisruptionBudget to use
-*/}}
-{{- define "webhook.podDisruptionBudget.spec" -}}
-{{- if and (not .Values.podDisruptionBudget.minAvailable) (not .Values.podDisruptionBudget.maxUnavailable) }}
-minAvailable: 1
-{{- end }}
-{{- if .Values.podDisruptionBudget.minAvailable }}
-minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
-{{- end }}
-{{- if .Values.podDisruptionBudget.maxUnavailable }}
-maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
-{{- end }}
-{{- end }}
 
 {{/*
 Expand the name of the chart.
@@ -105,21 +75,6 @@ Create the name of the service account to use
 {{/*
 cainjector templates
 */}}
-
-{{/*
-Create the PodDisruptionBudget to use
-*/}}
-{{- define "cainjector.podDisruptionBudget.spec" -}}
-{{- if and (not .Values.podDisruptionBudget.minAvailable) (not .Values.podDisruptionBudget.maxUnavailable) }}
-minAvailable: 1
-{{- end }}
-{{- if .Values.webhook.podDisruptionBudget.minAvailable }}
-minAvailable: {{ .Values.webhook.podDisruptionBudget.minAvailable }}
-{{- end }}
-{{- if .Values.webhook.podDisruptionBudget.maxUnavailable }}
-maxUnavailable: {{ .Values.webhook.podDisruptionBudget.maxUnavailable }}
-{{- end }}
-{{- end }}
 
 {{/*
 Expand the name of the chart.

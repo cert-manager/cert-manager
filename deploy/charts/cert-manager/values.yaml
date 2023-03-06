@@ -62,7 +62,8 @@ strategy: {}
 
 podDisruptionBudget:
   enabled: false
-  # minAvailable: 1
+
+  minAvailable: 1
   # maxUnavailable: 1
 
   # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
@@ -286,7 +287,8 @@ webhook:
 
   podDisruptionBudget:
     enabled: false
-    # minAvailable: 1
+
+    minAvailable: 1
     # maxUnavailable: 1
 
     # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
@@ -466,7 +468,8 @@ cainjector:
 
   podDisruptionBudget:
     enabled: false
-    # minAvailable: 1
+
+    minAvailable: 1
     # maxUnavailable: 1
 
     # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
