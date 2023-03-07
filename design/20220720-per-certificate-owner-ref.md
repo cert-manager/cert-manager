@@ -33,7 +33,7 @@ We propose to introduce the same setting at the Certificate level so that users 
 
 ## Stories
 
-**Story 1: managed cert-manager installations**
+**Story 1: managed cert-manager installations and "dev" clusters**
 
 [Flant](https://flant.com) manages large multi-tenant Kubernetes clusters. The installation of cert-manager is managed by Flant, and customers cannot edit cert-manager's configuration. Customers have access to a "prod" cluster and a "dev" cluster. On both clusters, Flant uses `--enable-certificate-owner-ref=false` to lower the chance of outages of their managed components such as the ingress controller.
 
