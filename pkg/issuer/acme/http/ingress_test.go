@@ -513,10 +513,6 @@ func TestEnsureIngress(t *testing.T) {
 	}
 }
 
-func Test_createIngress(t *testing.T) {
-
-}
-
 func checkOneIngress(check func(*testing.T, *networkingv1.Ingress)) func(*testing.T, *solverFixture, ...interface{}) {
 	return func(t *testing.T, s *solverFixture, _ ...interface{}) {
 		ingresses, err := s.Solver.ingressLister.List(labels.NewSelector())
