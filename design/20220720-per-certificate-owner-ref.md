@@ -35,9 +35,13 @@ We propose to introduce the same setting at the Certificate level so that users 
 
 **Story 1: managed cert-manager installations**
 
-[Flant](https://flant.com) manages Kubernetes clusters for their customers. The installation of cert-manager is managed by Flant. Flant uses `--enable-certificate-owner-ref=false` to lower the chance of outages of their managed components. On the other hand, customers are relying on long-lived “dev” namespaces in which they install and uninstall their applications over and over with random names. The Certificate resources are correctly removed, but the Secret resources stay and accumulate.
+[Flant](https://flant.com) manages large multi-tenant Kubernetes clusters. The installation of cert-manager is managed by Flant, and customers cannot edit cert-manager's configuration. Customers have access to a "prod" cluster and a "dev" cluster. On both clusters, Flant uses `--enable-certificate-owner-ref=false` to lower the chance of outages of their managed components such as the ingress controller.
 
-Source: https://github.com/deckhouse/deckhouse/pull/1601
+On the "dev" cluster, customers are given long-lived namespaces in which they install and uninstall their applications over and over with random names, including Certificate resources. With hundreds of customers deploying approximately ten times a day to the "dev" cluster, the Secret resources that are left over by cert-manager accumulate (around 10,000 Secret resources after a few months), and the Kubernetes API becomes slow, with people having to wait for 10 seconds to list the secrets in a given namespace.
+
+To solve this problem, Flant aims at using `cleanupPolicy: Never` on the certificates used for their managed components and use `--default-certificate-cleanup-policy=OnDelete` for the rest of the Certificates. Users won't have to change their Certificate resources.
+
+On the "prod" cluster, Flant recommends customers to keep the Secret resource on removal to lower the risk of outages. Flant aims to use `--default-certificate-cleanup-policy=Never` for the "prod" cluster and also aims to document the reason for this difference between "prod" and "dev".
 
 ## Questions
 
