@@ -250,7 +250,8 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// routes inserted into it in order to solve HTTP01 challenges.
 	// This is typically used in conjunction with ingress controllers like
 	// ingress-gce, which maintains a 1:1 mapping between external IPs and
-	// ingress resources.
+	// ingress resources. Only one of `class`, `name` or `ingressClassName` may
+	// be specified.
 	// +optional
 	Name string `json:"name,omitempty"`
 
