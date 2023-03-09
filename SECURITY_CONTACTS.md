@@ -14,3 +14,4 @@ SECURITY.md and report your vulnerability via e-mail.
 - [maelvls](https://github.com/maelvls)
 - [wallrj](https://github.com/wallrj)
 - [munnerz](https://github.com/munnerz)
+- [inteon](https://github.com/inteon)
