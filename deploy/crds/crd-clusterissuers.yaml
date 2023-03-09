@@ -5,7 +5,7 @@ metadata:
   labels:
     app: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
     # Generated labels {{- include "labels" . | nindent 4 }}
 spec:
   group: cert-manager.io
@@ -1161,7 +1161,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             serviceAccountRef:
-                              description: A reference to a service account that will be used to request a bound token (also known as "projected token"). Compared to using "secretRef", using this field means that you don't rely on statically bound tokens. To use this field, you must configure an RBAC rule to let cert-manager request a token. See <link to a page in cert-manager.io> to learn more.
+                              description: A reference to a service account that will be used to request a bound token (also known as "projected token"). Compared to using "secretRef", using this field means that you don't rely on statically bound tokens. To use this field, you must configure an RBAC rule to let cert-manager request a token.
                               type: object
                               required:
                                 - name

@@ -277,7 +277,7 @@ type VaultKubernetesAuth struct {
 	// token (also known as "projected token"). Compared to using "secretRef",
 	// using this field means that you don't rely on statically bound tokens. To
 	// use this field, you must configure an RBAC rule to let cert-manager
-	// request a token. See <link to a page in cert-manager.io> to learn more.
+	// request a token.
 	// +optional
 	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
 
