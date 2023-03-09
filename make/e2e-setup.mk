@@ -12,7 +12,7 @@ CRI_ARCH := $(HOST_ARCH)
 # is set in one place only.
 K8S_VERSION := 1.26
 
-IMAGE_ingressnginx_amd64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
+IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:aec4b029660d47aea025336150fdc2822c991f592d5170d754b6acaf158b513e
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:1bcec6bc854720e22f439c6dcea02fcf689f31976babcf03a449d750c2b1f34a
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.12.1@sha256:08dd1cb922624c51a5aefd4d9ce0ac5ed9688d96d8a5ad94664fa10e84702ed6
@@ -22,7 +22,7 @@ IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.23.2@sha256:4b9e
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
 
-IMAGE_ingressnginx_arm64 := k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
+IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:4355f1f65ea5e952886e929a15628f0c6704905035b4741c6f560378871c9335
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:141234fb74242155c7b843180b90ee5fb6a20c9e77598bd9c138c687059cdafd
 IMAGE_vault_arm64 := $(IMAGE_vault_amd64)
@@ -231,6 +231,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
+		--set controller.image.registry=registry.k8s.io \
 		--set controller.image.digest= \
 		--set controller.image.pullPolicy=Never \
 		--set controller.service.clusterIP=${SERVICE_IP_PREFIX}.15 \
