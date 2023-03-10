@@ -30,7 +30,7 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 TOOLS += ko=v0.12.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
-GATEWAY_API_VERSION=v0.5.1
+GATEWAY_API_VERSION=v0.6.0
 
 K8S_CODEGEN_VERSION=v0.26.0
 
@@ -398,7 +398,7 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 # gatewayapi #
 ##############
 
-GATEWAY_API_SHA256SUM=b84972572a104012e7fbea5651a113ac872f6ffeb0b037b4505d664383c932a3
+GATEWAY_API_SHA256SUM=7a6f00833ba23617d6b938cffc6f9cb7faddcc0997d0bd91f34614e42fe2d35d
 
 $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@

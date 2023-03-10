@@ -18,7 +18,7 @@ IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:1bcec6bc85472
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.12.1@sha256:08dd1cb922624c51a5aefd4d9ce0ac5ed9688d96d8a5ad94664fa10e84702ed6
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.1.1@sha256:7dafe98c73d229bbac08067fccf9b2884c63c8e1412fe18f9986f59232cf3cb5
-IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.23.2@sha256:4b9ed5bfd4afd02eabc3b6235293489dbae1684d4d3dee37e982e87638a011f9
+IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:39a804ce4b896de168915ae41358932c219443fd4ceffe37296a63f9adef0597
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
 
@@ -28,7 +28,7 @@ IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:141234fb74242
 IMAGE_vault_arm64 := $(IMAGE_vault_amd64)
 IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
 IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
-IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.23.2@sha256:c877e098c42d07244cc26d4d6d4743d80fe4313a69d8c775782cba93341e0099
+IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:fee2b24db85c3ed3487e0e2a325806323997171a2ed722252f8ca85d0bee919d
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
 
@@ -359,7 +359,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 10.1.3 \
+		--version 11.0.0 \
 		--namespace projectcontour \
 		--create-namespace \
 		--set contour.ingressClass.create=false \
