@@ -19,22 +19,22 @@ package configfile
 import (
 	"fmt"
 
-	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
-	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/apis/config/controller/scheme"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-type WebhookConfigFile struct {
-	Config *config.WebhookConfiguration
+type ControllerConfigFile struct {
+	Config *config.ControllerConfiguration
 }
 
-func New() *WebhookConfigFile {
-	return &WebhookConfigFile{
-		Config: &config.WebhookConfiguration{},
+func New() *ControllerConfigFile {
+	return &ControllerConfigFile{
+		Config: &config.ControllerConfiguration{},
 	}
 }
 
-func decodeConfiguration(data []byte) (*config.WebhookConfiguration, error) {
+func decodeConfiguration(data []byte) (*config.ControllerConfiguration, error) {
 	_, codec, err := scheme.NewSchemeAndCodecs(serializer.EnableStrict)
 	if err != nil {
 		return nil, err
@@ -45,16 +45,16 @@ func decodeConfiguration(data []byte) (*config.WebhookConfiguration, error) {
 		return nil, fmt.Errorf("failed to decode: %w", err)
 	}
 
-	c, ok := obj.(*config.WebhookConfiguration)
+	c, ok := obj.(*config.ControllerConfiguration)
 	if !ok {
-		return nil, fmt.Errorf("failed to cast object to WebhookConfiguration, unexpected type")
+		return nil, fmt.Errorf("failed to cast object to ControllerConfiguration, unexpected type")
 	}
 
 	return c, nil
 
 }
 
-func (cfg *WebhookConfigFile) DecodeAndConfigure(data []byte) error {
+func (cfg *ControllerConfigFile) DecodeAndConfigure(data []byte) error {
 	config, err := decodeConfiguration(data)
 	if err != nil {
 		return err
@@ -64,8 +64,8 @@ func (cfg *WebhookConfigFile) DecodeAndConfigure(data []byte) error {
 	return nil
 }
 
-func (cfg *WebhookConfigFile) GetPathRefs() ([]*string, error) {
-	paths, err := WebhookConfigurationPathRefs(cfg.Config)
+func (cfg *ControllerConfigFile) GetPathRefs() ([]*string, error) {
+	paths, err := ControllerConfigurationPathRefs(cfg.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -73,13 +73,12 @@ func (cfg *WebhookConfigFile) GetPathRefs() ([]*string, error) {
 
 }
 
-// webhookConfigurationPathRefs returns pointers to all the WebhookConfiguration fields that contain filepaths.
+// ControllerConfigurationPathRefs returns pointers to all the ControllerConfiguration fields that contain filepaths.
 // You might use this, for example, to resolve all relative paths against some common root before
 // passing the configuration to the application. This method must be kept up to date as new fields are added.
-func WebhookConfigurationPathRefs(cfg *config.WebhookConfiguration) ([]*string, error) {
+func ControllerConfigurationPathRefs(cfg *config.ControllerConfiguration) ([]*string, error) {
+
 	return []*string{
-		&cfg.TLSConfig.Filesystem.KeyFile,
-		&cfg.TLSConfig.Filesystem.CertFile,
 		&cfg.KubeConfig,
 	}, nil
 }

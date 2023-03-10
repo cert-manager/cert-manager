@@ -19,13 +19,17 @@ package configfile
 import (
 	"fmt"
 	"testing"
+
+	"github.com/cert-manager/cert-manager/pkg/webhook/configfile"
 )
 
 func TestFSLoader_Load(t *testing.T) {
 	const expectedFilename = "/path/to/config/file"
 	const kubeConfigPath = "path/to/kubeconfig/file"
 
-	loader, err := NewFSLoader(newFakeFS(func(filename string) ([]byte, error) {
+	webhookConfig := configfile.New()
+
+	loader, err := NewConfigurationFSLoader(func(filename string) ([]byte, error) {
 		if filename != expectedFilename {
 			t.Fatalf("unexpected filename %q passed to ReadFile", filename)
 			return nil, fmt.Errorf("unexpected filename %q", filename)
@@ -33,31 +37,18 @@ func TestFSLoader_Load(t *testing.T) {
 		return []byte(fmt.Sprintf(`apiVersion: webhook.config.cert-manager.io/v1alpha1
 kind: WebhookConfiguration
 kubeConfig: %s`, kubeConfigPath)), nil
-	}), expectedFilename)
+	}, expectedFilename)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cfg, err := loader.Load()
-	if err != nil {
+	if err := loader.Load(webhookConfig); err != nil {
 		t.Fatal(err)
 	}
 
 	// the config loader will force paths to be 'absolute' if they are provided as relative.
 	absKubeConfigPath := "/path/to/config/path/to/kubeconfig/file"
-	if cfg.KubeConfig != absKubeConfigPath {
-		t.Errorf("expected kubeConfig to be set to %q but got %q", absKubeConfigPath, cfg.KubeConfig)
+	if webhookConfig.Config.KubeConfig != absKubeConfigPath {
+		t.Errorf("expected kubeConfig to be set to %q but got %q", absKubeConfigPath, webhookConfig.Config.KubeConfig)
 	}
-}
-
-func newFakeFS(readFileFunc func(string) ([]byte, error)) Filesystem {
-	return fakeFS{readFileFunc: readFileFunc}
-}
-
-type fakeFS struct {
-	readFileFunc func(string) ([]byte, error)
-}
-
-func (f fakeFS) ReadFile(filename string) ([]byte, error) {
-	return f.readFileFunc(filename)
 }

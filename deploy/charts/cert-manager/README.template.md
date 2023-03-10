@@ -142,6 +142,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `dns01RecursiveNameservers` | Comma separated string with host and port of the recursive nameservers cert-manager should query | `` |
 | `dns01RecursiveNameserversOnly` | Forces cert-manager to only use the recursive nameservers for verification.  | `false` |
 | `enableCertificateOwnerRef` | When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted | `false` |
+| `config` | ControllerConfiguration YAML used to configure flags for the controller. Generates a ConfigMap containing contents of the field. See `values.yaml` for example. | `{}` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
 | `webhook.timeoutSeconds` | Seconds the API server should wait the webhook to respond before treating the call as a failure. | `10` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
