@@ -60,23 +60,25 @@ patch-crds: | $(NEEDS_CONTROLLER-GEN)
 verify-codegen: | k8s-codegen-tools $(NEEDS_GO)
 	VERIFY_ONLY="true" ./hack/k8s-codegen.sh \
 		$(GO) \
-		./$(BINDIR)/tools/client-gen \
-		./$(BINDIR)/tools/deepcopy-gen \
-		./$(BINDIR)/tools/informer-gen \
-		./$(BINDIR)/tools/lister-gen \
-		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen
+		$(BINDIR)/tools/deepcopy-gen \
+		$(BINDIR)/tools/applyconfiguration-gen \
+		$(BINDIR)/tools/client-gen \
+		$(BINDIR)/tools/informer-gen \
+		$(BINDIR)/tools/lister-gen \
+		$(BINDIR)/tools/defaulter-gen \
+		$(BINDIR)/tools/conversion-gen
 
 .PHONY: update-codegen
 update-codegen: | k8s-codegen-tools $(NEEDS_GO)
 	./hack/k8s-codegen.sh \
 		$(GO) \
-		./$(BINDIR)/tools/client-gen \
-		./$(BINDIR)/tools/deepcopy-gen \
-		./$(BINDIR)/tools/informer-gen \
-		./$(BINDIR)/tools/lister-gen \
-		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen
+		$(BINDIR)/tools/deepcopy-gen \
+		$(BINDIR)/tools/applyconfiguration-gen \
+		$(BINDIR)/tools/client-gen \
+		$(BINDIR)/tools/informer-gen \
+		$(BINDIR)/tools/lister-gen \
+		$(BINDIR)/tools/defaulter-gen \
+		$(BINDIR)/tools/conversion-gen
 
 .PHONY: update-all
 ## Update CRDs, code generation and licenses to the latest versions.

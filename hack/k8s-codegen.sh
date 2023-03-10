@@ -20,12 +20,13 @@ set -o pipefail
 
 go=$1
 
-clientgen=$2
-deepcopygen=$3
-informergen=$4
-listergen=$5
-defaultergen=$6
-conversiongen=$7
+deepcopygen=$2
+applyconfigurationgen=$3
+clientgen=$4
+informergen=$5
+listergen=$6
+defaultergen=$7
+conversiongen=$8
 
 # If the envvar "VERIFY_ONLY" is set, we only check if everything's up to date
 # and don't actually generate anything
@@ -73,6 +74,18 @@ client_package="${module_name}/${client_subpackage}"
 client_inputs=(
   pkg/apis/certmanager/v1 \
   pkg/apis/acme/v1 \
+)
+
+openapi_inputs=(
+  pkg/apis/certmanager/v1 \
+  pkg/apis/acme/v1 \
+  pkg/apis/meta/v1 \
+)
+openapi_external_inputs=(
+  sigs.k8s.io/gateway-api/apis/v1alpha2 \
+  k8s.io/api/core/v1 \
+  k8s.io/apimachinery/pkg/apis/meta/v1 \
+  k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1 \
 )
 
 # Generate defaulting functions to be used by the mutating webhook
@@ -149,6 +162,19 @@ gen-deepcopy() {
     --output-base ./
 }
 
+gen-applyconfigurations() {
+    rm -rf "${client_subpackage}"/applyconfigurations
+    echo "Generating applyconfigurations..." >&2
+    prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
+    joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
+    "$applyconfigurationgen" \
+      --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+      --input-dirs "$joined" \
+      --trim-path-prefix="$module_name" \
+      --output-package "${client_package}"/applyconfigurations \
+      --output-base ./
+}
+
 gen-clientsets() {
   clean "${client_subpackage}"/clientset '*.go'
   echo "+++ ${VERB} clientset..." >&2
@@ -160,6 +186,7 @@ gen-clientsets() {
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
+    --apply-configuration-package "${client_package}"/applyconfigurations \
     --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/clientset \
     --output-base ./
@@ -223,17 +250,18 @@ gen-conversions() {
   CONVERSION_PKGS=( "${conversion_inputs[@]/#/$module_name/}" )
 
   "$conversiongen" \
-      ${VERIFY_FLAGS} \
-      --go-header-file hack/boilerplate/boilerplate.generatego.txt \
-      --extra-peer-dirs $( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" ) \
-      --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
-      --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
-      --trim-path-prefix="$module_name" \
-      -O zz_generated.conversion \
-      --output-base ./
+    ${VERIFY_FLAGS} \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --extra-peer-dirs $( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" ) \
+    --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
+    --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
+    --trim-path-prefix="$module_name" \
+    -O zz_generated.conversion \
+    --output-base ./
 }
 
 gen-deepcopy
+gen-applyconfigurations
 gen-clientsets
 gen-listers
 gen-informers
