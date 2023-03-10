@@ -232,9 +232,17 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// The ingress class to use when creating Ingress resources to solve ACME
-	// challenges that use this challenge solver.
-	// Only one of 'class' or 'name' may be specified.
+	// This field configures the field `ingressClassName` on the created Ingress
+	// resources used to solve ACME challenges that use this challenge solver.
+	// This is the recommended way of configuring the ingress class. Only one of
+	// `class`, `name` or `ingressClassName` may be specified.
+	// +optional
+	IngressClassName *string `json:"ingressClassName,omitempty"`
+
+	// This field configures the annotation `kubernetes.io/ingress.class` when
+	// creating Ingress resources to solve ACME challenges that use this
+	// challenge solver. Only one of `class`, `name` or `ingressClassName` may
+	// be specified.
 	// +optional
 	Class *string `json:"class,omitempty"`
 
@@ -242,7 +250,8 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// routes inserted into it in order to solve HTTP01 challenges.
 	// This is typically used in conjunction with ingress controllers like
 	// ingress-gce, which maintains a 1:1 mapping between external IPs and
-	// ingress resources.
+	// ingress resources. Only one of `class`, `name` or `ingressClassName` may
+	// be specified.
 	// +optional
 	Name string `json:"name,omitempty"`
 

@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -473,6 +475,28 @@ func TestEnsureIngress(t *testing.T) {
 				}
 			},
 		},
+		"class field is passed to ingress as the annotation kubernetes.io/ingress.class": {
+			Challenge: &cmacme.Challenge{Spec: cmacme.ChallengeSpec{Solver: cmacme.ACMEChallengeSolver{HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					Class: strPtr("nginx"),
+				}}}},
+			},
+			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
+				assert.Equal(t, "nginx", ingress.Annotations["kubernetes.io/ingress.class"])
+				assert.Empty(t, ingress.Spec.IngressClassName)
+			}),
+		},
+		"ingressClassName field is passed to the ingress": {
+			Challenge: &cmacme.Challenge{Spec: cmacme.ChallengeSpec{Solver: cmacme.ACMEChallengeSolver{HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					IngressClassName: strPtr("nginx"),
+				}}}},
+			},
+			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
+				assert.Empty(t, ingress.Annotations["kubernetes.io/ingress.class"])
+				assert.Equal(t, strPtr("nginx"), ingress.Spec.IngressClassName)
+			}),
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -486,6 +510,15 @@ func TestEnsureIngress(t *testing.T) {
 			}
 			test.Finish(t, resp, err)
 		})
+	}
+}
+
+func checkOneIngress(check func(*testing.T, *networkingv1.Ingress)) func(*testing.T, *solverFixture, ...interface{}) {
+	return func(t *testing.T, s *solverFixture, _ ...interface{}) {
+		ingresses, err := s.Solver.ingressLister.List(labels.NewSelector())
+		assert.NoError(t, err)
+		require.Len(t, ingresses, 1)
+		check(t, ingresses[0])
 	}
 }
 

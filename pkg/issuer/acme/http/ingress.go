@@ -154,13 +154,18 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	// TODO: Figure out how to remove this without breaking users who depend on it.
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
 
-	// Use the Ingress Class annotation defined in networkingv1beta1 even though our Ingress objects
-	// are networkingv1, for maximum compatibility with all Ingress controllers.
-	// if the `kubernetes.io/ingress.class` annotation is present, it takes precedence over the
-	// `spec.IngressClassName` field.
-	// See discussion in https://github.com/cert-manager/cert-manager/issues/4537.
+	// The Kubernetes API won't allow both having the annotation and the field
+	// set.
+	if http01IngressCfg.Class != nil && http01IngressCfg.IngressClassName != nil {
+		return nil, fmt.Errorf("the fields ingressClassName and class cannot be set at the same time")
+	}
+
+	var ingressClassName *string
 	if http01IngressCfg.Class != nil {
 		ingAnnotations[annotationIngressClass] = *http01IngressCfg.Class
+	}
+	if http01IngressCfg.IngressClassName != nil {
+		ingressClassName = http01IngressCfg.IngressClassName
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
@@ -179,8 +184,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: networkingv1.IngressSpec{
-			// https://github.com/cert-manager/cert-manager/issues/4537
-			IngressClassName: nil,
+			IngressClassName: ingressClassName,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: httpHost,

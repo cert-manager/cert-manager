@@ -764,6 +764,11 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: strPtr("abc")},
 			},
 		},
+		"ingressClassName field specified": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: strPtr("abc")},
+			},
+		},
 		"neither field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
@@ -775,15 +780,26 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 				field.Required(fldPath, "no HTTP01 solver type configured"),
 			},
 		},
-		"both fields specified": {
+		"all three fields specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Name:  "abc",
-					Class: strPtr("abc"),
+					Name:             "abc",
+					Class:            strPtr("abc"),
+					IngressClassName: strPtr("abc"),
 				},
 			},
 			errs: []*field.Error{
-				field.Forbidden(fldPath.Child("ingress"), "only one of 'name' or 'class' should be specified"),
+				field.Forbidden(fldPath.Child("ingress"), "only one of 'ingressClassName', 'name' or 'class' should be specified"),
+			},
+		},
+		"ingressClassName is invalid": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					IngressClassName: strPtr("azure/application-gateway"),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ingress", "ingressClassName"), "azure/application-gateway", `must be a valid IngressClass name: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')`),
 			},
 		},
 		"acme issuer with valid http01 service config serviceType ClusterIP": {
