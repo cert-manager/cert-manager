@@ -20,9 +20,12 @@ package v1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 	scheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -47,6 +50,8 @@ type OrderInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.OrderList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Order, err error)
+	Apply(ctx context.Context, order *acmev1.OrderApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Order, err error)
+	ApplyStatus(ctx context.Context, order *acmev1.OrderApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Order, err error)
 	OrderExpansion
 }
 
@@ -188,6 +193,62 @@ func (c *orders) Patch(ctx context.Context, name string, pt types.PatchType, dat
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied order.
+func (c *orders) Apply(ctx context.Context, order *acmev1.OrderApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Order, err error) {
+	if order == nil {
+		return nil, fmt.Errorf("order provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(order)
+	if err != nil {
+		return nil, err
+	}
+	name := order.Name
+	if name == nil {
+		return nil, fmt.Errorf("order.Name must be provided to Apply")
+	}
+	result = &v1.Order{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("orders").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *orders) ApplyStatus(ctx context.Context, order *acmev1.OrderApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Order, err error) {
+	if order == nil {
+		return nil, fmt.Errorf("order provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(order)
+	if err != nil {
+		return nil, err
+	}
+
+	name := order.Name
+	if name == nil {
+		return nil, fmt.Errorf("order.Name must be provided to Apply")
+	}
+
+	result = &v1.Order{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("orders").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

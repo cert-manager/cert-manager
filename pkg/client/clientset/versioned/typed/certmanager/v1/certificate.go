@@ -20,9 +20,12 @@ package v1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	scheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -47,6 +50,8 @@ type CertificateInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.CertificateList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Certificate, err error)
+	Apply(ctx context.Context, certificate *certmanagerv1.CertificateApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Certificate, err error)
+	ApplyStatus(ctx context.Context, certificate *certmanagerv1.CertificateApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Certificate, err error)
 	CertificateExpansion
 }
 
@@ -188,6 +193,62 @@ func (c *certificates) Patch(ctx context.Context, name string, pt types.PatchTyp
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied certificate.
+func (c *certificates) Apply(ctx context.Context, certificate *certmanagerv1.CertificateApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Certificate, err error) {
+	if certificate == nil {
+		return nil, fmt.Errorf("certificate provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(certificate)
+	if err != nil {
+		return nil, err
+	}
+	name := certificate.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificate.Name must be provided to Apply")
+	}
+	result = &v1.Certificate{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("certificates").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *certificates) ApplyStatus(ctx context.Context, certificate *certmanagerv1.CertificateApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Certificate, err error) {
+	if certificate == nil {
+		return nil, fmt.Errorf("certificate provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	name := certificate.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificate.Name must be provided to Apply")
+	}
+
+	result = &v1.Certificate{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("certificates").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

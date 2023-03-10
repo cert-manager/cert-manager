@@ -20,8 +20,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	applyconfigurationscertmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -134,6 +137,51 @@ func (c *FakeCertificates) DeleteCollection(ctx context.Context, opts v1.DeleteO
 func (c *FakeCertificates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *certmanagerv1.Certificate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(certificatesResource, c.ns, name, pt, data, subresources...), &certmanagerv1.Certificate{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*certmanagerv1.Certificate), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied certificate.
+func (c *FakeCertificates) Apply(ctx context.Context, certificate *applyconfigurationscertmanagerv1.CertificateApplyConfiguration, opts v1.ApplyOptions) (result *certmanagerv1.Certificate, err error) {
+	if certificate == nil {
+		return nil, fmt.Errorf("certificate provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(certificate)
+	if err != nil {
+		return nil, err
+	}
+	name := certificate.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificate.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(certificatesResource, c.ns, *name, types.ApplyPatchType, data), &certmanagerv1.Certificate{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*certmanagerv1.Certificate), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeCertificates) ApplyStatus(ctx context.Context, certificate *applyconfigurationscertmanagerv1.CertificateApplyConfiguration, opts v1.ApplyOptions) (result *certmanagerv1.Certificate, err error) {
+	if certificate == nil {
+		return nil, fmt.Errorf("certificate provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(certificate)
+	if err != nil {
+		return nil, err
+	}
+	name := certificate.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificate.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(certificatesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &certmanagerv1.Certificate{})
 
 	if obj == nil {
 		return nil, err
