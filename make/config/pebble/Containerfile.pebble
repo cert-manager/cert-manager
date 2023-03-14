@@ -1,3 +1,5 @@
+# +skip_license_check
+
 ARG BASE_IMAGE
 
 FROM $BASE_IMAGE
