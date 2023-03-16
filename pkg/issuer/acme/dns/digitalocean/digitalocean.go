@@ -38,14 +38,14 @@ type DNSProvider struct {
 
 // NewDNSProvider returns a DNSProvider instance configured for digitalocean.
 // The access token must be passed in the environment variable DIGITALOCEAN_TOKEN
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
 	token := os.Getenv("DIGITALOCEAN_TOKEN")
-	return NewDNSProviderCredentials(token, dns01Nameservers)
+	return NewDNSProviderCredentials(token, dns01Nameservers, userAgent)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for digitalocean.
-func NewDNSProviderCredentials(token string, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
 	if token == "" {
 		return nil, fmt.Errorf("DigitalOcean token missing")
 	}
@@ -55,9 +55,15 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string) (*DNSPro
 		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
 	)
 
+	clientOpts := []godo.ClientOpt{godo.SetUserAgent(userAgent)}
+	client, err := godo.New(c, clientOpts...)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DNSProvider{
 		dns01Nameservers: dns01Nameservers,
-		client:           godo.NewClient(c),
+		client:           client,
 	}, nil
 }
 
