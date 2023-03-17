@@ -45,21 +45,21 @@ func restoreEnv() {
 
 func TestNewDNSProviderValid(t *testing.T) {
 	os.Setenv("DIGITALOCEAN_TOKEN", "")
-	_, err := NewDNSProviderCredentials("123", util.RecursiveNameservers)
+	_, err := NewDNSProviderCredentials("123", util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 	restoreEnv()
 }
 
 func TestNewDNSProviderValidEnv(t *testing.T) {
 	os.Setenv("DIGITALOCEAN_TOKEN", "123")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
+	_, err := NewDNSProvider(util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 	restoreEnv()
 }
 
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("DIGITALOCEAN_TOKEN", "")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
+	_, err := NewDNSProvider(util.RecursiveNameservers, "cert-manager-test")
 	assert.EqualError(t, err, "DigitalOcean token missing")
 	restoreEnv()
 }
@@ -69,7 +69,7 @@ func TestDigitalOceanPresent(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 
 	err = provider.Present(doDomain, "_acme-challenge."+doDomain+".", "123d==")
@@ -83,7 +83,7 @@ func TestDigitalOceanCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 
-	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(doDomain, "_acme-challenge."+doDomain+".", "123d==")

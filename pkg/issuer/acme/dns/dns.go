@@ -62,7 +62,7 @@ type dnsProviderConstructors struct {
 	route53      func(accessKey, secretKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	digitalOcean func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -286,7 +286,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 
 		apiToken := string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key])
 
-		impl, err = s.dnsProviderConstructors.digitalOcean(strings.TrimSpace(apiToken), s.DNS01Nameservers)
+		impl, err = s.dnsProviderConstructors.digitalOcean(strings.TrimSpace(apiToken), s.DNS01Nameservers, s.RESTConfig.UserAgent)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
 		}
