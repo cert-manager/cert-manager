@@ -196,6 +196,7 @@ prometheus:
     enabled: false
     prometheusInstance: default
     targetPort: 9402
+    appProtocol: ""
     path: /metrics
     interval: 60s
     scrapeTimeout: 30s
