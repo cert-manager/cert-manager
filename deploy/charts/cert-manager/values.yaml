@@ -542,6 +542,12 @@ prometheus:
     # +docs:property
     endpointAdditionalProperties: {}
 
+    # The explicit scheme for metrics scraping.
+    scheme: ""
+
+    # TLS configuration for metrics scraping.
+    tlsConfig: {}
+
   # Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
