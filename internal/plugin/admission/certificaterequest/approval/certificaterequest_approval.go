@@ -27,11 +27,9 @@ package approval
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -54,10 +52,15 @@ type certificateRequestApproval struct {
 	authorizer authorizer.Authorizer
 	discovery  discovery.DiscoveryInterface
 
-	// resourceCache stores the associated APIResource for a given GroupKind
-	// to making multiple queries to the API server for every approval.
-	resourceCache map[schema.GroupKind]metav1.APIResource
-	mutex         sync.RWMutex
+	// resourceInfo stores the associated resource info for a given GroupKind
+	// to prevent making multiple queries to the API server for every approval.
+	resourceInfo map[schema.GroupKind]resourceInfo
+	mutex        sync.RWMutex
+}
+
+type resourceInfo struct {
+	schema.GroupResource
+	Namespaced bool
 }
 
 var _ admission.ValidationInterface = &certificateRequestApproval{}
@@ -72,8 +75,8 @@ func Register(plugins *admission.Plugins) {
 
 func NewPlugin() admission.Interface {
 	return &certificateRequestApproval{
-		Handler:       admission.NewHandler(admissionv1.Update),
-		resourceCache: map[schema.GroupKind]metav1.APIResource{},
+		Handler:      admission.NewHandler(admissionv1.Update),
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
 	}
 }
 
@@ -99,6 +102,8 @@ func (c *certificateRequestApproval) Validate(ctx context.Context, request admis
 	if kind == "" {
 		kind = "Issuer"
 	}
+
+	// We got the GroupKind, now we need to get the Resource name.
 	apiResource, err := c.apiResourceForGroupKind(schema.GroupKind{Group: group, Kind: kind})
 	switch {
 	case err == errNoResourceExists:
@@ -108,8 +113,8 @@ func (c *certificateRequestApproval) Validate(ctx context.Context, request admis
 		return nil, err
 	}
 
-	signerName := signerNameForAPIResource(cr.Spec.IssuerRef.Name, cr.Namespace, *apiResource)
-	if !isAuthorizedForSignerName(ctx, c.authorizer, userInfoForRequest(request), signerName) {
+	signerNames := signerNamesForAPIResource(cr.Spec.IssuerRef.Name, cr.Namespace, *apiResource)
+	if !isAuthorizedForSignerNames(ctx, c.authorizer, userInfoForRequest(request), signerNames) {
 		return nil, field.Forbidden(field.NewPath("status.conditions"),
 			fmt.Sprintf("user %q does not have permissions to set approved/denied conditions for issuer %v", request.UserInfo.Username, cr.Spec.IssuerRef))
 	}
@@ -132,7 +137,7 @@ func approvalConditionsHaveChanged(oldCR, cr *certmanager.CertificateRequest) bo
 // requests that approve or deny the CertificateRequest.
 // namespaced will be true if the resource is namespaced.
 // 'resource' may be nil even if err is also nil.
-func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.GroupKind) (resource *metav1.APIResource, err error) {
+func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.GroupKind) (info *resourceInfo, err error) {
 	// fast path if resource is in the cache already
 	if resource := c.readAPIResourceFromCache(groupKind); resource != nil {
 		return resource, nil
@@ -163,11 +168,7 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 					continue
 				}
 
-				r := resource.DeepCopy()
-				// the Group field is not always populated in responses, so explicitly set it
-				r.Group = apiGroup.Name
-				c.cacheAPIResource(groupKind, *r)
-				return r, nil
+				return c.cacheAPIResource(groupKind, resource.Name, resource.Namespaced), nil
 			}
 		}
 	}
@@ -175,30 +176,48 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 	return nil, errNoResourceExists
 }
 
-func (c *certificateRequestApproval) readAPIResourceFromCache(groupKind schema.GroupKind) *metav1.APIResource {
+func (c *certificateRequestApproval) readAPIResourceFromCache(groupKind schema.GroupKind) *resourceInfo {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	if resource, ok := c.resourceCache[groupKind]; ok {
-		return &resource
+	if info, ok := c.resourceInfo[groupKind]; ok {
+		return &info
 	}
 	return nil
 }
 
-func (c *certificateRequestApproval) cacheAPIResource(groupKind schema.GroupKind, resource metav1.APIResource) {
+func (c *certificateRequestApproval) cacheAPIResource(groupKind schema.GroupKind, resourceName string, namespaced bool) *resourceInfo {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.resourceCache[groupKind] = resource
+
+	info := resourceInfo{
+		GroupResource: schema.GroupResource{
+			Group:    groupKind.Group,
+			Resource: resourceName,
+		},
+		Namespaced: namespaced,
+	}
+
+	c.resourceInfo[groupKind] = info
+
+	return &info
 }
 
 var errNoResourceExists = fmt.Errorf("no resource registered")
 
 // signerNameForAPIResource returns the computed signerName for a given API resource
 // referenced by a CertificateRequest in a namespace.
-func signerNameForAPIResource(name, namespace string, apiResource metav1.APIResource) string {
-	if apiResource.Namespaced {
-		return fmt.Sprintf("%s.%s/%s.%s", apiResource.Name, apiResource.Group, namespace, name)
+func signerNamesForAPIResource(name, namespace string, info resourceInfo) []string {
+	signerNames := make([]string, 0, 2)
+
+	signerNames = append(signerNames, fmt.Sprintf("%s.%s/*", info.Resource, info.Group))
+
+	if info.Namespaced {
+		signerNames = append(signerNames, fmt.Sprintf("%s.%s/%s.%s", info.Resource, info.Group, namespace, name))
+	} else {
+		signerNames = append(signerNames, fmt.Sprintf("%s.%s/%s", info.Resource, info.Group, name))
 	}
-	return fmt.Sprintf("%s.%s/%s", apiResource.Name, apiResource.Group, name)
+
+	return signerNames
 }
 
 // userInfoForRequest constructs a user.Info suitable for using with the authorizer interface
@@ -216,32 +235,23 @@ func userInfoForRequest(req admissionv1.AdmissionRequest) user.Info {
 	}
 }
 
-// isAuthorizedForSignerName checks whether an entity is authorized to 'approve' certificaterequests
-// for a given signerName.
+// isAuthorizedForSignerNames checks whether an entity is authorized to 'approve' certificaterequests
+// for a given set of signerNames.
 // We absorb errors from the authorizer because they are already retried by the underlying authorization
 // client, so we shouldn't ever see them unless the context webhook doesn't have the ability to submit
 // SARs or the context is cancelled (in which case, the AdmissionResponse won't ever be returned to the apiserver).
-func isAuthorizedForSignerName(ctx context.Context, authz authorizer.Authorizer, info user.Info, signerName string) bool {
+func isAuthorizedForSignerNames(ctx context.Context, authz authorizer.Authorizer, info user.Info, signerNames []string) bool {
 	verb := "approve"
-	// First check if the user has explicit permission to 'approve' for the given signerName.
-	attr := buildAttributes(info, verb, signerName)
-	decision, _, err := authz.Authorize(ctx, attr)
-	switch {
-	case err != nil:
-		return false
-	case decision == authorizer.DecisionAllow:
-		return true
-	}
 
-	// If not, check if the user has wildcard permissions to 'approve' for the domain portion of the signerName, e.g.
-	// 'issuers.cert-manager.io/*'.
-	attr = buildWildcardAttributes(info, verb, signerName)
-	decision, _, err = authz.Authorize(ctx, attr)
-	switch {
-	case err != nil:
-		return false
-	case decision == authorizer.DecisionAllow:
-		return true
+	for _, signerName := range signerNames {
+		attr := buildAttributes(info, verb, signerName)
+		decision, _, err := authz.Authorize(ctx, attr)
+		switch {
+		case err != nil:
+			return false
+		case decision == authorizer.DecisionAllow:
+			return true
+		}
 	}
 
 	return false
@@ -257,12 +267,6 @@ func buildAttributes(info user.Info, verb, signerName string) authorizer.Attribu
 		Resource:        "signers",
 		ResourceRequest: true,
 	}
-}
-
-func buildWildcardAttributes(info user.Info, verb, signerName string) authorizer.Attributes {
-	parts := strings.Split(signerName, "/")
-	domain := parts[0]
-	return buildAttributes(info, verb, domain+"/*")
 }
 
 func (c *certificateRequestApproval) SetAuthorizer(a authorizer.Authorizer) {
