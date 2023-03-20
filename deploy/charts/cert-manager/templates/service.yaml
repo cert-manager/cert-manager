@@ -27,6 +27,9 @@ spec:
   {{- end }}
   ports:
   - protocol: TCP
+{{- if .Values.prometheus.servicemonitor.appProtocol }}
+    appProtocol: {{ .Values.prometheus.servicemonitor.appProtocol }}
+{{- end }}
     port: 9402
     name: tcp-prometheus-servicemonitor
     targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
