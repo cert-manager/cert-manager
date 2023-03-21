@@ -89,7 +89,9 @@ func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 		switch f.Name {
 		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
 			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
-			fs.AddGoFlag(f)
+			pf := pflag.PFlagFromGoFlag(f)
+			pf.Deprecated = "this flag may be removed in the future"
+			fs.AddFlag(pf)
 		}
 	})
 
