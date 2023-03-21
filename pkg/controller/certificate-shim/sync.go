@@ -102,6 +102,11 @@ func SyncFnFor(
 			return nil
 		}
 
+		if isDeletedInForeground(ingLike) {
+			logf.V(logf.DebugLevel).Infof("not syncing ingress resource as it is being deleted via foreground cascading")
+			return nil
+		}
+
 		issuerName, issuerKind, issuerGroup, err := issuerForIngressLike(defaults, ingLike)
 		if err != nil {
 			log.Error(err, "failed to determine issuer to be used for ingress resource")
@@ -646,6 +651,28 @@ func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []strin
 		}
 	}
 	return false
+}
+
+// isDeletedInForeground returns true if the given ingressLike resource
+// contains either
+//
+// metadata.deletionTimestamp, or
+// metadata.finalizers having one of the values as foregroundDeletion
+//
+// which indicates that the resource is being deleted via foreground cascading.
+// Ref: https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion
+func isDeletedInForeground(ingLike metav1.Object) bool {
+	deletionTimestamp := ingLike.GetDeletionTimestamp()
+	finalizers := ingLike.GetFinalizers()
+	foregroundDeletion := false
+
+	for _, v := range finalizers {
+		if v == metav1.FinalizerDeleteDependents {
+			foregroundDeletion = true
+		}
+	}
+
+	return deletionTimestamp != nil || foregroundDeletion
 }
 
 // issuerForIngressLike determines the Issuer that should be specified on a
