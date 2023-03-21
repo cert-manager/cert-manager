@@ -1514,6 +1514,15 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:                "should not trigger an ingress sync if deleted in foreground",
+			Issuer:              clusterIssuer,
+			DefaultIssuerName:   "issuer-name",
+			DefaultIssuerKind:   "ClusterIssuer",
+			DefaultIssuerGroup:  "cert-manager.io",
+			ClusterIssuerLister: []runtime.Object{clusterIssuer},
+			IngressLike:         buildIngressInDeletion(buildIngress("", "", map[string]string{cmapi.IngressIssuerNameAnnotationKey: ""}), &metav1.Time{}, []string{metav1.FinalizerDeleteDependents}),
+		},
 	}
 
 	testGatewayShim := []testT{
@@ -2852,6 +2861,15 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:                "should not trigger a gateway sync if deleted in foreground",
+			Issuer:              clusterIssuer,
+			DefaultIssuerName:   "issuer-name",
+			DefaultIssuerKind:   "ClusterIssuer",
+			DefaultIssuerGroup:  "cert-manager.io",
+			ClusterIssuerLister: []runtime.Object{clusterIssuer},
+			IngressLike:         buildGatewayInDeletion(buildGateway("", "", map[string]string{cmapi.IngressIssuerNameAnnotationKey: ""}), &metav1.Time{}, []string{metav1.FinalizerDeleteDependents}),
+		},
 	}
 
 	testFn := func(test testT) func(t *testing.T) {
@@ -3412,4 +3430,61 @@ func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
 		}},
 	})
 	assert.Equal(t, false, got)
+}
+
+func buildIngressInDeletion(ingress *networkingv1.Ingress, deletionTimestamp *metav1.Time, finalizers []string) *networkingv1.Ingress {
+	if ingress == nil {
+		ingress = buildIngress("test-ingress", gen.DefaultTestNamespace, nil)
+	}
+
+	ingress.SetDeletionTimestamp(deletionTimestamp)
+	ingress.SetFinalizers(finalizers)
+	return ingress
+}
+
+func buildGatewayInDeletion(gateway *gwapi.Gateway, deletionTimestamp *metav1.Time, finalizers []string) *gwapi.Gateway {
+	if gateway == nil {
+		gateway = buildGateway("test-gw", gen.DefaultTestNamespace, nil)
+	}
+
+	gateway.SetDeletionTimestamp(deletionTimestamp)
+	gateway.SetFinalizers(finalizers)
+	return gateway
+}
+
+func Test_isDeletedInForeground(t *testing.T) {
+	type testT struct {
+		DeletionTimestamp *metav1.Time
+		Finalizers        []string
+		SkipSync          bool
+	}
+
+	tests := []testT{
+		{DeletionTimestamp: nil, Finalizers: nil, SkipSync: false},
+		{DeletionTimestamp: nil, Finalizers: []string{}, SkipSync: false},
+		{DeletionTimestamp: nil, Finalizers: []string{"cert-lock"}, SkipSync: false},
+		{DeletionTimestamp: &metav1.Time{}, Finalizers: []string{"cert-lock"}, SkipSync: true},
+		{DeletionTimestamp: &metav1.Time{}, Finalizers: nil, SkipSync: true},
+		{DeletionTimestamp: &metav1.Time{}, Finalizers: []string{}, SkipSync: true},
+		{DeletionTimestamp: nil, Finalizers: []string{metav1.FinalizerDeleteDependents}, SkipSync: true},
+		{DeletionTimestamp: &metav1.Time{}, Finalizers: []string{"cert-lock", metav1.FinalizerDeleteDependents}, SkipSync: true},
+	}
+
+	t.Run("should skip ingress sync if being deleted in foreground", func(t *testing.T) {
+		for _, test := range tests {
+			skipIngressSync := isDeletedInForeground(buildIngressInDeletion(nil, test.DeletionTimestamp, test.Finalizers))
+			if skipIngressSync != test.SkipSync {
+				t.Errorf("Expected skipIngressSync=%v for deletionTimestamp %#v, finalizers %#v", test.SkipSync, test.DeletionTimestamp, test.Finalizers)
+			}
+		}
+	})
+
+	t.Run("should skip gateway sync if being deleted in foreground", func(t *testing.T) {
+		for _, test := range tests {
+			skipGatewaySync := isDeletedInForeground(buildGatewayInDeletion(nil, test.DeletionTimestamp, test.Finalizers))
+			if skipGatewaySync != test.SkipSync {
+				t.Errorf("Expected skipGatewaySync=%v for deletionTimestamp %#v, finalizers %#v", test.SkipSync, test.DeletionTimestamp, test.Finalizers)
+			}
+		}
+	})
 }
