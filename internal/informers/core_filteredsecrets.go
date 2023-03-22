@@ -213,7 +213,6 @@ type secretLister struct {
 	partialMetadataLister metadatalister.Lister
 	typedLister           corev1listers.SecretLister
 	typedClient           typedcorev1.SecretsGetter
-	// TODO: add link
 	// Go recommends to not store context in
 	// structs, but here we have no other way as we need to use root context inside
 	// Get whose signature is defined upstream and does not accept context
@@ -243,7 +242,6 @@ type secretNamespaceLister struct {
 	partialMetadataLister metadatalister.Lister
 	typedLister           corev1listers.SecretLister
 	typedClient           typedcorev1.SecretsGetter
-	// TODO: add link
 	// Go recommends to not store context in
 	// structs, but here we have no other way as we need to use root context inside
 	// Get whose signature is defined upstream and does not accept context
@@ -253,8 +251,6 @@ type secretNamespaceLister struct {
 func (snl *secretNamespaceLister) Get(name string) (*corev1.Secret, error) {
 	log := logf.FromContext(snl.ctx)
 	log = log.WithValues("secret", name, "namespace", snl.namespace)
-	// TODO: debug print
-	log.Info("Getting secret from cache")
 	var secretFoundInTypedCache, secretFoundInMetadataCache bool
 	secret, err := snl.typedLister.Secrets(snl.namespace).Get(name)
 	if err == nil {
@@ -267,8 +263,6 @@ func (snl *secretNamespaceLister) Get(name string) (*corev1.Secret, error) {
 	}
 	_, partialMetadataGetErr := snl.partialMetadataLister.Namespace(snl.namespace).Get(name)
 	if partialMetadataGetErr == nil {
-		// TODO: debug line
-		log.Info("Secret found in partial metadata cache, getting it from kube apiserver")
 		secretFoundInMetadataCache = true
 	}
 
@@ -277,14 +271,11 @@ func (snl *secretNamespaceLister) Get(name string) (*corev1.Secret, error) {
 	}
 
 	if secretFoundInMetadataCache && secretFoundInTypedCache {
-		// TODO: this error message should be made into something that makes sense to users if they see it
 		log.Info(fmt.Sprintf("warning: possible internal error: stale cache: secret found both in typed cache and in partial cache: %s", pleaseOpenIssue), "secret name")
 		return snl.typedClient.Secrets(snl.namespace).Get(snl.ctx, name, metav1.GetOptions{})
 	}
 
 	if secretFoundInTypedCache {
-		// TODO: remove debug line
-		log.Info("secret found in typed cache, returning the cached version")
 		return secret, nil
 	}
 
@@ -292,9 +283,6 @@ func (snl *secretNamespaceLister) Get(name string) (*corev1.Secret, error) {
 		return snl.typedClient.Secrets(snl.namespace).Get(snl.ctx, name, metav1.GetOptions{})
 	}
 
-	// TODO: debug line
-	log.Info("secret neither in typed nor metadata cache")
-	// TODO: we want to return apierrors.ErrNotFound here, but which one?
 	return nil, partialMetadataGetErr
 }
 
@@ -326,7 +314,7 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 		key := types.NamespacedName{Namespace: snl.namespace, Name: name}.String()
 		if _, ok := matchingSecretsMap[key]; ok {
 			log.Info(fmt.Sprintf("warning: possible internal error: stale cache: secret found both in typed cache and in partial cache: %s", pleaseOpenIssue), "secret name", name)
-			// do nothing- use object from typed cache
+			// in case of duplicates, return the version from kube apiserver
 		}
 		secret, err := snl.typedClient.Secrets(snl.namespace).Get(snl.ctx, name, metav1.GetOptions{})
 		if err != nil {
