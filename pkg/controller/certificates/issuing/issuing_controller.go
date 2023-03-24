@@ -282,12 +282,18 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// Now check if CertificateRequest is in any of the final states so that
 	// this issuance can be completed as either succeeded or failed. Failed
 	// issuance will be retried with a delay (the logic for that lives in
-	// certificates-trigger controller).
-	// Final states are:
-	// Denied condition with status True => fail issuance
-	// InvalidRequest  condition with status True => fail issuance
-	// Ready conidtion with reason Failed => fail issuance
-	// Ready condition with reason Issued => finalize issuance as succeeded
+	// certificates-trigger controller). Final states are: Denied condition
+	// with status True => fail issuance InvalidRequest  condition with
+	// status True => fail issuance Ready conidtion with reason Failed =>
+	// fail issuance Ready condition with reason Issued => finalize issuance
+	// as succeeded.
+
+	// In case of a non-compliant issuer, a CertificateRequest can have both
+	// Denied status True (set by an approver) and Ready condition with
+	// reason Issued (set by the issuer). In this case, we prioritize the
+	// Denied condition and fail the issuance. This is done for consistency
+	// and also to avoid race conditions between the non-compliant issuer
+	// and this control loop.
 
 	// If the certificate request was denied, set the last failure time to
 	// now, bump the issuance attempts and set the Issuing status condition
