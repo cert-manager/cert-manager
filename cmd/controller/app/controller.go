@@ -37,6 +37,7 @@ import (
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
+	"github.com/cert-manager/cert-manager/cmd/controller/app/options"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
