@@ -1010,7 +1010,7 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if certificate is in Issuing state, one CertificateRequest, but has been denied, report denial and set last failed time and issuance attempts": {
+		"if certificate is in Issuing state, one CertificateRequest without Ready condition, but with Denied condition, report denial and set last failed time and issuance attempts": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
@@ -1058,6 +1058,290 @@ func TestIssuingController(t *testing.T) {
 				},
 				ExpectedEvents: []string{
 					"Warning DeniedReason The certificate request has failed to complete and will be retried: The certificate request has been denied",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest with a pending Ready condition and a Denied condition, report denial and set last failed time and issuance attempts": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionDenied,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "DeniedReason",
+							Message: "The certificate request has been denied",
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionReady,
+							Status:  cmmeta.ConditionFalse,
+							Reason:  "Pending",
+							Message: "The certificate request is pending",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "DeniedReason",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request has been denied",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning DeniedReason The certificate request has failed to complete and will be retried: The certificate request has been denied",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest that has been issued, but also has a Denied condition, report denial and set last failed time and issuance attempts": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionDenied,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "DeniedReason",
+							Message: "The certificate request has been denied",
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionReady,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "Issued",
+							Message: "The certificate request has been issued",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "DeniedReason",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request has been denied",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning DeniedReason The certificate request has failed to complete and will be retried: The certificate request has been denied",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest that has no ready condition and has been marked as invalid, report error and set last failed time and issuance attempts": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionInvalidRequest,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "InvalidRequest",
+							Message: "The certificate request is invalid",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "InvalidRequest",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request is invalid",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidRequest The certificate request has failed to complete and will be retried: The certificate request is invalid",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest that has a pending ready condition and has been marked as invalid, report error and set last failed time and issuance attempts": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionInvalidRequest,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "InvalidRequest",
+							Message: "The certificate request is invalid",
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionReady,
+							Status:  cmmeta.ConditionFalse,
+							Reason:  "Pending",
+							Message: "The certificate request is being issued",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "InvalidRequest",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request is invalid",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidRequest The certificate request has failed to complete and will be retried: The certificate request is invalid",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest that has been issued, but has also been marked as invalid, report error and set last failed time and issuance attempts": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionInvalidRequest,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "InvalidRequest",
+							Message: "The certificate request is invalid",
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionReady,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "Issued",
+							Message: "The certificate request has been issued",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "InvalidRequest",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request is invalid",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointer.Int(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidRequest The certificate request has failed to complete and will be retried: The certificate request is invalid",
 				},
 			},
 			expectedErr: false,

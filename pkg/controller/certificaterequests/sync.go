@@ -63,6 +63,12 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 		return nil
 	}
 
+	// If CertificateRequest is invalid, do not process it
+	if apiutil.CertificateRequestHasInvalidRequest(cr) {
+		dbg.Info("certificate request is invalid and will not be further processed")
+		return nil
+	}
+
 	// If CertificateRequest has not been approved, exit early.
 	if !apiutil.CertificateRequestIsApproved(cr) {
 		dbg.Info("certificate request has not been approved")

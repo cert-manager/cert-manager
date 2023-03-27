@@ -279,25 +279,37 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Some issuers won't honor the "Denied=True" condition, and we don't want
-	// to break these issuers. To avoid breaking these issuers, we skip bubbling
-	// up the "Denied=True" condition from the certificate request object to the
-	// certificate object when the issuer ignores the "Denied" state.
-	//
-	// To know whether or not an issuer ignores the "Denied" state, we pay
-	// attention to the "Ready" condition on the certificate request. If a
-	// certificate request is "Denied=True" and that the issuer still proceeds
-	// to adding the "Ready" condition (to either true or false), then we
-	// consider that this issuer has ignored the "Denied" state.
+	// Now check if CertificateRequest is in any of the final states so that
+	// this issuance can be completed as either succeeded or failed. Failed
+	// issuance will be retried with a delay (the logic for that lives in
+	// certificates-trigger controller). Final states are: Denied condition
+	// with status True => fail issuance InvalidRequest  condition with
+	// status True => fail issuance Ready conidtion with reason Failed =>
+	// fail issuance Ready condition with reason Issued => finalize issuance
+	// as succeeded.
+
+	// In case of a non-compliant issuer, a CertificateRequest can have both
+	// Denied status True (set by an approver) and Ready condition with
+	// reason Issued (set by the issuer). In this case, we prioritize the
+	// Denied condition and fail the issuance. This is done for consistency
+	// and also to avoid race conditions between the non-compliant issuer
+	// and this control loop.
+
+	// If the certificate request was denied, set the last failure time to
+	// now, bump the issuance attempts and set the Issuing status condition
+	// to False.
+	if apiutil.CertificateRequestIsDenied(req) {
+		return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionDenied))
+	}
+
+	// If the certificate request is invalid, set the last failure time to
+	// now, bump the issuance attempts and set the Issuing status condition
+	// to False.
+	if apiutil.CertificateRequestHasInvalidRequest(req) {
+		return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionInvalidRequest))
+	}
+
 	if crReadyCond == nil {
-		if apiutil.CertificateRequestIsDenied(req) {
-			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionDenied))
-		}
-
-		if apiutil.CertificateRequestHasInvalidRequest(req) {
-			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionInvalidRequest))
-		}
-
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
 	}

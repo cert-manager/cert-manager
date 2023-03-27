@@ -372,6 +372,21 @@ func TestSync(t *testing.T) {
 				ExpectedActions: []testpkg.Action{},
 			},
 		},
+		"should return nil (no action) if certificate request invalidrequest is set to true": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionInvalidRequest,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             "InvalidRequest",
+					Message:            "Certificate request is invalid",
+					LastTransitionTime: &nowMetaTime,
+				}),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
 		"should return nil (no action) if certificate request is ready and reason Issued": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
