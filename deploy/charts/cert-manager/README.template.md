@@ -114,11 +114,14 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.namespace` | Define namespace where to deploy the ServiceMonitor resource | (namespace where you are deploying) |
 | `prometheus.servicemonitor.prometheusInstance` | Prometheus Instance definition | `default` |
 | `prometheus.servicemonitor.targetPort` | Prometheus scrape port | `9402` |
+| `prometheus.servicemonitor.appProtocol` | Application protocol for prometheus service port | `` |
 | `prometheus.servicemonitor.path` | Prometheus scrape path | `/metrics` |
 | `prometheus.servicemonitor.interval` | Prometheus scrape interval | `60s` |
 | `prometheus.servicemonitor.labels` | Add custom labels to ServiceMonitor | |
 | `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
 | `prometheus.servicemonitor.honorLabels` | Enable label honoring for metrics scraped by Prometheus (see [Prometheus scrape config docs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) for details). By setting `honorLabels` to `true`, Prometheus will prefer label contents given by cert-manager on conflicts. Can be used to remove the "exported_namespace" label for example.  | `false` |
+| `prometheus.servicemonitor.scheme` | The protocol scheme to use when configuring the scrape job the service monitor respresents | `` |
+| `prometheus.servicemonitor.tlsConfig` | When the service monitor scheme requires the use of TLS (e.g. `scheme == "https"`), can be used to define CA certificates, keys, and certificates to use for the job. | `{}` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `deploymentAnnotations` | Annotations to add to the cert-manager deployment | `{}` |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
