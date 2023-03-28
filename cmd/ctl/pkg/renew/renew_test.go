@@ -72,6 +72,29 @@ func TestValidate(t *testing.T) {
 			},
 			expErr: true,
 		},
+		"If --namespace specified without arguments, error": {
+			options: &Options{},
+			setStringFlags: []stringFlag{
+				{name: "namespace", value: "foo"},
+			},
+			expErr: true,
+		},
+		"If --namespace specified and at least one argument, don't error": {
+			options: &Options{},
+			args:    []string{"bar"},
+			setStringFlags: []stringFlag{
+				{name: "namespace", value: "foo"},
+			},
+			expErr: false,
+		},
+		"If --namespace specified with multiple arguments, don't error": {
+			options: &Options{},
+			args:    []string{"bar", "abc"},
+			setStringFlags: []stringFlag{
+				{name: "namespace", value: "foo"},
+			},
+			expErr: false,
+		},
 	}
 
 	for name, test := range tests {

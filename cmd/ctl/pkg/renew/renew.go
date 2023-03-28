@@ -112,6 +112,10 @@ func (o *Options) Validate(cmd *cobra.Command, args []string) error {
 		return errors.New("cannot specify --namespace flag in conjunction with --all flag")
 	}
 
+	if !o.All && len(args) == 0 {
+		return errors.New("certificate name(s) is/are required without the --all flag")
+	}
+
 	return nil
 }
 
