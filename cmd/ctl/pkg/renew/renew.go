@@ -113,7 +113,7 @@ func (o *Options) Validate(cmd *cobra.Command, args []string) error {
 	}
 
 	if !o.All && len(args) == 0 {
-		return errors.New("certificate name(s) is/are required without the --all flag")
+		return errors.New("inform one or more Certificate resource name or use the --all flag to renew all Certificate resources")
 	}
 
 	return nil
