@@ -43,7 +43,7 @@ type baseFactory struct {
 
 func NewBaseKubeInformerFactory(client kubernetes.Interface, resync time.Duration, namespace string) KubeInformerFactory {
 	return &baseFactory{
-		f: kubeinformers.NewSharedInformerFactory(client, resync),
+		f: kubeinformers.NewSharedInformerFactoryWithOptions(client, resync, kubeinformers.WithNamespace(namespace)),
 		// namespace is set to a non-empty value if cert-manager
 		// controller is scoped to a single namespace via --namespace
 		// flag

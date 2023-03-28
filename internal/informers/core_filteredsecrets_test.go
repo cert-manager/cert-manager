@@ -188,6 +188,34 @@ func Test_secretNamespaceLister_Get(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		"if Secret found not found in either cache return not found error": {
+			namespace: "foo",
+			name:      "foo",
+			typedLister: FakeSecretLister{
+				NamespaceLister: FakeSecretNamespaceLister{
+					FakeGet: func(string) (*corev1.Secret, error) {
+						return nil, apierrors.NewNotFound(schema.GroupResource{}, "foo")
+					},
+				},
+			},
+			partialMetadataLister: FakeMetadataLister{
+				NamespaceLister: FakeMetadataNamespaceLister{
+					FakeGet: func(string) (*metav1.PartialObjectMetadata, error) {
+						return &metav1.PartialObjectMetadata{}, apierrors.NewNotFound(schema.GroupResource{}, "foo")
+					},
+				},
+			},
+			typedClient: FakeSecretsGetter{
+				FakeSecrets: func(string) typedcorev1.SecretInterface {
+					return FakeSecretInterface{
+						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
+							return nil, errors.New("some error")
+						},
+					}
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
