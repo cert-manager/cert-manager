@@ -490,9 +490,6 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
-					return testACMEOrderPending, nil
-				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
 					return "key", nil

@@ -161,6 +161,14 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return c.finalizeOrder(ctx, cl, o, genericIssuer)
 	}
 
+	// At this point, if no Challenges have failed or reached a final state,
+	// we can return without taking any action. This controller will resync
+	// the Order on any owned Challenge events.
+	if !anyChallengesFailed(challenges) && !allChallengesFinal(challenges) {
+		log.V(logf.DebugLevel).Info("No action taken")
+		return nil
+	}
+
 	// Note: each of the following code paths uses the ACME Order retrieved
 	// here. Be mindful when adding new code below this call to ACME server-
 	// if the new code does not need this ACME order, try to place it above
