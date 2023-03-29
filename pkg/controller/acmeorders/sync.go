@@ -189,9 +189,14 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	switch {
 	case anyChallengesFailed(challenges):
-		// TODO (@munnerz): instead of waiting for the ACME server to mark this
-		//  Order as failed, we could just mark the Order as failed as there is
-		//  no way that we will attempt and continue the order anyway.
+		// TODO (@munnerz): instead of waiting for the ACME server to
+		// mark this Order as failed, we could just mark the Order as
+		// failed as there is no way that we will attempt and continue
+		// the order anyway. This might, however, be a breaking change
+		// in edge cases where the status of the order resource in ACME
+		// server cannot be determined from challenge resource statuses
+		// correctly. Do not change this unless there is a real need for
+		// it.
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
