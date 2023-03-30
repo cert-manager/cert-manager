@@ -28,6 +28,7 @@ github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENS
 github.com/cenkalti/backoff/v3,https://github.com/cenkalti/backoff/blob/v3.0.0/LICENSE,MIT
 github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.1.3/LICENSE,MIT
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
+github.com/cert-manager/cert-manager/make/config/samplewebhook/sample,https://github.com/cert-manager/cert-manager/blob/HEAD/make/licenses.mk,Apache-2.0
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/azuredns/LICENSE,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/clouddns/LICENSE,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/cloudflare/LICENSE,MIT

@@ -2,6 +2,13 @@ module github.com/cert-manager/cert-manager
 
 go 1.19
 
+// Do not remove this comment:
+// please place any replace statements here at the top for visibility and add a
+// comment to it as to when it can be removed
+
+// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
+replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
+
 require (
 	github.com/Azure/azure-sdk-for-go v67.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.28
@@ -253,8 +260,3 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 )
-
-replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
-
-// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
-replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
