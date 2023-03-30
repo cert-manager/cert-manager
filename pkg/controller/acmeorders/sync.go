@@ -121,7 +121,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	}
 
 	dbg.Info("Computing list of Challenge resources that need to exist to complete this Order")
-	requiredChallenges, err := buildRequiredChallenges(ctx, cl, genericIssuer, o)
+	requiredChallenges, err := buildPartialRequiredChallenges(ctx, genericIssuer, o)
 	if err != nil {
 		log.Error(err, "Failed to determine the list of Challenge resources needed for the Order")
 		c.recorder.Eventf(o, corev1.EventTypeWarning, reasonSolver, "Failed to determine a valid solver configuration for the set of domains on the Order: %v", err)
@@ -142,6 +142,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	switch {
 	case needToCreateChallenges:
 		log.V(logf.DebugLevel).Info("Creating additional Challenge resources to complete Order")
+		requiredChallenges, err = ensureKeysForChallenges(cl, requiredChallenges)
+		if err != nil {
+			return err
+		}
 		return c.createRequiredChallenges(ctx, o, requiredChallenges)
 	case needToDeleteChallenges:
 		log.V(logf.DebugLevel).Info("Deleting leftover Challenge resources no longer required by Order")
@@ -399,7 +403,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 	return nil
 }
 
-func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme.Challenge) (bool, error) {
+func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []*cmacme.Challenge) (bool, error) {
 	for _, ch := range requiredChallenges {
 		_, err := c.challengeLister.Challenges(ch.Namespace).Get(ch.Name)
 		if apierrors.IsNotFound(err) {
@@ -412,9 +416,9 @@ func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme
 	return false, nil
 }
 
-func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
+func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []*cmacme.Challenge) error {
 	for _, ch := range requiredChallenges {
-		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(ctx, &ch, metav1.CreateOptions{})
+		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(ctx, ch, metav1.CreateOptions{})
 		if apierrors.IsAlreadyExists(err) {
 			continue
 		}
@@ -426,7 +430,7 @@ func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Ord
 	return nil
 }
 
-func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallenges []cmacme.Challenge) (bool, error) {
+func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallenges []*cmacme.Challenge) (bool, error) {
 	leftoverChallenges, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return false, err
@@ -435,7 +439,7 @@ func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallen
 	return len(leftoverChallenges) > 0, nil
 }
 
-func (c *controller) deleteLeftoverChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
+func (c *controller) deleteLeftoverChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []*cmacme.Challenge) error {
 	leftover, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return err
@@ -465,7 +469,7 @@ func (c *controller) deleteAllChallenges(ctx context.Context, o *cmacme.Order) e
 	return nil
 }
 
-func (c *controller) determineLeftoverChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) ([]*cmacme.Challenge, error) {
+func (c *controller) determineLeftoverChallenges(o *cmacme.Order, requiredChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, error) {
 	requiredNames := map[string]struct{}{}
 	for _, ch := range requiredChallenges {
 		requiredNames[ch.Name] = struct{}{}
