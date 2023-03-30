@@ -18,16 +18,17 @@ package acmeorders
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
-
-	"github.com/kr/pretty"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/kr/pretty"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 func TestChallengeSpecForAuthorization(t *testing.T) {
@@ -1246,6 +1247,77 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			}
 			if !reflect.DeepEqual(cs, test.expectedChallengeSpec) {
 				t.Errorf("returned challenge spec was not as expected: %v", pretty.Diff(test.expectedChallengeSpec, cs))
+			}
+		})
+	}
+}
+
+func Test_ensureKeysForChallenges(t *testing.T) {
+	basicACMEClient := &acmecl.FakeACME{
+		FakeHTTP01ChallengeResponse: func(token string) (string, error) {
+			switch token {
+			case "fooToken":
+				return "fooKeyHTTP01", nil
+			case "barToken":
+				return "barKeyHTTP01", nil
+			}
+			return "", fmt.Errorf("internal error: unexpected token value %s", token)
+		},
+		FakeDNS01ChallengeRecord: func(token string) (string, error) {
+			switch token {
+			case "fooToken":
+				return "fooKeyDNS01", nil
+			case "barToken":
+				return "barKeyDNS01", nil
+			}
+			return "", fmt.Errorf("internal error: unexpected token value %s", token)
+		},
+	}
+	fooChallenge := gen.Challenge("foo", gen.SetChallengeToken("fooToken"))
+	barChallenge := gen.Challenge("bar", gen.SetChallengeToken("barToken"))
+	tests := map[string]struct {
+		acmeClient        acmecl.Interface
+		partialChallenges []*cmacme.Challenge
+		want              []*cmacme.Challenge
+		wantErr           bool
+	}{
+		"happy path with some http-01 challenges": {
+			acmeClient: basicACMEClient,
+			partialChallenges: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01)),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01))},
+			want: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeKey("fooKeyHTTP01")),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeKey("barKeyHTTP01"))},
+		},
+		"happy path with some dns-01 challenges": {
+			acmeClient: basicACMEClient,
+			partialChallenges: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01)),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01))},
+			want: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeKey("fooKeyDNS01")),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeKey("barKeyDNS01"))},
+		},
+		"unhappy path with an unknown challenge type": {
+			acmeClient:        basicACMEClient,
+			partialChallenges: []*cmacme.Challenge{gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeType("foo")))},
+			wantErr:           true,
+		},
+	}
+	for name, scenario := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := ensureKeysForChallenges(scenario.acmeClient, scenario.partialChallenges)
+			if (err != nil) != scenario.wantErr {
+				t.Errorf("ensureKeysForChallenges() error = %v, wantErr %v", err, scenario.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, scenario.want) {
+				t.Errorf("ensureKeysForChallenges() = %v, want %v", got, scenario.want)
 			}
 		})
 	}
