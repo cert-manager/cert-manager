@@ -36,13 +36,24 @@ type Interface interface {
 	ListCertAlternates(ctx context.Context, url string) ([]string, error)
 	WaitOrder(ctx context.Context, url string) (*acme.Order, error)
 	CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
+	// Accept will (in success cases) be called once per a Challenge once it
+	// has passed self-check and is ready to be verified by the ACME server.
 	Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
 	GetChallenge(ctx context.Context, url string) (*acme.Challenge, error)
+	// GetAuthorization will be called once for each required authorization
+	// for an Order. Additionally it will be called most likely once when a
+	// Challenge has been scheduled for processing to retrieve its status.
 	GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
+	// WaitAuthorization will, in success cases, be called once per
+	// Challenge after it has been accepted.
 	WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	Register(ctx context.Context, acct *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
 	GetReg(ctx context.Context, url string) (*acme.Account, error)
+	// HTTP01ChallengeResponse will be called once when an cert-manager.io
+	// Challenge for an http-01 challenge type is being created.
 	HTTP01ChallengeResponse(token string) (string, error)
+	// DNS01ChallengeResponse will be called once when an cert-manager.io
+	// Challenge for an http-01 challenge type is being created.
 	DNS01ChallengeRecord(token string) (string, error)
 	Discover(ctx context.Context) (acme.Directory, error)
 	UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error)
