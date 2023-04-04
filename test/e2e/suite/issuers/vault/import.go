@@ -17,6 +17,6 @@ limitations under the License.
 package vault
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/vault/certificate"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/vault/certificaterequest"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/vault/certificate"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/vault/certificaterequest"
 )

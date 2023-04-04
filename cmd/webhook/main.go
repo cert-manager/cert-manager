@@ -19,9 +19,9 @@ package main
 import (
 	"flag"
 
-	"github.com/cert-manager/cert-manager/cmd/webhook/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/webhook-binary/app"
 )
 
 func main() {

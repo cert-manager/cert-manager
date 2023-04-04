@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -36,7 +37,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/test/integration/framework"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 

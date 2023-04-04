@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cert-manager/cert-manager/cmd/acmesolver/app"
+	"github.com/cert-manager/cert-manager/acmesolver-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 )
 

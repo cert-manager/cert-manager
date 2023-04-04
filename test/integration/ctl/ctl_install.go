@@ -27,9 +27,9 @@ import (
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 
-	"github.com/cert-manager/cert-manager/cmd/ctl/cmd"
-	"github.com/cert-manager/cert-manager/test/integration/ctl/install_framework"
-	"github.com/cert-manager/cert-manager/test/internal/util"
+	"github.com/cert-manager/cert-manager/cmctl-binary/cmd"
+	"github.com/cert-manager/cert-manager/integration-tests/ctl/install_framework"
+	"github.com/cert-manager/cert-manager/integration-tests/internal/util"
 )
 
 func TestCtlInstall(t *testing.T) {

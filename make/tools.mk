@@ -30,7 +30,7 @@ TOOLS += kubectl=v1.26.2
 TOOLS += kind=v0.17.0
 TOOLS += controller-gen=v0.11.3
 TOOLS += cosign=v1.12.1
-TOOLS += cmrel=a1e2bad95be9688794fd0571c4c40e88cccf9173
+TOOLS += cmrel=c35ba39e591f1e5150525ca0fef222beb719de8c
 TOOLS += release-notes=v0.14.0
 TOOLS += goimports=v0.1.12
 TOOLS += go-licenses=v1.5.0
@@ -455,3 +455,15 @@ update-kind-images: $(BINDIR)/tools/crane
 .PHONY: update-base-images
 update-base-images: $(BINDIR)/tools/crane
 	CRANE=./$(BINDIR)/tools/crane ./hack/latest-base-images.sh
+
+.PHONY: tidy
+## Run "go mod tidy" on each module in this repo
+tidy:
+	go mod tidy
+	cd cmd/acmesolver && go mod tidy
+	cd cmd/cainjector && go mod tidy
+	cd cmd/controller && go mod tidy
+	cd cmd/ctl && go mod tidy
+	cd cmd/webhook && go mod tidy
+	cd test/integration && go mod tidy
+	cd test/e2e && go mod tidy

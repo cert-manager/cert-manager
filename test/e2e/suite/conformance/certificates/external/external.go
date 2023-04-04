@@ -28,10 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	crtclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/e2e/framework"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/featureset"
-	"github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
 const (

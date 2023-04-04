@@ -36,10 +36,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 
-	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
 	"github.com/cert-manager/cert-manager/internal/webhook"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
+	"github.com/cert-manager/cert-manager/webhook-binary/app/options"
 )
 
 type StopFunc func()

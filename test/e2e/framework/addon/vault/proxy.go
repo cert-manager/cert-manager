@@ -28,7 +28,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 )
 
 type proxy struct {

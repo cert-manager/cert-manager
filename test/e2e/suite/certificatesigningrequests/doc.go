@@ -17,5 +17,5 @@ limitations under the License.
 package certificatesigningrequests
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificatesigningrequests/selfsigned"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/certificatesigningrequests/selfsigned"
 )

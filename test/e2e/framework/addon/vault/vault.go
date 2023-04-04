@@ -33,9 +33,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/cert-manager/cert-manager/test/e2e/framework/addon/base"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/addon/chart"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/config"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 )
 
 const (

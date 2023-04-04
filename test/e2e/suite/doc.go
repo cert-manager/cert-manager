@@ -17,10 +17,10 @@ limitations under the License.
 package suite
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificates"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificatesigningrequests"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/serving"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/certificaterequests"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/certificates"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/certificatesigningrequests"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/serving"
 )

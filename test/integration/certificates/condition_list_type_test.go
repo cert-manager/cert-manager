@@ -28,10 +28,10 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 // Test_ConditionsListType ensures that the Certificate's Conditions API field

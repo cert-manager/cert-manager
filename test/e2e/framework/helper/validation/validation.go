@@ -17,9 +17,9 @@ limitations under the License.
 package validation
 
 import (
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/featureset"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/validation/certificates"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/validation/certificatesigningrequests"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
 )
 
 func DefaultCertificateSet() []certificates.ValidationFunc {

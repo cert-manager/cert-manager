@@ -33,9 +33,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	testserver "github.com/cert-manager/cert-manager/integration-tests/acmedns/server"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	testserver "github.com/cert-manager/cert-manager/test/acme/dns/server"
 )
 
 var (

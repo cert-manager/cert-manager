@@ -35,10 +35,10 @@ cmctl-linux-tarballs: $(BINDIR)/release/cert-manager-cmctl-linux-amd64.tar.gz $(
 cmctl-linux-metadata: $(BINDIR)/metadata/cert-manager-cmctl-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-linux-arm.tar.gz.metadata.json | $(BINDIR)/metadata
 
 $(BINDIR)/cmctl/cmctl-linux-amd64 $(BINDIR)/cmctl/cmctl-linux-arm64 $(BINDIR)/cmctl/cmctl-linux-s390x $(BINDIR)/cmctl/cmctl-linux-ppc64le: $(BINDIR)/cmctl/cmctl-linux-%: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/cmctl
-	GOOS=linux GOARCH=$* $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl && GOOS=linux GOARCH=$* $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' main.go
 
 $(BINDIR)/cmctl/cmctl-linux-arm: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/cmctl
-	GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' main.go
 
 $(BINDIR)/release/cert-manager-cmctl-linux-amd64.tar.gz $(BINDIR)/release/cert-manager-cmctl-linux-arm64.tar.gz $(BINDIR)/release/cert-manager-cmctl-linux-s390x.tar.gz $(BINDIR)/release/cert-manager-cmctl-linux-ppc64le.tar.gz $(BINDIR)/release/cert-manager-cmctl-linux-arm.tar.gz: $(BINDIR)/release/cert-manager-cmctl-linux-%.tar.gz: $(BINDIR)/cmctl/cmctl-linux-% $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch $(BINDIR)/release
 	@$(eval TARDIR := $(BINDIR)/scratch/$(notdir $@))
@@ -67,7 +67,7 @@ cmctl-darwin-tarballs: $(BINDIR)/release/cert-manager-cmctl-darwin-amd64.tar.gz 
 cmctl-darwin-metadata: $(BINDIR)/metadata/cert-manager-cmctl-darwin-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-darwin-arm64.tar.gz.metadata.json | $(BINDIR)/metadata
 
 $(BINDIR)/cmctl/cmctl-darwin-amd64 $(BINDIR)/cmctl/cmctl-darwin-arm64:  $(BINDIR)/cmctl/cmctl-darwin-%: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/cmctl
-	GOOS=darwin GOARCH=$* $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl/ && GOOS=darwin GOARCH=$* $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' main.go
 
 $(BINDIR)/release/cert-manager-cmctl-darwin-amd64.tar.gz $(BINDIR)/release/cert-manager-cmctl-darwin-arm64.tar.gz: $(BINDIR)/release/cert-manager-cmctl-darwin-%.tar.gz:  $(BINDIR)/cmctl/cmctl-darwin-% $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch $(BINDIR)/release
 	@$(eval TARDIR := $(BINDIR)/scratch/$(notdir $@))
@@ -96,7 +96,7 @@ cmctl-windows-tarballs: $(BINDIR)/release/cert-manager-cmctl-windows-amd64.tar.g
 cmctl-windows-metadata: $(BINDIR)/metadata/cert-manager-cmctl-windows-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-cmctl-windows-amd64.zip.metadata.json | $(BINDIR)/release
 
 $(BINDIR)/cmctl/cmctl-windows-amd64.exe: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/cmctl
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl/ && GOOS=windows GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(CMCTL_GOLDFLAGS)' main.go
 
 $(BINDIR)/release/cert-manager-cmctl-windows-amd64.zip: $(BINDIR)/cmctl/cmctl-windows-amd64.exe $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch $(BINDIR)/release
 	@$(eval TARDIR := $(BINDIR)/scratch/$(notdir $@))
@@ -144,10 +144,10 @@ kubectl-cert_manager-linux-tarballs: $(BINDIR)/release/cert-manager-kubectl-cert
 kubectl-cert_manager-linux-metadata: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-linux-arm.tar.gz.metadata.json | $(BINDIR)/metadata
 
 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-amd64 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-arm64 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-s390x $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-ppc64le: $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-%: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/kubectl-cert_manager
-	GOOS=linux GOARCH=$* $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl/ && GOOS=linux GOARCH=$* $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' main.go
 
 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-arm: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/kubectl-cert_manager
-	GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl/ && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' main.go
 
 $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-amd64.tar.gz $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-arm64.tar.gz $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-s390x.tar.gz $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-ppc64le.tar.gz $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-arm.tar.gz: $(BINDIR)/release/cert-manager-kubectl-cert_manager-linux-%.tar.gz: $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-linux-% $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch $(BINDIR)/release
 	@$(eval TARDIR := $(BINDIR)/scratch/$(notdir $@))
@@ -176,7 +176,7 @@ kubectl-cert_manager-darwin-tarballs: $(BINDIR)/release/cert-manager-kubectl-cer
 kubectl-cert_manager-darwin-metadata: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-darwin-arm64.tar.gz.metadata.json | $(BINDIR)/metadata
 
 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-darwin-amd64 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-darwin-arm64:  $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-darwin-%: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/kubectl-cert_manager
-	GOOS=darwin GOARCH=$* $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl/ && GOOS=darwin GOARCH=$* $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' main.go
 
 $(BINDIR)/release/cert-manager-kubectl-cert_manager-darwin-amd64.tar.gz $(BINDIR)/release/cert-manager-kubectl-cert_manager-darwin-arm64.tar.gz: $(BINDIR)/release/cert-manager-kubectl-cert_manager-darwin-%.tar.gz:  $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-darwin-% $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch $(BINDIR)/release
 	@$(eval TARDIR := $(BINDIR)/scratch/$(notdir $@))
@@ -205,7 +205,7 @@ kubectl-cert_manager-windows-tarballs: $(BINDIR)/release/cert-manager-kubectl-ce
 kubectl-cert_manager-windows-metadata: $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-windows-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-kubectl-cert_manager-windows-amd64.zip.metadata.json | $(BINDIR)/release
 
 $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-windows-amd64.exe: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/kubectl-cert_manager
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' cmd/ctl/main.go
+	cd cmd/ctl/ && GOOS=windows GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(KUBECTL_PLUGIN_GOLDFLAGS)' main.go
 
 $(BINDIR)/release/cert-manager-kubectl-cert_manager-windows-amd64.zip: $(BINDIR)/kubectl-cert_manager/kubectl-cert_manager-windows-amd64.exe $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/scratch $(BINDIR)/release
 	@$(eval TARDIR := $(BINDIR)/scratch/$(notdir $@))
