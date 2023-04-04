@@ -59,7 +59,7 @@ unit-test: | $(NEEDS_GOTESTSUM)
 
 .PHONY: setup-integration-tests
 setup-integration-tests: test/integration/versionchecker/testdata/test_manifests.tar templated-crds
-	@$(eval GIT_TAGS_FILE := $(BINDIR)/scratch/git/upstream-tags.txt)
+	@$(eval GIT_TAGS_FILE := $(BINDIR)/scratch/git/upstream-tags.1.txt)
 	@echo -e "\033[0;33mLatest known tag for integration tests is $(shell tail -1 $(GIT_TAGS_FILE)); if that seems out-of-date,\npull latest tags, run 'rm $(GIT_TAGS_FILE)' and retest\033[0m"
 
 .PHONY: integration-test
@@ -131,9 +131,9 @@ test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/o
 	tar --append -f $(BINDIR)/scratch/versionchecker-test-manifests.tar -C $(BINDIR)/scratch ./$(RELEASE_VERSION).yaml
 	cp $(BINDIR)/scratch/versionchecker-test-manifests.tar $@
 
-$(BINDIR)/scratch/oldcrds.tar: $(BINDIR)/scratch/git/upstream-tags.txt | $(BINDIR)/scratch/oldcrds
-	@# First, download the CRDs for all releases listed in upstream-tags.txt
-	<$(BINDIR)/scratch/git/upstream-tags.txt xargs -I% -P5 \
+$(BINDIR)/scratch/oldcrds.tar: $(BINDIR)/scratch/git/upstream-tags.1.txt | $(BINDIR)/scratch/oldcrds
+	@# First, download the CRDs for all releases listed in upstream-tags
+	<$(BINDIR)/scratch/git/upstream-tags.1.txt xargs -I% -P5 \
 		./hack/fetch-old-crd.sh \
 		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml" \
 		$(BINDIR)/scratch/oldcrds/%.yaml
