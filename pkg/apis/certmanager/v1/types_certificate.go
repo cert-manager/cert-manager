@@ -394,11 +394,11 @@ type CertificateStatus struct {
 	// +optional
 	Conditions []CertificateCondition `json:"conditions,omitempty"`
 
-	// LastFailureTime is the time as recorded by the Certificate controller
-	// of the most recent failure to complete a CertificateRequest for this
-	// Certificate resource.
-	// If set, cert-manager will not re-request another Certificate until
-	// 1 hour has elapsed from this time.
+	// LastFailureTime is set only if the lastest issuance for this
+	// Certificate failed and contains the time of the failure. If an
+	// issuance has failed, the delay till the next issuance will be
+	// calculated using formula time.Hour * 2 ^ (failedIssuanceAttempts -
+	// 1). If the latest issuance has succeeded this field will be unset.
 	// +optional
 	LastFailureTime *metav1.Time `json:"lastFailureTime,omitempty"`
 
