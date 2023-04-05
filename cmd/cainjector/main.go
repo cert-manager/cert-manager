@@ -24,7 +24,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/cert-manager/cert-manager/cmd/cainjector/app"
+	"github.com/cert-manager/cert-manager/cainjector-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )

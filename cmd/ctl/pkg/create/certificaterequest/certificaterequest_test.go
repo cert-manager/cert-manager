@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
 )
 
 func TestValidate(t *testing.T) {

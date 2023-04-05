@@ -38,3 +38,9 @@ $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footno
 
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: go.mod go.sum | $(NEEDS_GO-LICENSES)
 	$(GO-LICENSES) csv ./...  > $@
+
+cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
+	cd cmd/$* && $(GO-LICENSES) csv ./...  > ../../$@
+
+test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
+	cd test/$* && $(GO-LICENSES) csv ./...  > ../../$@

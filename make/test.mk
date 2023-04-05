@@ -14,10 +14,13 @@
 
 export KUBEBUILDER_ASSETS=$(PWD)/$(BINDIR)/tools
 
+# GOTESTSUM_CI_FLAGS contains flags which are common to invocations of gotestsum in CI environments
+GOTESTSUM_CI_FLAGS := --junitfile-testsuite-name short --junitfile-testcase-classname relative
+
 # WHAT can be used to control which unit tests are run by "make test"; defaults to running all
 # tests except e2e tests (which require more significant setup)
 # For example: make WHAT=./pkg/util/pki test-pretty to only run the PKI utils tests
-WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/... ./hack/prune-junit-xml/...
+WHAT ?= ./pkg/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 
 .PHONY: test
 ## Test is the workhorse test command which by default runs all unit and
@@ -25,14 +28,18 @@ WHAT ?= ./pkg/... ./cmd/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 ##
 ##   make test WHAT=./pkg/...
 ##
+## Note that some tests and binaries are separated into different modules, and
+## as such won't be testable from the root directory or using this command.
+## There are separate make targets - such as "make unit-test" which should be
+## used to test everything at once.
+##
 ## @category Development
 test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
-## test-ci runs all unit and integration tests and writes a JUnit report of
-## the results. WHAT can be used to limit which tests are run; see help for
-## `make test` for more details.
+## test-ci runs all unit and integration tests and writes JUnit reports of
+## the results.
 ##
 ## Fuzz tests are hidden from JUnit output, because they're noisy and can cause
 ## issues with dashboards and UIs.
@@ -41,12 +48,17 @@ test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL
 test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	@mkdir -p $(ARTIFACTS)
 	$(GOTESTSUM) \
-		--junitfile $(ARTIFACTS)/junit_make-test-ci.xml \
-		--junitfile-testsuite-name short \
-		--junitfile-testcase-classname relative \
+		--junitfile $(ARTIFACTS)/junit_make-test-ci-core.xml \
+		$(GOTESTSUM_CI_FLAGS) \
 		--post-run-command $$'bash -c "$(GO) run hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' \
 		-- \
 		$(WHAT)
+	cd cmd/acmesolver && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-acmesolver.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	cd cmd/cainjector && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-cainjector.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	cd cmd/controller && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-controller.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	cd cmd/ctl        && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-ctl.xml        $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	cd cmd/webhook    && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-webhook.xml    $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	cd test/integration && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-integration.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
@@ -54,8 +66,31 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: | $(NEEDS_GOTESTSUM)
-	$(GOTESTSUM) ./cmd/... ./pkg/... ./internal/...
+unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-cmctl unit-test-controller unit-test-webhook | $(NEEDS_GOTESTSUM)
+
+.PHONY: unit-test-core-module
+unit-test-core-module: | $(NEEDS_GOTESTSUM)
+	$(GOTESTSUM) ./pkg/... ./internal/...
+
+.PHONY: unit-test-acmesolver
+unit-test-acmesolver: | $(NEEDS_GOTESTSUM)
+	cd cmd/acmesolver && $(GOTESTSUM) ./...
+
+.PHONY: unit-test-cainjector
+unit-test-cainjector: | $(NEEDS_GOTESTSUM)
+	cd cmd/cainjector && $(GOTESTSUM) ./...
+
+.PHONY: unit-test-cmctl
+unit-test-cmctl: | $(NEEDS_GOTESTSUM)
+	cd cmd/ctl && $(GOTESTSUM) ./...
+
+.PHONY: unit-test-controller
+unit-test-controller: | $(NEEDS_GOTESTSUM)
+	cd cmd/controller && $(GOTESTSUM) ./...
+
+.PHONY: unit-test-webhook
+unit-test-webhook: | $(NEEDS_GOTESTSUM)
+	cd cmd/webhook && $(GOTESTSUM) ./...
 
 .PHONY: setup-integration-tests
 setup-integration-tests: test/integration/versionchecker/testdata/test_manifests.tar templated-crds
@@ -69,7 +104,7 @@ setup-integration-tests: test/integration/versionchecker/testdata/test_manifests
 ##
 ## @category Development
 integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
-	$(GOTESTSUM) ./test/...
+	cd test/integration && $(GOTESTSUM) ./...
 
 .PHONY: e2e
 ## Run the end-to-end tests. Before running this, you need to run:

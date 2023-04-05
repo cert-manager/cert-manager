@@ -30,12 +30,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/create/certificaterequest"
-	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/create/certificaterequest"
+	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 type CreateCRTest struct {

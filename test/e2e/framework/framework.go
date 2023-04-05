@@ -35,16 +35,16 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/util"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/addon"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/config"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/util"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/util/errors"
 )
 
 // TODO: this really should be done somewhere in cert-manager proper
@@ -93,7 +93,7 @@ type Framework struct {
 
 // NewDefaultFramework makes a new framework for you, similar to NewFramework.
 // It uses the suite-wide 'DefaultConfig' which should be populated by the
-// testing harness in test/e2e/e2e_test.go
+// testing harness in e2e-tests/e2e_test.go
 func NewDefaultFramework(baseName string) *Framework {
 	return NewFramework(baseName, DefaultConfig)
 }

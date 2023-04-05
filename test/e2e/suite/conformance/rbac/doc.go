@@ -17,7 +17,7 @@ limitations under the License.
 package rbac
 
 import (
-	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 )
 
 // RBACDescribe wraps ConformanceDescribe with namespacing for RBAC tests

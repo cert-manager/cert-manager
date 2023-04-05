@@ -17,6 +17,6 @@ limitations under the License.
 package acme
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/acme/certificate"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/acme/certificaterequest"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/acme/certificate"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/acme/certificaterequest"
 )

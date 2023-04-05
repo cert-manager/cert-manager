@@ -25,10 +25,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	internalchallenges "github.com/cert-manager/cert-manager/internal/controller/challenges"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 // Test_Apply ensures that the Challenge Apply helpers can set both the

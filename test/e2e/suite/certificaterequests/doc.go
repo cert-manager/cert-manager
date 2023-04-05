@@ -17,6 +17,6 @@ limitations under the License.
 package certificaterequests
 
 import (
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests/approval"
-	_ "github.com/cert-manager/cert-manager/test/e2e/suite/certificaterequests/selfsigned"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/certificaterequests/approval"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/certificaterequests/selfsigned"
 )

@@ -17,7 +17,11 @@
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-modules
+
+.PHONY: verify-modules
+verify-modules: | $(NEEDS_CMREL)
+	$(CMREL) validate-gomod --path $(shell pwd)
 
 .PHONY: verify-imports
 verify-imports: | $(NEEDS_GOIMPORTS)
@@ -42,15 +46,22 @@ verify-boilerplate:
 ## Check that the LICENSES file is up to date; must pass before a change to go.mod can be merged
 ##
 ## @category CI
-verify-licenses: $(BINDIR)/scratch/LATEST-LICENSES
-	@diff $(BINDIR)/scratch/LATEST-LICENSES LICENSES >/dev/null || (echo -e "\033[0;33mLICENSES seem to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+verify-licenses: $(BINDIR)/scratch/LATEST-LICENSES $(BINDIR)/scratch/LATEST-LICENSES-acmesolver $(BINDIR)/scratch/LATEST-LICENSES-cainjector $(BINDIR)/scratch/LATEST-LICENSES-controller $(BINDIR)/scratch/LATEST-LICENSES-ctl $(BINDIR)/scratch/LATEST-LICENSES-webhook $(BINDIR)/scratch/LATEST-LICENSES-integration-tests $(BINDIR)/scratch/LATEST-LICENSES-e2e-tests
+	@diff $(BINDIR)/scratch/LATEST-LICENSES LICENSES >/dev/null || (echo -e "\033[0;33mLICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-acmesolver cmd/acmesolver/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/acmesolver/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-cainjector cmd/cainjector/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/cainjector/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-ctl        cmd/ctl/LICENSES        >/dev/null || (echo -e "\033[0;33mcmd/ctl/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-controller cmd/controller/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/controller/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-webhook    cmd/webhook/LICENSES    >/dev/null || (echo -e "\033[0;33mcmd/webhook/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-integration-tests test/integration/LICENSES >/dev/null || (echo -e "\033[0;33mtest/integration/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(BINDIR)/scratch/LATEST-LICENSES-e2e-tests         test/e2e/LICENSES         >/dev/null || (echo -e "\033[0;33mtest/e2e/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
 
 .PHONY: verify-crds
 verify-crds: | $(NEEDS_GO) $(NEEDS_CONTROLLER-GEN) $(NEEDS_YQ)
 	./hack/check-crds.sh $(GO) $(CONTROLLER-GEN) $(YQ)
 
 .PHONY: update-licenses
-update-licenses: LICENSES
+update-licenses: LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/ctl/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES test/integration/LICENSES test/e2e/LICENSES
 
 .PHONY: update-crds
 update-crds: generate-test-crds patch-crds

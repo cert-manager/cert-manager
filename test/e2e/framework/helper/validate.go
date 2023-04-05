@@ -22,11 +22,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/validation"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/validation/certificates"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/validation/certificatesigningrequests"
-	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
 )
 
 // ValidateCertificate retrieves the issued certificate and runs all validation functions
