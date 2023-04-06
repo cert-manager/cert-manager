@@ -25,8 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -70,7 +70,7 @@ type dnsProviderConstructors struct {
 // the certificate, and configures it based on the referenced issuer.
 type Solver struct {
 	*controller.Context
-	secretLister            corev1listers.SecretLister
+	secretLister            internalinformers.SecretLister
 	dnsProviderConstructors dnsProviderConstructors
 	webhookSolvers          map[string]webhook.Solver
 }
@@ -488,7 +488,7 @@ func (s *Solver) dns01SolverForConfig(config *cmacme.ACMEChallengeSolverDNS01) (
 // NewSolver creates a Solver which can instantiate the appropriate DNS
 // provider.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
-	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	secretsLister := ctx.KubeSharedInformerFactory.Secrets().Lister()
 	webhookSolvers := []webhook.Solver{
 		&webhookslv.Webhook{},
 		rfc2136.New(rfc2136.WithNamespace(ctx.Namespace), rfc2136.WithSecretsLister(secretsLister)),
@@ -511,7 +511,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 
 	return &Solver{
 		Context:      ctx,
-		secretLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		dnsProviderConstructors: dnsProviderConstructors{
 			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,

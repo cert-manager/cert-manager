@@ -21,11 +21,9 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
@@ -51,16 +49,12 @@ type controller struct {
 	metrics *metrics.Metrics
 }
 
-func NewController(
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory,
-	metrics *metrics.Metrics,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
+func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := cmFactory.Certmanager().V1().Certificates()
+	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 
 	// Reconcile over all Certificate events. We do _not_ reconcile on Secret
 	// events that are related to Certificates. It is the responsibility of the
@@ -76,7 +70,7 @@ func NewController(
 
 	return &controller{
 		certificateLister: certificateInformer.Lister(),
-		metrics:           metrics,
+		metrics:           ctx.Metrics,
 	}, queue, mustSync
 }
 
@@ -107,11 +101,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 }
 
 func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	ctrl, queue, mustSync := NewController(
-		ctx.KubeSharedInformerFactory,
-		ctx.SharedInformerFactory,
-		ctx.Metrics,
-	)
+	ctrl, queue, mustSync := NewController(ctx)
 	c.controller = ctrl
 
 	return queue, mustSync, nil

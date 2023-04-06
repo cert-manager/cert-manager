@@ -23,11 +23,11 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
@@ -50,7 +50,7 @@ type controller struct {
 	challengeLister     cmacmelisters.ChallengeLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
-	secretLister        corelisters.SecretLister
+	secretLister        internalinformers.SecretLister
 
 	// ACME challenge solvers are instantiated once at the time of controller
 	// construction.
@@ -91,12 +91,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// obtain references to all the informers used by this controller
 	challengeInformer := ctx.SharedInformerFactory.Acme().V1().Challenges()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
-	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	secretInformer := ctx.KubeSharedInformerFactory.Secrets()
 	// we register these informers here so the HTTP01 solver has a synced
 	// cache when managing pod/service/ingress resources
-	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
-	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1().Ingresses()
+	podInformer := ctx.KubeSharedInformerFactory.Pods()
+	serviceInformer := ctx.KubeSharedInformerFactory.Services()
+	ingressInformer := ctx.KubeSharedInformerFactory.Ingresses()
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.

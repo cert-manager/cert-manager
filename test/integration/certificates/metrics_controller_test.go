@@ -95,7 +95,14 @@ func TestMetricsController(t *testing.T) {
 		}
 	}()
 
-	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)
+	controllerContext := controllerpkg.Context{
+		KubeSharedInformerFactory: factory,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Metrics: metricsHandler,
+		},
+	}
+	ctrl, queue, mustSync := controllermetrics.NewController(&controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"metrics_test",

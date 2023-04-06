@@ -33,15 +33,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -154,7 +154,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return nil, apierrors.NewNotFound(schema.GroupResource{}, "test-secret")
 			},
 			builder: &testpkg.Builder{
@@ -196,7 +196,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return nil, errors.New("generic error")
 			},
 			expectedErr: true,
@@ -242,7 +242,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{}, nil
 			},
 			builder: &testpkg.Builder{
@@ -310,7 +310,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{}, nil
 			},
 			builder: &testpkg.Builder{
@@ -378,7 +378,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "", venaficlient.ErrCustomFieldsType{Type: "test-type"}
@@ -449,7 +449,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "", errors.New("generic error")
@@ -520,7 +520,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "test-pickup-id", nil
@@ -582,7 +582,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, endpoint.ErrCertificatePending{}
@@ -633,7 +633,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, endpoint.ErrRetrieveCertificateTimeout{}
@@ -684,7 +684,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, errors.New("generic error")
@@ -735,7 +735,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return []byte("garbage"), nil
@@ -808,7 +808,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ string, _ corelisters.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
+			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return []byte(fmt.Sprintf("%s%s", certBundle.ChainPEM, certBundle.CAPEM)), nil
@@ -895,7 +895,7 @@ func TestProcessItem(t *testing.T) {
 
 			controller := certificatesigningrequests.New(
 				apiutil.IssuerVenafi,
-				func(*controller.Context) certificatesigningrequests.Signer { return venafi },
+				func(*controllerpkg.Context) certificatesigningrequests.Signer { return venafi },
 			)
 			controller.Register(test.builder.Context)
 			test.builder.Start()

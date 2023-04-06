@@ -22,16 +22,14 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/informers"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -54,7 +52,7 @@ type controller struct {
 	challengeLister     cmacmelisters.ChallengeLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
-	secretLister        corelisters.SecretLister
+	secretLister        internalinformers.SecretLister
 
 	// used for testing
 	clock clock.Clock
@@ -72,22 +70,13 @@ type controller struct {
 
 	// scheduledWorkQueue holds items to be re-queued after a period of time.
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
-
-	// logger to be used by this controller
-	log logr.Logger
 }
 
 // NewController constructs an orders controller using the provided options.
 func NewController(
 	log logr.Logger,
-	cmClient cmclient.Interface,
-	kubeInformerFactory informers.SharedInformerFactory,
-	cmInformerFactory cminformers.SharedInformerFactory,
-	accountRegistry accounts.Getter,
-	recorder record.EventRecorder,
-	clock clock.Clock,
+	ctx *controllerpkg.Context,
 	isNamespaced bool,
-	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 
 	// Create a queue used to queue up Orders to be processed.
@@ -97,13 +86,13 @@ func NewController(
 	)
 
 	// Create a scheduledWorkQueue to schedule Orders for re-processing.
-	scheduledWorkQueue := scheduler.NewScheduledWorkQueue(clock, queue.Add)
+	scheduledWorkQueue := scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add)
 
 	// Obtain references to all the informers used by this controller.
-	orderInformer := cmInformerFactory.Acme().V1().Orders()
-	issuerInformer := cmInformerFactory.Certmanager().V1().Issuers()
-	challengeInformer := cmInformerFactory.Acme().V1().Challenges()
-	secretInformer := kubeInformerFactory.Core().V1().Secrets()
+	orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders()
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
+	challengeInformer := ctx.SharedInformerFactory.Acme().V1().Challenges()
+	secretInformer := ctx.KubeSharedInformerFactory.Secrets()
 
 	// Build a list of InformerSynced functions. The controller will only begin
 	// processing items once all of these informers have synced.
@@ -124,7 +113,7 @@ func NewController(
 	// register event handlers and obtain a lister for ClusterIssuers.
 	var clusterIssuerLister cmlisters.ClusterIssuerLister
 	if !isNamespaced {
-		clusterIssuerInformer := cmInformerFactory.Certmanager().V1().ClusterIssuers()
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
 		clusterIssuerLister = clusterIssuerInformer.Lister()
 		// register handler function for clusterissuer resources
@@ -145,7 +134,7 @@ func NewController(
 	})
 
 	return &controller{
-		clock:               clock,
+		clock:               ctx.Clock,
 		queue:               queue,
 		scheduledWorkQueue:  scheduledWorkQueue,
 		orderLister:         orderLister,
@@ -154,10 +143,10 @@ func NewController(
 		secretLister:        secretLister,
 		clusterIssuerLister: clusterIssuerLister,
 		helper:              issuer.NewHelper(issuerLister, clusterIssuerLister),
-		recorder:            recorder,
-		cmClient:            cmClient,
-		accountRegistry:     accountRegistry,
-		fieldManager:        fieldManager,
+		recorder:            ctx.Recorder,
+		cmClient:            ctx.CMClient,
+		accountRegistry:     ctx.AccountRegistry,
+		fieldManager:        ctx.FieldManager,
 	}, queue, mustSync
 
 }
@@ -215,14 +204,8 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 
 	ctrl, queue, mustSync := NewController(
 		log,
-		ctx.CMClient,
-		ctx.KubeSharedInformerFactory,
-		ctx.SharedInformerFactory,
-		ctx.ACMEOptions.AccountRegistry,
-		ctx.Recorder,
-		ctx.Clock,
+		ctx,
 		isNamespaced,
-		ctx.FieldManager,
 	)
 	c.controller = ctrl
 

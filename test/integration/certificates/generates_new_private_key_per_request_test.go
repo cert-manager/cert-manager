@@ -40,7 +40,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/revisionmanager"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
-	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -320,23 +319,36 @@ func runAllControllers(t *testing.T, ctx context.Context, config *rest.Config) f
 	log := logf.Log
 	clock := clock.RealClock{}
 	metrics := metrics.New(log, clock)
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmCl,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Metrics: metrics,
+			Clock:   clock,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-issuing-test",
+	}
 
-	revCtrl, revQueue, revMustSync := revisionmanager.NewController(log, cmCl, cmFactory)
+	// TODO: set field mananager before calling each of those- is that what we do in actual code?
+	revCtrl, revQueue, revMustSync := revisionmanager.NewController(log, &controllerContext)
 	revisionManager := controllerpkg.NewController(ctx, "revisionmanager_controller", metrics, revCtrl.ProcessItem, revMustSync, nil, revQueue)
 
-	readyCtrl, readyQueue, readyMustSync := readiness.NewController(log, cmCl, factory, cmFactory, policies.NewReadinessPolicyChain(clock), pki.RenewalTime, readiness.BuildReadyConditionFromChain, "readiness")
+	readyCtrl, readyQueue, readyMustSync := readiness.NewController(log, &controllerContext, policies.NewReadinessPolicyChain(clock), pki.RenewalTime, readiness.BuildReadyConditionFromChain)
 	readinessManager := controllerpkg.NewController(ctx, "readiness_controller", metrics, readyCtrl.ProcessItem, readyMustSync, nil, readyQueue)
 
-	issueCtrl, issueQueue, issueMustSync := issuing.NewController(log, kubeClient, cmCl, factory, cmFactory, &testpkg.FakeRecorder{}, clock, controllerpkg.CertificateOptions{}, "issuing")
+	issueCtrl, issueQueue, issueMustSync := issuing.NewController(log, &controllerContext)
 	issueManager := controllerpkg.NewController(ctx, "issuing_controller", metrics, issueCtrl.ProcessItem, issueMustSync, nil, issueQueue)
 
-	reqCtrl, reqQueue, reqMustSync := requestmanager.NewController(log, cmCl, factory, cmFactory, &testpkg.FakeRecorder{}, clock, controllerpkg.CertificateOptions{}, "requestmanager")
+	reqCtrl, reqQueue, reqMustSync := requestmanager.NewController(log, &controllerContext)
 	requestManager := controllerpkg.NewController(ctx, "requestmanager_controller", metrics, reqCtrl.ProcessItem, reqMustSync, nil, reqQueue)
 
-	keyCtrl, keyQueue, keyMustSync := keymanager.NewController(log, cmCl, kubeClient, factory, cmFactory, &testpkg.FakeRecorder{}, "keymanager")
+	keyCtrl, keyQueue, keyMustSync := keymanager.NewController(log, &controllerContext)
 	keyManager := controllerpkg.NewController(ctx, "keymanager_controller", metrics, keyCtrl.ProcessItem, keyMustSync, nil, keyQueue)
 
-	triggerCtrl, triggerQueue, triggerMustSync := trigger.NewController(log, cmCl, factory, cmFactory, &testpkg.FakeRecorder{}, clock, policies.NewTriggerPolicyChain(clock).Evaluate, "trigger")
+	triggerCtrl, triggerQueue, triggerMustSync := trigger.NewController(log, &controllerContext, policies.NewTriggerPolicyChain(clock).Evaluate)
 	triggerManager := controllerpkg.NewController(ctx, "trigger_controller", metrics, triggerCtrl.ProcessItem, triggerMustSync, nil, triggerQueue)
 
 	return framework.StartInformersAndControllers(t, factory, cmFactory, revisionManager, requestManager, keyManager, triggerManager, readinessManager, issueManager)

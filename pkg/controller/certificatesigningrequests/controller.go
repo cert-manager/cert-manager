@@ -128,7 +128,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 
 	// obtain references to all the informers used by this controller
-	csrInformer := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests()
+	csrInformer := ctx.KubeSharedInformerFactory.CertificateSigningRequests()
 
 	// build a list of InformerSynced functions that will be returned by the
 	// Register method. The controller will only begin processing items once all

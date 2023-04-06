@@ -22,9 +22,9 @@ import (
 	"fmt"
 
 	core "k8s.io/client-go/kubernetes/typed/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -68,7 +68,7 @@ func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, er
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
 
-	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	secretsLister := ctx.KubeSharedInformerFactory.Secrets().Lister()
 
 	a := &Acme{
 		issuer:                   issuer,
@@ -90,7 +90,7 @@ func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, er
 type keyFromSecretFunc func(ctx context.Context, namespace, name, keyName string) (crypto.Signer, error)
 
 // newKeyFromSecret returns an implementation of keyFromSecretFunc for a secrets lister.
-func newKeyFromSecret(secretLister corelisters.SecretLister) keyFromSecretFunc {
+func newKeyFromSecret(secretLister internalinformers.SecretLister) keyFromSecretFunc {
 	return func(ctx context.Context, namespace, name, keyName string) (crypto.Signer, error) {
 		return kube.SecretTLSKeyRef(ctx, secretLister, namespace, name, keyName)
 	}

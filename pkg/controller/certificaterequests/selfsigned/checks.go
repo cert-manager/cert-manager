@@ -45,9 +45,9 @@ func handleSecretReferenceWorkFunc(log logr.Logger,
 ) func(obj any) {
 	return func(obj any) {
 		log := log.WithName("handleSecretReference")
-		secret, ok := obj.(*corev1.Secret)
+		secret, ok := controllerpkg.ToSecret(obj)
 		if !ok {
-			log.Error(nil, "object is not a secret")
+			log.Error(nil, "object is not a secret", "object", obj)
 			return
 		}
 		log = logf.WithResource(log, secret)

@@ -74,9 +74,9 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsSer
 func NewSolver(ctx *controller.Context) (*Solver, error) {
 	return &Solver{
 		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Lister(),
+		podLister:        ctx.KubeSharedInformerFactory.Pods().Lister(),
+		serviceLister:    ctx.KubeSharedInformerFactory.Services().Lister(),
+		ingressLister:    ctx.KubeSharedInformerFactory.Ingresses().Lister(),
 		httpRouteLister:  ctx.GWShared.Gateway().V1beta1().HTTPRoutes().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,

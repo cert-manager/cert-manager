@@ -20,14 +20,13 @@ package fake
 import (
 	"time"
 
-	corelisters "k8s.io/client-go/listers/core/v1"
-
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // Vault is a mock implementation of the Vault interface
 type Vault struct {
-	NewFn                           func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)
+	NewFn                           func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*Vault, error)
 	SignFn                          func([]byte, time.Duration) ([]byte, []byte, error)
 	IsVaultInitializedAndUnsealedFn func() error
 }
@@ -43,7 +42,7 @@ func New() *Vault {
 		},
 	}
 
-	v.NewFn = func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error) {
+	v.NewFn = func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*Vault, error) {
 		return v, nil
 	}
 
@@ -64,13 +63,13 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 }
 
 // WithNew sets the fake Vault's New function.
-func (v *Vault) WithNew(f func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)) *Vault {
+func (v *Vault) WithNew(f func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*Vault, error)) *Vault {
 	v.NewFn = f
 	return v
 }
 
 // New call NewFn and returns a pointer to the fake Vault.
-func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer) (*Vault, error) {
+func (v *Vault) New(ns string, sl internalinformers.SecretLister, iss cmapi.GenericIssuer) (*Vault, error) {
 	_, err := v.NewFn(ns, sl, iss)
 	if err != nil {
 		return nil, err

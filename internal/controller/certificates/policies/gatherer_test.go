@@ -168,7 +168,7 @@ func TestDataForCertificate(t *testing.T) {
 			// type by registering a fake handler.
 			noop := cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {}}
 			test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(noop)
-			test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Informer().AddEventHandler(noop)
+			test.builder.KubeSharedInformerFactory.Secrets().Informer().AddEventHandler(noop)
 
 			// Even though we are only relying on listers in this unit test
 			// and do not use the informer event handlers, we still need to
@@ -212,7 +212,7 @@ func TestDataForCertificate(t *testing.T) {
 
 			g := &Gatherer{
 				CertificateRequestLister: test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister(),
-				SecretLister:             test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+				SecretLister:             test.builder.KubeSharedInformerFactory.Secrets().Lister(),
 			}
 
 			ctx := logf.NewContext(context.Background(), logf.WithResource(log, test.givenCert))

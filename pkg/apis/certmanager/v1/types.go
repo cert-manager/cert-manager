@@ -19,8 +19,14 @@ package v1
 const (
 
 	// Common label keys added to resources
-
-	// Label key that indicates that a resource is of interest to cert-manager controller
+	// Label key that indicates that a resource is of interest to
+	// cert-manager controller By default this is set on
+	// certificate.spec.secretName secret as well as on the temporary
+	// private key Secret. If using SecretsFilteredCaching feature, you
+	// might want to set this (with a value of 'true') to any other Secrets
+	// that cert-manager controller needs to read, such as issuer
+	// credentials Secrets.
+	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md#risks-and-mitigations
 	PartOfCertManagerControllerLabelKey = "controller.cert-manager.io/fao"
 
 	// Common annotation keys added to resources

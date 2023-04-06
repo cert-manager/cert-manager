@@ -36,11 +36,12 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
@@ -822,7 +823,7 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	if test.fakeClient != nil {
-		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
+		v.clientBuilder = func(namespace string, secretsLister internalinformers.SecretLister,
 			issuer cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
@@ -830,7 +831,7 @@ func runTest(t *testing.T, test testT) {
 
 	controller := certificaterequests.New(
 		apiutil.IssuerVenafi,
-		func(*controller.Context) certificaterequests.Issuer { return v },
+		func(*controllerpkg.Context) certificaterequests.Issuer { return v },
 	)
 	controller.Register(test.builder.Context)
 	test.builder.Start()

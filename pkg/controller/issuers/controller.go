@@ -20,13 +20,12 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -36,7 +35,7 @@ import (
 
 type controller struct {
 	issuerLister cmlisters.IssuerLister
-	secretLister corelisters.SecretLister
+	secretLister internalinformers.SecretLister
 
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
@@ -71,7 +70,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// obtain references to all the informers used by this controller
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
-	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	secretInformer := ctx.KubeSharedInformerFactory.Secrets()
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
@@ -99,14 +98,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 // TODO: replace with generic handleObject function (like Navigator)
 func (c *controller) secretDeleted(obj interface{}) {
 	log := c.log.WithName("secretDeleted")
-
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
+	secret, ok := controllerpkg.ToSecret(obj)
 	if !ok {
-		log.Error(nil, "object was not a secret object")
+		log.Error(nil, "object is not a secret", "object", obj)
 		return
 	}
+
 	log = logf.WithResource(log, secret)
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {

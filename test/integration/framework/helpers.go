@@ -26,13 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubectl/pkg/util/openapi"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -44,12 +44,12 @@ func NewEventRecorder(t *testing.T) record.EventRecorder {
 	return eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: t.Name()})
 }
 
-func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, informers.SharedInformerFactory, cmclient.Interface, cminformers.SharedInformerFactory) {
+func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, internalinformers.KubeInformerFactory, cmclient.Interface, cminformers.SharedInformerFactory) {
 	cl, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		t.Fatal(err)
 	}
-	factory := informers.NewSharedInformerFactory(cl, 0)
+	factory := internalinformers.NewBaseKubeInformerFactory(cl, 0, "")
 	cmCl, err := cmclient.NewForConfig(config)
 	if err != nil {
 		t.Fatal(err)
@@ -58,11 +58,11 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, inform
 	return cl, factory, cmCl, cmFactory
 }
 
-func StartInformersAndController(t *testing.T, factory informers.SharedInformerFactory, cmFactory cminformers.SharedInformerFactory, c controllerpkg.Interface) StopFunc {
+func StartInformersAndController(t *testing.T, factory internalinformers.KubeInformerFactory, cmFactory cminformers.SharedInformerFactory, c controllerpkg.Interface) StopFunc {
 	return StartInformersAndControllers(t, factory, cmFactory, c)
 }
 
-func StartInformersAndControllers(t *testing.T, factory informers.SharedInformerFactory, cmFactory cminformers.SharedInformerFactory, cs ...controllerpkg.Interface) StopFunc {
+func StartInformersAndControllers(t *testing.T, factory internalinformers.KubeInformerFactory, cmFactory cminformers.SharedInformerFactory, cs ...controllerpkg.Interface) StopFunc {
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
 

@@ -23,8 +23,8 @@ import (
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -46,7 +46,7 @@ type signingFn func([]*x509.Certificate, crypto.Signer, *x509.Certificate) (pki.
 
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	reporter *crutil.Reporter
 
@@ -67,7 +67,7 @@ func init() {
 func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &CA{
 		issuerOptions:     ctx.IssuerOptions,
-		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		templateGenerator: pki.GenerateTemplateFromCertificateRequest,
 		signingFn:         pki.SignCSRTemplate,

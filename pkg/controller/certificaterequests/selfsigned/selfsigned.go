@@ -25,11 +25,11 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -52,7 +52,7 @@ type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, inte
 
 type SelfSigned struct {
 	issuerOptions controllerpkg.IssuerOptions
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 
 	reporter *crutil.Reporter
 	recorder record.EventRecorder
@@ -72,7 +72,7 @@ func init() {
 				// Handle informed Secrets which may be referenced by the
 				// "cert-manager.io/private-key-secret-name" annotation.
 				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
-					secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Informer()
+					secretInformer := ctx.KubeSharedInformerFactory.Secrets().Informer()
 					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
 					helper := issuer.NewHelper(
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
@@ -95,7 +95,7 @@ func init() {
 func NewSelfSigned(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &SelfSigned{
 		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		recorder:      ctx.Recorder,
 		signingFn:     pki.SignCertificate,

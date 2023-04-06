@@ -17,8 +17,7 @@ limitations under the License.
 package selfsigned
 
 import (
-	corelisters "k8s.io/client-go/listers/core/v1"
-
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -30,11 +29,11 @@ type SelfSigned struct {
 	*controller.Context
 	issuer v1.GenericIssuer
 
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 }
 
 func NewSelfSigned(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, error) {
-	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	secretsLister := ctx.KubeSharedInformerFactory.Secrets().Lister()
 
 	return &SelfSigned{
 		Context:       ctx,

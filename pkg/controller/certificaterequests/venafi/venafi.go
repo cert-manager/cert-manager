@@ -23,10 +23,10 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -47,7 +47,7 @@ const (
 
 type Venafi struct {
 	issuerOptions controllerpkg.IssuerOptions
-	secretsLister corelisters.SecretLister
+	secretsLister internalinformers.SecretLister
 	reporter      *crutil.Reporter
 	cmClient      clientset.Interface
 
@@ -68,7 +68,7 @@ func init() {
 func NewVenafi(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &Venafi{
 		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		clientBuilder: venaficlient.New,
 		metrics:       ctx.Metrics,
