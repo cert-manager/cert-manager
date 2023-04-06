@@ -35,8 +35,11 @@ var (
 	orderGvk = cmacme.SchemeGroupVersion.WithKind("Order")
 )
 
-func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order) ([]cmacme.Challenge, error) {
-	chs := make([]cmacme.Challenge, 0)
+// buildPartialRequiredChallenges builds partial required ACME challenges by
+// looking at authorization on order spec and related issuer. It does not call
+// ACME. ensureKeysForChallenge must be called before creating the Challenge.
+func buildPartialRequiredChallenges(ctx context.Context, issuer cmapi.GenericIssuer, o *cmacme.Order) ([]*cmacme.Challenge, error) {
+	chs := make([]*cmacme.Challenge, 0)
 	for _, a := range o.Status.Authorizations {
 		if a.InitialState == cmacme.Valid {
 			wc := false
@@ -46,17 +49,20 @@ func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cm
 			logf.FromContext(ctx).V(logf.DebugLevel).Info("Authorization already valid, not creating Challenge resource", "identifier", a.Identifier, "is_wildcard", wc)
 			continue
 		}
-		ch, err := buildChallenge(ctx, cl, issuer, o, a)
+		ch, err := buildPartialChallenge(ctx, issuer, o, a)
 		if err != nil {
 			return nil, err
 		}
-		chs = append(chs, *ch)
+		chs = append(chs, ch)
 	}
 	return chs, nil
 }
 
-func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.Challenge, error) {
-	chSpec, err := challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
+// buildPartialChallenge builds a challenge for the required ACME Authorization.
+// The spec will be populated with fields that can be determined by looking at
+// the ACME Authorization object returned in Order.
+func buildPartialChallenge(ctx context.Context, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.Challenge, error) {
+	chSpec, err := partialChallengeSpecForAuthorization(ctx, issuer, o, authz)
 	if err != nil {
 		// TODO: in this case, we should probably not return the error as it's
 		//  unlikely we can make it succeed by retrying.
@@ -78,7 +84,10 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 	}, nil
 }
 
-func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.ChallengeSpec, error) {
+// partialChallengeSpecForAuthorization builds a partial challenge spec by
+// looking at the ACME authorization object and issuer. It does not make any
+// ACME calls.
+func partialChallengeSpecForAuthorization(ctx context.Context, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.ChallengeSpec, error) {
 	log := logf.FromContext(ctx, "challengeSpecForAuthorization")
 	dbg := log.V(logf.DebugLevel)
 
@@ -258,11 +267,6 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		return nil, err
 	}
 
-	key, err := keyForChallenge(cl, selectedChallenge.Token, chType)
-	if err != nil {
-		return nil, err
-	}
-
 	// 4. handle overriding the HTTP01 ingress class and name fields using the
 	//    ACMECertificateHTTP01IngressNameOverride & Class annotations
 	if err := applyIngressParameterAnnotationOverrides(o, selectedSolver); err != nil {
@@ -276,7 +280,6 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		URL:              selectedChallenge.URL,
 		DNSName:          authz.Identifier,
 		Token:            selectedChallenge.Token,
-		Key:              key,
 		// selectedSolver cannot be nil due to the check above.
 		Solver:    *selectedSolver,
 		Wildcard:  wc,
@@ -321,15 +324,26 @@ func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMECha
 	return nil
 }
 
-func keyForChallenge(cl acmecl.Interface, token string, chType cmacme.ACMEChallengeType) (string, error) {
-	switch chType {
-	case cmacme.ACMEChallengeTypeHTTP01:
-		return cl.HTTP01ChallengeResponse(token)
-	case cmacme.ACMEChallengeTypeDNS01:
-		return cl.DNS01ChallengeRecord(token)
-	default:
-		return "", fmt.Errorf("unsupported challenge type: %v", chType)
+func ensureKeysForChallenges(cl acmecl.Interface, challenges []*cmacme.Challenge) ([]*cmacme.Challenge, error) {
+	for _, ch := range challenges {
+		var (
+			key string
+			err error
+		)
+		switch ch.Spec.Type {
+		case cmacme.ACMEChallengeTypeHTTP01:
+			key, err = cl.HTTP01ChallengeResponse(ch.Spec.Token)
+		case cmacme.ACMEChallengeTypeDNS01:
+			key, err = cl.DNS01ChallengeRecord(ch.Spec.Token)
+		default:
+			return nil, fmt.Errorf("challenge %s has unsupported challenge type: %s", ch.Name, ch.Spec.Type)
+		}
+		if err != nil {
+			return nil, err
+		}
+		ch.Spec.Key = key
 	}
+	return challenges, nil
 }
 
 func anyChallengesFailed(chs []*cmacme.Challenge) bool {

@@ -121,7 +121,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	}
 
 	dbg.Info("Computing list of Challenge resources that need to exist to complete this Order")
-	requiredChallenges, err := buildRequiredChallenges(ctx, cl, genericIssuer, o)
+	requiredChallenges, err := buildPartialRequiredChallenges(ctx, genericIssuer, o)
 	if err != nil {
 		log.Error(err, "Failed to determine the list of Challenge resources needed for the Order")
 		c.recorder.Eventf(o, corev1.EventTypeWarning, reasonSolver, "Failed to determine a valid solver configuration for the set of domains on the Order: %v", err)
@@ -142,6 +142,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	switch {
 	case needToCreateChallenges:
 		log.V(logf.DebugLevel).Info("Creating additional Challenge resources to complete Order")
+		requiredChallenges, err = ensureKeysForChallenges(cl, requiredChallenges)
+		if err != nil {
+			return err
+		}
 		return c.createRequiredChallenges(ctx, o, requiredChallenges)
 	case needToDeleteChallenges:
 		log.V(logf.DebugLevel).Info("Deleting leftover Challenge resources no longer required by Order")
@@ -159,6 +163,14 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	if o.Status.State == cmacme.Ready {
 		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
 		return c.finalizeOrder(ctx, cl, o, genericIssuer)
+	}
+
+	// At this point, if no Challenges have failed or reached a final state,
+	// we can return without taking any action. This controller will resync
+	// the Order on any owned Challenge events.
+	if !anyChallengesFailed(challenges) && !allChallengesFinal(challenges) {
+		log.V(logf.DebugLevel).Info("No action taken")
+		return nil
 	}
 
 	// Note: each of the following code paths uses the ACME Order retrieved
@@ -181,9 +193,14 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	switch {
 	case anyChallengesFailed(challenges):
-		// TODO (@munnerz): instead of waiting for the ACME server to mark this
-		//  Order as failed, we could just mark the Order as failed as there is
-		//  no way that we will attempt and continue the order anyway.
+		// TODO (@munnerz): instead of waiting for the ACME server to
+		// mark this Order as failed, we could just mark the Order as
+		// failed as there is no way that we will attempt and continue
+		// the order anyway. This might, however, be a breaking change
+		// in edge cases where the status of the order resource in ACME
+		// server cannot be determined from challenge resource statuses
+		// correctly. Do not change this unless there is a real need for
+		// it.
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
@@ -386,7 +403,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 	return nil
 }
 
-func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme.Challenge) (bool, error) {
+func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []*cmacme.Challenge) (bool, error) {
 	for _, ch := range requiredChallenges {
 		_, err := c.challengeLister.Challenges(ch.Namespace).Get(ch.Name)
 		if apierrors.IsNotFound(err) {
@@ -399,9 +416,9 @@ func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme
 	return false, nil
 }
 
-func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
+func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []*cmacme.Challenge) error {
 	for _, ch := range requiredChallenges {
-		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(ctx, &ch, metav1.CreateOptions{})
+		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(ctx, ch, metav1.CreateOptions{})
 		if apierrors.IsAlreadyExists(err) {
 			continue
 		}
@@ -413,7 +430,7 @@ func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Ord
 	return nil
 }
 
-func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallenges []cmacme.Challenge) (bool, error) {
+func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallenges []*cmacme.Challenge) (bool, error) {
 	leftoverChallenges, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return false, err
@@ -422,7 +439,7 @@ func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallen
 	return len(leftoverChallenges) > 0, nil
 }
 
-func (c *controller) deleteLeftoverChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
+func (c *controller) deleteLeftoverChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []*cmacme.Challenge) error {
 	leftover, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return err
@@ -452,7 +469,7 @@ func (c *controller) deleteAllChallenges(ctx context.Context, o *cmacme.Order) e
 	return nil
 }
 
-func (c *controller) determineLeftoverChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) ([]*cmacme.Challenge, error) {
+func (c *controller) determineLeftoverChallenges(o *cmacme.Order, requiredChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, error) {
 	requiredNames := map[string]struct{}{}
 	for _, ch := range requiredChallenges {
 		requiredNames[ch.Name] = struct{}{}

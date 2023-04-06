@@ -60,6 +60,12 @@ func SetChallengeToken(t string) ChallengeModifier {
 	}
 }
 
+func SetChallengeKey(k string) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Key = k
+	}
+}
+
 // SetIssuer sets the challenge.spec.issuerRef field
 func SetChallengeIssuer(o cmmeta.ObjectReference) ChallengeModifier {
 	return func(c *cmacme.Challenge) {

@@ -206,10 +206,16 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 			return "key", nil
 		},
 	}
-	testAuthorizationChallenge, err := buildChallenge(context.TODO(), fakeHTTP01ACMECl, testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
+	testAuthorizationChallenge, err := buildPartialChallenge(context.TODO(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
+
 	if err != nil {
 		t.Fatalf("error building Challenge resource test fixture: %v", err)
 	}
+	key, err := fakeHTTP01ACMECl.FakeHTTP01ChallengeResponse(testAuthorizationChallenge.Spec.Token)
+	if err != nil {
+		t.Fatalf("error building Challenge resource test fixture: %v", err)
+	}
+	testAuthorizationChallenge.Spec.Key = key
 	testAuthorizationChallengeValid := testAuthorizationChallenge.DeepCopy()
 	testAuthorizationChallengeValid.Status.State = cmacme.Valid
 	testAuthorizationChallengeInvalid := testAuthorizationChallenge.DeepCopy()
@@ -338,7 +344,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
 				ExpectedEvents: []string{
-					`Normal Created Created Challenge resource "testorder-2179654896" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-756011405" for domain "test.com"`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -490,9 +496,6 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
-					return testACMEOrderPending, nil
-				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
 					return "key", nil
