@@ -319,9 +319,8 @@ $(BINDIR)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(BINDIR)/downloaded
 # possible with go install. That's a problem when cross-compiling for
 # linux/arm64 when running on darwin/arm64.
 $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble/pebble: $(BINDIR)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz | $(NEEDS_GO)
-	@mkdir -p $(dir $@)
-	tar xzf $< -C $(dir $@)
-	cd $(dir $@)pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) $(GOFLAGS) -o $(CURDIR)/$@ ./cmd/pebble
+	tar xzf $< -C /tmp
+	cd /tmp/pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) $(GOFLAGS) -o $(CURDIR)/$@ ./cmd/pebble
 
 $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar: $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble/pebble make/config/pebble/Containerfile.pebble
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
