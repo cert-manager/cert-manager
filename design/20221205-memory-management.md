@@ -305,7 +305,7 @@ Test the memory spike caused by the inital LIST-ing of `Secret`s, the size of ca
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/createsecrets.png?raw=true)
+![alt text](/design/images/20221205-memory-management/createsecrets.png)
 
 Install cert-manager from [latest master with client-go metrics enabled](https://github.com/irbekrm/cert-manager/tree/client_go_metrics).
 
@@ -313,17 +313,17 @@ Wait for cert-manager to start and populate the caches.
 
 Apply a label to all `Secret`s to initate cache resync:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/labelsecret.png?raw=true)
+![alt text](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that memory consumption spikes on controller startup when all `Secret`s are initally listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/latestmastersecrets.png?raw=true)
+![alt text](/design/images/20221205-memory-management/latestmastersecrets.png)
 
 ##### partial metadata prototype
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/createsecrets.png?raw=true)
+![alt text](/design/images/20221205-memory-management/createsecrets.png)
 
 Deploy cert-manager from [partial metadata prototype](https://github.com/irbekrm/cert-manager/tree/partial_metadata).
 
@@ -331,11 +331,11 @@ Wait for cert-manager to start and populate the caches.
 
 Apply a label to all `Secret`s to initate cache resync:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/labelsecret.png?raw=true)
+![alt text](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that the memory consumption is significantly lower:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialmetadatasecrets.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialmetadatasecrets.png)
 
 #### Issuance of a large number of `Certificate`s
 
@@ -348,30 +348,30 @@ Here is a script that sets up the issuers, creates the `Certificate`s, waits for
 
 This test was run against a version of cert-manager that corresponds to v1.11.0-alpha.2 with some added client-go metrics https://github.com/irbekrm/cert-manager/tree/client_go_metrics.
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/masterissuanceterminal.png?raw=true)
+![alt text](/design/images/20221205-memory-management/masterissuanceterminal.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/mastercertmanager.png?raw=true)
+![alt text](/design/images/20221205-memory-management/mastercertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/masterkubeapiserver.png?raw=true)
+![alt text](/design/images/20221205-memory-management/masterkubeapiserver.png)
 
 ##### partial metadata
 
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialnolabels.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialnolabels.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialnolabelscertmanager.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialnolabelskubeapiserver.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialnolabelskubeapiserver.png)
 
 The issuance is slightly slowed down because on each issuance cert-manager needs to get the unlabelled CA `Secret` directly from kube apiserver.
 Users could mitigate this by adding cert-manager labels to the CA `Secret`s.
 Run a modified version of the same script, but [with CA `Secret`s labelled](https://gist.github.com/irbekrm/bc56a917a164b1a3a097bda483def0b8#file-measure-issuance-time-sh-L31-L34):
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partiallabels.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partiallabels.png)
 
 For CA issuers, normally a `Secret` will be retrieved once per issuer reconcile and once per certificate request signing. In some cases, two `Secret`s might be retrieved during certificate request signing see [secrets for issuers](#secrets-for-clusterissuers). We could look into improving this, by initializing a client with credentials and sharing with certificate request controllers, similarly to how it's currently done with [ACME clients](https://github.com/cert-manager/cert-manager/blob/v1.11.0/pkg/controller/context.go#L188-L190).
 
@@ -612,17 +612,17 @@ See performance of the protototype:
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/createsecrets.png?raw=true)
+![alt text](/design/images/20221205-memory-management/createsecrets.png)
 
 Deploy cert-manager from https://github.com/irbekrm/cert-manager/tree/experimental_transform_funcs
 
 Wait for cert-manager caches to sync, then run a command to label all `Secret`s to make caches resync:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/labelsecret.png?raw=true)
+![alt text](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that altough altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
 
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/transformfunctionsgrafana.png?raw=true)
+![alt text](/design/images/20221205-memory-management/transformfunctionsgrafana.png)
 
 ### Use PartialMetadata only
 
@@ -642,13 +642,13 @@ The following metrics are approximate as the prototype could probably be optimiz
 Deploy cert-manager from https://github.com/irbekrm/cert-manager/tree/just_partial
 
 Run a script to set up 10 CA issuers, create 500 certificates and observe that the time taken is significantly higher than for latest version of cert-manager:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialonly.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialonly.png)
 
 Observe high request latency for cert-manager:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialonlycertmanager.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialonlycertmanager.png)
 
 Observe a large number of additional requests to kube apiserver:
-![alt text](https://github.com/irbekrm/cert-manager/blob/memory_design/design/images/20221205-memory-management/partialonlykubeapiserver.png?raw=true)
+![alt text](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
 
 ### Use paging to limit the memory spike when controller starts up
 
