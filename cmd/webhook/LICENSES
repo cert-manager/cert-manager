@@ -2,7 +2,7 @@ github.com/Azure/go-ntlmssp,https://github.com/Azure/go-ntlmssp/blob/cb9428e4ac1
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
 github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
 github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.1.3/LICENSE,MIT
-github.com/cert-manager/cert-manager,Unknown,Apache-2.0
+github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/webhook-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/webhook-binary/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/v1.1.1/LICENSE,ISC

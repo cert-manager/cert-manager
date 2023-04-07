@@ -9,11 +9,11 @@ github.com/asaskevich/govalidator,https://github.com/asaskevich/govalidator/blob
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
 github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
 github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.1.3/LICENSE,MIT
-github.com/cert-manager/cert-manager,Unknown,Apache-2.0
-github.com/cert-manager/cert-manager/cmctl-binary,Unknown,Apache-2.0
+github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
+github.com/cert-manager/cert-manager/cmctl-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/cmctl-binary/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/integration-tests,https://github.com/cert-manager/cert-manager/blob/HEAD/integration-tests/LICENSE,Apache-2.0
-github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util,Unknown,MIT
-github.com/cert-manager/cert-manager/webhook-binary/app,Unknown,Apache-2.0
+github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/util/LICENSE,MIT
+github.com/cert-manager/cert-manager/webhook-binary/app,https://github.com/cert-manager/cert-manager/blob/HEAD/webhook-binary/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/chai2010/gettext-go,https://github.com/chai2010/gettext-go/blob/v1.0.2/LICENSE,BSD-3-Clause
 github.com/containerd/containerd,https://github.com/containerd/containerd/blob/v1.6.18/LICENSE,Apache-2.0
