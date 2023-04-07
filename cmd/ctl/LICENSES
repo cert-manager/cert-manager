@@ -49,8 +49,8 @@ github.com/gorilla/mux,https://github.com/gorilla/mux/blob/v1.8.0/LICENSE,BSD-3-
 github.com/gosuri/uitable,https://github.com/gosuri/uitable/blob/v0.0.4/LICENSE,MIT
 github.com/gosuri/uitable/util/wordwrap,https://github.com/gosuri/uitable/blob/v0.0.4/util/wordwrap/LICENSE.md,MIT
 github.com/gregjones/httpcache,https://github.com/gregjones/httpcache/blob/9cad4c3443a7/LICENSE.txt,MIT
-github.com/huandu/xstrings,https://github.com/huandu/xstrings/blob/v1.3.3/LICENSE,MIT
-github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.12/LICENSE,BSD-3-Clause
+github.com/huandu/xstrings,https://github.com/huandu/xstrings/blob/v1.4.0/LICENSE,MIT
+github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,BSD-3-Clause
 github.com/jmoiron/sqlx,https://github.com/jmoiron/sqlx/blob/v1.3.5/LICENSE,MIT
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
@@ -63,7 +63,7 @@ github.com/lib/pq,https://github.com/lib/pq/blob/v1.10.7/LICENSE.md,MIT
 github.com/liggitt/tabwriter,https://github.com/liggitt/tabwriter/blob/89fcab3d43de/LICENSE,BSD-3-Clause
 github.com/mailru/easyjson,https://github.com/mailru/easyjson/blob/v0.7.7/LICENSE,MIT
 github.com/mattn/go-colorable,https://github.com/mattn/go-colorable/blob/v0.1.13/LICENSE,MIT
-github.com/mattn/go-isatty,https://github.com/mattn/go-isatty/blob/v0.0.16/LICENSE,MIT
+github.com/mattn/go-isatty,https://github.com/mattn/go-isatty/blob/v0.0.17/LICENSE,MIT
 github.com/mattn/go-runewidth,https://github.com/mattn/go-runewidth/blob/v0.0.13/LICENSE,MIT
 github.com/matttproud/golang_protobuf_extensions/pbutil,https://github.com/matttproud/golang_protobuf_extensions/blob/v1.0.4/LICENSE,Apache-2.0
 github.com/mitchellh/copystructure,https://github.com/mitchellh/copystructure/blob/v1.2.0/LICENSE,MIT
@@ -87,12 +87,12 @@ github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.37.0/L
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.37.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.8.0/LICENSE,Apache-2.0
 github.com/rivo/uniseg,https://github.com/rivo/uniseg/blob/v0.2.0/LICENSE.txt,MIT
-github.com/rubenv/sql-migrate,https://github.com/rubenv/sql-migrate/blob/v1.2.0/LICENSE,MIT
-github.com/rubenv/sql-migrate/sqlparse,https://github.com/rubenv/sql-migrate/blob/v1.2.0/sqlparse/LICENSE,MIT
+github.com/rubenv/sql-migrate,https://github.com/rubenv/sql-migrate/blob/v1.3.1/LICENSE,MIT
+github.com/rubenv/sql-migrate/sqlparse,https://github.com/rubenv/sql-migrate/blob/v1.3.1/sqlparse/LICENSE,MIT
 github.com/russross/blackfriday/v2,https://github.com/russross/blackfriday/blob/v2.1.0/LICENSE.txt,BSD-2-Clause
-github.com/shopspring/decimal,https://github.com/shopspring/decimal/blob/v1.2.0/LICENSE,MIT
+github.com/shopspring/decimal,https://github.com/shopspring/decimal/blob/v1.3.1/LICENSE,MIT
 github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.9.0/LICENSE,MIT
-github.com/spf13/cast,https://github.com/spf13/cast/blob/v1.4.1/LICENSE,MIT
+github.com/spf13/cast,https://github.com/spf13/cast/blob/v1.5.0/LICENSE,MIT
 github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.6.1/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 github.com/xeipuuv/gojsonpointer,https://github.com/xeipuuv/gojsonpointer/blob/4e3ac2762d5f/LICENSE-APACHE-2.0.txt,Apache-2.0
@@ -114,7 +114,7 @@ google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
-helm.sh/helm/v3,https://github.com/helm/helm/blob/v3.11.1/LICENSE,Apache-2.0
+helm.sh/helm/v3,https://github.com/helm/helm/blob/v3.11.2/LICENSE,Apache-2.0
 k8s.io/api,https://github.com/kubernetes/api/blob/v0.26.3/LICENSE,Apache-2.0
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,https://github.com/kubernetes/apiextensions-apiserver/blob/v0.26.3/LICENSE,Apache-2.0
 k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.26.3/LICENSE,Apache-2.0
