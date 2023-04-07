@@ -18,7 +18,7 @@ package configfile
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -35,10 +35,10 @@ type Filesystem interface {
 type realFS struct{}
 
 func (fs realFS) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
+	return os.ReadFile(filename)
 }
 
-// NewRealFS builds a Filesystem that wraps around `ioutil.ReadFile`.
+// NewRealFS builds a Filesystem that wraps around `os.ReadFile`.
 func NewRealFS() Filesystem {
 	return realFS{}
 }
