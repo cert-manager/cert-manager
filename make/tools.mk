@@ -26,8 +26,8 @@ CTR=docker
 
 TOOLS :=
 TOOLS += helm=v3.11.1
-TOOLS += kubectl=v1.26.2
-TOOLS += kind=v0.17.0
+TOOLS += kubectl=v1.26.3
+TOOLS += kind=v0.18.0
 TOOLS += controller-gen=v0.11.3
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=c35ba39e591f1e5150525ca0fef222beb719de8c
@@ -44,9 +44,9 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 TOOLS += ko=v0.12.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
-GATEWAY_API_VERSION=v0.6.0
+GATEWAY_API_VERSION=v0.6.2
 
-K8S_CODEGEN_VERSION=v0.26.2
+K8S_CODEGEN_VERSION=v0.26.3
 
 KUBEBUILDER_ASSETS_VERSION=1.26.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
@@ -246,9 +246,9 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # kubectl #
 ###########
 
-KUBECTL_linux_amd64_SHA256SUM=fcf86d21fb1a49b012bce7845cf00081d2dd7a59f424b28621799deceb5227b3
-KUBECTL_darwin_amd64_SHA256SUM=f5cc3c01e9b87523c4f25353b8c9c8a57a0b2d6074b0f64cabc181280a4a1822
-KUBECTL_darwin_arm64_SHA256SUM=b4ab288aa31352dc1b2c0de7845ec298b27685826b053da96aaec6d310cdc55c
+KUBECTL_linux_amd64_SHA256SUM=026c8412d373064ab0359ed0d1a25c975e9ce803a093d76c8b30c5996ad73e75
+KUBECTL_darwin_amd64_SHA256SUM=325164ce110a837d7ac0fdea819f00f88d0f1fe3e6c956ff800f92b6c7a6688c
+KUBECTL_darwin_arm64_SHA256SUM=aa3e0fd85611adfbbc71a46adbf12046bb54433c06b7dddff40f0569382b540a
 
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
@@ -259,9 +259,9 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=a8c045856db33f839908b6acb90dc8ec397253ffdaef7baf058f5a542e009b9c
-KIND_darwin_amd64_SHA256SUM=a4e9f4cf18ec762934f4acd68752fe085bcded3a736258de0367085525180342
-KIND_darwin_arm64_SHA256SUM=b9afee2707e711fb5d39049a361972f8c44ee7ce6145cafd0f7e4b47ceec1409
+KIND_linux_amd64_SHA256SUM=705c722b0a87c9068e183f6d8baecd155a97a9683949ca837c2a500c9aa95c63
+KIND_darwin_amd64_SHA256SUM=9c91e3a6f380ee4cab79094d3fade94eb10a4416d8d3a6d3e1bb9c616f392de4
+KIND_darwin_arm64_SHA256SUM=96e0765d385c4e5457dc95dc49f66d385727885dfe1ad77520af0a32b7f8ccb2
 
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) -sSfL https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
@@ -412,7 +412,7 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 # gatewayapi #
 ##############
 
-GATEWAY_API_SHA256SUM=7a6f00833ba23617d6b938cffc6f9cb7faddcc0997d0bd91f34614e42fe2d35d
+GATEWAY_API_SHA256SUM=732c370b6e3eb2d2ebf4dbaaeb4b2ac003c39a52e255e85f1e5be13e8dff8e95
 
 $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
