@@ -60,6 +60,15 @@ strategy: {}
   #   maxSurge: 0
   #   maxUnavailable: 1
 
+podDisruptionBudget:
+  enabled: false
+
+  minAvailable: 1
+  # maxUnavailable: 1
+
+  # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
+  # or a percentage value (e.g. 25%)
+
 # Comma separated list of feature gates that should be enabled on the
 # controller pod & webhook pod.
 featureGates: ""
@@ -276,6 +285,15 @@ webhook:
     seccompProfile:
       type: RuntimeDefault
 
+  podDisruptionBudget:
+    enabled: false
+
+    minAvailable: 1
+    # maxUnavailable: 1
+
+    # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
+    # or a percentage value (e.g. 25%)
+
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext:
@@ -447,6 +465,15 @@ cainjector:
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
+
+  podDisruptionBudget:
+    enabled: false
+
+    minAvailable: 1
+    # maxUnavailable: 1
+
+    # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
+    # or a percentage value (e.g. 25%)
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
