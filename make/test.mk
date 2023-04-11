@@ -122,7 +122,9 @@ e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
 	make/e2e.sh
 
 .PHONY: e2e-ci
-e2e-ci: e2e-setup-kind e2e-setup
+e2e-ci: | $(NEEDS_GO)
+	$(shell export HELM_BURST_LIMIT=-1)
+	$(MAKE) e2e-setup-kind e2e-setup
 	make/e2e-ci.sh
 
 $(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test

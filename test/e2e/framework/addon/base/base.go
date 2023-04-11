@@ -55,6 +55,9 @@ func (b *Base) Setup(c *config.Config) error {
 		return err
 	}
 
+	kubeConfig.Burst = 9000
+	kubeConfig.QPS = 9000
+
 	kubeClientset, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return err

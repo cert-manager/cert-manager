@@ -70,7 +70,7 @@ BINDIR=${BINDIR:-$_default_bindir}
 #  [6]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507019887451574272
 #  [7]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_cert-manager/4968/pull-cert-manager-make-e2e-v1-23/1507040653668782080
 
-nodes=20
+nodes=40
 
 flake_attempts=1
 

@@ -121,6 +121,10 @@ func (f *Framework) BeforeEach() {
 	By("Creating a kubernetes client")
 	kubeConfig, err := util.LoadConfig(f.Config.KubeConfig, f.Config.KubeContext)
 	Expect(err).NotTo(HaveOccurred())
+
+	kubeConfig.Burst = 9000
+	kubeConfig.QPS = 9000
+
 	f.KubeClientConfig = kubeConfig
 
 	f.KubeClientSet, err = kubernetes.NewForConfig(kubeConfig)
