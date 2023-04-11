@@ -166,6 +166,8 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		kubeConfig, err := testutil.LoadConfig(f.Config.KubeConfig, f.Config.KubeContext)
 		Expect(err).NotTo(HaveOccurred())
 
+		kubeConfig.QPS = 9000
+		kubeConfig.Burst = 9000
 		kubeConfig.BearerToken = fmt.Sprintf("%s", token)
 		kubeConfig.CertData = nil
 		kubeConfig.KeyData = nil

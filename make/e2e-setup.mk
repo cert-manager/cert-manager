@@ -247,6 +247,7 @@ e2e-setup-certmanager: $(BINDIR)/cert-manager.tgz $(foreach binaryname,controlle
 		--set startupapicheck.image.tag="$(TAG)" \
 		--set installCRDs=true \
 		--set featureGates="$(feature_gates_controller)" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200}" \
 		--set "webhook.extraArgs={--feature-gates=$(feature_gates_webhook)}" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
