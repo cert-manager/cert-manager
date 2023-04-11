@@ -204,9 +204,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting controller")
 
-			// TODO: make this either a constant or a command line flag
-			workers := 5
-			return iface.Run(workers, rootCtx.Done())
+			return iface.Run(opts.NumberOfConcurrentWorkers, rootCtx.Done())
 		})
 	}
 
