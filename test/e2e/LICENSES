@@ -44,14 +44,14 @@ github.com/hashicorp/hcl,https://github.com/hashicorp/hcl/blob/v1.0.0/LICENSE,MP
 github.com/hashicorp/vault/api,https://github.com/hashicorp/vault/blob/api/v1.8.2/api/LICENSE,MPL-2.0
 github.com/hashicorp/vault/sdk,https://github.com/hashicorp/vault/blob/sdk/v0.6.2/sdk/LICENSE,MPL-2.0
 github.com/hashicorp/yamux,https://github.com/hashicorp/yamux/blob/3520598351bb/LICENSE,MPL-2.0
-github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.12/LICENSE,BSD-3-Clause
+github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,BSD-3-Clause
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
 github.com/kr/pretty,https://github.com/kr/pretty/blob/v0.3.1/License,MIT
 github.com/kr/text,https://github.com/kr/text/blob/v0.2.0/License,MIT
 github.com/mailru/easyjson,https://github.com/mailru/easyjson/blob/v0.7.7/LICENSE,MIT
 github.com/mattn/go-colorable,https://github.com/mattn/go-colorable/blob/v0.1.13/LICENSE,MIT
-github.com/mattn/go-isatty,https://github.com/mattn/go-isatty/blob/v0.0.16/LICENSE,MIT
+github.com/mattn/go-isatty,https://github.com/mattn/go-isatty/blob/v0.0.17/LICENSE,MIT
 github.com/matttproud/golang_protobuf_extensions/pbutil,https://github.com/matttproud/golang_protobuf_extensions/blob/v1.0.4/LICENSE,Apache-2.0
 github.com/mitchellh/copystructure,https://github.com/mitchellh/copystructure/blob/v1.2.0/LICENSE,MIT
 github.com/mitchellh/go-testing-interface,https://github.com/mitchellh/go-testing-interface/blob/v1.0.0/LICENSE,MIT

@@ -1075,6 +1075,7 @@ k8s.io/kms v0.26.3/go.mod h1:69qGnf1NsFOQP07fBYqNLZklqEHSJF024JqYCaeVxHg=
 k8s.io/kube-aggregator v0.26.3 h1:nc4H5ymGkWPU3c9U9UM468JcmNENY/s/mDYVW3t3uRo=
 k8s.io/kube-aggregator v0.26.3/go.mod h1:SgBESB/+PfZAyceTPIanfQ7GtX9G/+mjfUbTHg3Twbo=
 k8s.io/kube-openapi v0.0.0-20230109183929-3758b55a6596 h1:8cNCQs+WqqnSpZ7y0LMQPKD+RZUHU17VqLPMW3qxnxc=
+k8s.io/kube-openapi v0.0.0-20230109183929-3758b55a6596/go.mod h1:/BYxry62FuDzmI+i9B+X2pqfySRmSOW2ARmj5Zbqhj0=
 k8s.io/utils v0.0.0-20230313181309-38a27ef9d749 h1:xMMXJlJbsU8w3V5N2FLDQ8YgU8s1EoULdbQBcAeNJkY=
 k8s.io/utils v0.0.0-20230313181309-38a27ef9d749/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
