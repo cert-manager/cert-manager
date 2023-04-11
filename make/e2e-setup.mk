@@ -263,7 +263,7 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 
 .PHONY: e2e-setup-gatewayapi
 e2e-setup-gatewayapi: $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(BINDIR)/scratch/kind-exists $(NEEDS_KUBECTL)
-	$(KUBECTL) apply -f $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
+	$(KUBECTL) apply --server-side -f $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
@@ -311,7 +311,7 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 		--set initImage.pullPolicy=Never \
 		kyverno kyverno/kyverno >/dev/null
 	@$(KUBECTL) create ns cert-manager >/dev/null 2>&1 || true
-	$(KUBECTL) apply -f make/config/kyverno/policy.yaml >/dev/null
+	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
 
 $(BINDIR)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(BINDIR)/downloaded
 	$(CURL) https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
@@ -387,7 +387,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 		--set envoy.service.clusterIP=${SERVICE_IP_PREFIX}.14 \
 		--set-file configInline=make/config/projectcontour/contour.yaml \
 		projectcontour bitnami/contour >/dev/null
-	$(KUBECTL) apply -f make/config/projectcontour/gateway.yaml
+	$(KUBECTL) apply --server-side -f make/config/projectcontour/gateway.yaml
 
 .PHONY: e2e-setup-sampleexternalissuer
 ifeq ($(CRI_ARCH),amd64)
