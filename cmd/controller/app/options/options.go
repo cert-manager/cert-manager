@@ -101,6 +101,10 @@ type ControllerOptions struct {
 
 	EnableCertificateOwnerRef bool
 
+	// The number of concurrent workers for each controller.
+	NumberOfConcurrentWorkers int
+	// MaxConcurrentChallenges determines the maximum number of challenges that can be
+	// scheduled as 'processing' at once.
 	MaxConcurrentChallenges int
 
 	// The host and port address, separated by a ':', that the Prometheus server
@@ -142,7 +146,8 @@ const (
 
 	defaultDNS01RecursiveNameserversOnly = false
 
-	defaultMaxConcurrentChallenges = 60
+	defaultNumberOfConcurrentWorkers = 5
+	defaultMaxConcurrentChallenges   = 60
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
@@ -246,6 +251,8 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
+		NumberOfConcurrentWorkers:         defaultNumberOfConcurrentWorkers,
+		MaxConcurrentChallenges:           defaultMaxConcurrentChallenges,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
 		EnablePprof:                       cmdutil.DefaultEnableProfiling,
 		PprofAddress:                      cmdutil.DefaultProfilerAddr,
@@ -358,6 +365,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 
+	fs.IntVar(&s.NumberOfConcurrentWorkers, "concurrent-workers", defaultNumberOfConcurrentWorkers, ""+
+		"The number of concurrent workers for each controller.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
