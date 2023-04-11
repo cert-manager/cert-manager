@@ -467,3 +467,9 @@ tidy:
 	cd cmd/webhook && go mod tidy
 	cd test/integration && go mod tidy
 	cd test/e2e && go mod tidy
+
+.PHONY: go-workspace
+go-workspace:
+	@rm -f go.work
+	go work init
+	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/webhook ./test/integration ./test/e2e
