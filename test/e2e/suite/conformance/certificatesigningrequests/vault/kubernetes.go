@@ -67,7 +67,10 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 type kubernetes struct {
 	testWithRootCA bool
-	vaultRole      string
+	// vaultRole is the name of the Vault role
+	vaultRole string
+	// saTokenSecretName is the name of the Secret containing the service account token
+	saTokenSecretName string
 
 	addon       *vault.Vault
 	initializer *vault.VaultInitializer
@@ -135,8 +138,7 @@ func (k *kubernetes) initVault(f *framework.Framework, boundNS string) {
 		Name:      "cm-e2e-create-vault-issuer",
 		Namespace: f.Namespace.Name,
 	}
-
-	k.vaultRole = "vault-issuer-" + util.RandStringRunes(5)
+	k.vaultRole = "vault-role-" + util.RandStringRunes(5)
 
 	Expect(k.addon.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup vault")
 	Expect(k.addon.Provision()).NotTo(HaveOccurred(), "failed to provision vault")
@@ -161,11 +163,16 @@ func (k *kubernetes) initVault(f *framework.Framework, boundNS string) {
 	Expect(k.initializer.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
 
 	By("Creating a ServiceAccount for Vault authentication")
-	boundSA := k.vaultRole
+
+	// boundNS is name of the service account for which a Secret containing the service account token will be created
+	boundSA := "vault-issuer-" + util.RandStringRunes(5)
 	err := k.initializer.CreateKubernetesRole(f.KubeClientSet, k.vaultRole, boundNS, boundSA)
 	Expect(err).NotTo(HaveOccurred())
-	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(context.TODO(), vault.NewVaultKubernetesSecret(k.vaultRole, k.vaultRole), metav1.CreateOptions{})
+
+	k.saTokenSecretName = "vault-sa-secret-" + util.RandStringRunes(5)
+	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(context.TODO(), vault.NewVaultKubernetesSecret(k.saTokenSecretName, boundSA), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
+
 	_, _, err = k.initializer.CreateAppRole()
 	Expect(err).NotTo(HaveOccurred())
 }
@@ -185,7 +192,7 @@ func (k *kubernetes) issuerSpec(f *framework.Framework) cmapi.IssuerSpec {
 						Role: k.vaultRole,
 						SecretRef: cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: k.vaultRole,
+								Name: k.saTokenSecretName,
 							},
 						},
 					},
