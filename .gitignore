@@ -19,3 +19,4 @@ _bin/
 user.bazelrc
 *.bak
 /go.work.sum
+**/go.work
