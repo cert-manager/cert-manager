@@ -50,21 +50,10 @@ type VaultInitializer struct {
 	APIServerCA        string // Kubernetes API Server CA certificate
 }
 
-func NewVaultTokenSecret(name string) *corev1.Secret {
+func NewVaultAppRoleSecret(secretName, secretId string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		StringData: map[string]string{
-			"token": vaultToken,
-		},
-	}
-}
-
-func NewVaultAppRoleSecret(name, secretId string) *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
+			GenerateName: secretName,
 		},
 		StringData: map[string]string{
 			"secretkey": secretId,
@@ -72,58 +61,10 @@ func NewVaultAppRoleSecret(name, secretId string) *corev1.Secret {
 	}
 }
 
-func NewVaultServiceAccount(name string) *corev1.ServiceAccount {
-	return &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-	}
-}
-
-func NewVaultServiceAccountRole(namespace, serviceAccountName string) *rbacv1.ClusterRole {
-	return &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("auth-delegator:%s:%s", namespace, serviceAccountName),
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"authentication.k8s.io"},
-				Resources: []string{"tokenreviews"},
-				Verbs:     []string{"create"},
-			},
-			{
-				APIGroups: []string{"authorization.k8s.io"},
-				Resources: []string{"subjectaccessreviews"},
-				Verbs:     []string{"create"},
-			},
-		},
-	}
-}
-
-func NewVaultServiceAccountClusterRoleBinding(roleName, namespace, subject string) *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: roleName,
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     roleName,
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Name:      subject,
-				Kind:      "ServiceAccount",
-				Namespace: namespace,
-			},
-		},
-	}
-}
-
-func NewVaultKubernetesSecret(name string, serviceAccountName string) *corev1.Secret {
+func NewVaultKubernetesSecret(secretName, serviceAccountName string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name: secretName,
 			Annotations: map[string]string{
 				"kubernetes.io/service-account.name": serviceAccountName,
 			},
@@ -218,10 +159,10 @@ func (v *VaultInitializer) Setup() error {
 
 func (v *VaultInitializer) Clean() error {
 	if err := v.client.Sys().Unmount("/" + v.IntermediateMount); err != nil {
-		return fmt.Errorf("Unable to unmount %v: %v", v.IntermediateMount, err)
+		return fmt.Errorf("unable to unmount %v: %v", v.IntermediateMount, err)
 	}
 	if err := v.client.Sys().Unmount("/" + v.RootMount); err != nil {
-		return fmt.Errorf("Unable to unmount %v: %v", v.RootMount, err)
+		return fmt.Errorf("unable to unmount %v: %v", v.RootMount, err)
 	}
 
 	v.proxy.clean()
@@ -235,7 +176,7 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 	policy := fmt.Sprintf("path \"%s\" { capabilities = [ \"create\", \"update\" ] }", role_path)
 	err := v.client.Sys().PutPolicy(v.Role, policy)
 	if err != nil {
-		return "", "", fmt.Errorf("Error creating policy: %s", err.Error())
+		return "", "", fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
 	// # create approle
@@ -247,21 +188,21 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 	baseUrl := path.Join("/v1", "auth", v.AppRoleAuthPath, "role", v.Role)
 	_, err = v.proxy.callVault("POST", baseUrl, "", params)
 	if err != nil {
-		return "", "", fmt.Errorf("Error creating approle: %s", err.Error())
+		return "", "", fmt.Errorf("error creating approle: %s", err.Error())
 	}
 
 	// # read the role-id
 	url := path.Join(baseUrl, "role-id")
 	roleId, err := v.proxy.callVault("GET", url, "role_id", map[string]string{})
 	if err != nil {
-		return "", "", fmt.Errorf("Error reading role_id: %s", err.Error())
+		return "", "", fmt.Errorf("error reading role_id: %s", err.Error())
 	}
 
 	// # read the secret-id
 	url = path.Join(baseUrl, "secret-id")
 	secretId, err := v.proxy.callVault("POST", url, "secret_id", map[string]string{})
 	if err != nil {
-		return "", "", fmt.Errorf("Error reading secret_id: %s", err.Error())
+		return "", "", fmt.Errorf("error reading secret_id: %s", err.Error())
 	}
 
 	return roleId, secretId, nil
@@ -271,12 +212,12 @@ func (v *VaultInitializer) CleanAppRole() error {
 	url := path.Join("/v1", "auth", v.AppRoleAuthPath, "role", v.Role)
 	_, err := v.proxy.callVault("DELETE", url, "", map[string]string{})
 	if err != nil {
-		return fmt.Errorf("Error deleting AppRole: %s", err.Error())
+		return fmt.Errorf("error deleting AppRole: %s", err.Error())
 	}
 
 	err = v.client.Sys().DeletePolicy(v.Role)
 	if err != nil {
-		return fmt.Errorf("Error deleting policy: %s", err.Error())
+		return fmt.Errorf("error deleting policy: %s", err.Error())
 	}
 
 	return nil
@@ -290,7 +231,7 @@ func (v *VaultInitializer) mountPKI(mount, ttl string) error {
 		},
 	}
 	if err := v.client.Sys().Mount("/"+mount, opts); err != nil {
-		return fmt.Errorf("Error mounting %s: %s", mount, err.Error())
+		return fmt.Errorf("error mounting %s: %s", mount, err.Error())
 	}
 
 	return nil
@@ -308,7 +249,7 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 
 	cert, err := v.proxy.callVault("POST", url, "certificate", params)
 	if err != nil {
-		return "", fmt.Errorf("Error generating CA root certificate: %s", err.Error())
+		return "", fmt.Errorf("error generating CA root certificate: %s", err.Error())
 	}
 
 	return cert, nil
@@ -326,7 +267,7 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 
 	csr, err := v.proxy.callVault("POST", url, "csr", params)
 	if err != nil {
-		return "", fmt.Errorf("Error generating CA intermediate certificate: %s", err.Error())
+		return "", fmt.Errorf("error generating CA intermediate certificate: %s", err.Error())
 	}
 
 	return csr, nil
@@ -343,7 +284,7 @@ func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 
 	cert, err := v.proxy.callVault("POST", url, "certificate", params)
 	if err != nil {
-		return "", fmt.Errorf("Error signing intermediate Vault certificate: %s", err.Error())
+		return "", fmt.Errorf("error signing intermediate Vault certificate: %s", err.Error())
 	}
 
 	return cert, nil
@@ -357,7 +298,7 @@ func (v *VaultInitializer) importSignIntermediate(caChain, intermediateMount str
 
 	_, err := v.proxy.callVault("POST", url, "", params)
 	if err != nil {
-		return fmt.Errorf("Error importing intermediate Vault certificate: %s", err.Error())
+		return fmt.Errorf("error importing intermediate Vault certificate: %s", err.Error())
 	}
 
 	return nil
@@ -372,7 +313,7 @@ func (v *VaultInitializer) configureCert(mount string) error {
 
 	_, err := v.proxy.callVault("POST", url, "", params)
 	if err != nil {
-		return fmt.Errorf("Error configuring Vault certificate: %s", err.Error())
+		return fmt.Errorf("error configuring Vault certificate: %s", err.Error())
 	}
 
 	return nil
@@ -382,13 +323,13 @@ func (v *VaultInitializer) setupRole() error {
 	// vault auth-enable approle
 	auths, err := v.client.Sys().ListAuth()
 	if err != nil {
-		return fmt.Errorf("Error fetching auth mounts: %s", err.Error())
+		return fmt.Errorf("error fetching auth mounts: %s", err.Error())
 	}
 
 	if _, ok := auths[v.AppRoleAuthPath]; !ok {
 		options := &vault.EnableAuthOptions{Type: "approle"}
 		if err := v.client.Sys().EnableAuthWithOptions(v.AppRoleAuthPath, options); err != nil {
-			return fmt.Errorf("Error enabling approle: %s", err.Error())
+			return fmt.Errorf("error enabling approle: %s", err.Error())
 		}
 	}
 
@@ -405,7 +346,7 @@ func (v *VaultInitializer) setupRole() error {
 
 	_, err = v.proxy.callVault("POST", url, "", params)
 	if err != nil {
-		return fmt.Errorf("Error creating role %s: %s", v.Role, err.Error())
+		return fmt.Errorf("error creating role %s: %s", v.Role, err.Error())
 	}
 
 	return nil
@@ -420,13 +361,13 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 	// vault auth-enable kubernetes
 	auths, err := v.client.Sys().ListAuth()
 	if err != nil {
-		return fmt.Errorf("Error fetching auth mounts: %s", err.Error())
+		return fmt.Errorf("error fetching auth mounts: %s", err.Error())
 	}
 
 	if _, ok := auths[v.KubernetesAuthPath]; !ok {
 		options := &vault.EnableAuthOptions{Type: "kubernetes"}
 		if err := v.client.Sys().EnableAuthWithOptions(v.KubernetesAuthPath, options); err != nil {
-			return fmt.Errorf("Error enabling kubernetes auth: %s", err.Error())
+			return fmt.Errorf("error enabling kubernetes auth: %s", err.Error())
 		}
 	}
 
@@ -455,6 +396,10 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 	return nil
 }
 
+func roleName(podNS, podSA string) string {
+	return fmt.Sprintf("auth-delegator:%s:%s", podNS, podSA)
+}
+
 // CreateKubernetesRole creates a service account and ClusterRoleBinding for
 // Kubernetes auth delegation. The name "boundSA" refers to the Vault param
 // "bound_service_account_names".
@@ -464,19 +409,57 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, vau
 	//    authenticate with Kubernetes for the token review.
 	//  - boundSA = the service account used to login using the Vault Kubernetes
 	//    auth.
-	clusterRole := NewVaultServiceAccountRole(v.PodNS, v.PodSA)
+	clusterRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: roleName(v.PodNS, v.PodSA),
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"authentication.k8s.io"},
+				Resources: []string{"tokenreviews"},
+				Verbs:     []string{"create"},
+			},
+			{
+				APIGroups: []string{"authorization.k8s.io"},
+				Resources: []string{"subjectaccessreviews"},
+				Verbs:     []string{"create"},
+			},
+		},
+	}
 	_, err := client.RbacV1().ClusterRoles().Create(context.TODO(), clusterRole, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
-	roleBinding := NewVaultServiceAccountClusterRoleBinding(clusterRole.Name, v.PodNS, v.PodSA)
+
+	roleBinding := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: roleName(v.PodNS, v.PodSA),
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     clusterRole.Name,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Name:      v.PodSA,
+				Kind:      "ServiceAccount",
+				Namespace: v.PodNS,
+			},
+		},
+	}
 	_, err = client.RbacV1().ClusterRoleBindings().Create(context.TODO(), roleBinding, metav1.CreateOptions{})
 
 	if err != nil {
 		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
 
-	_, err = client.CoreV1().ServiceAccounts(boundNS).Create(context.TODO(), NewVaultServiceAccount(boundSA), metav1.CreateOptions{})
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: boundSA,
+		},
+	}
+	_, err = client.CoreV1().ServiceAccounts(boundNS).Create(context.TODO(), serviceAccount, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating ServiceAccount for Kubernetes auth: %s", err.Error())
 	}
@@ -539,11 +522,11 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, vau
 
 // CleanKubernetesRole cleans up the ClusterRoleBinding and ServiceAccount for Kubernetes auth delegation
 func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, vaultRole, boundNS, boundSA string) error {
-	clusterRole := NewVaultServiceAccountRole(v.PodNS, v.PodSA) // Just for getting the name.
-	if err := client.RbacV1().ClusterRoleBindings().Delete(context.TODO(), clusterRole.Name, metav1.DeleteOptions{}); err != nil {
+	if err := client.RbacV1().ClusterRoleBindings().Delete(context.TODO(), roleName(v.PodNS, v.PodSA), metav1.DeleteOptions{}); err != nil {
 		return err
 	}
-	if err := client.RbacV1().ClusterRoles().Delete(context.TODO(), clusterRole.Name, metav1.DeleteOptions{}); err != nil {
+
+	if err := client.RbacV1().ClusterRoles().Delete(context.TODO(), roleName(v.PodNS, v.PodSA), metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 

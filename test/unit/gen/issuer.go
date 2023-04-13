@@ -325,21 +325,21 @@ func SetIssuerVaultAppRoleAuth(keyName, approleName, roleId, path string) Issuer
 	}
 }
 
-func SetIssuerVaultKubernetesAuthSecret(keyName, secretServiceAccount, role, path string) IssuerModifier {
+func SetIssuerVaultKubernetesAuthSecret(secretKey, secretName, vaultRole, vaultPath string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
 		if spec.Vault == nil {
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
-			Path: path,
+			Path: vaultPath,
 			SecretRef: cmmeta.SecretKeySelector{
-				Key: keyName,
+				Key: secretKey,
 				LocalObjectReference: cmmeta.LocalObjectReference{
-					Name: secretServiceAccount,
+					Name: secretName,
 				},
 			},
-			Role: role,
+			Role: vaultRole,
 		}
 
 	}

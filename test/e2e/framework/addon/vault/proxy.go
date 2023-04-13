@@ -65,8 +65,7 @@ func (p *proxy) init() (*vault.Client, error) {
 	cfg.Address = fmt.Sprintf("https://127.0.0.1:%d", p.listenPort)
 
 	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(p.vaultCA)
-	if ok == false {
+	if ok := caCertPool.AppendCertsFromPEM(p.vaultCA); !ok {
 		return nil, fmt.Errorf("error loading Vault CA bundle: %s", p.vaultCA)
 	}
 
