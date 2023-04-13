@@ -134,11 +134,6 @@ func (c *Chart) Provision() error {
 		return fmt.Errorf("error install helm chart: %v", err)
 	}
 
-	err = c.Base.Details().Helper().WaitForAllPodsRunningInNamespace(c.Namespace)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -192,25 +187,7 @@ func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 	return cmd
 }
 
-func (c *Chart) getHelmVersion() (string, error) {
-	cmd := c.buildHelmCmd("version", "--template", "{{.Client.Version}}")
-	stdoutBuf := &bytes.Buffer{}
-	cmd.Stdout = stdoutBuf
-
-	err := cmd.Run()
-	if err != nil {
-		return "", err
-	}
-
-	outBytes, err := io.ReadAll(stdoutBuf)
-	if err != nil {
-		return "", err
-	}
-
-	return string(outBytes), nil
-}
-
-// Deprovision the deployed instance of tiller-deploy
+// Deprovision the deployed chart
 func (c *Chart) Deprovision() error {
 	cmd := c.buildHelmCmd("delete", "--namespace", c.Namespace, c.ReleaseName)
 	stdoutBuf := &bytes.Buffer{}
@@ -250,11 +227,7 @@ func (c *Chart) SupportsGlobal() bool {
 	// We can't run in global mode if the release name is not set, as there's
 	// no way for us to communicate the generated release name to other test
 	// runners when running in parallel mode.
-	if c.ReleaseName == "" {
-		return false
-	}
-
-	return true
+	return c.ReleaseName != ""
 }
 
 func (c *Chart) Logs() (map[string]string, error) {
