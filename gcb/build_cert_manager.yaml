@@ -1,7 +1,10 @@
 # This cloudbuild config file is intended to be triggered when a tag is pushed to the cert-manager repo
 # and will build a cert-manager release and push to Google Cloud Storage (GCS).
 
-# The release won't be published automatically here; this just controls the build.
+# The release won't be published automatically; this file just defines the build steps.
+
+# The full release and publish process is documented here:
+# https://cert-manager.io/docs/contributing/release-process/
 
 timeout: 2700s # 45m
 
