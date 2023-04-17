@@ -141,8 +141,8 @@ func NewController(
 		secretsUpdateData:        secretsManager.UpdateData,
 		postIssuancePolicyChain: policies.NewSecretPostIssuancePolicyChain(
 			ctx.CertificateOptions.EnableOwnerRef,
-			ctx.FieldManager,
 			ctx.DefaultSecretCleanupPolicy,
+			ctx.FieldManager,
 		),
 		fieldManager:         ctx.FieldManager,
 		localTemporarySigner: pki.GenerateLocallySignedTemporaryCertificate,
