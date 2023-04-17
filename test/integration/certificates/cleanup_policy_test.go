@@ -56,18 +56,17 @@ func Test_CleanupPolicyChange(t *testing.T) {
 	defer stopFn()
 
 	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
-	controllerOptions := controllerpkg.CertificateOptions{
-		EnableOwnerRef:             false,
-		DefaultSecretCleanupPolicy: certmanager.CleanupPolicyNever,
-	}
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
-			CertificateOptions: controllerOptions,
+			Clock: clock.RealClock{},
+			CertificateOptions: controllerpkg.CertificateOptions{
+				EnableOwnerRef:             false,
+				DefaultSecretCleanupPolicy: certmanager.CleanupPolicyNever,
+			},
 		},
 		Recorder:     framework.NewEventRecorder(t),
 		FieldManager: fieldManager,
@@ -142,7 +141,7 @@ func Test_CleanupPolicyChange(t *testing.T) {
 	stopControllerNoOwnerRef()
 	kubeClient, factory, cmClient, cmFactory = framework.NewClients(t, config)
 	stopControllerNoOwnerRef = nil
-	controllerOptions.DefaultSecretCleanupPolicy = certmanager.CleanupPolicyOnDelete
+	controllerContext.DefaultSecretCleanupPolicy = certmanager.CleanupPolicyOnDelete
 	ctrl, queue, mustSync = issuing.NewController(logf.Log, &controllerContext)
 	c = controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
