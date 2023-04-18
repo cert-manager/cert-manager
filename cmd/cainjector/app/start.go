@@ -78,12 +78,12 @@ type InjectorControllerOptions struct {
 	// MutatingWebhookConfigurations
 	EnableMutatingWebhookConfigurationsInjectable bool
 
-	// EnableMutatingWebhookConfigurationsInjectable determines whether cainjector
+	// EnableCustomResourceDefinitionsInjectable determines whether cainjector
 	// will spin up a control loop to inject CA data to annotated
 	// CustomResourceDefinitions
 	EnableCustomResourceDefinitionsInjectable bool
 
-	// EnableMutatingWebhookConfigurationsInjectable determines whether cainjector
+	// EnableAPIServicesInjectable determines whether cainjector
 	// will spin up a control loop to inject CA data to annotated
 	// APIServices
 	EnableAPIServicesInjectable bool
@@ -118,7 +118,7 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"of a leadership. This is only applicable if leader election is enabled.")
 
 	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, "Enable profiling for cainjector")
-	fs.BoolVar(&o.EnableCertificateDataSource, "enable-certificates-data-source", true, "Enable configuring cert-manager.io Certificate resources as potential sources for CA data. Requires cert-manager.io Certificate CRD to be installed. It is not required to watch Certificates if you only use cainjector as cert-manager's internal components and in that case setting this flag to false might slightly reduce memory consumption")
+	fs.BoolVar(&o.EnableCertificateDataSource, "enable-certificates-data-source", true, "Enable configuring cert-manager.io Certificate resources as potential sources for CA data. Requires cert-manager.io Certificate CRD to be installed. This data source can be disabled to reduce memory consumption if you only use cainjector as part of cert-manager's installation")
 	fs.BoolVar(&o.EnableValidatingWebhookConfigurationsInjectable, "enable-validatingwebhookconfigurations-injectable", true, "Inject CA data to annotated ValidatingWebhookConfigurations. This functionality is required for cainjector to correctly function as cert-manager's internal component")
 	fs.BoolVar(&o.EnableMutatingWebhookConfigurationsInjectable, "enable-mutatingwebhookconfigurations-injectable", true, "Inject CA data to annotated MutatingWebhookConfigurations. This functionality is required for cainjector to work correctly as cert-manager's internal component")
 	fs.BoolVar(&o.EnableCustomResourceDefinitionsInjectable, "enable-customresourcedefinitions-injectable", true, "Inject CA data to annotated CustomResourceDefinitions. This functionality is not required if cainjecor is only used as cert-manager's internal component and setting it to false might slightly reduce memory consumption")
@@ -221,8 +221,8 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		})
 	}
 
-	// If cainjector has been configured to watch Certificate CRDs
-	// (--watch-certificates=true), poll kubeapiserver for 5 minutes or till
+	// If cainjector has been configured to watch Certificate CRDs (true by default)
+	// (--enable-certificates-data-source=true), poll kubeapiserver for 5 minutes or till
 	// certificate CRD is found.
 	if o.EnableCertificateDataSource {
 		directClient, err := client.New(mgr.GetConfig(), client.Options{
