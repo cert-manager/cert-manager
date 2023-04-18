@@ -47,7 +47,7 @@ TOOLS += ko=v0.13.0
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.6.2
 
-K8S_CODEGEN_VERSION=v0.26.3
+K8S_CODEGEN_VERSION=v0.27.1
 
 KUBEBUILDER_ASSETS_VERSION=1.26.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
