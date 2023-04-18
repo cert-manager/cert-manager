@@ -77,7 +77,7 @@ type secretForCertificateMapper struct {
 
 func (m *secretForCertificateMapper) Map(obj client.Object) []ctrl.Request {
 	// grab the certificate, if it exists
-	certName := OwningCertForSecret(obj.(*corev1.Secret))
+	certName := owningCertForSecret(obj.(*corev1.Secret))
 	if certName == nil {
 		return nil
 	}
