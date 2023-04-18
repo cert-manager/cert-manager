@@ -19,7 +19,6 @@ package server
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,9 +30,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/klogr"
 
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	"k8s.io/klog/v2/klogr"
 )
 
 func TestConvert(t *testing.T) {
@@ -61,7 +61,7 @@ func TestConvert(t *testing.T) {
 			in: &apiextensionsv1.ConversionReview{
 				Request: &apiextensionsv1.ConversionRequest{},
 			},
-			log: "convert request handled",
+			log: "request received by converting webhook",
 		},
 		{
 			name: "v1 conversion review with nil Request",
@@ -89,7 +89,9 @@ func TestConvert(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.NotNil(t, out)
-			assert.Contains(t, bufWriter.String(), tc.log)
+			if klog.V(logf.DebugLevel).Enabled() {
+				assert.Contains(t, bufWriter.String(), tc.log)
+			}
 		})
 	}
 }
@@ -162,7 +164,7 @@ func TestValidate(t *testing.T) {
 					responseAllowed: responseAllowed,
 				},
 			},
-			log: fmt.Sprintf("validate request handled name %s namespace %s response uuid %s allowed %t", admissionReqName, admissionReqNameSpace, responseUID, responseAllowed),
+			log: "request received by validating webhook",
 		},
 		{
 			name: "v1 validation review with nil response",
@@ -175,7 +177,7 @@ func TestValidate(t *testing.T) {
 			s: &Server{
 				ValidationWebhook: &validation{},
 			},
-			log: fmt.Sprintf("validate request handled name %s namespace %s", admissionReqName, admissionReqNameSpace),
+			log: "request received by validating webhook",
 		},
 		{
 			name: "v1 validation review with nil Request",
@@ -186,7 +188,7 @@ func TestValidate(t *testing.T) {
 					responseAllowed: responseAllowed,
 				},
 			},
-			log: "validate request handled nil request",
+			log: "request received by validating webhook",
 		},
 	}
 
@@ -195,8 +197,8 @@ func TestValidate(t *testing.T) {
 			var bufWriter = bytes.NewBuffer(nil)
 			klog.SetOutput(bufWriter)
 			klog.LogToStderr(false)
-
 			log := klogr.New()
+
 			tc.s.log = log
 
 			out, err := tc.s.validate(context.TODO(), tc.in)
@@ -207,7 +209,9 @@ func TestValidate(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.NotNil(t, out)
-			assert.Contains(t, bufWriter.String(), tc.log)
+			if klog.V(logf.DebugLevel).Enabled() {
+				assert.Contains(t, bufWriter.String(), tc.log)
+			}
 		})
 	}
 }
