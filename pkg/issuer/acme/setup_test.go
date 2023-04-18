@@ -538,6 +538,9 @@ func TestAcme_Setup(t *testing.T) {
 				AddClientFunc: func(string, cmacme.ACMEIssuer, *rsa.PrivateKey, string) {
 					addClientWasCalled = true
 				},
+				IsKeyCheckSumCachedFunc: func(uid string, privateKey *rsa.PrivateKey) bool {
+					return true
+				},
 			}
 
 			// Mock ACME client.
