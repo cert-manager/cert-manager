@@ -110,6 +110,12 @@ type ControllerOptions struct {
 	// The host and port address, separated by a ':', that the Prometheus server
 	// should expose metrics on.
 	MetricsListenAddress string
+	// The host and port address, separated by a ':', that the healthz server
+	// should listen on.
+	HealthzListenAddress string
+	// Leader election healthz checks within this timeout period after the lease
+	// expires will still return healthy.
+	HealthzLeaderElectionTimeout time.Duration
 	// PprofAddress is the address on which Go profiler will run. Should be
 	// in form <host>:<port>.
 	PprofAddress string
@@ -150,6 +156,11 @@ const (
 	defaultMaxConcurrentChallenges   = 60
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+	defaultHealthzServerAddress           = "127.0.0.1:10257"
+	// This default value is the same as used in Kubernetes controller-manager.
+	// See:
+	// https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kube-controller-manager/app/controllermanager.go#L202-L209
+	defaultHealthzLeaderElectionTimeout = 20 * time.Second
 
 	// default time period to wait between checking DNS01 and HTTP01 challenge propagation
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
@@ -251,6 +262,8 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
+		HealthzListenAddress:              defaultHealthzServerAddress,
+		HealthzLeaderElectionTimeout:      defaultHealthzLeaderElectionTimeout,
 		NumberOfConcurrentWorkers:         defaultNumberOfConcurrentWorkers,
 		MaxConcurrentChallenges:           defaultMaxConcurrentChallenges,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
@@ -375,6 +388,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
+	fs.StringVar(&s.HealthzListenAddress, "healthz-listen-address", defaultHealthzServerAddress, ""+
+		"The host and port that the healthz server should listen on. "+
+		"The healthz server serves the /livez endpoint, which is called by the LivenessProbe.")
+	fs.DurationVar(&s.HealthzLeaderElectionTimeout, "healthz-leader-election-timeout", defaultHealthzLeaderElectionTimeout, ""+
+		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	fs.BoolVar(&s.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, ""+
 		"Enable profiling for controller.")
 	fs.StringVar(&s.PprofAddress, "profiler-address", cmdutil.DefaultProfilerAddr,
