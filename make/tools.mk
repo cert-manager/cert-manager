@@ -33,7 +33,7 @@ TOOLS += cosign=v1.12.1
 TOOLS += cmrel=c35ba39e591f1e5150525ca0fef222beb719de8c
 TOOLS += release-notes=v0.14.0
 TOOLS += goimports=v0.1.12
-TOOLS += go-licenses=v1.5.0
+TOOLS += go-licenses=v1.6.0
 TOOLS += gotestsum=v1.8.2
 TOOLS += rclone=v1.59.2
 TOOLS += trivy=v0.32.0
