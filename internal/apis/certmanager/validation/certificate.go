@@ -44,6 +44,10 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
+	} else {
+		for _, msg := range apivalidation.NameIsDNSSubdomain(crt.SecretName, false) {
+			el = append(el, field.Invalid(fldPath.Child("secretName"), crt.SecretName, msg))
+		}
 	}
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
