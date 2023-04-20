@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/cainjector-binary
 
-go 1.19
+go 1.20
 
 replace github.com/cert-manager/cert-manager => ../../
 
