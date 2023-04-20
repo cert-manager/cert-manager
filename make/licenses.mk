@@ -36,11 +36,28 @@ $(BINDIR)/scratch/cert-manager.license: $(BINDIR)/scratch/license.yaml $(BINDIR)
 $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footnote.yaml | $(BINDIR)/scratch
 	cp $< $@
 
-LICENSES $(BINDIR)/scratch/LATEST-LICENSES: go.mod go.sum | $(NEEDS_GO-LICENSES)
+# Create a go.work file so that go-licenses can discover the LICENCE file of the
+# github/cert-manager/cert-manager module and all the dependencies of the
+# github/cert-manager/cert-manager module.
+#
+# Without this, go-licenses *guesses* the wrong LICENSE for cert-manager and
+# links to the wrong versions of LICENSES for transitive dependencies.
+#
+# The go.work file is in a non-standard location, because we made a decision not
+# to commit a go.work file to the repository root for reasons given in:
+# https://github.com/cert-manager/cert-manager/pull/5935
+LICENSES_GO_WORK := $(BINDIR)/scratch/LICENSES.go.work
+$(LICENSES_GO_WORK):
+	$(MAKE) go-workspace GOWORK=$(abspath $@)
+
+LICENSES $(BINDIR)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
+LICENSES $(BINDIR)/scratch/LATEST-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
 	$(GO-LICENSES) csv ./...  > $@
 
-cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
+cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: export GOWORK=$(abspath $(LICENSES_GO_WORK))
+cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
 	cd cmd/$* && $(GO-LICENSES) csv ./...  > ../../$@
 
-test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
+test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: export GOWORK=$(abspath $(LICENSES_GO_WORK))
+test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
 	cd test/$* && $(GO-LICENSES) csv ./...  > ../../$@

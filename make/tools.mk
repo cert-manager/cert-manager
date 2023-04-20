@@ -458,6 +458,7 @@ update-base-images: $(BINDIR)/tools/crane
 
 .PHONY: tidy
 ## Run "go mod tidy" on each module in this repo
+## @category Development
 tidy:
 	go mod tidy
 	cd cmd/acmesolver && go mod tidy
@@ -469,7 +470,10 @@ tidy:
 	cd test/e2e && go mod tidy
 
 .PHONY: go-workspace
+go-workspace: export GOWORK?=$(abspath go.work)
+## Create a go.work file in the repository root (or GOWORK)
+## @category Development
 go-workspace:
-	@rm -f go.work
+	@rm -f $(GOWORK)
 	go work init
 	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/webhook ./test/integration ./test/e2e
