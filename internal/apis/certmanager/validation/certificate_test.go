@@ -142,6 +142,19 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
+		"certificate invalid secretName": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					IssuerRef:  validIssuerRef,
+					SecretName: "testFoo",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("secretName"), "testFoo", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')"),
+			},
+			a: someAdmissionRequest,
+		},
 		"certificate with no domains, URIs or common name": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
