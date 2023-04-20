@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager
 
-go 1.19
+go 1.20
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
