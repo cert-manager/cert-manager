@@ -30,10 +30,11 @@ var _ accounts.Registry = &FakeRegistry{}
 
 // FakeRegistry implements the accounts.Registry interface using stub functions
 type FakeRegistry struct {
-	AddClientFunc    func(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
-	RemoveClientFunc func(uid string)
-	GetClientFunc    func(uid string) (acmecl.Interface, error)
-	ListClientsFunc  func() map[string]acmecl.Interface
+	AddClientFunc           func(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
+	RemoveClientFunc        func(uid string)
+	GetClientFunc           func(uid string) (acmecl.Interface, error)
+	ListClientsFunc         func() map[string]acmecl.Interface
+	IsKeyCheckSumCachedFunc func(uid string, privateKey *rsa.PrivateKey) bool
 }
 
 func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
@@ -50,4 +51,8 @@ func (f *FakeRegistry) GetClient(uid string) (acmecl.Interface, error) {
 
 func (f *FakeRegistry) ListClients() map[string]acmecl.Interface {
 	return f.ListClientsFunc()
+}
+
+func (f *FakeRegistry) IsKeyCheckSumCached(uid string, privateKey *rsa.PrivateKey) bool {
+	return f.IsKeyCheckSumCachedFunc(uid, privateKey)
 }

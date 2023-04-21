@@ -33,7 +33,7 @@ TOOLS += cosign=v1.12.1
 TOOLS += cmrel=c35ba39e591f1e5150525ca0fef222beb719de8c
 TOOLS += release-notes=v0.14.0
 TOOLS += goimports=v0.1.12
-TOOLS += go-licenses=v1.5.0
+TOOLS += go-licenses=v1.6.0
 TOOLS += gotestsum=v1.8.2
 TOOLS += rclone=v1.59.2
 TOOLS += trivy=v0.32.0
@@ -41,7 +41,7 @@ TOOLS += ytt=v0.43.0
 TOOLS += yq=v4.27.5
 TOOLS += crane=v0.11.0
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
-TOOLS += ko=v0.12.0
+TOOLS += ko=v0.13.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.6.2
@@ -52,7 +52,7 @@ KUBEBUILDER_ASSETS_VERSION=1.26.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.19.6
+VENDORED_GO_VERSION := 1.20.3
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
@@ -351,9 +351,9 @@ $(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 # ko #
 ######
 
-KO_linux_amd64_SHA256SUM=05aa77182fa7c55386bd2a210fd41298542726f33bbfc9c549add3a66f7b90ad
-KO_darwin_amd64_SHA256SUM=8679d0d74fc75f24e044649c6a961dad0a3ef03bedbdece35e2f3f29eb7876af
-KO_darwin_arm64_SHA256SUM=cfef98db8ad0e1edaa483fa5c6af89eb573a8434abd372b510b89005575de702
+KO_linux_amd64_SHA256SUM=80f3e3148fabd5b839cc367ac56bb4794f90e7262b01911316c670b210b574cc
+KO_darwin_amd64_SHA256SUM=8d9daea9bcf25c790f705ea115d1c0a0193cb3d9759e937ab2959c71f88ce29c
+KO_darwin_arm64_SHA256SUM=8b6ad2ca95de9e9a5f697f6a653301ef5405a643b09bdd10628bac0f77eaadff
 
 $(BINDIR)/downloaded/tools/ko@$(KO_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,Darwin,$*))
@@ -458,6 +458,7 @@ update-base-images: $(BINDIR)/tools/crane
 
 .PHONY: tidy
 ## Run "go mod tidy" on each module in this repo
+## @category Development
 tidy:
 	go mod tidy
 	cd cmd/acmesolver && go mod tidy
@@ -469,7 +470,10 @@ tidy:
 	cd test/e2e && go mod tidy
 
 .PHONY: go-workspace
+go-workspace: export GOWORK?=$(abspath go.work)
+## Create a go.work file in the repository root (or GOWORK)
+## @category Development
 go-workspace:
-	@rm -f go.work
+	@rm -f $(GOWORK)
 	go work init
 	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/webhook ./test/integration ./test/e2e
