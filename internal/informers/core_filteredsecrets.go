@@ -115,14 +115,6 @@ func (bf *filteredSecretsFactory) WaitForCacheSync(stopCh <-chan struct{}) map[s
 	return caches
 }
 
-func (bf *filteredSecretsFactory) Pods() corev1informers.PodInformer {
-	return bf.typedInformerFactory.Core().V1().Pods()
-}
-
-func (bf *filteredSecretsFactory) Services() corev1informers.ServiceInformer {
-	return bf.typedInformerFactory.Core().V1().Services()
-}
-
 func (bf *filteredSecretsFactory) Ingresses() networkingv1informers.IngressInformer {
 	return bf.typedInformerFactory.Networking().V1().Ingresses()
 }
