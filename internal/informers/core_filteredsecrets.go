@@ -164,9 +164,11 @@ type filteredSecretInformer struct {
 
 func (f *filteredSecretInformer) Informer() Informer {
 	typedInformer := f.typedInformerFactory.InformerFor(&corev1.Secret{}, f.newTyped)
-	// TODO: set any possible transforms
+
 	metadataInformer := f.metadataInformerFactory.ForResource(secretsGVR).Informer()
-	// TODO: set transform on metadataInformer to remove last applied annotation etc
+	if err := metadataInformer.SetTransform(partialMetadataRemoveAll); err != nil {
+		panic(fmt.Sprintf("internal error: error setting transfomer on the metadata informer: %v", err))
+	}
 	return &informer{
 		typedInformer:    typedInformer,
 		metadataInformer: metadataInformer,

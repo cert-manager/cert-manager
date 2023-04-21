@@ -31,7 +31,7 @@ IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:aec4b029660d47aea02
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:1bcec6bc854720e22f439c6dcea02fcf689f31976babcf03a449d750c2b1f34a
 IMAGE_vault_amd64 := index.docker.io/library/vault:1.12.1@sha256:08dd1cb922624c51a5aefd4d9ce0ac5ed9688d96d8a5ad94664fa10e84702ed6
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
-IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.1.1@sha256:7dafe98c73d229bbac08067fccf9b2884c63c8e1412fe18f9986f59232cf3cb5
+IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:6f7c87979b1e3bd92dc3ab54d037f80628547d7b58a8cb2b3bfa06c006b1ed9d
 IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:39a804ce4b896de168915ae41358932c219443fd4ceffe37296a63f9adef0597
 IMAGE_pebble_amd64 := local/pebble:local
 IMAGE_vaultretagged_amd64 := local/vault:local
@@ -41,7 +41,7 @@ IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:4355f1f65ea5e952886
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:141234fb74242155c7b843180b90ee5fb6a20c9e77598bd9c138c687059cdafd
 IMAGE_vault_arm64 := $(IMAGE_vault_amd64)
 IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
-IMAGE_sampleexternalissuer_arm64 := # 🚧 NOT AVAILABLE FOR arm64 🚧
+IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:4a99caed209cf76fc15e37ad153d20d8b905a895021c799d360bba3402c66392
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:fee2b24db85c3ed3487e0e2a325806323997171a2ed722252f8ca85d0bee919d
 IMAGE_pebble_arm64 := local/pebble:local
 IMAGE_vaultretagged_arm64 := local/vault:local
@@ -390,18 +390,9 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(KUBECTL) apply --server-side -f make/config/projectcontour/gateway.yaml
 
 .PHONY: e2e-setup-sampleexternalissuer
-ifeq ($(CRI_ARCH),amd64)
 e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL)
-	$(KUBECTL) apply -n sample-external-issuer-system -f https://github.com/cert-manager/sample-external-issuer/releases/download/v0.1.1/install.yaml >/dev/null
+	$(KUBECTL) apply -n sample-external-issuer-system -f https://github.com/cert-manager/sample-external-issuer/releases/download/v0.3.0/install.yaml >/dev/null
 	$(KUBECTL) patch -n sample-external-issuer-system deployments.apps sample-external-issuer-controller-manager --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/1/imagePullPolicy", "value": "Never"}]' >/dev/null
-else
-e2e-setup-sampleexternalissuer:
-	@printf "\033[0;33mWarning\033[0;0m: skipping the target \033[0;31m$@\033[0;0m because there exists no image for $(CRI_ARCH).\n" >&2
-	@printf "The end-to-end tests that rely on sampleexternalissuer will fail. If you are using Docker Desktop,\n" >&2
-	@printf "you can force using the amd64 image anyways by running:\n" >&2
-	@printf "    \033[0;36mmake $@ CRI_ARCH=amd64\033[0;0m\n" >&2
-	@printf "Note that this won't if you are using Colima, or Rancher Desktop, or minikube.\n" >&2
-endif
 
 # Note that the end-to-end tests are dealing with the Helm installation. We
 # do not need to Helm install here.
