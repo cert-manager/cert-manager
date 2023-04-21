@@ -19,7 +19,6 @@ package informers
 import (
 	corev1 "k8s.io/api/core/v1"
 	certificatesv1 "k8s.io/client-go/informers/certificates/v1"
-	corev1informers "k8s.io/client-go/informers/core/v1"
 	networkingv1informers "k8s.io/client-go/informers/networking/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -45,8 +44,6 @@ const pleaseOpenIssue = "Please report this by opening an issue with this error 
 type KubeInformerFactory interface {
 	Start(<-chan struct{})
 	WaitForCacheSync(<-chan struct{}) map[string]bool
-	Pods() corev1informers.PodInformer
-	Services() corev1informers.ServiceInformer
 	Ingresses() networkingv1informers.IngressInformer
 	Secrets() SecretInformer
 	CertificateSigningRequests() certificatesv1.CertificateSigningRequestInformer

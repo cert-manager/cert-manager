@@ -29,8 +29,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	corev1listers "k8s.io/client-go/listers/core/v1"
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
+	"k8s.io/client-go/tools/cache"
 	k8snet "k8s.io/utils/net"
 	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
 
@@ -59,8 +59,8 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister       corev1listers.PodLister
-	serviceLister   corev1listers.ServiceLister
+	podLister       cache.GenericLister
+	serviceLister   cache.GenericLister
 	ingressLister   networkingv1listers.IngressLister
 	httpRouteLister gwapilisters.HTTPRouteLister
 
@@ -74,8 +74,8 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsSer
 func NewSolver(ctx *controller.Context) (*Solver, error) {
 	return &Solver{
 		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Services().Lister(),
+		podLister:        ctx.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
+		serviceLister:    ctx.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
 		ingressLister:    ctx.KubeSharedInformerFactory.Ingresses().Lister(),
 		httpRouteLister:  ctx.GWShared.Gateway().V1beta1().HTTPRoutes().Lister(),
 		testReachability: testReachability,
@@ -108,19 +108,19 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	log := logf.FromContext(ctx).WithName(loggerName)
 	ctx = logf.NewContext(ctx, log)
 
-	_, podErr := s.ensurePod(ctx, ch)
-	svc, svcErr := s.ensureService(ctx, ch)
+	podErr := s.ensurePod(ctx, ch)
+	svcName, svcErr := s.ensureService(ctx, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
 	var ingressErr, gatewayErr error
 	if ch.Spec.Solver.HTTP01 != nil {
 		if ch.Spec.Solver.HTTP01.Ingress != nil {
-			_, ingressErr = s.ensureIngress(ctx, ch, svc.Name)
+			_, ingressErr = s.ensureIngress(ctx, ch, svcName)
 			return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 		}
 		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
-			_, gatewayErr = s.ensureGatewayHTTPRoute(ctx, ch, svc.Name)
+			_, gatewayErr = s.ensureGatewayHTTPRoute(ctx, ch, svcName)
 			return utilerrors.NewAggregate([]error{podErr, svcErr, gatewayErr})
 		}
 	}
