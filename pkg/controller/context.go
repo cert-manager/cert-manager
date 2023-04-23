@@ -344,6 +344,7 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	ctx.Client = clients.kubeClient
 	ctx.CMClient = clients.cmClient
 	ctx.GWClient = clients.gwClient
+	ctx.MetadataClient = clients.metadataOnlyClient
 	ctx.DiscoveryClient = clients.kubeClient.Discovery()
 	ctx.Recorder = recorder
 
