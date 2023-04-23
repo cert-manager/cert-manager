@@ -96,7 +96,6 @@ func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) 
 
 	var relevantPods []*metav1.PartialObjectMetadata
 	for _, pod := range podMetadataList {
-		// TODO: can we use a metadata lister instead?
 		p, ok := pod.(*metav1.PartialObjectMetadata)
 		if !ok {
 			return nil, fmt.Errorf("internal error: cannot cast PartialMetadata: %+#v", pod)
@@ -117,7 +116,7 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 
 	pods, err := s.getPodsForChallenge(ctx, ch)
 	if err != nil {
-		return err
+		return fmt.Errorf("error retrieving pods for cleanup: %w", err)
 	}
 	var errs []error
 	for _, pod := range pods {
@@ -127,7 +126,7 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("error deleting pod: %w", err))
 			continue
 		}
 		log.V(logf.InfoLevel).Info("successfully deleted pod resource")
