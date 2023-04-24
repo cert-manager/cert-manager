@@ -3,7 +3,7 @@ name: cert-manager
 # The version and appVersion fields are set automatically by the release tool
 version: v0.1.0
 appVersion: v0.1.0
-kubeVersion: ">= 1.21.0-0"
+kubeVersion: ">= 1.22.0-0"
 description: A Helm chart for cert-manager
 home: https://github.com/cert-manager/cert-manager
 icon: https://raw.githubusercontent.com/cert-manager/cert-manager/d53c0b9270f8cd90d908460d69502694e1838f5f/logo/logo-small.png
