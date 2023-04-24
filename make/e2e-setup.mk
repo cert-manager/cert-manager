@@ -33,8 +33,6 @@ IMAGE_vault_amd64 := index.docker.io/library/vault:1.12.1@sha256:08dd1cb922624c5
 IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:6f7c87979b1e3bd92dc3ab54d037f80628547d7b58a8cb2b3bfa06c006b1ed9d
 IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:39a804ce4b896de168915ae41358932c219443fd4ceffe37296a63f9adef0597
-IMAGE_pebble_amd64 := local/pebble:local
-IMAGE_vaultretagged_amd64 := local/vault:local
 
 IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:4355f1f65ea5e952886e929a15628f0c6704905035b4741c6f560378871c9335
@@ -43,13 +41,15 @@ IMAGE_vault_arm64 := $(IMAGE_vault_amd64)
 IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:4a99caed209cf76fc15e37ad153d20d8b905a895021c799d360bba3402c66392
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:fee2b24db85c3ed3487e0e2a325806323997171a2ed722252f8ca85d0bee919d
-IMAGE_pebble_arm64 := local/pebble:local
-IMAGE_vaultretagged_arm64 := local/vault:local
+
+PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
+
+LOCALIMAGE_pebble := local/pebble:local
+LOCALIMAGE_vaultretagged := local/vault:local
+LOCALIMAGE_samplewebhook := local/samplewebhook:local
 
 IMAGE_kind_amd64 := $(shell make/cluster.sh --show-image)
 IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
-
-PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
 # TODO: considering moving the installation commands in this file to separate scripts for readability
 # Once that is done, we can consume this variable from ./make/config/lib.sh
@@ -120,6 +120,28 @@ define image-tar
 $(BINDIR)/downloaded/containers/$(CRI_ARCH)/$(if $(IMAGE_$(1)_$(CRI_ARCH)),$(subst :,+,$(IMAGE_$(1)_$(CRI_ARCH))),missing-$(1)).tar
 endef
 
+# The function "local-image-tar" returns the path to the image tarball for a given local
+# image name. For example:
+#
+#     $(call local-image-tar, samplewebhook)
+#
+# returns the following path:
+#
+#     $(BINDIR)/containers/samplewebhook+local.tar
+#                          <--------------------->
+#                          LOCALIMAGE_samplewebhook
+#                        (with ":" replaced with "+")
+#
+# Note the "+" signs. We replace all the "+" with ":" because ":" can't be used
+# in make targets. The "+" replacement is safe since it isn't a valid character
+# in image names.
+#
+# When an image isn't available, i.e., IMAGE_imagename is empty, we still
+# return a string of the form "$(BINDIR)/containers/missing-imagename.tar".
+define local-image-tar
+$(BINDIR)/containers/$(if $(LOCALIMAGE_$(1)),$(subst :,+,$(LOCALIMAGE_$(1))),missing-$(1)).tar
+endef
+
 # Let's separate the pulling of the Kind image so that more tasks can be
 # run in parallel when running "make -j e2e-setup". In CI, the Docker
 # engine being stripped on every job, we save the kind image to
@@ -134,7 +156,7 @@ preload-kind-image: $(call image-tar,kind) | $(NEEDS_CRANE)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
-LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,vault) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call image-tar,vaultretagged) load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar load-$(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
+LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,sampleexternalissuer) load-$(call local-image-tar,vaultretagged) load-$(call local-image-tar,pebble) load-$(call local-image-tar,samplewebhook) load-$(BINDIR)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(BINDIR)/containers/cert-manager-ctl-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
 $(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists | $(NEEDS_KIND)
 	$(KIND) load image-archive --name=$(shell cat $(BINDIR)/scratch/kind-exists) $*
@@ -164,7 +186,7 @@ $(call image-tar,kind) $(call image-tar,vault): $(BINDIR)/downloaded/containers/
 
 # Since we dynamically install Vault via Helm during the end-to-end tests,
 # we need its image to be retagged to a well-known tag "local/vault:local".
-$(call image-tar,vaultretagged): $(call image-tar,vault)
+$(call local-image-tar,vaultretagged): $(call image-tar,vault)
 	@mkdir -p /tmp/vault $(dir $@)
 	tar xf $< -C /tmp/vault
 	cat /tmp/vault/manifest.json | jq '.[0].RepoTags |= ["local/vault:local"]' -r > /tmp/vault/temp
@@ -319,11 +341,12 @@ $(BINDIR)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(BINDIR)/downloaded
 # We can't use GOBIN with "go install" because cross-compilation is not
 # possible with go install. That's a problem when cross-compiling for
 # linux/arm64 when running on darwin/arm64.
-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble/pebble: $(BINDIR)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz | $(NEEDS_GO)
+$(call local-image-tar,pebble).dir/pebble: $(BINDIR)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz | $(NEEDS_GO)
+	@mkdir -p $(dir $@)
 	tar xzf $< -C /tmp
 	cd /tmp/pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) $(GOFLAGS) -o $(CURDIR)/$@ ./cmd/pebble
 
-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar: $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble/pebble make/config/pebble/Containerfile.pebble
+$(call local-image-tar,pebble): $(call local-image-tar,pebble).dir/pebble make/config/pebble/Containerfile.pebble
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
 	$(CTR) build --quiet \
 		-f make/config/pebble/Containerfile.pebble \
@@ -333,7 +356,7 @@ $(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar: $(BINDIR)/downloaded/con
 	$(CTR) save local/pebble:local -o $@ >/dev/null
 
 .PHONY: e2e-setup-pebble
-e2e-setup-pebble: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM)
+e2e-setup-pebble: load-$(call local-image-tar,pebble) $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM)
 	$(HELM) upgrade \
 		--install \
 		--wait \
@@ -341,11 +364,11 @@ e2e-setup-pebble: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/pebble.tar $(
 		--create-namespace \
 		pebble make/config/pebble/chart >/dev/null
 
-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook/samplewebhook: make/config/samplewebhook/sample/main.go | $(NEEDS_GO)
+$(call local-image-tar,samplewebhook).dir/samplewebhook: make/config/samplewebhook/sample/main.go | $(NEEDS_GO)
 	@mkdir -p $(dir $@)
 	GOOS=linux GOARCH=$(CRI_ARCH) $(GOBUILD) -o $@ $(GOFLAGS) make/config/samplewebhook/sample/main.go
 
-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar: $(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook
+$(call local-image-tar,samplewebhook): $(call local-image-tar,samplewebhook).dir/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
 	$(CTR) build --quiet \
 		-f make/config/samplewebhook/Containerfile.samplewebhook \
@@ -355,7 +378,7 @@ $(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar: $(BINDIR)/downloa
 	$(CTR) save local/samplewebhook:local -o $@ >/dev/null
 
 .PHONY: e2e-setup-samplewebhook
-e2e-setup-samplewebhook: load-$(BINDIR)/downloaded/containers/$(CRI_ARCH)/samplewebhook.tar e2e-setup-certmanager $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM)
+e2e-setup-samplewebhook: load-$(call local-image-tar,samplewebhook) e2e-setup-certmanager $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM)
 	$(HELM) upgrade \
 		--install \
 		--wait \
@@ -369,7 +392,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) repo add bitnami --force-update https://charts.bitnami.com/bitnami >/dev/null
 	# Warning: When upgrading the version of this helm chart, bear in mind that the IMAGE_projectcontour_* images above might need to be updated, too.
 	# Each helm chart version in the bitnami repo corresponds to an underlying application version. Check application versions and chart versions with:
-	# $ helm search repo bitnami -l | grep -E "contour[^-]"
+	# $$ helm search repo bitnami -l | grep -E "contour[^-]"
 	$(HELM) upgrade \
 		--install \
 		--wait \
@@ -397,7 +420,7 @@ e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(BI
 # Note that the end-to-end tests are dealing with the Helm installation. We
 # do not need to Helm install here.
 .PHONY: e2e-setup-vault
-e2e-setup-vault: load-$(call image-tar,vaultretagged) $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM)
+e2e-setup-vault: load-$(call local-image-tar,vaultretagged) $(BINDIR)/scratch/kind-exists | $(NEEDS_HELM)
 
 # Exported because it needs to flow down to make/e2e.sh.
 export ARTIFACTS ?= $(shell pwd)/$(BINDIR)/artifacts
