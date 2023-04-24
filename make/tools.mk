@@ -246,9 +246,13 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # kubectl #
 ###########
 
-KUBECTL_linux_amd64_SHA256SUM=026c8412d373064ab0359ed0d1a25c975e9ce803a093d76c8b30c5996ad73e75
-KUBECTL_darwin_amd64_SHA256SUM=325164ce110a837d7ac0fdea819f00f88d0f1fe3e6c956ff800f92b6c7a6688c
-KUBECTL_darwin_arm64_SHA256SUM=aa3e0fd85611adfbbc71a46adbf12046bb54433c06b7dddff40f0569382b540a
+# Example commands to discover new kubectl versions and their SHAs:
+# gsutil ls gs://kubernetes-release/release/
+# gsutil cp gs://kubernetes-release/release/<version>/bin/<os>/<arch>/kubectl
+# sha256sum kubelet
+KUBECTL_linux_amd64_SHA256SUM=7fe3a762d926fb068bae32c399880e946e8caf3d903078bea9b169dcd5c17f6d
+KUBECTL_darwin_amd64_SHA256SUM=136f73ede0d52c7985d299432236f891515c050d58d71b4a7d39c45085020ad8
+KUBECTL_darwin_arm64_SHA256SUM=a2029331fa70450a631506c83bb27ae95cc9fdb4b21efb81fde81c689d922ceb
 
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
