@@ -26,7 +26,7 @@ CTR=docker
 
 TOOLS :=
 TOOLS += helm=v3.11.2
-TOOLS += kubectl=v1.26.3
+TOOLS += kubectl=v1.27.1
 TOOLS += kind=v0.18.0
 TOOLS += controller-gen=v0.11.3
 TOOLS += cosign=v1.12.1
