@@ -273,6 +273,8 @@ func (s *Server) validate(ctx context.Context, obj runtime.Object) (runtime.Obje
 		return nil, errors.New("request is not of type apiextensions v1")
 	}
 	review.Response = s.ValidationWebhook.Validate(ctx, review.Request)
+	s.logAdmissionReview(review, "request received by validating webhook")
+
 	return review, nil
 }
 
@@ -282,7 +284,20 @@ func (s *Server) mutate(ctx context.Context, obj runtime.Object) (runtime.Object
 		return nil, errors.New("request is not of type apiextensions v1")
 	}
 	review.Response = s.MutationWebhook.Mutate(ctx, review.Request)
+	s.logAdmissionReview(review, "request received by mutating webhook")
+
 	return review, nil
+}
+
+func (s *Server) logAdmissionReview(review *admissionv1.AdmissionReview, prefix string) {
+	logLevel := logf.DebugLevel
+	if review.Request == nil {
+		s.log.V(logLevel).Info(prefix, "unexpected nil request")
+	} else if review.Response == nil {
+		s.log.V(logLevel).Info(prefix, "kind", review.Request.Kind.Kind, "name", review.Request.Name, "namespace", review.Request.Namespace, "unexpected empty response")
+	} else {
+		s.log.V(logLevel).Info(prefix, "kind", review.Request.Kind.Kind, "name", review.Request.Name, "namespace", review.Request.Namespace, "response uuid", review.Response.UID, "allowed", review.Response.Allowed)
+	}
 }
 
 func (s *Server) convert(_ context.Context, obj runtime.Object) (runtime.Object, error) {
@@ -292,6 +307,7 @@ func (s *Server) convert(_ context.Context, obj runtime.Object) (runtime.Object,
 			return nil, errors.New("review.request was nil")
 		}
 		review.Response = s.ConversionWebhook.Convert(review.Request)
+		s.log.V(logf.DebugLevel).Info("request received by converting webhook", "kind", review.Kind, "request uid", review.Request.UID, "response uid", review.Response.UID)
 		return review, nil
 	default:
 		return nil, fmt.Errorf("unsupported conversion review type: %T", review)
