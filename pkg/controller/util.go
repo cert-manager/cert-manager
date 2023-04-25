@@ -33,12 +33,10 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-var (
-	// KeyFunc creates a key for an API object. The key can be passed to a
-	// worker function that processes an object from a queue such as
-	// ProcessItem.
-	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
-)
+// KeyFunc creates a key for an API object. The key can be passed to a
+// worker function that processes an object from a queue such as
+// ProcessItem.
+var KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 // DefaultItemBasedRateLimiter returns a new rate limiter with base delay of 5
 // seconds, max delay of 5 minutes.
@@ -117,7 +115,7 @@ func (q *QueuingEventHandler) Enqueue(obj interface{}) {
 }
 
 // OnAdd adds a newly created object to the workqueue.
-func (q *QueuingEventHandler) OnAdd(obj interface{}) {
+func (q *QueuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	q.Enqueue(obj)
 }
 
@@ -151,7 +149,7 @@ func (b *BlockingEventHandler) Enqueue(obj interface{}) {
 }
 
 // OnAdd synchronously adds a newly created object to the workqueue.
-func (b *BlockingEventHandler) OnAdd(obj interface{}) {
+func (b *BlockingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	b.WorkFunc(obj)
 }
 
@@ -219,5 +217,4 @@ func ToSecret(obj interface{}) (*corev1.Secret, bool) {
 		secret.SetNamespace(meta.Namespace)
 	}
 	return secret, true
-
 }
