@@ -18,7 +18,6 @@ package vault
 
 import (
 	"context"
-	"path"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -32,13 +31,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-)
-
-const (
-	intermediateMount      = "intermediate-ca"
-	role                   = "kubernetes-vault"
-	vaultSecretAppRoleName = "vault-role-"
-	authPath               = "approle"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
@@ -69,8 +61,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 })
 
 type vaultAppRoleProvisioner struct {
-	vault     *vault.Vault
-	vaultInit *vault.VaultInitializer
+	setup *vault.VaultInitializer
 
 	*vaultSecrets
 }
@@ -84,8 +75,7 @@ type vaultSecrets struct {
 }
 
 func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
-	Expect(v.vaultInit.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
-	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
+	Expect(v.setup.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 
 	err := f.KubeClientSet.CoreV1().Secrets(v.secretNamespace).Delete(context.TODO(), v.secretName, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
@@ -97,11 +87,12 @@ func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.Obje
 }
 
 func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole Issuer")
 
 	v.vaultSecrets = v.initVault(f)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, v.secretID), metav1.CreateOptions{})
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, v.secretID), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	v.secretName = sec.Name
@@ -128,11 +119,12 @@ func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.Ob
 }
 
 func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole ClusterIssuer")
 
 	v.vaultSecrets = v.initVault(f)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, v.secretID), metav1.CreateOptions{})
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, v.secretID), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	v.secretName = sec.Name
@@ -159,26 +151,16 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 }
 
 func (v *vaultAppRoleProvisioner) initVault(f *framework.Framework) *vaultSecrets {
-	v.vault = &vault.Vault{
-		Base:      addon.Base,
-		Namespace: f.Namespace.Name,
-		Name:      "cm-e2e-create-vault-issuer",
-	}
-	Expect(v.vault.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup vault")
-	Expect(v.vault.Provision()).NotTo(HaveOccurred(), "failed to provision vault")
-
 	By("Configuring the VaultAppRole server")
-	v.vaultInit = &vault.VaultInitializer{
-		Details:           *v.vault.Details(),
-		RootMount:         "root-ca",
-		IntermediateMount: intermediateMount,
-		Role:              role,
-		AppRoleAuthPath:   authPath,
-	}
-	Expect(v.vaultInit.Init()).NotTo(HaveOccurred(), "failed to init vault")
-	Expect(v.vaultInit.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
+	v.setup = vault.NewVaultInitializerAppRole(
+		addon.Base.Details().KubeClient,
+		*addon.Vault.Details(),
+		false,
+	)
+	Expect(v.setup.Init()).NotTo(HaveOccurred(), "failed to init vault")
+	Expect(v.setup.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
 
-	roleID, secretID, err := v.vaultInit.CreateAppRole()
+	roleID, secretID, err := v.setup.CreateAppRole()
 	Expect(err).NotTo(HaveOccurred(), "vault to create app role from vault")
 
 	return &vaultSecrets{
@@ -188,17 +170,15 @@ func (v *vaultAppRoleProvisioner) initVault(f *framework.Framework) *vaultSecret
 }
 
 func (v *vaultAppRoleProvisioner) createIssuerSpec(f *framework.Framework) cmapi.IssuerSpec {
-	vaultPath := path.Join(intermediateMount, "sign", role)
-
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			Vault: &cmapi.VaultIssuer{
-				Server:   v.vault.Details().Host,
-				Path:     vaultPath,
-				CABundle: v.vault.Details().VaultCA,
+				Server:   addon.Vault.Details().URL,
+				Path:     v.setup.IntermediateSignPath(),
+				CABundle: addon.Vault.Details().VaultCA,
 				Auth: cmapi.VaultAuth{
 					AppRole: &cmapi.VaultAppRole{
-						Path:   authPath,
+						Path:   v.setup.AppRoleAuthPath(),
 						RoleId: v.roleID,
 						SecretRef: cmmeta.SecretKeySelector{
 							Key: "secretkey",

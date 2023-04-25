@@ -207,7 +207,7 @@ func (f *Framework) printAddonLogs() {
 func (f *Framework) RequireGlobalAddon(a addon.Addon) {
 	BeforeEach(func() {
 		By("Setting up access for global shared addon")
-		err := a.Setup(f.Config)
+		_, err := a.Setup(f.Config)
 		Expect(err).NotTo(HaveOccurred())
 	})
 }
@@ -223,7 +223,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 
 	BeforeEach(func() {
 		By("Provisioning test-scoped addon")
-		err := a.Setup(f.Config)
+		_, err := a.Setup(f.Config)
 		if errors.IsSkip(err) {
 			Skipf("Skipping test as addon could not be setup: %v", err)
 		}

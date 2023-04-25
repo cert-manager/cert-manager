@@ -97,20 +97,20 @@ type Details struct {
 	Namespace string
 }
 
-func (c *Chart) Setup(cfg *config.Config) error {
+func (c *Chart) Setup(cfg *config.Config, _ ...interface{}) (interface{}, error) {
 	var err error
 
 	c.config = cfg
 	if c.config.Addons.Helm.Path == "" {
-		return fmt.Errorf("--helm-binary-path must be set")
+		return nil, fmt.Errorf("--helm-binary-path must be set")
 	}
 
 	c.home, err = os.MkdirTemp("", "helm-chart-install")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Provision an instance of tiller-deploy
@@ -146,9 +146,11 @@ func (c *Chart) runDepUpdate() error {
 }
 
 func (c *Chart) runInstall() error {
-	args := []string{"install", c.ReleaseName, c.ChartName,
+	args := []string{"upgrade", c.ReleaseName, c.ChartName,
+		"--install",
 		"--wait",
 		"--namespace", c.Namespace,
+		"--create-namespace",
 		"--version", c.ChartVersion}
 
 	for _, v := range c.Values {
@@ -160,20 +162,8 @@ func (c *Chart) runInstall() error {
 	}
 
 	cmd := c.buildHelmCmd(args...)
-	stdoutBuf := &bytes.Buffer{}
-	cmd.Stdout = stdoutBuf
 
-	err := cmd.Run()
-	if err != nil {
-		_, err2 := io.Copy(os.Stdout, stdoutBuf)
-		if err2 != nil {
-			return fmt.Errorf("cmd.Run: %v: io.Copy: %v", err, err2)
-		}
-
-		return fmt.Errorf("cmd.Run: %v", err)
-	}
-
-	return nil
+	return cmd.Run()
 }
 
 func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
