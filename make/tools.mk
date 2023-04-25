@@ -233,7 +233,7 @@ $(foreach GO_DEPENDENCY,$(GO_DEPENDENCIES),$(eval $(call go_dependency,$(word 1,
 HELM_linux_amd64_SHA256SUM=781d826daec584f9d50a01f0f7dadfd25a3312217a14aa2fbb85107b014ac8ca
 HELM_darwin_amd64_SHA256SUM=404938fd2c6eff9e0dab830b0db943fca9e1572cd3d7ee40904705760faa390f
 HELM_darwin_arm64_SHA256SUM=f61a3aa55827de2d8c64a2063fd744b618b443ed063871b79f52069e90813151
-
+HELM_linux_arm64_SHA256SUM=0a60baac83c3106017666864e664f52a4e16fbd578ac009f9a85456a9241c5db
 $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$*_SHA256SUM)
@@ -253,7 +253,7 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 KUBECTL_linux_amd64_SHA256SUM=7fe3a762d926fb068bae32c399880e946e8caf3d903078bea9b169dcd5c17f6d
 KUBECTL_darwin_amd64_SHA256SUM=136f73ede0d52c7985d299432236f891515c050d58d71b4a7d39c45085020ad8
 KUBECTL_darwin_arm64_SHA256SUM=a2029331fa70450a631506c83bb27ae95cc9fdb4b21efb81fde81c689d922ceb
-
+KUBECTL_linux_arm64_SHA256SUM=fd3cb8f16e6ed8aee9955b76e3027ac423b6d1cc7356867310d128082e2db916
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$*_SHA256SUM)
@@ -266,7 +266,7 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 KIND_linux_amd64_SHA256SUM=705c722b0a87c9068e183f6d8baecd155a97a9683949ca837c2a500c9aa95c63
 KIND_darwin_amd64_SHA256SUM=9c91e3a6f380ee4cab79094d3fade94eb10a4416d8d3a6d3e1bb9c616f392de4
 KIND_darwin_arm64_SHA256SUM=96e0765d385c4e5457dc95dc49f66d385727885dfe1ad77520af0a32b7f8ccb2
-
+KIND_linux_arm64_SHA256SUM=9c0320ac39b1f82f1011ae4e4ceb9c9865b528f59839b4d4eff7ab2804fac5f2
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) -sSfL https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
@@ -345,7 +345,7 @@ $(BINDIR)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 YQ_linux_amd64_SHA256SUM=9a54846e81720ae22814941905cd3b056ebdffb76bf09acffa30f5e90b22d615
 YQ_darwin_amd64_SHA256SUM=79a55533b683c5eabdc35b00336aa4c107d7d719db0639a31892fc35d1436cdc
 YQ_darwin_arm64_SHA256SUM=40547a5049f15a1103268fd871baaa34a31ad30136ee27a829cf697737f392be
-
+YQ_linux_arm64_SHA256SUM=ea360a0ecdff30c8625ccd0b97f8714b8308a429fd839cf8ccc481f311e217c6
 $(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$* -o $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
@@ -402,7 +402,7 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=e6ea8e2c6657dad0493f8c61c7a8fef444a5aa421019d09e7f4b6b4e3e9bd45d
 KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=7d1690234e5cf601f1c8b403f835a3a74ffe6cac23a29293a1155ca552599706
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=069e902a99b3d224c455120c5178a8452eb76bc1d4e8cf5179d081e98dd7601c
-
+KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=afd2c4be4952164e412195f3f0fb318867ec65c52d45dd8d94fb158145659778
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout
