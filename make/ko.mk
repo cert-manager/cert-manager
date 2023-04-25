@@ -13,6 +13,9 @@
 # limitations under the License.
 
 ## Experimental tools for building and deploying cert-manager using ko to build and push Docker images.
+## You need to have go workspaces set up to use the ko make targets.
+## https://go.dev/blog/get-familiar-with-workspaces.
+## Run make go-workspaces to set up a Go workspace for this repo.
 ##
 ## Examples:
 ##
