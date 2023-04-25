@@ -47,35 +47,36 @@ func podLabels(ch *cmacme.Challenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.Pod, error) {
+func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx).WithName("ensurePod")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver pods")
 	existingPods, err := s.getPodsForChallenge(ctx, ch)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(existingPods) == 1 {
 		logf.WithRelatedResource(log, existingPods[0]).Info("found one existing HTTP01 solver pod")
-		return existingPods[0], nil
+		return nil
 	}
 	if len(existingPods) > 1 {
 		log.V(logf.InfoLevel).Info("multiple challenge solver pods found for challenge. cleaning up all existing pods.")
 		err := s.cleanupPods(ctx, ch)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return nil, fmt.Errorf("multiple existing challenge solver pods found and cleaned up. retrying challenge sync")
+		return fmt.Errorf("multiple existing challenge solver pods found and cleaned up. retrying challenge sync")
 	}
 
 	log.V(logf.InfoLevel).Info("creating HTTP01 challenge solver pod")
 
-	return s.createPod(ctx, ch)
+	_, err = s.createPod(ctx, ch)
+	return err
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
 // the given challenge
-func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*corev1.Pod, error) {
+func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*metav1.PartialObjectMetadata, error) {
 	log := logf.FromContext(ctx)
 
 	podLabels := podLabels(ch)
@@ -88,19 +89,23 @@ func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) 
 		orderSelector = orderSelector.Add(*req)
 	}
 
-	podList, err := s.podLister.Pods(ch.Namespace).List(orderSelector)
+	podMetadataList, err := s.podLister.ByNamespace(ch.Namespace).List(orderSelector)
 	if err != nil {
 		return nil, err
 	}
 
-	var relevantPods []*corev1.Pod
-	for _, pod := range podList {
-		if !metav1.IsControlledBy(pod, ch) {
-			logf.WithRelatedResource(log, pod).Info("found existing solver pod for this challenge resource, however " +
+	var relevantPods []*metav1.PartialObjectMetadata
+	for _, pod := range podMetadataList {
+		p, ok := pod.(*metav1.PartialObjectMetadata)
+		if !ok {
+			return nil, fmt.Errorf("internal error: cannot cast PartialMetadata: %+#v", pod)
+		}
+		if !metav1.IsControlledBy(p, ch) {
+			logf.WithRelatedResource(log, p).Info("found existing solver pod for this challenge resource, however " +
 				"it does not have an appropriate OwnerReference referencing this challenge. Skipping it altogether.")
 			continue
 		}
-		relevantPods = append(relevantPods, pod)
+		relevantPods = append(relevantPods, p)
 	}
 
 	return relevantPods, nil
@@ -111,7 +116,7 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 
 	pods, err := s.getPodsForChallenge(ctx, ch)
 	if err != nil {
-		return err
+		return fmt.Errorf("error retrieving pods for cleanup: %w", err)
 	}
 	var errs []error
 	for _, pod := range pods {
@@ -121,7 +126,7 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("error deleting pod: %w", err))
 			continue
 		}
 		log.V(logf.InfoLevel).Info("successfully deleted pod resource")

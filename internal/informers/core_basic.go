@@ -64,14 +64,6 @@ func (bf *baseFactory) WaitForCacheSync(stopCh <-chan struct{}) map[string]bool 
 	return ret
 }
 
-func (bf *baseFactory) Pods() corev1informers.PodInformer {
-	return bf.f.Core().V1().Pods()
-}
-
-func (bf *baseFactory) Services() corev1informers.ServiceInformer {
-	return bf.f.Core().V1().Services()
-}
-
 func (bf *baseFactory) Ingresses() networkingv1informers.IngressInformer {
 	return bf.f.Networking().V1().Ingresses()
 }

@@ -18,247 +18,252 @@ package http
 
 import (
 	"context"
-	"reflect"
+	"fmt"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	coretesting "k8s.io/client-go/testing"
+	"k8s.io/utils/pointer"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/stretchr/testify/assert"
+	coretesting "k8s.io/client-go/testing"
 )
 
 func TestEnsurePod(t *testing.T) {
-	const createdPodKey = "createdPod"
-	tests := map[string]solverFixture{
-		"should return an existing pod if one already exists": {
-			Challenge: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					DNSName: "example.com",
-					Token:   "token",
-					Key:     "key",
-					Solver: cmacme.ACMEChallengeSolver{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+	type testT struct {
+		builder     *testpkg.Builder
+		chal        *cmacme.Challenge
+		expectedErr bool
+	}
+	cpuRequest, err := resource.ParseQuantity("10m")
+	assert.NoError(t, err)
+	cpuLimit, err := resource.ParseQuantity("100m")
+	assert.NoError(t, err)
+	memoryRequest, err := resource.ParseQuantity("64Mi")
+	assert.NoError(t, err)
+	memoryLimit, err := resource.ParseQuantity("64Mi")
+	assert.NoError(t, err)
+	var (
+		testNamespace = "foo"
+		chal          = &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: testNamespace,
+			},
+			Spec: cmacme.ChallengeSpec{
+				DNSName: "example.com",
+				Token:   "token",
+				Key:     "key",
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+					},
+				},
+			},
+		}
+		pod = &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "cm-acme-http-solver-",
+				Namespace:    testNamespace,
+				Labels:       podLabels(chal),
+				Annotations: map[string]string{
+					"sidecar.istio.io/inject": "false",
+				},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+			},
+			Spec: corev1.PodSpec{
+				AutomountServiceAccountToken: pointer.Bool(false),
+				NodeSelector: map[string]string{
+					"kubernetes.io/os": "linux",
+				},
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				SecurityContext: &corev1.PodSecurityContext{
+					RunAsNonRoot: pointer.BoolPtr(true),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: corev1.SeccompProfileTypeRuntimeDefault,
+					},
+				},
+				Containers: []corev1.Container{
+					{
+						Name:            "acmesolver",
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Args: []string{
+							fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+							fmt.Sprintf("--domain=%s", chal.Spec.DNSName),
+							fmt.Sprintf("--token=%s", chal.Spec.Token),
+							fmt.Sprintf("--key=%s", chal.Spec.Key),
+						},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    cpuRequest,
+								corev1.ResourceMemory: memoryRequest,
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    cpuLimit,
+								corev1.ResourceMemory: memoryLimit,
+							},
+						},
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "http",
+								ContainerPort: acmeSolverListenPort,
+							},
+						},
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
 						},
 					},
 				},
 			},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(context.TODO(), s.Challenge)
-				if err != nil {
-					t.Errorf("error preparing test: %v", err)
-				}
-				s.testResources[createdPodKey] = ing
-
-				// TODO: replace this with expectedActions to make sure no other actions are performed
-				// create a reactor that fails the test if a pod is created
-				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-					t.Errorf("ensurePod should not create a pod if one already exists")
-					t.Fail()
-					return false, ret, nil
-				})
-
-				s.Builder.Sync()
+		}
+		podMeta = &metav1.PartialObjectMetadata{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				createdPod := s.testResources[createdPodKey].(*corev1.Pod)
-				resp := args[0].(*corev1.Pod)
-				if resp == nil {
-					t.Errorf("unexpected pod = nil")
-					t.Fail()
-					return
-				}
-				if !reflect.DeepEqual(resp, createdPod) {
-					t.Errorf("Expected %v to equal %v", resp, createdPod)
-				}
+			ObjectMeta: pod.ObjectMeta,
+		}
+	)
+	tests := map[string]testT{
+		"should do nothing if pod already exists": {
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{podMeta},
+				ExpectedActions:        []testpkg.Action{},
 			},
+			chal: chal,
 		},
 		"should create a new pod if one does not exist": {
-			Challenge: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					DNSName: "example.com",
-					Token:   "token",
-					Key:     "key",
-					Solver: cmacme.ACMEChallengeSolver{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
-					},
-				},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
 			},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedPod := s.Solver.buildPod(s.Challenge)
-				// create a reactor that fails the test if a pod is created
-				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-					pod := action.(coretesting.CreateAction).GetObject().(*corev1.Pod)
-					// clear pod name as we don't know it yet in the expectedPod
-					pod.Name = ""
-					if !reflect.DeepEqual(pod, expectedPod) {
-						t.Errorf("Expected %v to equal %v", pod, expectedPod)
-					}
-					return false, ret, nil
-				})
-
-				s.Builder.Sync()
-			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resp := args[0].(*corev1.Pod)
-				err := args[1]
-				if resp == nil && err == nil {
-					t.Errorf("unexpected pod = nil")
-					t.Fail()
-					return
-				}
-				pods, err := s.Solver.podLister.List(labels.NewSelector())
-				if err != nil {
-					t.Errorf("unexpected error listing pods: %v", err)
-					t.Fail()
-					return
-				}
-				if len(pods) != 1 {
-					t.Errorf("unexpected %d pods in lister: %+v", len(pods), pods)
-					t.Fail()
-					return
-				}
-				if !reflect.DeepEqual(pods[0], resp) {
-					t.Errorf("Expected %v to equal %v", pods[0], resp)
-				}
-			},
+			chal: chal,
 		},
 		"should clean up if multiple pods exist": {
-			Challenge: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					DNSName: "example.com",
-					Token:   "token",
-					Key:     "key",
-					Solver: cmacme.ACMEChallengeSolver{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
-					},
-				},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{podMeta, func(p metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata { p.Name = "foobar"; return &p }(*podMeta)},
+				KubeObjects:            []runtime.Object{pod, func(p corev1.Pod) *corev1.Pod { p.Name = "foobar"; return &p }(*pod)},
+				ExpectedActions: []testpkg.Action{testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, "foobar")),
+					testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, ""))},
 			},
-			Err: true,
-			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createPod(context.TODO(), s.Challenge)
-				if err != nil {
-					t.Errorf("error preparing test: %v", err)
-				}
-				_, err = s.Solver.createPod(context.TODO(), s.Challenge)
-				if err != nil {
-					t.Errorf("error preparing test: %v", err)
-				}
-
-				s.Builder.Sync()
-			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				pods, err := s.Solver.podLister.List(labels.NewSelector())
-				if err != nil {
-					t.Errorf("error listing pods: %v", err)
-					t.Fail()
-					return
-				}
-				if len(pods) != 0 {
-					t.Errorf("expected pods to have been cleaned up, but there were %d pods left", len(pods))
-				}
-			},
+			chal:        chal,
+			expectedErr: true,
 		},
 	}
-	for name, test := range tests {
+	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
-			test.Setup(t)
-			resp, err := test.Solver.ensurePod(context.TODO(), test.Challenge)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
+			scenario.builder.T = t
+			scenario.builder.InitWithRESTConfig()
+			s := &Solver{
+				Context:   scenario.builder.Context,
+				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
+			s.Context.ACMEOptions = controller.ACMEOptions{
+				HTTP01SolverResourceRequestCPU:    cpuRequest,
+				HTTP01SolverResourceRequestMemory: memoryRequest,
+				HTTP01SolverResourceLimitsCPU:     cpuLimit,
+				HTTP01SolverResourceLimitsMemory:  memoryLimit,
+				ACMEHTTP01SolverRunAsNonRoot:      true,
 			}
-			test.Finish(t, resp, err)
+			scenario.builder.Start()
+			defer scenario.builder.Stop()
+			err := s.ensurePod(context.Background(), scenario.chal)
+			if err != nil != scenario.expectedErr {
+				t.Fatalf("unexpected error: wants err: %t, got err %v", scenario.expectedErr, err)
+
+			}
+			scenario.builder.CheckAndFinish()
 		})
+
 	}
 }
 
-func TestGetPodsForCertificate(t *testing.T) {
-	const createdPodKey = "createdPod"
-	tests := map[string]solverFixture{
-		"should return one pod that matches": {
-			Challenge: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					DNSName: "example.com",
-					Solver: cmacme.ACMEChallengeSolver{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
+func TestGetPodsForChallenge(t *testing.T) {
+	type testT struct {
+		builder        *testpkg.Builder
+		chal           *cmacme.Challenge
+		wantedPodMetas []*metav1.PartialObjectMetadata
+		wantsErr       bool
+	}
+	var (
+		testNamespace = "foo"
+		chal          = &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: testNamespace,
+			},
+			Spec: cmacme.ChallengeSpec{
+				DNSName: "example.com",
+				Token:   "token",
+				Key:     "key",
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 					},
 				},
 			},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(context.TODO(), s.Challenge)
-				if err != nil {
-					t.Errorf("error preparing test: %v", err)
-				}
-
-				s.testResources[createdPodKey] = ing
-				s.Builder.Sync()
+		}
+		pod = &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName:    "cm-acme-http-solver-",
+				Namespace:       testNamespace,
+				Labels:          podLabels(chal),
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				createdPod := s.testResources[createdPodKey].(*corev1.Pod)
-				resp := args[0].([]*corev1.Pod)
-				if len(resp) != 1 {
-					t.Errorf("expected one pod to be returned, but got %d", len(resp))
-					t.Fail()
-					return
-				}
-				if !reflect.DeepEqual(resp[0], createdPod) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdPod)
-				}
+		}
+		podMeta = &metav1.PartialObjectMetadata{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
 			},
+			ObjectMeta: pod.ObjectMeta,
+		}
+		podMeta2 = &metav1.PartialObjectMetadata{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
+		}
+	)
+	podMeta2.Labels[cmacme.DomainLabelKey] = "foo"
+	tests := map[string]testT{
+		"should return one pod that matches": {
+			chal: chal,
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{podMeta},
+			},
+			wantedPodMetas: []*metav1.PartialObjectMetadata{podMeta},
 		},
 		"should not return a pod for the same certificate but different domain": {
-			Challenge: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					DNSName: "example.com",
-					Solver: cmacme.ACMEChallengeSolver{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
-					},
-				},
-			},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				differentChallenge := s.Challenge.DeepCopy()
-				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createPod(context.TODO(), differentChallenge)
-				if err != nil {
-					t.Errorf("error preparing test: %v", err)
-				}
-
-				s.Builder.Sync()
-			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resp := args[0].([]*corev1.Pod)
-				if len(resp) != 0 {
-					t.Errorf("expected zero pods to be returned, but got %d", len(resp))
-					t.Fail()
-					return
-				}
+			chal: chal,
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{&metav1.PartialObjectMetadata{}},
 			},
 		},
 	}
-	for name, test := range tests {
+	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
-			test.Setup(t)
-			resp, err := test.Solver.getPodsForChallenge(context.TODO(), test.Challenge)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
+			scenario.builder.T = t
+			scenario.builder.InitWithRESTConfig()
+			s := &Solver{
+				Context:   scenario.builder.Context,
+				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
+			defer scenario.builder.Stop()
+			scenario.builder.Start()
+			gotPodMetas, err := s.getPodsForChallenge(s.RootContext, scenario.chal)
+			if err != nil != scenario.wantsErr {
+				t.Fatalf("unexpected error: wants error: %t, got error: %v", scenario.wantsErr, err)
 			}
-			test.Finish(t, resp, err)
+			assert.ElementsMatch(t, gotPodMetas, scenario.wantedPodMetas)
+			scenario.builder.CheckAndFinish()
 		})
 	}
 }

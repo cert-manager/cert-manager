@@ -31,34 +31,37 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (*corev1.Service, error) {
+// ensureService ensures that a Service exists for the given Challenge. It
+// returns the name of the Service and error if any.
+func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (string, error) {
 	log := logf.FromContext(ctx).WithName("ensureService")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver services for challenge")
 	existingServices, err := s.getServicesForChallenge(ctx, ch)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if len(existingServices) == 1 {
 		logf.WithRelatedResource(log, existingServices[0]).Info("found one existing HTTP01 solver Service for challenge resource")
-		return existingServices[0], nil
+		return existingServices[0].Name, nil
 	}
 	if len(existingServices) > 1 {
 		log.V(logf.DebugLevel).Info("multiple challenge solver services found for challenge. cleaning up all existing services.")
 		err := s.cleanupServices(ctx, ch)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		return nil, fmt.Errorf("multiple existing challenge solver services found and cleaned up. retrying challenge sync")
+		return "", fmt.Errorf("multiple existing challenge solver services found and cleaned up. retrying challenge sync")
 	}
 
 	log.V(logf.DebugLevel).Info("creating HTTP01 challenge solver service")
-	return s.createService(ctx, ch)
+	svc, err := s.createService(ctx, ch)
+	return svc.Name, err
 }
 
 // getServicesForChallenge returns a list of services that were created to solve
 // http challenges for the given domain
-func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*corev1.Service, error) {
+func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*metav1.PartialObjectMetadata, error) {
 	log := logf.FromContext(ctx).WithName("getServicesForChallenge")
 
 	podLabels := podLabels(ch)
@@ -71,19 +74,23 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challen
 		selector = selector.Add(*req)
 	}
 
-	serviceList, err := s.serviceLister.Services(ch.Namespace).List(selector)
+	serviceList, err := s.serviceLister.ByNamespace(ch.Namespace).List(selector)
 	if err != nil {
 		return nil, err
 	}
 
-	var relevantServices []*corev1.Service
+	var relevantServices []*metav1.PartialObjectMetadata
 	for _, service := range serviceList {
-		if !metav1.IsControlledBy(service, ch) {
-			logf.WithRelatedResource(log, service).Info("found existing solver pod for this challenge resource, however " +
+		s, ok := service.(*metav1.PartialObjectMetadata)
+		if !ok {
+			return nil, fmt.Errorf("internal error: cannot cast Service PartialObjectMetadata")
+		}
+		if !metav1.IsControlledBy(s, ch) {
+			logf.WithRelatedResource(log, s).Info("found existing solver pod for this challenge resource, however " +
 				"it does not have an appropriate OwnerReference referencing this challenge. Skipping it altogether.")
 			continue
 		}
-		relevantServices = append(relevantServices, service)
+		relevantServices = append(relevantServices, s)
 	}
 
 	return relevantServices, nil

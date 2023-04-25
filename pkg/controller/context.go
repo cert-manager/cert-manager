@@ -26,11 +26,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
@@ -44,6 +48,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
@@ -84,6 +89,8 @@ type Context struct {
 	CMClient clientset.Interface
 	// GWClient is a GatewayAPI clientset.
 	GWClient gwclient.Interface
+	// MetadataClient is a PartialObjectMetadata client
+	MetadataClient metadata.Interface
 	// DiscoveryClient is a discovery interface. Usually set to Client.Discovery unless a fake client is in use.
 	DiscoveryClient discovery.DiscoveryInterface
 
@@ -97,6 +104,10 @@ type Context struct {
 	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
 	// instances for cert-manager.io types
 	SharedInformerFactory informers.SharedInformerFactory
+
+	// HTTP01ResourceMetadataInformersFactory is a metadata only informers
+	// factory with a http-01 resource label filter selector
+	HTTP01ResourceMetadataInformersFactory metadatainformer.SharedInformerFactory
 
 	// GWShared can be used to obtain SharedIndexInformer instances for
 	// gateway.networking.k8s.io types
@@ -273,6 +284,20 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 	} else {
 		kubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(clients.kubeClient, resyncPeriod, opts.Namespace)
 	}
+	r, err := labels.NewRequirement(cmacme.DomainLabelKey, selection.Exists, nil)
+	if err != nil {
+		panic(fmt.Errorf("internal error: failed to build label selector to filter HTTP-01 challenge resources: %w", err))
+	}
+	isHTTP01ChallengeResourceLabelSelector := labels.NewSelector().Add(*r)
+	http01ResourceMetadataInformerFactory := metadatainformer.NewFilteredSharedInformerFactory(clients.metadataOnlyClient, resyncPeriod, opts.Namespace, func(listOptions *metav1.ListOptions) {
+		// metadataInformersFactory is at the moment only used for pods
+		// and services for http-01 challenge which can be identified by
+		// the same label keys, so it is okay to set the label selector
+		// here. If we start using it for other resources then we'll
+		// have to set the selectors on individual informers instead.
+		listOptions.LabelSelector = isHTTP01ChallengeResourceLabelSelector.String()
+
+	})
 
 	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(clients.gwClient, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
@@ -280,13 +305,14 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		baseRestConfig: restConfig,
 		log:            logf.FromContext(ctx),
 		ctx: &Context{
-			RootContext:               ctx,
-			StopCh:                    ctx.Done(),
-			KubeSharedInformerFactory: kubeSharedInformerFactory,
-			SharedInformerFactory:     sharedInformerFactory,
-			GWShared:                  gwSharedInformerFactory,
-			GatewaySolverEnabled:      clients.gatewayAvailable,
-			ContextOptions:            opts,
+			RootContext:                            ctx,
+			StopCh:                                 ctx.Done(),
+			KubeSharedInformerFactory:              kubeSharedInformerFactory,
+			SharedInformerFactory:                  sharedInformerFactory,
+			GWShared:                               gwSharedInformerFactory,
+			GatewaySolverEnabled:                   clients.gatewayAvailable,
+			HTTP01ResourceMetadataInformersFactory: http01ResourceMetadataInformerFactory,
+			ContextOptions:                         opts,
 		},
 	}, nil
 }
@@ -318,6 +344,7 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	ctx.Client = clients.kubeClient
 	ctx.CMClient = clients.cmClient
 	ctx.GWClient = clients.gwClient
+	ctx.MetadataClient = clients.metadataOnlyClient
 	ctx.DiscoveryClient = clients.kubeClient.Discovery()
 	ctx.Recorder = recorder
 
