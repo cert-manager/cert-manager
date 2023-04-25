@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 
@@ -29,25 +30,57 @@ import (
 
 var cfg = framework.DefaultConfig
 
+var isPrimary = false
+
 var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	addon.InitGlobals(cfg)
 
-	err := addon.ProvisionGlobals(cfg)
+	isPrimary = true
+
+	// We first setup the global addons, but do not provision them yet.
+	// This is because we need to transfer the data from the primary
+	// node to the other nodes.
+	toBeTransferred, err := addon.SetupGlobalsPrimary(cfg)
 	if err != nil {
 		framework.Failf("Error provisioning global addons: %v", err)
 	}
 
-	return nil
-}, func([]byte) {
-	addon.InitGlobals(cfg)
-
-	err := addon.SetupGlobals(cfg)
+	encodedData, err := json.Marshal(toBeTransferred)
 	if err != nil {
-		framework.Failf("Error configuring global addons: %v", err)
+		framework.Failf("Error encoding global addon data: %v", err)
+	}
+
+	return encodedData
+}, func(encodedData []byte) {
+	transferredData := []interface{}{}
+	err := json.Unmarshal(encodedData, &transferredData)
+	if err != nil {
+		framework.Failf("Error decoding global addon data: %v", err)
+	}
+
+	if isPrimary {
+		// For the primary node, we need to run ProvisionGlobals to
+		// actually provision the global addons.
+		err = addon.ProvisionGlobals(cfg)
+		if err != nil {
+			framework.Failf("Error configuring global addons: %v", err)
+		}
+	} else {
+		// For non-primary nodes, we need to run Setup with the data
+		// transferred from the primary node.
+		addon.InitGlobals(cfg)
+
+		err := addon.SetupGlobalsNonPrimary(cfg, transferredData)
+		if err != nil {
+			framework.Failf("Error provisioning global addons: %v", err)
+		}
 	}
 })
 
-var _ = ginkgo.SynchronizedAfterSuite(func() {}, func() {
+var _ = ginkgo.SynchronizedAfterSuite(func() {
+	// Reset the isPrimary flag to false for the next run (when --repeat flag is used)
+	isPrimary = false
+}, func() {
 	ginkgo.By("Retrieving logs for global addons")
 	globalLogs, err := addon.GlobalLogs()
 	if err != nil {

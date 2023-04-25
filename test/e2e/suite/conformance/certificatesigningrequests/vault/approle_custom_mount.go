@@ -25,7 +25,6 @@ import (
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	issuer := &approle{
 		testWithRootCA: true,
-		authPath:       customAuthPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole Custom Auth Path Issuer With Root CA",
@@ -39,7 +38,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	issuerNoRoot := &approle{
 		testWithRootCA: false,
-		authPath:       customAuthPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole Custom Auth Path Issuer Without Root CA",
@@ -53,7 +51,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	clusterIssuer := &approle{
 		testWithRootCA: true,
-		authPath:       customAuthPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole Custom Auth Path ClusterIssuer With Root CA",
@@ -67,7 +64,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	clusterIssuerNoRoot := &approle{
 		testWithRootCA: false,
-		authPath:       customAuthPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole Custom Auth Path ClusterIssuer Without Root CA",

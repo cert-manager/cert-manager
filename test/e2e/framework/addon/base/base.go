@@ -20,6 +20,7 @@ package base
 
 import (
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper"
@@ -39,6 +40,9 @@ type Details struct {
 	// the global configuration.
 	Config *config.Config
 
+	// KubeConfig is the loaded Kubernetes configuration for addons to use.
+	KubeConfig *rest.Config
+
 	// KubeClient is a configured Kubernetes clientset for addons to use.
 	KubeClient kubernetes.Interface
 }
@@ -49,10 +53,10 @@ func (d *Details) Helper() *helper.Helper {
 	}
 }
 
-func (b *Base) Setup(c *config.Config) error {
+func (b *Base) Setup(c *config.Config, _ ...interface{}) (interface{}, error) {
 	kubeConfig, err := util.LoadConfig(c.KubeConfig, c.KubeContext)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	kubeConfig.Burst = 9000
@@ -60,15 +64,17 @@ func (b *Base) Setup(c *config.Config) error {
 
 	kubeClientset, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	b.details = &Details{
-		Config:     c,
+		Config: c,
+
+		KubeConfig: kubeConfig,
 		KubeClient: kubeClientset,
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (b *Base) Provision() error {

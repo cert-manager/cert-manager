@@ -92,7 +92,7 @@ func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectRe
 		Namespace: f.Namespace.Name,
 	}
 
-	err := v.tpp.Setup(f.Config)
+	_, err := v.tpp.Setup(f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
@@ -123,7 +123,7 @@ func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.O
 		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
 	}
 
-	err := v.tpp.Setup(f.Config)
+	_, err := v.tpp.Setup(f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}

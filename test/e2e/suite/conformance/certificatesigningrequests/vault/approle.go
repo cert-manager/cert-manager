@@ -19,7 +19,6 @@ package vault
 import (
 	"context"
 	"fmt"
-	"path"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -36,21 +35,10 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 )
 
-const (
-	rootMount         = "root-ca"
-	intermediateMount = "intermediate-ca"
-	role              = "kubernetes-vault"
-	secretAppRoleName = "vault-role-"
-	authPath          = "approle"
-	customAuthPath    = "custom/path"
-)
-
 type approle struct {
-	authPath       string
 	testWithRootCA bool
 
-	addon       *vault.Vault
-	initializer *vault.VaultInitializer
+	setup *vault.VaultInitializer
 
 	*secrets
 }
@@ -66,7 +54,6 @@ type secrets struct {
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	issuer := &approle{
 		testWithRootCA: true,
-		authPath:       authPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole Issuer With Root CA",
@@ -80,7 +67,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	issuerNoRoot := &approle{
 		testWithRootCA: false,
-		authPath:       authPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole Issuer Without Root CA",
@@ -94,7 +80,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	clusterIssuer := &approle{
 		testWithRootCA: true,
-		authPath:       authPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole ClusterIssuer With Root CA",
@@ -108,7 +93,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	clusterIssuerNoRoot := &approle{
 		testWithRootCA: false,
-		authPath:       authPath,
 	}
 	(&certificatesigningrequests.Suite{
 		Name:             "Vault AppRole ClusterIssuer Without Root CA",
@@ -122,8 +106,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 })
 
 func (a *approle) delete(f *framework.Framework, signerName string) {
-	Expect(a.initializer.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
-	Expect(a.addon.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
+	Expect(a.setup.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 
 	err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(context.TODO(), a.secretName, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
@@ -136,11 +119,12 @@ func (a *approle) delete(f *framework.Framework, signerName string) {
 }
 
 func (a *approle) createIssuer(f *framework.Framework) string {
+	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole Issuer")
 
 	a.secrets = a.initVault(f)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vault.NewVaultAppRoleSecret(secretAppRoleName, a.secretID), metav1.CreateOptions{})
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, a.secretID), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	a.secretName = sec.Name
@@ -163,11 +147,12 @@ func (a *approle) createIssuer(f *framework.Framework) string {
 }
 
 func (a *approle) createClusterIssuer(f *framework.Framework) string {
+	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole ClusterIssuer")
 
 	a.secrets = a.initVault(f)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), vault.NewVaultAppRoleSecret(secretAppRoleName, a.secretID), metav1.CreateOptions{})
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, a.secretID), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	a.secretName = sec.Name
@@ -190,27 +175,16 @@ func (a *approle) createClusterIssuer(f *framework.Framework) string {
 }
 
 func (a *approle) initVault(f *framework.Framework) *secrets {
-	a.addon = &vault.Vault{
-		Base:      addon.Base,
-		Namespace: f.Namespace.Name,
-		Name:      "cm-e2e-create-vault-issuer",
-	}
-	Expect(a.addon.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup vault")
-	Expect(a.addon.Provision()).NotTo(HaveOccurred(), "failed to provision vault")
-
 	By("Configuring the VaultAppRole server")
-	a.initializer = &vault.VaultInitializer{
-		Details:           *a.addon.Details(),
-		RootMount:         rootMount,
-		IntermediateMount: intermediateMount,
-		ConfigureWithRoot: a.testWithRootCA,
-		Role:              role,
-		AppRoleAuthPath:   a.authPath,
-	}
-	Expect(a.initializer.Init()).NotTo(HaveOccurred(), "failed to init vault")
-	Expect(a.initializer.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
+	a.setup = vault.NewVaultInitializerAppRole(
+		addon.Base.Details().KubeClient,
+		*addon.Vault.Details(),
+		a.testWithRootCA,
+	)
+	Expect(a.setup.Init()).NotTo(HaveOccurred(), "failed to init vault")
+	Expect(a.setup.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
 
-	roleID, secretID, err := a.initializer.CreateAppRole()
+	roleID, secretID, err := a.setup.CreateAppRole()
 	Expect(err).NotTo(HaveOccurred(), "vault to create app role from vault")
 
 	return &secrets{
@@ -220,17 +194,15 @@ func (a *approle) initVault(f *framework.Framework) *secrets {
 }
 
 func (a *approle) createIssuerSpec(f *framework.Framework) cmapi.IssuerSpec {
-	vaultPath := path.Join(intermediateMount, "sign", role)
-
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			Vault: &cmapi.VaultIssuer{
-				Server:   a.addon.Details().Host,
-				Path:     vaultPath,
-				CABundle: a.addon.Details().VaultCA,
+				Server:   addon.Vault.Details().URL,
+				Path:     a.setup.IntermediateSignPath(),
+				CABundle: addon.Vault.Details().VaultCA,
 				Auth: cmapi.VaultAuth{
 					AppRole: &cmapi.VaultAppRole{
-						Path:   a.authPath,
+						Path:   a.setup.AppRoleAuthPath(),
 						RoleId: a.roleID,
 						SecretRef: cmmeta.SecretKeySelector{
 							Key: "secretkey",

@@ -22,12 +22,13 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 )
 
 type Addon interface {
-	Setup(*config.Config) error
+	Setup(*config.Config, ...interface{}) (interface{}, error)
 	Provision() error
 	Deprovision() error
 	SupportsGlobal() bool
@@ -40,7 +41,8 @@ type Addon interface {
 
 var (
 	// Base is a base addon containing Kubernetes clients
-	Base = &base.Base{}
+	Base  = &base.Base{}
+	Vault = &vault.Vault{}
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
@@ -61,20 +63,43 @@ func InitGlobals(cfg *config.Config) {
 	}
 	globalsInited = true
 	*Base = base.Base{}
+	*Vault = vault.Vault{
+		Base:      Base,
+		Namespace: "e2e-vault",
+		Name:      "vault",
+	}
 	allAddons = []Addon{
 		Base,
+		Vault,
 	}
 }
 
-// ProvisionGlobals provisions all of the global addons, including calling Setup.
+// SetupGlobals setups all of the global addons.
 // This should be called by the test suite entrypoint in a SynchronizedBeforeSuite
-// block to ensure it is run once per suite.
-func ProvisionGlobals(cfg *config.Config) error {
-	// TODO: if we want to provision dependencies in parallel we will need
-	// to improve the logic here.
-	for _, g := range allAddons {
-		if err := provisionGlobal(g, cfg); err != nil {
+// block to ensure it is run once per suite (only on ginkgo process #1).
+func SetupGlobalsPrimary(cfg *config.Config) ([]interface{}, error) {
+	toBeTransferred := make([]interface{}, len(allAddons))
+	for idx, g := range allAddons {
+		data, err := g.Setup(cfg)
+		if err != nil {
+			return nil, err
+		}
+		if !g.SupportsGlobal() {
+			return nil, fmt.Errorf("requested global plugin does not support shared mode with current configuration")
+		}
+		toBeTransferred[idx] = data
+	}
+	return toBeTransferred, nil
+}
+
+func SetupGlobalsNonPrimary(cfg *config.Config, transferred []interface{}) error {
+	for idx, g := range allAddons {
+		_, err := g.Setup(cfg, transferred[idx])
+		if err != nil {
 			return err
+		}
+		if !g.SupportsGlobal() {
+			return fmt.Errorf("requested global plugin does not support shared mode with current configuration")
 		}
 	}
 	return nil
@@ -84,10 +109,10 @@ func ProvisionGlobals(cfg *config.Config) error {
 // This should be called by the test suite entrypoint in a BeforeSuite block
 // on all ginkgo nodes to ensure global instances are configured for each test
 // runner.
-func SetupGlobals(cfg *config.Config) error {
+func ProvisionGlobals(cfg *config.Config) error {
 	for _, g := range allAddons {
-		err := g.Setup(cfg)
-		if err != nil {
+		provisioned = append(provisioned, g)
+		if err := g.Provision(); err != nil {
 			return err
 		}
 	}
@@ -136,24 +161,4 @@ func DeprovisionGlobals(cfg *config.Config) error {
 		errs = append(errs, a.Deprovision())
 	}
 	return utilerrors.NewAggregate(errs)
-}
-
-func provisionGlobal(a Addon, cfg *config.Config) error {
-	if err := a.Setup(cfg); err != nil {
-		return err
-	}
-	if !a.SupportsGlobal() {
-		return fmt.Errorf("Requested global plugin does not support shared mode with current configuration")
-	}
-	if cfg.Cleanup {
-		err := a.Deprovision()
-		if err != nil {
-			return err
-		}
-	}
-	provisioned = append(provisioned, a)
-	if err := a.Provision(); err != nil {
-		return err
-	}
-	return nil
 }
