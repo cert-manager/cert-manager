@@ -40,9 +40,9 @@ import (
 
 const (
 	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
-	vaultHelmChartVersion = "0.22.1"
-	vaultImageRepository  = "index.docker.io/library/vault"
-	vaultImageTag         = "1.12.1@sha256:08dd1cb922624c51a5aefd4d9ce0ac5ed9688d96d8a5ad94664fa10e84702ed6"
+	vaultHelmChartVersion = "0.24.1"
+	vaultImageRepository  = "local/vault"
+	vaultImageTag         = "local"
 )
 
 // Vault describes the configuration details for an instance of Vault
@@ -193,6 +193,10 @@ func (v *Vault) Setup(cfg *config.Config) error {
 			{
 				Key:   "server.image.tag",
 				Value: vaultImageTag,
+			},
+			{
+				Key:   "server.image.pullPolicy",
+				Value: "Never",
 			},
 			// configure resource requests and limits
 			{

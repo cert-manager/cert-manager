@@ -18,7 +18,7 @@ require (
 	github.com/segmentio/encoding v0.3.6
 	github.com/sergi/go-diff v1.3.1
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/crypto v0.5.0
+	golang.org/x/crypto v0.6.0
 	golang.org/x/sync v0.1.0
 	k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver v0.26.3

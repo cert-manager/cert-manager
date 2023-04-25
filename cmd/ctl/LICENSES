@@ -100,7 +100,7 @@ github.com/xeipuuv/gojsonreference,https://github.com/xeipuuv/gojsonreference/bl
 github.com/xeipuuv/gojsonschema,https://github.com/xeipuuv/gojsonschema/blob/v1.2.0/LICENSE-APACHE-2.0.txt,Apache-2.0
 github.com/xlab/treeprint,https://github.com/xlab/treeprint/blob/v1.1.0/LICENSE,MIT
 go.starlark.net,https://github.com/google/starlark-go/blob/8dd3e2ee1dd5/LICENSE,BSD-3-Clause
-golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.5.0:LICENSE,BSD-3-Clause
+golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.6.0:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.7.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.5.0:LICENSE,BSD-3-Clause
 golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.1.0:LICENSE,BSD-3-Clause
