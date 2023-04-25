@@ -23,7 +23,7 @@ set -eu -o pipefail
 
 if [ $# -ne 1 ]; 
     then echo "error: incorrect number of args: usage ${0} <kubebuilder-tools-version>"
-    echo "you can discover available versions by running gsutil ls gs://kubebuilder-tools
+    echo "you can discover available versions by running gsutil ls gs://kubebuilder-tools"
     exit 1
 fi
 
@@ -33,7 +33,7 @@ version=$1
 
 kubebuilder_tools_storage_url="https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools"
 
-os_arches=("linux-amd64" "darwin-amd64" "darwin-arm64")
+os_arches=("linux-amd64" "darwin-amd64" "darwin-arm64" "linux-arm64")
 
 output=$(printf "Kubebuilder tools SHAs for version %s:" "$version")
 
