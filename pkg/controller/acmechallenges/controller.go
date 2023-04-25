@@ -94,8 +94,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	secretInformer := ctx.KubeSharedInformerFactory.Secrets()
 	// we register these informers here so the HTTP01 solver has a synced
 	// cache when managing pod/service/ingress resources
-	podInformer := ctx.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods"))
-	serviceInformer := ctx.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services"))
+	podInformer := ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods"))
+	serviceInformer := ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services"))
 	ingressInformer := ctx.KubeSharedInformerFactory.Ingresses()
 
 	// build a list of InformerSynced functions that will be returned by the Register method.

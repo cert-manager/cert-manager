@@ -145,7 +145,7 @@ func TestEnsureService(t *testing.T) {
 			scenario.builder.InitWithRESTConfig()
 			s := &Solver{
 				Context:       scenario.builder.Context,
-				serviceLister: scenario.builder.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
+				serviceLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
 			}
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
@@ -229,7 +229,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 			scenario.builder.InitWithRESTConfig()
 			s := &Solver{
 				Context:       scenario.builder.Context,
-				serviceLister: scenario.builder.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
+				serviceLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
 			}
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
