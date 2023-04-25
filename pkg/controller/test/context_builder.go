@@ -151,7 +151,7 @@ func (b *Builder) Init() {
 	b.KubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(b.Client, informerResyncPeriod, "")
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.GWShared = gwinformers.NewSharedInformerFactory(b.GWClient, informerResyncPeriod)
-	b.MetadataInformerFactory = metadatainformer.NewFilteredSharedInformerFactory(b.MetadataClient, informerResyncPeriod, "", func(listOptions *metav1.ListOptions) {})
+	b.HTTP01ResourceMetadataInformersFactory = metadatainformer.NewFilteredSharedInformerFactory(b.MetadataClient, informerResyncPeriod, "", func(listOptions *metav1.ListOptions) {})
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log, clock.RealClock{})
 
@@ -322,7 +322,7 @@ func (b *Builder) Start() {
 	b.KubeSharedInformerFactory.Start(b.stopCh)
 	b.SharedInformerFactory.Start(b.stopCh)
 	b.GWShared.Start(b.stopCh)
-	b.MetadataInformerFactory.Start(b.stopCh)
+	b.HTTP01ResourceMetadataInformersFactory.Start(b.stopCh)
 
 	// wait for caches to sync
 	b.Sync()
@@ -338,7 +338,7 @@ func (b *Builder) Sync() {
 	if err := mustAllSync(b.GWShared.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for GWShared to sync: " + err.Error())
 	}
-	if err := mustAllSyncGVR(b.MetadataInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
+	if err := mustAllSyncGVR(b.HTTP01ResourceMetadataInformersFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for MetadataInformerFactory to sync:" + err.Error())
 	}
 	if b.additionalSyncFuncs != nil {

@@ -163,7 +163,7 @@ func TestEnsurePod(t *testing.T) {
 			scenario.builder.InitWithRESTConfig()
 			s := &Solver{
 				Context:   scenario.builder.Context,
-				podLister: scenario.builder.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
+				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 			}
 			s.Context.ACMEOptions = controller.ACMEOptions{
 				HTTP01SolverResourceRequestCPU:    cpuRequest,
@@ -254,7 +254,7 @@ func TestGetPodsForChallenge(t *testing.T) {
 			scenario.builder.InitWithRESTConfig()
 			s := &Solver{
 				Context:   scenario.builder.Context,
-				podLister: scenario.builder.MetadataInformerFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
+				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 			}
 			defer scenario.builder.Stop()
 			scenario.builder.Start()

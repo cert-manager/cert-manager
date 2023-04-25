@@ -105,9 +105,9 @@ type Context struct {
 	// instances for cert-manager.io types
 	SharedInformerFactory informers.SharedInformerFactory
 
-	// MetadataInformerFactory can be used to start partial metadata
-	// informers
-	MetadataInformerFactory metadatainformer.SharedInformerFactory
+	// HTTP01ResourceMetadataInformersFactory is a metadata only informers
+	// factory with a http-01 resource label filter selector
+	HTTP01ResourceMetadataInformersFactory metadatainformer.SharedInformerFactory
 
 	// GWShared can be used to obtain SharedIndexInformer instances for
 	// gateway.networking.k8s.io types
@@ -289,7 +289,7 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		panic(fmt.Errorf("internal error: failed to build label selector to filter HTTP-01 challenge resources: %w", err))
 	}
 	isHTTP01ChallengeResourceLabelSelector := labels.NewSelector().Add(*r)
-	metadataInformerFactory := metadatainformer.NewFilteredSharedInformerFactory(clients.metadataOnlyClient, resyncPeriod, opts.Namespace, func(listOptions *metav1.ListOptions) {
+	http01ResourceMetadataInformerFactory := metadatainformer.NewFilteredSharedInformerFactory(clients.metadataOnlyClient, resyncPeriod, opts.Namespace, func(listOptions *metav1.ListOptions) {
 		// metadataInformersFactory is at the moment only used for pods
 		// and services for http-01 challenge which can be identified by
 		// the same label keys, so it is okay to set the label selector
@@ -305,14 +305,14 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		baseRestConfig: restConfig,
 		log:            logf.FromContext(ctx),
 		ctx: &Context{
-			RootContext:               ctx,
-			StopCh:                    ctx.Done(),
-			KubeSharedInformerFactory: kubeSharedInformerFactory,
-			SharedInformerFactory:     sharedInformerFactory,
-			GWShared:                  gwSharedInformerFactory,
-			GatewaySolverEnabled:      clients.gatewayAvailable,
-			MetadataInformerFactory:   metadataInformerFactory,
-			ContextOptions:            opts,
+			RootContext:                            ctx,
+			StopCh:                                 ctx.Done(),
+			KubeSharedInformerFactory:              kubeSharedInformerFactory,
+			SharedInformerFactory:                  sharedInformerFactory,
+			GWShared:                               gwSharedInformerFactory,
+			GatewaySolverEnabled:                   clients.gatewayAvailable,
+			HTTP01ResourceMetadataInformersFactory: http01ResourceMetadataInformerFactory,
+			ContextOptions:                         opts,
 		},
 	}, nil
 }

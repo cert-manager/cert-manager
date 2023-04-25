@@ -81,7 +81,6 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challen
 
 	var relevantServices []*metav1.PartialObjectMetadata
 	for _, service := range serviceList {
-		// TODO: can we use a metadata specific lister instead?
 		s, ok := service.(*metav1.PartialObjectMetadata)
 		if !ok {
 			return nil, fmt.Errorf("internal error: cannot cast Service PartialObjectMetadata")

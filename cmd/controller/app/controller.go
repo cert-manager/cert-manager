@@ -211,7 +211,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	log.V(logf.DebugLevel).Info("starting shared informer factories")
 	ctx.SharedInformerFactory.Start(rootCtx.Done())
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
-	ctx.MetadataInformerFactory.Start(rootCtx.Done())
+	ctx.HTTP01ResourceMetadataInformersFactory.Start(rootCtx.Done())
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
 		ctx.GWShared.Start(rootCtx.Done())
