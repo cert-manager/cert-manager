@@ -156,7 +156,7 @@ const (
 	defaultMaxConcurrentChallenges   = 60
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
-	defaultHealthzServerAddress           = "127.0.0.1:10257"
+	defaultHealthzServerAddress           = "0.0.0.0:10257"
 	// This default value is the same as used in Kubernetes controller-manager.
 	// See:
 	// https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kube-controller-manager/app/controllermanager.go#L202-L209
