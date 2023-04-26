@@ -134,6 +134,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	}
 	healthzServer := healthz.NewServer(opts.HealthzLeaderElectionTimeout)
 	g.Go(func() error {
+		log.V(logf.InfoLevel).Info("starting healthz server", "address", healthzListener.Addr())
 		return healthzServer.Start(rootCtx, healthzListener)
 	})
 
