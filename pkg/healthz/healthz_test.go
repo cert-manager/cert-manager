@@ -46,12 +46,12 @@ const (
 	lockDescription = "fake-resource-lock"
 )
 
-// TestHealthzLivez checks the responses of the `/livez` endpoint.
+// TestHealthzLivezLeaderElection checks the responses of the `/livez/leaderElection` endpoint.
 //
 // These tests are intended to demonstrate that the LeaderElectionHealthzAdaptor
 // does indeed cause the `/livez` endpoint to return errors if the healthz
 // server continues to run after the LeaderElector go-routine has exited.
-func TestHealthzLivez(t *testing.T) {
+func TestHealthzLivezLeaderElection(t *testing.T) {
 
 	type input struct {
 		leaderElectionEnabled bool
