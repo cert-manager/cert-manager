@@ -45,6 +45,7 @@ const (
 	// alpha: v1.7.0
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
+	// See https://github.com/cert-manager/cert-manager/blob/master/design/20220118.server-side-apply.md#feature-gate
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
 
 	// alpha: v1.8.0
@@ -95,9 +96,14 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
-	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	StableCertificateRequestName:                     {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
-	SecretsFilteredCaching:                           {Default: false, PreRelease: featuregate.Alpha},
+	// We plan to graduate this feature to Beta in v1.13 after we moved all controllers to use ServerSideApply.
+	// We already know that the feature is reasonably correct & stable thanks to enabling it in our e2e tests for a while.
+	// More info about criteria: https://github.com/cert-manager/cert-manager/blob/master/design/20220118.server-side-apply.md#feature-gate
+	ServerSideApply: {Default: false, PreRelease: featuregate.Alpha},
+	// We plan to graduate this feature to Beta in v1.13 after we gathered some User feedback.
+	// More info about criteria: https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md#graduation-criteria
+	SecretsFilteredCaching: {Default: false, PreRelease: featuregate.Alpha},
 }
