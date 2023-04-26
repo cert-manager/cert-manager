@@ -47,7 +47,7 @@ $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footno
 # to commit a go.work file to the repository root for reasons given in:
 # https://github.com/cert-manager/cert-manager/pull/5935
 LICENSES_GO_WORK := $(BINDIR)/scratch/LICENSES.go.work
-$(LICENSES_GO_WORK):
+$(LICENSES_GO_WORK): $(BINDIR)/scratch
 	$(MAKE) go-workspace GOWORK=$(abspath $@)
 
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
