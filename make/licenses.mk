@@ -18,9 +18,8 @@
 # As such, this is hardcoded to avoid needless complexity
 LICENSE_YEAR=2022
 
-# Creates the boilerplate header for YAML files, assumed to be the same as the one in
-# shell scripts (hence the use of boilerplate.sh.txt)
-$(BINDIR)/scratch/license.yaml: hack/boilerplate/boilerplate.sh.txt | $(BINDIR)/scratch
+# Creates the boilerplate header for YAML files from the template in hack/
+$(BINDIR)/scratch/license.yaml: hack/boilerplate-yaml.txt | $(BINDIR)/scratch
 	sed -e "s/YEAR/$(LICENSE_YEAR)/g" < $< > $@
 
 # The references LICENSES file is 1.4MB at the time of writing. Bundling it into every container image
