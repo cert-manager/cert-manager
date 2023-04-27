@@ -21,6 +21,9 @@ import (
 
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
+	"k8s.io/component-base/logs"
+	logsapi "k8s.io/component-base/logs/api/v1"
+	_ "k8s.io/component-base/logs/json/register"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	configscheme "github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
@@ -30,20 +33,29 @@ import (
 
 // WebhookFlags defines options that can only be configured via flags.
 type WebhookFlags struct {
+	Logging *logs.Options
+
 	// Path to a file containing a WebhookConfiguration resource
 	Config string
 }
 
 func NewWebhookFlags() *WebhookFlags {
-	return &WebhookFlags{}
+	return &WebhookFlags{
+		Logging: logs.NewOptions(),
+	}
 }
 
 func (f *WebhookFlags) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&f.Config, "config", "", "Path to a file containing a WebhookConfiguration object used to configure the webhook")
+	logsapi.AddFlags(f.Logging, fs)
 }
 
 func ValidateWebhookFlags(f *WebhookFlags) error {
-	// No validation needed today
+	err := logsapi.ValidateAndApply(f.Logging, nil)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

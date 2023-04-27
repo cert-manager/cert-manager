@@ -21,13 +21,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 
@@ -35,7 +34,7 @@ import (
 )
 
 var (
-	Log = klogr.New().WithName("cert-manager")
+	Log = klogr.NewWithOptions().WithName("cert-manager")
 )
 
 const (
@@ -49,8 +48,6 @@ const (
 	TraceLevel        = 5
 )
 
-var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
-
 // GlogWriter serves as a bridge between the standard log package and the glog package.
 type GlogWriter struct{}
 
@@ -62,22 +59,21 @@ func (writer GlogWriter) Write(data []byte) (n int, err error) {
 
 // InitLogs initializes logs the way we want for kubernetes.
 func InitLogs(fs *flag.FlagSet) {
+	logs.InitLogs()
+
 	if fs == nil {
 		fs = flag.CommandLine
 	}
-	klog.InitFlags(fs)
+	initDeprecatedFlags(fs)
 	_ = fs.Set("logtostderr", "true")
 
 	log.SetOutput(GlogWriter{})
 	log.SetFlags(0)
-
-	// The default glog flush interval is 30 seconds, which is frighteningly long.
-	go wait.Until(klog.Flush, *logFlushFreq, wait.NeverStop)
 }
 
 // FlushLogs flushes logs immediately.
 func FlushLogs() {
-	klog.Flush()
+	logs.FlushLogs()
 }
 
 const (
@@ -175,4 +171,16 @@ func WithInfof(l logr.Logger) *LogWithFormat {
 // Infof logs message with the given format and arguments.
 func (l *LogWithFormat) Infof(format string, a ...interface{}) {
 	l.Info(fmt.Sprintf(format, a...))
+}
+
+func initDeprecatedFlags(fs *flag.FlagSet) {
+	var allFlags flag.FlagSet
+	klog.InitFlags(&allFlags)
+	allFlags.VisitAll(func(f *flag.Flag) {
+		switch f.Name {
+		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
+			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
+			fs.Var(f.Value, f.Name, f.Usage)
+		}
+	})
 }
