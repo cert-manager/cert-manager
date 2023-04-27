@@ -312,7 +312,7 @@ $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/to
 TRIVY_linux_amd64_SHA256SUM=e6e1c4767881ab1e40da5f3bb499b1c9176892021c7cb209405078fc096d94d8
 TRIVY_darwin_amd64_SHA256SUM=1cc8b2301f696b71c488d99c917a21a191ab26e1c093287c20112e8bb517ac4c
 TRIVY_darwin_arm64_SHA256SUM=41a3d4c12cd227cf95db6b30144b85e571541f587837f2f3814e2339dd81a21a
-
+TRIVY_linux_arm64_SHA256SUM=fd6e4b8f9ce7ad138b8fd46c7db308d1343f27ee8029766c939c5f66c5bef048
 $(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,macOS,$*))
 	$(eval OS_AND_ARCH := $(subst linux,Linux,$(OS_AND_ARCH)))
