@@ -20,8 +20,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	applyconfigurationsacmev1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -134,6 +137,51 @@ func (c *FakeChallenges) DeleteCollection(ctx context.Context, opts v1.DeleteOpt
 func (c *FakeChallenges) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *acmev1.Challenge, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(challengesResource, c.ns, name, pt, data, subresources...), &acmev1.Challenge{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*acmev1.Challenge), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied challenge.
+func (c *FakeChallenges) Apply(ctx context.Context, challenge *applyconfigurationsacmev1.ChallengeApplyConfiguration, opts v1.ApplyOptions) (result *acmev1.Challenge, err error) {
+	if challenge == nil {
+		return nil, fmt.Errorf("challenge provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(challenge)
+	if err != nil {
+		return nil, err
+	}
+	name := challenge.Name
+	if name == nil {
+		return nil, fmt.Errorf("challenge.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(challengesResource, c.ns, *name, types.ApplyPatchType, data), &acmev1.Challenge{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*acmev1.Challenge), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeChallenges) ApplyStatus(ctx context.Context, challenge *applyconfigurationsacmev1.ChallengeApplyConfiguration, opts v1.ApplyOptions) (result *acmev1.Challenge, err error) {
+	if challenge == nil {
+		return nil, fmt.Errorf("challenge provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(challenge)
+	if err != nil {
+		return nil, err
+	}
+	name := challenge.Name
+	if name == nil {
+		return nil, fmt.Errorf("challenge.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(challengesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &acmev1.Challenge{})
 
 	if obj == nil {
 		return nil, err
