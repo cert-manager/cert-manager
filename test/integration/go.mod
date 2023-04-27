@@ -6,11 +6,14 @@ replace github.com/cert-manager/cert-manager => ../../
 
 replace github.com/cert-manager/cert-manager/cmctl-binary => ../../cmd/ctl/
 
+replace github.com/cert-manager/cert-manager/controller-binary => ../../cmd/controller/
+
 replace github.com/cert-manager/cert-manager/webhook-binary => ../../cmd/webhook/
 
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cert-manager/cert-manager/cmctl-binary v0.0.0-00010101000000-000000000000
+	github.com/cert-manager/cert-manager/controller-binary v0.0.0-00010101000000-000000000000
 	github.com/cert-manager/cert-manager/webhook-binary v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.2.3
 	github.com/miekg/dns v1.1.50

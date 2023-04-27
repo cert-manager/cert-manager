@@ -2,8 +2,18 @@ module github.com/cert-manager/cert-manager/e2e-tests
 
 go 1.20
 
+replace github.com/cert-manager/cert-manager/controller-binary => ../../cmd/controller/
+
+replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
+
+// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
+replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
+
+replace github.com/cert-manager/cert-manager => ../../
+
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
+	github.com/cert-manager/cert-manager/controller-binary v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go v0.58.1
 	github.com/hashicorp/vault/api v1.9.1
 	github.com/kr/pretty v0.3.1
@@ -52,7 +62,7 @@ require (
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -89,10 +99,3 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
-
-// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
-replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
-
-replace github.com/cert-manager/cert-manager => ../../

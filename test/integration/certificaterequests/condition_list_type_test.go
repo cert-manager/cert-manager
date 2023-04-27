@@ -27,7 +27,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/ssaclient/certificaterequests"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"

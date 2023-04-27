@@ -36,7 +36,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/cert-manager/cert-manager/webhook-binary/pkg/webhook/authority"
 )
 
 // Tests for the dynamic authority functionality to ensure it properly handles

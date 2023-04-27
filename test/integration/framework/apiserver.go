@@ -40,10 +40,10 @@ import (
 
 	"github.com/cert-manager/cert-manager/integration-tests/internal/apiserver"
 	"github.com/cert-manager/cert-manager/internal/test/paths"
-	"github.com/cert-manager/cert-manager/internal/webhook"
 	"github.com/cert-manager/cert-manager/pkg/api"
-	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	webhooktesting "github.com/cert-manager/cert-manager/webhook-binary/app/testing"
+	"github.com/cert-manager/cert-manager/webhook-binary/pkg/webhook"
+	"github.com/cert-manager/cert-manager/webhook-binary/pkg/webhook/handlers"
 )
 
 type StopFunc func()

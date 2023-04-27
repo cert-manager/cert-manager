@@ -33,8 +33,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cert-manager/cert-manager/controller-binary/pkg/issuer/acme/dns/rfc2136"
 	testserver "github.com/cert-manager/cert-manager/integration-tests/acmedns/server"
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 

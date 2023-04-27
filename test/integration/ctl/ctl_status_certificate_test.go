@@ -31,15 +31,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/reference"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
-	statuscertcmd "github.com/cert-manager/cert-manager/cmctl-binary/pkg/status/certificate"
+	"github.com/cert-manager/cert-manager/cmctl-binary/cmd/factory"
+	statuscertcmd "github.com/cert-manager/cert-manager/cmctl-binary/cmd/status/certificate"
+	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/ctl"
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	"github.com/cert-manager/cert-manager/pkg/ctl"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )

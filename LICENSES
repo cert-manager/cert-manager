@@ -20,11 +20,11 @@ github.com/cenkalti/backoff/v3,https://github.com/cenkalti/backoff/blob/v3.0.0/L
 github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.1.3/LICENSE,MIT
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/make/config/samplewebhook/sample,https://github.com/cert-manager/cert-manager/blob/HEAD/make/licenses.mk,Apache-2.0
-github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/azuredns/LICENSE,MIT
-github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/clouddns/LICENSE,MIT
-github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/cloudflare/LICENSE,MIT
-github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/route53/LICENSE,MIT
-github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/util/LICENSE,MIT
+github.com/cert-manager/cert-manager/controller-binary/pkg/issuer/acme/dns/azuredns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/azuredns/LICENSE,MIT
+github.com/cert-manager/cert-manager/controller-binary/pkg/issuer/acme/dns/clouddns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/clouddns/LICENSE,MIT
+github.com/cert-manager/cert-manager/controller-binary/pkg/issuer/acme/dns/cloudflare,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/cloudflare/LICENSE,MIT
+github.com/cert-manager/cert-manager/controller-binary/pkg/issuer/acme/dns/route53,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/route53/LICENSE,MIT
+github.com/cert-manager/cert-manager/controller-binary/pkg/issuer/acme/dns/util,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/util/LICENSE,MIT
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/coreos/go-semver/semver,https://github.com/coreos/go-semver/blob/v0.3.0/LICENSE,Apache-2.0
 github.com/coreos/go-systemd/v22,https://github.com/coreos/go-systemd/blob/v22.3.2/LICENSE,Apache-2.0

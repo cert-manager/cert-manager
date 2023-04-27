@@ -6,11 +6,11 @@ replace github.com/cert-manager/cert-manager => ../../
 
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
+	github.com/go-logr/logr v1.2.3
 	github.com/spf13/cobra v1.6.1
 )
 
 require (
-	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect

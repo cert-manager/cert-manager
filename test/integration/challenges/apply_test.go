@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	internalchallenges "github.com/cert-manager/cert-manager/internal/controller/challenges"
+	internalchallenges "github.com/cert-manager/cert-manager/internal/ssaclient/challenges"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )

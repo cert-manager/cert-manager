@@ -28,12 +28,12 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
-	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/pkg/webhook/configfile"
 	"github.com/cert-manager/cert-manager/webhook-binary/app/options"
+	cmwebhook "github.com/cert-manager/cert-manager/webhook-binary/pkg/webhook"
+	"github.com/cert-manager/cert-manager/webhook-binary/pkg/webhook/configfile"
 )
 
 const componentWebhook = "webhook"

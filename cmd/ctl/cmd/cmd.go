@@ -27,8 +27,8 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/build"
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/build/commands"
+	"github.com/cert-manager/cert-manager/cmctl-binary/cmd/build"
+	"github.com/cert-manager/cert-manager/cmctl-binary/cmd/build/commands"
 )
 
 func NewCertManagerCtlCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.Command {

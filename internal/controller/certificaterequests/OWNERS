@@ -1,4 +1,0 @@
-filters:
-  "apply(_test)?\\.go$":
-    required_reviewers:
-    - joshvanl
