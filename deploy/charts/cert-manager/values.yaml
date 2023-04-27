@@ -217,7 +217,7 @@ prometheus:
 # https_proxy: "https://proxy:8080"
 # no_proxy: 127.0.0.1,localhost
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
+# A Kubernetes Affinty, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core
 # for example:
 #   affinity:
 #     nodeAffinity:
@@ -230,7 +230,7 @@ prometheus:
 #            - master
 affinity: {}
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#toleration-v1-core
+# A list of Kubernetes Tolerations, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core
 # for example:
 #   tolerations:
 #   - key: foo.bar.com/role
@@ -239,7 +239,7 @@ affinity: {}
 #     effect: NoSchedule
 tolerations: []
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#topologyspreadconstraint-v1-core
+# A list of Kubernetes TopologySpreadConstraints, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core
 # for example:
 #   topologySpreadConstraints:
 #   - maxSkew: 2
