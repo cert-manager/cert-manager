@@ -40,6 +40,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
+	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
@@ -127,6 +128,15 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 			return nil
 		})
 	}
+	healthzListener, err := net.Listen("tcp", opts.HealthzListenAddress)
+	if err != nil {
+		return fmt.Errorf("failed to listen on healthz address %s: %v", opts.HealthzListenAddress, err)
+	}
+	healthzServer := healthz.NewServer(opts.HealthzLeaderElectionTimeout)
+	g.Go(func() error {
+		log.V(logf.InfoLevel).Info("starting healthz server", "address", healthzListener.Addr())
+		return healthzServer.Start(rootCtx, healthzListener)
+	})
 
 	elected := make(chan struct{})
 	if opts.LeaderElect {
@@ -136,7 +146,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 			if err != nil {
 				return err
 			}
-
 			errorCh := make(chan error, 1)
 			if err := startLeaderElection(rootCtx, opts, ctx.Client, ctx.Recorder, leaderelection.LeaderCallbacks{
 				OnStartedLeading: func(_ context.Context) {
@@ -151,7 +160,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 						errorCh <- errors.New("leader election lost")
 					}
 				},
-			}); err != nil {
+			}, healthzServer.LeaderHealthzAdaptor); err != nil {
 				return err
 			}
 
@@ -320,7 +329,7 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 	return ctxFactory, nil
 }
 
-func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, callbacks leaderelection.LeaderCallbacks) error {
+func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, callbacks leaderelection.LeaderCallbacks, healthzAdaptor *leaderelection.HealthzAdaptor) error {
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
@@ -354,6 +363,7 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 		RetryPeriod:     opts.LeaderElectionRetryPeriod,
 		ReleaseOnCancel: true,
 		Callbacks:       callbacks,
+		WatchDog:        healthzAdaptor,
 	})
 	if err != nil {
 		return err
