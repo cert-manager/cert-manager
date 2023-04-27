@@ -106,6 +106,13 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
 | `topologySpreadConstraints` | Topology spread constraints for pod assignment | `[]` |
+| `livenessProbe.enabled` | Enable or disable the liveness probe for the controller container in the controller Pod. See https://cert-manager.io/docs/installation/best-practice/ to learn about when you might want to enable this livenss probe. | `false` |
+| `livenessProbe.initialDelaySeconds` | The liveness probe initial delay (in seconds) | `10` |
+| `livenessProbe.periodSeconds` | The liveness probe period (in seconds) | `10` |
+| `livenessProbe.timeoutSeconds` | The liveness probe timeout (in seconds) | `10` |
+| `livenessProbe.periodSeconds` | The liveness probe period (in seconds) | `10` |
+| `livenessProbe.successThreshold` | The liveness probe success threshold | `1` |
+| `livenessProbe.failureThreshold` | The liveness probe failure threshold | `8` |
 | `ingressShim.defaultIssuerName` | Optional default issuer to use for ingress resources |  |
 | `ingressShim.defaultIssuerKind` | Optional default issuer kind to use for ingress resources |  |
 | `ingressShim.defaultIssuerGroup` | Optional default issuer group to use for ingress resources |  |
