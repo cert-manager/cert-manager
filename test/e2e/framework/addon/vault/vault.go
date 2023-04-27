@@ -301,8 +301,13 @@ func (v *Vault) Provision() error {
 		var lastError error
 		err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 			pod, err := kubeClient.CoreV1().Pods(v.proxy.podNamespace).Get(context.TODO(), v.proxy.podName, metav1.GetOptions{})
-			if err != nil {
+			if err != nil && !apierrors.IsNotFound(err) {
 				return false, err
+			}
+
+			if err != nil && apierrors.IsNotFound(err) {
+				lastError = fmt.Errorf("pod not found")
+				return false, nil
 			}
 
 			if pod.Status.Phase != corev1.PodRunning {
@@ -326,7 +331,7 @@ func (v *Vault) Provision() error {
 				}).
 				DoRaw(context.TODO())
 
-			if err != nil && !apierrors.IsNotFound(err) {
+			if err != nil {
 				return fmt.Errorf("error waiting for vault pod to be ready: %w; failed to retrieve logs: %w", lastError, err)
 			}
 
