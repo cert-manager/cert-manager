@@ -35,12 +35,9 @@ verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz
 verify-errexit:
 	./hack/verify-errexit.sh
 
-__PYTHON := python3
-
 .PHONY: verify-boilerplate
-verify-boilerplate:
-	@command -v $(__PYTHON) >/dev/null || (echo "couldn't find python3 at '$(__PYTHON)', required for $@. Install python3 or set '__PYTHON'" && exit 1)
-	$(__PYTHON) hack/verify_boilerplate.py
+verify-boilerplate: | $(NEEDS_BOILERSUITE)
+	$(BOILERSUITE) .
 
 .PHONY: verify-licenses
 ## Check that the LICENSES file is up to date; must pass before a change to go.mod can be merged

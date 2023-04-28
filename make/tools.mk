@@ -40,6 +40,7 @@ TOOLS += trivy=v0.32.0
 TOOLS += ytt=v0.43.0
 TOOLS += yq=v4.27.5
 TOOLS += crane=v0.11.0
+TOOLS += boilersuite=v0.1.0
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 TOOLS += ko=v0.13.0
 
@@ -217,6 +218,7 @@ GO_DEPENDENCIES += goimports=golang.org/x/tools/cmd/goimports
 GO_DEPENDENCIES += go-licenses=github.com/google/go-licenses
 GO_DEPENDENCIES += gotestsum=gotest.tools/gotestsum
 GO_DEPENDENCIES += crane=github.com/google/go-containerregistry/cmd/crane
+GO_DEPENDENCIES += boilersuite=github.com/cert-manager/boilersuite
 
 define go_dependency
 $$(BINDIR)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(NEEDS_GO) $$(BINDIR)/downloaded/tools
@@ -268,7 +270,7 @@ KIND_darwin_amd64_SHA256SUM=9c91e3a6f380ee4cab79094d3fade94eb10a4416d8d3a6d3e1bb
 KIND_darwin_arm64_SHA256SUM=96e0765d385c4e5457dc95dc49f66d385727885dfe1ad77520af0a32b7f8ccb2
 
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
-	$(CURL) -sSfL https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
+	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
 	chmod +x $@
 

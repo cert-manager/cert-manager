@@ -141,7 +141,7 @@ gen-deepcopy() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$deepcopygen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --output-file-base zz_generated.deepcopy \
     --trim-path-prefix="$module_name" \
@@ -156,7 +156,7 @@ gen-clientsets() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$clientgen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
@@ -172,7 +172,7 @@ gen-listers() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$listergen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/listers \
@@ -186,7 +186,7 @@ gen-informers() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$informergen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --versioned-clientset-package "${client_package}"/clientset/versioned \
     --listers-package "${client_package}"/listers \
@@ -203,7 +203,7 @@ gen-defaulters() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$defaultergen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --trim-path-prefix="$module_name" \
     -O zz_generated.defaults \
@@ -224,7 +224,7 @@ gen-conversions() {
 
   "$conversiongen" \
       ${VERIFY_FLAGS} \
-      --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+      --go-header-file hack/boilerplate-go.txt \
       --extra-peer-dirs $( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" ) \
       --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
       --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
