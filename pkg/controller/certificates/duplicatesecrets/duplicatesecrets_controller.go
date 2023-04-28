@@ -179,14 +179,14 @@ func needsUpdate(crt *cmapi.Certificate, duplicates []string) bool {
 	}
 }
 
-// buildDuplicateSecretNameCondition returns a nil condition if there is no
+// buildDuplicateSecretNameCondition returns a nil condition if there are no
 // duplicates, else, returns a DuplicateSecretName condition.
 func buildDuplicateSecretNameCondition(duplicates []string) *cmapi.CertificateCondition {
 	if len(duplicates) == 0 {
 		return nil
 	}
 
-	const msg = "Certificate shares the same Secret name as the following Certificates in the same Namespace: [ %s ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway."
+	const msg = "Certificate shares the same Secret name as the following Certificates in this Namespace: [ %s ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway."
 	return &cmapi.CertificateCondition{
 		Type:    cmapi.CertificateConditionDuplicateSecretName,
 		Status:  cmmeta.ConditionTrue,

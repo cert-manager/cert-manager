@@ -404,7 +404,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 }
 
 // stopIssueCertificateDuplicateSecretName sets the Issuing condition to False
-// on the given Certificate because is references the same SecretName as the
+// on the given Certificate because it references the same SecretName as the
 // Certificate `duplicateCrtName` which resides in the same Namespace.
 func (c *controller) stopIssueCertificateDuplicateSecretName(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, dupeSecretNameCondition cmapi.CertificateCondition) error {
 	log.V(logf.DebugLevel).Info("Certificate spec.secretName matches that of others in the same Namespace, failing issuance")

@@ -588,7 +588,7 @@ const (
 	// A condition added to Certificate resources when the Certificate shares the
 	// same Secret name with 1 or more Certificate resources in the same
 	// Namespace. This condition will block issuance until the conflicting
-	// Certificate(s) are deleted or updated with a unique Secret name.
+	// Certificate(s) are deleted or updated with unique Secret name(s).
 	CertificateConditionDuplicateSecretName CertificateConditionType = "DuplicateSecretName"
 )
 
