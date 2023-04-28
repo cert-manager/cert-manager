@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 )
 
@@ -74,6 +75,8 @@ type Chart struct {
 	Repo Repo
 }
 
+var _ internal.Addon = &Chart{}
+
 type Repo struct {
 	// name of the repository
 	Name string
@@ -97,7 +100,7 @@ type Details struct {
 	Namespace string
 }
 
-func (c *Chart) Setup(cfg *config.Config, _ ...interface{}) (interface{}, error) {
+func (c *Chart) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	var err error
 
 	c.config = cfg

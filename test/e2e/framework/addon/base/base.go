@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util"
@@ -33,6 +34,8 @@ type Base struct {
 	// in the event a suite is run in serial
 	details *Details
 }
+
+var _ internal.Addon = &Base{}
 
 // Details return the details about the certmanager instance deployed
 type Details struct {
@@ -53,7 +56,7 @@ func (d *Details) Helper() *helper.Helper {
 	}
 }
 
-func (b *Base) Setup(c *config.Config, _ ...interface{}) (interface{}, error) {
+func (b *Base) Setup(c *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	kubeConfig, err := util.LoadConfig(c.KubeConfig, c.KubeContext)
 	if err != nil {
 		return nil, err

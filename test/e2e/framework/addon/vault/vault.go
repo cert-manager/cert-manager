@@ -39,6 +39,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 )
 
@@ -72,6 +73,8 @@ type Vault struct {
 	details Details
 }
 
+var _ internal.Addon = &Vault{}
+
 type Details struct {
 	// URL is the url that can be used to connect to Vault inside the cluster
 	URL string
@@ -98,7 +101,7 @@ func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
 	return details, nil
 }
 
-func (v *Vault) Setup(cfg *config.Config, leaderData ...interface{}) (interface{}, error) {
+func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	if v.Name == "" {
 		return nil, fmt.Errorf("'Name' field must be set on Vault addon")
 	}

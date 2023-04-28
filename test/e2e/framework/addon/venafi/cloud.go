@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -42,11 +43,13 @@ type VenafiCloud struct {
 	createdSecret *corev1.Secret
 }
 
+var _ internal.Addon = &VenafiCloud{}
+
 type CloudDetails struct {
 	issuerTemplate cmapi.VenafiIssuer
 }
 
-func (v *VenafiCloud) Setup(cfg *config.Config, _ ...interface{}) (interface{}, error) {
+func (v *VenafiCloud) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	v.config = cfg
 
 	if v.Base == nil {

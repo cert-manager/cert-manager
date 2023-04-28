@@ -17,6 +17,7 @@ limitations under the License.
 package dnsproviders
 
 import (
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
@@ -26,7 +27,7 @@ type RFC2136 struct {
 	nameserver string
 }
 
-func (b *RFC2136) Setup(c *config.Config, _ ...interface{}) (interface{}, error) {
+func (b *RFC2136) Setup(c *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
 	b.nameserver = c.Addons.ACMEServer.DNSServer
 	return nil, nil
 }

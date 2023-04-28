@@ -30,16 +30,21 @@ import (
 
 var cfg = framework.DefaultConfig
 
-var isPrimary = false
+// isGinkgoProcessNumberOne is true if this is the first ginkgo process to run.
+// Only the first ginkgo process will run the global addon Setup, Provision &
+// Deprovision code.
+// All other ginkgo processes will only run the global addon Setup code using
+// the data transferred from the Setup function on the first ginkgo process.
+var isGinkgoProcessNumberOne = false
 
 var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	addon.InitGlobals(cfg)
 
-	isPrimary = true
+	isGinkgoProcessNumberOne = true
 
 	// We first setup the global addons, but do not provision them yet.
-	// This is because we need to transfer the data from the primary
-	// node to the other nodes.
+	// This is because we need to transfer the data from ginkgo process #1
+	// to the other ginkgo processes.
 	toBeTransferred, err := addon.SetupGlobalsPrimary(cfg)
 	if err != nil {
 		framework.Failf("Error provisioning global addons: %v", err)
@@ -52,22 +57,22 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 
 	return encodedData
 }, func(encodedData []byte) {
-	transferredData := []interface{}{}
+	transferredData := []addon.AddonTransferableData{}
 	err := json.Unmarshal(encodedData, &transferredData)
 	if err != nil {
 		framework.Failf("Error decoding global addon data: %v", err)
 	}
 
-	if isPrimary {
-		// For the primary node, we need to run ProvisionGlobals to
+	if isGinkgoProcessNumberOne {
+		// For ginkgo process #1, we need to run ProvisionGlobals to
 		// actually provision the global addons.
 		err = addon.ProvisionGlobals(cfg)
 		if err != nil {
 			framework.Failf("Error configuring global addons: %v", err)
 		}
 	} else {
-		// For non-primary nodes, we need to run Setup with the data
-		// transferred from the primary node.
+		// For gingko process #2 and above, we need to run Setup with
+		// the Setup data returned by ginkgo process #1.
 		addon.InitGlobals(cfg)
 
 		err := addon.SetupGlobalsNonPrimary(cfg, transferredData)
@@ -78,8 +83,8 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 })
 
 var _ = ginkgo.SynchronizedAfterSuite(func() {
-	// Reset the isPrimary flag to false for the next run (when --repeat flag is used)
-	isPrimary = false
+	// Reset the isGinkgoProcessNumberOne flag to false for the next run (when --repeat flag is used)
+	isGinkgoProcessNumberOne = false
 }, func() {
 	ginkgo.By("Retrieving logs for global addons")
 	globalLogs, err := addon.GlobalLogs()

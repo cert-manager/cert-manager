@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
@@ -44,7 +45,7 @@ type Cloudflare struct {
 	createdSecret *corev1.Secret
 }
 
-func (b *Cloudflare) Setup(c *config.Config, _ ...interface{}) (interface{}, error) {
+func (b *Cloudflare) Setup(c *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
 	if c.Suite.ACME.Cloudflare.APIKey == "" ||
 		c.Suite.ACME.Cloudflare.Domain == "" ||
 		c.Suite.ACME.Cloudflare.Email == "" {
