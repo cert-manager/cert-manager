@@ -43,6 +43,7 @@ TOOLS += crane=v0.11.0
 TOOLS += boilersuite=v0.1.0
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 TOOLS += ko=v0.13.0
+TOOLS += helmchk=0652d091c5aca3739945b6d12cf988f916acc12f
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.6.2
@@ -219,6 +220,7 @@ GO_DEPENDENCIES += go-licenses=github.com/google/go-licenses
 GO_DEPENDENCIES += gotestsum=gotest.tools/gotestsum
 GO_DEPENDENCIES += crane=github.com/google/go-containerregistry/cmd/crane
 GO_DEPENDENCIES += boilersuite=github.com/cert-manager/boilersuite
+GO_DEPENDENCIES += helmchk=github.com/amurant/helmchk
 
 define go_dependency
 $$(BINDIR)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(NEEDS_GO) $$(BINDIR)/downloaded/tools

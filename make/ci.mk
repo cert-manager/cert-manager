@@ -28,8 +28,9 @@ verify-imports: | $(NEEDS_GOIMPORTS)
 	./hack/verify-goimports.sh $(GOIMPORTS)
 
 .PHONY: verify-chart
-verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz
-	DOCKER=$(CTR) ./hack/verify-chart-version.sh $<
+verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz | $(NEEDS_HELM) $(NEEDS_HELMCHK)
+	CTR=$(CTR) HELM=$(HELM) HELMCHK=$(HELMCHK) \
+		./hack/verify-chart.sh $<
 
 .PHONY: verify-errexit
 verify-errexit:

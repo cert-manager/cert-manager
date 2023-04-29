@@ -18,25 +18,32 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+HACK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
+
+CTR=${CTR:-docker}
+HELM=${HELM:-helm}
+HELMCHK=${HELMCHK:-helmchk}
+
 chart_tarball=${1:-}
-DOCKER=${DOCKER:-docker}
 
 if [ -z "${chart_tarball}" ]; then
     echo "usage: $0 <path to helm chart tarball>"
     exit 1
 fi
 
-chart_dir="deploy/charts/cert-manager"
+echo "Linting chart '${chart_tarball}'"
 
-echo "Linting chart '${chart_tarball}' using internal dir '${chart_dir}'"
-
+# Extract the chart tarball to a temporary directory
 tmpdir="$(mktemp -d)"
 trap "rm -rf ${tmpdir}" EXIT
+tar -C "${tmpdir}" -xvf "$chart_tarball"
 
-tar -C "${tmpdir}" -xvf $chart_tarball
+# Run helm lint
+${HELM} lint "${tmpdir}/cert-manager"
 
-if ! ${DOCKER} run -v "${tmpdir}":/workspace --workdir /workspace \
-    quay.io/helmpack/chart-testing:v3.7.1 \
+# Run chart-testing lint
+if ! ${CTR} run -v "${tmpdir}":/workspace --workdir /workspace \
+    quay.io/helmpack/chart-testing:v3.8.0 \
     ct lint \
     --check-version-increment=false \
     --validate-maintainers=false \
@@ -45,5 +52,8 @@ if ! ${DOCKER} run -v "${tmpdir}":/workspace --workdir /workspace \
     echo "Linting failed"
     exit 1
 fi
+
+# Run helmchk
+${HELMCHK} --exceptions "${HACK_DIR}/helmchk-exceptions.txt" "${tmpdir}/cert-manager"
 
 echo "Linting succeeded!"
