@@ -34,10 +34,10 @@ import (
 	k8snet "k8s.io/utils/net"
 	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
 
+	"github.com/cert-manager/cert-manager/internal/acmesolver"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -197,7 +197,7 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 	if k8snet.IsIPv6(net.ParseIP(url.Host)) {
 		url.Host = fmt.Sprintf("[%s]", url.Host)
 	}
-	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
+	url.Path = fmt.Sprintf("%s/%s", acmesolver.HTTPChallengePath, ch.Spec.Token)
 
 	return url
 }

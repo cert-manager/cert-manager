@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/component-base/logs"
 
+	"github.com/cert-manager/cert-manager/acmesolver-binary/solver"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 

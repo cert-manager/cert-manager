@@ -29,8 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	"github.com/cert-manager/cert-manager/internal/acmesolver"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -391,5 +391,5 @@ func ingressPath(token, serviceName string) networkingv1.HTTPIngressPath {
 }
 
 var solverPathFn = func(token string) string {
-	return fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token)
+	return fmt.Sprintf("%s/%s", acmesolver.HTTPChallengePath, token)
 }

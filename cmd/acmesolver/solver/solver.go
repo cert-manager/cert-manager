@@ -22,6 +22,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/cert-manager/cert-manager/internal/acmesolver"
 	"github.com/go-logr/logr"
 )
 
@@ -63,8 +64,8 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		}
 		log.Info("validating request")
 		// verify the base path is correct
-		if basePath != HTTPChallengePath {
-			log.Info("invalid base_path", "expected_base_path", HTTPChallengePath)
+		if basePath != acmesolver.HTTPChallengePath {
+			log.Info("invalid base_path", "expected_base_path", acmesolver.HTTPChallengePath)
 			http.NotFound(w, r)
 			return
 		}
