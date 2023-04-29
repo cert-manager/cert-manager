@@ -641,4 +641,10 @@ type ACMEIssuerStatus struct {
 	// associated with the  Issuer
 	// +optional
 	LastRegisteredEmail string `json:"lastRegisteredEmail,omitempty"`
+
+	// LastPrivateKeyHash is a hash of the private key associated with the latest
+	// registered ACME account, in order to track changes made to registered account
+	// associated with the Issuer
+	// +optional
+	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
 }
