@@ -34,7 +34,7 @@ type FakeRegistry struct {
 	RemoveClientFunc        func(uid string)
 	GetClientFunc           func(uid string) (acmecl.Interface, error)
 	ListClientsFunc         func() map[string]acmecl.Interface
-	IsKeyCheckSumCachedFunc func(uid string, privateKey *rsa.PrivateKey) bool
+	IsKeyCheckSumCachedFunc func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
 }
 
 func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
@@ -53,6 +53,6 @@ func (f *FakeRegistry) ListClients() map[string]acmecl.Interface {
 	return f.ListClientsFunc()
 }
 
-func (f *FakeRegistry) IsKeyCheckSumCached(uid string, privateKey *rsa.PrivateKey) bool {
-	return f.IsKeyCheckSumCachedFunc(uid, privateKey)
+func (f *FakeRegistry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+	return f.IsKeyCheckSumCachedFunc(lastPrivateKeyHash, privateKey)
 }
