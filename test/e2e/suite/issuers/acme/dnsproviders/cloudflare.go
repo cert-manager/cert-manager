@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
@@ -44,24 +45,24 @@ type Cloudflare struct {
 	createdSecret *corev1.Secret
 }
 
-func (b *Cloudflare) Setup(c *config.Config) error {
+func (b *Cloudflare) Setup(c *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
 	if c.Suite.ACME.Cloudflare.APIKey == "" ||
 		c.Suite.ACME.Cloudflare.Domain == "" ||
 		c.Suite.ACME.Cloudflare.Email == "" {
-		return errors.NewSkip(ErrNoCredentials)
+		return nil, errors.NewSkip(ErrNoCredentials)
 	}
 
 	if b.Base == nil {
 		b.Base = &base.Base{}
-		err := b.Base.Setup(c)
+		_, err := b.Base.Setup(c)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	b.cf = c.Suite.ACME.Cloudflare
 
-	return nil
+	return nil, nil
 }
 
 // Provision will create a copy of the DNS provider credentials in a secret in
