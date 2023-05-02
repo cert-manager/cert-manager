@@ -18,9 +18,8 @@
 # As such, this is hardcoded to avoid needless complexity
 LICENSE_YEAR=2022
 
-# Creates the boilerplate header for YAML files, assumed to be the same as the one in
-# shell scripts (hence the use of boilerplate.sh.txt)
-$(BINDIR)/scratch/license.yaml: hack/boilerplate/boilerplate.sh.txt | $(BINDIR)/scratch
+# Creates the boilerplate header for YAML files from the template in hack/
+$(BINDIR)/scratch/license.yaml: hack/boilerplate-yaml.txt | $(BINDIR)/scratch
 	sed -e "s/YEAR/$(LICENSE_YEAR)/g" < $< > $@
 
 # The references LICENSES file is 1.4MB at the time of writing. Bundling it into every container image
@@ -47,7 +46,7 @@ $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footno
 # to commit a go.work file to the repository root for reasons given in:
 # https://github.com/cert-manager/cert-manager/pull/5935
 LICENSES_GO_WORK := $(BINDIR)/scratch/LICENSES.go.work
-$(LICENSES_GO_WORK):
+$(LICENSES_GO_WORK): $(BINDIR)/scratch
 	$(MAKE) go-workspace GOWORK=$(abspath $@)
 
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))

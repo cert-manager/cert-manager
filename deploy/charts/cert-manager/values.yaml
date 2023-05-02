@@ -217,7 +217,7 @@ prometheus:
 # https_proxy: "https://proxy:8080"
 # no_proxy: 127.0.0.1,localhost
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
+# A Kubernetes Affinty, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core
 # for example:
 #   affinity:
 #     nodeAffinity:
@@ -230,7 +230,7 @@ prometheus:
 #            - master
 affinity: {}
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#toleration-v1-core
+# A list of Kubernetes Tolerations, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core
 # for example:
 #   tolerations:
 #   - key: foo.bar.com/role
@@ -239,7 +239,7 @@ affinity: {}
 #     effect: NoSchedule
 tolerations: []
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#topologyspreadconstraint-v1-core
+# A list of Kubernetes TopologySpreadConstraints, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core
 # for example:
 #   topologySpreadConstraints:
 #   - maxSkew: 2
@@ -250,6 +250,22 @@ tolerations: []
 #         app.kubernetes.io/instance: cert-manager
 #         app.kubernetes.io/component: controller
 topologySpreadConstraints: []
+
+# LivenessProbe settings for the controller container of the controller Pod.
+#
+# Disabled by default, because the controller has a leader election mechanism
+# which should cause it to exit if it is unable to renew its leader election
+# record.
+# LivenessProbe durations and thresholds are based on those used for the Kubernetes
+# controller-manager. See:
+# https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245
+livenessProbe:
+  enabled: false
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 15
+  successThreshold: 1
+  failureThreshold: 8
 
 webhook:
   replicaCount: 1

@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -42,29 +43,31 @@ type VenafiCloud struct {
 	createdSecret *corev1.Secret
 }
 
+var _ internal.Addon = &VenafiCloud{}
+
 type CloudDetails struct {
 	issuerTemplate cmapi.VenafiIssuer
 }
 
-func (v *VenafiCloud) Setup(cfg *config.Config) error {
+func (v *VenafiCloud) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	v.config = cfg
 
 	if v.Base == nil {
 		v.Base = &base.Base{}
-		err := v.Base.Setup(cfg)
+		_, err := v.Base.Setup(cfg)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if v.config.Addons.Venafi.Cloud.Zone == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi Cloud Zone must be set"))
+		return nil, errors.NewSkip(fmt.Errorf("Venafi Cloud Zone must be set"))
 	}
 	if v.config.Addons.Venafi.Cloud.APIToken == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi Cloud APIToken must be set"))
+		return nil, errors.NewSkip(fmt.Errorf("Venafi Cloud APIToken must be set"))
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (v *VenafiCloud) Provision() error {
@@ -108,7 +111,7 @@ func (v *VenafiCloud) Deprovision() error {
 }
 
 func (v *VenafiCloud) SupportsGlobal() bool {
-	return true
+	return false
 }
 
 func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
