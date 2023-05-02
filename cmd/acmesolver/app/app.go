@@ -18,9 +18,11 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/component-base/logs"
 
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
@@ -29,12 +31,18 @@ import (
 
 func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 	s := new(solver.HTTP01Solver)
+	logOptions := logs.NewOptions()
 
 	cmd := &cobra.Command{
 		Use:   "acmesolver",
 		Short: "HTTP server used to solve ACME challenges.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
+
+			if err := logf.ValidateAndApply(logOptions); err != nil {
+				return fmt.Errorf("error validating options: %s", err)
+			}
+
 			rootCtx = logf.NewContext(rootCtx, logf.Log, "acmesolver")
 			log := logf.FromContext(rootCtx)
 
@@ -65,6 +73,8 @@ func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 	cmd.Flags().StringVar(&s.Domain, "domain", "", "the domain name to verify")
 	cmd.Flags().StringVar(&s.Token, "token", "", "the challenge token to verify against")
 	cmd.Flags().StringVar(&s.Key, "key", "", "the challenge key to respond with")
+
+	logf.AddFlags(logOptions, cmd.Flags())
 
 	return cmd
 }

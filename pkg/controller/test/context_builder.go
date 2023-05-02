@@ -53,7 +53,7 @@ import (
 )
 
 func init() {
-	logs.InitLogs(nil)
+	logs.InitLogs()
 	_ = flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
 	ktesting.DefaultConfig = ktesting.NewConfig(ktesting.Verbosity(4))
 }

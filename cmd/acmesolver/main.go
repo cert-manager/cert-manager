@@ -22,6 +22,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/acmesolver-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // acmesolver solves ACME http-01 challenges. This is intended to run as a pod
@@ -31,6 +32,9 @@ import (
 func main() {
 	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
+
+	logf.InitLogs()
+	defer logf.FlushLogs()
 
 	cmd := app.NewACMESolverCommand(stopCh)
 

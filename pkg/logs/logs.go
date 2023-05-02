@@ -23,10 +23,13 @@ import (
 	"log"
 
 	"github.com/go-logr/logr"
+	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/component-base/logs"
+	logsapi "k8s.io/component-base/logs/api/v1"
+	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 
@@ -58,17 +61,44 @@ func (writer GlogWriter) Write(data []byte) (n int, err error) {
 }
 
 // InitLogs initializes logs the way we want for kubernetes.
-func InitLogs(fs *flag.FlagSet) {
+func InitLogs() {
 	logs.InitLogs()
-
-	if fs == nil {
-		fs = flag.CommandLine
-	}
-	initDeprecatedFlags(fs)
-	_ = fs.Set("logtostderr", "true")
 
 	log.SetOutput(GlogWriter{})
 	log.SetFlags(0)
+}
+
+func AddFlags(opts *logs.Options, fs *pflag.FlagSet) {
+	// init deprecated flags
+	{
+		var allFlags flag.FlagSet
+		klog.InitFlags(&allFlags)
+
+		allFlags.VisitAll(func(f *flag.Flag) {
+			switch f.Name {
+			case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
+				"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
+				fs.AddGoFlag(f)
+			}
+		})
+	}
+	_ = fs.Set("logtostderr", "true")
+
+	{
+		var allFlags pflag.FlagSet
+		logsapi.AddFlags(opts, &allFlags)
+
+		allFlags.VisitAll(func(f *pflag.Flag) {
+			switch f.Name {
+			case "logging-format", "log-flush-frequency", "v", "vmodule":
+				fs.AddFlag(f)
+			}
+		})
+	}
+}
+
+func ValidateAndApply(opts *logs.Options) error {
+	return logsapi.ValidateAndApply(opts, nil)
 }
 
 // FlushLogs flushes logs immediately.
@@ -132,8 +162,6 @@ func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.L
 	)
 }
 
-var contextKey = &struct{}{}
-
 func FromContext(ctx context.Context, names ...string) logr.Logger {
 	l, err := logr.FromContext(ctx)
 	if err != nil {
@@ -171,16 +199,4 @@ func WithInfof(l logr.Logger) *LogWithFormat {
 // Infof logs message with the given format and arguments.
 func (l *LogWithFormat) Infof(format string, a ...interface{}) {
 	l.Info(fmt.Sprintf(format, a...))
-}
-
-func initDeprecatedFlags(fs *flag.FlagSet) {
-	var allFlags flag.FlagSet
-	klog.InitFlags(&allFlags)
-	allFlags.VisitAll(func(f *flag.Flag) {
-		switch f.Name {
-		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
-			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
-			fs.Var(f.Value, f.Name, f.Usage)
-		}
-	})
 }

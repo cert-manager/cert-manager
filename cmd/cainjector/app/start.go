@@ -18,6 +18,7 @@ package app
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -35,10 +36,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/component-base/logs"
-	logsapi "k8s.io/component-base/logs/api/v1"
-	_ "k8s.io/component-base/logs/json/register"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/api"
@@ -132,16 +132,16 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	utilfeature.DefaultMutableFeatureGate.AddFlag(fs)
 
-	logsapi.AddFlags(o.Logging, fs)
-}
+	logf.AddFlags(o.Logging, fs)
 
-func (o *InjectorControllerOptions) Validate() error {
-	err := logsapi.ValidateAndApply(o.Logging, nil)
-	if err != nil {
-		return err
+	{
+		var controllerRuntimeFlags flag.FlagSet
+		config.RegisterFlags(&controllerRuntimeFlags)
+
+		controllerRuntimeFlags.VisitAll(func(f *flag.Flag) {
+			fs.AddGoFlag(f)
+		})
 	}
-
-	return nil
 }
 
 // NewInjectorControllerOptions returns a new InjectorControllerOptions
@@ -174,7 +174,7 @@ servers and webhook servers.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.log = logf.Log.WithName("cainjector")
 
-			if err := o.Validate(); err != nil {
+			if err := logf.ValidateAndApply(o.Logging); err != nil {
 				return fmt.Errorf("error validating options: %s", err)
 			}
 

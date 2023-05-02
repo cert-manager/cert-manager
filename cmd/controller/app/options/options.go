@@ -26,9 +26,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/component-base/logs"
-	logsapi "k8s.io/component-base/logs/api/v1"
-
-	_ "k8s.io/component-base/logs/json/register"
 
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -417,7 +414,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	fs.MarkHidden("internal-healthz-leader-election-timeout")
 
-	logsapi.AddFlags(s.Logging, fs)
+	logf.AddFlags(s.Logging, fs)
 }
 
 func (o *ControllerOptions) Validate() error {
@@ -458,7 +455,7 @@ func (o *ControllerOptions) Validate() error {
 		}
 	}
 
-	err := logsapi.ValidateAndApply(o.Logging, nil)
+	err := logf.ValidateAndApply(o.Logging)
 	if err != nil {
 		errs = append(errs, err)
 	}

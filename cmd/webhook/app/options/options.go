@@ -22,12 +22,11 @@ import (
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
-	logsapi "k8s.io/component-base/logs/api/v1"
-	_ "k8s.io/component-base/logs/json/register"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	configscheme "github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
 	configv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
@@ -47,16 +46,7 @@ func NewWebhookFlags() *WebhookFlags {
 
 func (f *WebhookFlags) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&f.Config, "config", "", "Path to a file containing a WebhookConfiguration object used to configure the webhook")
-	logsapi.AddFlags(f.Logging, fs)
-}
-
-func ValidateWebhookFlags(f *WebhookFlags) error {
-	err := logsapi.ValidateAndApply(f.Logging, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	logf.AddFlags(f.Logging, fs)
 }
 
 func NewWebhookConfiguration() (*config.WebhookConfiguration, error) {
