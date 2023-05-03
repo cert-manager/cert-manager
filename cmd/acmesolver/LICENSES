@@ -1,6 +1,6 @@
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/acmesolver-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/acmesolver-binary/LICENSE,Apache-2.0
-github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.3/LICENSE,Apache-2.0
+github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.4/LICENSE,Apache-2.0
 github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
 github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
