@@ -33,7 +33,7 @@ github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3
 github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.3/LICENSE.txt,MIT
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
 github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.4/v3/LICENSE,MIT
-github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.3/LICENSE,Apache-2.0
+github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.4/LICENSE,Apache-2.0
 github.com/go-logr/stdr,https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE,Apache-2.0
 github.com/go-openapi/jsonpointer,https://github.com/go-openapi/jsonpointer/blob/v0.19.6/LICENSE,Apache-2.0
 github.com/go-openapi/jsonreference,https://github.com/go-openapi/jsonreference/blob/v0.20.1/LICENSE,Apache-2.0
@@ -81,11 +81,11 @@ github.com/patrickmn/go-cache,https://github.com/patrickmn/go-cache/blob/v2.1.0/
 github.com/pavlo-v-chernykh/keystore-go/v4,https://github.com/pavlo-v-chernykh/keystore-go/blob/v4.4.1/LICENSE,MIT
 github.com/pierrec/lz4,https://github.com/pierrec/lz4/blob/v2.5.2/LICENSE,BSD-3-Clause
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
-github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.14.0/LICENSE,Apache-2.0
+github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.0/LICENSE,Apache-2.0
 github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.3.0/LICENSE,Apache-2.0
-github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.37.0/LICENSE,Apache-2.0
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.37.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
-github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.8.0/LICENSE,Apache-2.0
+github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.42.0/LICENSE,Apache-2.0
+github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.42.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
+github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.9.0/LICENSE,Apache-2.0
 github.com/rogpeppe/go-internal/fmtsort,https://github.com/rogpeppe/go-internal/blob/v1.10.0/LICENSE,BSD-3-Clause
 github.com/ryanuber/go-glob,https://github.com/ryanuber/go-glob/blob/v1.0.0/LICENSE,MIT
 github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.9.0/LICENSE,MIT
@@ -121,7 +121,7 @@ google.golang.org/api,https://github.com/googleapis/google-api-go-client/blob/v0
 google.golang.org/api/internal/third_party/uritemplates,https://github.com/googleapis/google-api-go-client/blob/v0.111.0/internal/third_party/uritemplates/LICENSE,BSD-3-Clause
 google.golang.org/genproto,https://github.com/googleapis/go-genproto/blob/637eb2293923/LICENSE,Apache-2.0
 google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.53.0/LICENSE,Apache-2.0
-google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.28.1/LICENSE,BSD-3-Clause
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.30.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/ini.v1,https://github.com/go-ini/ini/blob/v1.62.0/LICENSE,Apache-2.0
 gopkg.in/square/go-jose.v2,https://github.com/square/go-jose/blob/v2.6.0/LICENSE,Apache-2.0

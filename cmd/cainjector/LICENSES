@@ -7,7 +7,7 @@ github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/v1.1.1/L
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.9.0/LICENSE,MIT
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6.0/v5/LICENSE,BSD-3-Clause
 github.com/fsnotify/fsnotify,https://github.com/fsnotify/fsnotify/blob/v1.6.0/LICENSE,BSD-3-Clause
-github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.3/LICENSE,Apache-2.0
+github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.4/LICENSE,Apache-2.0
 github.com/go-openapi/jsonpointer,https://github.com/go-openapi/jsonpointer/blob/v0.19.6/LICENSE,Apache-2.0
 github.com/go-openapi/jsonreference,https://github.com/go-openapi/jsonreference/blob/v0.20.1/LICENSE,Apache-2.0
 github.com/go-openapi/swag,https://github.com/go-openapi/swag/blob/v0.22.3/LICENSE,Apache-2.0
@@ -27,11 +27,11 @@ github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bac
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
-github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.14.0/LICENSE,Apache-2.0
+github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.0/LICENSE,Apache-2.0
 github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.3.0/LICENSE,Apache-2.0
-github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.37.0/LICENSE,Apache-2.0
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.37.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
-github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.8.0/LICENSE,Apache-2.0
+github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.42.0/LICENSE,Apache-2.0
+github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.42.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
+github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.9.0/LICENSE,Apache-2.0
 github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.7.0/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.9.0:LICENSE,BSD-3-Clause
@@ -42,7 +42,7 @@ golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.7.0:LICENSE,BSD-3-
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.9.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
 gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.2.0/v2/LICENSE,Apache-2.0
-google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.28.1/LICENSE,BSD-3-Clause
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.30.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
@@ -59,7 +59,7 @@ k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json,https://git
 k8s.io/kube-openapi/pkg/validation/spec,https://github.com/kubernetes/kube-openapi/blob/15aac26d736a/pkg/validation/spec/LICENSE,Apache-2.0
 k8s.io/utils,https://github.com/kubernetes/utils/blob/d93618cff8a2/LICENSE,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/d93618cff8a2/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
-sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.14.6/LICENSE,Apache-2.0
+sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-runtime/blob/2e57de78ba00/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api/apis/v1beta1,https://github.com/kubernetes-sigs/gateway-api/blob/v0.6.2/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
 sigs.k8s.io/structured-merge-diff/v4,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.2.3/LICENSE,Apache-2.0
