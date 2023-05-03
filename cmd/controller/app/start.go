@@ -33,6 +33,7 @@ import (
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/ingresses"
+	_ "github.com/cert-manager/cert-manager/pkg/controller/certificates/duplicatesecrets"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
 	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"

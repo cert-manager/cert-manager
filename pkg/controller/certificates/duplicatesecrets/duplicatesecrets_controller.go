@@ -25,18 +25,15 @@ import (
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/cert-manager/cert-manager/internal/controller/certificates"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -67,20 +64,17 @@ type controller struct {
 // other controllers to prevent CertificateRequest creation runaway.
 func NewController(
 	log logr.Logger,
-	client cmclient.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory,
-	fieldManager string,
+	ctx *controllerpkg.Context,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
-	certificateInformer := cmFactory.Certmanager().V1().Certificates()
+	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
 	mustSync := []cache.InformerSynced{certificateInformer.Informer().HasSynced}
 
 	return &controller{
 		certificateLister: certificateInformer.Lister(),
-		client:            client,
-		fieldManager:      fieldManager,
+		client:            ctx.CMClient,
+		fieldManager:      ctx.FieldManager,
 		queue:             queue,
 	}, queue, mustSync
 }
@@ -113,7 +107,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// Get the Certificates in the same Namespace which have the same Secret name
 	// set.
-	duplicates, err := certificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
+	duplicates, err := internalcertificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
 	if err != nil {
 		return err
 	}
@@ -224,12 +218,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync := NewController(log,
-		ctx.CMClient,
-		ctx.KubeSharedInformerFactory,
-		ctx.SharedInformerFactory,
-		ctx.FieldManager,
-	)
+	ctrl, queue, mustSync := NewController(log, ctx)
 	c.controller = ctrl
 
 	return queue, mustSync, nil

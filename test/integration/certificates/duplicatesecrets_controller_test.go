@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -33,7 +34,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/duplicatesecrets"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/test/integration/framework"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -47,10 +47,24 @@ func Test_DuplicateSecrets(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t, ctx)
 	defer stopFn()
 
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	controllerOptions := controllerpkg.CertificateOptions{
+		EnableOwnerRef: true,
+	}
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmClient,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-certificates-duplicatesecrets-test",
+	}
 
-	ctrl, queue, mustSync := duplicatesecrets.NewController(logf.Log, cmCl,
-		factory, cmFactory, "cert-manage-certificates-duplicatesecrets-test")
+	ctrl, queue, mustSync := duplicatesecrets.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"duplicatesecrets_test",
@@ -85,17 +99,17 @@ func Test_DuplicateSecrets(t *testing.T) {
 	crt2 := gen.CertificateFrom(crt1, gen.SetCertificateName("2"))
 	crt3 := gen.CertificateFrom(crt1, gen.SetCertificateName("3"))
 
-	crt1, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt1, metav1.CreateOptions{})
+	crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt1, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	crt2, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt2, metav1.CreateOptions{})
+	crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt2, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if err := wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
-		crt1, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
+		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -104,7 +118,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 			return false, nil
 		}
 
-		crt2, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
+		crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -120,21 +134,21 @@ func Test_DuplicateSecrets(t *testing.T) {
 
 	// A third Certificate with the same Secret name should have all conditions
 	// set.
-	crt3, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt3, metav1.CreateOptions{})
+	crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt3, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if err := wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
-		crt1, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
+		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		crt2, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
+		crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		crt3, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "3", metav1.GetOptions{})
+		crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "3", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -163,30 +177,30 @@ func Test_DuplicateSecrets(t *testing.T) {
 	crt2.Spec.SecretName = "2"
 	crt3.Spec.SecretName = "3"
 
-	crt1, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt1, metav1.UpdateOptions{})
+	crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt1, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	crt2, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt2, metav1.UpdateOptions{})
+	crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt2, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	crt3, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt3, metav1.UpdateOptions{})
+	crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt3, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if err := wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
-		crt1, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
+		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		crt2, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
+		crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 
-		crt3, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, "3", metav1.GetOptions{})
+		crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "3", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

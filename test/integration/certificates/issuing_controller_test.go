@@ -1156,12 +1156,24 @@ func Test_IssuingController_DuplicateSecretName(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmClient,
+		SharedInformerFactory:     cmFactory,
+		ContextOptions: controllerpkg.ContextOptions{
+			Clock:              clock.RealClock{},
+			CertificateOptions: controllerOptions,
+		},
+		Recorder:     framework.NewEventRecorder(t),
+		FieldManager: "cert-manager-issuing-test-duplicate-secret-name",
+	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions, "cert-manager-issuing-test-duplicate-secret-name")
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test_duplicate_secret_name",
@@ -1194,7 +1206,7 @@ func Test_IssuingController_DuplicateSecretName(t *testing.T) {
 		gen.SetCertificateCommonName("example.com"),
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1202,7 +1214,7 @@ func Test_IssuingController_DuplicateSecretName(t *testing.T) {
 	// Add Issuing and DuplicateSecretName condition to Certificate
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionDuplicateSecretName, cmmeta.ConditionTrue, "DupeReason", "")
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1210,7 +1222,7 @@ func Test_IssuingController_DuplicateSecretName(t *testing.T) {
 	// Wait for the Certificate to have a False Issuing condition and be marked
 	// as failed.
 	err = wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
-		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+		crt, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
 			return false, nil
@@ -1228,19 +1240,19 @@ func Test_IssuingController_DuplicateSecretName(t *testing.T) {
 	}
 
 	// Remove the DuplicateSecretName condition from the Certificate
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName)
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for the Certificate to remove the Issuing condition.
 	err = wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
-		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+		crt, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
 			return false, nil

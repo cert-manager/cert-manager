@@ -25,12 +25,12 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
-	"github.com/cert-manager/cert-manager/test/e2e/framework"
-	e2eutil "github.com/cert-manager/cert-manager/test/e2e/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
