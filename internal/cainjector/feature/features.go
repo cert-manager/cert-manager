@@ -23,13 +23,18 @@ import (
 )
 
 const (
-// FeatureName will enable XYZ feature.
-// Fill this section out with additional details about the feature.
-//
-// Owner (responsible for graduating feature through to GA): @username
-// Alpha: vX.Y
-// Beta: ...
-// FeatureName featuregate.Feature = "FeatureName"
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
+	//
+	// Owner (responsible for graduating feature through to GA): @username
+	// Alpha: vX.Y
+	// Beta: ...
+	// FeatureName featuregate.Feature = "FeatureName"
+
+	// alpha: v1.12.0
+	//
+	// ServerSideApply enables the use of ServerSideApply in all API calls.
+	ServerSideApply featuregate.Feature = "ServerSideApply"
 )
 
 func init() {
@@ -43,4 +48,6 @@ func init() {
 //	utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
-var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{}
+var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	ServerSideApply: {Default: false, PreRelease: featuregate.Alpha},
+}
