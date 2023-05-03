@@ -252,6 +252,10 @@ type customResourceWebhookClientConfigPatch struct {
 }
 
 func (t *crdConversionTarget) AsApplyObject() (client.Object, client.Patch) {
+	if t.obj.Spec.Conversion == nil || t.obj.Spec.Conversion.Webhook == nil || t.obj.Spec.Conversion.Webhook.ClientConfig == nil {
+		return &t.obj, nil
+	}
+
 	return &t.obj, newSSAPatch(&customResourceDefinitionPatch{
 		TypeMetaApplyConfiguration: *applymetav1.
 			TypeMeta().
