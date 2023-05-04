@@ -357,9 +357,10 @@ type JKSKeystore struct {
 	// Secret resource, encrypted using the password stored in
 	// `passwordSecretRef`.
 	// The keystore file will be updated immediately.
-	// A file named `truststore.jks` will also be created in the target
-	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef` containing the issuing Certificate Authority
+	// If the issuer provided a CA certificate, a file named `truststore.jks`
+	// will also be created in the target Secret resource, encrypted using the
+	// password stored in `passwordSecretRef`
+	// containing the issuing Certificate Authority
 	Create bool `json:"create"`
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
@@ -375,9 +376,10 @@ type PKCS12Keystore struct {
 	// Secret resource, encrypted using the password stored in
 	// `passwordSecretRef`.
 	// The keystore file will be updated immediately.
-	// A file named `truststore.p12` will also be created in the target
-	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef` containing the issuing Certificate Authority
+	// If the issuer provided a CA certificate, a file named `truststore.p12` will
+	// also be created in the target Secret resource, encrypted using the
+	// password stored in `passwordSecretRef` containing the issuing Certificate
+	// Authority
 	Create bool `json:"create"`
 
 	// PasswordSecretRef is a reference to a key in a Secret resource

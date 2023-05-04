@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 	"sigs.k8s.io/structured-merge-diff/v4/value"
 
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -100,6 +101,8 @@ func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 // If the private key rotation is set to "Never", the key store related values are re-encoded
 // as per the certificate specification
 func SecretKeystoreFormatMatchesSpec(input Input) (string, string, bool) {
+	_, issuerProvidesCA := input.Secret.Data[cmmeta.TLSCAKey]
+
 	if input.Certificate.Spec.Keystores == nil {
 		if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
 			len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 ||
@@ -113,8 +116,8 @@ func SecretKeystoreFormatMatchesSpec(input Input) (string, string, bool) {
 	if input.Certificate.Spec.Keystores.JKS != nil {
 		if input.Certificate.Spec.Keystores.JKS.Create {
 			if len(input.Secret.Data[cmapi.JKSSecretKey]) == 0 ||
-				len(input.Secret.Data[cmapi.JKSTruststoreKey]) == 0 {
-				return SecretMismatch, "JKS Keystore keys does not contain data", true
+				(len(input.Secret.Data[cmapi.JKSTruststoreKey]) == 0 && issuerProvidesCA) {
+				return SecretMismatch, "JKS Keystore key does not contain data", true
 			}
 		} else {
 			if len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
@@ -132,8 +135,8 @@ func SecretKeystoreFormatMatchesSpec(input Input) (string, string, bool) {
 	if input.Certificate.Spec.Keystores.PKCS12 != nil {
 		if input.Certificate.Spec.Keystores.PKCS12.Create {
 			if len(input.Secret.Data[cmapi.PKCS12SecretKey]) == 0 ||
-				len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) == 0 {
-				return SecretMismatch, "PKCS12 Keystore keys does not contain data", true
+				(len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) == 0 && issuerProvidesCA) {
+				return SecretMismatch, "PKCS12 Keystore key does not contain data", true
 			}
 		} else {
 			if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
