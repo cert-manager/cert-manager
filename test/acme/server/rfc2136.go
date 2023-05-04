@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-
 	"github.com/go-logr/logr"
 	"github.com/miekg/dns"
+
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type rfc2136Handler struct {
