@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// package dns contains a framework for testing ACME DNS solver implementations.
+// Used by both internal and external solvers.
 package dns
 
 import (
