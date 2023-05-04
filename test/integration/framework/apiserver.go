@@ -38,11 +38,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/cert-manager/cert-manager/integration-tests/internal/apiserver"
 	"github.com/cert-manager/cert-manager/internal/test/paths"
 	"github.com/cert-manager/cert-manager/internal/webhook"
 	"github.com/cert-manager/cert-manager/pkg/api"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	"github.com/cert-manager/cert-manager/test/apiserver"
 	webhooktesting "github.com/cert-manager/cert-manager/webhook-binary/app/testing"
 )
 
