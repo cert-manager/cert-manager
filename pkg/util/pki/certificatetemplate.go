@@ -75,11 +75,9 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, mutators ...Certif
 	}
 
 	cert := &x509.Certificate{
-		// Version must be 2 according to RFC5280.
-		// A version value of 2 confusingly means version 3.
-		// This value isn't used by Go at the time of writing.
+		// Version must be 3 according to RFC5280.
 		// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-		Version:            2,
+		Version:            3,
 		SerialNumber:       serialNumber,
 		PublicKeyAlgorithm: csr.PublicKeyAlgorithm,
 		PublicKey:          csr.PublicKey,

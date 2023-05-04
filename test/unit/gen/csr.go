@@ -96,7 +96,7 @@ func CSRWithSigner(sk crypto.Signer, mods ...CSRModifier) (csr []byte, err error
 	}
 
 	cr := &x509.CertificateRequest{
-		Version:            3,
+		Version:            0,
 		SignatureAlgorithm: signatureAlgorithm,
 		PublicKeyAlgorithm: keyAlgorithm,
 		PublicKey:          sk.Public(),
