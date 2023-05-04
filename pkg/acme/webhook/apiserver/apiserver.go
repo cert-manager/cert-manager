@@ -166,7 +166,7 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		apiGroupInfo.VersionedResourcesStorageMap[gvr.Version] = v1alpha1storage
 	}
 	if err := s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error installing APIGroup for solvers: %w", err)
 	}
 
 	for i := range c.ExtraConfig.Solvers {
