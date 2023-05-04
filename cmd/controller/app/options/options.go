@@ -388,15 +388,27 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
-	fs.StringVar(&s.HealthzListenAddress, "healthz-listen-address", defaultHealthzServerAddress, ""+
-		"The host and port that the healthz server should listen on. "+
-		"The healthz server serves the /livez endpoint, which is called by the LivenessProbe.")
-	fs.DurationVar(&s.HealthzLeaderElectionTimeout, "healthz-leader-election-timeout", defaultHealthzLeaderElectionTimeout, ""+
-		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	fs.BoolVar(&s.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, ""+
 		"Enable profiling for controller.")
 	fs.StringVar(&s.PprofAddress, "profiler-address", cmdutil.DefaultProfilerAddr,
 		"The host and port that Go profiler should listen on, i.e localhost:6060. Ensure that profiler is not exposed on a public address. Profiler will be served at /debug/pprof.")
+
+	// The healthz related flags are given the prefix "internal-" and are hidden,
+	// to discourage users from overriding them.
+	// We may want to rename or remove these flags when we have feedback from
+	// end-users about whether the default liveness
+	// probe and the separate healthz server are a good and correct way to
+	// mitigate unexpected deadlocks in the controller-manager process.
+	//
+	// TODO(wallrj) Consider merging the metrics, pprof and healthz servers, and
+	// having a single --secure-port flag, like Kubernetes components do.
+	fs.StringVar(&s.HealthzListenAddress, "internal-healthz-listen-address", defaultHealthzServerAddress, ""+
+		"The host and port that the healthz server should listen on. "+
+		"The healthz server serves the /livez endpoint, which is called by the LivenessProbe.")
+	fs.MarkHidden("internal-healthz-listen-address")
+	fs.DurationVar(&s.HealthzLeaderElectionTimeout, "internal-healthz-leader-election-timeout", defaultHealthzLeaderElectionTimeout, ""+
+		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
+	fs.MarkHidden("internal-healthz-leader-election-timeout")
 }
 
 func (o *ControllerOptions) Validate() error {
