@@ -82,7 +82,6 @@ func AddFlags(opts *logs.Options, fs *pflag.FlagSet) {
 			}
 		})
 	}
-	_ = fs.Set("logtostderr", "true")
 
 	{
 		var allFlags pflag.FlagSet

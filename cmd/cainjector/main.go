@@ -39,11 +39,10 @@ func main() {
 	ctrl.SetLogger(logf.Log)
 
 	ctx := util.ContextWithStopCh(context.Background(), stopCh)
-
 	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
 
 	if err := cmd.Execute(); err != nil {
-		cmd.PrintErrln(err)
+		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}
 }

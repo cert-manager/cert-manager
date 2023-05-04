@@ -17,9 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/cert-manager/cert-manager/acmesolver-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -39,7 +36,7 @@ func main() {
 	cmd := app.NewACMESolverCommand(stopCh)
 
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}
 }

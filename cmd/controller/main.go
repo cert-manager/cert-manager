@@ -32,7 +32,7 @@ func main() {
 	cmd := app.NewCommandStartCertManagerController(stopCh)
 
 	if err := cmd.Execute(); err != nil {
-		logf.Log.Error(err, "error while executing")
+		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}
 }
