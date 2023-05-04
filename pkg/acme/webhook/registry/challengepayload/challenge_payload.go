@@ -36,6 +36,7 @@ type REST struct {
 var _ rest.Creater = &REST{}
 var _ rest.Scoper = &REST{}
 var _ rest.GroupVersionKindProvider = &REST{}
+var _ rest.SingularNameProvider = &REST{}
 
 func NewREST(hookFn webhook.Solver) *REST {
 	return &REST{
@@ -45,6 +46,9 @@ func NewREST(hookFn webhook.Solver) *REST {
 
 func (r *REST) New() runtime.Object {
 	return &v1alpha1.ChallengePayload{}
+}
+func (r *REST) GetSingularName() string {
+	return "ChallengePayload"
 }
 
 func (r *REST) GroupVersionKind(containingGV schema.GroupVersion) schema.GroupVersionKind {
