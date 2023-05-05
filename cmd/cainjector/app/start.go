@@ -143,7 +143,7 @@ func NewCommandStartInjectorController(ctx context.Context, out, errOut io.Write
 	o := NewInjectorControllerOptions(out, errOut)
 
 	cmd := &cobra.Command{
-		Use:   "ca-injector",
+		Use:   "cainjector",
 		Short: fmt.Sprintf("CA Injection Controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		Long: `
 cert-manager CA injector is a Kubernetes addon to automate the injection of CA data into
@@ -155,7 +155,7 @@ servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
 		RunE: func(cmd *cobra.Command, args []string) error {
-			o.log = logf.Log.WithName("ca-injector")
+			o.log = logf.Log.WithName("cainjector")
 
 			logf.V(logf.InfoLevel).InfoS("starting", "version", util.AppVersion, "revision", util.AppGitCommit)
 			return o.RunInjectorController(ctx)
@@ -169,19 +169,21 @@ servers and webhook servers.`,
 }
 
 func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                        api.Scheme,
-		Namespace:                     o.Namespace,
-		LeaderElection:                o.LeaderElect,
-		LeaderElectionNamespace:       o.LeaderElectionNamespace,
-		LeaderElectionID:              "cert-manager-cainjector-leader-election",
-		LeaderElectionReleaseOnCancel: true,
-		LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
-		LeaseDuration:                 &o.LeaseDuration,
-		RenewDeadline:                 &o.RenewDeadline,
-		RetryPeriod:                   &o.RetryPeriod,
-		MetricsBindAddress:            "0",
-	})
+	mgr, err := ctrl.NewManager(
+		util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "cainjector"),
+		ctrl.Options{
+			Scheme:                        api.Scheme,
+			Namespace:                     o.Namespace,
+			LeaderElection:                o.LeaderElect,
+			LeaderElectionNamespace:       o.LeaderElectionNamespace,
+			LeaderElectionID:              "cert-manager-cainjector-leader-election",
+			LeaderElectionReleaseOnCancel: true,
+			LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
+			LeaseDuration:                 &o.LeaseDuration,
+			RenewDeadline:                 &o.RenewDeadline,
+			RetryPeriod:                   &o.RetryPeriod,
+			MetricsBindAddress:            "0",
+		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
 	}

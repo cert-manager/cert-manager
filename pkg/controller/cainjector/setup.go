@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // this file contains the logic to set up the different reconcile loops run by cainjector
@@ -90,8 +91,6 @@ var (
 		listType:            &apiext.CustomResourceDefinitionList{},
 		objType:             &apiext.CustomResourceDefinition{},
 	}
-
-	injectorSetups = []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 )
 
 // registerAllInjectors registers all injectors and based on the
@@ -134,6 +133,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				cds,
 				kds,
 			},
+			fieldManager: util.PrefixFromUserAgent(mgr.GetConfig().UserAgent),
 		}
 
 		// Index injectable with a new field. If the injectable's CA is
@@ -196,9 +196,8 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 						toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 					}).Map))
 		}
-		err := b.Complete(r)
-		if err != nil {
-			err = fmt.Errorf("error registering controller for %s: %w", setup.objType.GetName(), err)
+		if err := b.Complete(r); err != nil {
+			return fmt.Errorf("error registering controller for %s: %w", setup.objType.GetName(), err)
 		}
 	}
 	return nil
