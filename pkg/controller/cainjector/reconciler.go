@@ -125,9 +125,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// actually update with injected CA data
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 		obj, patch := target.AsApplyObject()
-		err = r.Client.Patch(ctx, obj, patch, &client.PatchOptions{
-			Force: pointer.Bool(true), FieldManager: r.fieldManager,
-		})
+		if patch != nil {
+			err = r.Client.Patch(ctx, obj, patch, &client.PatchOptions{
+				Force: pointer.Bool(true), FieldManager: r.fieldManager,
+			})
+		}
 	} else {
 		err = r.Client.Update(ctx, target.AsObject())
 	}
