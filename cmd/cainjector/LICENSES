@@ -4,7 +4,7 @@ github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manage
 github.com/cert-manager/cert-manager/cainjector-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/cainjector-binary/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/v1.1.1/LICENSE,ISC
-github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.9.0/LICENSE,MIT
+github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.1/LICENSE,MIT
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6.0/v5/LICENSE,BSD-3-Clause
 github.com/fsnotify/fsnotify,https://github.com/fsnotify/fsnotify/blob/v1.6.0/LICENSE,BSD-3-Clause
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.4/LICENSE,Apache-2.0
