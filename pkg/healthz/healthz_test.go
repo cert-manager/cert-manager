@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,6 +32,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/klog/v2"
@@ -81,7 +83,6 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 			name: "ok-leader-election-disabled",
 			in: input{
 				leaderElectionEnabled: false,
-				resourceLock:          nil,
 			},
 			out: output{
 				responseBody: "ok",
@@ -89,16 +90,11 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 			},
 		},
 		{
-			// OK: when the local node is leader and has updated the leader
-			// election record.
+			// OK: when the local node wins and holds the leader election
 			name: "ok-local-leader",
 			in: input{
 				leaderElectionEnabled: true,
-				resourceLock: &fakeResourceLock{
-					record: &resourcelock.LeaderElectionRecord{
-						HolderIdentity: localIdentity,
-					},
-				},
+				resourceLock:          &fakeResourceLock{},
 			},
 			out: output{
 				responseBody: "ok",
@@ -196,7 +192,6 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
 			log, ctx := ktesting.NewTestContext(t)
 
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -207,7 +202,7 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 
 			livezURL := "http://" + l.Addr().String() + "/livez/leaderElection"
 
-			const leaderElectionHealthzAdaptorTimeout = time.Millisecond
+			const leaderElectionHealthzAdaptorTimeout = 0
 			s := healthz.NewServer(leaderElectionHealthzAdaptorTimeout)
 
 			g, gCTX := errgroup.WithContext(ctx)
@@ -227,6 +222,7 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 					"renewDeadline", renewDeadline,
 					"retryPeriod", retryPeriod,
 				)
+				tc.in.resourceLock.lockName = t.Name()
 				g.Go(func() error {
 					defer log.Info("Leader election go-routine finished")
 					leaderelection.RunOrDie(gCTX, leaderelection.LeaderElectionConfig{
@@ -313,9 +309,11 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 // The intention is to be able to test the behavior of the
 // LeaderElectionHealthzAdaptor under those circumstances.
 type fakeResourceLock struct {
+	lockName    string
 	record      *resourcelock.LeaderElectionRecord
 	getError    error
 	updateError error
+	lock        sync.Mutex
 }
 
 func (o *fakeResourceLock) Identity() string {
@@ -323,10 +321,33 @@ func (o *fakeResourceLock) Identity() string {
 }
 
 func (o *fakeResourceLock) Describe() string {
-	return lockDescription
+	return o.lockName
 }
 
+// Get returns not-found error if the leader election record is not currently
+// set i.e. the zero value of fakeResourceLock,
+// to simulate a situation where no leader has ever been elected.
+//
+// Or if there is an existing record, it simply returns it.
+// This is to allow simulating the situation where the local node has won the
+// election and updated the record by calling Create or subsequently Update.
+//
+// There is a special case, where if the holder == remote-node,
+// we are simulating a remote leader.
+// And in this case, we want to always return a unique []byte representation,
+// which causes the leader election library to treat the leader election record
+// as having been renewed.
+// To do this we increment the LeaderTransitions field.
+//
+// This aspect of the LeaderElectionRecord API is documented as follows:
+// > LeaderElectionRecord is the record that is stored in the leader election annotation.
+// > This information should be used for observational purposes only and could be replaced
+// > with a random string (e.g. UUID) with only slight modification of this code.
+// > -- https://github.com/kubernetes/kubernetes/blob/7e25f1232a9f89875641431ae011c916f0376c57/staging/src/k8s.io/client-go/tools/leaderelection/resourcelock/interface.go#L107-L110
 func (o *fakeResourceLock) Get(ctx context.Context) (*resourcelock.LeaderElectionRecord, []byte, error) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+
 	klog.FromContext(ctx).WithName("fakeResourceLock").Info("Get")
 	if o.getError != nil {
 		return nil, nil, o.getError
@@ -335,20 +356,39 @@ func (o *fakeResourceLock) Get(ctx context.Context) (*resourcelock.LeaderElectio
 		err := errors.NewNotFound(schema.ParseGroupResource("configmap"), "foo")
 		return nil, nil, err
 	}
+
+	// If simulating a remote-node leader, increment the LeaderTransitions field,
+	// simply to ensure a unique []byte representation each time.
+	// See the function documentation above for a fuller explanation.
+	if o.record.HolderIdentity == remoteIdentity {
+		o.record.LeaderTransitions++
+	}
+
 	lerByte, err := json.Marshal(*o.record)
 	if err != nil {
 		return nil, nil, err
+	}
+	if o.record.HolderIdentity == remoteIdentity {
+		// Always return unique leader election record bytes,
+		// to simulate an always updated remote leader election record.
+		lerByte = []byte(uuid.NewUUID())
 	}
 	return o.record, lerByte, nil
 }
 
 func (o *fakeResourceLock) Create(ctx context.Context, ler resourcelock.LeaderElectionRecord) error {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+
 	klog.FromContext(ctx).WithName("fakeResourceLock").Info("Create")
 	o.record = &ler
 	return nil
 }
 
 func (o *fakeResourceLock) Update(ctx context.Context, ler resourcelock.LeaderElectionRecord) error {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+
 	klog.FromContext(ctx).WithName("fakeResourceLock").Info("Update")
 	o.record = &ler
 	return o.updateError
