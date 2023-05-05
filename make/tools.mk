@@ -28,7 +28,7 @@ TOOLS :=
 TOOLS += helm=v3.11.2
 TOOLS += kubectl=v1.27.1
 TOOLS += kind=v0.18.0
-TOOLS += controller-gen=v0.11.3
+TOOLS += controller-gen=v0.12.0
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=c35ba39e591f1e5150525ca0fef222beb719de8c
 TOOLS += release-notes=v0.14.0
@@ -47,9 +47,9 @@ TOOLS += ko=v0.13.0
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.6.2
 
-K8S_CODEGEN_VERSION=v0.26.3
+K8S_CODEGEN_VERSION=v0.27.1
 
-KUBEBUILDER_ASSETS_VERSION=1.26.1
+KUBEBUILDER_ASSETS_VERSION=1.27.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -401,10 +401,10 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # is possible that these SHAs change, whilst the version does not. To verify the
 # change that has been made to the tools look at
 # https://github.com/kubernetes-sigs/kubebuilder/tree/tools-releases
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=e6ea8e2c6657dad0493f8c61c7a8fef444a5aa421019d09e7f4b6b4e3e9bd45d
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=7d1690234e5cf601f1c8b403f835a3a74ffe6cac23a29293a1155ca552599706
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=069e902a99b3d224c455120c5178a8452eb76bc1d4e8cf5179d081e98dd7601c
-KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=afd2c4be4952164e412195f3f0fb318867ec65c52d45dd8d94fb158145659778
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=7482055621d3286069aaeaa7fde2d55a50eb7c3d904691c0b2b81c3c87d3b353
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=0afb40d1b7c8e6ea51bda93201138f21d3949f886534a9cefa917bdd38a061f8
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=ba6172a8171a35282c1b739787810da83a44f0f24fdd2bc30ad970b07acdbd1e
+KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=a1f62fde417ebdf0095e40bd5e80545f27cd0c81381cba315d612cef68475cfb
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout

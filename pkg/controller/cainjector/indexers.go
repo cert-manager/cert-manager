@@ -26,21 +26,42 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
-// setup for indexers used to trigger reconciliation on injected CA data.
+const (
+	// injectFromPath is the index key used to look up the value of inject-ca-from on targeted objects
+	injectFromPath = ".metadata.annotations.inject-ca-from"
 
-// certificateToInjectableFunc converts a given certificate to the reconcile requests for the corresponding injectables
-// (webhooks, api services, etc) that reference it.
-type certificateToInjectableFunc func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request
+	// injectFromSecretPath is the index key used to look up the value of
+	// inject-ca-from-secret on targeted objects
+	injectFromSecretPath = ".metadata.annotations.inject-ca-from-secret"
+)
 
-// buildCertToInjectableFunc creates a certificateToInjectableFunc that maps from certificates to the given type of injectable.
-func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) certificateToInjectableFunc {
-	return func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request {
-		log = log.WithValues("type", resourceName)
-		objs := listTyp.DeepCopyObject().(client.ObjectList)
+// certFromSecretToInjectableMapFuncBuilder returns a handler.MapFunc that, for
+// a Secret change, ensures that if this Secret is a Certificate Secret of
+// Certificate that is configured as a CA source for an injectable via
+// inject-ca-from annotation, a reconcile loop will be triggered for this
+// injectable
+func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []ctrl.Request {
+		secretName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
+		certName := owningCertForSecret(obj.(*corev1.Secret))
+		if certName == nil {
+			return nil
+		}
+		log = log.WithValues("type", config.resourceName, "secret", secretName, "certificate", *certName)
+
+		var cert cmapi.Certificate
+		// confirm that a service owns this cert
+		if err := cl.Get(context.Background(), *certName, &cert); err != nil {
+			// TODO(directxman12): check for not found error?
+			log.Error(err, "unable to fetch certificate that owns the secret")
+			return nil
+		}
+		objs := config.listType.DeepCopyObject().(client.ObjectList)
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with certificate")
 			return nil
@@ -68,82 +89,52 @@ func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) cert
 	}
 }
 
-// secretForCertificateMapper is a Mapper that converts secrets up to injectables, through certificates.
-type secretForCertificateMapper struct {
-	Client                  client.Reader
-	log                     logr.Logger
-	certificateToInjectable certificateToInjectableFunc
+// certFromSecretToInjectableMapFuncBuilder returns a handler.MapFunc that, for
+// a Certificate change, ensures that if this Certificate that is configured as
+// a CA source for an injectable via inject-ca-from annotation, a reconcile loop
+// will be triggered for this injectable
+func certToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []ctrl.Request {
+		certName := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+		log = log.WithValues("type", config.resourceName, "certificate", certName)
+		objs := config.listType.DeepCopyObject().(client.ObjectList)
+		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
+			log.Error(err, "unable to fetch injectables associated with certificate")
+			return nil
+		}
+
+		var reqs []ctrl.Request
+		if err := meta.EachListItem(objs, func(obj runtime.Object) error {
+			metaInfo, err := meta.Accessor(obj)
+			if err != nil {
+				log.Error(err, "unable to get metadata from list item")
+				// continue on error
+				return nil
+			}
+			reqs = append(reqs, ctrl.Request{NamespacedName: types.NamespacedName{
+				Name:      metaInfo.GetName(),
+				Namespace: metaInfo.GetNamespace(),
+			}})
+			return nil
+		}); err != nil {
+			log.Error(err, "unable get items from list")
+			return nil
+		}
+
+		return reqs
+	}
 }
 
-func (m *secretForCertificateMapper) Map(obj client.Object) []ctrl.Request {
-	// grab the certificate, if it exists
-	certName := owningCertForSecret(obj.(*corev1.Secret))
-	if certName == nil {
-		return nil
-	}
-
-	secretName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
-	log := m.log.WithValues("secret", secretName, "certificate", *certName)
-
-	var cert cmapi.Certificate
-	// confirm that a service owns this cert
-	if err := m.Client.Get(context.Background(), *certName, &cert); err != nil {
-		// TODO(directxman12): check for not found error?
-		log.Error(err, "unable to fetch certificate that owns the secret")
-		return nil
-	}
-
-	return m.certificateToInjectable(log, m.Client, *certName)
-}
-
-// certMapper is a mapper that converts Certificates up to injectables
-type certMapper struct {
-	Client       client.Reader
-	log          logr.Logger
-	toInjectable certificateToInjectableFunc
-}
-
-func (m *certMapper) Map(obj client.Object) []ctrl.Request {
-	certName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
-	log := m.log.WithValues("certificate", certName)
-	return m.toInjectable(log, m.Client, certName)
-}
-
-var (
-	// injectFromPath is the index key used to look up the value of inject-ca-from on targeted objects
-	injectFromPath = ".metadata.annotations.inject-ca-from"
-)
-
-// injectableCAFromIndexer is an IndexerFunc indexing on certificates
-// referenced by injectables.
-func injectableCAFromIndexer(rawObj client.Object) []string {
-	metaInfo, err := meta.Accessor(rawObj)
-	if err != nil {
-		return nil
-	}
-
-	// skip invalid certificate names
-	certNameRaw := metaInfo.GetAnnotations()[cmapi.WantInjectAnnotation]
-	if certNameRaw == "" {
-		return nil
-	}
-	certName := splitNamespacedName(certNameRaw)
-	if certName.Namespace == "" {
-		return nil
-	}
-
-	return []string{certNameRaw}
-}
-
-// secretToInjectableFunc converts a given certificate to the reconcile requests for the corresponding injectables
-// (webhooks, api services, etc) that reference it.
-type secretToInjectableFunc func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request
-
-// buildSecretToInjectableFunc creates a certificateToInjectableFunc that maps from secrets to the given type of injectable.
-func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) secretToInjectableFunc {
-	return func(log logr.Logger, cl client.Reader, secretName types.NamespacedName) []ctrl.Request {
-		log = log.WithValues("type", resourceName)
-		objs := listTyp.DeepCopyObject().(client.ObjectList)
+// secretForInjectableMapFuncBuilder returns a handler.MapFunc that, for a
+// config for particular injectable type (i.e CRD, APIService) and a Secret,
+// returns all injectables that have the inject-ca-from-secret annotion with the
+// given secret name. This will be used in an event handler to ensure that
+// changes to a Secret triggers a reconcile loop for the relevant injectable.
+func secretForInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []ctrl.Request {
+		secretName := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+		log = log.WithValues("type", config.resourceName, "secret", secretName)
+		objs := config.listType.DeepCopyObject().(client.ObjectList)
 		// TODO: ensure that this is cache lister, not a direct client
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with secret")
@@ -172,25 +163,26 @@ func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) se
 	}
 }
 
-// secretForInjectableMapper is a Mapper that converts secrets to injectables
-// via the 'inject-ca-from-secret' annotation
-type secretForInjectableMapper struct {
-	Client             client.Reader
-	log                logr.Logger
-	secretToInjectable secretToInjectableFunc
-}
+// injectableCAFromIndexer is an IndexerFunc indexing on certificates
+// referenced by injectables.
+func injectableCAFromIndexer(rawObj client.Object) []string {
+	metaInfo, err := meta.Accessor(rawObj)
+	if err != nil {
+		return nil
+	}
 
-func (m *secretForInjectableMapper) Map(obj client.Object) []ctrl.Request {
-	secretName := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
-	log := m.log.WithValues("secret", secretName)
-	return m.secretToInjectable(log, m.Client, secretName)
-}
+	// skip invalid certificate names
+	certNameRaw := metaInfo.GetAnnotations()[cmapi.WantInjectAnnotation]
+	if certNameRaw == "" {
+		return nil
+	}
+	certName := splitNamespacedName(certNameRaw)
+	if certName.Namespace == "" {
+		return nil
+	}
 
-var (
-	// injectFromSecretPath is the index key used to look up the value of
-	// inject-ca-from-secret on targeted objects
-	injectFromSecretPath = ".metadata.annotations.inject-ca-from-secret"
-)
+	return []string{certNameRaw}
+}
 
 // injectableCAFromSecretIndexer is an IndexerFunc indexing on secrets
 // referenced by injectables.
