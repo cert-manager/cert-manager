@@ -1267,6 +1267,9 @@ spec:
                   description: ACME specific status options. This field should only be set if the Issuer is configured to use an ACME server to issue certificates.
                   type: object
                   properties:
+                    lastPrivateKeyHash:
+                      description: LastPrivateKeyHash is a hash of the private key associated with the latest registered ACME account, in order to track changes made to registered account associated with the Issuer
+                      type: string
                     lastRegisteredEmail:
                       description: LastRegisteredEmail is the email associated with the latest registered ACME account, in order to track changes made to registered account associated with the  Issuer
                       type: string

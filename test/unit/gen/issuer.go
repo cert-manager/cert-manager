@@ -226,6 +226,16 @@ func SetIssuerACMELastRegisteredEmail(email string) IssuerModifier {
 	}
 }
 
+func SetIssuerACMELastPrivateKeyHash(privateKeyHash string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		status := iss.GetStatus()
+		if status.ACME == nil {
+			status.ACME = &cmacme.ACMEIssuerStatus{}
+		}
+		status.ACME.LastPrivateKeyHash = privateKeyHash
+	}
+}
+
 func SetIssuerCA(a v1.CAIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().CA = &a
