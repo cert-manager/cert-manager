@@ -134,14 +134,13 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	logf.AddFlags(o.Logging, fs)
 
-	{
-		var controllerRuntimeFlags flag.FlagSet
-		config.RegisterFlags(&controllerRuntimeFlags)
-
-		controllerRuntimeFlags.VisitAll(func(f *flag.Flag) {
-			fs.AddGoFlag(f)
-		})
-	}
+	// The controller-runtime flag (--kubeconfig) that we need
+	// relies on the "flag" package but we use "spf13/pflag".
+	var controllerRuntimeFlags flag.FlagSet
+	config.RegisterFlags(&controllerRuntimeFlags)
+	controllerRuntimeFlags.VisitAll(func(f *flag.Flag) {
+		fs.AddGoFlag(f)
+	})
 }
 
 // NewInjectorControllerOptions returns a new InjectorControllerOptions

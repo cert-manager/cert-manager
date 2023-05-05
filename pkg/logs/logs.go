@@ -69,7 +69,6 @@ func InitLogs() {
 }
 
 func AddFlags(opts *logs.Options, fs *pflag.FlagSet) {
-	// init deprecated flags
 	{
 		var allFlags flag.FlagSet
 		klog.InitFlags(&allFlags)
