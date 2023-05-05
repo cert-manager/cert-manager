@@ -94,7 +94,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				os.Exit(1)
 			}
 
-			if err := options.ValidateWebhookFlags(webhookFlags); err != nil {
+			if err := logf.ValidateAndApply(webhookFlags.Logging); err != nil {
 				log.Error(err, "Failed to validate webhook flags")
 				os.Exit(1)
 			}
@@ -110,6 +110,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 					log.Error(err, "Failed to merge flags with config file values")
 					os.Exit(1)
 				}
+
 				// update feature gates based on new config
 				if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(webhookConfig.FeatureGates); err != nil {
 					log.Error(err, "Failed to set feature gates from config file")
@@ -132,7 +133,6 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 
 	webhookFlags.AddFlags(cleanFlagSet)
 	options.AddConfigFlags(cleanFlagSet, webhookConfig)
-	options.AddGlobalFlags(cleanFlagSet)
 
 	cleanFlagSet.BoolP("help", "h", false, fmt.Sprintf("help for %s", cmd.Name()))
 
@@ -149,26 +149,15 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	return cmd
 }
 
-// newFlagSetWithGlobals constructs a new pflag.FlagSet with global flags registered
-// on it.
-func newFlagSetWithGlobals() *pflag.FlagSet {
-	fs := pflag.NewFlagSet("", pflag.ExitOnError)
-	// set the normalize func, similar to k8s.io/component-base/cli//flags.go:InitFlags
-	fs.SetNormalizeFunc(cliflag.WordSepNormalizeFunc)
-	// explicitly add flags from libs that register global flags
-	options.AddGlobalFlags(fs)
-	return fs
-}
-
 // newFakeFlagSet constructs a pflag.FlagSet with the same flags as fs, but where
 // all values have noop Set implementations
-func newFakeFlagSet(fs *pflag.FlagSet) *pflag.FlagSet {
-	ret := pflag.NewFlagSet("", pflag.ExitOnError)
-	ret.SetNormalizeFunc(fs.GetNormalizeFunc())
-	fs.VisitAll(func(f *pflag.Flag) {
-		ret.VarP(cliflag.NoOp{}, f.Name, f.Shorthand, f.Usage)
-	})
-	return ret
+func newFakeFlagSet() *pflag.FlagSet {
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
+
+	// set the normalize func, similar to k8s.io/component-base/cli//flags.go:InitFlags
+	fs.SetNormalizeFunc(cliflag.WordSepNormalizeFunc)
+
+	return fs
 }
 
 // webhookConfigFlagPrecedence re-parses flags over the WebhookConfiguration object.
@@ -176,17 +165,21 @@ func newFakeFlagSet(fs *pflag.FlagSet) *pflag.FlagSet {
 // This is necessary to preserve backwards-compatibility across binary upgrades.
 // See issue #56171 for more details.
 func webhookConfigFlagPrecedence(cfg *config.WebhookConfiguration, args []string) error {
-	// We use a throwaway webhookFlags and a fake global flagset to avoid double-parses,
+	// We use a throwaway webhookFlags and a fake flagset to avoid double-parses,
 	// as some Set implementations accumulate values from multiple flag invocations.
-	fs := newFakeFlagSet(newFlagSetWithGlobals())
+	fs := newFakeFlagSet()
+
 	// register throwaway KubeletFlags
 	options.NewWebhookFlags().AddFlags(fs)
+
 	// register new WebhookConfiguration
 	options.AddConfigFlags(fs, cfg)
+
 	// re-parse flags
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+
 	return nil
 }
 

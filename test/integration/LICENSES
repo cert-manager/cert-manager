@@ -40,6 +40,7 @@ github.com/go-gorp/gorp/v3,https://github.com/go-gorp/gorp/blob/v3.1.0/LICENSE,M
 github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.4/v3/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.4/LICENSE,Apache-2.0
 github.com/go-logr/stdr,https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE,Apache-2.0
+github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.2.3/LICENSE,Apache-2.0
 github.com/go-openapi/jsonpointer,https://github.com/go-openapi/jsonpointer/blob/v0.19.6/LICENSE,Apache-2.0
 github.com/go-openapi/jsonreference,https://github.com/go-openapi/jsonreference/blob/v0.20.1/LICENSE,Apache-2.0
 github.com/go-openapi/swag,https://github.com/go-openapi/swag/blob/v0.22.3/LICENSE,Apache-2.0

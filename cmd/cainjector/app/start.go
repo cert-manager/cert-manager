@@ -18,6 +18,7 @@ package app
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -34,8 +35,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/component-base/logs"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/api"
@@ -48,6 +51,8 @@ import (
 
 // InjectorControllerOptions is a struct having injector controller options values
 type InjectorControllerOptions struct {
+	Logging *logs.Options
+
 	Namespace               string
 	LeaderElect             bool
 	LeaderElectionNamespace string
@@ -126,13 +131,24 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
 
 	utilfeature.DefaultMutableFeatureGate.AddFlag(fs)
+
+	logf.AddFlags(o.Logging, fs)
+
+	// The controller-runtime flag (--kubeconfig) that we need
+	// relies on the "flag" package but we use "spf13/pflag".
+	var controllerRuntimeFlags flag.FlagSet
+	config.RegisterFlags(&controllerRuntimeFlags)
+	controllerRuntimeFlags.VisitAll(func(f *flag.Flag) {
+		fs.AddGoFlag(f)
+	})
 }
 
 // NewInjectorControllerOptions returns a new InjectorControllerOptions
 func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOptions {
 	o := &InjectorControllerOptions{
-		StdOut: out,
-		StdErr: errOut,
+		StdOut:  out,
+		StdErr:  errOut,
+		Logging: logs.NewOptions(),
 	}
 
 	return o
@@ -156,6 +172,10 @@ servers and webhook servers.`,
 		// TODO: Refactor this function from this package
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.log = logf.Log.WithName("cainjector")
+
+			if err := logf.ValidateAndApply(o.Logging); err != nil {
+				return fmt.Errorf("error validating options: %s", err)
+			}
 
 			logf.V(logf.InfoLevel).InfoS("starting", "version", util.AppVersion, "revision", util.AppGitCommit)
 			return o.RunInjectorController(ctx)

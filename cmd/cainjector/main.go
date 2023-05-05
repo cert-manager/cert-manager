@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"flag"
 
 	"os"
 
@@ -35,18 +34,15 @@ func main() {
 	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
-	logf.InitLogs(flag.CommandLine)
+	logf.InitLogs()
 	defer logf.FlushLogs()
 	ctrl.SetLogger(logf.Log)
 
 	ctx := util.ContextWithStopCh(context.Background(), stopCh)
-
 	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
-	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		cmd.PrintErrln(err)
+		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}
 }

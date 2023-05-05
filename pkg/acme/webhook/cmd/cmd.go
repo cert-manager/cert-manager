@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"flag"
 	"os"
 	"runtime"
 
@@ -46,7 +45,7 @@ func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
 	}
 
 	cmd := server.NewCommandStartWebhookServer(os.Stdout, os.Stderr, stopCh, groupName, hooks...)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+
 	if err := cmd.Execute(); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
