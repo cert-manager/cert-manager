@@ -74,7 +74,7 @@ func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 	cmd.Flags().StringVar(&s.Token, "token", "", "the challenge token to verify against")
 	cmd.Flags().StringVar(&s.Key, "key", "", "the challenge key to respond with")
 
-	logf.AddFlags(logOptions, cmd.Flags())
+	// TODO(@inteon): use flags to configure the log configuration
 
 	return cmd
 }
