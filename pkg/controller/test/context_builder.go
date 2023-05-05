@@ -35,7 +35,6 @@ import (
 	"k8s.io/client-go/rest"
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
@@ -54,8 +53,8 @@ import (
 
 func init() {
 	logs.InitLogs()
-	_ = flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
-	ktesting.DefaultConfig = ktesting.NewConfig(ktesting.Verbosity(4))
+	_ = flag.Set("alsologtostderr", "true")
+	_ = flag.Set("v", "4")
 }
 
 // Builder is a structure used to construct new Contexts for use during tests.
