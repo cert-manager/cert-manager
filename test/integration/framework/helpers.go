@@ -95,7 +95,7 @@ func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, ctx context.Context, config
 		t.Fatal(err)
 	}
 
-	err = wait.PollImmediateUntil(time.Second, func() (bool, error) {
+	err = wait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (done bool, err error) {
 		og := openapi.NewOpenAPIGetter(dc)
 		oapiResource, err := openapi.NewOpenAPIParser(og).Parse()
 		if err != nil {
@@ -106,7 +106,7 @@ func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, ctx context.Context, config
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done())
+	})
 
 	if err != nil {
 		t.Fatal("Our GVK isn't loaded into the OpenAPI resources API after waiting for 2 minutes", err)

@@ -114,7 +114,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 
 	// Determine the random port number that was chosen
 	var listenPort int
-	if err = wait.PollImmediateUntil(100*time.Millisecond, func() (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
 		listenPort, err = srv.Port()
 		if err != nil {
 			if errors.Is(err, server.ErrNotListening) {
@@ -123,7 +123,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 			return false, err
 		}
 		return true, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		t.Fatalf("Failed waiting for ListenPort to be allocated (got error: %v)", err)
 	}
 
