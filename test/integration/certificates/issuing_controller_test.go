@@ -217,7 +217,7 @@ func TestIssuingController(t *testing.T) {
 
 	// Wait for the Certificate to have the 'Issuing' condition removed, and
 	// for the signed certificate, ca, and private key stored in the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -266,7 +266,7 @@ func TestIssuingController(t *testing.T) {
 		}
 
 		return true, nil
-	}, ctx.Done())
+	})
 
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
@@ -440,7 +440,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -489,7 +489,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		}
 
 		return true, nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
 	}
@@ -658,7 +658,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -671,7 +671,10 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		}
 
 		return true, nil
-	}, ctx.Done())
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Add labels and annotations to the SecretTemplate.
 	annotations := map[string]string{"annotation-1": "abc", "annotation-2": "123"}
@@ -683,7 +686,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	}
 
 	// Wait for the Annotations and Labels to be observed on the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
@@ -700,7 +703,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 			}
 		}
 		return true, nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -713,7 +716,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	}
 
 	// Wait for the Annotations and Labels to be removed from the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
@@ -732,7 +735,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 			}
 		}
 		return true, nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -904,7 +907,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -917,7 +920,10 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		}
 
 		return true, nil
-	}, ctx.Done())
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Add additional output formats
 	crt = gen.CertificateFrom(crt, gen.SetCertificateAdditionalOutputFormats(
@@ -934,7 +940,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	combinedPEM := append(append(pkBytes, '\n'), certPEM...)
 
 	// Wait for the additional output format values to to be observed on the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
@@ -944,7 +950,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
 			"key.der": pkDER, "tls-combined.pem": combinedPEM,
 		}, secret.Data), nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -957,7 +963,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	}
 
 	// Wait for the additional output formats to be removed from the Secret.
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
@@ -966,7 +972,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		return reflect.DeepEqual(map[string][]byte{
 			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
 		}, secret.Data), nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

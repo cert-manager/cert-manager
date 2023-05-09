@@ -118,10 +118,7 @@ func (o *Options) Run(ctx context.Context) {
 	}
 	log.SetOutput(o.ErrOut) // Log all intermediate errors to stderr
 
-	pollContext, cancel := context.WithTimeout(ctx, o.Wait)
-	defer cancel()
-
-	pollErr := wait.PollImmediateUntil(o.Interval, func() (done bool, err error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, o.Interval, o.Wait, true, func(ctx context.Context) (bool, error) {
 		if err := o.APIChecker.Check(ctx); err != nil {
 			if !o.Verbose && errors.Unwrap(err) != nil {
 				err = errors.Unwrap(err)
@@ -132,16 +129,16 @@ func (o *Options) Run(ctx context.Context) {
 		}
 
 		return true, nil
-	}, pollContext.Done())
+	})
 
 	log.SetOutput(o.Out) // Log conclusion to stdout
 
 	if pollErr != nil {
-		if errors.Is(pollContext.Err(), context.DeadlineExceeded) && o.Wait > 0 {
+		if errors.Is(pollErr, context.DeadlineExceeded) && o.Wait > 0 {
 			log.Printf("Timed out after %s", o.Wait)
 		}
 
-		cmcmdutil.SetExitCode(pollContext.Err())
+		cmcmdutil.SetExitCode(pollErr)
 
 		runtime.Goexit() // Do soft exit (handle all defers, that should set correct exit code)
 	}

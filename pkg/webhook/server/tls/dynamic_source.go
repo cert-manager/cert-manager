@@ -141,7 +141,7 @@ func (f *DynamicSource) Run(ctx context.Context) error {
 	}()
 
 	// check the current certificate every 10s in case it needs updating
-	if err := wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Second*10, true, func(ctx context.Context) (done bool, err error) {
 		// regenerate the serving certificate if the root CA has been rotated
 		select {
 		// if the authority has stopped for whatever reason, exit and return the error
@@ -177,16 +177,11 @@ func (f *DynamicSource) Run(ctx context.Context) error {
 			return true, context.Canceled
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		// In case of an error, the stopCh is closed; wait for all channels to close
 		<-authorityErrChan
 		<-rotationChan
 		<-renewalChan
-
-		// If there was an ErrWaitTimeout error, this must be caused by closing stopCh
-		if errors.Is(err, wait.ErrWaitTimeout) {
-			return context.Canceled
-		}
 
 		return err
 	}

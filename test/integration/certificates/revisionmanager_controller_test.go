@@ -154,7 +154,7 @@ func TestRevisionManagerController(t *testing.T) {
 	var crs []cmapi.CertificateRequest
 
 	// Wait for 3 CertificateRequests to be deleted, and that they have the correct revisions
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		requests, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -168,7 +168,7 @@ func TestRevisionManagerController(t *testing.T) {
 		crs = requests.Items
 
 		return true, nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

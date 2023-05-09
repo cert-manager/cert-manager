@@ -312,13 +312,13 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				}()
 				go func() {
 					defer close(errCh)
-					err = wait.PollImmediateUntil(time.Second, func() (done bool, err error) {
-						req, err = cmCl.CertmanagerV1().CertificateRequests(test.inputNamespace).Get(pollCtx, test.inputArgs[0], metav1.GetOptions{})
+					err = wait.PollUntilContextCancel(pollCtx, time.Second, true, func(ctx context.Context) (done bool, err error) {
+						req, err = cmCl.CertmanagerV1().CertificateRequests(test.inputNamespace).Get(ctx, test.inputArgs[0], metav1.GetOptions{})
 						if err != nil {
 							return false, nil
 						}
 						return true, nil
-					}, pollCtx.Done())
+					})
 					if err != nil {
 						errCh <- fmt.Errorf("timeout when waiting for CertificateRequest to be created, error: %v", err)
 						return

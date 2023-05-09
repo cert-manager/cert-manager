@@ -82,7 +82,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 
 	// allow the controller 5s to provision the Secret - this is far longer
 	// than it should ever take.
-	if err := wait.PollImmediateUntil(time.Millisecond*500, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
 		cert, err := source.GetCertificate(nil)
 		if err == tls.ErrNotAvailable {
 			t.Logf("GetCertificate has no certificate available, waiting...")
@@ -96,7 +96,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 		}
 		t.Logf("Got non-nil certificate from dynamic source")
 		return true, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		t.Errorf("Failed waiting for source to return a certificate: %v", err)
 		return
 	}
@@ -148,7 +148,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	var serialNumber *big.Int
 	// allow the controller 5s to provision the Secret - this is far longer
 	// than it should ever take.
-	if err := wait.PollImmediateUntil(time.Millisecond*500, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
 		cert, err := source.GetCertificate(nil)
 		if err == tls.ErrNotAvailable {
 			t.Logf("GetCertificate has no certificate available, waiting...")
@@ -169,7 +169,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 
 		serialNumber = x509cert.SerialNumber
 		return true, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		t.Errorf("Failed waiting for source to return a certificate: %v", err)
 		return
 	}
@@ -181,7 +181,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 
 	// wait for the serving certificate to have a new serial number (which
 	// indicates it has been regenerated)
-	if err := wait.PollImmediateUntil(time.Millisecond*500, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
 		cert, err := source.GetCertificate(nil)
 		if err == tls.ErrNotAvailable {
 			t.Logf("GetCertificate has no certificate available, waiting...")
@@ -206,7 +206,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 		}
 
 		return true, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		t.Errorf("Failed waiting for source to return a certificate: %v", err)
 		return
 	}
