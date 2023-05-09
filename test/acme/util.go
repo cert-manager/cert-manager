@@ -94,10 +94,10 @@ func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.Challeng
 	}
 }
 
-func allConditions(c ...wait.ConditionFunc) wait.ConditionFunc {
-	return func() (bool, error) {
+func allConditions(c ...wait.ConditionWithContextFunc) wait.ConditionWithContextFunc {
+	return func(ctx context.Context) (bool, error) {
 		for _, fn := range c {
-			ok, err := fn()
+			ok, err := fn(ctx)
 			if err != nil || !ok {
 				return ok, err
 			}
@@ -106,23 +106,14 @@ func allConditions(c ...wait.ConditionFunc) wait.ConditionFunc {
 	}
 }
 
-func closingStopCh(t time.Duration) <-chan struct{} {
-	stopCh := make(chan struct{})
-	go func() {
-		defer close(stopCh)
-		<-time.After(t)
-	}()
-	return stopCh
-}
-
-func (f *fixture) recordHasPropagatedCheck(fqdn, value string) func() (bool, error) {
-	return func() (bool, error) {
+func (f *fixture) recordHasPropagatedCheck(fqdn, value string) func(ctx context.Context) (bool, error) {
+	return func(ctx context.Context) (bool, error) {
 		return util.PreCheckDNS(fqdn, value, []string{f.testDNSServer}, *f.useAuthoritative)
 	}
 }
 
-func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func() (bool, error) {
-	return func() (bool, error) {
+func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func(ctx context.Context) (bool, error) {
+	return func(ctx context.Context) (bool, error) {
 		msg, err := util.DNSQuery(fqdn, dns.TypeTXT, []string{f.testDNSServer}, *f.useAuthoritative)
 		if err != nil {
 			return false, err

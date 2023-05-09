@@ -321,9 +321,8 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		// TODO: we should use observedGeneration here, but currently it won't
 		// be incremented correctly in this scenario.
 		// Verify that Issuer's Ready condition remains True for 5 seconds.
-		err = wait.Poll(time.Millisecond*200, time.Second*5, func() (bool, error) {
-			iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Get(
-				context.TODO(), issuerName, metav1.GetOptions{})
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Millisecond*200, time.Second*5, true, func(ctx context.Context) (bool, error) {
+			iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Get(ctx, issuerName, metav1.GetOptions{})
 			if err != nil {
 				return false, err
 			}
@@ -337,6 +336,6 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			return false, nil
 		})
 		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError(wait.ErrWaitTimeout))
+		Expect(err).To(MatchError(context.DeadlineExceeded))
 	})
 })
