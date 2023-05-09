@@ -33,7 +33,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/webhook/configfile"
-	"github.com/cert-manager/cert-manager/webhook-binary/app/options"
+	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 )
 
 const componentWebhook = "webhook"

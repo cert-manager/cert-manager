@@ -38,8 +38,8 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/webhook"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
-	"github.com/cert-manager/cert-manager/webhook-binary/app/options"
 )
 
 type StopFunc func()

@@ -14,7 +14,6 @@ replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cert-manager/cert-manager/cmctl-binary v0.0.0-00010101000000-000000000000
-	github.com/cert-manager/cert-manager/webhook-binary v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.2.4
 	github.com/miekg/dns v1.1.50
 	github.com/munnerz/crd-schema-fuzz v1.0.0
