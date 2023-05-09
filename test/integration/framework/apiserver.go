@@ -43,7 +43,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/api"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/test/apiserver"
-	webhooktesting "github.com/cert-manager/cert-manager/webhook-binary/app/testing"
+	webhooktesting "github.com/cert-manager/cert-manager/test/webhook"
 )
 
 type StopFunc func()
