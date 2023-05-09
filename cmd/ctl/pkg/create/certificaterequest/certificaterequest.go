@@ -245,7 +245,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	if o.FetchCert {
 		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
 			req.Name, req.Namespace)
-		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(ctx, time.Second, o.Timeout, false, func(ctx context.Context) (done bool, err error) {
 			req, err = o.CMClient.CertmanagerV1().CertificateRequests(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil

@@ -78,7 +78,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	}
 
 	var firstReq *cmapi.CertificateRequest
-	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -111,7 +111,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	t.Log("Marked CertificateRequest as InvalidRequest")
 
 	// Wait for Certificate to be marked as Failed
-	if err := wait.Poll(time.Millisecond*500, time.Second*50, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*50, true, func(ctx context.Context) (bool, error) {
 		crt, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -137,7 +137,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	}
 
 	var secondReq *cmapi.CertificateRequest
-	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -212,7 +212,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	}
 
 	var firstReq *cmapi.CertificateRequest
-	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -245,7 +245,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	t.Log("Marked CertificateRequest as Failed")
 
 	// Wait for Certificate to be marked as Failed
-	if err := wait.Poll(time.Millisecond*500, time.Second*50, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*50, true, func(ctx context.Context) (bool, error) {
 		crt, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -271,7 +271,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	}
 
 	var secondReq *cmapi.CertificateRequest
-	if err := wait.Poll(time.Millisecond*500, time.Second*10, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
