@@ -166,7 +166,7 @@ func TestSign(t *testing.T) {
 	badDataSecret := ecCASecret.DeepCopy()
 	badDataSecret.Data[corev1.TLSPrivateKeyKey] = []byte("bad key")
 
-	template, err := pki.GenerateTemplateFromCertificateSigningRequest(baseCSR)
+	template, err := pki.CertificateTemplateFromCertificateSigningRequest(baseCSR)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -465,7 +465,7 @@ func TestSign(t *testing.T) {
 			templateGenerator: func(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
 				// Pass the given CSR to a "real" template generator to ensure that it
 				// doesn't err. Return the pre-generated template.
-				_, err := pki.GenerateTemplateFromCertificateSigningRequest(csr)
+				_, err := pki.CertificateTemplateFromCertificateSigningRequest(csr)
 				if err != nil {
 					return nil, err
 				}
@@ -743,7 +743,7 @@ func TestCA_Sign(t *testing.T) {
 				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
 					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
-				templateGenerator: pki.GenerateTemplateFromCertificateSigningRequest,
+				templateGenerator: pki.CertificateTemplateFromCertificateSigningRequest,
 				signingFn:         pki.SignCSRTemplate,
 			}
 

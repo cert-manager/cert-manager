@@ -64,7 +64,7 @@ func init() {
 		Localities:          []string{"San Francisco"},
 		Provinces:           []string{"California"},
 	}
-	caX509Cert, err := pki.GenerateTemplate(caCertificateTemplate)
+	caX509Cert, err := pki.CertificateTemplateFromCertificate(caCertificateTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +101,7 @@ func init() {
 		Countries:           []string{"GB"},
 		OrganizationalUnits: []string{"cert-manager"},
 	}
-	testX509Cert, err := pki.GenerateTemplate(testCertTemplate)
+	testX509Cert, err := pki.CertificateTemplateFromCertificate(testCertTemplate)
 	if err != nil {
 		panic(err)
 	}

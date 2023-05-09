@@ -153,7 +153,7 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	template, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Errorf("error generating template: %v", err)
 	}
@@ -169,7 +169,12 @@ func TestSign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	template2, err := pki.GenerateTemplateFromCSRPEM(generateCSR(t, sk2, "example.com", "example.com", "foo.com"), time.Hour, false)
+	template2, err := pki.CertificateTemplateFromCSRPEM(
+		generateCSR(t, sk2, "example.com", "example.com", "foo.com"),
+		pki.CertificateTemplateOverrideDuration(time.Hour),
+		pki.CertificateTemplateOverrideBasicConstraints(false, nil),
+		pki.CertificateTemplateOverrideKeyUsages(0, nil),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

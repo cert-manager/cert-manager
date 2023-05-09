@@ -40,7 +40,7 @@ var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cma
 
 func ValidateCertificateRequest(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
 	cr := obj.(*cmapi.CertificateRequest)
-	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
+	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"))
 	allErrs = append(allErrs,
 		ValidateCertificateRequestApprovalCondition(cr.Status.Conditions, field.NewPath("status", "conditions"))...)
 
@@ -83,7 +83,7 @@ func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest,
 	return el
 }
 
-func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, validateCSRContent bool) field.ErrorList {
+func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	el = append(el, validateIssuerRef(crSpec.IssuerRef, fldPath)...)
@@ -96,7 +96,7 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
 		} else {
 			// only compare usages if set on CR and in the CSR
-			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && validateCSRContent && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
+			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
 				if crSpec.IsCA {
 					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
 				}

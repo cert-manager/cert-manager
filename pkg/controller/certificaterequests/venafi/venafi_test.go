@@ -211,7 +211,7 @@ func TestSign(t *testing.T) {
 		},
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	template, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Fatal(err)
 	}

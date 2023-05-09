@@ -225,7 +225,7 @@ func Test_ProcessItem(t *testing.T) {
 		}),
 	)
 
-	tmpl, err := pki.GenerateTemplateFromCertificateSigningRequest(baseCSR)
+	tmpl, err := pki.CertificateTemplateFromCertificateSigningRequest(baseCSR)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func Test_ProcessItem(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tmpl, err = pki.GenerateTemplateFromCertificateSigningRequest(gen.CertificateSigningRequestFrom(baseCSR,
+	tmpl, err = pki.CertificateTemplateFromCertificateSigningRequest(gen.CertificateSigningRequestFrom(baseCSR,
 		gen.SetCertificateSigningRequestRequest(csrPEMExampleNotPresent),
 	))
 	if err != nil {

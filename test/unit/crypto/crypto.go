@@ -135,7 +135,7 @@ func CreateCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*Cr
 		},
 	}
 
-	unsignedCert, err := pki.GenerateTemplateFromCertificateRequest(certificateRequest)
+	unsignedCert, err := pki.CertificateTemplateFromCertificateRequest(certificateRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func MustCreateCertWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cmapi.C
 		t.Fatal(err)
 	}
 
-	template, err := pki.GenerateTemplate(spec)
+	template, err := pki.CertificateTemplateFromCertificate(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func MustCreateCert(t *testing.T, pkData []byte, spec *cmapi.Certificate) []byte
 		t.Fatal(err)
 	}
 
-	template, err := pki.GenerateTemplate(spec)
+	template, err := pki.CertificateTemplateFromCertificate(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
