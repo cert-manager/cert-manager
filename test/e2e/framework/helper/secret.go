@@ -34,24 +34,22 @@ func (h *Helper) WaitForSecretCertificateData(ns, name string, timeout time.Dura
 	var secret *corev1.Secret
 	logf, done := log.LogBackoff()
 	defer done()
-	err := wait.PollImmediate(time.Second, timeout,
-		func() (bool, error) {
-			var err error
-			logf("Waiting for Secret %s:%s to contain a certificate", ns, name)
-			secret, err = h.KubeClient.CoreV1().Secrets(ns).Get(context.TODO(), name, metav1.GetOptions{})
-			if err != nil {
-				return false, fmt.Errorf("error getting secret %s: %s", name, err)
-			}
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+		var err error
+		logf("Waiting for Secret %s:%s to contain a certificate", ns, name)
+		secret, err = h.KubeClient.CoreV1().Secrets(ns).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return false, fmt.Errorf("error getting secret %s: %s", name, err)
+		}
 
-			if len(secret.Data[corev1.TLSCertKey]) > 0 {
-				return true, nil
-			}
+		if len(secret.Data[corev1.TLSCertKey]) > 0 {
+			return true, nil
+		}
 
-			logf("Secret still does not contain certificate data %s/%s",
-				secret.Namespace, secret.Name)
-			return false, nil
-		},
-	)
+		logf("Secret still does not contain certificate data %s/%s",
+			secret.Namespace, secret.Name)
+		return false, nil
+	})
 
 	if err != nil {
 		return nil, err

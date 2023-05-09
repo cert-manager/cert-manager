@@ -208,7 +208,7 @@ func (v *VaultInitializer) Init() error {
 			return fmt.Errorf("error parsing proxy URL: %s", err.Error())
 		}
 		var lastError error
-		err = wait.PollImmediate(time.Second, 20*time.Second, func() (bool, error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
 			conn, err := net.DialTimeout("tcp", proxyUrl.Host, time.Second)
 			if err != nil {
 				lastError = err
@@ -226,7 +226,7 @@ func (v *VaultInitializer) Init() error {
 	// Wait for Vault to be ready
 	{
 		var lastError error
-		err = wait.PollImmediate(time.Second, 20*time.Second, func() (bool, error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
 			_, err := v.client.Sys().Health()
 			if err != nil {
 				lastError = err

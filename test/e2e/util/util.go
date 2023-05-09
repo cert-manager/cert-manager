@@ -57,14 +57,13 @@ func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, d
 }
 
 func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1.Issuer) (bool, error)) error {
-	return wait.PollImmediate(500*time.Millisecond, time.Minute,
-		func() (bool, error) {
-			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if err != nil {
-				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
-			}
-			return fn(issuer)
-		})
+	return wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+		issuer, err := client.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
+		}
+		return fn(issuer)
+	})
 }
 
 // WaitForIssuerCondition waits for the status of the named issuer to contain
@@ -72,17 +71,15 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1.IssuerCondition) error {
 	logf, done := log.LogBackoff()
 	defer done()
-	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
-		func() (bool, error) {
-			logf("Waiting for issuer %v condition %#v", name, condition)
-			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
-			}
+	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+		logf("Waiting for issuer %v condition %#v", name, condition)
+		issuer, err := client.Get(ctx, name, metav1.GetOptions{})
+		if nil != err {
+			return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
+		}
 
-			return apiutil.IssuerHasCondition(issuer, condition), nil
-		},
-	)
+		return apiutil.IssuerHasCondition(issuer, condition), nil
+	})
 	return wrapErrorWithIssuerStatusCondition(client, pollErr, name, condition.Type)
 }
 
@@ -112,17 +109,15 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1.IssuerCondition) error {
 	logf, done := log.LogBackoff()
 	defer done()
-	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
-		func() (bool, error) {
-			logf("Waiting for clusterissuer %v condition %#v", name, condition)
-			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
-			}
+	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+		logf("Waiting for clusterissuer %v condition %#v", name, condition)
+		issuer, err := client.Get(ctx, name, metav1.GetOptions{})
+		if nil != err {
+			return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
+		}
 
-			return apiutil.IssuerHasCondition(issuer, condition), nil
-		},
-	)
+		return apiutil.IssuerHasCondition(issuer, condition), nil
+	})
 	return wrapErrorWithClusterIssuerStatusCondition(client, pollErr, name, condition.Type)
 }
 
@@ -152,21 +147,19 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 func WaitForCRDToNotExist(client apiextensionsv1.CustomResourceDefinitionInterface, name string) error {
 	logf, done := log.LogBackoff()
 	defer done()
-	return wait.PollImmediate(500*time.Millisecond, time.Minute,
-		func() (bool, error) {
-			logf("Waiting for CRD %v to not exist", name)
-			_, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil == err {
-				return false, nil
-			}
-
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-
+	return wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+		logf("Waiting for CRD %v to not exist", name)
+		_, err := client.Get(ctx, name, metav1.GetOptions{})
+		if nil == err {
 			return false, nil
-		},
-	)
+		}
+
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+
+		return false, nil
+	})
 }
 
 // Deprecated: use test/unit/gen/Certificate in future
