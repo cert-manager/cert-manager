@@ -120,7 +120,7 @@ go.etcd.io/etcd/api/v3,https://github.com/etcd-io/etcd/blob/api/v3.5.7/api/LICEN
 go.etcd.io/etcd/client/pkg/v3,https://github.com/etcd-io/etcd/blob/client/pkg/v3.5.7/client/pkg/LICENSE,Apache-2.0
 go.etcd.io/etcd/client/v3,https://github.com/etcd-io/etcd/blob/client/v3.5.7/client/v3/LICENSE,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.40.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE,Apache-2.0
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.38.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.39.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0
 go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob/v1.15.0/LICENSE,Apache-2.0
 go.opentelemetry.io/otel/exporters/otlp/internal/retry,https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/internal/retry/v1.15.0/exporters/otlp/internal/retry/LICENSE,Apache-2.0
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/v1.15.0/exporters/otlp/otlptrace/LICENSE,Apache-2.0
