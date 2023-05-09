@@ -69,7 +69,9 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+		if issuer != nil {
+			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+		}
 	})
 
 	It("should obtain a signed certificate for a single domain", func() {
