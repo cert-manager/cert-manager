@@ -31,7 +31,7 @@ import (
 
 	internalcmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
-	"github.com/cert-manager/cert-manager/internal/webhook/feature"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"

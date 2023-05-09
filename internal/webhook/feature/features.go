@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The cert-manager Authors.
+Copyright 2023 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package feature
 
 import (
 	"k8s.io/component-base/featuregate"
-
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -44,19 +42,3 @@ const (
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 )
-
-func init() {
-	utilfeature.DefaultMutableFeatureGate.Add(webhookFeatureGates)
-}
-
-// webhookFeatureGates defines all feature gates for the webhook component.
-// To add a new feature, define a key for it above and add it here.
-// To check whether a feature is enabled, use:
-//
-//	utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
-//
-// Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
-var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
-}

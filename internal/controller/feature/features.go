@@ -17,10 +17,7 @@ limitations under the License.
 package feature
 
 import (
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/featuregate"
-
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -82,22 +79,3 @@ const (
 	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md
 	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
 )
-
-func init() {
-	runtime.Must(utilfeature.DefaultMutableFeatureGate.Add(defaultCertManagerFeatureGates))
-}
-
-// defaultCertManagerFeatureGates consists of all known cert-manager feature keys.
-// To add a new feature, define a key for it above and add it here. The features will be
-// available on the cert-manager controller binary.
-var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
-	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
-	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
-	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
-	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
-	StableCertificateRequestName:                     {Default: false, PreRelease: featuregate.Alpha},
-	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
-	SecretsFilteredCaching:                           {Default: false, PreRelease: featuregate.Alpha},
-}

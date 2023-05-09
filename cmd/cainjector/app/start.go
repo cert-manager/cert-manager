@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	_ "github.com/cert-manager/cert-manager/cainjector-binary/features"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/api"
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"

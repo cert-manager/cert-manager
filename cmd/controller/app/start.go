@@ -24,6 +24,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
+	_ "github.com/cert-manager/cert-manager/controller-binary/features"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"

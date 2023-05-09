@@ -18,8 +18,6 @@ package feature
 
 import (
 	"k8s.io/component-base/featuregate"
-
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -36,18 +34,3 @@ const (
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
 )
-
-func init() {
-	utilfeature.DefaultMutableFeatureGate.Add(cainjectorFeatureGates)
-}
-
-// cainjectorFeatureGates defines all feature gates for the cainjector component.
-// To add a new feature, define a key for it above and add it here.
-// To check whether a feature is enabled, use:
-//
-//	utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
-//
-// Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
-var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ServerSideApply: {Default: false, PreRelease: featuregate.Alpha},
-}
