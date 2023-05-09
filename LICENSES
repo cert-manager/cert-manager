@@ -44,9 +44,9 @@ github.com/cpuguy83/go-md2man/v2/md2man,https://github.com/cpuguy83/go-md2man/bl
 github.com/cyphar/filepath-securejoin,https://github.com/cyphar/filepath-securejoin/blob/v0.2.3/LICENSE,BSD-3-Clause
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/v1.1.1/LICENSE,ISC
 github.com/digitalocean/godo,https://github.com/digitalocean/godo/blob/v1.86.0/LICENSE.txt,MIT
-github.com/docker/cli/cli/config,https://github.com/docker/cli/blob/v20.10.21/LICENSE,Apache-2.0
+github.com/docker/cli/cli/config,https://github.com/docker/cli/blob/v20.10.24/LICENSE,Apache-2.0
 github.com/docker/distribution,https://github.com/docker/distribution/blob/v2.8.1/LICENSE,Apache-2.0
-github.com/docker/docker,https://github.com/docker/docker/blob/v20.10.21/LICENSE,Apache-2.0
+github.com/docker/docker,https://github.com/docker/docker/blob/v20.10.24/LICENSE,Apache-2.0
 github.com/docker/docker-credential-helpers,https://github.com/docker/docker-credential-helpers/blob/v0.7.0/LICENSE,MIT
 github.com/docker/go-connections,https://github.com/docker/go-connections/blob/v0.4.0/LICENSE,Apache-2.0
 github.com/docker/go-metrics,https://github.com/docker/go-metrics/blob/v0.0.1/LICENSE,Apache-2.0
