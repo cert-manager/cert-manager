@@ -65,25 +65,6 @@ func CertificateTemplateOverrideKeyUsages(keyUsage x509.KeyUsage, extKeyUsage []
 	}
 }
 
-// CertificateTemplateAddKeyUsages returns a CertificateTemplateMutator that adds the given key usages
-// to the certificate key usages.
-func CertificateTemplateAddKeyUsages(keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) CertificateTemplateMutator {
-	return func(cert *x509.Certificate) {
-		cert.KeyUsage |= keyUsage
-
-	OuterLoop:
-		for _, usage := range extKeyUsage {
-			for _, existingUsage := range cert.ExtKeyUsage {
-				if existingUsage == usage {
-					continue OuterLoop
-				}
-			}
-
-			cert.ExtKeyUsage = append(cert.ExtKeyUsage, usage)
-		}
-	}
-}
-
 // CertificateTemplateFromCSR will create a x509.Certificate for the
 // given *x509.CertificateRequest.
 // Call OverrideTemplateFromOptions to override the duration, isCA, maxPathLen, keyUsage, and extKeyUsage.
