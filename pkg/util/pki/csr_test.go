@@ -432,7 +432,7 @@ func TestGenerateCSR(t *testing.T) {
 
 	basicConstraintsGenerator := func(isCA bool) ([]byte, error) {
 		return asn1.Marshal(struct {
-			IsCA bool
+			IsCA bool `asn1:"optional"`
 		}{
 			IsCA: isCA,
 		})
@@ -615,8 +615,10 @@ func TestGenerateCSR(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, tt.literalCertificateSubjectFeatureEnabled)()
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.UseCertificateRequestBasicConstraints, tt.basicConstraintsFeatureEnabled)()
-			got, err := GenerateCSR(tt.crt)
+			got, err := GenerateCSR(
+				tt.crt,
+				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
+			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)
 				return

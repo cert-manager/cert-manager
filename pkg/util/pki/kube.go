@@ -28,24 +28,6 @@ import (
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 )
 
-// GenerateTemplateFromCertificateSigningRequest will create an
-// *x509.Certificate from the given CertificateSigningRequest resource
-func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
-	duration, err := DurationFromCertificateSigningRequest(csr)
-	if err != nil {
-		return nil, err
-	}
-
-	ku, eku, err := BuildKeyUsagesKube(csr.Spec.Usages)
-	if err != nil {
-		return nil, err
-	}
-
-	isCA := csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
-
-	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
-}
-
 // DurationFromCertificateSigningRequest returns the duration that the user may
 // have requested using the annotation
 // "experimental.cert-manager.io/request-duration" or via the CSR

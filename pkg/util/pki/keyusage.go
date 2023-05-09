@@ -145,6 +145,26 @@ func MarshalKeyUsage(usage x509.KeyUsage) (pkix.Extension, error) {
 	return ext, err
 }
 
+func UnmarshalKeyUsage(value []byte) (usage x509.KeyUsage, err error) {
+	var asn1bits asn1.BitString
+	var rest []byte
+
+	if rest, err = asn1.Unmarshal(value, &asn1bits); err != nil {
+		return usage, err
+	} else if len(rest) != 0 {
+		return usage, errors.New("x509: trailing data after X.509 KeyUsage")
+	}
+
+	var usageInt int
+	for i := 0; i < 9; i++ {
+		if asn1bits.At(i) != 0 {
+			usageInt |= 1 << uint(i)
+		}
+	}
+
+	return x509.KeyUsage(usageInt), nil
+}
+
 // Adapted from x509.go
 func MarshalExtKeyUsage(extUsages []x509.ExtKeyUsage, unknownUsages []asn1.ObjectIdentifier) (pkix.Extension, error) {
 	ext := pkix.Extension{Id: OIDExtensionExtendedKeyUsage}
@@ -163,4 +183,25 @@ func MarshalExtKeyUsage(extUsages []x509.ExtKeyUsage, unknownUsages []asn1.Objec
 	var err error
 	ext.Value, err = asn1.Marshal(oids)
 	return ext, err
+}
+
+func UnmarshalExtKeyUsage(value []byte) (extUsages []x509.ExtKeyUsage, unknownUsages []asn1.ObjectIdentifier, err error) {
+	var asn1ExtendedUsages []asn1.ObjectIdentifier
+	var rest []byte
+
+	if rest, err = asn1.Unmarshal(value, &asn1ExtendedUsages); err != nil {
+		return extUsages, unknownUsages, err
+	} else if len(rest) != 0 {
+		return extUsages, unknownUsages, errors.New("x509: trailing data after X.509 ExtendedKeyUsage")
+	}
+
+	for _, asnExtUsage := range asn1ExtendedUsages {
+		if eku, ok := ExtKeyUsageFromOID(asnExtUsage); ok {
+			extUsages = append(extUsages, eku)
+		} else {
+			unknownUsages = append(unknownUsages, asnExtUsage)
+		}
+	}
+
+	return extUsages, unknownUsages, nil
 }

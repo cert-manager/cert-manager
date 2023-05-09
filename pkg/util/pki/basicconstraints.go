@@ -19,6 +19,7 @@ package pki
 import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"errors"
 )
 
 // Copied from x509.go
@@ -28,14 +29,40 @@ var (
 
 // Copied from x509.go
 type basicConstraints struct {
-	IsCA bool
+	IsCA       bool `asn1:"optional"`
+	MaxPathLen int  `asn1:"optional,default:-1"`
 }
 
 // Adapted from x509.go
-func MarshalBasicConstraints(isCA bool) (pkix.Extension, error) {
+func MarshalBasicConstraints(isCA bool, maxPathLen *int) (pkix.Extension, error) {
 	ext := pkix.Extension{Id: OIDExtensionBasicConstraints}
 
+	// A value of -1 causes encoding/asn1 to omit the value as desired.
+	maxPathLenValue := -1
+	if maxPathLen != nil {
+		maxPathLenValue = *maxPathLen
+	}
+
 	var err error
-	ext.Value, err = asn1.Marshal(basicConstraints{isCA})
+	ext.Value, err = asn1.Marshal(basicConstraints{isCA, maxPathLenValue})
 	return ext, err
+}
+
+// Adapted from x509.go
+func UnmarshalBasicConstraints(value []byte) (isCA bool, maxPathLen *int, err error) {
+	var constraints basicConstraints
+	var rest []byte
+
+	if rest, err = asn1.Unmarshal(value, &constraints); err != nil {
+		return isCA, maxPathLen, err
+	} else if len(rest) != 0 {
+		return isCA, maxPathLen, errors.New("x509: trailing data after X.509 BasicConstraints")
+	}
+
+	isCA = constraints.IsCA
+	if constraints.MaxPathLen >= 0 {
+		maxPathLen = new(int)
+		*maxPathLen = constraints.MaxPathLen
+	}
+	return isCA, maxPathLen, nil
 }
