@@ -174,23 +174,21 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 			token []byte
 			ok    bool
 		)
-		err = wait.PollImmediate(time.Second, time.Second*10,
-			func() (bool, error) {
-				secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secret.Name, metav1.GetOptions{})
-				if err != nil {
-					return false, err
-				}
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*10, true, func(ctx context.Context) (bool, error) {
+			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
 
-				if len(secret.Data) == 0 {
-					return false, nil
-				}
-				if token, ok = secret.Data["token"]; !ok {
-					return false, nil
-				}
+			if len(secret.Data) == 0 {
+				return false, nil
+			}
+			if token, ok = secret.Data["token"]; !ok {
+				return false, nil
+			}
 
-				return true, nil
-			},
-		)
+			return true, nil
+		})
 		Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error: %s", err))
 
 		By("Building ServiceAccount kubernetes clientset")
