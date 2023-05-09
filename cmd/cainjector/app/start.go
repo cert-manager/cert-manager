@@ -254,7 +254,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		if err != nil {
 			return fmt.Errorf("failed to create client: %w", err)
 		}
-		err = wait.PollImmediate(time.Second, time.Minute*5, func() (bool, error) {
+		err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute*5, true, func(ctx context.Context) (bool, error) {
 			certsCRDName := types.NamespacedName{Name: "certificates.cert-manager.io"}
 			certsCRD := apiext.CustomResourceDefinition{}
 			err := directClient.Get(ctx, certsCRDName, &certsCRD)

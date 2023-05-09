@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 )
 
 // Defines methods that help provision test environments
@@ -77,12 +76,8 @@ func (f *Framework) DeleteKubeNamespace(namespace string) error {
 // WaitForKubeNamespaceNotExist will wait for the namespace with the given name
 // to not exist for up to 2 minutes.
 func (f *Framework) WaitForKubeNamespaceNotExist(namespace string) error {
-	return wait.PollImmediate(Poll, time.Minute*2, namespaceNotExist(f.KubeClientSet, namespace))
-}
-
-func namespaceNotExist(c kubernetes.Interface, namespace string) wait.ConditionFunc {
-	return func() (bool, error) {
-		_, err := c.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	return wait.PollUntilContextTimeout(context.TODO(), Poll, time.Minute*2, true, func(ctx context.Context) (bool, error) {
+		_, err := f.KubeClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
@@ -90,5 +85,5 @@ func namespaceNotExist(c kubernetes.Interface, namespace string) wait.ConditionF
 			return false, err
 		}
 		return false, nil
-	}
+	})
 }

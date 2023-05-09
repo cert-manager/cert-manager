@@ -302,7 +302,7 @@ func (v *Vault) Provision() error {
 		}
 
 		var lastError error
-		err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 			pod, err := kubeClient.CoreV1().Pods(v.proxy.podNamespace).Get(context.TODO(), v.proxy.podName, metav1.GetOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
 				return false, err
