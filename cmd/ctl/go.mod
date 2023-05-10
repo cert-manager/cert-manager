@@ -2,13 +2,20 @@ module github.com/cert-manager/cert-manager/cmctl-binary
 
 go 1.20
 
-replace github.com/cert-manager/cert-manager => ../../
-
 // remove this once controller-runtime v0.15.0 is released
 replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.13.1-0.20230503134813-2e57de78ba00
 
+// Note on cert-manager versioning:
+// Because cmctl and the core cert-manager module live in the same repository, but cmctl depends on a specific
+// cert-manager version (rather than using replace statements or a go.work file), there's a need to be able
+// to update cert-manager, then update cmctl to point to that new version.
+// This means that it's not always possible to use a "nice" tagged version of cert-manager and the version
+// might look messy.
+// To update the cert-manager version, use "go get github.com/cert-manager/cert-manager@X", where X could be a commit SHA
+// or a branch name (master).
+
 require (
-	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
+	github.com/cert-manager/cert-manager v1.12.0-beta.1.0.20230510114354-4959b1ce1a71
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
