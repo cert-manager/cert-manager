@@ -82,9 +82,12 @@ github.com/matttproud/golang_protobuf_extensions/pbutil,https://github.com/mattt
 github.com/miekg/dns,https://github.com/miekg/dns/blob/v1.1.50/LICENSE,BSD-3-Clause
 github.com/mitchellh/go-homedir,https://github.com/mitchellh/go-homedir/blob/v1.1.0/LICENSE,MIT
 github.com/mitchellh/mapstructure,https://github.com/mitchellh/mapstructure/blob/v1.5.0/LICENSE,MIT
+github.com/moby/spdystream,https://github.com/moby/spdystream/blob/v0.2.0/LICENSE,Apache-2.0
 github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
+github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.9.2/LICENSE,MIT
+github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.27.6/LICENSE,MIT
 github.com/patrickmn/go-cache,https://github.com/patrickmn/go-cache/blob/v2.1.0/LICENSE,MIT
 github.com/pavlo-v-chernykh/keystore-go/v4,https://github.com/pavlo-v-chernykh/keystore-go/blob/v4.4.1/LICENSE,MIT
 github.com/pierrec/lz4,https://github.com/pierrec/lz4/blob/v2.5.2/LICENSE,BSD-3-Clause
