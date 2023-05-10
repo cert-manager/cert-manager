@@ -17,7 +17,7 @@ limitations under the License.
 package internal
 
 import (
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/test/framework/config"
 )
 
 // Addon is an interface that defines a e2e addon.

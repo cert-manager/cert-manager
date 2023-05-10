@@ -23,33 +23,33 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/framework/addon/base"
+	"github.com/cert-manager/cert-manager/test/framework/addon/internal"
+	"github.com/cert-manager/cert-manager/test/framework/config"
+	"github.com/cert-manager/cert-manager/test/framework/util/errors"
 )
 
-type VenafiCloud struct {
+type VenafiTPP struct {
 	Base   *base.Base
 	config *config.Config
 
 	// Namespace to create supporting credential resources in
 	Namespace string
 
-	details CloudDetails
+	details TPPDetails
 
 	createdSecret *corev1.Secret
 }
 
-var _ internal.Addon = &VenafiCloud{}
+var _ internal.Addon = &VenafiTPP{}
 
-type CloudDetails struct {
+type TPPDetails struct {
 	issuerTemplate cmapi.VenafiIssuer
 }
 
-func (v *VenafiCloud) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
+func (v *VenafiTPP) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	v.config = cfg
 
 	if v.Base == nil {
@@ -60,24 +60,35 @@ func (v *VenafiCloud) Setup(cfg *config.Config, _ ...internal.AddonTransferableD
 		}
 	}
 
-	if v.config.Addons.Venafi.Cloud.Zone == "" {
-		return nil, errors.NewSkip(fmt.Errorf("Venafi Cloud Zone must be set"))
+	if v.config.Addons.Venafi.TPP.URL == "" {
+		return nil, errors.NewSkip(fmt.Errorf("Venafi TPP URL must be set"))
 	}
-	if v.config.Addons.Venafi.Cloud.APIToken == "" {
-		return nil, errors.NewSkip(fmt.Errorf("Venafi Cloud APIToken must be set"))
+	if v.config.Addons.Venafi.TPP.Zone == "" {
+		return nil, errors.NewSkip(fmt.Errorf("Venafi TPP Zone must be set"))
+	}
+
+	if v.config.Addons.Venafi.TPP.AccessToken == "" {
+		if v.config.Addons.Venafi.TPP.Username == "" {
+			return nil, errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing username"))
+		}
+		if v.config.Addons.Venafi.TPP.Password == "" {
+			return nil, errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing password"))
+		}
 	}
 
 	return nil, nil
 }
 
-func (v *VenafiCloud) Provision() error {
+func (v *VenafiTPP) Provision() error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-e2e-venafi-cloud-",
+			GenerateName: "cm-e2e-venafi-",
 			Namespace:    v.Namespace,
 		},
 		Data: map[string][]byte{
-			"apikey": []byte(v.config.Addons.Venafi.Cloud.APIToken),
+			"username":     []byte(v.config.Addons.Venafi.TPP.Username),
+			"password":     []byte(v.config.Addons.Venafi.TPP.Password),
+			"access-token": []byte(v.config.Addons.Venafi.TPP.AccessToken),
 		},
 	}
 
@@ -88,36 +99,37 @@ func (v *VenafiCloud) Provision() error {
 
 	v.createdSecret = s
 	v.details.issuerTemplate = cmapi.VenafiIssuer{
-		Zone: v.config.Addons.Venafi.Cloud.Zone,
-		Cloud: &cmapi.VenafiCloud{
-			URL: "https://api.venafi.cloud",
-			APITokenSecretRef: cmmeta.SecretKeySelector{
-				LocalObjectReference: cmmeta.LocalObjectReference{
-					Name: s.Name,
-				},
-				Key: "apikey",
+		Zone: v.config.Addons.Venafi.TPP.Zone,
+		TPP: &cmapi.VenafiTPP{
+			URL: v.config.Addons.Venafi.TPP.URL,
+			CredentialsRef: cmmeta.LocalObjectReference{
+				Name: s.Name,
 			},
 		},
 	}
 	return nil
 }
 
-func (v *VenafiCloud) Details() *CloudDetails {
+func (v *VenafiTPP) Details() *TPPDetails {
 	return &v.details
 }
 
-func (v *VenafiCloud) Deprovision() error {
+func (v *VenafiTPP) Deprovision() error {
+	if v.createdSecret == nil {
+		return nil
+	}
+
 	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(context.TODO(), v.createdSecret.Name, metav1.DeleteOptions{})
 }
 
-func (v *VenafiCloud) SupportsGlobal() bool {
+func (v *VenafiTPP) SupportsGlobal() bool {
 	return false
 }
 
-func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
+func (t *TPPDetails) BuildIssuer() *cmapi.Issuer {
 	return &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-cloud-",
+			GenerateName: "venafi-tpp-",
 		},
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
@@ -127,10 +139,10 @@ func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
 	}
 }
 
-func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
+func (t *TPPDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	return &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-cloud-",
+			GenerateName: "venafi-tpp-",
 		},
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
@@ -140,9 +152,9 @@ func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	}
 }
 
-// SetAPIKey sets the Secret data["apikey"] value
-func (v *VenafiCloud) SetAPIKey(token string) error {
-	v.createdSecret.Data["apikey"] = []byte(token)
+// SetAccessToken sets the Secret data["access-token"] value
+func (v *VenafiTPP) SetAccessToken(token string) error {
+	v.createdSecret.Data["access-token"] = []byte(token)
 	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(context.TODO(), v.createdSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err

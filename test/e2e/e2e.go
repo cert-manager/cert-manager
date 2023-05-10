@@ -23,9 +23,9 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	"github.com/cert-manager/cert-manager/test/framework"
+	"github.com/cert-manager/cert-manager/test/framework/addon"
+	"github.com/cert-manager/cert-manager/test/framework/log"
 )
 
 var cfg = framework.DefaultConfig
