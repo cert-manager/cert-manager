@@ -22,10 +22,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/util"
+	"github.com/cert-manager/cert-manager/test/framework/addon/internal"
+	"github.com/cert-manager/cert-manager/test/framework/config"
+	"github.com/cert-manager/cert-manager/test/framework/helper"
+	"github.com/cert-manager/cert-manager/test/framework/util"
 )
 
 type Base struct {

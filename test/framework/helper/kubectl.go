@@ -20,7 +20,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	"github.com/cert-manager/cert-manager/test/framework/log"
 )
 
 type Kubectl struct {
