@@ -28,9 +28,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/test/framework/addon/base"
+	"github.com/cert-manager/cert-manager/test/framework/addon/internal"
+	"github.com/cert-manager/cert-manager/test/framework/config"
 )
 
 // Chart is a generic Helm chart addon for the test environment

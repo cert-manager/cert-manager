@@ -25,14 +25,14 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+	"github.com/cert-manager/cert-manager/test/framework"
+	"github.com/cert-manager/cert-manager/test/framework/addon"
+	"github.com/cert-manager/cert-manager/test/framework/addon/vault"
+	"github.com/cert-manager/cert-manager/test/framework/helper/featureset"
 )
 
 type approle struct {

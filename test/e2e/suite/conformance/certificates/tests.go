@@ -37,10 +37,6 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -48,6 +44,10 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/framework"
+	"github.com/cert-manager/cert-manager/test/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/test/framework/helper/validation"
+	"github.com/cert-manager/cert-manager/test/framework/helper/validation/certificates"
 )
 
 // Define defines simple conformance tests that can be run against any issuer type.

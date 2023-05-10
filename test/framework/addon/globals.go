@@ -21,11 +21,11 @@ import (
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	"github.com/cert-manager/cert-manager/test/framework/addon/base"
+	"github.com/cert-manager/cert-manager/test/framework/addon/internal"
+	"github.com/cert-manager/cert-manager/test/framework/addon/vault"
+	"github.com/cert-manager/cert-manager/test/framework/config"
+	"github.com/cert-manager/cert-manager/test/framework/log"
 )
 
 type Addon = internal.Addon

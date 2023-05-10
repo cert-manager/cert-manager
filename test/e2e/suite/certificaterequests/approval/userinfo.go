@@ -29,11 +29,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	testutil "github.com/cert-manager/cert-manager/e2e-tests/framework/util"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/test/framework"
+	testutil "github.com/cert-manager/cert-manager/test/framework/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 

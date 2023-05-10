@@ -35,16 +35,16 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
-	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/framework"
+	"github.com/cert-manager/cert-manager/test/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/test/framework/helper/validation"
+	"github.com/cert-manager/cert-manager/test/framework/log"
+	. "github.com/cert-manager/cert-manager/test/framework/matcher"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
