@@ -254,7 +254,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				},
 			},
 			expRunErr:          true,
-			expErrMsg:          "error when waiting for CertificateRequest to be signed: timed out waiting for the condition",
+			expErrMsg:          "error when waiting for CertificateRequest to be signed: context deadline exceeded",
 			expNamespace:       ns1,
 			expName:            cr7Name,
 			expKeyFilename:     cr7Name + ".key",
@@ -377,7 +377,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			// If applicable, check the file where the certificate is stored
 			// If the expected error message is the one below, we skip checking
 			// because no certificate will have been written to file
-			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: timed out waiting for the condition" {
+			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: context deadline exceeded" {
 				certData, err := os.ReadFile(test.expCertFilename)
 				if err != nil {
 					t.Errorf("error when reading file storing private key: %v", err)

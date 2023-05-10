@@ -263,7 +263,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	if o.FetchCert {
 		fmt.Fprintf(o.Out, "CertificateSigningRequest %s has not been signed yet. Wait until it is signed...\n", req.Name)
 
-		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(ctx, time.Second, o.Timeout, false, func(ctx context.Context) (done bool, err error) {
 			req, err = o.KubeClient.CertificatesV1().CertificateSigningRequests().Get(ctx, req.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, err
