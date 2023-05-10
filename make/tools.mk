@@ -401,10 +401,10 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # is possible that these SHAs change, whilst the version does not. To verify the
 # change that has been made to the tools look at
 # https://github.com/kubernetes-sigs/kubebuilder/tree/tools-releases
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=7482055621d3286069aaeaa7fde2d55a50eb7c3d904691c0b2b81c3c87d3b353
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=0afb40d1b7c8e6ea51bda93201138f21d3949f886534a9cefa917bdd38a061f8
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=ba6172a8171a35282c1b739787810da83a44f0f24fdd2bc30ad970b07acdbd1e
-KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=a1f62fde417ebdf0095e40bd5e80545f27cd0c81381cba315d612cef68475cfb
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=a6bb872e30d91f3aec25771590d7cb3605e49eb05da14e09309165ccbe9e4714
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=b11a87091d8c7a18ee799ba90acbbacec83209f072c8a5a027cd5cf5ac2c7325
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=365d8fc4c3bb80fdee4a0054f118e2dbfb5d99cad46e54f4b896cc29653a45cb
+KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=829a1495ed6aaa6e64ad02460bf962615217e031cb2e96936060e9623a0b79be
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout
