@@ -47,6 +47,9 @@ import (
 	"github.com/cert-manager/cert-manager/test/framework/util/errors"
 )
 
+// TODO: not all this code is required to be externally accessible. Separate the
+// bits that do and the bits that don't. Perhaps we should have an external
+// testing lib shared across projects?
 // TODO: this really should be done somewhere in cert-manager proper
 var Scheme = runtime.NewScheme()
 
