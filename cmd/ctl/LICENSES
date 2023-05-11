@@ -85,8 +85,8 @@ github.com/opencontainers/go-digest,https://github.com/opencontainers/go-digest/
 github.com/opencontainers/image-spec/specs-go,https://github.com/opencontainers/image-spec/blob/3a7f492d3f1b/LICENSE,Apache-2.0
 github.com/peterbourgon/diskv,https://github.com/peterbourgon/diskv/blob/v2.0.1/LICENSE,MIT
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
-github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.0/LICENSE,Apache-2.0
-github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.3.0/LICENSE,Apache-2.0
+github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.1/LICENSE,Apache-2.0
+github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.4.0/LICENSE,Apache-2.0
 github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.42.0/LICENSE,Apache-2.0
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.42.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.9.0/LICENSE,Apache-2.0
@@ -113,7 +113,7 @@ golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.6.0:LICENSE,BS
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.9.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.5.0:LICENSE,BSD-3-Clause
 golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.1.0:LICENSE,BSD-3-Clause
-golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.7.0:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.8.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.7.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.9.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
@@ -142,7 +142,7 @@ k8s.io/kubectl/pkg,https://github.com/kubernetes/kubectl/blob/v0.27.1/LICENSE,Ap
 k8s.io/utils,https://github.com/kubernetes/utils/blob/d93618cff8a2/LICENSE,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/d93618cff8a2/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
 oras.land/oras-go/pkg,https://github.com/oras-project/oras-go/blob/v1.2.2/LICENSE,Apache-2.0
-sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/2e57de78ba00/LICENSE,Apache-2.0
+sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/c2e3d6d6350e/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api/apis/v1beta1,https://github.com/kubernetes-sigs/gateway-api/blob/v0.6.2/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
 sigs.k8s.io/kustomize/api,https://github.com/kubernetes-sigs/kustomize/blob/api/v0.13.2/api/LICENSE,Apache-2.0
