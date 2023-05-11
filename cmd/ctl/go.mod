@@ -3,7 +3,7 @@ module github.com/cert-manager/cert-manager/cmctl-binary
 go 1.20
 
 // remove this once controller-runtime v0.15.0 is released
-replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.13.1-0.20230503134813-2e57de78ba00
+replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 
 // Note on cert-manager versioning:
 // Because cmctl and the core cert-manager module live in the same repository, but cmctl depends on a specific
@@ -120,8 +120,8 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.15.0 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/client_golang v1.15.1 // indirect
+	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
@@ -144,7 +144,7 @@ require (
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/term v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
