@@ -158,7 +158,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestCSR(csrEmptyCertPEM),
 	)
 
-	templateRSA, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	templateRSA, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -169,7 +169,7 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 
-	templateEC, err := pki.GenerateTemplateFromCertificateRequest(ecCR)
+	templateEC, err := pki.CertificateTemplateFromCertificateRequest(ecCR)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -180,7 +180,7 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 
-	templateEmptyCert, err := pki.GenerateTemplateFromCertificateRequest(emptyCR)
+	templateEmptyCert, err := pki.CertificateTemplateFromCertificateRequest(emptyCR)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()

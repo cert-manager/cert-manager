@@ -168,7 +168,7 @@ func TestIssuingController(t *testing.T) {
 	})
 
 	// Sign Certificate
-	certTemplate, err := utilpki.GenerateTemplate(crt)
+	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -391,7 +391,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	})
 
 	// Sign Certificate
-	certTemplate, err := utilpki.GenerateTemplate(crt)
+	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -609,7 +609,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	})
 
 	// Sign Certificate
-	certTemplate, err := utilpki.GenerateTemplate(crt)
+	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -858,7 +858,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	})
 
 	// Sign Certificate
-	certTemplate, err := utilpki.GenerateTemplate(crt)
+	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}

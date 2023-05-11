@@ -33,7 +33,7 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	if err != nil {
 		return nil, err
 	}
-	caCertTemplate, err := GenerateTemplate(&cmapi.Certificate{
+	caCertTemplate, err := CertificateTemplateFromCertificate(&cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{
 			CommonName: "cert-manager.local",
 			IsCA:       true,
@@ -48,7 +48,7 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	}
 
 	// sign a temporary certificate using the root CA
-	template, err := GenerateTemplate(crt)
+	template, err := CertificateTemplateFromCertificate(crt)
 	if err != nil {
 		return nil, err
 	}

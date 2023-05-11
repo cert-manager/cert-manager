@@ -18,6 +18,9 @@ package validation
 
 import (
 	"bytes"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"reflect"
 	"testing"
@@ -29,6 +32,7 @@ import (
 	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cminternalmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -540,6 +544,75 @@ func TestValidateCertificateRequest(t *testing.T) {
 			a:     someAdmissionRequest,
 			wantE: []*field.Error{},
 		},
+		"Test csr with default usages and isCA": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageCertSign, cmapi.UsageKeyEncipherment), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    nil,
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"Test cr with default usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					// mustGenerateCSR will set the default usages for us
+					Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"Test cr with default usages, without any encoded in csr": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					// mustGenerateCSR will set the default usages for us
+					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com")), func(cr *x509.CertificateRequest) {
+						// manually remove extensions that encode default usages
+						cr.Extensions = nil
+						cr.ExtraExtensions = nil
+					}),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"Test cr with default usages, with empty set encoded in csr": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					// mustGenerateCSR will set the default usages for us
+					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com")), func(cr *x509.CertificateRequest) {
+						// manually remove extensions that encode default usages
+						cr.Extensions = nil
+						cr.ExtraExtensions = []pkix.Extension{
+							{
+								Id:       pki.OIDExtensionKeyUsage,
+								Critical: false,
+								Value: func(t *testing.T) []byte {
+									asn1KeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{}, BitLength: 0})
+									if err != nil {
+										t.Fatal(err)
+									}
+
+									return asn1KeyUsage
+								}(t),
+							},
+						}
+					}),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
 		"Error on csr not having all usages": {
 			cr: &cminternal.CertificateRequest{
 				Spec: cminternal.CertificateRequestSpec{
@@ -802,7 +875,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 	}
 }
 
-func mustGenerateCSR(t *testing.T, crt *cmapi.Certificate) []byte {
+func mustGenerateCSR(t *testing.T, crt *cmapi.Certificate, modifiers ...func(*x509.CertificateRequest)) []byte {
 	// Create a new private key
 	pk, err := utilpki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -812,6 +885,9 @@ func mustGenerateCSR(t *testing.T, crt *cmapi.Certificate) []byte {
 	x509CSR, err := utilpki.GenerateCSR(crt)
 	if err != nil {
 		t.Fatal(err)
+	}
+	for _, modifier := range modifiers {
+		modifier(x509CSR)
 	}
 	csrDER, err := utilpki.EncodeCSR(x509CSR, pk)
 	if err != nil {

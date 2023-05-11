@@ -30,7 +30,7 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {
+func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 	csr, pk, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("example.com"), gen.SetCSRDNSNames("example.com", "foo.example.com"))
 	if err != nil {
 		t.Fatal(err)
@@ -202,7 +202,7 @@ func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			templ, err := pki.GenerateTemplateFromCertificateSigningRequest(test.csr)
+			templ, err := pki.CertificateTemplateFromCertificateSigningRequest(test.csr)
 			assert.Equal(t, test.expErr, err != nil)
 
 			if err == nil {

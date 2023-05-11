@@ -128,7 +128,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 		},
 	}
 
-	unsignedCert, err := pki.GenerateTemplateFromCertificateRequest(certificateRequest)
+	unsignedCert, err := pki.CertificateTemplateFromCertificateRequest(certificateRequest)
 	if err != nil {
 		return nil, err
 	}

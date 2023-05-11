@@ -147,7 +147,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		return nil, err
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
+	template, err := pki.CertificateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		message := "Error generating certificate template"
 		s.reporter.Failed(cr, err, "ErrorGenerating", message)

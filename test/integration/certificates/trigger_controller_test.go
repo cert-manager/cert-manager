@@ -393,7 +393,7 @@ func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cm
 		t.Fatal(err)
 	}
 
-	template, err := pki.GenerateTemplate(spec)
+	template, err := pki.CertificateTemplateFromCertificate(spec)
 	if err != nil {
 		t.Fatal(err)
 	}

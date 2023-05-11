@@ -56,7 +56,7 @@ func mustSelfSignCertificate(t *testing.T, pkBytes []byte) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	x509Crt, err := pki.GenerateTemplate(&cmapi.Certificate{
+	x509Crt, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{
 			DNSNames: []string{"example.com"},
 		},
@@ -84,7 +84,7 @@ func mustCert(t *testing.T, commonName string, isCA bool) *keyAndCert {
 	keyPEM, err := pki.EncodePrivateKey(key, cmapi.PKCS8)
 	require.NoError(t, err)
 
-	cert, err := pki.GenerateTemplate(&cmapi.Certificate{
+	cert, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{
 			CommonName: commonName,
 			IsCA:       isCA,

@@ -82,7 +82,7 @@ func NewCA(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		certClient:        ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		fieldManager:      ctx.FieldManager,
 		recorder:          ctx.Recorder,
-		templateGenerator: pki.GenerateTemplateFromCertificateSigningRequest,
+		templateGenerator: pki.CertificateTemplateFromCertificateSigningRequest,
 		signingFn:         pki.SignCSRTemplate,
 	}
 }

@@ -161,7 +161,7 @@ func TestSign(t *testing.T) {
 	badDataSecret := rsaCASecret.DeepCopy()
 	badDataSecret.Data[corev1.TLSPrivateKeyKey] = []byte("bad key")
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	template, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,7 +360,7 @@ func TestSign(t *testing.T) {
 		"a successful signing should set condition to Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
-				_, err := pki.GenerateTemplateFromCertificateRequest(cr)
+				_, err := pki.CertificateTemplateFromCertificateRequest(cr)
 				if err != nil {
 					return nil, err
 				}
@@ -586,7 +586,7 @@ func TestCA_Sign(t *testing.T) {
 				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
 					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
-				templateGenerator: pki.GenerateTemplateFromCertificateRequest,
+				templateGenerator: pki.CertificateTemplateFromCertificateRequest,
 				signingFn:         pki.SignCSRTemplate,
 			}
 

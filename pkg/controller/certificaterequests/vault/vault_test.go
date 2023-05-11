@@ -66,7 +66,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 
 func generateSelfSignedCertFromCR(cr *cmapi.CertificateRequest, key crypto.Signer,
 	duration time.Duration) ([]byte, error) {
-	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
+	template, err := pki.CertificateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		return nil, fmt.Errorf("error generating template: %v", err)
 	}

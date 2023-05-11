@@ -69,7 +69,7 @@ func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		issuerOptions:     ctx.IssuerOptions,
 		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		templateGenerator: pki.GenerateTemplateFromCertificateRequest,
+		templateGenerator: pki.CertificateTemplateFromCertificateRequest,
 		signingFn:         pki.SignCSRTemplate,
 	}
 }
