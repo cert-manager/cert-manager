@@ -6,14 +6,14 @@ github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICEN
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.2.4/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.2.3/LICENSE,Apache-2.0
 github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
-github.com/golang/protobuf,https://github.com/golang/protobuf/blob/v1.5.3/LICENSE,BSD-3-Clause
+github.com/golang/protobuf/proto,https://github.com/golang/protobuf/blob/v1.5.3/LICENSE,BSD-3-Clause
 github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
 github.com/matttproud/golang_protobuf_extensions/pbutil,https://github.com/matttproud/golang_protobuf_extensions/blob/v1.0.4/LICENSE,Apache-2.0
 github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
-github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.0/LICENSE,Apache-2.0
-github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.3.0/LICENSE,Apache-2.0
+github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.1/LICENSE,Apache-2.0
+github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.4.0/LICENSE,Apache-2.0
 github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.42.0/LICENSE,Apache-2.0
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.42.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.9.0/LICENSE,Apache-2.0
@@ -23,7 +23,7 @@ go.uber.org/atomic,https://github.com/uber-go/atomic/blob/v1.9.0/LICENSE.txt,MIT
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.6.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.24.0/LICENSE.txt,MIT
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.9.0:LICENSE,BSD-3-Clause
-golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.7.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.8.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.9.0:LICENSE,BSD-3-Clause
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.30.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
