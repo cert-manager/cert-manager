@@ -21,7 +21,7 @@ ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen ve
 
 .PHONY: verify-modules
 verify-modules: | $(NEEDS_CMREL)
-	$(CMREL) validate-gomod --path $(shell pwd)
+	$(CMREL) validate-gomod --path $(shell pwd) --direct-import-modules github.com/cert-manager/cert-manager/cmctl-binary --no-dummy-modules github.com/cert-manager/cert-manager/integration-tests
 
 .PHONY: verify-imports
 verify-imports: | $(NEEDS_GOIMPORTS)

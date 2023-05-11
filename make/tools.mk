@@ -30,7 +30,7 @@ TOOLS += kubectl=v1.27.1
 TOOLS += kind=v0.18.0
 TOOLS += controller-gen=v0.12.0
 TOOLS += cosign=v1.12.1
-TOOLS += cmrel=c35ba39e591f1e5150525ca0fef222beb719de8c
+TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
 TOOLS += release-notes=v0.14.0
 TOOLS += goimports=v0.1.12
 TOOLS += go-licenses=v1.6.0
