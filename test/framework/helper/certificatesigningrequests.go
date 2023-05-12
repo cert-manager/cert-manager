@@ -35,25 +35,23 @@ func (h *Helper) WaitForCertificateSigningRequestSigned(name string, timeout tim
 	var csr *certificatesv1.CertificateSigningRequest
 	logf, done := log.LogBackoff()
 	defer done()
-	err := wait.PollImmediate(time.Second, timeout,
-		func() (bool, error) {
-			var err error
-			logf("Waiting for CertificateSigningRequest %s to be ready", name)
-			csr, err = h.KubeClient.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), name, metav1.GetOptions{})
-			if err != nil {
-				return false, fmt.Errorf("error getting CertificateSigningRequest %s: %v", name, err)
-			}
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+		var err error
+		logf("Waiting for CertificateSigningRequest %s to be ready", name)
+		csr, err = h.KubeClient.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return false, fmt.Errorf("error getting CertificateSigningRequest %s: %v", name, err)
+		}
 
-			if util.CertificateSigningRequestIsFailed(csr) {
-				return false, fmt.Errorf("CertificateSigningRequest has failed: %v", csr.Status)
-			}
+		if util.CertificateSigningRequestIsFailed(csr) {
+			return false, fmt.Errorf("CertificateSigningRequest has failed: %v", csr.Status)
+		}
 
-			if len(csr.Status.Certificate) == 0 {
-				return false, nil
-			}
-			return true, nil
-		},
-	)
+		if len(csr.Status.Certificate) == 0 {
+			return false, nil
+		}
+		return true, nil
+	})
 
 	if err != nil {
 		return nil, err

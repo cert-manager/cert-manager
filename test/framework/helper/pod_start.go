@@ -47,7 +47,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 	ginkgo.By("Waiting " + timeout.String() + " for all pods in namespace '" + ns + "' to be Ready")
 	logf, done := log.LogBackoff()
 	defer done()
-	return wait.PollImmediate(Poll, timeout, func() (bool, error) {
+	return wait.PollUntilContextTimeout(context.TODO(), Poll, timeout, true, func(ctx context.Context) (bool, error) {
 		pods, err := h.KubeClient.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return false, err
