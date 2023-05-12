@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	ctlcmd "github.com/cert-manager/cert-manager/cmctl-binary/cmd"
+	ctlcmd "github.com/cert-manager/cert-manager/cmd/ctl/cmd"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 )
 

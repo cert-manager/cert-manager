@@ -1,9 +1,6 @@
-module github.com/cert-manager/cert-manager/cmctl-binary
+module github.com/cert-manager/cert-manager/cmd/ctl
 
 go 1.20
-
-// remove this once controller-runtime v0.15.0 is released
-replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 
 // Note on cert-manager versioning:
 // Because cmctl and the core cert-manager module live in the same repository, but cmctl depends on a specific
@@ -29,7 +26,7 @@ require (
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/kubectl v0.27.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 	sigs.k8s.io/yaml v1.3.0
 )
 

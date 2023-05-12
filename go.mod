@@ -6,12 +6,8 @@ go 1.20
 // please place any replace statements here at the top for visibility and add a
 // comment to it as to when it can be removed
 
-replace (
-	// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
-	github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
-	// remove this once controller-runtime v0.15.0 is released
-	sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
-)
+// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
+replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
 
 require (
 	github.com/Azure/azure-sdk-for-go v67.3.0+incompatible
@@ -55,7 +51,7 @@ require (
 	k8s.io/kube-aggregator v0.27.1
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 	sigs.k8s.io/controller-tools v0.12.0
 	sigs.k8s.io/gateway-api v0.6.2
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3
