@@ -4,7 +4,7 @@ go 1.20
 
 replace github.com/cert-manager/cert-manager => ../../
 
-replace github.com/cert-manager/cert-manager/cmctl-binary => ../../cmd/ctl/
+replace github.com/cert-manager/cert-manager/cmd/ctl => ../../cmd/ctl/
 
 replace github.com/cert-manager/cert-manager/webhook-binary => ../../cmd/webhook/
 
@@ -13,7 +13,7 @@ replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime
 
 require (
 	github.com/cert-manager/cert-manager v1.12.0-beta.1.0.20230510114354-4959b1ce1a71
-	github.com/cert-manager/cert-manager/cmctl-binary v0.0.0-00010101000000-000000000000
+	github.com/cert-manager/cert-manager/cmd/ctl v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.2.4
 	github.com/miekg/dns v1.1.50
 	github.com/munnerz/crd-schema-fuzz v1.0.0

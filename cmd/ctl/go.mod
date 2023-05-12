@@ -1,4 +1,4 @@
-module github.com/cert-manager/cert-manager/cmctl-binary
+module github.com/cert-manager/cert-manager/cmd/ctl
 
 go 1.20
 
