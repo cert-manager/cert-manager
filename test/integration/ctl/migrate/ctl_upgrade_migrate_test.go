@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/upgrade/migrateapiversion"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/upgrade/migrateapiversion"
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
