@@ -12,7 +12,7 @@ go 1.20
 // or a branch name (master).
 
 require (
-	github.com/cert-manager/cert-manager v1.12.0-beta.1.0.20230510114354-4959b1ce1a71
+	github.com/cert-manager/cert-manager v1.12.0-beta.1.0.20230512140741-9935a18130c1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
