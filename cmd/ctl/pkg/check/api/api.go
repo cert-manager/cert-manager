@@ -31,7 +31,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
 	cmcmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/util/cmapichecker"
 )

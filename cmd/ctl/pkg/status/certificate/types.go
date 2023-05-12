@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubectl/pkg/describe"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/status/util"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/status/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
