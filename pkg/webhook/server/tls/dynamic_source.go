@@ -21,7 +21,6 @@ import (
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -66,7 +65,7 @@ func (f *DynamicSource) Run(ctx context.Context) error {
 
 	// initially fetch a certificate from the signing CA
 	interval := time.Second
-	if err := wait.PollUntil(interval, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, interval, false, func(ctx context.Context) (done bool, err error) {
 		// check for errors from the authority here too, to prevent retrying
 		// if the authority has failed to start
 		select {
@@ -86,14 +85,9 @@ func (f *DynamicSource) Run(ctx context.Context) error {
 			return false, nil
 		}
 		return true, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		// In case of an error, the stopCh is closed; wait for authorityErrChan to be closed too
 		<-authorityErrChan
-
-		// If there was an ErrWaitTimeout error, this must be caused by closing stopCh
-		if errors.Is(err, wait.ErrWaitTimeout) {
-			return context.Canceled
-		}
 
 		return err
 	}
