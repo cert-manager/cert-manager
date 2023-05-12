@@ -197,9 +197,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			},
 			Containers: []corev1.Container{
 				{
-					Name: "acmesolver",
-					// TODO: use an image as specified as a config option
-					Image:           s.Context.HTTP01SolverImage,
+					Name:            "acmesolver",
+					Image:           s.ACMEOptions.HTTP01SolverImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					// TODO: replace this with some kind of cmdline generator
 					Args: []string{
