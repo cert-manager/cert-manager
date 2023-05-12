@@ -2,9 +2,6 @@ module github.com/cert-manager/cert-manager/e2e-tests
 
 go 1.20
 
-// remove this once controller-runtime v0.15.0 is released
-replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
-
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go v0.58.1
@@ -16,7 +13,7 @@ require (
 	k8s.io/client-go v0.27.1
 	k8s.io/kube-aggregator v0.27.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 	sigs.k8s.io/gateway-api v0.6.2
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3
 )

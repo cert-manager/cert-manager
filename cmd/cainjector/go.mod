@@ -4,9 +4,6 @@ go 1.20
 
 replace github.com/cert-manager/cert-manager => ../../
 
-// remove this once controller-runtime v0.15.0 is released
-replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
-
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.2.4
@@ -17,7 +14,7 @@ require (
 	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v0.27.1
 	k8s.io/component-base v0.27.1
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 )
 
 require (

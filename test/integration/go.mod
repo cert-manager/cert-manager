@@ -8,9 +8,6 @@ replace github.com/cert-manager/cert-manager/cmd/ctl => ../../cmd/ctl/
 
 replace github.com/cert-manager/cert-manager/webhook-binary => ../../cmd/webhook/
 
-// remove this once controller-runtime v0.15.0 is released
-replace sigs.k8s.io/controller-runtime v0.14.6 => sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
-
 require (
 	github.com/cert-manager/cert-manager v1.12.0-beta.1.0.20230510114354-4959b1ce1a71
 	github.com/cert-manager/cert-manager/cmd/ctl v0.0.0-00010101000000-000000000000
@@ -30,7 +27,7 @@ require (
 	k8s.io/component-base v0.27.1
 	k8s.io/kubectl v0.27.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 )
 
 require (
