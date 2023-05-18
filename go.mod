@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.9.0
 	github.com/kr/pretty v0.3.1
 	github.com/miekg/dns v1.1.50
-	github.com/onsi/ginkgo/v2 v2.9.4
+	github.com/onsi/ginkgo/v2 v2.9.5
 	github.com/onsi/gomega v1.27.6
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.1
 	github.com/pkg/errors v0.9.1
@@ -37,23 +37,23 @@ require (
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/crypto v0.6.0
 	golang.org/x/oauth2 v0.5.0
-	golang.org/x/sync v0.1.0
+	golang.org/x/sync v0.2.0
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.111.0
-	k8s.io/api v0.27.1
-	k8s.io/apiextensions-apiserver v0.27.1
-	k8s.io/apimachinery v0.27.1
-	k8s.io/apiserver v0.27.1
-	k8s.io/client-go v0.27.1
-	k8s.io/code-generator v0.27.1
-	k8s.io/component-base v0.27.1
-	k8s.io/klog/v2 v2.90.1
-	k8s.io/kube-aggregator v0.27.1
-	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
+	k8s.io/api v0.27.2
+	k8s.io/apiextensions-apiserver v0.27.2
+	k8s.io/apimachinery v0.27.2
+	k8s.io/apiserver v0.27.2
+	k8s.io/client-go v0.27.2
+	k8s.io/code-generator v0.27.2
+	k8s.io/component-base v0.27.2
+	k8s.io/klog/v2 v2.100.1
+	k8s.io/kube-aggregator v0.27.2
+	k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	sigs.k8s.io/controller-runtime v0.15.0-beta.0
 	sigs.k8s.io/controller-tools v0.12.0
-	sigs.k8s.io/gateway-api v0.6.2
+	sigs.k8s.io/gateway-api v0.7.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3
 	software.sslmate.com/src/go-pkcs12 v0.2.0
 )
@@ -87,7 +87,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-logr/zapr v1.2.3 // indirect
+	github.com/go-logr/zapr v1.2.4 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.1 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
@@ -163,12 +163,12 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.8.0 // indirect
+	golang.org/x/tools v0.9.1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923 // indirect
 	google.golang.org/grpc v1.54.0 // indirect
@@ -180,8 +180,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
-	k8s.io/kms v0.27.1 // indirect
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.1 // indirect
+	k8s.io/kms v0.27.2 // indirect
+	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
