@@ -26,7 +26,7 @@ CTR=docker
 
 TOOLS :=
 TOOLS += helm=v3.11.2
-TOOLS += kubectl=v1.27.1
+TOOLS += kubectl=v1.27.2
 TOOLS += kind=v0.18.0
 TOOLS += controller-gen=v0.12.0
 TOOLS += cosign=v1.12.1
@@ -47,7 +47,7 @@ TOOLS += ko=v0.13.0
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.6.2
 
-K8S_CODEGEN_VERSION=v0.27.1
+K8S_CODEGEN_VERSION=v0.27.2
 
 KUBEBUILDER_ASSETS_VERSION=1.27.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
@@ -252,10 +252,10 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # gsutil ls gs://kubernetes-release/release/
 # gsutil cp gs://kubernetes-release/release/<version>/bin/<os>/<arch>/kubectl
 # sha256sum kubelet
-KUBECTL_linux_amd64_SHA256SUM=7fe3a762d926fb068bae32c399880e946e8caf3d903078bea9b169dcd5c17f6d
-KUBECTL_darwin_amd64_SHA256SUM=136f73ede0d52c7985d299432236f891515c050d58d71b4a7d39c45085020ad8
-KUBECTL_darwin_arm64_SHA256SUM=a2029331fa70450a631506c83bb27ae95cc9fdb4b21efb81fde81c689d922ceb
-KUBECTL_linux_arm64_SHA256SUM=fd3cb8f16e6ed8aee9955b76e3027ac423b6d1cc7356867310d128082e2db916
+KUBECTL_linux_amd64_SHA256SUM=4f38ee903f35b300d3b005a9c6bfb9a46a57f92e89ae602ef9c129b91dc6c5a5
+KUBECTL_darwin_amd64_SHA256SUM=ec954c580e4f50b5a8aa9e29132374ce54390578d6e95f7ad0b5d528cb025f85
+KUBECTL_darwin_arm64_SHA256SUM=d2b045b1a0804d4c46f646aeb6dcd278202b9da12c773d5e462b1b857d1f37d7
+KUBECTL_linux_arm64_SHA256SUM=1b0966692e398efe71fe59f913eaec44ffd4468cc1acd00bf91c29fa8ff8f578
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$*_SHA256SUM)
