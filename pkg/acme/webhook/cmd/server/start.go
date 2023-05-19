@@ -23,8 +23,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apiserver/pkg/features"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/component-base/logs"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
@@ -135,6 +138,13 @@ func (o WebhookServerOptions) Config() (*apiserver.Config, error) {
 // RunWebhookServer creates a new apiserver, registers an API Group for each of
 // the configured solvers and runs the new apiserver.
 func (o WebhookServerOptions) RunWebhookServer(stopCh <-chan struct{}) error {
+	// extension apiserver does not need priority and fairness.
+	// TODO: this is a short term fix; when APF graduates we will need to
+	// find another way. Alternatives are either to find a way how to
+	// disable APF controller (without the feature gate), run the controller
+	// (create RBAC and ensure required resources are installed) or do some
+	// bigger refactor of this project that could solve the problem
+	utilruntime.Must(utilfeature.DefaultMutableFeatureGate.Set(fmt.Sprintf("%s=false", features.APIPriorityAndFairness)))
 	config, err := o.Config()
 	if err != nil {
 		return err
