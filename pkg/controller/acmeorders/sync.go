@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"math"
 	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
@@ -53,6 +54,7 @@ var (
 	// RequeuePeriod is the default period after which an Order should be re-queued.
 	// It can be overriden in tests.
 	RequeuePeriod time.Duration = time.Second * 5
+	maxRetries                  = 6
 )
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
@@ -98,7 +100,23 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("Updating Order status as status.finalizeURL is not set")
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if acmeErr.StatusCode == 429 {
+				retryCount := 0
+				for retryCount < maxRetries {
+					retryCount++
+					delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+					time.Sleep(delay)
+					_, err = c.updateOrderStatus(ctx, cl, o)
+					if err == nil {
+						break
+					} else if retryCount == maxRetries {
+						log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+						c.setOrderState(&o.Status, string(cmacme.Errored))
+						o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+						return nil
+					}
+				}
+			} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -180,7 +198,23 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	acmeOrder, err := getACMEOrder(ctx, cl, o)
 	// Order probably has been deleted, we cannot recover here.
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if acmeErr.StatusCode == 429 {
+			retryCount := 0
+			for retryCount < maxRetries {
+				retryCount++
+				delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+				time.Sleep(delay)
+				acmeOrder, err = getACMEOrder(ctx, cl, o)
+				if err == nil {
+					break
+				} else if retryCount == maxRetries {
+					log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+					c.setOrderState(&o.Status, string(cmacme.Errored))
+					o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+					return nil
+				}
+			}
+		} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -204,7 +238,23 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if acmeErr.StatusCode == 429 {
+				retryCount := 0
+				for retryCount < maxRetries {
+					retryCount++
+					delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+					time.Sleep(delay)
+					_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
+					if err == nil {
+						break
+					} else if retryCount == maxRetries {
+						log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+						c.setOrderState(&o.Status, string(cmacme.Errored))
+						o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+						return nil
+					}
+				}
+			} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -244,7 +294,23 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
 		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if acmeErr.StatusCode == 429 {
+				retryCount := 0
+				for retryCount < maxRetries {
+					retryCount++
+					delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+					time.Sleep(delay)
+					_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
+					if err == nil {
+						break
+					} else if retryCount == maxRetries {
+						log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+						c.setOrderState(&o.Status, string(cmacme.Errored))
+						o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+						return nil
+					}
+				}
+			} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -286,7 +352,23 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if acmeErr.StatusCode == 429 {
+			retryCount := 0
+			for retryCount < maxRetries {
+				retryCount++
+				delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+				time.Sleep(delay)
+				acmeOrder, err = cl.AuthorizeOrder(ctx, authzIDs, options...)
+				if err == nil {
+					break
+				} else if retryCount == maxRetries {
+					log.Error(err, "failed to create the ACME order (429 error) marking Order as failed")
+					c.setOrderState(&o.Status, string(cmacme.Errored))
+					o.Status.Reason = fmt.Sprintf("Failed to create Order resource after maximum retries: %v", err)
+					return nil
+				}
+			}
+		} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to create Order: %v", err)
@@ -378,7 +460,23 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 
 		acmeAuthz, err := cl.GetAuthorization(ctx, authz.URL)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if acmeErr.StatusCode == 429 {
+				retryCount := 0
+				for retryCount < maxRetries {
+					retryCount++
+					delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+					time.Sleep(delay)
+					acmeAuthz, err = cl.GetAuthorization(ctx, authz.URL)
+					if err == nil {
+						break
+					} else if retryCount == maxRetries {
+						log.Error(err, "failed to authorize to ACME (429 error) marking as failed")
+						c.setOrderState(&o.Status, string(cmacme.Errored))
+						o.Status.Reason = fmt.Sprintf("Failed to retrieve authorization resource after maximum retries: %v", err)
+						return nil
+					}
+				}
+			} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to fetch authorization metadata from acme server")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to fetch authorization: %v", err)
@@ -569,7 +667,23 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// non-4xx error, ensure the order status is up-to-date.
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if acmeErr.StatusCode == 429 {
+			retryCount := 0
+			for retryCount < maxRetries {
+				retryCount++
+				delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+				time.Sleep(delay)
+				_, err = c.updateOrderStatus(ctx, cl, o)
+				if err == nil {
+					break
+				} else if retryCount == maxRetries {
+					log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+					c.setOrderState(&o.Status, string(cmacme.Errored))
+					o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+					return nil
+				}
+			}
+		} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", errUpdate)
@@ -627,8 +741,25 @@ func (c *controller) syncCertificateData(ctx context.Context, cl acmecl.Interfac
 	log := logf.FromContext(ctx)
 	acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
+		if acmeErr.StatusCode == 429 {
+			retryCount := 0
+			for retryCount < maxRetries {
+				retryCount++
+				delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+				time.Sleep(delay)
+				acmeOrder, err = c.updateOrderStatus(ctx, cl, o)
+				if err == nil {
+					break
+				} else if retryCount == maxRetries {
+					log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+					c.setOrderState(&o.Status, string(cmacme.Errored))
+					o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+					return nil
+				}
+			}
+		} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			// Handle other 4xx errors
+			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 			return nil
@@ -664,7 +795,23 @@ func (c *controller) syncCertificateDataWithOrder(ctx context.Context, cl acmecl
 	}
 	certs, err := cl.FetchCert(ctx, acmeOrder.CertURL, true)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if acmeErr.StatusCode == 429 {
+			retryCount := 0
+			for retryCount < maxRetries {
+				retryCount++
+				delay := time.Duration(math.Pow(2, float64(retryCount-1))) * time.Second
+				time.Sleep(delay)
+				certs, err = cl.FetchCert(ctx, acmeOrder.CertURL, true)
+				if err == nil {
+					break
+				} else if retryCount == maxRetries {
+					log.Error(err, "failed to retrieve the ACME order (429 error) marking Order as failed")
+					c.setOrderState(&o.Status, string(cmacme.Errored))
+					o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource after maximum retries: %v", err)
+					return nil
+				}
+			}
+		} else if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to retrieve issued certificate from ACME server")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve signed certificate: %v", err)
