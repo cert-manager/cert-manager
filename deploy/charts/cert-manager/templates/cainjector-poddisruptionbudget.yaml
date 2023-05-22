@@ -17,7 +17,7 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "cainjector"
 
-  {{- with .Values.cainjector.podDisruptionBudget.minAvailable }}
+  {{- with and .Values.cainjector.podDisruptionBudget.minAvailable (not .Values.cainjector.podDisruptionBudget.maxUnavailable) }}
   minAvailable: {{ . }}
   {{- end }}
   {{- with .Values.cainjector.podDisruptionBudget.maxUnavailable }}
