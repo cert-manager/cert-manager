@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
@@ -153,11 +154,13 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 
 		By("expect all Certificates to be successfully be issued once all SecretNames are unique")
 		for i, crtName := range []string{crt1, crt2, crt3} {
-			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred())
-			crt.Spec.SecretName = fmt.Sprintf("unique-secret-%d", i)
-			_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(ctx, crt, metav1.UpdateOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			Expect(retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				crt.Spec.SecretName = fmt.Sprintf("unique-secret-%d", i)
+				_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(ctx, crt, metav1.UpdateOptions{})
+				return err
+			})).NotTo(HaveOccurred())
 		}
 
 		for _, crtName := range []string{crt1, crt2, crt3} {
