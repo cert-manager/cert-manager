@@ -108,7 +108,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (bool, error) {
 		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -139,7 +139,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (bool, error) {
 		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -190,7 +190,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := wait.PollImmediateUntilWithContext(ctx, time.Millisecond*100, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (bool, error) {
 		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
 		if err != nil {
 			return false, err
