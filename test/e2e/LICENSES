@@ -46,7 +46,7 @@ github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bac
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.9.5/LICENSE,MIT
-github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.27.6/LICENSE,MIT
+github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.27.7/LICENSE,MIT
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
 github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.15.1/LICENSE,Apache-2.0
 github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.4.0/LICENSE,Apache-2.0
@@ -86,7 +86,7 @@ k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json,https://git
 k8s.io/kube-openapi/pkg/validation/spec,https://github.com/kubernetes/kube-openapi/blob/54b630e78af5/pkg/validation/spec/LICENSE,Apache-2.0
 k8s.io/utils,https://github.com/kubernetes/utils/blob/9f6742963106/LICENSE,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/9f6742963106/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
-sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.15.0-beta.0/LICENSE,Apache-2.0
+sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.15.0/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v0.7.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
 sigs.k8s.io/structured-merge-diff/v4,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.2.3/LICENSE,Apache-2.0

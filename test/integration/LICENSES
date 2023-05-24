@@ -140,7 +140,7 @@ golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.8.0:LICENSE,BSD-3-Cl
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.8.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.9.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
-gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.2.0/v2/LICENSE,Apache-2.0
+gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.3.0/v2/LICENSE,Apache-2.0
 google.golang.org/genproto,https://github.com/googleapis/go-genproto/blob/7f2fa6fef1f4/LICENSE,Apache-2.0
 google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.54.0/LICENSE,Apache-2.0
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.30.0/LICENSE,BSD-3-Clause
@@ -167,7 +167,7 @@ k8s.io/utils,https://github.com/kubernetes/utils/blob/9f6742963106/LICENSE,Apach
 k8s.io/utils/internal/third_party/forked/golang,https://github.com/kubernetes/utils/blob/9f6742963106/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
 oras.land/oras-go/pkg,https://github.com/oras-project/oras-go/blob/v1.2.2/LICENSE,Apache-2.0
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,https://github.com/kubernetes-sigs/apiserver-network-proxy/blob/konnectivity-client/v0.1.2/konnectivity-client/LICENSE,Apache-2.0
-sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.15.0-beta.0/LICENSE,Apache-2.0
+sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.15.0/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v0.7.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
 sigs.k8s.io/kustomize/api,https://github.com/kubernetes-sigs/kustomize/blob/api/v0.13.2/api/LICENSE,Apache-2.0
