@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
-	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/renew"
+	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/factory"
+	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/renew"
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CMCTL_GOLDFLAGS := $(GOLDFLAGS) -X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build.name=cmctl" -X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion=true"
+CMCTL_GOLDFLAGS := $(GOLDFLAGS) -X "github.com/cert-manager/cert-manager/cmd/ctl/cmd/build.name=cmctl" -X "github.com/cert-manager/cert-manager/cmd/ctl/cmd/build/commands.registerCompletion=true"
 
-KUBECTL_PLUGIN_GOLDFLAGS := $(GOLDFLAGS) -X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build.name=kubectl cert-manager" -X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion=false"
+KUBECTL_PLUGIN_GOLDFLAGS := $(GOLDFLAGS) -X "github.com/cert-manager/cert-manager/cmd/ctl/cmd/build.name=kubectl cert-manager" -X "github.com/cert-manager/cert-manager/cmd/ctl/cmd/build/commands.registerCompletion=false"
 
 $(BINDIR)/cmctl:
 	@mkdir -p $@
