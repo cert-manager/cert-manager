@@ -60,8 +60,11 @@ strategy: {}
   #   maxSurge: 0
   #   maxUnavailable: 1
 
-# Comma separated list of feature gates that should be enabled on the
-# controller pod & webhook pod.
+# Comma separated list of feature gates that should be enabled on the controller
+# Note: do not use this field to pass feature gate values into webhook
+# component as this behaviour relies on a bug that will be fixed in cert-manager 1.13
+# https://github.com/cert-manager/cert-manager/pull/6093
+# Use webhook.extraArgs to pass --feature-gates flag directly instead.
 featureGates: ""
 
 # The maximum number of challenges that can be scheduled as 'processing' at once
