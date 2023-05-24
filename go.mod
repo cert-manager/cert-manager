@@ -28,7 +28,7 @@ require (
 	github.com/kr/pretty v0.3.1
 	github.com/miekg/dns v1.1.50
 	github.com/onsi/ginkgo/v2 v2.9.5
-	github.com/onsi/gomega v1.27.6
+	github.com/onsi/gomega v1.27.7
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.15.1
@@ -38,7 +38,7 @@ require (
 	golang.org/x/crypto v0.6.0
 	golang.org/x/oauth2 v0.5.0
 	golang.org/x/sync v0.2.0
-	gomodules.xyz/jsonpatch/v2 v2.2.0
+	gomodules.xyz/jsonpatch/v2 v2.3.0
 	google.golang.org/api v0.111.0
 	k8s.io/api v0.27.2
 	k8s.io/apiextensions-apiserver v0.27.2
@@ -51,7 +51,7 @@ require (
 	k8s.io/kube-aggregator v0.27.2
 	k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
-	sigs.k8s.io/controller-runtime v0.15.0-beta.0
+	sigs.k8s.io/controller-runtime v0.15.0
 	sigs.k8s.io/controller-tools v0.12.0
 	sigs.k8s.io/gateway-api v0.7.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3
