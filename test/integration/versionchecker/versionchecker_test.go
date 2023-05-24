@@ -36,7 +36,7 @@ import (
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/cert-manager/cert-manager/pkg/util/versionchecker"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/util/versionchecker"
 )
 
 //go:embed testdata/test_manifests.tar

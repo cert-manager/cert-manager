@@ -33,13 +33,13 @@ import (
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/factory"
 	statuscertcmd "github.com/cert-manager/cert-manager/cmd/ctl/cmd/status/certificate"
+	ctl "github.com/cert-manager/cert-manager/cmd/ctl/pkg/scheme"
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	"github.com/cert-manager/cert-manager/pkg/ctl"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )

@@ -37,10 +37,10 @@ import (
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/build"
 	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/factory"
+	ctl "github.com/cert-manager/cert-manager/cmd/ctl/pkg/scheme"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/ctl"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 

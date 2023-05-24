@@ -34,10 +34,10 @@ import (
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/build"
 	"github.com/cert-manager/cert-manager/cmd/ctl/cmd/factory"
+	ctl "github.com/cert-manager/cert-manager/cmd/ctl/pkg/scheme"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	"github.com/cert-manager/cert-manager/pkg/ctl"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
 
