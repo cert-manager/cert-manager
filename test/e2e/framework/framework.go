@@ -35,16 +35,16 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/util"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/cert-manager/cert-manager/test/framework/addon"
-	"github.com/cert-manager/cert-manager/test/framework/config"
-	"github.com/cert-manager/cert-manager/test/framework/helper"
-	"github.com/cert-manager/cert-manager/test/framework/log"
-	"github.com/cert-manager/cert-manager/test/framework/util"
-	"github.com/cert-manager/cert-manager/test/framework/util/errors"
 )
 
 // TODO: not all this code is required to be externally accessible. Separate the

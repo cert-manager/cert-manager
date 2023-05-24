@@ -30,13 +30,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/test/framework"
-	"github.com/cert-manager/cert-manager/test/framework/helper/featureset"
-	"github.com/cert-manager/cert-manager/test/framework/helper/validation"
-	"github.com/cert-manager/cert-manager/test/framework/helper/validation/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 

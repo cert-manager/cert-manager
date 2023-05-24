@@ -25,12 +25,12 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	vaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/venafi"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/test/framework"
-	vaddon "github.com/cert-manager/cert-manager/test/framework/addon/venafi"
 )
 
 var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func() {

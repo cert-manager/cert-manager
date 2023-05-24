@@ -37,10 +37,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 
-	"github.com/cert-manager/cert-manager/test/framework/addon/base"
-	"github.com/cert-manager/cert-manager/test/framework/addon/chart"
-	"github.com/cert-manager/cert-manager/test/framework/addon/internal"
-	"github.com/cert-manager/cert-manager/test/framework/config"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 )
 
 const (
