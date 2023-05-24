@@ -72,7 +72,7 @@ spec:
           - --secure-port={{ .Values.webhook.securePort }}
           {{- end }}
           {{- if .Values.featureGates }}
-          - --feature-gates={{ .Values.featureGates }}
+          - --feature-gates={{ .Values.webhook.featureGates }}
           {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}

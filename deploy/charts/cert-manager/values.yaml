@@ -70,7 +70,7 @@ podDisruptionBudget:
   # or a percentage value (e.g. 25%)
 
 # Comma separated list of feature gates that should be enabled on the
-# controller pod & webhook pod.
+# controller pod.
 featureGates: ""
 
 # The maximum number of challenges that can be scheduled as 'processing' at once
@@ -340,6 +340,10 @@ webhook:
   extraArgs: []
   # Path to a file containing a WebhookConfiguration object used to configure the webhook
   # - --config=<path-to-config-file>
+
+  # Comma separated list of feature gates that should be enabled on the
+  # webhook pod.
+  featureGates: ""
 
   resources: {}
     # requests:

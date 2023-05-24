@@ -29,12 +29,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 func buildCertificate(cn string, dnsNames ...string) *cmapi.Certificate {
@@ -614,10 +611,10 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, tt.literalCertificateSubjectFeatureEnabled)()
 			got, err := GenerateCSR(
 				tt.crt,
 				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
+				WithUseLiteralSubject(tt.literalCertificateSubjectFeatureEnabled),
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)

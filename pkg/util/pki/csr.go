@@ -30,10 +30,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
@@ -165,6 +163,7 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 
 type generateCSROptions struct {
 	EncodeBasicConstraintsInRequest bool
+	UseLiteralSubject               bool
 }
 
 type GenerateCSROption func(*generateCSROptions)
@@ -178,6 +177,12 @@ func WithEncodeBasicConstraintsInRequest(encode bool) GenerateCSROption {
 	}
 }
 
+func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.UseLiteralSubject = useLiteralSubject
+	}
+}
+
 // GenerateCSR will generate a new *x509.CertificateRequest template to be used
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
@@ -185,14 +190,23 @@ func WithEncodeBasicConstraintsInRequest(encode bool) GenerateCSROption {
 func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.CertificateRequest, error) {
 	opts := &generateCSROptions{
 		EncodeBasicConstraintsInRequest: false,
+		UseLiteralSubject:               false,
 	}
 	for _, opt := range optFuncs {
 		opt(opts)
 	}
 
-	commonName, err := extractCommonName(crt.Spec)
-	if err != nil {
-		return nil, err
+	var (
+		commonName = crt.Spec.CommonName
+		err        error
+	)
+
+	if opts.UseLiteralSubject {
+		commonName, err = extractCommonNameFromLiteralSubject(crt.Spec)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	iPAddresses := IPAddressesForCertificate(crt)
@@ -250,7 +264,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		ExtraExtensions:    extraExtensions,
 	}
 
-	if isLiteralCertificateSubjectEnabled() && len(crt.Spec.LiteralSubject) > 0 {
+	if opts.UseLiteralSubject && len(crt.Spec.LiteralSubject) > 0 {
 		rawSubject, err := ParseSubjectStringToRawDERBytes(crt.Spec.LiteralSubject)
 		if err != nil {
 			return nil, err
@@ -449,30 +463,25 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 	return pubKeyAlgo, sigAlgo, nil
 }
 
-func extractCommonName(spec v1.CertificateSpec) (string, error) {
-	var commonName = spec.CommonName
-	if isLiteralCertificateSubjectEnabled() && len(spec.LiteralSubject) > 0 {
-		commonName = ""
-		sequence, err := UnmarshalSubjectStringToRDNSequence(spec.LiteralSubject)
-		if err != nil {
-			return "", err
-		}
+func extractCommonNameFromLiteralSubject(spec v1.CertificateSpec) (string, error) {
+	if spec.LiteralSubject == "" {
+		return spec.CommonName, nil
+	}
+	commonName := ""
+	sequence, err := UnmarshalSubjectStringToRDNSequence(spec.LiteralSubject)
+	if err != nil {
+		return "", err
+	}
 
-		for _, rdns := range sequence {
-			for _, atv := range rdns {
-				if atv.Type.Equal(OIDConstants.CommonName) {
-					if str, ok := atv.Value.(string); ok {
-						commonName = str
-					}
+	for _, rdns := range sequence {
+		for _, atv := range rdns {
+			if atv.Type.Equal(OIDConstants.CommonName) {
+				if str, ok := atv.Value.(string); ok {
+					commonName = str
 				}
 			}
 		}
 	}
 
 	return commonName, nil
-
-}
-
-func isLiteralCertificateSubjectEnabled() bool {
-	return utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject)
 }
