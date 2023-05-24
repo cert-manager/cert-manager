@@ -342,7 +342,7 @@ webhook:
   # - --config=<path-to-config-file>
 
   # Comma separated list of feature gates that should be enabled on the
-  # webhok pod.
+  # webhook pod.
   featureGates: ""
 
   resources: {}
