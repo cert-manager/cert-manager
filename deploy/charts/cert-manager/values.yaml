@@ -68,6 +68,7 @@ podDisruptionBudget:
 
   # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
   # or a percentage value (e.g. 25%)
+  # maxUnavailable takes precedence over minAvailable if set
 
 # Comma separated list of feature gates that should be enabled on the
 # controller pod.
@@ -310,6 +311,7 @@ webhook:
 
     # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
     # or a percentage value (e.g. 25%)
+    # maxUnavailable takes precedence over minAvailable if set
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -495,6 +497,7 @@ cainjector:
 
     # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
     # or a percentage value (e.g. 25%)
+    # maxUnavailable takes precedence over minAvailable if set
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
