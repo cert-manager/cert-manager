@@ -17,8 +17,8 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "webhook"
 
-  {{- with and .Values.webhook.podDisruptionBudget.minAvailable (not .Values.webhook.podDisruptionBudget.maxUnavailable) }}
-  minAvailable: {{ . }}
+  {{- if and .Values.webhook.podDisruptionBudget.minAvailable (not .Values.webhook.podDisruptionBudget.maxUnavailable) }}
+  minAvailable: {{ .Values.webhook.podDisruptionBudget.minAvailable }}
   {{- end }}
   {{- with .Values.webhook.podDisruptionBudget.maxUnavailable }}
   maxUnavailable: {{ . }}

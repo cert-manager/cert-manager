@@ -17,8 +17,8 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "controller"
 
-  {{- with and .Values.podDisruptionBudget.minAvailable (not .Values.podDisruptionBudget.maxUnavailable) }}
-  minAvailable: {{ . }}
+  {{- if and .Values.podDisruptionBudget.minAvailable (not .Values.podDisruptionBudget.maxUnavailable) }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   {{- end }}
   {{- with .Values.podDisruptionBudget.maxUnavailable }}
   maxUnavailable: {{ . }}
