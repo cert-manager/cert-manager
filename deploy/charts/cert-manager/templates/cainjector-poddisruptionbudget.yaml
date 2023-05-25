@@ -17,10 +17,10 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "cainjector"
 
-  {{- if and .Values.cainjector.podDisruptionBudget.minAvailable (not .Values.cainjector.podDisruptionBudget.maxUnavailable) }}
+  {{- if and .Values.cainjector.podDisruptionBudget.minAvailable (not (hasKey .Values.cainjector.podDisruptionBudget "maxUnavailable")) }}
   minAvailable: {{ .Values.cainjector.podDisruptionBudget.minAvailable }}
   {{- end }}
-  {{- with .Values.cainjector.podDisruptionBudget.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- if hasKey .Values.cainjector.podDisruptionBudget "maxUnavailable" }}
+  maxUnavailable: {{ .Values.cainjector.podDisruptionBudget.maxUnavailable }}
   {{- end }}
 {{- end }}
