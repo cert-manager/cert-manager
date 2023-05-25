@@ -36,6 +36,8 @@ import (
 	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
 
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
+
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -49,7 +51,6 @@ import (
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 )
 
 // TestIssuingController performs a basic test to ensure that the issuing
@@ -983,7 +984,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 // is removed again when disabled.
 // Also ensures that changes to the Secret which modify the owner reference,
 // are reverted or corrected if needed by the issuing controller.
-func Test_IssuingController_OwnerRefernece(t *testing.T) {
+func Test_IssuingController_OwnerReference(t *testing.T) {
 	const (
 		fieldManager = "cert-manager-issuing-test"
 	)
