@@ -164,7 +164,15 @@ e2e-build: $(BINDIR)/test/e2e.test
 
 .PHONY: test-upgrade
 test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
-	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+	./hack/verify-upgrade.sh \
+		$(RELEASE_VERSION) \
+		$(GIT_COMMIT) \
+		$(shell $(MAKE) last-published-release) \
+		$(HELM) \
+		$(KIND) \
+		$(YTT) \
+		$(KUBECTL) \
+		$(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
 
 test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
 	@# Remove the temp files if they exist

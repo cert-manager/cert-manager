@@ -12,24 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RELEASE_VERSION := $(shell git describe --tags --match='v*' --abbrev=14)
+VERSION_INFO := $(shell ./hack/build/version.sh version .)
 
-GITCOMMIT := $(shell git rev-parse HEAD)
-
-IS_TAGGED_RELEASE := $(shell git describe --exact-match HEAD >/dev/null 2>&1 && echo "true" || echo "false")
-
-IS_PRERELEASE := $(shell echo $(RELEASE_VERSION) | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$$' - && echo "false" || echo "true")
+GIT_VERSION := $(patsubst GIT_VERSION=%,%,$(filter GIT_VERSION=%,$(VERSION_INFO)))
+GIT_COMMIT := $(patsubst GIT_COMMIT=%,%,$(filter GIT_COMMIT=%,$(VERSION_INFO)))
+IS_TAGGED_RELEASE := $(patsubst GIT_IS_TAGGED_RELEASE=%,%,$(filter GIT_IS_TAGGED_RELEASE=%,$(VERSION_INFO)))
+IS_PRERELEASE := $(patsubst GIT_IS_PRERELEASE=%,%,$(filter GIT_IS_PRERELEASE=%,$(VERSION_INFO)))
+IMAGE_NAME_SHORT := $(patsubst IMAGE_NAME_SHORT=%,%,$(filter IMAGE_NAME_SHORT=%,$(VERSION_INFO)))
+IMAGE_NAME_LONG := $(patsubst IMAGE_NAME_LONG=%,%,$(filter IMAGE_NAME_LONG=%,$(VERSION_INFO)))
+RELEASE_VERSION := $(IMAGE_NAME_LONG)
 
 .PHONY: gitver
 gitver:
 	@echo "Release version:   \"$(RELEASE_VERSION)\""
 	@echo "Is tagged release: \"$(IS_TAGGED_RELEASE)\""
 	@echo "Is prerelease:     \"$(IS_PRERELEASE)\""
-	@echo "Git commit hash:   \"$(GITCOMMIT)\""
+	@echo "Git commit hash:   \"$(GIT_COMMIT)\""
 
-.PHONY: release-version
-release-version:
-	@echo "$(RELEASE_VERSION)"
+.PHONY: last-published-release
+last-published-release:
+	@./hack/build/version.sh last-published-release https://github.com/cert-manager/cert-manager.git
 
 # Lists all remote tags on the upstream, which gives tags in format:
 # "<commit> ref/tags/<tag>". Strips commit + tag prefix, filters out tags for v1+,
@@ -42,12 +44,7 @@ release-version:
 # printing explaining the latest version available in their checkout when they run tests,
 # but sometimes we'll want to force a new version.
 $(BINDIR)/scratch/git/upstream-tags.1.txt: | $(BINDIR)/scratch/git
-	git ls-remote --tags --sort "version:refname" --refs https://github.com/cert-manager/cert-manager.git | \
-		awk '{print $$2;}' | \
-		sed 's/refs\/tags\///' | \
-		sed -n '/v1.0.0/,$$p' | \
-		grep -v "v1.2.0-alpha.1" > $@
-
+	./hack/build/version.sh list-published-releases https://github.com/cert-manager/cert-manager.git > $@
 
 # This target is preserved entirely to make it clear that the file has been renamed, so
 # that anyone who has scripts which reference the file will know to update
