@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 	"sigs.k8s.io/structured-merge-diff/v4/value"
 
-	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
