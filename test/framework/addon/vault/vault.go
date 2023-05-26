@@ -382,6 +382,7 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 	ca, _ := x509.ParseCertificate(catls.Certificate[0])
 
 	cert := &x509.Certificate{
+		Version:      3,
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
 			CommonName:   dnsName,
@@ -404,6 +405,7 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 
 func GenerateCA() ([]byte, []byte, error) {
 	ca := &x509.Certificate{
+		Version:      3,
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
 			Organization: []string{"cert-manager test"},

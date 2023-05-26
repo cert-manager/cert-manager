@@ -48,6 +48,7 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
 			),
 			certificate: &x509.Certificate{
+				Version: 3,
 				Subject: pkix.Name{
 					CommonName:         "cert-manager",
 					Organization:       []string{"Example Organization 1", "Example Organization 2"},
@@ -89,6 +90,7 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
 			),
 			certificate: &x509.Certificate{
+				Version: 3,
 				Subject: pkix.Name{
 					CommonName: "cert-manager",
 				},
@@ -109,6 +111,7 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
 			),
 			certificate: &x509.Certificate{
+				Version:     3,
 				IPAddresses: []net.IP{{1, 1, 1, 1}, {1, 2, 3, 4}},
 			},
 			expAnnotations: map[string]string{
@@ -127,7 +130,8 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
 			),
 			certificate: &x509.Certificate{
-				URIs: urls,
+				Version: 3,
+				URIs:    urls,
 			},
 			expAnnotations: map[string]string{
 				"cert-manager.io/certificate-name": "test-certificate",
@@ -145,6 +149,7 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
 			),
 			certificate: &x509.Certificate{
+				Version:  3,
 				DNSNames: []string{"example.com", "cert-manager.io"},
 			},
 			expAnnotations: map[string]string{

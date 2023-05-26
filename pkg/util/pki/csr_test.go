@@ -723,7 +723,7 @@ func TestSignCSRTemplate(t *testing.T) {
 		pk, err := GenerateECPrivateKey(256)
 		require.NoError(t, err)
 		tmpl := &x509.Certificate{
-			Version:               2,
+			Version:               3,
 			BasicConstraintsValid: true,
 			SerialNumber:          big.NewInt(0),
 			Subject: pkix.Name{
