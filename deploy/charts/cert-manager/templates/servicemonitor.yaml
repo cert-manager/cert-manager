@@ -42,4 +42,7 @@ spec:
     interval: {{ .Values.prometheus.servicemonitor.interval }}
     scrapeTimeout: {{ .Values.prometheus.servicemonitor.scrapeTimeout }}
     honorLabels: {{ .Values.prometheus.servicemonitor.honorLabels }}
+    {{- with .Values.prometheus.servicemonitor.endpointAdditionalProperties }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}
