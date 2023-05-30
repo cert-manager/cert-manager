@@ -102,7 +102,7 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s)")
+	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s = poll once)")
 	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
 	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print detailed error messages")
 
@@ -118,13 +118,18 @@ func (o *Options) Run(ctx context.Context) {
 	}
 	log.SetOutput(o.ErrOut) // Log all intermediate errors to stderr
 
-	pollErr := wait.PollUntilContextTimeout(ctx, o.Interval, o.Wait, true, func(ctx context.Context) (bool, error) {
+	start := time.Now()
+	pollErr := wait.PollUntilContextCancel(ctx, o.Interval, false, func(ctx context.Context) (bool, error) {
 		if err := o.APIChecker.Check(ctx); err != nil {
 			if !o.Verbose && errors.Unwrap(err) != nil {
 				err = errors.Unwrap(err)
 			}
 
 			log.Printf("Not ready: %v", err)
+
+			if time.Since(start) > o.Wait {
+				return false, context.DeadlineExceeded
+			}
 			return false, nil
 		}
 
