@@ -18,9 +18,9 @@ package versionchecker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	errors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -32,17 +32,10 @@ import (
 const certificatesCertManagerCrdName = "certificates.cert-manager.io"
 const certificatesCertManagerOldCrdName = "certificates.certmanager.k8s.io"
 
-var certManagerLabelSelector = map[string]string{
-	"app.kubernetes.io/instance": "cert-manager",
-}
-var certManagerOldLabelSelector = map[string]string{
-	"release": "cert-manager",
-}
-
 var (
-	ErrCertManagerCRDsNotFound  = errors.New("the cert-manager CRDs are not yet installed on the Kubernetes API server")
-	ErrVersionNotDetected       = errors.New("could not detect the cert-manager version")
-	ErrMultipleVersionsDetected = errors.New("detect multiple different cert-manager versions")
+	ErrCertManagerCRDsNotFound  = fmt.Errorf("the cert-manager CRDs are not yet installed on the Kubernetes API server")
+	ErrVersionNotDetected       = fmt.Errorf("could not detect the cert-manager version")
+	ErrMultipleVersionsDetected = fmt.Errorf("detect multiple different cert-manager versions")
 )
 
 type Version struct {

@@ -23,7 +23,10 @@ import (
 
 // SetExitCode sets the exit code to 1 if the error is not a context.Canceled error.
 func SetExitCode(err error) {
-	if (err != nil) && !errors.Is(err, context.Canceled) {
+	if (err != nil) && errors.Is(err, context.DeadlineExceeded) {
+		errorExitCodeChannel <- 124 // Indicate that there was a timeout error
+	} else if (err != nil) && !errors.Is(err, context.Canceled) {
 		errorExitCodeChannel <- 1 // Indicate that there was an error
 	}
+	// If the context was canceled, we don't need to set the exit code
 }

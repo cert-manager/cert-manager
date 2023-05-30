@@ -19,7 +19,6 @@ package cmapichecker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,52 +91,52 @@ func TestCmapiChecker(t *testing.T) {
 			createError: errors.New(errCertManagerCRDsMapping),
 
 			expectedSimpleError:  ErrCertManagerCRDsNotFound.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrCertManagerCRDsNotFound.Error(), errCertManagerCRDsMapping),
+			expectedVerboseError: errCertManagerCRDsMapping,
 		},
 		"check API without CRDs installed 2": {
 			createError: errors.New(errCertManagerCRDsNotFound),
 
 			expectedSimpleError:  ErrCertManagerCRDsNotFound.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrCertManagerCRDsNotFound.Error(), errCertManagerCRDsNotFound),
+			expectedVerboseError: errCertManagerCRDsNotFound,
 		},
 
 		"check API with mutating webhook service not ready": {
 			createError: errors.New(errMutatingWebhookServiceFailure),
 
 			expectedSimpleError:  ErrWebhookServiceFailure.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrWebhookServiceFailure.Error(), errMutatingWebhookServiceFailure),
+			expectedVerboseError: errMutatingWebhookServiceFailure,
 		},
 		"check API with conversion webhook service not ready": {
 			createError: errors.New(errConversionWebhookServiceFailure),
 
 			expectedSimpleError:  ErrWebhookServiceFailure.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrWebhookServiceFailure.Error(), errConversionWebhookServiceFailure),
+			expectedVerboseError: errConversionWebhookServiceFailure,
 		},
 
 		"check API with mutating webhook pod not accepting connections": {
 			createError: errors.New(errMutatingWebhookDeploymentFailure),
 
 			expectedSimpleError:  ErrWebhookDeploymentFailure.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrWebhookDeploymentFailure.Error(), errMutatingWebhookDeploymentFailure),
+			expectedVerboseError: errMutatingWebhookDeploymentFailure,
 		},
 		"check API with conversion webhook pod not accepting connections": {
 			createError: errors.New(errConversionWebhookDeploymentFailure),
 
 			expectedSimpleError:  ErrWebhookDeploymentFailure.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrWebhookDeploymentFailure.Error(), errConversionWebhookDeploymentFailure),
+			expectedVerboseError: errConversionWebhookDeploymentFailure,
 		},
 
 		"check API with webhook certificate not updated in mutation webhook resource definitions": {
 			createError: errors.New(errMutatingWebhookCertificateFailure),
 
 			expectedSimpleError:  ErrWebhookCertificateFailure.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrWebhookCertificateFailure.Error(), errMutatingWebhookCertificateFailure),
+			expectedVerboseError: errMutatingWebhookCertificateFailure,
 		},
 		"check API with webhook certificate not updated in conversion webhook resource definitions": {
 			createError: errors.New(errConversionWebhookCertificateFailure),
 
 			expectedSimpleError:  ErrWebhookCertificateFailure.Error(),
-			expectedVerboseError: fmt.Sprintf("%s (%s)", ErrWebhookCertificateFailure.Error(), errConversionWebhookCertificateFailure),
+			expectedVerboseError: errConversionWebhookCertificateFailure,
 		},
 		"unexpected error": {
 			createError: errors.New("unexpected error"),
@@ -169,23 +168,23 @@ func runTest(t *testing.T, test testT) {
 
 	errorClient.createError = test.createError
 
-	var unwrappedErr error
+	var simpleError error
 	err = checker.Check(context.TODO())
 	if err != nil {
 		if err.Error() != test.expectedVerboseError {
 			t.Errorf("error differs from expected error:\n%s\n vs \n%s", err.Error(), test.expectedVerboseError)
 		}
 
-		unwrappedErr = errors.Unwrap(err)
+		simpleError = TranslateToSimpleError(err)
 	} else {
 		if test.expectedVerboseError != "" {
 			t.Errorf("expected error did not occure:\n%s", test.expectedVerboseError)
 		}
 	}
 
-	if unwrappedErr != nil {
-		if unwrappedErr.Error() != test.expectedSimpleError {
-			t.Errorf("simple error differs from expected error:\n%s\n vs \n%s", unwrappedErr.Error(), test.expectedSimpleError)
+	if simpleError != nil {
+		if simpleError.Error() != test.expectedSimpleError {
+			t.Errorf("simple error differs from expected error:\n%s\n vs \n%s", simpleError.Error(), test.expectedSimpleError)
 		}
 	} else {
 		if test.expectedSimpleError != "" {
