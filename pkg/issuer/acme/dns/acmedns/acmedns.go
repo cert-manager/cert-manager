@@ -72,7 +72,12 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 		return c.client.UpdateTXTRecord(account, value)
 	}
 
-	return fmt.Errorf("account credentials not found for domain %s", domain)
+	if account, exists := c.accounts[fqdn]; exists {
+		// Update the acme-dns TXT record.
+		return c.client.UpdateTXTRecord(account, value)
+	}
+
+	return fmt.Errorf("account credentials neither found for domain %s nor fqdn %s", domain, fqdn)
 }
 
 // CleanUp removes the record matching the specified parameters. It is not
