@@ -25,6 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -95,6 +96,29 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
+		// If the Certificate is not found, we can assume it has been deleted
+		// unfortunately. We cannot rely on the resource's DuplicateSecretName
+		// condition to determine what Certificates it was conflicting with, so
+		// we need to loop over all Certificates in the Namespace and requeue
+		// Certificates which have this Certificate's name in their
+		// DuplicateSecretName condition.
+
+		// Get all Certificates in the Namespace.
+		crts, err := c.certificateLister.Certificates(namespace).List(labels.NewSelector())
+		if err != nil {
+			return err
+		}
+
+		// Loop over all Certificates and requeue those which have this
+		// Certificate's name in their DuplicateSecretName condition.
+		for _, crt := range crts {
+			if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
+				condition.Status == cmmeta.ConditionTrue &&
+				stringSliceContains(strings.Split(condition.Reason, ","), name) {
+				c.queue.Add(crt.Namespace + "/" + crt.Name)
+			}
+		}
+
 		return nil
 	}
 	if err != nil {
@@ -104,6 +128,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	log = logf.WithResource(log, crt)
 	ctx = logf.NewContext(ctx, log)
+
+	oldDuplicates := []string{}
+	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
+		condition.Status == cmmeta.ConditionTrue {
+		oldDuplicates = strings.Split(condition.Reason, ",")
+	}
 
 	// Get the Certificates in the same Namespace which have the same Secret name
 	// set.
@@ -138,11 +168,24 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// We also need to re-reconcile all other Certificates which have the same
 	// Secret name set so their conditions can be evaluated.
+	for _, duplicate := range oldDuplicates {
+		c.queue.Add(crt.Namespace + "/" + duplicate)
+	}
+
 	for _, duplicate := range duplicates {
 		c.queue.Add(crt.Namespace + "/" + duplicate)
 	}
 
 	return nil
+}
+
+func stringSliceContains(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
 
 // needsUpdate returns true if the Certificate needs a state change because the
