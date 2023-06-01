@@ -103,7 +103,7 @@ func (o *cmapiChecker) Check(ctx context.Context) error {
 	return nil
 }
 
-// This translateToSimpleError function detects errors based on the error message.
+// TranslateToSimpleError detects errors based on the error message.
 // It tries to map these error messages to a better understandable error message that
 // explains what is wrong. If it cannot create a simple error, it will return nil.
 // ErrCertManagerCRDsNotFound:
