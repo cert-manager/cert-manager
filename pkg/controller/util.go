@@ -170,7 +170,7 @@ func (b *BlockingEventHandler) OnDelete(obj interface{}) {
 	b.WorkFunc(obj)
 }
 
-// BuildAnnotationsCopy takes a map of annotations and a list of prefix
+// BuildAnnotationsToCopy takes a map of annotations and a list of prefix
 // filters and builds a filtered map of annotations. It is used to filter
 // annotations to be copied from Certificate to CertificateRequest and from
 // CertificateSigningRequest to Order.

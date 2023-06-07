@@ -89,7 +89,7 @@ func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger,
 	}
 }
 
-// certFromSecretToInjectableMapFuncBuilder returns a handler.MapFunc that, for
+// certToInjectableMapFuncBuilder returns a handler.MapFunc that, for
 // a Certificate change, ensures that if this Certificate that is configured as
 // a CA source for an injectable via inject-ca-from annotation, a reconcile loop
 // will be triggered for this injectable
