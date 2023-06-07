@@ -207,7 +207,7 @@ func CertificateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509
 	)
 }
 
-// CertificateTemplateFromCertificateRequest will create a x509.Certificate for the given
+// CertificateTemplateFromCertificateSigningRequest will create a x509.Certificate for the given
 // CertificateSigningRequest resource
 func CertificateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
 	duration, err := DurationFromCertificateSigningRequest(csr)

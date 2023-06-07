@@ -31,7 +31,7 @@ func CertificateSecretName(name string) Func {
 	}
 }
 
-// CertificateSecretName returns a predicate that used to filter Certificates
+// CertificateNextPrivateKeySecretName returns a predicate that used to filter Certificates
 // to only those with the given 'status.nextPrivateKeySecretName'.
 // It is not possible to select Certificates with a 'nil' secret name using
 // this predicate function.
