@@ -188,7 +188,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
-			RestartPolicy: corev1.RestartPolicyOnFailure,
+			RestartPolicy:      corev1.RestartPolicyOnFailure,
+			EnableServiceLinks: pointer.Bool(false),
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot: pointer.BoolPtr(s.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot),
 				SeccompProfile: &corev1.SeccompProfile{
