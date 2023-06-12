@@ -77,6 +77,7 @@ func TestEnsurePod(t *testing.T) {
 			},
 			Spec: corev1.PodSpec{
 				AutomountServiceAccountToken: pointer.Bool(false),
+				EnableServiceLinks:           pointer.Bool(false),
 				NodeSelector: map[string]string{
 					"kubernetes.io/os": "linux",
 				},
