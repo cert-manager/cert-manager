@@ -45,6 +45,7 @@ spec:
       {{- if hasKey .Values.cainjector "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.cainjector.automountServiceAccountToken }}
       {{- end }}
+      enableServiceLinks: false
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}

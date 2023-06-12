@@ -52,6 +52,7 @@ spec:
       {{- if hasKey .Values "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
       {{- end }}
+      enableServiceLinks: false
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
