@@ -66,9 +66,13 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 	}
 
 	data := internal.SecretData{
-		PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
-		Certificate: secret.Data[corev1.TLSCertKey],
-		CA:          secret.Data[cmmeta.TLSCAKey],
+		PrivateKey:      secret.Data[corev1.TLSPrivateKeyKey],
+		Certificate:     secret.Data[corev1.TLSCertKey],
+		CA:              secret.Data[cmmeta.TLSCAKey],
+		CertificateName: secret.Annotations[cmapi.CertificateNameKey],
+		IssuerName:      secret.Annotations[cmapi.IssuerNameAnnotationKey],
+		IssuerKind:      secret.Annotations[cmapi.IssuerKindAnnotationKey],
+		IssuerGroup:     secret.Annotations[cmapi.IssuerGroupAnnotationKey],
 	}
 
 	// Check whether the Certificate's Secret has correct output format and

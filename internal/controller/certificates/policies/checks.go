@@ -347,10 +347,17 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 			}
 		}
 
-		baseAnnotations, err := internalcertificates.AnnotationsForCertificateSecret(input.Certificate, x509cert)
+		baseAnnotations, err := internalcertificates.AnnotationsForCertificate(x509cert)
 		if err != nil {
 			return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
 		}
+
+		// We don't use the values of these annotations, but we need to make sure
+		// that the keys are present in the map so that we can compare the sets.
+		baseAnnotations[cmapi.CertificateNameKey] = "<certificate-nalue>"
+		baseAnnotations[cmapi.IssuerNameAnnotationKey] = "<issuer-name>"
+		baseAnnotations[cmapi.IssuerKindAnnotationKey] = "<issuer-kind>"
+		baseAnnotations[cmapi.IssuerGroupAnnotationKey] = "<issuer-group>"
 
 		managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
 

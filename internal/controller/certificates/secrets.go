@@ -20,75 +20,62 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
-	"strings"
 
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-// AnnotationsForCertificateSecret returns a map which is set on all
+// AnnotationsForCertificate returns a map which is set on all
 // Certificate Secret's Annotations when issued. These annotations contain
-// information about the Issuer and Certificate.
-// If the X.509 certificate is not-nil, additional annotations will be added
-// relating to its Common Name and Subject Alternative Names.
-func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.Certificate) (map[string]string, error) {
+// information about the Certificate.
+// If the X.509 certificate is nil, an empty map will be returned.
+func AnnotationsForCertificate(certificate *x509.Certificate) (map[string]string, error) {
 	annotations := make(map[string]string)
 
-	// Only add certificate data if certificate is non-nil.
-	if certificate != nil {
-		var err error
-
-		var errList []error
-		annotations[cmapi.SubjectOrganizationsAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Organization)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectOrganizationalUnitsAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.OrganizationalUnit)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectCountriesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Country)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectProvincesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Province)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectLocalitiesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.Locality)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectPostalCodesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.PostalCode)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectStreetAddressesAnnotationKey], err = cmutil.JoinWithEscapeCSV(certificate.Subject.StreetAddress)
-		errList = append(errList, err)
-
-		annotations[cmapi.SubjectSerialNumberAnnotationKey] = certificate.Subject.SerialNumber
-		annotations[cmapi.EmailsAnnotationKey] = strings.Join(certificate.EmailAddresses, ",")
-
-		// return first error
-		for _, v := range errList {
-			if v != nil {
-				return nil, err
-			}
-		}
-
-		// remove empty subject annotations
-		for k, v := range annotations {
-			if v == "" {
-				delete(annotations, k)
-			}
-		}
-
-		annotations[cmapi.CommonNameAnnotationKey] = certificate.Subject.CommonName
-		annotations[cmapi.AltNamesAnnotationKey] = strings.Join(certificate.DNSNames, ",")
-		annotations[cmapi.IPSANAnnotationKey] = strings.Join(utilpki.IPAddressesToString(certificate.IPAddresses), ",")
-		annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(certificate.URIs), ",")
+	if certificate == nil {
+		return annotations, nil
 	}
 
-	annotations[cmapi.CertificateNameKey] = crt.Name
-	annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
-	annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
+	var encodingErr error
+	addStringAnnotation := func(keepEmpty bool, key string, value string) {
+		if len(value) == 0 && !keepEmpty {
+			return
+		}
+		annotations[key] = value
+	}
+	addCSVEncodedAnnotation := func(keepEmpty bool, key string, values []string) {
+		if len(values) == 0 && !keepEmpty {
+			return
+		}
+
+		csvString, err := cmutil.JoinWithEscapeCSV(values)
+		if err != nil {
+			encodingErr = err
+			return
+		}
+		annotations[key] = csvString
+	}
+
+	addStringAnnotation(true, cmapi.CommonNameAnnotationKey, certificate.Subject.CommonName)
+	addStringAnnotation(false, cmapi.SubjectSerialNumberAnnotationKey, certificate.Subject.SerialNumber)
+
+	addCSVEncodedAnnotation(false, cmapi.SubjectOrganizationsAnnotationKey, certificate.Subject.Organization)
+	addCSVEncodedAnnotation(false, cmapi.SubjectOrganizationalUnitsAnnotationKey, certificate.Subject.OrganizationalUnit)
+	addCSVEncodedAnnotation(false, cmapi.SubjectCountriesAnnotationKey, certificate.Subject.Country)
+	addCSVEncodedAnnotation(false, cmapi.SubjectProvincesAnnotationKey, certificate.Subject.Province)
+	addCSVEncodedAnnotation(false, cmapi.SubjectLocalitiesAnnotationKey, certificate.Subject.Locality)
+	addCSVEncodedAnnotation(false, cmapi.SubjectPostalCodesAnnotationKey, certificate.Subject.PostalCode)
+	addCSVEncodedAnnotation(false, cmapi.SubjectStreetAddressesAnnotationKey, certificate.Subject.StreetAddress)
+
+	addCSVEncodedAnnotation(false, cmapi.EmailsAnnotationKey, certificate.EmailAddresses)
+	addCSVEncodedAnnotation(true, cmapi.AltNamesAnnotationKey, certificate.DNSNames)
+	addCSVEncodedAnnotation(true, cmapi.IPSANAnnotationKey, utilpki.IPAddressesToString(certificate.IPAddresses))
+	addCSVEncodedAnnotation(true, cmapi.URISANAnnotationKey, utilpki.URLsToString(certificate.URIs))
+
+	if encodingErr != nil {
+		return nil, encodingErr
+	}
 
 	return annotations, nil
 }
