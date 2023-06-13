@@ -268,5 +268,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		}
 	}
 
+	if venafiAnnotation, found := ingLikeAnnotations[cmapi.VenafiCustomFieldsAnnotationKey]; found {
+		metav1.SetMetaDataAnnotation(&crt.ObjectMeta, cmapi.VenafiCustomFieldsAnnotationKey, venafiAnnotation)
+	}
+
 	return nil
 }
