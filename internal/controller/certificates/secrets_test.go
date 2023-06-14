@@ -24,10 +24,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func Test_AnnotationsForCertificateSecret(t *testing.T) {
@@ -39,14 +35,10 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		crt            *cmapi.Certificate
 		certificate    *x509.Certificate
 		expAnnotations map[string]string
 	}{
 		"if pass non-nil certificate, expect all Annotations to be present": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
-			),
 			certificate: &x509.Certificate{
 				Version: 3,
 				Subject: pkix.Name{
@@ -66,10 +58,6 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				EmailAddresses: []string{"test1@example.com", "test2@cert-manager.io"},
 			},
 			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name":            "test-certificate",
-				"cert-manager.io/issuer-name":                 "another-test-issuer",
-				"cert-manager.io/issuer-kind":                 "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":                "my-group.hello.world",
 				"cert-manager.io/common-name":                 "cert-manager",
 				"cert-manager.io/alt-names":                   "example.com,cert-manager.io",
 				"cert-manager.io/ip-sans":                     "1.1.1.1,1.2.3.4",
@@ -86,9 +74,6 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 			},
 		},
 		"if pass non-nil certificate with only CommonName, expect all Annotations to be present": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
-			),
 			certificate: &x509.Certificate{
 				Version: 3,
 				Subject: pkix.Name{
@@ -96,90 +81,57 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				},
 			},
 			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "another-test-issuer",
-				"cert-manager.io/issuer-kind":      "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":     "my-group.hello.world",
-				"cert-manager.io/common-name":      "cert-manager",
-				"cert-manager.io/alt-names":        "",
-				"cert-manager.io/ip-sans":          "",
-				"cert-manager.io/uri-sans":         "",
+				"cert-manager.io/common-name": "cert-manager",
+				"cert-manager.io/alt-names":   "",
+				"cert-manager.io/ip-sans":     "",
+				"cert-manager.io/uri-sans":    "",
 			},
 		},
 		"if pass non-nil certificate with only IP Addresses, expect all Annotations to be present": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
-			),
 			certificate: &x509.Certificate{
 				Version:     3,
 				IPAddresses: []net.IP{{1, 1, 1, 1}, {1, 2, 3, 4}},
 			},
 			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "another-test-issuer",
-				"cert-manager.io/issuer-kind":      "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":     "my-group.hello.world",
-				"cert-manager.io/common-name":      "",
-				"cert-manager.io/alt-names":        "",
-				"cert-manager.io/ip-sans":          "1.1.1.1,1.2.3.4",
-				"cert-manager.io/uri-sans":         "",
+				"cert-manager.io/common-name": "",
+				"cert-manager.io/alt-names":   "",
+				"cert-manager.io/ip-sans":     "1.1.1.1,1.2.3.4",
+				"cert-manager.io/uri-sans":    "",
 			},
 		},
 		"if pass non-nil certificate with only URI SANs, expect all Annotations to be present": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
-			),
 			certificate: &x509.Certificate{
 				Version: 3,
 				URIs:    urls,
 			},
 			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "another-test-issuer",
-				"cert-manager.io/issuer-kind":      "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":     "my-group.hello.world",
-				"cert-manager.io/common-name":      "",
-				"cert-manager.io/alt-names":        "",
-				"cert-manager.io/ip-sans":          "",
-				"cert-manager.io/uri-sans":         "spiffe.io//cert-manager.io/test,spiffe.io//hello.world",
+				"cert-manager.io/common-name": "",
+				"cert-manager.io/alt-names":   "",
+				"cert-manager.io/ip-sans":     "",
+				"cert-manager.io/uri-sans":    "spiffe.io//cert-manager.io/test,spiffe.io//hello.world",
 			},
 		},
 		"if pass non-nil certificate with only DNS names, expect all Annotations to be present": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
-			),
 			certificate: &x509.Certificate{
 				Version:  3,
 				DNSNames: []string{"example.com", "cert-manager.io"},
 			},
 			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "another-test-issuer",
-				"cert-manager.io/issuer-kind":      "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":     "my-group.hello.world",
-				"cert-manager.io/common-name":      "",
-				"cert-manager.io/alt-names":        "example.com,cert-manager.io",
-				"cert-manager.io/ip-sans":          "",
-				"cert-manager.io/uri-sans":         "",
+				"cert-manager.io/common-name": "",
+				"cert-manager.io/alt-names":   "example.com,cert-manager.io",
+				"cert-manager.io/ip-sans":     "",
+				"cert-manager.io/uri-sans":    "",
 			},
 		},
 		"if no certificate data, then expect no X.509 related annotations": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "test-issuer", Kind: "", Group: "cert-manager.io"}),
-			),
-			certificate: nil,
-			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "test-issuer",
-				"cert-manager.io/issuer-kind":      "Issuer",
-				"cert-manager.io/issuer-group":     "cert-manager.io",
-			},
+			certificate:    nil,
+			expAnnotations: map[string]string{},
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotAnnotations, err := AnnotationsForCertificateSecret(test.crt, test.certificate)
+			gotAnnotations, err := AnnotationsForCertificate(test.certificate)
 			assert.Equal(t, test.expAnnotations, gotAnnotations)
 			assert.Equal(t, nil, err)
 		})

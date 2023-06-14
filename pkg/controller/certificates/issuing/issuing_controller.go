@@ -390,9 +390,13 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 		return err
 	}
 	secretData := internal.SecretData{
-		PrivateKey:  pkData,
-		Certificate: req.Status.Certificate,
-		CA:          req.Status.CA,
+		PrivateKey:      pkData,
+		Certificate:     req.Status.Certificate,
+		CA:              req.Status.CA,
+		CertificateName: crt.Name,
+		IssuerName:      req.Spec.IssuerRef.Name,
+		IssuerKind:      req.Spec.IssuerRef.Kind,
+		IssuerGroup:     req.Spec.IssuerRef.Group,
 	}
 
 	if err := c.secretsUpdateData(ctx, crt, secretData); err != nil {
