@@ -354,7 +354,7 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 
 		// We don't use the values of these annotations, but we need to make sure
 		// that the keys are present in the map so that we can compare the sets.
-		baseAnnotations[cmapi.CertificateNameKey] = "<certificate-nalue>"
+		baseAnnotations[cmapi.CertificateNameKey] = "<certificate-value>"
 		baseAnnotations[cmapi.IssuerNameAnnotationKey] = "<issuer-name>"
 		baseAnnotations[cmapi.IssuerKindAnnotationKey] = "<issuer-kind>"
 		baseAnnotations[cmapi.IssuerGroupAnnotationKey] = "<issuer-group>"
