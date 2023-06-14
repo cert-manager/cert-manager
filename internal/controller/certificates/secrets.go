@@ -37,6 +37,9 @@ func AnnotationsForCertificate(certificate *x509.Certificate) (map[string]string
 		return annotations, nil
 	}
 
+	// TODO: the reason that for some annotations we keep empty annotations and we don't for others is not clear.
+	// The keepEmpty parameter is only used here to maintain this unexplained previous behaviour.
+
 	var encodingErr error
 	addStringAnnotation := func(keepEmpty bool, key string, value string) {
 		if len(value) == 0 && !keepEmpty {
