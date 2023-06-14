@@ -173,6 +173,8 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	if len(data.Certificate) > 0 {
 		var err error
 		certificate, err = utilpki.DecodeX509CertificateBytes(data.Certificate)
+		// TODO: handle InvalidData here? Maybe we should still patch the secret
+		// when we detect that the certificate bytes are invalid.
 		if err != nil {
 			return err
 		}
