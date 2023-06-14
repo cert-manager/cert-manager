@@ -350,7 +350,11 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int, nextPrivateKeySecretName string) error {
 	log := logf.FromContext(ctx)
 
-	x509CSR, err := pki.GenerateCSR(crt, pki.WithUseLiteralSubject(utilfeature.DefaultMutableFeatureGate.Enabled(feature.LiteralCertificateSubject)))
+	x509CSR, err := pki.GenerateCSR(
+		crt,
+		pki.WithUseLiteralSubject(utilfeature.DefaultMutableFeatureGate.Enabled(feature.LiteralCertificateSubject)),
+		pki.WithEncodeBasicConstraintsInRequest(utilfeature.DefaultMutableFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints)),
+	)
 	if err != nil {
 		log.Error(err, "Failed to generate CSR - will not retry")
 		return nil
