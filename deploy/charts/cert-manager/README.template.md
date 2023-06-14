@@ -126,6 +126,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.labels` | Add custom labels to ServiceMonitor | |
 | `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
 | `prometheus.servicemonitor.honorLabels` | Enable label honoring for metrics scraped by Prometheus (see [Prometheus scrape config docs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) for details). By setting `honorLabels` to `true`, Prometheus will prefer label contents given by cert-manager on conflicts. Can be used to remove the "exported_namespace" label for example.  | `false` |
+| `prometheus.servicemonitor.relabelings` | Add relabelings to ServiceMonitor. See [Prometheus RelabelConfig docs](https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.RelabelConfig) | `[]` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `deploymentAnnotations` | Annotations to add to the cert-manager deployment | `{}` |
 | `podDisruptionBudget.enabled` | Adds a PodDisruptionBudget for the cert-manager deployment | `false` |
