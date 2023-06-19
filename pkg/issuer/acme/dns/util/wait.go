@@ -9,8 +9,10 @@ this directory.
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -21,7 +23,7 @@ import (
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,
-	useAuthoritative bool) (bool, error)
+	useAuthoritative bool, acmeDNS01CheckMethod string) (bool, error)
 type dnsQueryFunc func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
 var (
@@ -40,6 +42,11 @@ const defaultResolvConf = "/etc/resolv.conf"
 
 const issueTag = "issue"
 const issuewildTag = "issuewild"
+
+const (
+	ACMEDNS01CheckViaDNSLookup = "dnslookup"
+	ACMEDNS01CheckViaHTTPS     = "dns-over-https"
+)
 
 var defaultNameservers = []string{
 	"8.8.8.8:53",
@@ -101,9 +108,9 @@ func followCNAMEs(fqdn string, nameservers []string, fqdnChain ...string) (strin
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string, nameservers []string,
-	useAuthoritative bool) (bool, error) {
 
+func checkDNSPropagationWithDNSLookup(fqdn, value string, nameservers []string,
+	useAuthoritative bool) (bool, error) {
 	var err error
 	fqdn, err = followCNAMEs(fqdn, nameservers)
 	if err != nil {
@@ -123,6 +130,53 @@ func checkDNSPropagation(fqdn, value string, nameservers []string,
 		authoritativeNss[i] = net.JoinHostPort(ans, "53")
 	}
 	return checkAuthoritativeNss(fqdn, value, authoritativeNss)
+}
+
+func checkDNSPropagationWithHTTPS(fqdn, value string, nameservers []string, useAuthoritative bool) (bool, error) {
+	logf.V(logf.InfoLevel).Infof("Checking DNS propagation for FQDN %s using Google's API for DNS over HTTPS", fqdn)
+
+	req, err := http.NewRequest("GET", "https://8.8.8.8/resolve?name="+fqdn+"&type=TXT", nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Add("Cache-Control", "no-cache")
+	r, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("Unable to lookup DNS via HTTPS: %s", err)
+	}
+	defer r.Body.Close()
+
+	var resp struct {
+		Status int
+		Answer []struct{ Data string }
+	}
+
+	if err = json.NewDecoder(r.Body).Decode(&resp); err != nil {
+		return false, fmt.Errorf("Error parsing response from DNS over HTTPS: %s", err)
+	}
+
+	if resp.Status == 0 && len(resp.Answer) >= 1 {
+		for _, answer := range resp.Answer {
+			if txt := strings.Trim(answer.Data, "\""); txt == value {
+				return true, nil
+			}
+		}
+	}
+
+	logf.V(logf.DebugLevel).Infof("No TXT entry found. Expected='%s'", value)
+	return false, nil
+}
+
+func checkDNSPropagation(fqdn, value string, nameservers []string,
+	useAuthoritative bool, acmeDNS01CheckMethod string) (bool, error) {
+	switch acmeDNS01CheckMethod {
+	case ACMEDNS01CheckViaDNSLookup:
+		return checkDNSPropagationWithDNSLookup(fqdn, value, nameservers, useAuthoritative)
+	case ACMEDNS01CheckViaHTTPS:
+		return checkDNSPropagationWithHTTPS(fqdn, value, nameservers, useAuthoritative)
+	default:
+		return false, fmt.Errorf("Unknown DNS propagation method")
+	}
 }
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.

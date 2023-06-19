@@ -167,6 +167,9 @@ type IssuerOptions struct {
 }
 
 type ACMEOptions struct {
+	// ACMEDNS01CheckMethod specifies how to check for DNS propagation for DNS01 challenges
+	ACMEDNS01CheckMethod string
+
 	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
 	// challenges
 	HTTP01SolverImage string

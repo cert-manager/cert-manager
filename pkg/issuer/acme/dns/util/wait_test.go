@@ -165,9 +165,16 @@ func TestMatchCAA(t *testing.T) {
 	}
 }
 
+func TestPreCheckDNSOverHTTPS(t *testing.T) {
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true, "dns-over-https")
+	if err != nil || !ok {
+		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
+	}
+}
+
 func TestPreCheckDNS(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true)
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true, "dnslookup")
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
@@ -175,7 +182,7 @@ func TestPreCheckDNS(t *testing.T) {
 
 func TestPreCheckDNSNonAuthoritative(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"1.1.1.1:53"}, false)
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"1.1.1.1:53"}, false, "dnslookup")
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
