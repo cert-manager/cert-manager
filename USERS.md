@@ -14,6 +14,7 @@ We'd love for you to share your cert-manager story with the world!
 | [<img src="https://media.jfrog.com/wp-content/uploads/2017/12/20133032/Jfrog-Logo.svg" alt="JFrog" width="100"> ](https://jfrog.com/) | Securing ingresses |  |
 | [<img src="https://www.urssaf.org/files/Logos/logo_urssaforg.png" width="100" alt="Urssaf Caisse nationale"> ](https://urssaf.org) | Securing ingresses | |
 | [<img src="https://avatars.githubusercontent.com/u/24900634?s=200&v=4" alt="Azusa Pacific University Logo" width="100"> ](https://www.apu.edu) | Securing Ingresses | [@azusapacificuniversity](https://github.com/azusapacificuniversity) [www.apu.edu](https://www.apu.edu) |
+| [<img src="https://www.diagrid.io/_next/static/media/logo.181bad37.svg" width="100" alt="Diagrid"> ](https://diagrid.io) | Securing ingresses and internal workloads | [@diagridio](https://github.com/diagridio) [Blog](https://www.diagrid.io/blog) |
 
 ## Individuals
 
