@@ -167,17 +167,6 @@ type IssuerOptions struct {
 }
 
 type ACMEOptions struct {
-	// ACMEDNS01CheckMethod specifies how to check for DNS propagation for DNS01 challenges
-	ACMEDNS01CheckMethod string
-
-	// DnsOverHttpsJsonEndpoint allows specifying what Json endpoint to use for doing the DNS-over-HTTPS verification.
-	// Examples:
-	// - "https://1.1.1.1/dns-query"
-	// - "https://8.8.8.8/resolve"
-	// - "https://8.8.4.4/resolve"
-	// - "https://9.9.9.9:5053/dns-query"
-	DnsOverHttpsJsonEndpoint string
-
 	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
 	// challenges
 	HTTP01SolverImage string

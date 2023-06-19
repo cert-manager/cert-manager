@@ -9,8 +9,10 @@ this directory.
 package util
 
 import (
-	"encoding/json"
+	"bytes"
+	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -23,7 +25,7 @@ import (
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,
-	useAuthoritative bool, acmeDNS01CheckMethod string, dnsOverHttpsJsonEndpoint string) (bool, error)
+	useAuthoritative bool) (bool, error)
 type dnsQueryFunc func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
 var (
@@ -43,16 +45,9 @@ const defaultResolvConf = "/etc/resolv.conf"
 const issueTag = "issue"
 const issuewildTag = "issuewild"
 
-const (
-	ACMEDNS01CheckViaDNSLookup = "dnslookup"
-	ACMEDNS01CheckViaHTTPS     = "dns-over-https"
-)
-
-const DefaultDnsOverHttpsJsonEndpoint = "https://dns.google/resolve"
-
 var defaultNameservers = []string{
 	"8.8.8.8:53",
-	"8.8.4.4:53",
+	"https://dns.google/resolve",
 }
 
 var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
@@ -110,9 +105,9 @@ func followCNAMEs(fqdn string, nameservers []string, fqdnChain ...string) (strin
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-
-func checkDNSPropagationWithDNSLookup(fqdn, value string, nameservers []string,
+func checkDNSPropagation(fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error) {
+
 	var err error
 	fqdn, err = followCNAMEs(fqdn, nameservers)
 	if err != nil {
@@ -132,69 +127,6 @@ func checkDNSPropagationWithDNSLookup(fqdn, value string, nameservers []string,
 		authoritativeNss[i] = net.JoinHostPort(ans, "53")
 	}
 	return checkAuthoritativeNss(fqdn, value, authoritativeNss)
-}
-
-// The dnsOverHttpsJsonEndpoint has to be a JSON GET endpoint and NOT an RFC 8484 GET endpoint.
-// This decision was taken because the JSON format is much easier to parse, test and debug, and is a standard
-// for the big DNS-over-HTTPS DNS providers such as Google, Cloudflare, or Quad9.
-// Examples:
-// - "https://1.1.1.1/dns-query"
-// - "https://8.8.8.8/resolve"
-// - "https://8.8.4.4/resolve"
-// - "https://9.9.9.9:5053/dns-query"
-func checkDNSPropagationWithHTTPS(fqdn, value string, dnsOverHttpsJsonEndpoint string) (bool, error) {
-	logf.V(logf.InfoLevel).Infof("Checking DNS propagation for FQDN %s using Google's API for DNS over HTTPS", fqdn)
-
-	if dnsOverHttpsJsonEndpoint == "" {
-		dnsOverHttpsJsonEndpoint = DefaultDnsOverHttpsJsonEndpoint
-	}
-
-	req, err := http.NewRequest("GET", dnsOverHttpsJsonEndpoint+"?name="+fqdn+"&type=TXT", nil)
-	if err != nil {
-		return false, err
-	}
-	req.Header.Add("Cache-Control", "no-cache")
-	req.Header.Add("accept", "application/dns-json")
-	r, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("Unable to lookup the DNS via HTTPS: %s", err)
-	}
-	defer r.Body.Close()
-
-	var resp struct {
-		Status int
-		Answer []struct{ Data string }
-	}
-
-	if err = json.NewDecoder(r.Body).Decode(&resp); err != nil {
-		return false, fmt.Errorf("Error parsing response from DNS over HTTPS: %s", err)
-	}
-
-	if resp.Status == 0 && len(resp.Answer) >= 1 {
-		for _, answer := range resp.Answer {
-			if txt := strings.Trim(answer.Data, "\""); txt == value {
-				logf.V(logf.DebugLevel).Infof("Self-checking using the DNS-over-HTTPS Lookup method was successful")
-				return true, nil
-			}
-		}
-	}
-
-	logf.V(logf.DebugLevel).Infof("No TXT entry found. Expected='%s'", value)
-	return false, nil
-}
-
-func checkDNSPropagation(fqdn, value string, nameservers []string,
-	useAuthoritative bool, acmeDNS01CheckMethod string, dnsOverHttpsJsonEndpoint string) (bool, error) {
-	switch acmeDNS01CheckMethod {
-	case ACMEDNS01CheckViaDNSLookup:
-		logf.V(logf.DebugLevel).Infof("Self-checking using the DNS Lookup method")
-		return checkDNSPropagationWithDNSLookup(fqdn, value, nameservers, useAuthoritative)
-	case ACMEDNS01CheckViaHTTPS:
-		logf.V(logf.DebugLevel).Infof("Self-checking using the DNS-over-HTTPS Lookup method")
-		return checkDNSPropagationWithHTTPS(fqdn, value, dnsOverHttpsJsonEndpoint)
-	default:
-		return false, fmt.Errorf("Unknown DNS propagation method")
-	}
 }
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
@@ -232,6 +164,13 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 // DNSQuery will query a nameserver, iterating through the supplied servers as it retries
 // The nameserver should include a port, to facilitate testing where we talk to a mock dns server.
 func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
+	switch rtype {
+	case dns.TypeCAA, dns.TypeCNAME, dns.TypeNS, dns.TypeSOA, dns.TypeTXT:
+	default:
+		// For all other types, we don't have a implementation (yet)
+		return nil, fmt.Errorf("unsupported DNS record type %d", rtype)
+	}
+
 	m := new(dns.Msg)
 	m.SetQuestion(fqdn, rtype)
 	m.SetEdns0(4096, false)
@@ -240,18 +179,34 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		m.RecursionDesired = false
 	}
 
-	// Will retry the request based on the number of servers (n+1)
-	for i := 1; i <= len(nameservers)+1; i++ {
-		ns := nameservers[i%len(nameservers)]
-		udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
-		in, _, err = udp.Exchange(m, ns)
+	udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
+	tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
+	tcpTls := &dns.Client{Net: "tcp-tls", Timeout: DNSTimeout}
+	httpClient := *http.DefaultClient
+	httpClient.Timeout = DNSTimeout
+	http := httpDNSClient{
+		HTTPClient: &httpClient,
+	}
 
-		if (in != nil && in.Truncated) ||
-			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
-			logf.V(logf.DebugLevel).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
-			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
-			// If the TCP request succeeds, the err will reset to nil
-			in, _, err = tcp.Exchange(m, ns)
+	// Will retry the request based on the number of servers (n+1)
+	for _, ns := range nameservers {
+		// If the TCP request succeeds, the err will reset to nil
+		if strings.HasPrefix(ns, "tls://") {
+			in, _, err = tcpTls.Exchange(m, strings.TrimPrefix(ns, "tls://"))
+
+		} else if strings.HasPrefix(ns, "https://") {
+			in, _, err = http.Exchange(context.TODO(), m, ns)
+
+		} else {
+			in, _, err = udp.Exchange(m, ns)
+
+			// Try TCP if UDP fails
+			if (in != nil && in.Truncated) ||
+				(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
+				logf.V(logf.DebugLevel).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
+				// If the TCP request succeeds, the err will reset to nil
+				in, _, err = tcp.Exchange(m, ns)
+			}
 		}
 
 		if err == nil {
@@ -259,6 +214,64 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		}
 	}
 	return
+}
+
+type httpDNSClient struct {
+	HTTPClient *http.Client
+}
+
+const dohMimeType = "application/dns-message"
+
+func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *dns.Msg, rtt time.Duration, err error) {
+	p, err := m.Pack()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, a, bytes.NewReader(p))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	req.Header.Set("Content-Type", dohMimeType)
+	req.Header.Set("Accept", dohMimeType)
+
+	hc := http.DefaultClient
+	if c.HTTPClient != nil {
+		hc = c.HTTPClient
+	}
+
+	req = req.WithContext(ctx)
+
+	t := time.Now()
+
+	resp, err := hc.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, 0, fmt.Errorf("dns: server returned HTTP %d error: %q", resp.StatusCode, resp.Status)
+	}
+
+	if ct := resp.Header.Get("Content-Type"); ct != dohMimeType {
+		return nil, 0, fmt.Errorf("dns: unexpected Content-Type %q; expected %q", ct, dohMimeType)
+	}
+
+	p, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rtt = time.Since(t)
+
+	r = new(dns.Msg)
+	if err := r.Unpack(p); err != nil {
+		return r, 0, err
+	}
+
+	return r, rtt, nil
 }
 
 func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers []string) error {

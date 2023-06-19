@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -30,7 +31,6 @@ import (
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cm "github.com/cert-manager/cert-manager/pkg/apis/certmanager"
-
 	challengescontroller "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
@@ -55,7 +55,6 @@ import (
 	csrvenaficontroller "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/venafi"
 	clusterissuerscontroller "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
 	issuerscontroller "github.com/cert-manager/cert-manager/pkg/controller/issuers"
-	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -88,10 +87,6 @@ type ControllerOptions struct {
 	ACMEHTTP01SolverRunAsNonRoot          bool
 	// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
 	ACMEHTTP01SolverNameservers []string
-
-	ACMEDNS01CheckMethod string
-
-	DnsOverHttpsJsonEndpoint string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -147,10 +142,6 @@ const (
 	defaultKubeconfig                 = ""
 	defaultKubernetesAPIQPS   float32 = 20
 	defaultKubernetesAPIBurst         = 50
-
-	defaultACMEDNS01CheckMethod = dnsutil.ACMEDNS01CheckViaDNSLookup
-
-	defaultDnsOverHttpsJsonEndpoint = dnsutil.DefaultDnsOverHttpsJsonEndpoint
 
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
@@ -271,8 +262,6 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultIssuerGroup:                defaultTLSACMEIssuerGroup,
 		DefaultAutoCertificateAnnotations: defaultAutoCertificateAnnotations,
 		ACMEHTTP01SolverNameservers:       []string{},
-		ACMEDNS01CheckMethod:              defaultACMEDNS01CheckMethod,
-		DnsOverHttpsJsonEndpoint:          defaultDnsOverHttpsJsonEndpoint,
 		DNS01RecursiveNameservers:         []string{},
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
@@ -336,17 +325,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
-
-	fs.StringVar(&s.ACMEDNS01CheckMethod, "acme-dns01-check-method", defaultACMEDNS01CheckMethod, fmt.Sprintf(
-		"[%s, %s] Method used to check DNS propagation during ACME DNS01 challenges. You may "+
-			"want to change this parameter if you run cert-manager with a different DNS view "+
-			"than the rest of the world (aka DNS split horizon).",
-		dnsutil.ACMEDNS01CheckViaDNSLookup, dnsutil.ACMEDNS01CheckViaHTTPS))
-
-	fs.StringVar(&s.DnsOverHttpsJsonEndpoint, "dns-over-https-json-endpoint", defaultDnsOverHttpsJsonEndpoint, fmt.Sprintf(
-		"Only used when specifying \"dns-over-https\" for the \"acme-dns01-check-method\" option. "+
-			"This allows specifying what JSON endpoint to use for doing the DNS-over-HTTPS verification."+
-			"Examples: 'https://1.1.1.1/dns-query', 'https://8.8.8.8/resolve', ''https://8.8.4.4/resolve'. or 'https://9.9.9.9:5053/dns-query'"))
 
 	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", defaultACMEHTTP01SolverResourceRequestCPU, ""+
 		"Defines the resource request CPU size when spawning new ACME HTTP01 challenge solver pods.")
@@ -457,18 +435,30 @@ func (o *ControllerOptions) Validate() error {
 		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
-	switch o.ACMEDNS01CheckMethod {
-	case dnsutil.ACMEDNS01CheckViaDNSLookup:
-	case dnsutil.ACMEDNS01CheckViaHTTPS:
-	default:
-		return fmt.Errorf("Unsupported DNS01 check method: %s", o.ACMEDNS01CheckMethod)
-	}
-
-	for _, server := range append(o.DNS01RecursiveNameservers, o.ACMEHTTP01SolverNameservers...) {
+	for _, server := range o.ACMEHTTP01SolverNameservers {
 		// ensure all servers have a port number
 		_, _, err := net.SplitHostPort(server)
 		if err != nil {
 			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+		}
+	}
+
+	for _, server := range o.DNS01RecursiveNameservers {
+		// ensure all servers follow one of the following formats:
+		// - <ip address>:<port>
+		// - https://<DoH RFC 8484 server address>
+		// - tls://<DoT RFC 7858 server address>
+
+		if strings.HasPrefix(server, "https://") || strings.HasPrefix(server, "tls://") {
+			_, err := url.ParseRequestURI(server)
+			if err != nil {
+				return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+			}
+		} else {
+			_, _, err := net.SplitHostPort(server)
+			if err != nil {
+				return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+			}
 		}
 	}
 

@@ -74,12 +74,6 @@ func applyDefaults(f *fixture) {
 		trueVal := true
 		f.useAuthoritative = &trueVal
 	}
-	if f.acmeDNS01CheckMethod == "" {
-		f.acmeDNS01CheckMethod = "dnslookup"
-	}
-	if f.dnsOverHttpsJsonEndpoint == "" {
-		f.dnsOverHttpsJsonEndpoint = "https://dns.google/resolve"
-	}
 }
 
 func validate(f *fixture) error {

@@ -108,7 +108,7 @@ func allConditions(c ...wait.ConditionWithContextFunc) wait.ConditionWithContext
 
 func (f *fixture) recordHasPropagatedCheck(fqdn, value string) func(ctx context.Context) (bool, error) {
 	return func(ctx context.Context) (bool, error) {
-		return util.PreCheckDNS(fqdn, value, []string{f.testDNSServer}, *f.useAuthoritative, f.acmeDNS01CheckMethod, f.dnsOverHttpsJsonEndpoint)
+		return util.PreCheckDNS(fqdn, value, []string{f.testDNSServer}, *f.useAuthoritative)
 	}
 }
 
