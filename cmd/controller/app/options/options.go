@@ -447,9 +447,8 @@ func (o *ControllerOptions) Validate() error {
 		// ensure all servers follow one of the following formats:
 		// - <ip address>:<port>
 		// - https://<DoH RFC 8484 server address>
-		// - tls://<DoT RFC 7858 server address>
 
-		if strings.HasPrefix(server, "https://") || strings.HasPrefix(server, "tls://") {
+		if strings.HasPrefix(server, "https://") {
 			_, err := url.ParseRequestURI(server)
 			if err != nil {
 				return fmt.Errorf("invalid DNS server (%v): %v", err, server)

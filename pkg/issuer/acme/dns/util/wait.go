@@ -47,7 +47,7 @@ const issuewildTag = "issuewild"
 
 var defaultNameservers = []string{
 	"8.8.8.8:53",
-	"https://dns.google/resolve",
+	"8.8.4.4:53",
 }
 
 var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
@@ -181,7 +181,6 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 
 	udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
 	tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
-	tcpTls := &dns.Client{Net: "tcp-tls", Timeout: DNSTimeout}
 	httpClient := *http.DefaultClient
 	httpClient.Timeout = DNSTimeout
 	http := httpDNSClient{
@@ -191,10 +190,7 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 	// Will retry the request based on the number of servers (n+1)
 	for _, ns := range nameservers {
 		// If the TCP request succeeds, the err will reset to nil
-		if strings.HasPrefix(ns, "tls://") {
-			in, _, err = tcpTls.Exchange(m, strings.TrimPrefix(ns, "tls://"))
-
-		} else if strings.HasPrefix(ns, "https://") {
+		if strings.HasPrefix(ns, "https://") {
 			in, _, err = http.Exchange(context.TODO(), m, ns)
 
 		} else {
