@@ -273,30 +273,34 @@ func TestResolveConfServers(t *testing.T) {
 
 // TODO: find a website which uses issuewild?
 func TestValidateCAA(t *testing.T) {
-	// google installs a CAA record at google.com
-	// ask for the www.google.com record to test that
-	// we recurse up the labels
-	err := ValidateCAA("www.google.com", []string{"letsencrypt", "pki.goog"}, false, RecursiveNameservers)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	// now ask, expecting a CA that won't match
-	err = ValidateCAA("www.google.com", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
-	if err == nil {
-		t.Fatalf("expected err, got success")
-	}
-	// if the CAA record allows non-wildcards then it has an `issue` tag,
-	// and it is known that it has no issuewild tags, then wildcard certificates
-	// will also be allowed
-	err = ValidateCAA("www.google.com", []string{"pki.goog"}, true, RecursiveNameservers)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	// ask for a domain you know does not have CAA records.
-	// it should succeed
-	err = ValidateCAA("www.example.org", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
-	if err != nil {
-		t.Fatalf("expected err, got %s", err)
+
+	for _, nameservers := range [][]string{RecursiveNameservers, []string{"https://1.1.1.1/dns-query"}, []string{"https://8.8.8.8/dns-query"}} {
+
+		// google installs a CAA record at google.com
+		// ask for the www.google.com record to test that
+		// we recurse up the labels
+		err := ValidateCAA("www.google.com", []string{"letsencrypt", "pki.goog"}, false, nameservers)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		// now ask, expecting a CA that won't match
+		err = ValidateCAA("www.google.com", []string{"daniel.homebrew.ca"}, false, nameservers)
+		if err == nil {
+			t.Fatalf("expected err, got success")
+		}
+		// if the CAA record allows non-wildcards then it has an `issue` tag,
+		// and it is known that it has no issuewild tags, then wildcard certificates
+		// will also be allowed
+		err = ValidateCAA("www.google.com", []string{"pki.goog"}, true, nameservers)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		// ask for a domain you know does not have CAA records.
+		// it should succeed
+		err = ValidateCAA("www.example.org", []string{"daniel.homebrew.ca"}, false, nameservers)
+		if err != nil {
+			t.Fatalf("expected err, got %s", err)
+		}
 	}
 }
 
