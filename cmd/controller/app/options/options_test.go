@@ -17,11 +17,11 @@ limitations under the License.
 package options
 
 import (
-	"k8s.io/component-base/logs"
 	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/component-base/logs"
 )
 
 func TestEnabledControllers(t *testing.T) {
