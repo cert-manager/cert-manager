@@ -98,8 +98,11 @@ type ControllerOptions struct {
 	DefaultAutoCertificateAnnotations []string
 
 	// Allows specifying a list of custom nameservers to perform DNS checks on.
-	// For DNS lookups, this can be either specified like `<ip address>:<port>`.
-	// For DNS over HTTPS lookups, this can be specified like `https://<DoH RFC 8484 server address>`.
+	// Each nameserver can be either the IP address and port of a standard
+	// recursive DNS server, or the endpoint to an RFC 8484 DNS over HTTPS
+	// endpoint. For example, the following values are valid:
+	//  - "8.8.8.8:53" (Standard DNS)
+	//  - "https://1.1.1.1/dns-query" (DNS over HTTPS)
 	DNS01RecursiveNameservers []string
 	// Allows controlling if recursive nameservers are only used for all checks.
 	// Normally authoritative nameservers are used for checking propagation.
