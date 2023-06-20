@@ -167,7 +167,7 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 	switch rtype {
 	case dns.TypeCAA, dns.TypeCNAME, dns.TypeNS, dns.TypeSOA, dns.TypeTXT:
 	default:
-		// For all other types, we don't have a implementation (yet)
+		// We explicitly specified here what types are supported, so we can more confidently create tests for this function.
 		return nil, fmt.Errorf("unsupported DNS record type %d", rtype)
 	}
 
