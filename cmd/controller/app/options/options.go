@@ -98,6 +98,8 @@ type ControllerOptions struct {
 	DefaultAutoCertificateAnnotations []string
 
 	// Allows specifying a list of custom nameservers to perform DNS checks on.
+	// For DNS lookups, this can be either specified like `<ip address>:<port>`.
+	// For DNS over HTTPS lookups, this can be specified like `https://<DoH RFC 8484 server address>`.
 	DNS01RecursiveNameservers []string
 	// Allows controlling if recursive nameservers are only used for all checks.
 	// Normally authoritative nameservers are used for checking propagation.
@@ -363,10 +365,13 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
 	fs.StringVar(&s.DefaultIssuerGroup, "default-issuer-group", defaultTLSACMEIssuerGroup, ""+
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
+
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
 		[]string{}, "A list of comma separated dns server endpoints used for "+
-			"DNS01 check requests. This should be a list containing host and "+
-			"port, for example 8.8.8.8:53,8.8.4.4:53")
+			"DNS01 and DNS-over-HTTPS check requests. This should be a list containing entries of the following format: "+
+			"For DNS01 checks: `<ip address>:<port>`, for example: `8.8.8.8:53,8.8.4.4:53`. For DNS-over-HTTPS checks: "+
+			"`https://<DoH RFC 8484 server address>`, for example: `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query")
+
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		defaultDNS01RecursiveNameserversOnly,
 		"When true, cert-manager will only ever query the configured DNS resolvers "+
