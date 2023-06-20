@@ -371,7 +371,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"This should be a list containing entries of the following formats: `<ip address>:<port>` or `https://<DoH RFC 8484 server address>`. "+
 			"For example: `8.8.8.8:53,8.8.4.4:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
 			"To make sure ALL DNS requests happen through DoH, `dns01-recursive-nameservers-only` should also be set to true.")
-		
+
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		defaultDNS01RecursiveNameserversOnly,
 		"When true, cert-manager will only ever query the configured DNS resolvers "+
