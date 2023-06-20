@@ -75,7 +75,7 @@ func TestValidate(t *testing.T) {
 			DNS01RecursiveServers: []string{"192.168.0.1:53", "10.0.0.1:5353"},
 			expError:              "",
 		},
-		"if valid DNS servers with DoH server addresses including https prefix, return no errors, ": {
+		"if valid DNS servers with DoH server addresses including https prefix, return no errors": {
 			DNS01RecursiveServers: []string{"https://dns.example.com", "https://doh.server"},
 			expError:              "",
 		},
