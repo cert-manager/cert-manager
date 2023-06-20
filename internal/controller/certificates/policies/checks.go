@@ -166,6 +166,10 @@ func SecretIssuerAnnotationsNotUpToDate(input Input) (string, string, bool) {
 	return "", "", false
 }
 
+// SecretCertificateMatchesSpec checks that the current CertificateRequest contains a CSR that is
+// signed by the key stored in the Secret. A failure is often caused by the Secret being changed
+// outside of the control of cert-manager, causing the current CertificateRequest to no longer
+// match what is stored in the Secret.
 func SecretPublicKeysDiffersFromCurrentCertificateRequest(input Input) (string, string, bool) {
 	if input.CurrentRevisionRequest == nil {
 		return "", "", false
