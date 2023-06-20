@@ -368,9 +368,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
 		[]string{}, "A list of comma separated dns server endpoints used for "+
-			"DNS01 and DNS-over-HTTPS check requests. This should be a list containing entries of the following format: "+
-			"For DNS01 checks: `<ip address>:<port>`, for example: `8.8.8.8:53,8.8.4.4:53`. For DNS-over-HTTPS checks: "+
-			"`https://<DoH RFC 8484 server address>`, for example: `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query")
+			"DNS01 and DNS-over-HTTPS (DoH) check requests. This should be a list containing entries of the following format: "+
+			"For DNS01 checks: `<ip address>:<port>`, for example: `8.8.8.8:53,8.8.4.4:53`. For DoH checks: "+
+			"`https://<DoH RFC 8484 server address>`, for example: `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
+			"In the case of using DoH checks, `dns01-recursive-nameservers-only` should be set to true. ")
 
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		defaultDNS01RecursiveNameserversOnly,
