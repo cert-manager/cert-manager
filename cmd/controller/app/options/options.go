@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -97,6 +98,11 @@ type ControllerOptions struct {
 	DefaultAutoCertificateAnnotations []string
 
 	// Allows specifying a list of custom nameservers to perform DNS checks on.
+	// Each nameserver can be either the IP address and port of a standard
+	// recursive DNS server, or the endpoint to an RFC 8484 DNS over HTTPS
+	// endpoint. For example, the following values are valid:
+	//  - "8.8.8.8:53" (Standard DNS)
+	//  - "https://1.1.1.1/dns-query" (DNS over HTTPS)
 	DNS01RecursiveNameservers []string
 	// Allows controlling if recursive nameservers are only used for all checks.
 	// Normally authoritative nameservers are used for checking propagation.
@@ -362,10 +368,13 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
 	fs.StringVar(&s.DefaultIssuerGroup, "default-issuer-group", defaultTLSACMEIssuerGroup, ""+
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
+
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
-		[]string{}, "A list of comma separated dns server endpoints used for "+
-			"DNS01 check requests. This should be a list containing host and "+
-			"port, for example 8.8.8.8:53,8.8.4.4:53")
+		[]string{}, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+
+			"This should be a list containing entries of the following formats: `<ip address>:<port>` or `https://<DoH RFC 8484 server address>`. "+
+			"For example: `8.8.8.8:53,8.8.4.4:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
+			"To make sure ALL DNS requests happen through DoH, `dns01-recursive-nameservers-only` should also be set to true.")
+
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		defaultDNS01RecursiveNameserversOnly,
 		"When true, cert-manager will only ever query the configured DNS resolvers "+
@@ -434,11 +443,29 @@ func (o *ControllerOptions) Validate() error {
 		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
-	for _, server := range append(o.DNS01RecursiveNameservers, o.ACMEHTTP01SolverNameservers...) {
+	for _, server := range o.ACMEHTTP01SolverNameservers {
 		// ensure all servers have a port number
 		_, _, err := net.SplitHostPort(server)
 		if err != nil {
 			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+		}
+	}
+
+	for _, server := range o.DNS01RecursiveNameservers {
+		// ensure all servers follow one of the following formats:
+		// - <ip address>:<port>
+		// - https://<DoH RFC 8484 server address>
+
+		if strings.HasPrefix(server, "https://") {
+			_, err := url.ParseRequestURI(server)
+			if err != nil {
+				return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+			}
+		} else {
+			_, _, err := net.SplitHostPort(server)
+			if err != nil {
+				return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+			}
 		}
 	}
 

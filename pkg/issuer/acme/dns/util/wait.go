@@ -9,8 +9,12 @@ this directory.
 package util
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -153,13 +157,20 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, nil
 		}
 	}
-
+	logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS Lookup method was successful")
 	return true, nil
 }
 
 // DNSQuery will query a nameserver, iterating through the supplied servers as it retries
 // The nameserver should include a port, to facilitate testing where we talk to a mock dns server.
 func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
+	switch rtype {
+	case dns.TypeCAA, dns.TypeCNAME, dns.TypeNS, dns.TypeSOA, dns.TypeTXT:
+	default:
+		// We explicitly specified here what types are supported, so we can more confidently create tests for this function.
+		return nil, fmt.Errorf("unsupported DNS record type %d", rtype)
+	}
+
 	m := new(dns.Msg)
 	m.SetQuestion(fqdn, rtype)
 	m.SetEdns0(4096, false)
@@ -168,18 +179,30 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		m.RecursionDesired = false
 	}
 
-	// Will retry the request based on the number of servers (n+1)
-	for i := 1; i <= len(nameservers)+1; i++ {
-		ns := nameservers[i%len(nameservers)]
-		udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
-		in, _, err = udp.Exchange(m, ns)
+	udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
+	tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
+	httpClient := *http.DefaultClient
+	httpClient.Timeout = DNSTimeout
+	http := httpDNSClient{
+		HTTPClient: &httpClient,
+	}
 
-		if (in != nil && in.Truncated) ||
-			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
-			logf.V(logf.DebugLevel).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
-			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
-			// If the TCP request succeeds, the err will reset to nil
-			in, _, err = tcp.Exchange(m, ns)
+	// Will retry the request based on the number of servers (n+1)
+	for _, ns := range nameservers {
+		// If the TCP request succeeds, the err will reset to nil
+		if strings.HasPrefix(ns, "https://") {
+			in, _, err = http.Exchange(context.TODO(), m, ns)
+
+		} else {
+			in, _, err = udp.Exchange(m, ns)
+
+			// Try TCP if UDP fails
+			if (in != nil && in.Truncated) ||
+				(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
+				logf.V(logf.DebugLevel).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
+				// If the TCP request succeeds, the err will reset to nil
+				in, _, err = tcp.Exchange(m, ns)
+			}
 		}
 
 		if err == nil {
@@ -187,6 +210,64 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		}
 	}
 	return
+}
+
+type httpDNSClient struct {
+	HTTPClient *http.Client
+}
+
+const dohMimeType = "application/dns-message"
+
+func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *dns.Msg, rtt time.Duration, err error) {
+	p, err := m.Pack()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, a, bytes.NewReader(p))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	req.Header.Set("Content-Type", dohMimeType)
+	req.Header.Set("Accept", dohMimeType)
+
+	hc := http.DefaultClient
+	if c.HTTPClient != nil {
+		hc = c.HTTPClient
+	}
+
+	req = req.WithContext(ctx)
+
+	t := time.Now()
+
+	resp, err := hc.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, 0, fmt.Errorf("dns: server returned HTTP %d error: %q", resp.StatusCode, resp.Status)
+	}
+
+	if ct := resp.Header.Get("Content-Type"); ct != dohMimeType {
+		return nil, 0, fmt.Errorf("dns: unexpected Content-Type %q; expected %q", ct, dohMimeType)
+	}
+
+	p, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rtt = time.Since(t)
+
+	r = new(dns.Msg)
+	if err := r.Unpack(p); err != nil {
+		return r, 0, err
+	}
+
+	return r, rtt, nil
 }
 
 func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers []string) error {

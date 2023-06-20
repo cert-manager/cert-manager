@@ -17,9 +17,11 @@ limitations under the License.
 package options
 
 import (
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/component-base/logs"
 )
 
 func TestEnabledControllers(t *testing.T) {
@@ -59,6 +61,51 @@ func TestEnabledControllers(t *testing.T) {
 			if !got.Equal(test.expEnabled) {
 				t.Errorf("got unexpected enabled, exp=%s got=%s",
 					test.expEnabled, got)
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := map[string]struct {
+		DNS01RecursiveServers []string
+		expError              string
+	}{
+		"if valid dns servers with ip address and port, return no errors": {
+			DNS01RecursiveServers: []string{"192.168.0.1:53", "10.0.0.1:5353"},
+			expError:              "",
+		},
+		"if valid DNS servers with DoH server addresses including https prefix, return no errors": {
+			DNS01RecursiveServers: []string{"https://dns.example.com", "https://doh.server"},
+			expError:              "",
+		},
+		"if invalid DNS server format due to missing https prefix, return 'invalid DNS server' error": {
+			DNS01RecursiveServers: []string{"dns.example.com"},
+			expError:              "invalid DNS server",
+		},
+		"if invalid DNS server format due to invalid IP address length and no port, return 'invalid DNS server' error": {
+			DNS01RecursiveServers: []string{"192.168.0.1.53"},
+			expError:              "invalid DNS server",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			o := ControllerOptions{
+				DNS01RecursiveNameservers: test.DNS01RecursiveServers,
+				DefaultIssuerKind:         defaultTLSACMEIssuerKind,
+				KubernetesAPIBurst:        defaultKubernetesAPIBurst,
+				KubernetesAPIQPS:          defaultKubernetesAPIQPS,
+				Logging:                   logs.NewOptions(),
+			}
+
+			err := o.Validate()
+			if test.expError != "" {
+				if err == nil || !strings.Contains(err.Error(), test.expError) {
+					t.Errorf("expected error containing '%s', but got: %v", test.expError, err)
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
 			}
 		})
 	}
