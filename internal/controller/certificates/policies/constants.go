@@ -30,8 +30,7 @@ const (
 	// the Input Secret could not be parsed or decoded.
 	InvalidCertificate string = "InvalidCertificate"
 	// InvalidCertificateRequest is a policy violation whereby the CSR in
-	// the Input CertificateRequest could not be parsed or decoded or is
-	// eg. signed using an unknown key.
+	// the Input CertificateRequest could not be parsed or decoded.
 	InvalidCertificateRequest string = "InvalidCertificateRequest"
 
 	// SecretMismatch is a policy violation reason for a scenario where Secret's

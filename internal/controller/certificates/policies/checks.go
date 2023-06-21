@@ -166,11 +166,11 @@ func SecretIssuerAnnotationsNotUpToDate(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-// SecretCertificateMatchesSpec checks that the current CertificateRequest contains a CSR that is
-// signed by the key stored in the Secret. A failure is often caused by the Secret being changed
-// outside of the control of cert-manager, causing the current CertificateRequest to no longer
-// match what is stored in the Secret.
-func SecretPublicKeysDiffersFromCurrentCertificateRequest(input Input) (string, string, bool) {
+// SecretPublicKeyDiffersFromCurrentCertificateRequest checks that the current CertificateRequest
+// contains a CSR that is signed by the key stored in the Secret. A failure is often caused by the
+// Secret being changed outside of the control of cert-manager, causing the current CertificateRequest
+// to no longer match what is stored in the Secret.
+func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) (string, string, bool) {
 	if input.CurrentRevisionRequest == nil {
 		return "", "", false
 	}
@@ -189,7 +189,7 @@ func SecretPublicKeysDiffersFromCurrentCertificateRequest(input Input) (string, 
 		return InvalidCertificateRequest, fmt.Sprintf("CertificateRequest's public key is invalid: %v", err), true
 	}
 	if !equal {
-		return InvalidCertificateRequest, "Secret contains a private key that does not match the current CertificateRequest", true
+		return SecretMismatch, "Secret contains a private key that does not match the current CertificateRequest", true
 	}
 
 	return "", "", false

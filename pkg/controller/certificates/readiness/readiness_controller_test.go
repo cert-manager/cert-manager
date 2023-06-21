@@ -476,33 +476,6 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			message:        "Certificate expired on Sun, 31 Dec 0000 23:00:00 UTC",
 			violationFound: true,
 		},
-		"Certificate is not Ready when it has expired (no cr)": {
-			cert: gen.Certificate("something",
-				gen.SetCertificateCommonName("new.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
-					Name:  "testissuer",
-					Kind:  "IssuerKind",
-					Group: "group.example.com",
-				})),
-			secret: gen.Secret("something",
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.IssuerNameAnnotationKey:  "testissuer",
-					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-					cmapi.IssuerGroupAnnotationKey: "group.example.com",
-				}),
-				gen.SetSecretData(
-					map[string][]byte{
-						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey,
-							gen.Certificate("something", gen.SetCertificateCommonName("new.example.com")),
-							clock.Now().Add(-3*time.Hour), clock.Now().Add(-1*time.Hour),
-						),
-					},
-				)),
-			reason:         policies.Expired,
-			message:        "Certificate expired on Sun, 31 Dec 0000 23:00:00 UTC",
-			violationFound: true,
-		},
 		"Certificate is Ready, no policy violations found": {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),

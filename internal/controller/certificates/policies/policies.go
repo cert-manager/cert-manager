@@ -72,7 +72,7 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 		SecretPublicKeysDiffer,
 		SecretPrivateKeyMatchesSpec,
 		SecretIssuerAnnotationsNotUpToDate,
-		SecretPublicKeysDiffersFromCurrentCertificateRequest,
+		SecretPublicKeyDiffersFromCurrentCertificateRequest,
 		CurrentCertificateRequestNotValidForSpec,
 		CurrentCertificateNearingExpiry(c),
 	}
@@ -85,7 +85,7 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 		SecretDoesNotExist,
 		SecretIsMissingData,
 		SecretPublicKeysDiffer,
-		SecretPublicKeysDiffersFromCurrentCertificateRequest,
+		SecretPublicKeyDiffersFromCurrentCertificateRequest,
 		CurrentCertificateRequestNotValidForSpec,
 		CurrentCertificateHasExpired(c),
 	}
