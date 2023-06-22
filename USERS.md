@@ -18,6 +18,7 @@ We'd love for you to share your cert-manager story with the world!
 | [<img src="https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/main/logos/kubernetes-cluster-logos_final-02.svg" alt="Cluster API" width="100"> ](https://cluster-api.sigs.k8s.io/) | Securing webhooks | [The Cluster API Book](https://cluster-api.sigs.k8s.io/) |
 | [<img src="https://cloudogu.com/images/logo.png" alt="Cloudogu Logo" width="100"> ](https://cloudogu.com) | Securing Ingresses | [@cloudogu](https://github.com/cloudogu) [Blog](https://platform.cloudogu.com/en/blog/) |
 | [<img src="https://raw.githubusercontent.com/metal3-io/metal3-docs/main/images/metal3.svg" alt="Metal³" width="100"> ](https://metal3.io/) | Securing webhooks and internal workloads | [metal3.io](https://metal3.io/) |
+| [<img src="https://senselabs.de/img/logo.svg" alt="SenseLabs" width="100">](https://senselabs.de) | Generating certificates and securing Ingresses | [SenseLabs](https://senselabs.de) |
 
 ## Individuals
 
