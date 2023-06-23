@@ -213,7 +213,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			message: "Issuing certificate as Secret was previously issued by IssuerKind.new.example.com/testissuer",
 			reissue: true,
 		},
-		"trigger issuance as current CertificateRequest is not signed with private key": {
+		"trigger if the Secret contains a different private key than was used to sign the CSR": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
@@ -234,7 +234,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 					CommonName: "example.com",
 				}}),
 			}},
-			reason:  InvalidCertificateRequest,
+			reason:  SecretMismatch,
 			message: "Secret contains a private key that does not match the current CertificateRequest",
 			reissue: true,
 		},
