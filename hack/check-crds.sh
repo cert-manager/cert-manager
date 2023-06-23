@@ -40,8 +40,7 @@ if [[ -z $yq ]]; then
 fi
 
 echo "+++ verifying that generated CRDs are up-to-date..." >&2
-
-tmpdir="$(mktemp -d tmp-CHECKCRD-XXXXXXXXX --tmpdir)"
+tmpdir="$(mktemp -d tmp-CHECKCRD-XXXXXXXXX)"
 trap 'rm -r $tmpdir' EXIT
 
 make PATCH_CRD_OUTPUT_DIR=$tmpdir patch-crds
