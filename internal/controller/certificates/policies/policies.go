@@ -96,6 +96,9 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 // correctness of metadata and output formats of Certificate's Secrets.
 func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string) Chain {
 	return Chain{
+		SecretBaseLabelsMismatch,
+		SecretCertificateDetailsAnnotationsMismatch,
+		SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager),
 		SecretTemplateMismatchesSecret,
 		SecretTemplateMismatchesSecretManagedFields(fieldManager),
 		SecretAdditionalOutputFormatsDataMismatch,
@@ -103,7 +106,6 @@ func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string)
 		SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled, fieldManager),
 		SecretOwnerReferenceValueMismatch(ownerRefEnabled),
 		SecretKeystoreFormatMatchesSpec,
-		SecretBaseLabelsAreMissing,
 	}
 }
 

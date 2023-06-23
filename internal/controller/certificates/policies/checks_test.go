@@ -537,7 +537,126 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 	}
 }
 
-func Test_SecretTemplateMismatchesSecret(t *testing.T) {
+func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
+	const fieldManager = "cert-manager-unit-test"
+
+	var (
+		fixedClockStart = time.Now()
+		fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
+		baseCertBundle  = testcrypto.MustCreateCryptoBundle(t,
+			gen.Certificate("test-certificate", gen.SetCertificateCommonName("cert-manager")), fixedClock)
+	)
+
+	tests := map[string]struct {
+		secretManagedFields []metav1.ManagedFieldsEntry
+		secretData          map[string][]byte
+
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"if there are no cert-manager annotations and the certificate data is nil, should return false": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if optional cert-manager annotations are present with no certificate data, should return false": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							},
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if cert-manager annotations are present with certificate data, should return false": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							},
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {},
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names":  {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			secretData:   map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if required and optional cert-manager annotations are present with certificate data but certificate data is nil, should return true": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							},
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {},
+								"f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretManagedMetadataMismatch,
+			expMessage:   "Secret has these extra Annotations: [cert-manager.io/uri-sans]",
+			expViolation: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager)(Input{
+				Secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: test.secretData},
+			})
+
+			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
+			assert.Equal(t, test.expMessage, gotMessage, "unexpected message")
+			assert.Equal(t, test.expViolation, gotViolation, "unexpected violation")
+		})
+	}
+}
+
+func Test_SecretSecretTemplateMismatch(t *testing.T) {
 	tests := map[string]struct {
 		tmpl         *cmapi.CertificateSecretTemplate
 		secret       *corev1.Secret
@@ -683,20 +802,12 @@ func Test_SecretTemplateMismatchesSecret(t *testing.T) {
 	}
 }
 
-func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
+func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 	const fieldManager = "cert-manager-unit-test"
-
-	var (
-		fixedClockStart = time.Now()
-		fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
-		baseCertBundle  = testcrypto.MustCreateCryptoBundle(t,
-			gen.Certificate("test-certificate", gen.SetCertificateCommonName("cert-manager")), fixedClock)
-	)
 
 	tests := map[string]struct {
 		tmpl                *cmapi.CertificateSecretTemplate
 		secretManagedFields []metav1.ManagedFieldsEntry
-		secretData          map[string][]byte
 
 		expReason    string
 		expMessage   string
@@ -741,7 +852,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			},
 			secretManagedFields: nil,
 			expReason:           SecretTemplateMismatch,
-			expMessage:          "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:          "Secret is missing these Template Labels: [abc]",
 			expViolation:        true,
 		},
 		"if template is nil but managed fields is not nil, should return true": {
@@ -759,7 +870,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "SecretTemplate is nil, but Secret contains extra managed entries",
+			expMessage:   "Secret has these extra Labels: [abc]",
 			expViolation: true,
 		},
 		"if template annotations do not match managed fields, should return true": {
@@ -782,7 +893,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Annotations: [foo2]",
 			expViolation: true,
 		},
 		"if template labels do not match managed fields, should return true": {
@@ -805,7 +916,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Labels: [def]",
 			expViolation: true,
 		},
 		"if template annotations and labels match managed fields, should return false": {
@@ -852,7 +963,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret has these extra Annotations: [foo3]",
 			expViolation: true,
 		},
 		"if template labels is a subset of managed fields, return true": {
@@ -876,7 +987,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret has these extra Labels: [ghi]",
 			expViolation: true,
 		},
 		"if managed fields annotations is a subset of template, return true": {
@@ -899,7 +1010,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Annotations: [foo3]",
 			expViolation: true,
 		},
 		"if managed fields labels is a subset of template, return true": {
@@ -922,7 +1033,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Labels: [ghi]",
 			expViolation: true,
 		},
 		"if managed fields matches template but is split across multiple managed fields, should return false": {
@@ -968,7 +1079,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			expMessage:   "",
 			expViolation: false,
 		},
-		"if managed fields matches template and base cert-manager annotations are present with no certificate data, should return false": {
+		"if managed fields matches template and cert-manager annotations are present, should return false": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 			},
@@ -978,10 +1089,8 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {},
-								"f:cert-manager.io/certificate-name": {},
-								"f:cert-manager.io/issuer-name": {},
-								"f:cert-manager.io/issuer-kind": {},
-								"f:cert-manager.io/issuer-group": {}
+								"f:cert-manager.io/foo1": {},
+								"f:cert-manager.io/foo2": {}
 							}
 						}}`),
 				}},
@@ -990,64 +1099,13 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			expMessage:   "",
 			expViolation: false,
 		},
-		"if managed fields matches template and base cert-manager annotations are present with certificate data, should return false": {
-			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-			},
-			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:foo1": {},
-								"f:foo2": {},
-								"f:cert-manager.io/certificate-name": {},
-								"f:cert-manager.io/issuer-name": {},
-								"f:cert-manager.io/issuer-kind": {},
-								"f:cert-manager.io/issuer-group": {},
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names":  {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {}
-							}
-						}}`),
-				}},
-			},
-			secretData:   map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes},
-			expViolation: false,
-		},
-		"if managed fields matches template and base cert-manager annotations are present with certificate data but certificate data is nil, should return true": {
-			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-			},
-			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:foo1": {},
-								"f:foo2": {},
-								"f:cert-manager.io/certificate-name": {},
-								"f:cert-manager.io/issuer-name": {},
-								"f:cert-manager.io/issuer-kind": {},
-								"f:cert-manager.io/issuer-group": {},
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names":  {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {}
-							}
-						}}`),
-				}},
-			},
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
-			expViolation: true,
-		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecretManagedFields(fieldManager)(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
-				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: test.secretData},
+				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: map[string][]byte{}},
 			})
 
 			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
