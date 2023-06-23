@@ -213,6 +213,31 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			message: "Issuing certificate as Secret was previously issued by IssuerKind.new.example.com/testissuer",
 			reissue: true,
 		},
+		"trigger if the Secret contains a different private key than was used to sign the CSR": {
+			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(
+						t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+					),
+				},
+			},
+			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
+				IssuerRef: cmmeta.ObjectReference{
+					Name:  "testissuer",
+					Kind:  "IssuerKind",
+					Group: "group.example.com",
+				},
+				Request: testcrypto.MustGenerateCSRImpl(t, testcrypto.MustCreatePEMPrivateKey(t), &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+				}}),
+			}},
+			reason:  SecretMismatch,
+			message: "Secret contains a private key that does not match the current CertificateRequest",
+			reissue: true,
+		},
 		// we only have a basic test here for this as unit tests for the
 		// `pki.RequestMatchesSpec` function cover all other cases.
 		"trigger issuance when CertificateRequest does not match certificate spec": {
