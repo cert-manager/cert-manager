@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
@@ -100,7 +101,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 					IssuerRef: cmmeta.ObjectReference{Name: "test"},
 				},
 			},
-			expectError: false,
+			expectError: true,
+			errorSuffix: "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[3] != []certmanager.KeyUsage[2]]",
 		},
 		"No errors on valid certificaterequest with special usages only set in spec": {
 			input: &cmapi.CertificateRequest{
@@ -111,8 +113,9 @@ func TestValidationCertificateRequests(t *testing.T) {
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
-							DNSNames: []string{"example.com"},
-							Usages:   []cmapi.KeyUsage{},
+							DNSNames:              []string{"example.com"},
+							Usages:                []cmapi.KeyUsage{},
+							EncodeUsagesInRequest: pointer.Bool(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -150,8 +153,9 @@ func TestValidationCertificateRequests(t *testing.T) {
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
-							DNSNames: []string{"example.com"},
-							Usages:   []cmapi.KeyUsage{},
+							DNSNames:              []string{"example.com"},
+							Usages:                []cmapi.KeyUsage{},
+							EncodeUsagesInRequest: pointer.Bool(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},

@@ -95,15 +95,22 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
 		} else {
-			// only compare usages if set on CR and in the CSR
-			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
+			// only compare usages if set on the CSR
+			if len(csr.Extensions) > 0 {
+				if len(crSpec.Usages) == 0 {
+					crSpec.Usages = defaultInternalKeyUsages
+				}
+
 				if crSpec.IsCA {
 					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
 				}
+
 				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
 				if len(err) > 0 {
 					el = append(el, err...)
-				} else if len(csrUsages) > 0 && !isUsageEqual(csrUsages, crSpec.Usages) && !isUsageEqual(csrUsages, defaultInternalKeyUsages) {
+				}
+
+				if len(csrUsages) > 0 && !isUsageEqual(csrUsages, crSpec.Usages) {
 					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages, these should match if both are set: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)))))
 				}
 			}
