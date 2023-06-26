@@ -80,7 +80,7 @@ e2e-setup-kind: kind-exists
 $(BINDIR)/scratch/kind-exists: make/config/kind/cluster.yaml preload-kind-image make/cluster.sh FORCE | $(BINDIR)/scratch $(NEEDS_KIND) $(NEEDS_KUBECTL) $(NEEDS_YQ)
 	@$(eval KIND_CLUSTER_NAME ?= kind)
 	@make/cluster.sh --name $(KIND_CLUSTER_NAME)
-	@if [ "$(shell cat $@ 2>/dev/null)" != kind ]; then echo kind > $@; else touch $@; fi
+	@if [ "$(shell cat $@ 2>/dev/null)" != $(KIND_CLUSTER_NAME) ]; then echo $(KIND_CLUSTER_NAME) > $@; else touch $@; fi
 
 .PHONY: kind-exists
 kind-exists: $(BINDIR)/scratch/kind-exists
