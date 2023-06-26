@@ -431,8 +431,9 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 
 	_, err = a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sel.Name,
-			Namespace: ns,
+			Name:            sel.Name,
+			Namespace:       ns,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(a.issuer, a.issuer.GetObjectKind().GroupVersionKind())},
 		},
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
