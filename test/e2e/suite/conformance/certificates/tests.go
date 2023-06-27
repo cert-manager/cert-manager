@@ -785,9 +785,9 @@ func (s *Suite) Define() {
 			var certName string
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			altNames := strings.Join([]string{
+				domain,
 				e2eutil.RandomSubdomain(s.DomainSuffix),
 				e2eutil.RandomSubdomain(domain),
-				domain,
 			}, ",")
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
