@@ -26,7 +26,7 @@ source ./make/kind_images.sh
 
 mode=kind
 k8s_version=1.27
-kind_cluster_name=kind
+name=kind
 
 help() {
   cat <<EOF
@@ -68,6 +68,10 @@ while [ $# -ne 0 ]; do
     help
     exit 0
     ;;
+    # This block of code will create the variable associated the flags,
+    # $mode, $name, and $k8s_version and then set them to the value provided.
+    # E.g. "--name pinto" will create the variable named "name" set to the
+    # value "pinto"--equivalent to name="pinto"
   --mode | --name | --k8s-version)
     if [ $# -lt 2 ]; then
       echo "$1 requires an argument" >&2
@@ -93,6 +97,8 @@ while [ $# -ne 0 ]; do
   esac
   shift
 done
+
+kind_cluster_name=${name}
 
 if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
   k8s_version="$K8S_VERSION"
