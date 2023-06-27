@@ -55,6 +55,7 @@ func Test_translateAnnotations(t *testing.T) {
 			cmapi.SubjectStreetAddressesAnnotationKey:     `"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`,
 			cmapi.SubjectPostalCodesAnnotationKey:         "ABC123",
 			cmapi.SubjectSerialNumberAnnotationKey:        "123456",
+			cmapi.AltNamesAnnotationKey:                   "example.com,test.example.com",
 		}
 	}
 
@@ -77,6 +78,15 @@ func Test_translateAnnotations(t *testing.T) {
 				joinedAddresses, joinErr := cmutil.JoinWithEscapeCSV(crt.Spec.Subject.StreetAddresses)
 				a.Equal(nil, joinErr)
 				a.Equal(`"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`, joinedAddresses)
+
+				splitAltNames, splitErr := cmutil.SplitWithEscapeCSV("example.com,test.example.com")
+				a.Equal(nil, splitErr)
+				a.Equal(splitAltNames, crt.Spec.DNSNames)
+
+				joinedAltNames, joinErr := cmutil.JoinWithEscapeCSV(crt.Spec.DNSNames)
+				a.Equal(nil, joinErr)
+				a.Equal("example.com,test.example.com", joinedAltNames)
+
 			},
 		},
 		"success rsa private key algorithm": {
