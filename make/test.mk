@@ -128,7 +128,7 @@ e2e-ci: | $(NEEDS_GO)
 	make/e2e-ci.sh
 
 $(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
-	CGO_ENABLED=0 $(GINKGO) build --tags e2e_test test/e2e
+	CGO_ENABLED=0 $(GINKGO) build --ldflags="-w -s" --trimpath --tags e2e_test test/e2e
 	mv test/e2e/e2e.test $(BINDIR)/test/e2e.test
 
 .PHONY: e2e-build
