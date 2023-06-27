@@ -784,6 +784,11 @@ func (s *Suite) Define() {
 			}
 			var certName string
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			altNames := strings.Join([]string{
+				e2eutil.RandomSubdomain(s.DomainSuffix),
+				e2eutil.RandomSubdomain(domain),
+				domain,
+			}, ",")
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
 			revisionHistoryLimit := pointer.Int32(7)
@@ -805,6 +810,7 @@ func (s *Suite) Define() {
 					"cert-manager.io/issuer-kind":                 issuerRef.Kind,
 					"cert-manager.io/issuer-group":                issuerRef.Group,
 					"cert-manager.io/common-name":                 domain,
+					"cert-manager.io/alt-names":                   altNames,
 					"cert-manager.io/duration":                    duration.String(),
 					"cert-manager.io/renew-before":                renewBefore.String(),
 					"cert-manager.io/revision-history-limit":      strconv.FormatInt(int64(*revisionHistoryLimit), 10),
@@ -828,6 +834,7 @@ func (s *Suite) Define() {
 					"cert-manager.io/issuer-kind":                 issuerRef.Kind,
 					"cert-manager.io/issuer-group":                issuerRef.Group,
 					"cert-manager.io/common-name":                 domain,
+					"cert-manager.io/alt-names":                   altNames,
 					"cert-manager.io/duration":                    duration.String(),
 					"cert-manager.io/renew-before":                renewBefore.String(),
 					"cert-manager.io/revision-history-limit":      strconv.FormatInt(int64(*revisionHistoryLimit), 10),
@@ -857,7 +864,7 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(
 				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
-					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
+					Expect(certificate.Spec.DNSNames).To(ConsistOf(strings.Split(altNames, ",")))
 					Expect(certificate.Spec.CommonName).To(Equal(domain))
 					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
 					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
