@@ -47,6 +47,13 @@ const (
 	// This feature gate must be used together with LiteralCertificateSubject webhook feature gate.
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
+
+	// Owner (responsible for graduating feature through to GA): @inteon
+	// GA: v1.13
+	// DontAllowInsecureCSRUsageDefinition will prevent the webhook from allowing
+	// CertificateRequest's usages to be only defined in the CSR, while leaving
+	// the usages field empty.
+	DontAllowInsecureCSRUsageDefinition featuregate.Feature = "DontAllowInsecureCSRUsageDefinition"
 )
 
 func init() {
@@ -61,6 +68,8 @@ func init() {
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	DontAllowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
+
 	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
 }
