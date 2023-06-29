@@ -437,14 +437,12 @@ func SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string)
 		}
 
 		// Ignore the CertificateName and IssuerRef annotations as these cannot be set by the postIssuance controller.
-		for _, k := range []string{
+		managedAnnotations.Delete(
 			cmapi.CertificateNameKey,       // SecretCertificateNameAnnotationMismatch checks the value
 			cmapi.IssuerNameAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
 			cmapi.IssuerKindAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
 			cmapi.IssuerGroupAnnotationKey, // SecretIssuerAnnotationsMismatch checks the value
-		} {
-			delete(managedAnnotations, k)
-		}
+		)
 
 		// Remove the non cert-manager labels from the managed labels so we can compare
 		// 1 to 1 all the cert-manager labels.
