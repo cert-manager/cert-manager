@@ -3,9 +3,6 @@ kind: CustomResourceDefinition
 metadata:
   name: issuers.cert-manager.io
   labels:
-    app: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/instance: "{{ .Release.Name }}"
     # Generated labels {{- include "labels" . | nindent 4 }}
 spec:
   group: cert-manager.io
