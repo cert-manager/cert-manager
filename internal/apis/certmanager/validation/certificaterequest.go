@@ -30,9 +30,11 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	"github.com/cert-manager/cert-manager/pkg/apis/acme"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -95,16 +97,26 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
 		} else {
-			// only compare usages if set on CR and in the CSR
-			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
-				if crSpec.IsCA {
-					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
+			// in case DontAllowInsecureCSRUsageDefinition is disabled: only compare usages if set on the CR
+			// otherwise: always compare usages
+			if utilfeature.DefaultMutableFeatureGate.Enabled(feature.DontAllowInsecureCSRUsageDefinition) || len(crSpec.Usages) > 0 {
+				// set capacity to length to obtain a "copy-on-append" slice
+				crUsages := crSpec.Usages[:len(crSpec.Usages):len(crSpec.Usages)]
+				if len(crUsages) == 0 {
+					crUsages = defaultInternalKeyUsages[:len(defaultInternalKeyUsages):len(defaultInternalKeyUsages)]
 				}
+
+				if crSpec.IsCA {
+					crUsages = ensureCertSignIsSet(crUsages)
+				}
+
 				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
 				if len(err) > 0 {
 					el = append(el, err...)
-				} else if len(csrUsages) > 0 && !isUsageEqual(csrUsages, crSpec.Usages) && !isUsageEqual(csrUsages, defaultInternalKeyUsages) {
-					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages, these should match if both are set: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)))))
+				}
+
+				if len(csrUsages) > 0 && !isUsageEqual(csrUsages, crUsages) {
+					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages, these should match if both are set: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crUsages)))))
 				}
 			}
 		}
