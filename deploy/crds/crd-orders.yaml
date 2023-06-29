@@ -7,6 +7,9 @@ metadata:
     app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/instance: '{{ .Release.Name }}'
     # Generated labels {{- include "labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
 spec:
   group: acme.cert-manager.io
   names:
