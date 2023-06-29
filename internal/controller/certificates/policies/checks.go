@@ -446,7 +446,7 @@ func SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string)
 			delete(managedAnnotations, k)
 		}
 
-		// Remove the non cert-manager labels from the managed Annotations so we can compare
+		// Remove the non cert-manager labels from the managed labels so we can compare
 		// 1 to 1 all the cert-manager labels.
 		for k := range managedLabels {
 			if strings.HasPrefix(k, "cert-manager.io/") ||
