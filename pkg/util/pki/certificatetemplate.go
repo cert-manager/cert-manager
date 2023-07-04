@@ -20,30 +20,75 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"fmt"
+	"strings"
 	"time"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
+	"golang.org/x/exp/slices"
 	certificatesv1 "k8s.io/api/certificates/v1"
 )
 
-type CertificateTemplateMutator func(*x509.Certificate)
+type CertificateTemplateValidatorMutator func(*x509.CertificateRequest, *x509.Certificate) error
 
-// CertificateTemplateOverrideDuration returns a CertificateTemplateMutator that overrides the
+func hasExtension(checkReq *x509.CertificateRequest, extensionID asn1.ObjectIdentifier) bool {
+	for _, ext := range checkReq.Extensions {
+		if ext.Id.Equal(extensionID) {
+			return true
+		}
+	}
+
+	for _, ext := range checkReq.ExtraExtensions {
+		if ext.Id.Equal(extensionID) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// CertificateTemplateOverrideDuration returns a CertificateTemplateValidatorMutator that overrides the
 // certificate duration.
-func CertificateTemplateOverrideDuration(duration time.Duration) CertificateTemplateMutator {
-	return func(cert *x509.Certificate) {
+func CertificateTemplateOverrideDuration(duration time.Duration) CertificateTemplateValidatorMutator {
+	return func(req *x509.CertificateRequest, cert *x509.Certificate) error {
 		cert.NotBefore = time.Now()
 		cert.NotAfter = cert.NotBefore.Add(duration)
+		return nil
 	}
 }
 
-// CertificateTemplateOverrideBasicConstraints returns a CertificateTemplateMutator that overrides
+// CertificateTemplateValidateAndOverrideBasicConstraints returns a CertificateTemplateValidatorMutator that overrides
 // the certificate basic constraints.
-func CertificateTemplateOverrideBasicConstraints(isCA bool, maxPathLen *int) CertificateTemplateMutator {
-	return func(cert *x509.Certificate) {
+func CertificateTemplateValidateAndOverrideBasicConstraints(isCA bool, maxPathLen *int) CertificateTemplateValidatorMutator {
+	return func(req *x509.CertificateRequest, cert *x509.Certificate) error {
+		if hasExtension(req, OIDExtensionBasicConstraints) {
+			if !cert.BasicConstraintsValid {
+				return fmt.Errorf("encoded CSR error: BasicConstraintsValid is not true")
+			}
+
+			if cert.IsCA != isCA {
+				return fmt.Errorf("encoded CSR error: IsCA %v does not match expected value %v", cert.IsCA, isCA)
+			}
+
+			expectedMaxPathLen := 0
+			expectedMaxPathLenZero := false
+			if maxPathLen != nil {
+				expectedMaxPathLen = *maxPathLen
+				expectedMaxPathLenZero = *maxPathLen == 0
+			}
+
+			if cert.MaxPathLen != expectedMaxPathLen {
+				return fmt.Errorf("encoded CSR error: MaxPathLen %v does not match expected value %v", cert.MaxPathLen, expectedMaxPathLen)
+			}
+
+			if cert.MaxPathLenZero != expectedMaxPathLenZero {
+				return fmt.Errorf("encoded CSR error: MaxPathLenZero %v does not match expected value %v", cert.MaxPathLenZero, expectedMaxPathLenZero)
+			}
+		}
+
 		cert.BasicConstraintsValid = true
 		cert.IsCA = isCA
 		if maxPathLen != nil {
@@ -53,22 +98,68 @@ func CertificateTemplateOverrideBasicConstraints(isCA bool, maxPathLen *int) Cer
 			cert.MaxPathLen = 0
 			cert.MaxPathLenZero = false
 		}
+		return nil
 	}
 }
 
-// OverrideTemplateKeyUsages returns a CertificateTemplateMutator that overrides the
+// CertificateTemplateValidateAndOverrideKeyUsages returns a CertificateTemplateValidatorMutator that overrides the
 // certificate key usages.
-func CertificateTemplateOverrideKeyUsages(keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) CertificateTemplateMutator {
-	return func(cert *x509.Certificate) {
+func CertificateTemplateValidateAndOverrideKeyUsages(keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) CertificateTemplateValidatorMutator {
+	return func(req *x509.CertificateRequest, cert *x509.Certificate) error {
+		if hasExtension(req, OIDExtensionKeyUsage) || hasExtension(req, OIDExtensionExtendedKeyUsage) {
+			if cert.KeyUsage != keyUsage {
+				return fmt.Errorf("encoded CSR error: the KeyUsages %s do not match the expected KeyUsages %s",
+					printKeyUsage(apiutil.KeyUsageStrings(cert.KeyUsage)),
+					printKeyUsage(apiutil.KeyUsageStrings(keyUsage)),
+				)
+			}
+
+			if !slices.Equal(cert.ExtKeyUsage, extKeyUsage) {
+				return fmt.Errorf("encoded CSR error: the ExtKeyUsages %s do not match the expected ExtKeyUsages %s",
+					printKeyUsage(apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage)),
+					printKeyUsage(apiutil.ExtKeyUsageStrings(extKeyUsage)),
+				)
+			}
+		}
+
 		cert.KeyUsage = keyUsage
 		cert.ExtKeyUsage = extKeyUsage
+		return nil
+	}
+}
+
+type printKeyUsage []v1.KeyUsage
+
+func (k printKeyUsage) String() string {
+	var sb strings.Builder
+	sb.WriteString("[")
+	for i, u := range k {
+		sb.WriteString(" '")
+		sb.WriteString(string(u))
+		sb.WriteString("'")
+		if i < len(k)-1 {
+			sb.WriteString(",")
+		}
+	}
+	if len(k) > 0 {
+		sb.WriteString(" ")
+	}
+	sb.WriteString("]")
+	return sb.String()
+}
+
+// Deprecated: use CertificateTemplateValidateAndOverrideKeyUsages instead.
+func certificateTemplateOverrideKeyUsages(keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) CertificateTemplateValidatorMutator {
+	return func(req *x509.CertificateRequest, cert *x509.Certificate) error {
+		cert.KeyUsage = keyUsage
+		cert.ExtKeyUsage = extKeyUsage
+		return nil
 	}
 }
 
 // CertificateTemplateFromCSR will create a x509.Certificate for the
 // given *x509.CertificateRequest.
-// Call OverrideTemplateFromOptions to override the duration, isCA, maxPathLen, keyUsage, and extKeyUsage.
-func CertificateTemplateFromCSR(csr *x509.CertificateRequest, mutators ...CertificateTemplateMutator) (*x509.Certificate, error) {
+func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators ...CertificateTemplateValidatorMutator) (*x509.Certificate, error) {
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
@@ -145,8 +236,10 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, mutators ...Certif
 		}
 	}
 
-	for _, mutator := range mutators {
-		mutator(cert)
+	for _, validatorMutator := range validatorMutators {
+		if err := validatorMutator(csr, cert); err != nil {
+			return nil, err
+		}
 	}
 
 	return cert, nil
@@ -154,8 +247,7 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, mutators ...Certif
 
 // CertificateTemplateFromCSRPEM will create a x509.Certificate for the
 // given csrPEM.
-// Call OverrideTemplateFromOptions to override the duration, isCA, maxPathLen, keyUsage, and extKeyUsage.
-func CertificateTemplateFromCSRPEM(csrPEM []byte, mutators ...CertificateTemplateMutator) (*x509.Certificate, error) {
+func CertificateTemplateFromCSRPEM(csrPEM []byte, validatorMutators ...CertificateTemplateValidatorMutator) (*x509.Certificate, error) {
 	csr, err := DecodeX509CertificateRequestBytes(csrPEM)
 	if err != nil {
 		return nil, err
@@ -165,7 +257,7 @@ func CertificateTemplateFromCSRPEM(csrPEM []byte, mutators ...CertificateTemplat
 		return nil, err
 	}
 
-	return CertificateTemplateFromCSR(csr, mutators...)
+	return CertificateTemplateFromCSR(csr, validatorMutators...)
 }
 
 // CertificateTemplateFromCertificate will create a x509.Certificate for the given
@@ -185,27 +277,44 @@ func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate,
 	return CertificateTemplateFromCSR(
 		csr,
 		CertificateTemplateOverrideDuration(certDuration),
-		CertificateTemplateOverrideBasicConstraints(crt.Spec.IsCA, nil),
-		CertificateTemplateOverrideKeyUsages(keyUsage, extKeyUsage),
+		CertificateTemplateValidateAndOverrideBasicConstraints(crt.Spec.IsCA, nil),
+		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 	)
+}
+
+func makeCertificateTemplateFromCertificateRequestFunc(allowInsecureCSRUsageDefinition bool) func(cr *v1.CertificateRequest) (*x509.Certificate, error) {
+	return func(cr *v1.CertificateRequest) (*x509.Certificate, error) {
+		certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
+		keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
+		if err != nil {
+			return nil, err
+		}
+
+		return CertificateTemplateFromCSRPEM(
+			cr.Spec.Request,
+			CertificateTemplateOverrideDuration(certDuration),
+			CertificateTemplateValidateAndOverrideBasicConstraints(cr.Spec.IsCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
+			(func() CertificateTemplateValidatorMutator {
+				if allowInsecureCSRUsageDefinition && len(cr.Spec.Usages) == 0 {
+					// If the CertificateRequest does not specify any usages, and the AllowInsecureCSRUsageDefinition
+					// flag is set, then we allow the usages to be defined solely by the CSR blob, but we still override
+					// the usages to match the old behavior.
+					return certificateTemplateOverrideKeyUsages(keyUsage, extKeyUsage)
+				}
+
+				// Override the key usages, but make sure they match the usages in the CSR if present
+				return CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage)
+			})(),
+		)
+	}
 }
 
 // CertificateTemplateFromCertificateRequest will create a x509.Certificate for the given
 // CertificateRequest resource
-func CertificateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
-	if err != nil {
-		return nil, err
-	}
+var CertificateTemplateFromCertificateRequest = makeCertificateTemplateFromCertificateRequestFunc(false)
 
-	return CertificateTemplateFromCSRPEM(
-		cr.Spec.Request,
-		CertificateTemplateOverrideDuration(certDuration),
-		CertificateTemplateOverrideBasicConstraints(cr.Spec.IsCA, nil),
-		CertificateTemplateOverrideKeyUsages(keyUsage, extKeyUsage),
-	)
-}
+// Deprecated: Use CertificateTemplateFromCertificateRequest instead.
+var DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition = makeCertificateTemplateFromCertificateRequestFunc(true)
 
 // CertificateTemplateFromCertificateSigningRequest will create a x509.Certificate for the given
 // CertificateSigningRequest resource
@@ -225,8 +334,8 @@ func CertificateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certif
 	return CertificateTemplateFromCSRPEM(
 		csr.Spec.Request,
 		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateOverrideBasicConstraints(isCA, nil),
-		CertificateTemplateOverrideKeyUsages(ku, eku),
+		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
+		CertificateTemplateValidateAndOverrideKeyUsages(ku, eku),          // Override the key usages, but make sure they match the usages in the CSR if present
 	)
 }
 
@@ -250,8 +359,8 @@ func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool
 	return CertificateTemplateFromCSRPEM(
 		csrPEM,
 		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateOverrideBasicConstraints(isCA, nil),
-		CertificateTemplateOverrideKeyUsages(0, nil),
+		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
+		certificateTemplateOverrideKeyUsages(0, nil),                      // Override the key usages to be empty
 	)
 }
 
@@ -260,7 +369,7 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 	return CertificateTemplateFromCSRPEM(
 		csrPEM,
 		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateOverrideBasicConstraints(isCA, nil),
-		CertificateTemplateOverrideKeyUsages(keyUsage, extKeyUsage),
+		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil),      // Override the basic constraints, but make sure they match the constraints in the CSR if present
+		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage), // Override the key usages, but make sure they match the usages in the CSR if present
 	)
 }

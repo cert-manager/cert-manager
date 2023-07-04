@@ -172,8 +172,8 @@ func TestSign(t *testing.T) {
 	template2, err := pki.CertificateTemplateFromCSRPEM(
 		generateCSR(t, sk2, "example.com", "example.com", "foo.com"),
 		pki.CertificateTemplateOverrideDuration(time.Hour),
-		pki.CertificateTemplateOverrideBasicConstraints(false, nil),
-		pki.CertificateTemplateOverrideKeyUsages(0, nil),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(false, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
 	)
 	if err != nil {
 		t.Fatal(err)

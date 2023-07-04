@@ -83,12 +83,7 @@ func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields [
 		return nil, err
 	}
 
-	tmpl, err := pki.CertificateTemplateFromCSRPEM(
-		csrPEM,
-		pki.CertificateTemplateOverrideDuration(duration),
-		pki.CertificateTemplateOverrideBasicConstraints(false, nil),
-		pki.CertificateTemplateOverrideKeyUsages(0, nil),
-	)
+	tmpl, err := pki.CertificateTemplateFromCSRPEM(csrPEM)
 	if err != nil {
 		return nil, err
 	}

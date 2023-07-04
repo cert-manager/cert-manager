@@ -36,6 +36,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/crypto v0.6.0
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/oauth2 v0.5.0
 	golang.org/x/sync v0.2.0
 	gomodules.xyz/jsonpatch/v2 v2.3.0
