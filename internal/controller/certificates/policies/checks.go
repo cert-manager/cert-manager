@@ -355,6 +355,143 @@ func SecretTemplateMismatchesSecret(input Input) (string, string, bool) {
 	return "", "", false
 }
 
+func certificateDataAnnotationsForSecret(secret *corev1.Secret) (annotations map[string]string, err error) {
+	var certificate *x509.Certificate
+	if len(secret.Data[corev1.TLSCertKey]) > 0 {
+		certificate, err = pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	certificateAnnotations, err := internalcertificates.AnnotationsForCertificate(certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	return certificateAnnotations, nil
+}
+
+func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager string) (labels, annotations sets.Set[string], err error) {
+	managedLabels, managedAnnotations := sets.New[string](), sets.New[string]()
+
+	for _, managedField := range secret.ManagedFields {
+		// If the managed field isn't owned by the cert-manager controller, ignore.
+		if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+			continue
+		}
+
+		// Decode the managed field.
+		var fieldset fieldpath.Set
+		if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+			return nil, nil, err
+		}
+
+		// Extract the labels and annotations of the managed fields.
+		metadata := fieldset.Children.Descend(fieldpath.PathElement{
+			FieldName: pointer.String("metadata"),
+		})
+		labels := metadata.Children.Descend(fieldpath.PathElement{
+			FieldName: pointer.String("labels"),
+		})
+		annotations := metadata.Children.Descend(fieldpath.PathElement{
+			FieldName: pointer.String("annotations"),
+		})
+
+		// Gather the annotations and labels on the managed fields. Remove the '.'
+		// prefix which appears on managed field keys.
+		labels.Iterate(func(path fieldpath.Path) {
+			managedLabels.Insert(strings.TrimPrefix(path.String(), "."))
+		})
+		annotations.Iterate(func(path fieldpath.Path) {
+			managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
+		})
+	}
+
+	return managedLabels, managedAnnotations, nil
+}
+
+// SecretManagedLabelsAndAnnotationsManagedFieldsMismatch will inspect the given Secret's
+// managed fields for its Annotations and Labels, and compare this against the
+// Labels and Annotations that are managed by cert-manager. Returns false if Annotations and
+// Labels match on both the Certificate's SecretTemplate and the Secret's
+// managed fields, true otherwise.
+// Also returns true if the managed fields or signed certificate were not able
+// to be decoded.
+func SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string) Func {
+	return func(input Input) (string, string, bool) {
+		managedLabels, managedAnnotations, err := secretLabelsAndAnnotationsManagedFields(input.Secret, fieldManager)
+		if err != nil {
+			return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
+		}
+
+		// Remove the non cert-manager annotations from the managed Annotations so we can compare
+		// 1 to 1 all the cert-manager annotations.
+		for k := range managedAnnotations {
+			if strings.HasPrefix(k, "cert-manager.io/") ||
+				strings.HasPrefix(k, "controller.cert-manager.io/") {
+				continue
+			}
+
+			delete(managedAnnotations, k)
+		}
+
+		// Ignore the CertificateName and IssuerRef annotations as these cannot be set by the postIssuance controller.
+		managedAnnotations.Delete(
+			cmapi.CertificateNameKey,       // SecretCertificateNameAnnotationMismatch checks the value
+			cmapi.IssuerNameAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
+			cmapi.IssuerKindAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
+			cmapi.IssuerGroupAnnotationKey, // SecretIssuerAnnotationsMismatch checks the value
+		)
+
+		// Remove the non cert-manager labels from the managed labels so we can compare
+		// 1 to 1 all the cert-manager labels.
+		for k := range managedLabels {
+			if strings.HasPrefix(k, "cert-manager.io/") ||
+				strings.HasPrefix(k, "controller.cert-manager.io/") {
+				continue
+			}
+
+			delete(managedLabels, k)
+		}
+
+		expCertificateDataAnnotations, err := certificateDataAnnotationsForSecret(input.Secret)
+		if err != nil {
+			return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
+		}
+
+		expLabels := sets.New[string](
+			cmapi.PartOfCertManagerControllerLabelKey, // SecretBaseLabelsMismatch checks the value
+		)
+		expAnnotations := sets.New[string]()
+		for k := range expCertificateDataAnnotations { // SecretCertificateDetailsAnnotationsMismatch checks the value
+			expAnnotations.Insert(k)
+		}
+
+		if !managedLabels.Equal(expLabels) {
+			missingLabels := expLabels.Difference(managedLabels)
+			if len(missingLabels) > 0 {
+				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Labels: %v", missingLabels.UnsortedList()), true
+			}
+
+			extraLabels := managedLabels.Difference(expLabels)
+			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Labels: %v", extraLabels.UnsortedList()), true
+		}
+
+		if !managedAnnotations.Equal(expAnnotations) {
+			missingAnnotations := expAnnotations.Difference(managedAnnotations)
+			if len(missingAnnotations) > 0 {
+				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Annotations: %v", missingAnnotations.UnsortedList()), true
+			}
+
+			extraAnnotations := managedAnnotations.Difference(expAnnotations)
+			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", extraAnnotations.UnsortedList()), true
+		}
+
+		return "", "", false
+	}
+}
+
 // SecretTemplateMismatchesSecretManagedFields will inspect the given Secret's
 // managed fields for its Annotations and Labels, and compare this against the
 // SecretTemplate on the given Certificate. Returns false if Annotations and
@@ -364,134 +501,101 @@ func SecretTemplateMismatchesSecret(input Input) (string, string, bool) {
 // to be decoded.
 func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 	return func(input Input) (string, string, bool) {
-		// Only attempt to decode the signed certificate, if one is available.
-		var x509cert *x509.Certificate
-		if len(input.Secret.Data[corev1.TLSCertKey]) > 0 {
-			var err error
-			x509cert, err = pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-			if err != nil {
-				// This case should never happen as it should always be caught by the
-				// secretPublicKeysMatch function beforehand, but handle it just in case.
-				return InvalidCertificate, fmt.Sprintf("Failed to decode stored certificate: %v", err), true
-			}
-		}
-
-		baseAnnotations, err := internalcertificates.AnnotationsForCertificate(x509cert)
+		managedLabels, managedAnnotations, err := secretLabelsAndAnnotationsManagedFields(input.Secret, fieldManager)
 		if err != nil {
-			return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
+			return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 		}
 
-		// We don't use the values of these annotations, but we need to make sure
-		// that the keys are present in the map so that we can compare the sets.
-		baseAnnotations[cmapi.CertificateNameKey] = "<certificate-value>"
-		baseAnnotations[cmapi.IssuerNameAnnotationKey] = "<issuer-name>"
-		baseAnnotations[cmapi.IssuerKindAnnotationKey] = "<issuer-kind>"
-		baseAnnotations[cmapi.IssuerGroupAnnotationKey] = "<issuer-group>"
-
-		managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
-
-		for _, managedField := range input.Secret.ManagedFields {
-			// If the managed field isn't owned by the cert-manager controller, ignore.
-			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+		// Remove the cert-manager annotations from the managed Annotations so we can compare
+		// 1 to 1 against the SecretTemplate.
+		for k := range managedAnnotations {
+			if !strings.HasPrefix(k, "cert-manager.io/") &&
+				!strings.HasPrefix(k, "controller.cert-manager.io/") {
 				continue
 			}
 
-			// Decode the managed field.
-			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
-				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
-			}
-
-			// Extract the labels and annotations of the managed fields.
-			metadata := fieldset.Children.Descend(fieldpath.PathElement{
-				FieldName: pointer.String("metadata"),
-			})
-			labels := metadata.Children.Descend(fieldpath.PathElement{
-				FieldName: pointer.String("labels"),
-			})
-			annotations := metadata.Children.Descend(fieldpath.PathElement{
-				FieldName: pointer.String("annotations"),
-			})
-
-			// Gather the annotations and labels on the managed fields. Remove the '.'
-			// prefix which appears on managed field keys.
-			labels.Iterate(func(path fieldpath.Path) {
-				managedLabels.Insert(strings.TrimPrefix(path.String(), "."))
-			})
-			annotations.Iterate(func(path fieldpath.Path) {
-				managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
-			})
+			delete(managedAnnotations, k)
 		}
 
-		// Remove the base Annotations from the managed Annotations so we can compare
-		// 1 to 1 against the SecretTemplate.
-		for k := range baseAnnotations {
-			managedAnnotations = managedAnnotations.Delete(k)
-		}
-
-		// Remove the base label from the managed Labels so we can
+		// Remove the cert-manager labels from the managed Labels so we can
 		// compare 1 to 1 against the SecretTemplate
-		managedLabels.Delete(cmapi.PartOfCertManagerControllerLabelKey)
-
-		// Check early for Secret Template being nil, and whether managed
-		// labels/annotations are not.
-		if input.Certificate.Spec.SecretTemplate == nil {
-			if len(managedLabels) > 0 || len(managedAnnotations) > 0 {
-				return SecretTemplateMismatch, "SecretTemplate is nil, but Secret contains extra managed entries", true
+		for k := range managedLabels {
+			if !strings.HasPrefix(k, "cert-manager.io/") &&
+				!strings.HasPrefix(k, "controller.cert-manager.io/") {
+				continue
 			}
-			// SecretTemplate is nil. Managed annotations and labels are also empty.
-			// Return false.
-			return "", "", false
+
+			delete(managedLabels, k)
 		}
 
-		// SecretTemplate is not nil. Do length checks.
-		if len(input.Certificate.Spec.SecretTemplate.Labels) != len(managedLabels) ||
-			len(input.Certificate.Spec.SecretTemplate.Annotations) != len(managedAnnotations) {
-			return SecretTemplateMismatch, "Certificate's SecretTemplate doesn't match Secret", true
+		expLabels := sets.New[string]()
+		expAnnotations := sets.New[string]()
+		if input.Certificate.Spec.SecretTemplate != nil {
+			for k := range input.Certificate.Spec.SecretTemplate.Labels {
+				expLabels.Insert(k)
+			}
+			for k := range input.Certificate.Spec.SecretTemplate.Annotations {
+				expAnnotations.Insert(k)
+			}
 		}
 
-		// Check equal unsorted for SecretTemplate keys, and the managed fields
-		// equivalents.
-		for _, smap := range []struct {
-			specMap    map[string]string
-			managedSet sets.String
-		}{
-			{specMap: input.Certificate.Spec.SecretTemplate.Labels, managedSet: managedLabels},
-			{specMap: input.Certificate.Spec.SecretTemplate.Annotations, managedSet: managedAnnotations},
-		} {
-
-			specSet := sets.NewString()
-			for kSpec := range smap.specMap {
-				specSet.Insert(kSpec)
+		if !managedLabels.Equal(expLabels) {
+			missingLabels := expLabels.Difference(managedLabels)
+			if len(missingLabels) > 0 {
+				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Labels: %v", missingLabels.UnsortedList()), true
 			}
 
-			if !specSet.Equal(smap.managedSet) {
-				return SecretTemplateMismatch, "Certificate's SecretTemplate doesn't match Secret", true
+			extraLabels := managedLabels.Difference(expLabels)
+			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Labels: %v", extraLabels.UnsortedList()), true
+		}
+
+		if !managedAnnotations.Equal(expAnnotations) {
+			missingAnnotations := expAnnotations.Difference(managedAnnotations)
+			if len(missingAnnotations) > 0 {
+				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Annotations: %v", missingAnnotations.UnsortedList()), true
 			}
+
+			extraAnnotations := managedAnnotations.Difference(expAnnotations)
+			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", extraAnnotations.UnsortedList()), true
 		}
 
 		return "", "", false
 	}
 }
 
-func SecretBaseLabelsAreMissing(input Input) (string, string, bool) {
-	// If certificate has not been issued yet or is in invalid state, do not attempt to update metadata
-	if len(input.Secret.Data[corev1.TLSCertKey]) > 0 {
-		var err error
-		_, err = pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-		if err != nil {
-			// This case should never happen as it should always be caught by the
-			// secretPublicKeysMatch function beforehand, but handle it just in case.
-			return InvalidCertificate, fmt.Sprintf("Failed to decode stored certificate: %v", err), true
-		}
-	}
-
+// NOTE: The presence of the controller.cert-manager.io/fao label is checked
+// by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch function.
+func SecretBaseLabelsMismatch(input Input) (string, string, bool) {
 	// check if Secret has the base labels. Currently there is only one base label
 	if input.Secret.Labels == nil {
-		return SecretBaseLabelsMissing, fmt.Sprintf("missing base label %s", cmapi.PartOfCertManagerControllerLabelKey), true
+		return "", "", false
 	}
-	if _, ok := input.Secret.Labels[cmapi.PartOfCertManagerControllerLabelKey]; !ok {
-		return SecretBaseLabelsMissing, fmt.Sprintf("missing base label %s", cmapi.PartOfCertManagerControllerLabelKey), true
+
+	value, ok := input.Secret.Labels[cmapi.PartOfCertManagerControllerLabelKey]
+	if !ok || value == "true" {
+		return "", "", false
+	}
+
+	return SecretManagedMetadataMismatch, fmt.Sprintf("wrong base label %s value %q, expected \"true\"", cmapi.PartOfCertManagerControllerLabelKey, value), true
+}
+
+// SecretCertificateDetailsAnnotationsMismatch - When the certificate details annotations are
+// not matching, the secret is updated.
+// NOTE: The presence of the certificate details annotations is checked
+// by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch function.
+func SecretCertificateDetailsAnnotationsMismatch(input Input) (string, string, bool) {
+	dataAnnotations, err := certificateDataAnnotationsForSecret(input.Secret)
+	if err != nil {
+		return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
+	}
+
+	for k, v := range dataAnnotations {
+		existing, ok := input.Secret.Annotations[k]
+		if !ok || existing == v {
+			continue
+		}
+
+		return SecretManagedMetadataMismatch, fmt.Sprintf("Secret metadata %s does not match certificate metadata %s", input.Secret.Annotations[k], v), true
 	}
 
 	return "", "", false

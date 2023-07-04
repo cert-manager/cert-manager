@@ -202,10 +202,15 @@ func Test_ensureSecretData(t *testing.T) {
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names": {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {},
 								"f:foo": {},
 								"f:another-annotation": {}
 							},
 							"f:labels": {
+								"f:controller.cert-manager.io/fao": {},
 								"f:abc": {},
 								"f:another-label": {}
 							}
@@ -241,9 +246,14 @@ func Test_ensureSecretData(t *testing.T) {
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names": {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {},
 								"f:foo": {}
 							},
 							"f:labels": {
+								"f:controller.cert-manager.io/fao": {},
 								"f:abc": {}
 							}
 						}}`),
@@ -280,9 +290,14 @@ func Test_ensureSecretData(t *testing.T) {
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names": {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {},
 								"f:foo": {}
 							},
 							"f:labels": {
+								"f:controller.cert-manager.io/fao": {},
 								"f:abc": {}
 							}
 						}}`),
@@ -452,10 +467,27 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
 						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`{"f:data": {
-							"f:tls-combined.pem": {},
-							"f:key.der": {}
-						}}`),
+							Raw: []byte(`
+							{
+								"f:metadata": {
+									"f:labels": {
+										"f:controller.cert-manager.io/fao": {}
+									},
+									"f:annotations": {
+										"f:cert-manager.io/common-name": {},
+										"f:cert-manager.io/alt-names": {},
+										"f:cert-manager.io/ip-sans": {},
+										"f:cert-manager.io/uri-sans": {}
+									},
+									"f:ownerReferences": {
+										"k:{\"uid\":\"uid-123\"}": {}
+									}
+								},
+								"f:data": {
+									"f:tls-combined.pem": {},
+									"f:key.der": {}
+								}
+							}`),
 						},
 					}},
 				},
@@ -483,10 +515,27 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
 						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`{"f:data": {
-							"f:tls-combined.pem": {},
-							"f:key.der": {}
-						}}`),
+							Raw: []byte(`
+							{
+								"f:metadata": {
+									"f:labels": {
+										"f:controller.cert-manager.io/fao": {}
+									},
+									"f:annotations": {
+										"f:cert-manager.io/common-name": {},
+										"f:cert-manager.io/alt-names": {},
+										"f:cert-manager.io/ip-sans": {},
+										"f:cert-manager.io/uri-sans": {}
+									},
+									"f:ownerReferences": {
+										"k:{\"uid\":\"uid-123\"}": {}
+									}
+								},
+								"f:data": {
+									"f:tls-combined.pem": {},
+									"f:key.der": {}
+								}
+							}`),
 						},
 					}},
 				},
@@ -513,10 +562,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -540,10 +599,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -579,10 +648,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-234\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -629,10 +708,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -678,10 +767,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -726,10 +825,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -776,10 +885,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -825,10 +944,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -874,10 +1003,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -922,10 +1061,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},
@@ -972,10 +1121,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-		{"f:metadata": {
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
 								"f:ownerReferences": {
-		"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
 						}},
 					},
 				},

@@ -52,10 +52,9 @@ const (
 	// SecretTemplate is not reflected on the target Secret, either by having
 	// extra, missing, or wrong Annotations or Labels.
 	SecretTemplateMismatch string = "SecretTemplateMismatch"
-
-	// SecretBaseLabelsMissing is a policy violation whereby the Secret is
+	// SecretManagedMetadataMismatch is a policy violation whereby the Secret is
 	// missing labels that should have been added by cert-manager
-	SecretBaseLabelsMissing string = "SecretBaseLabelsMissing"
+	SecretManagedMetadataMismatch string = "SecretManagedMetadataMismatch"
 
 	// AdditionalOutputFormatsMismatch is a policy violation whereby the
 	// Certificate's AdditionalOutputFormats is not reflected on the target
