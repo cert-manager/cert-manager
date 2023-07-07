@@ -299,6 +299,10 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 		unionCount++
 	}
 
+	if auth.ClientCertificate != nil {
+		unionCount++
+	}
+
 	if auth.Kubernetes != nil {
 		unionCount++
 
@@ -327,7 +331,7 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 	}
 
 	if unionCount == 0 {
-		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef"))
+		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate"))
 	}
 
 	// Due to the fact that there has not been any "oneOf" validation on

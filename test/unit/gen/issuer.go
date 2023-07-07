@@ -334,6 +334,18 @@ func SetIssuerVaultAppRoleAuth(keyName, approleName, roleId, path string) Issuer
 		}
 	}
 }
+func SetIssuerVaultClientCertificateAuth(path, secretName string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Auth.ClientCertificate = &v1.VaultClientCertificateAuth{
+			Path:       path,
+			SecretName: secretName,
+		}
+	}
+}
 
 func SetIssuerVaultKubernetesAuthSecret(secretKey, secretName, vaultRole, vaultPath string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
