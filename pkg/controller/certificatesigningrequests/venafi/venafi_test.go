@@ -72,8 +72,8 @@ func TestProcessItem(t *testing.T) {
 	rootTmpl, err := pki.CertificateTemplateFromCSRPEM(
 		rootCSRPEM,
 		pki.CertificateTemplateOverrideDuration(time.Hour),
-		pki.CertificateTemplateOverrideBasicConstraints(true, nil),
-		pki.CertificateTemplateOverrideKeyUsages(0, nil),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(true, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -92,8 +92,8 @@ func TestProcessItem(t *testing.T) {
 	leafTmpl, err := pki.CertificateTemplateFromCSRPEM(
 		leafCSRPEM,
 		pki.CertificateTemplateOverrideDuration(time.Hour),
-		pki.CertificateTemplateOverrideBasicConstraints(false, nil),
-		pki.CertificateTemplateOverrideKeyUsages(0, nil),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(false, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
 	)
 	if err != nil {
 		t.Fatal(err)

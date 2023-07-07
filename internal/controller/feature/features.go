@@ -85,6 +85,13 @@ const (
 	// they know cert-manager will need access to to speed up issuance.
 	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md
 	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
+
+	// Owner (responsible for graduating feature through to GA): @inteon
+	// GA: v1.13
+	// DontAllowInsecureCSRUsageDefinition will prevent the webhook from allowing
+	// CertificateRequest's usages to be only defined in the CSR, while leaving
+	// the usages field empty.
+	DontAllowInsecureCSRUsageDefinition featuregate.Feature = "DontAllowInsecureCSRUsageDefinition"
 )
 
 func init() {
@@ -95,6 +102,8 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available on the cert-manager controller binary.
 var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	DontAllowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
+
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
