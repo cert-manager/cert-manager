@@ -610,8 +610,10 @@ func TestValidateCertificateRequest(t *testing.T) {
 					Usages:    []cminternal.KeyUsage{cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
 				},
 			},
-			a:     someAdmissionRequest,
-			wantE: []*field.Error{},
+			a: someAdmissionRequest,
+			wantE: []*field.Error{
+				field.Invalid(fldPath.Child("request"), nil, "encoded CSR error: the KeyUsages [] do not match the expected KeyUsages [ 'digital signature', 'key encipherment' ]"),
+			},
 		},
 		"Error on csr not having all usages": {
 			cr: &cminternal.CertificateRequest{
@@ -623,7 +625,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			wantE: []*field.Error{
-				field.Invalid(fldPath.Child("request"), nil, "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[3] != []certmanager.KeyUsage[4]]"),
+				field.Invalid(fldPath.Child("request"), nil, "encoded CSR error: the ExtKeyUsages [ 'server auth' ] do not match the expected ExtKeyUsages [ 'server auth', 'client auth' ]"),
 			},
 		},
 		"Error on cr not having all usages": {
@@ -636,7 +638,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			wantE: []*field.Error{
-				field.Invalid(fldPath.Child("request"), nil, "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[4] != []certmanager.KeyUsage[2]]"),
+				field.Invalid(fldPath.Child("request"), nil, "encoded CSR error: the ExtKeyUsages [ 'server auth', 'client auth' ] do not match the expected ExtKeyUsages []"),
 			},
 		},
 		"Test csr with any, signing, digital signature, key encipherment, server and client auth": {
@@ -901,40 +903,4 @@ func mustGenerateCSR(t *testing.T, crt *cmapi.Certificate, modifiers ...func(*x5
 	}
 
 	return csrPEM.Bytes()
-}
-
-func Test_patchDuplicateKeyUsage(t *testing.T) {
-	tests := []struct {
-		name   string
-		usages []cminternal.KeyUsage
-		want   []cminternal.KeyUsage
-	}{
-		{
-			name:   "Test single KU",
-			usages: []cminternal.KeyUsage{cminternal.UsageKeyEncipherment},
-			want:   []cminternal.KeyUsage{cminternal.UsageKeyEncipherment},
-		},
-		{
-			name:   "Test UsageSigning",
-			usages: []cminternal.KeyUsage{cminternal.UsageSigning},
-			want:   []cminternal.KeyUsage{cminternal.UsageDigitalSignature},
-		},
-		{
-			name:   "Test multiple KU",
-			usages: []cminternal.KeyUsage{cminternal.UsageDigitalSignature, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
-			want:   []cminternal.KeyUsage{cminternal.UsageDigitalSignature, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
-		},
-		{
-			name:   "Test double signing",
-			usages: []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageDigitalSignature},
-			want:   []cminternal.KeyUsage{cminternal.UsageDigitalSignature},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := patchDuplicateKeyUsage(tt.usages); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("patchDuplicateKeyUsage() = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }
