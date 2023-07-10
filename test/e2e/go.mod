@@ -2,6 +2,12 @@ module github.com/cert-manager/cert-manager/e2e-tests
 
 go 1.20
 
+// Do not remove this comment:
+// please place any replace statements here at the top for visibility and add a
+// comment to it as to when it can be removed
+
+replace github.com/cert-manager/cert-manager => ../../
+
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go v0.58.1
@@ -100,7 +106,3 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
-
-replace github.com/cert-manager/cert-manager => ../../
