@@ -103,7 +103,4 @@ require (
 
 replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
 
-// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
-replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
-
 replace github.com/cert-manager/cert-manager => ../../
