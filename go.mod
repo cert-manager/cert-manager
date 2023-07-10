@@ -6,15 +6,12 @@ go 1.20
 // please place any replace statements here at the top for visibility and add a
 // comment to it as to when it can be removed
 
-// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
-replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
-
 require (
 	github.com/Azure/azure-sdk-for-go v67.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/Venafi/vcert/v4 v4.23.0
+	github.com/Venafi/vcert/v4 v4.24.1-0.20230703183014-69f417ae176d
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/aws/aws-sdk-go v1.44.179
 	github.com/cpu/goacmedns v0.1.1
