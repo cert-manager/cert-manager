@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/component-base/featuregate"
 
-	. "github.com/cert-manager/cert-manager/test/framework/log"
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 )
 
 func nowStamp() string {

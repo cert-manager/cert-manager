@@ -24,12 +24,12 @@ import (
 	"encoding/pem"
 	"time"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/test/framework"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

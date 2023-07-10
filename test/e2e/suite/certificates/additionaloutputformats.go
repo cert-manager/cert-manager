@@ -30,13 +30,13 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/test/framework"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 

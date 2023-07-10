@@ -19,9 +19,9 @@ package certificates
 import (
 	. "github.com/onsi/ginkgo/v2"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/framework"
-	"github.com/cert-manager/cert-manager/test/framework/helper/featureset"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any
