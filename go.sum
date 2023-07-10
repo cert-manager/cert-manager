@@ -109,6 +109,8 @@ github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbt
 github.com/PuerkitoBio/urlesc v0.0.0-20160726150825-5bd2802263f2/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d h1:UrqY+r/OJnIp5u0s1SbQ8dVfLCZJsnvazdBP5hS4iRs=
+github.com/Venafi/vcert/v4 v4.24.1-0.20230703183014-69f417ae176d h1:xrCoQD8VjB+Q7FGPGq20rLeT0C1pjim2qUUv5buQGC4=
+github.com/Venafi/vcert/v4 v4.24.1-0.20230703183014-69f417ae176d/go.mod h1:4Nec3twWisOdS1unpDZ93sfau9eVSDS8Ot+Ry/gg0es=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.1 h1:5BIsppVPdWJA29Yb5cYawQYeh5geN413WxAgBZvEtdA=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.1/go.mod h1:kX6YddBkXqqywAe8c9LyvgTCyFuZCTMF4cRPQhc3Fy8=
@@ -599,8 +601,6 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/inconshreveable/mousetrap v1.0.1 h1:U3uMjPSQEBMNp1lFxmllqCPM6P5u/Xq7Pgzkat/bFNc=
 github.com/inconshreveable/mousetrap v1.0.1/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
-github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d h1:V9SfHhSwP97N8ziqP621+qk5FJ+oMh8Lu9ttrL2/U3o=
-github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d/go.mod h1:SWmRLLPU0f2ujjVaEUssKKSxYHhznpohrPYxUpjsGFg=
 github.com/jhump/protoreflect v1.6.0 h1:h5jfMVslIg6l29nsMs0D8Wj17RDVdNYti0vDN/PZZoE=
 github.com/jhump/protoreflect v1.6.0/go.mod h1:eaTn3RZAmMBcV0fifFvlm6VHNz3wSkYyXYWUh7ymB74=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
