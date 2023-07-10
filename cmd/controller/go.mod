@@ -28,7 +28,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Azure/go-ntlmssp v0.0.0-20220621081337-cb9428e4ac1e // indirect
-	github.com/Venafi/vcert/v4 v4.23.0 // indirect
+	github.com/Venafi/vcert/v4 v4.24.1-0.20230703183014-69f417ae176d // indirect
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2 // indirect
 	github.com/aws/aws-sdk-go v1.44.179 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -154,6 +154,3 @@ require (
 )
 
 replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
-
-// remove this once https://github.com/jetstack/vcert/pull/3 is merged upstream
-replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
