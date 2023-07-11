@@ -26,8 +26,6 @@ github.com/grpc-ecosystem/grpc-gateway/v2,https://github.com/grpc-ecosystem/grpc
 github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,BSD-3-Clause
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
-github.com/kr/pretty,https://github.com/kr/pretty/blob/v0.3.1/License,MIT
-github.com/kr/text,https://github.com/kr/text/blob/v0.2.0/License,MIT
 github.com/mailru/easyjson,https://github.com/mailru/easyjson/blob/v0.7.7/LICENSE,MIT
 github.com/matttproud/golang_protobuf_extensions/pbutil,https://github.com/matttproud/golang_protobuf_extensions/blob/v1.0.4/LICENSE,Apache-2.0
 github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
@@ -38,7 +36,6 @@ github.com/prometheus/client_model/go,https://github.com/prometheus/client_model
 github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.42.0/LICENSE,Apache-2.0
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.42.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.9.0/LICENSE,Apache-2.0
-github.com/rogpeppe/go-internal/fmtsort,https://github.com/rogpeppe/go-internal/blob/v1.10.0/LICENSE,BSD-3-Clause
 github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.7.0/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.39.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0

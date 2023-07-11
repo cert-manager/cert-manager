@@ -103,7 +103,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 				},
 			},
 			expectError: true,
-			errorSuffix: "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[3] != []certmanager.KeyUsage[2]]",
+			errorSuffix: "encoded CSR error: the ExtKeyUsages [ 'client auth' ] do not match the expected ExtKeyUsages []",
 		},
 		"No errors on valid certificaterequest with special usages only set in spec": {
 			input: &cmapi.CertificateRequest{
@@ -143,7 +143,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 				},
 			},
 			expectError: true,
-			errorSuffix: "csr key usages do not match specified usages, these should match if both are set: [[2]: \"client auth\" != \"code signing\"]",
+			errorSuffix: "encoded CSR error: the ExtKeyUsages [ 'client auth' ] do not match the expected ExtKeyUsages [ 'code signing' ]",
 		},
 		"Shouldn't error when setting user info, since this will be overwritten by the mutating webhook": {
 			input: &cmapi.CertificateRequest{
@@ -305,7 +305,7 @@ func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false
 				},
 			},
 			expectError: true,
-			errorSuffix: "csr key usages do not match specified usages, these should match if both are set: [[2]: \"client auth\" != \"code signing\"]",
+			errorSuffix: "encoded CSR error: the ExtKeyUsages [ 'client auth' ] do not match the expected ExtKeyUsages [ 'code signing' ]",
 		},
 		"Shouldn't error when setting user info, since this will be overwritten by the mutating webhook": {
 			input: &cmapi.CertificateRequest{
