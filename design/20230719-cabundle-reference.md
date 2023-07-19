@@ -1,8 +1,8 @@
 ---
 title: Certificate Request CRD
 authors:
-  - "[@AppalaKarthik](https://github.com/AppalaKarthik)"
-  - "[@sankalp-at-github](https://github.com/sankalp-at-gh)"
+  - [@AppalaKarthik](https://github.com/AppalaKarthik)
+  - [@sankalp-at-github](https://github.com/sankalp-at-gh)
 creation-date: 2023-07-19
 last-updated: 2023-07-19
 #status: implementable
