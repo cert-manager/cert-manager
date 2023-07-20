@@ -59,11 +59,11 @@ To include reference using resources other than mentioned.
 
 ## Proposal
 
-Enable reading of cabundle from naive kubernetes objects like secrets, configmaps.
+Enable reading of cabundle from native kubernetes objects like secrets and configmaps.
 
 ## Design Details
 
-Add Secret, ConfigMap, ClusterTrustBundle optional fields to the spec which can be used to refer a key to find the caBundle. Below is the example for venafi issuer.
+Add secrets and configMaps as optional fields to the spec which can be used to refer a key to find the caBundle. Below is the example for venafi issuer.
 
 ```
 spec:
@@ -85,7 +85,7 @@ spec:
 
 ### Graduation Criteria
 
-Placing the `caBundleSecetRef`, `caBundleConfigMapRef` and `clusterTrustBundleRef` specification functionality behind a feature gate should be required.
+Placing the `caBundleSecetRef` and `caBundleConfigMapRef` specification functionality behind a feature gate should be required.
 Placing this functionality behind a feature gate would allow the cert-manager
 authors gain confidence about its correctness, and ensure there are no
 regressions in the stability of controller reconciliation.
