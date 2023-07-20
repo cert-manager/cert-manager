@@ -19,4 +19,5 @@ maintainers:
     email: cert-manager-maintainers@googlegroups.com
     url: https://cert-manager.io
 annotations:
+  artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "{{IS_PRERELEASE}}"
