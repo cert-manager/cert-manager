@@ -8,7 +8,7 @@ last-updated: 2023-07-19
 #status: implementable
 ---
 
-# Design: Certficate Authority Bundle Reference Using Secrets, Configmaps and ClusterTrustBundle
+# Design: Certficate Authority Bundle Reference Using Secrets, Configmaps
 
 
 <!-- toc -->
