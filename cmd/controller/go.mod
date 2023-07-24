@@ -9,10 +9,10 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sync v0.2.0
-	k8s.io/apimachinery v0.27.2
-	k8s.io/client-go v0.27.2
-	k8s.io/component-base v0.27.2
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	k8s.io/apimachinery v0.27.4
+	k8s.io/client-go v0.27.4
+	k8s.io/component-base v0.27.4
+	k8s.io/utils v0.0.0-20230711102312-30195339c3c7
 )
 
 require (
@@ -99,7 +99,7 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
@@ -140,16 +140,16 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.27.2 // indirect
-	k8s.io/apiextensions-apiserver v0.27.2 // indirect
-	k8s.io/apiserver v0.27.2 // indirect
+	k8s.io/api v0.27.4 // indirect
+	k8s.io/apiextensions-apiserver v0.27.4 // indirect
+	k8s.io/apiserver v0.27.4 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
-	k8s.io/kube-aggregator v0.27.2 // indirect
-	k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5 // indirect
+	k8s.io/kube-aggregator v0.27.4 // indirect
+	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 // indirect
-	sigs.k8s.io/gateway-api v0.7.0 // indirect
+	sigs.k8s.io/gateway-api v0.7.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.3.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.2.0 // indirect
 )
