@@ -29,6 +29,7 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/stretchr/testify/assert"
@@ -92,7 +93,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
+			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains corrupt certificate data": {
@@ -103,8 +104,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				},
 			},
-			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
+			reason:  InvalidCertificate,
+			message: "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains corrupt private key data": {
@@ -118,7 +119,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in key input",
+			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains a non-matching key-pair": {
@@ -132,10 +133,10 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: private key does not match public key",
+			message: "Issuing certificate as Secret contains a private key that does not match the certificate",
 			reissue: true,
 		},
-		"trigger issuance as Secret has old/incorrect 'issuer name' annotation": {
+		"trigger issuance as Secret has old or incorrect 'issuer name' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
 				IssuerRef: cmmeta.ObjectReference{
@@ -156,10 +157,10 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  IncorrectIssuer,
-			message: "Issuing certificate as Secret was previously issued by Issuer.cert-manager.io/oldissuer",
+			message: "Issuing certificate as Secret was previously issued by \"Issuer.cert-manager.io/oldissuer\"",
 			reissue: true,
 		},
-		"trigger issuance as Secret has old/incorrect 'issuer kind' annotation": {
+		"trigger issuance as Secret has old or incorrect 'issuer kind' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
 				IssuerRef: cmmeta.ObjectReference{
@@ -182,10 +183,10 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  IncorrectIssuer,
-			message: "Issuing certificate as Secret was previously issued by OldIssuerKind.cert-manager.io/testissuer",
+			message: "Issuing certificate as Secret was previously issued by \"OldIssuerKind.cert-manager.io/testissuer\"",
 			reissue: true,
 		},
-		"trigger issuance as Secret has old/incorrect 'issuer group' annotation": {
+		"trigger issuance as Secret has old or incorrect 'issuer group' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
 				IssuerRef: cmmeta.ObjectReference{
@@ -210,7 +211,36 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  IncorrectIssuer,
-			message: "Issuing certificate as Secret was previously issued by IssuerKind.new.example.com/testissuer",
+			message: "Issuing certificate as Secret was previously issued by \"IssuerKind.new.example.com/testissuer\"",
+			reissue: true,
+		},
+		"trigger issuance as private key properties do not meet the requested properties": {
+			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
+				Data: func() map[string][]byte {
+					// generate a 521 bit EC private key, which is not the type of key
+					// configured in the Certificate resource
+					pk, err := pki.GenerateECPrivateKey(521)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					return map[string][]byte{
+						corev1.TLSPrivateKeyKey: pkData,
+						corev1.TLSCertKey: testcrypto.MustCreateCert(
+							t, pkData,
+							&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						),
+					}
+				}(),
+			},
+			reason:  SecretMismatch,
+			message: "Existing private key is not up to date for spec: [spec.privateKey.algorithm]",
 			reissue: true,
 		},
 		"trigger if the Secret contains a different private key than was used to sign the CSR": {
@@ -344,7 +374,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  SecretMismatch,
-			message: "Existing issued Secret is not up to date for spec: [spec.commonName]",
+			message: "Issuing certificate as Existing issued Secret is not up to date for spec: [spec.commonName]",
 			reissue: true,
 		},
 		"do nothing if signed x509 certificate in Secret matches spec (when request does not exist)": {
@@ -734,7 +764,7 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
 		},
-		"if SecretTemplate is non-nil, Secret Annoations match but Labels don't match keys, return true": {
+		"if SecretTemplate is non-nil, Secret Annotations match but Labels don't match keys, return true": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
@@ -790,7 +820,7 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecret(Input{
+			gotReason, gotMessage, gotViolation := SecretSecretTemplateMismatch(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
 				Secret:      test.secret,
 			})
@@ -1103,7 +1133,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecretManagedFields(fieldManager)(Input{
+			gotReason, gotMessage, gotViolation := SecretSecretTemplateManagedFieldsMismatch(fieldManager)(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
 				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: map[string][]byte{}},
 			})
@@ -1115,7 +1145,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 	}
 }
 
-func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
+func Test_SecretAdditionalOutputFormatsMismatch(t *testing.T) {
 	cert := []byte("a")
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
 	block, _ := pem.Decode(pk)
@@ -1372,7 +1402,7 @@ func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsDataMismatch(test.input)
+			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsMismatch(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -1380,7 +1410,7 @@ func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
 	}
 }
 
-func Test_SecretAdditionalOutputFormatsOwnerMismatch(t *testing.T) {
+func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 	const fieldManager = "cert-manager-test"
 
 	tests := map[string]struct {
@@ -1804,7 +1834,7 @@ func Test_SecretAdditionalOutputFormatsOwnerMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsOwnerMismatch(fieldManager)(test.input)
+			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -1992,7 +2022,7 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 	}
 }
 
-func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
+func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 	crt := gen.Certificate("test-certificate",
 		gen.SetCertificateUID(types.UID("uid-123")),
 	)
@@ -2240,7 +2270,7 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceValueMismatch(test.ownerRefEnabled)(test.input)
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.ownerRefEnabled)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)

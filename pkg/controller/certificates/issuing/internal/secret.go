@@ -188,10 +188,17 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[k] = v
 	}
 
-	secret.Annotations[cmapi.CertificateNameKey] = data.CertificateName
-	secret.Annotations[cmapi.IssuerNameAnnotationKey] = data.IssuerName
-	secret.Annotations[cmapi.IssuerKindAnnotationKey] = data.IssuerKind
-	secret.Annotations[cmapi.IssuerGroupAnnotationKey] = data.IssuerGroup
+	// Add the certificate name and issuer details to the secret annotations.
+	// If the annotations are not set/ empty, we do not use them to determine
+	// if the secret needs to be updated.
+	if data.CertificateName != "" {
+		secret.Annotations[cmapi.CertificateNameKey] = data.CertificateName
+	}
+	if data.IssuerName != "" || data.IssuerKind != "" || data.IssuerGroup != "" {
+		secret.Annotations[cmapi.IssuerNameAnnotationKey] = data.IssuerName
+		secret.Annotations[cmapi.IssuerKindAnnotationKey] = data.IssuerKind
+		secret.Annotations[cmapi.IssuerGroupAnnotationKey] = data.IssuerGroup
+	}
 
 	secret.Labels[cmapi.PartOfCertManagerControllerLabelKey] = "true"
 
