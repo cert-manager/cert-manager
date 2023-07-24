@@ -1354,8 +1354,8 @@ k8s.io/apimachinery v0.27.4/go.mod h1:XNfZ6xklnMCOGGFNqXG7bUrQCoR04dh/E7FprV6pb+
 k8s.io/apiserver v0.18.0/go.mod h1:3S2O6FeBBd6XTo0njUrLxiqk8GNy6wWOftjhJcXYnjw=
 k8s.io/apiserver v0.27.4 h1:ncZ0MBR9yQ/Gf34rtu1EK+HqT8In1YpfAUINu/Akvho=
 k8s.io/apiserver v0.27.4/go.mod h1:GDEFRfFZ4/l+pAvwYRnoSfz0K4j3TWiN4WsG2KnRteE=
-k8s.io/cli-runtime v0.27.2 h1:9HI8gfReNujKXt16tGOAnb8b4NZ5E+e0mQQHKhFGwYw=
-k8s.io/cli-runtime v0.27.2/go.mod h1:9UecpyPDTkhiYY4d9htzRqN+rKomJgyb4wi0OfrmCjw=
+k8s.io/cli-runtime v0.27.4 h1:Zb0eci+58eHZNnoHhjRFc7W88s8dlG12VtIl3Nv2Hto=
+k8s.io/cli-runtime v0.27.4/go.mod h1:k9Z1xiZq2xNplQmehpDquLgc+rE+pubpO1cK4al4Mlw=
 k8s.io/client-go v0.18.0/go.mod h1:uQSYDYs4WhVZ9i6AIoEZuwUggLVEF64HOD37boKAtF8=
 k8s.io/client-go v0.27.4 h1:vj2YTtSJ6J4KxaC88P4pMPEQECWMY8gqPqsTgUKzvjk=
 k8s.io/client-go v0.27.4/go.mod h1:ragcly7lUlN0SRPk5/ZkGnDjPknzb37TICq07WhI6Xc=
@@ -1375,8 +1375,8 @@ k8s.io/kube-aggregator v0.27.4/go.mod h1:+eG83gkAyh0uilQEAOgheeQW4hr+PkyV+5O1nLG
 k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c/go.mod h1:GRQhZsXIAJ1xR0C9bd8UpWHZ5plfAS9fzPjJuQ6JL3E=
 k8s.io/kube-openapi v0.0.0-20230718181711-3c0fae5ee9fd h1:0tN7VkdcfPGfii8Zl0edopOV08M6XxGlhO29AsPkBHw=
 k8s.io/kube-openapi v0.0.0-20230718181711-3c0fae5ee9fd/go.mod h1:wZK2AVp1uHCp4VamDVgBP2COHZjqD1T68Rf0CM3YjSM=
-k8s.io/kubectl v0.27.2 h1:sSBM2j94MHBFRWfHIWtEXWCicViQzZsb177rNsKBhZg=
-k8s.io/kubectl v0.27.2/go.mod h1:GCOODtxPcrjh+EC611MqREkU8RjYBh10ldQCQ6zpFKw=
+k8s.io/kubectl v0.27.4 h1:RV1TQLIbtL34+vIM+W7HaS3KfAbqvy9lWn6pWB9els4=
+k8s.io/kubectl v0.27.4/go.mod h1:qtc1s3BouB9KixJkriZMQqTsXMc+OAni6FeKAhq7q14=
 k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=
 k8s.io/utils v0.0.0-20230711102312-30195339c3c7 h1:ZgnF1KZsYxWIifwSNZFZgNtWE89WI5yiP5WwlfDoIyc=
 k8s.io/utils v0.0.0-20230711102312-30195339c3c7/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
