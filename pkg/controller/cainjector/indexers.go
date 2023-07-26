@@ -52,7 +52,7 @@ func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger,
 		if certName == nil {
 			return nil
 		}
-		log = log.WithValues("type", config.resourceName, "secret", secretName, "certificate", *certName)
+		log := log.WithValues("type", config.resourceName, "secret", secretName, "certificate", *certName)
 
 		var cert cmapi.Certificate
 		// confirm that a service owns this cert
@@ -96,7 +96,7 @@ func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger,
 func certToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []ctrl.Request {
 		certName := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
-		log = log.WithValues("type", config.resourceName, "certificate", certName)
+		log := log.WithValues("type", config.resourceName, "certificate", certName)
 		objs := config.listType.DeepCopyObject().(client.ObjectList)
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with certificate")
@@ -133,7 +133,7 @@ func certToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config se
 func secretForInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []ctrl.Request {
 		secretName := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
-		log = log.WithValues("type", config.resourceName, "secret", secretName)
+		log := log.WithValues("type", config.resourceName, "secret", secretName)
 		objs := config.listType.DeepCopyObject().(client.ObjectList)
 		// TODO: ensure that this is cache lister, not a direct client
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
