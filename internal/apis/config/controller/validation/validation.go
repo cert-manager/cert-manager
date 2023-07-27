@@ -44,7 +44,7 @@ func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
 		return fmt.Errorf("invalid value for kube-api-qps: %v must be higher than 0", o.KubernetesAPIQPS)
 	}
 
-	if float64(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
+	if float32(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
 		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
@@ -87,7 +87,7 @@ func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
 		}
 	}
 
-	err := logf.ValidateAndApply(o.Logging)
+	err := logf.ValidateAndApply(&o.Logging)
 	if err != nil {
 		errs = append(errs, err)
 	}

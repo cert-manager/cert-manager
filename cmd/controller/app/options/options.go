@@ -75,8 +75,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"will be attempted.")
 	fs.StringVar(&c.KubeConfig, "kubeconfig", c.KubeConfig, ""+
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
-	fs.Float64Var(&c.KubernetesAPIQPS, "kube-api-qps", c.KubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
-	fs.Int32Var(&c.KubernetesAPIBurst, "kube-api-burst", c.KubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
+	fs.Float32Var(&c.KubernetesAPIQPS, "kube-api-qps", c.KubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
+	fs.IntVar(&c.KubernetesAPIBurst, "kube-api-burst", c.KubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
 	fs.StringVar(&c.ClusterResourceNamespace, "cluster-resource-namespace", c.ClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
@@ -180,9 +180,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
 
-	fs.Int32Var(&c.NumberOfConcurrentWorkers, "concurrent-workers", c.NumberOfConcurrentWorkers, ""+
+	fs.IntVar(&c.NumberOfConcurrentWorkers, "concurrent-workers", c.NumberOfConcurrentWorkers, ""+
 		"The number of concurrent workers for each controller.")
-	fs.Int32Var(&c.MaxConcurrentChallenges, "max-concurrent-challenges", c.MaxConcurrentChallenges, ""+
+	fs.IntVar(&c.MaxConcurrentChallenges, "max-concurrent-challenges", c.MaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 	fs.DurationVar(&c.DNS01CheckRetryPeriod, "dns01-check-retry-period", c.DNS01CheckRetryPeriod, ""+
 		"The duration the controller should wait between a propagation check. Despite the name, this flag is used to configure the wait period for both DNS01 and HTTP01 challenge propagation checks. For DNS01 challenges the propagation check verifies that a TXT record with the challenge token has been created. For HTTP01 challenges the propagation check verifies that the challenge token is served at the challenge URL."+
@@ -212,7 +212,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	fs.MarkHidden("internal-healthz-leader-election-timeout")
 
-	logf.AddFlags(c.Logging, fs)
+	logf.AddFlags(&c.Logging, fs)
 }
 
 func EnabledControllers(o *config.ControllerConfiguration) sets.String {

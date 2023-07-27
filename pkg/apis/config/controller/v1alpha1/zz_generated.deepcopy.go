@@ -32,7 +32,7 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	out.TypeMeta = in.TypeMeta
 	if in.KubernetesAPIQPS != nil {
 		in, out := &in.KubernetesAPIQPS, &out.KubernetesAPIQPS
-		*out = new(float64)
+		*out = new(float32)
 		**out = **in
 	}
 	if in.KubernetesAPIBurst != nil {

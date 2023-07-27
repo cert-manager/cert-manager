@@ -214,7 +214,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting controller")
 
-			return iface.Run(int(opts.NumberOfConcurrentWorkers), rootCtx.Done())
+			return iface.Run(opts.NumberOfConcurrentWorkers, rootCtx.Done())
 		})
 	}
 
@@ -275,8 +275,8 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
 		Kubeconfig:         opts.KubeConfig,
-		KubernetesAPIQPS:   float32(opts.KubernetesAPIQPS),
-		KubernetesAPIBurst: int(opts.KubernetesAPIBurst),
+		KubernetesAPIQPS:   opts.KubernetesAPIQPS,
+		KubernetesAPIBurst: opts.KubernetesAPIBurst,
 		APIServerHost:      opts.APIServerHost,
 
 		Namespace: opts.Namespace,
@@ -302,7 +302,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		SchedulerOptions: controller.SchedulerOptions{
-			MaxConcurrentChallenges: int(opts.MaxConcurrentChallenges),
+			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
 		},
 
 		IssuerOptions: controller.IssuerOptions{

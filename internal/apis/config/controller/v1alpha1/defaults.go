@@ -56,7 +56,7 @@ import (
 var (
 	defaultAPIServerHost              = ""
 	defaultKubeconfig                 = ""
-	defaultKubernetesAPIQPS   float64 = 20
+	defaultKubernetesAPIQPS   float32 = 20
 	defaultKubernetesAPIBurst int32   = 50
 
 	defaultClusterResourceNamespace = "kube-system"

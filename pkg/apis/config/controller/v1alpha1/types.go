@@ -37,7 +37,8 @@ type ControllerConfiguration struct {
 	KubeConfig string `json:"kubeConfig,omitempty"`
 
 	// Indicates the maximum queries-per-second requests to the Kubernetes apiserver
-	KubernetesAPIQPS *float64 `json:"kubernetesAPIQPS,omitempty"`
+	// TODO: floats are not recommended. Maybe we should use resource.Quantity? https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
+	KubernetesAPIQPS *float32 `json:"kubernetesAPIQPS,omitempty"`
 
 	// The maximum burst queries-per-second of requests sent to the Kubernetes apiserver
 	KubernetesAPIBurst *int32 `json:"kubernetesAPIBurst,omitempty"`

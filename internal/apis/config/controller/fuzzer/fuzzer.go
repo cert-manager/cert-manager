@@ -69,7 +69,8 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			s.HealthzLeaderElectionTimeout = defaultTime
 			s.EnablePprof = true
 			s.PprofAddress = "something:1234"
-			s.Logging = logs.NewOptions()
+			temp := logs.NewOptions()
+			s.Logging = *temp
 			s.CopiedAnnotationPrefixes = []string{"*", "-kubectl.kubernetes.io/", "-fluxcd.io/", "-argocd.argoproj.io/"}
 
 		},

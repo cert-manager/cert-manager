@@ -38,10 +38,10 @@ type ControllerConfiguration struct {
 	KubeConfig string
 
 	// Indicates the maximum queries-per-second requests to the Kubernetes apiserver
-	KubernetesAPIQPS float64
+	KubernetesAPIQPS float32
 
 	// The maximum burst queries-per-second of requests sent to the Kubernetes apiserver
-	KubernetesAPIBurst int32
+	KubernetesAPIBurst int
 
 	// Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in.
 	ClusterResourceNamespace string
@@ -169,10 +169,10 @@ type ControllerConfiguration struct {
 	EnableCertificateOwnerRef bool
 
 	// The number of concurrent workers for each controller.
-	NumberOfConcurrentWorkers int32
+	NumberOfConcurrentWorkers int
 
 	// The maximum number of challenges that can be scheduled as 'processing' at once.
-	MaxConcurrentChallenges int32
+	MaxConcurrentChallenges int
 
 	// The host and port that the metrics endpoint should listen on.
 	MetricsListenAddress string
@@ -193,7 +193,7 @@ type ControllerConfiguration struct {
 	// Enable profiling for controller.
 	EnablePprof bool
 
-	Logging *logs.Options
+	Logging logs.Options
 
 	// The duration the controller should wait between a propagation check. Despite
 	// the name, this flag is used to configure the wait period for both DNS01 and
