@@ -38,10 +38,10 @@ type ControllerConfiguration struct {
 	KubeConfig string
 
 	// Indicates the maximum queries-per-second requests to the Kubernetes apiserver
-	KubernetesAPIQPS *float32
+	KubernetesAPIQPS float64
 
 	// The maximum burst queries-per-second of requests sent to the Kubernetes apiserver
-	KubernetesAPIBurst *int
+	KubernetesAPIBurst int32
 
 	// Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in.
 	ClusterResourceNamespace string
@@ -53,7 +53,7 @@ type ControllerConfiguration struct {
 
 	// If true, cert-manager will perform leader election between instances to
 	// ensure no more than one instance of cert-manager operates at a time
-	LeaderElect *bool
+	LeaderElect bool
 
 	//Namespace used to perform leader election. Only used if leader election is enabled
 	LeaderElectionNamespace string
@@ -108,7 +108,7 @@ type ControllerConfiguration struct {
 
 	// Defines the ability to run the http01 solver as root for troubleshooting
 	// issues
-	ACMEHTTP01SolverRunAsNonRoot *bool
+	ACMEHTTP01SolverRunAsNonRoot bool
 
 	// 	A list of comma separated dns server endpoints used for
 	// 	ACME HTTP01 check requests. This should be a list containing host and
@@ -122,7 +122,7 @@ type ControllerConfiguration struct {
 	// ClusterIssuer API object. When this flag is enabled, the following sources
 	// for credentials are also used: AWS - All sources the Go SDK defaults to,
 	// notably including any EC2 IAM roles available via instance metadata.
-	ClusterIssuerAmbientCredentials *bool
+	ClusterIssuerAmbientCredentials bool
 
 	// Whether an issuer may make use of ambient credentials. 'Ambient
 	// Credentials' are credentials drawn from the environment, metadata services,
@@ -130,7 +130,7 @@ type ControllerConfiguration struct {
 	// object. When this flag is enabled, the following sources for
 	// credentials are also used: AWS - All sources the Go SDK defaults to,
 	// notably including any EC2 IAM roles available via instance metadata.
-	IssuerAmbientCredentials *bool
+	IssuerAmbientCredentials bool
 
 	// Default issuer/certificates details consumed by ingress-shim
 	// Name of the Issuer to use when the tls is requested but issuer name is
@@ -161,18 +161,18 @@ type ControllerConfiguration struct {
 	// environments, where access to authoritative nameservers is restricted.
 	// Enabling this option could cause the DNS01 self check to take longer
 	// due to caching performed by the recursive nameservers.
-	DNS01RecursiveNameserversOnly *bool
+	DNS01RecursiveNameserversOnly bool
 
 	// Whether to set the certificate resource as an owner of secret where the
 	// tls certificate is stored. When this flag is enabled, the secret will be
 	// automatically removed when the certificate resource is deleted.
-	EnableCertificateOwnerRef *bool
+	EnableCertificateOwnerRef bool
 
 	// The number of concurrent workers for each controller.
-	NumberOfConcurrentWorkers *int
+	NumberOfConcurrentWorkers int32
 
 	// The maximum number of challenges that can be scheduled as 'processing' at once.
-	MaxConcurrentChallenges *int
+	MaxConcurrentChallenges int32
 
 	// The host and port that the metrics endpoint should listen on.
 	MetricsListenAddress string
@@ -191,7 +191,7 @@ type ControllerConfiguration struct {
 	PprofAddress string
 
 	// Enable profiling for controller.
-	EnablePprof *bool
+	EnablePprof bool
 
 	Logging *logs.Options
 

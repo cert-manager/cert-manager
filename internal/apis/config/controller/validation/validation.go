@@ -36,15 +36,15 @@ func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
 		return errors.New("the --default-issuer-kind flag must not be empty")
 	}
 
-	if *o.KubernetesAPIBurst <= 0 {
+	if o.KubernetesAPIBurst <= 0 {
 		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher than 0", o.KubernetesAPIBurst)
 	}
 
-	if *o.KubernetesAPIQPS <= 0 {
+	if o.KubernetesAPIQPS <= 0 {
 		return fmt.Errorf("invalid value for kube-api-qps: %v must be higher than 0", o.KubernetesAPIQPS)
 	}
 
-	if float32(*o.KubernetesAPIBurst) < *o.KubernetesAPIQPS {
+	if float64(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
 		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 

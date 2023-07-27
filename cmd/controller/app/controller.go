@@ -98,7 +98,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	})
 
 	// Start profiler if it is enabled
-	if *opts.EnablePprof {
+	if opts.EnablePprof {
 		profilerLn, err := net.Listen("tcp", opts.PprofAddress)
 		if err != nil {
 			return fmt.Errorf("failed to listen on profiler address %s: %v", opts.PprofAddress, err)
@@ -140,7 +140,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	})
 
 	elected := make(chan struct{})
-	if *opts.LeaderElect {
+	if opts.LeaderElect {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting leader election")
 			ctx, err := ctxFactory.Build("leader-election")
@@ -214,7 +214,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting controller")
 
-			return iface.Run(*opts.NumberOfConcurrentWorkers, rootCtx.Done())
+			return iface.Run(int(opts.NumberOfConcurrentWorkers), rootCtx.Done())
 		})
 	}
 
@@ -270,13 +270,13 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %w", err)
 	}
 
-	ACMEHTTP01SolverRunAsNonRoot := *opts.ACMEHTTP01SolverRunAsNonRoot
+	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01SolverRunAsNonRoot
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
 		Kubeconfig:         opts.KubeConfig,
-		KubernetesAPIQPS:   *opts.KubernetesAPIQPS,
-		KubernetesAPIBurst: *opts.KubernetesAPIBurst,
+		KubernetesAPIQPS:   float32(opts.KubernetesAPIQPS),
+		KubernetesAPIBurst: int(opts.KubernetesAPIBurst),
 		APIServerHost:      opts.APIServerHost,
 
 		Namespace: opts.Namespace,
@@ -296,18 +296,18 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.DNS01CheckRetryPeriod,
-			DNS01CheckAuthoritative: !*opts.DNS01RecursiveNameserversOnly,
+			DNS01CheckAuthoritative: !opts.DNS01RecursiveNameserversOnly,
 
 			AccountRegistry: acmeAccountRegistry,
 		},
 
 		SchedulerOptions: controller.SchedulerOptions{
-			MaxConcurrentChallenges: *opts.MaxConcurrentChallenges,
+			MaxConcurrentChallenges: int(opts.MaxConcurrentChallenges),
 		},
 
 		IssuerOptions: controller.IssuerOptions{
-			ClusterIssuerAmbientCredentials: *opts.ClusterIssuerAmbientCredentials,
-			IssuerAmbientCredentials:        *opts.IssuerAmbientCredentials,
+			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
+			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 		},
 
@@ -319,7 +319,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:           *opts.EnableCertificateOwnerRef,
+			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
 			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
 		},
 	})

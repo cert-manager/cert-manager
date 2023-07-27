@@ -37,10 +37,10 @@ type ControllerConfiguration struct {
 	KubeConfig string `json:"kubeConfig,omitempty"`
 
 	// Indicates the maximum queries-per-second requests to the Kubernetes apiserver
-	KubernetesAPIQPS *float32 `json:"kubernetesAPIQPS,omitempty"`
+	KubernetesAPIQPS *float64 `json:"kubernetesAPIQPS,omitempty"`
 
 	// The maximum burst queries-per-second of requests sent to the Kubernetes apiserver
-	KubernetesAPIBurst *int `json:"kubernetesAPIBurst,omitempty"`
+	KubernetesAPIBurst *int32 `json:"kubernetesAPIBurst,omitempty"`
 
 	// Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in.
 	ClusterResourceNamespace string `json:"clusterResourceNamespace,omitempty"`
@@ -163,10 +163,10 @@ type ControllerConfiguration struct {
 	EnableCertificateOwnerRef *bool `json:"enableCertificateOwnerRef,omitempty"`
 
 	// The number of concurrent workers for each controller.
-	NumberOfConcurrentWorkers *int `json:"numberOfConcurrentWorkers,omitempty"`
+	NumberOfConcurrentWorkers *int32 `json:"numberOfConcurrentWorkers,omitempty"`
 
 	// The maximum number of challenges that can be scheduled as 'processing' at once.
-	MaxConcurrentChallenges *int `json:"maxConcurrentChallenges,omitempty"`
+	MaxConcurrentChallenges *int32 `json:"maxConcurrentChallenges,omitempty"`
 
 	// The host and port that the metrics endpoint should listen on.
 	MetricsListenAddress string `json:"metricsListenAddress,omitempty"`

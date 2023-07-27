@@ -30,45 +30,15 @@ import (
 func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	if in.KubernetesAPIQPS != nil {
-		in, out := &in.KubernetesAPIQPS, &out.KubernetesAPIQPS
-		*out = new(float32)
-		**out = **in
-	}
-	if in.KubernetesAPIBurst != nil {
-		in, out := &in.KubernetesAPIBurst, &out.KubernetesAPIBurst
-		*out = new(int)
-		**out = **in
-	}
-	if in.LeaderElect != nil {
-		in, out := &in.LeaderElect, &out.LeaderElect
-		*out = new(bool)
-		**out = **in
-	}
 	if in.Controllers != nil {
 		in, out := &in.Controllers, &out.Controllers
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ACMEHTTP01SolverRunAsNonRoot != nil {
-		in, out := &in.ACMEHTTP01SolverRunAsNonRoot, &out.ACMEHTTP01SolverRunAsNonRoot
-		*out = new(bool)
-		**out = **in
-	}
 	if in.ACMEHTTP01SolverNameservers != nil {
 		in, out := &in.ACMEHTTP01SolverNameservers, &out.ACMEHTTP01SolverNameservers
 		*out = make([]string, len(*in))
 		copy(*out, *in)
-	}
-	if in.ClusterIssuerAmbientCredentials != nil {
-		in, out := &in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials
-		*out = new(bool)
-		**out = **in
-	}
-	if in.IssuerAmbientCredentials != nil {
-		in, out := &in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials
-		*out = new(bool)
-		**out = **in
 	}
 	if in.DefaultAutoCertificateAnnotations != nil {
 		in, out := &in.DefaultAutoCertificateAnnotations, &out.DefaultAutoCertificateAnnotations
@@ -79,31 +49,6 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		in, out := &in.DNS01RecursiveNameservers, &out.DNS01RecursiveNameservers
 		*out = make([]string, len(*in))
 		copy(*out, *in)
-	}
-	if in.DNS01RecursiveNameserversOnly != nil {
-		in, out := &in.DNS01RecursiveNameserversOnly, &out.DNS01RecursiveNameserversOnly
-		*out = new(bool)
-		**out = **in
-	}
-	if in.EnableCertificateOwnerRef != nil {
-		in, out := &in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef
-		*out = new(bool)
-		**out = **in
-	}
-	if in.NumberOfConcurrentWorkers != nil {
-		in, out := &in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers
-		*out = new(int)
-		**out = **in
-	}
-	if in.MaxConcurrentChallenges != nil {
-		in, out := &in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges
-		*out = new(int)
-		**out = **in
-	}
-	if in.EnablePprof != nil {
-		in, out := &in.EnablePprof, &out.EnablePprof
-		*out = new(bool)
-		**out = **in
 	}
 	if in.Logging != nil {
 		in, out := &in.Logging, &out.Logging

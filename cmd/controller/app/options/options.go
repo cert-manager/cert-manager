@@ -75,15 +75,15 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"will be attempted.")
 	fs.StringVar(&c.KubeConfig, "kubeconfig", c.KubeConfig, ""+
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
-	fs.Float32Var(c.KubernetesAPIQPS, "kube-api-qps", *c.KubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
-	fs.IntVar(c.KubernetesAPIBurst, "kube-api-burst", *c.KubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
+	fs.Float64Var(&c.KubernetesAPIQPS, "kube-api-qps", c.KubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
+	fs.Int32Var(&c.KubernetesAPIBurst, "kube-api-burst", c.KubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
 	fs.StringVar(&c.ClusterResourceNamespace, "cluster-resource-namespace", c.ClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
 	fs.StringVar(&c.Namespace, "namespace", c.Namespace, ""+
 		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
 		"If not specified, all namespaces will be watched")
-	fs.BoolVar(c.LeaderElect, "leader-elect", *c.LeaderElect, ""+
+	fs.BoolVar(&c.LeaderElect, "leader-elect", c.LeaderElect, ""+
 		"If true, cert-manager will perform leader election between instances to ensure no more "+
 		"than one instance of cert-manager operates at a time")
 	fs.StringVar(&c.LeaderElectionNamespace, "leader-election-namespace", c.LeaderElectionNamespace, ""+
@@ -130,7 +130,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.StringVar(&c.ACMEHTTP01SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", c.ACMEHTTP01SolverResourceLimitsMemory, ""+
 		"Defines the resource limits Memory size when spawning new ACME HTTP01 challenge solver pods.")
 
-	fs.BoolVar(c.ACMEHTTP01SolverRunAsNonRoot, "acme-http01-solver-run-as-non-root", *c.ACMEHTTP01SolverRunAsNonRoot, ""+
+	fs.BoolVar(&c.ACMEHTTP01SolverRunAsNonRoot, "acme-http01-solver-run-as-non-root", c.ACMEHTTP01SolverRunAsNonRoot, ""+
 		"Defines the ability to run the http01 solver as root for troubleshooting issues")
 
 	fs.StringSliceVar(&c.ACMEHTTP01SolverNameservers, "acme-http01-solver-nameservers",
@@ -138,11 +138,11 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 			"ACME HTTP01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 
-	fs.BoolVar(c.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", *c.ClusterIssuerAmbientCredentials, ""+
+	fs.BoolVar(&c.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", c.ClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
-	fs.BoolVar(c.IssuerAmbientCredentials, "issuer-ambient-credentials", *c.IssuerAmbientCredentials, ""+
+	fs.BoolVar(&c.IssuerAmbientCredentials, "issuer-ambient-credentials", c.IssuerAmbientCredentials, ""+
 		"Whether an issuer may make use of ambient credentials. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the Issuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
@@ -162,15 +162,15 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 			"For example: `8.8.8.8:53,8.8.4.4:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
 			"To make sure ALL DNS requests happen through DoH, `dns01-recursive-nameservers-only` should also be set to true.")
 
-	fs.BoolVar(c.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
-		*c.DNS01RecursiveNameserversOnly,
+	fs.BoolVar(&c.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
+		c.DNS01RecursiveNameserversOnly,
 		"When true, cert-manager will only ever query the configured DNS resolvers "+
 			"to perform the ACME DNS01 self check. This is useful in DNS constrained "+
 			"environments, where access to authoritative nameservers is restricted. "+
 			"Enabling this option could cause the DNS01 self check to take longer "+
 			"due to caching performed by the recursive nameservers.")
 
-	fs.BoolVar(c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", *c.EnableCertificateOwnerRef, ""+
+	fs.BoolVar(&c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", c.EnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
@@ -180,9 +180,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
 
-	fs.IntVar(c.NumberOfConcurrentWorkers, "concurrent-workers", *c.NumberOfConcurrentWorkers, ""+
+	fs.Int32Var(&c.NumberOfConcurrentWorkers, "concurrent-workers", c.NumberOfConcurrentWorkers, ""+
 		"The number of concurrent workers for each controller.")
-	fs.IntVar(c.MaxConcurrentChallenges, "max-concurrent-challenges", *c.MaxConcurrentChallenges, ""+
+	fs.Int32Var(&c.MaxConcurrentChallenges, "max-concurrent-challenges", c.MaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 	fs.DurationVar(&c.DNS01CheckRetryPeriod, "dns01-check-retry-period", c.DNS01CheckRetryPeriod, ""+
 		"The duration the controller should wait between a propagation check. Despite the name, this flag is used to configure the wait period for both DNS01 and HTTP01 challenge propagation checks. For DNS01 challenges the propagation check verifies that a TXT record with the challenge token has been created. For HTTP01 challenges the propagation check verifies that the challenge token is served at the challenge URL."+
@@ -190,7 +190,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 
 	fs.StringVar(&c.MetricsListenAddress, "metrics-listen-address", c.MetricsListenAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
-	fs.BoolVar(c.EnablePprof, "enable-profiling", *c.EnablePprof, ""+
+	fs.BoolVar(&c.EnablePprof, "enable-profiling", c.EnablePprof, ""+
 		"Enable profiling for controller.")
 	fs.StringVar(&c.PprofAddress, "profiler-address", c.PprofAddress,
 		"The host and port that Go profiler should listen on, i.e localhost:6060. Ensure that profiler is not exposed on a public address. Profiler will be served at /debug/pprof.")

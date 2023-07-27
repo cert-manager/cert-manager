@@ -56,8 +56,8 @@ import (
 var (
 	defaultAPIServerHost              = ""
 	defaultKubeconfig                 = ""
-	defaultKubernetesAPIQPS   float32 = 20
-	defaultKubernetesAPIBurst         = 50
+	defaultKubernetesAPIQPS   float64 = 20
+	defaultKubernetesAPIBurst int32   = 50
 
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
@@ -84,8 +84,8 @@ var (
 	defaultDNS01RecursiveNameserversOnly = false
 	defaultDNS01RecursiveNameservers     = []string{}
 
-	defaultNumberOfConcurrentWorkers = 5
-	defaultMaxConcurrentChallenges   = 60
+	defaultNumberOfConcurrentWorkers int32 = 5
+	defaultMaxConcurrentChallenges   int32 = 60
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 

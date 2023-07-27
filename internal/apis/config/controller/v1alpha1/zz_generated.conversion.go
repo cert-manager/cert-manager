@@ -27,9 +27,10 @@ import (
 
 	controller "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	v1 "k8s.io/component-base/logs/api/v1"
+	apiv1 "k8s.io/component-base/logs/api/v1"
 )
 
 func init() {
@@ -55,11 +56,17 @@ func RegisterConversions(s *runtime.Scheme) error {
 func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *v1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
 	out.APIServerHost = in.APIServerHost
 	out.KubeConfig = in.KubeConfig
-	out.KubernetesAPIQPS = (*float32)(unsafe.Pointer(in.KubernetesAPIQPS))
-	out.KubernetesAPIBurst = (*int)(unsafe.Pointer(in.KubernetesAPIBurst))
+	if err := v1.Convert_Pointer_float64_To_float64(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_int32_To_int32(&in.KubernetesAPIBurst, &out.KubernetesAPIBurst, s); err != nil {
+		return err
+	}
 	out.ClusterResourceNamespace = in.ClusterResourceNamespace
 	out.Namespace = in.Namespace
-	out.LeaderElect = (*bool)(unsafe.Pointer(in.LeaderElect))
+	if err := v1.Convert_Pointer_bool_To_bool(&in.LeaderElect, &out.LeaderElect, s); err != nil {
+		return err
+	}
 	out.LeaderElectionNamespace = in.LeaderElectionNamespace
 	out.LeaderElectionLeaseDuration = time.Duration(in.LeaderElectionLeaseDuration)
 	out.LeaderElectionRenewDeadline = time.Duration(in.LeaderElectionRenewDeadline)
@@ -70,25 +77,41 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 	out.ACMEHTTP01SolverResourceRequestMemory = in.ACMEHTTP01SolverResourceRequestMemory
 	out.ACMEHTTP01SolverResourceLimitsCPU = in.ACMEHTTP01SolverResourceLimitsCPU
 	out.ACMEHTTP01SolverResourceLimitsMemory = in.ACMEHTTP01SolverResourceLimitsMemory
-	out.ACMEHTTP01SolverRunAsNonRoot = (*bool)(unsafe.Pointer(in.ACMEHTTP01SolverRunAsNonRoot))
+	if err := v1.Convert_Pointer_bool_To_bool(&in.ACMEHTTP01SolverRunAsNonRoot, &out.ACMEHTTP01SolverRunAsNonRoot, s); err != nil {
+		return err
+	}
 	out.ACMEHTTP01SolverNameservers = *(*[]string)(unsafe.Pointer(&in.ACMEHTTP01SolverNameservers))
-	out.ClusterIssuerAmbientCredentials = (*bool)(unsafe.Pointer(in.ClusterIssuerAmbientCredentials))
-	out.IssuerAmbientCredentials = (*bool)(unsafe.Pointer(in.IssuerAmbientCredentials))
+	if err := v1.Convert_Pointer_bool_To_bool(&in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_bool_To_bool(&in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials, s); err != nil {
+		return err
+	}
 	out.DefaultIssuerName = in.DefaultIssuerName
 	out.DefaultIssuerKind = in.DefaultIssuerKind
 	out.DefaultIssuerGroup = in.DefaultIssuerGroup
 	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
 	out.DNS01RecursiveNameservers = *(*[]string)(unsafe.Pointer(&in.DNS01RecursiveNameservers))
-	out.DNS01RecursiveNameserversOnly = (*bool)(unsafe.Pointer(in.DNS01RecursiveNameserversOnly))
-	out.EnableCertificateOwnerRef = (*bool)(unsafe.Pointer(in.EnableCertificateOwnerRef))
-	out.NumberOfConcurrentWorkers = (*int)(unsafe.Pointer(in.NumberOfConcurrentWorkers))
-	out.MaxConcurrentChallenges = (*int)(unsafe.Pointer(in.MaxConcurrentChallenges))
+	if err := v1.Convert_Pointer_bool_To_bool(&in.DNS01RecursiveNameserversOnly, &out.DNS01RecursiveNameserversOnly, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_int32_To_int32(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_int32_To_int32(&in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges, s); err != nil {
+		return err
+	}
 	out.MetricsListenAddress = in.MetricsListenAddress
 	out.HealthzListenAddress = in.HealthzListenAddress
 	out.HealthzLeaderElectionTimeout = time.Duration(in.HealthzLeaderElectionTimeout)
 	out.PprofAddress = in.PprofAddress
-	out.EnablePprof = (*bool)(unsafe.Pointer(in.EnablePprof))
-	out.Logging = (*v1.LoggingConfiguration)(unsafe.Pointer(in.Logging))
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnablePprof, &out.EnablePprof, s); err != nil {
+		return err
+	}
+	out.Logging = (*apiv1.LoggingConfiguration)(unsafe.Pointer(in.Logging))
 	out.DNS01CheckRetryPeriod = time.Duration(in.DNS01CheckRetryPeriod)
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
@@ -103,11 +126,17 @@ func Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfigurat
 func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
 	out.APIServerHost = in.APIServerHost
 	out.KubeConfig = in.KubeConfig
-	out.KubernetesAPIQPS = (*float32)(unsafe.Pointer(in.KubernetesAPIQPS))
-	out.KubernetesAPIBurst = (*int)(unsafe.Pointer(in.KubernetesAPIBurst))
+	if err := v1.Convert_float64_To_Pointer_float64(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_int32_To_Pointer_int32(&in.KubernetesAPIBurst, &out.KubernetesAPIBurst, s); err != nil {
+		return err
+	}
 	out.ClusterResourceNamespace = in.ClusterResourceNamespace
 	out.Namespace = in.Namespace
-	out.LeaderElect = (*bool)(unsafe.Pointer(in.LeaderElect))
+	if err := v1.Convert_bool_To_Pointer_bool(&in.LeaderElect, &out.LeaderElect, s); err != nil {
+		return err
+	}
 	out.LeaderElectionNamespace = in.LeaderElectionNamespace
 	out.LeaderElectionLeaseDuration = time.Duration(in.LeaderElectionLeaseDuration)
 	out.LeaderElectionRenewDeadline = time.Duration(in.LeaderElectionRenewDeadline)
@@ -118,25 +147,41 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 	out.ACMEHTTP01SolverResourceRequestMemory = in.ACMEHTTP01SolverResourceRequestMemory
 	out.ACMEHTTP01SolverResourceLimitsCPU = in.ACMEHTTP01SolverResourceLimitsCPU
 	out.ACMEHTTP01SolverResourceLimitsMemory = in.ACMEHTTP01SolverResourceLimitsMemory
-	out.ACMEHTTP01SolverRunAsNonRoot = (*bool)(unsafe.Pointer(in.ACMEHTTP01SolverRunAsNonRoot))
+	if err := v1.Convert_bool_To_Pointer_bool(&in.ACMEHTTP01SolverRunAsNonRoot, &out.ACMEHTTP01SolverRunAsNonRoot, s); err != nil {
+		return err
+	}
 	out.ACMEHTTP01SolverNameservers = *(*[]string)(unsafe.Pointer(&in.ACMEHTTP01SolverNameservers))
-	out.ClusterIssuerAmbientCredentials = (*bool)(unsafe.Pointer(in.ClusterIssuerAmbientCredentials))
-	out.IssuerAmbientCredentials = (*bool)(unsafe.Pointer(in.IssuerAmbientCredentials))
+	if err := v1.Convert_bool_To_Pointer_bool(&in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_bool_To_Pointer_bool(&in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials, s); err != nil {
+		return err
+	}
 	out.DefaultIssuerName = in.DefaultIssuerName
 	out.DefaultIssuerKind = in.DefaultIssuerKind
 	out.DefaultIssuerGroup = in.DefaultIssuerGroup
 	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
 	out.DNS01RecursiveNameservers = *(*[]string)(unsafe.Pointer(&in.DNS01RecursiveNameservers))
-	out.DNS01RecursiveNameserversOnly = (*bool)(unsafe.Pointer(in.DNS01RecursiveNameserversOnly))
-	out.EnableCertificateOwnerRef = (*bool)(unsafe.Pointer(in.EnableCertificateOwnerRef))
-	out.NumberOfConcurrentWorkers = (*int)(unsafe.Pointer(in.NumberOfConcurrentWorkers))
-	out.MaxConcurrentChallenges = (*int)(unsafe.Pointer(in.MaxConcurrentChallenges))
+	if err := v1.Convert_bool_To_Pointer_bool(&in.DNS01RecursiveNameserversOnly, &out.DNS01RecursiveNameserversOnly, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_int32_To_Pointer_int32(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_int32_To_Pointer_int32(&in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges, s); err != nil {
+		return err
+	}
 	out.MetricsListenAddress = in.MetricsListenAddress
 	out.HealthzListenAddress = in.HealthzListenAddress
 	out.HealthzLeaderElectionTimeout = time.Duration(in.HealthzLeaderElectionTimeout)
 	out.PprofAddress = in.PprofAddress
-	out.EnablePprof = (*bool)(unsafe.Pointer(in.EnablePprof))
-	out.Logging = (*v1.LoggingConfiguration)(unsafe.Pointer(in.Logging))
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnablePprof, &out.EnablePprof, s); err != nil {
+		return err
+	}
+	out.Logging = (*apiv1.LoggingConfiguration)(unsafe.Pointer(in.Logging))
 	out.DNS01CheckRetryPeriod = time.Duration(in.DNS01CheckRetryPeriod)
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))

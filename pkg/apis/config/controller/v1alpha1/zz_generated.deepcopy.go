@@ -32,12 +32,12 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	out.TypeMeta = in.TypeMeta
 	if in.KubernetesAPIQPS != nil {
 		in, out := &in.KubernetesAPIQPS, &out.KubernetesAPIQPS
-		*out = new(float32)
+		*out = new(float64)
 		**out = **in
 	}
 	if in.KubernetesAPIBurst != nil {
 		in, out := &in.KubernetesAPIBurst, &out.KubernetesAPIBurst
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.LeaderElect != nil {
@@ -92,12 +92,12 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	}
 	if in.NumberOfConcurrentWorkers != nil {
 		in, out := &in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.MaxConcurrentChallenges != nil {
 		in, out := &in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.EnablePprof != nil {
