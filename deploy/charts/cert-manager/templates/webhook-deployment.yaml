@@ -55,6 +55,9 @@ spec:
       {{- if .Values.webhook.hostNetwork }}
       hostNetwork: true
       {{- end }}
+      {{- if .Values.webhook.hostNetwork }}
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}-webhook
           {{- with .Values.webhook.image }}
