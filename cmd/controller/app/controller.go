@@ -35,6 +35,7 @@ import (
 	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
@@ -48,7 +49,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
-func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
+func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	rootCtx, cancelContext := context.WithCancel(cmdutil.ContextWithStopCh(context.Background(), stopCh))
 	defer cancelContext()
 	rootCtx = logf.NewContext(rootCtx, logf.Log, "controller")
@@ -67,7 +68,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 		return err
 	}
 
-	enabledControllers := opts.EnabledControllers()
+	enabledControllers := options.EnabledControllers(opts)
 	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
 
 	// Start metrics server
@@ -237,7 +238,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 
 // buildControllerContextFactory builds a new controller ContextFactory which
 // can build controller contexts for each component.
-func buildControllerContextFactory(ctx context.Context, opts *options.ControllerOptions) (*controller.ContextFactory, error) {
+func buildControllerContextFactory(ctx context.Context, opts *config.ControllerConfiguration) (*controller.ContextFactory, error) {
 	log := logf.FromContext(ctx)
 
 	nameservers := opts.DNS01RecursiveNameservers
@@ -273,7 +274,7 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
-		Kubeconfig:         opts.Kubeconfig,
+		Kubeconfig:         opts.KubeConfig,
 		KubernetesAPIQPS:   opts.KubernetesAPIQPS,
 		KubernetesAPIBurst: opts.KubernetesAPIBurst,
 		APIServerHost:      opts.APIServerHost,
@@ -329,7 +330,7 @@ func buildControllerContextFactory(ctx context.Context, opts *options.Controller
 	return ctxFactory, nil
 }
 
-func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, callbacks leaderelection.LeaderCallbacks, healthzAdaptor *leaderelection.HealthzAdaptor) error {
+func startLeaderElection(ctx context.Context, opts *config.ControllerConfiguration, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, callbacks leaderelection.LeaderCallbacks, healthzAdaptor *leaderelection.HealthzAdaptor) error {
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {

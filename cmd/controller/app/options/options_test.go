@@ -21,7 +21,11 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/component-base/logs"
+
+	//"github.com/cert-manager/cert-manager/controller-binary/app/options"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
+	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
 )
 
 func TestEnabledControllers(t *testing.T) {
@@ -43,21 +47,21 @@ func TestEnabledControllers(t *testing.T) {
 		},
 		"if all default controllers enabled, return all default controllers": {
 			controllers: []string{"*"},
-			expEnabled:  sets.NewString(defaultEnabledControllers...),
+			expEnabled:  sets.NewString(defaults.DefaultEnabledControllers...),
 		},
 		"if all controllers enabled, some diabled, return all controllers with disabled": {
 			controllers: []string{"*", "-clusterissuers", "-issuers"},
-			expEnabled:  sets.NewString(defaultEnabledControllers...).Delete("clusterissuers", "issuers"),
+			expEnabled:  sets.NewString(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			o := ControllerOptions{
-				controllers: test.controllers,
+			o := config.ControllerConfiguration{
+				Controllers: test.controllers,
 			}
 
-			got := o.EnabledControllers()
+			got := EnabledControllers(&o)
 			if !got.Equal(test.expEnabled) {
 				t.Errorf("got unexpected enabled, exp=%s got=%s",
 					test.expEnabled, got)
@@ -91,15 +95,11 @@ func TestValidate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			o := ControllerOptions{
-				DNS01RecursiveNameservers: test.DNS01RecursiveServers,
-				DefaultIssuerKind:         defaultTLSACMEIssuerKind,
-				KubernetesAPIBurst:        defaultKubernetesAPIBurst,
-				KubernetesAPIQPS:          defaultKubernetesAPIQPS,
-				Logging:                   logs.NewOptions(),
-			}
+			o, _ := NewControllerConfiguration()
+			o.DNS01RecursiveNameservers = test.DNS01RecursiveServers
+			//defaults.SetDefaults_ControllerConfiguration(o)
 
-			err := o.Validate()
+			err := validation.ValidateControllerConfiguration(o)
 			if test.expError != "" {
 				if err == nil || !strings.Contains(err.Error(), test.expError) {
 					t.Errorf("expected error containing '%s', but got: %v", test.expError, err)

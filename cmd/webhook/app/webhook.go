@@ -31,8 +31,9 @@ import (
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/pkg/webhook/configfile"
+	webhookconfigfile "github.com/cert-manager/cert-manager/pkg/webhook/configfile"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 )
 
@@ -190,13 +191,15 @@ func loadConfigFile(name string) (*config.WebhookConfiguration, error) {
 	if err != nil {
 		return nil, fmt.Errorf(errFmt, name, err)
 	}
-	loader, err := configfile.NewFSLoader(configfile.NewRealFS(), webhookConfigFile)
+
+	webhookConfig := webhookconfigfile.New()
+	loader, err := configfile.NewConfigurationFSLoader(nil, webhookConfigFile)
 	if err != nil {
 		return nil, fmt.Errorf(errFmt, name, err)
 	}
-	cfg, err := loader.Load()
-	if err != nil {
+	if err := loader.Load(webhookConfig); err != nil {
 		return nil, fmt.Errorf(errFmt, name, err)
 	}
-	return cfg, nil
+
+	return webhookConfig.Config, nil
 }
