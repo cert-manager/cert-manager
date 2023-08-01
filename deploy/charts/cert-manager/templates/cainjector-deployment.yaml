@@ -16,6 +16,9 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.cainjector.replicaCount }}
+  {{- if .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "cainjector.name" . }}

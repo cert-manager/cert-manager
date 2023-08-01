@@ -54,6 +54,9 @@ installCRDs: false
 
 replicaCount: 1
 
+# Number of old history to retain to allow rollback (If not set, default Kubernetes value is set to 10)
+# revisionHistoryLimit: 1
+
 strategy: {}
   # type: RollingUpdate
   # rollingUpdate:
