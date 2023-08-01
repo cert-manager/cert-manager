@@ -37,7 +37,8 @@ func main() {
 	logf.InitLogs()
 	defer logf.FlushLogs()
 
-	// In cmctl, we are using cmdutil.CheckErr, which will call os.Exit(1) if it receives an error.
+	// In cmctl, we are using cmdutil.CheckErr, a kubectl utility function that creates human readable
+	// error messages from errors. By default, this function will call os.Exit(1) if it receives an error.
 	// Instead, we want to do a soft exit, and use SetExitCode to set the correct exit code.
 	// Additionally, we make sure to output the final error message to stdout, as we do not want this
 	// message to be mixed with other log outputs from the execution of the command.
