@@ -18,20 +18,24 @@ package cmd
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/klog/v2"
+	"k8s.io/component-base/logs"
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build/commands"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func NewCertManagerCtlCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.Command {
+	ctx = logf.NewContext(ctx, logf.Log)
+
+	logOptions := logs.NewOptions()
+
 	cmds := &cobra.Command{
 		Use:   build.Name(),
 		Short: "cert-manager CLI tool to manage and configure cert-manager resources",
@@ -40,16 +44,29 @@ func NewCertManagerCtlCommand(ctx context.Context, in io.Reader, out, err io.Wri
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return logf.ValidateAndApply(logOptions)
+		},
+		SilenceErrors: true, // Errors are already logged when calling cmd.Execute()
 	}
 	cmds.SetUsageTemplate(usageTemplate())
 
-	cmds.Flags().AddGoFlagSet(flag.CommandLine)
-	flag.CommandLine.Parse([]string{})
-	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
-	klog.InitFlags(fakefs)
-	if err := fakefs.Parse([]string{"-logtostderr=false"}); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
+	{
+		var logFlags pflag.FlagSet
+		logf.AddFlagsNonDeprecated(logOptions, &logFlags)
+
+		logFlags.VisitAll(func(f *pflag.Flag) {
+			switch f.Name {
+			case "v":
+				// "cmctl check api" already had a "v" flag that did not require any value, for
+				// backwards compatibility we allow the "v" logging flag to be set without a value
+				// and default to "2" (which will result in the same behaviour as before).
+				f.NoOptDefVal = "2"
+				cmds.PersistentFlags().AddFlag(f)
+			default:
+				cmds.PersistentFlags().AddFlag(f)
+			}
+		})
 	}
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}

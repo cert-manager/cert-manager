@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -32,6 +31,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type options struct {
@@ -88,7 +88,7 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := run(ctx, options)
 			if err != nil {
-				return fmt.Errorf("run: %v", err)
+				return err
 			}
 
 			if options.dryRun {
@@ -126,9 +126,11 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 // run assumes cert-manager was installed as a Helm release named cert-manager.
 // this is not configurable to avoid uninstalling non-cert-manager releases.
 func run(ctx context.Context, o options) (*release.UninstallReleaseResponse, error) {
-	log.SetFlags(0) // disable prefixing logs with timestamps.
+	log := logf.FromContext(ctx, "install")
 
-	if err := o.cfg.Init(o.settings.RESTClientGetter(), o.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+	if err := o.cfg.Init(o.settings.RESTClientGetter(), o.settings.Namespace(), os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
+		log.Info(fmt.Sprintf(format, v...))
+	}); err != nil {
 		return nil, fmt.Errorf("o.cfg.Init: %v", err)
 	}
 
@@ -139,7 +141,7 @@ func run(ctx context.Context, o options) (*release.UninstallReleaseResponse, err
 	res, err := o.client.Run(releaseName)
 
 	if errors.Is(err, driver.ErrReleaseNotFound) {
-		log.Fatalf("release %v not found in namespace %v, did you use the correct namespace?", releaseName, o.settings.Namespace())
+		return nil, fmt.Errorf("release %v not found in namespace %v, did you use the correct namespace?", releaseName, o.settings.Namespace())
 	}
 
 	return res, nil
