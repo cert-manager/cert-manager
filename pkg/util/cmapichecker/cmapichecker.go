@@ -38,12 +38,13 @@ var (
 )
 
 const (
-	crdsMappingError  = `error finding the scope of the object: failed to get restmapping: no matches for kind "Certificate" in group "cert-manager.io"`
+	crdsMapping1Error = `error finding the scope of the object: failed to get restmapping: failed to find API group "cert-manager.io"`
+	crdsMapping2Error = `error finding the scope of the object: failed to get restmapping: no matches for kind "Certificate" in group "cert-manager.io"`
 	crdsNotFoundError = `the server could not find the requested resource (post certificates.cert-manager.io)`
 )
 
 var (
-	regexErrCertManagerCRDsNotFound   = regexp.MustCompile(`^(` + regexp.QuoteMeta(crdsMappingError) + `|` + regexp.QuoteMeta(crdsNotFoundError) + `)$`)
+	regexErrCertManagerCRDsNotFound   = regexp.MustCompile(`^(` + regexp.QuoteMeta(crdsMapping1Error) + `|` + regexp.QuoteMeta(crdsMapping2Error) + `|` + regexp.QuoteMeta(crdsNotFoundError) + `)$`)
 	regexErrWebhookServiceFailure     = regexp.MustCompile(`Post "(.*)": service "(.*)-webhook" not found`)
 	regexErrWebhookDeploymentFailure  = regexp.MustCompile(`Post "(.*)": (.*): connect: connection refused`)
 	regexErrWebhookCertificateFailure = regexp.MustCompile(`Post "(.*)": x509: certificate signed by unknown authority`)
