@@ -112,14 +112,10 @@ func (o *Options) Run(ctx context.Context) error {
 		if err := o.APIChecker.Check(ctx); err != nil {
 			simpleError := cmapichecker.TranslateToSimpleError(err)
 			if simpleError != nil {
-				if !log.V(2).Enabled() {
-					log.Error(simpleError, "Not ready")
-				} else {
-					log.Error(simpleError, "Not ready", "underlyingError", err)
-				}
+				log.V(2).Info("Not ready", "err", simpleError, "underlyingError", err)
 				lastError = simpleError
 			} else {
-				log.Error(err, "Not ready")
+				log.V(2).Info("Not ready", "err", err)
 				lastError = err
 			}
 
@@ -134,7 +130,7 @@ func (o *Options) Run(ctx context.Context) error {
 
 	if pollErr != nil {
 		if errors.Is(pollErr, context.DeadlineExceeded) && o.Wait > 0 {
-			log.Error(pollErr, "Timed out", "after", o.Wait)
+			log.V(2).Info("Timed out", "after", o.Wait, "err", pollErr)
 			cmcmdutil.SetExitCode(pollErr)
 		} else {
 			cmcmdutil.SetExitCode(lastError)
