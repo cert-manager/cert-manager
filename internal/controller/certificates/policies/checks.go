@@ -580,6 +580,7 @@ func SecretBaseLabelsMismatch(input Input) (string, string, bool) {
 // by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch function.
 func SecretCertificateDetailsAnnotationsMismatch(input Input) (string, string, bool) {
 	dataAnnotations, err := certificateDataAnnotationsForSecret(input.Secret)
+
 	if err != nil {
 		return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
 	}
