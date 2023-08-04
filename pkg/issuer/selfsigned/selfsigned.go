@@ -25,6 +25,7 @@ import (
 )
 
 // SelfSigned is an Issuer implementation the simply self-signs Certificates.
+// For more info see: https://cert-manager.io/docs/configuration/selfsigned/
 type SelfSigned struct {
 	*controller.Context
 	issuer v1.GenericIssuer
