@@ -160,6 +160,24 @@ type VenafiTPP struct {
 	// is used to validate the chain.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
+
+	// Reference to a Secret containing a base64-encoded bundle of PEM CAs
+	// which will be used to validate the certificate chain presented by the TPP server.
+	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
+	// `kind` is a required field and only accepts "Secret" kinds.
+	// If none of CABundle, CABundleSecretRef or CABundleConfigMapRef are defined, the certificate bundle in
+	// the cert-manager controller container is used to validate the TLS connection.
+	// +optional
+	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
+
+	// Reference to a ConfigMap containing a base64-encoded bundle of PEM CAs
+	// which will be used to validate the certificate chain presented by the TPP server.
+	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
+	// `kind` is a required field and only accepts "ConfigMap" kinds.
+	// If none of CABundle, CABundleSecretRef or CABundleConfigMapRef are defined, the certificate bundle in
+	// the cert-manager controller container is used to validate the TLS connection.
+	// +optional
+	CABundleConfigMapRef *cmmeta.ConfigMapKeySelector `json:"caBundleConfigMapRef,omitempty"`
 }
 
 // VenafiCloud defines connection configuration details for Venafi Cloud
