@@ -69,6 +69,18 @@ type SecretKeySelector struct {
 	Key string
 }
 
+// A reference to a specific 'key' within a ConfigMap resource.
+// In some instances, `key` is a required field.
+type ConfigMapKeySelector struct {
+	// The name of the ConfigMap resource being referred to.
+	LocalObjectReference `json:",inline"`
+
+	// The key of the entry in the ConfigMap resource's `data` field to be used.
+	// Some instances of this field may be defaulted, in others it may be
+	// required.
+	Key string `json:"key,omitempty"`
+}
+
 const (
 	// Used as a data key in Secret resources to store a CA certificate.
 	TLSCAKey = "ca.crt"
