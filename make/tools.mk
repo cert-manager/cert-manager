@@ -400,10 +400,10 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # is possible that these SHAs change, whilst the version does not. To verify the
 # change that has been made to the tools look at
 # https://github.com/kubernetes-sigs/kubebuilder/tree/tools-releases
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=a12ae2dd2a4968530ae4887cd943b86a5ff131723d991303806fcd45defc5220
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=f9699df7b021f71a1ab55329b36b48a798e6ae3a44d2132255fc7e46c6790d4d
 KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=e1913674bacaa70c067e15649237e1f67d891ba53f367c0a50786b4a274ee047
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=0422632a2bbb0d4d14d7d8b0f05497a4d041c11d770a07b7a55c44bcc5e8ce66
-KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=1eb64f8c209952d592bcd2770ed57dcd7ea720cecc0c622633033eab9fd8ce25
+KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=9d2803e8ca85c465b33c12b06d0b2eba3ddb64b53a468628f741e50b462c46ad
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
