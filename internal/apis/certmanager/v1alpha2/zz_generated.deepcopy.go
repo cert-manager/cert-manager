@@ -987,6 +987,16 @@ func (in *VenafiTPP) DeepCopyInto(out *VenafiTPP) {
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(metav1.SecretKeySelector)
+		**out = **in
+	}
+	if in.CABundleConfigMapRef != nil {
+		in, out := &in.CABundleConfigMapRef, &out.CABundleConfigMapRef
+		*out = new(metav1.ConfigMapKeySelector)
+		**out = **in
+	}
 	return
 }
 
