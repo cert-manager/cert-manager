@@ -58,3 +58,15 @@ func Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(in *meta.SecretKeySe
 func Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(in *cmmeta.SecretKeySelector, out *meta.SecretKeySelector, s conversion.Scope) error {
 	return autoConvert_v1_SecretKeySelector_To_meta_SecretKeySelector(in, out, s)
 }
+
+// Convert_meta_ConfigMapKeySelector_To_v1_ConfigMapKeySelector is explicitly defined to avoid issues in conversion-gen
+// when referencing types in other API groups.
+func Convert_meta_ConfigMapKeySelector_To_v1_ConfigMapKeySelector(in *meta.ConfigMapKeySelector, out *cmmeta.ConfigMapKeySelector, s conversion.Scope) error {
+	return autoConvert_meta_ConfigMapKeySelector_To_v1_ConfigMapKeySelector(in, out, s)
+}
+
+// Convert_v1_ConfigMapKeySelector_To_meta_ConfigMapKeySelector is explicitly defined to avoid issues in conversion-gen
+// when referencing types in other API groups.
+func Convert_v1_ConfigMapKeySelector_To_meta_ConfigMapKeySelector(in *cmmeta.ConfigMapKeySelector, out *meta.ConfigMapKeySelector, s conversion.Scope) error {
+	return autoConvert_v1_ConfigMapKeySelector_To_meta_ConfigMapKeySelector(in, out, s)
+}

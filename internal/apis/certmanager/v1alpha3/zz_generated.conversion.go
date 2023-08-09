@@ -1597,8 +1597,9 @@ func autoConvert_v1alpha3_VenafiTPP_To_certmanager_VenafiTPP(in *VenafiTPP, out 
 	if in.CABundleConfigMapRef != nil {
 		in, out := &in.CABundleConfigMapRef, &out.CABundleConfigMapRef
 		*out = new(meta.ConfigMapKeySelector)
-		// FIXME: Provide conversion function to convert metav1.ConfigMapKeySelector to meta.ConfigMapKeySelector
-		compileErrorOnMissingConversion()
+		if err := apismetav1.Convert_v1_ConfigMapKeySelector_To_meta_ConfigMapKeySelector(*in, *out, s); err != nil {
+			return err
+		}
 	} else {
 		out.CABundleConfigMapRef = nil
 	}
@@ -1628,8 +1629,9 @@ func autoConvert_certmanager_VenafiTPP_To_v1alpha3_VenafiTPP(in *certmanager.Ven
 	if in.CABundleConfigMapRef != nil {
 		in, out := &in.CABundleConfigMapRef, &out.CABundleConfigMapRef
 		*out = new(metav1.ConfigMapKeySelector)
-		// FIXME: Provide conversion function to convert meta.ConfigMapKeySelector to metav1.ConfigMapKeySelector
-		compileErrorOnMissingConversion()
+		if err := apismetav1.Convert_meta_ConfigMapKeySelector_To_v1_ConfigMapKeySelector(*in, *out, s); err != nil {
+			return err
+		}
 	} else {
 		out.CABundleConfigMapRef = nil
 	}
