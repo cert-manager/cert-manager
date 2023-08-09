@@ -35,10 +35,6 @@ type instrumentedConnector struct {
 
 var _ connector = instrumentedConnector{}
 
-var (
-	now = time.Now()
-)
-
 func newInstumentedConnector(conn connector, metrics *metrics.Metrics, log logr.Logger) connector {
 	return instrumentedConnector{
 		conn:    conn,
@@ -48,41 +44,46 @@ func newInstumentedConnector(conn connector, metrics *metrics.Metrics, log logr.
 }
 
 func (ic instrumentedConnector) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
+	start := time.Now()
 	ic.logger.V(logf.TraceLevel).Info("calling ReadZoneConfiguration")
 	config, err := ic.conn.ReadZoneConfiguration()
 	labels := []string{"read_zone_configuration"}
-	ic.metrics.ObserveVenafiRequestDuration(time.Since(now), labels...)
+	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return config, err
 }
 
 func (ic instrumentedConnector) RequestCertificate(req *certificate.Request) (string, error) {
+	start := time.Now()
 	ic.logger.V(logf.TraceLevel).Info("calling RequestCertificate")
 	reqID, err := ic.conn.RequestCertificate(req)
 	labels := []string{"request_certificate"}
-	ic.metrics.ObserveVenafiRequestDuration(time.Since(now), labels...)
+	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return reqID, err
 }
 
 func (ic instrumentedConnector) RetrieveCertificate(req *certificate.Request) (*certificate.PEMCollection, error) {
+	start := time.Now()
 	ic.logger.V(logf.TraceLevel).Info("calling RetrieveCertificate")
 	pemCollection, err := ic.conn.RetrieveCertificate(req)
 	labels := []string{"retrieve_certificate"}
-	ic.metrics.ObserveVenafiRequestDuration(time.Since(now), labels...)
+	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return pemCollection, err
 }
 
 func (ic instrumentedConnector) Ping() error {
+	start := time.Now()
 	ic.logger.V(logf.TraceLevel).Info("calling Ping")
 	err := ic.conn.Ping()
 	labels := []string{"ping"}
-	ic.metrics.ObserveVenafiRequestDuration(time.Since(now), labels...)
+	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return err
 }
 
 func (ic instrumentedConnector) RenewCertificate(req *certificate.RenewalRequest) (string, error) {
+	start := time.Now()
 	ic.logger.V(logf.TraceLevel).Info("calling RenewCertificate")
 	reqID, err := ic.conn.RenewCertificate(req)
 	labels := []string{"renew_certificate"}
-	ic.metrics.ObserveVenafiRequestDuration(time.Since(now), labels...)
+	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return reqID, err
 }
