@@ -83,22 +83,22 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.StringVar(&c.Namespace, "namespace", c.Namespace, ""+
 		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
 		"If not specified, all namespaces will be watched")
-	fs.BoolVar(&c.LeaderElect, "leader-elect", c.LeaderElect, ""+
+	fs.BoolVar(&c.LeaderElectionConfig.Enabled, "leader-elect", c.LeaderElectionConfig.Enabled, ""+
 		"If true, cert-manager will perform leader election between instances to ensure no more "+
 		"than one instance of cert-manager operates at a time")
-	fs.StringVar(&c.LeaderElectionNamespace, "leader-election-namespace", c.LeaderElectionNamespace, ""+
+	fs.StringVar(&c.LeaderElectionConfig.Namespace, "leader-election-namespace", c.LeaderElectionConfig.Namespace, ""+
 		"Namespace used to perform leader election. Only used if leader election is enabled")
-	fs.DurationVar(&c.LeaderElectionLeaseDuration, "leader-election-lease-duration", c.LeaderElectionLeaseDuration, ""+
+	fs.DurationVar(&c.LeaderElectionConfig.LeaseDuration, "leader-election-lease-duration", c.LeaderElectionConfig.LeaseDuration, ""+
 		"The duration that non-leader candidates will wait after observing a leadership "+
 		"renewal until attempting to acquire leadership of a led but unrenewed leader "+
 		"slot. This is effectively the maximum duration that a leader can be stopped "+
 		"before it is replaced by another candidate. This is only applicable if leader "+
 		"election is enabled.")
-	fs.DurationVar(&c.LeaderElectionRenewDeadline, "leader-election-renew-deadline", c.LeaderElectionRenewDeadline, ""+
+	fs.DurationVar(&c.LeaderElectionConfig.RenewDeadline, "leader-election-renew-deadline", c.LeaderElectionConfig.RenewDeadline, ""+
 		"The interval between attempts by the acting master to renew a leadership slot "+
 		"before it stops leading. This must be less than or equal to the lease duration. "+
 		"This is only applicable if leader election is enabled.")
-	fs.DurationVar(&c.LeaderElectionRetryPeriod, "leader-election-retry-period", c.LeaderElectionRetryPeriod, ""+
+	fs.DurationVar(&c.LeaderElectionConfig.RetryPeriod, "leader-election-retry-period", c.LeaderElectionConfig.RetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
@@ -109,32 +109,32 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"'foo'.\nAll controllers: %s",
 		strings.Join(defaults.AllControllers, ", ")))
 
+	fs.StringVar(&c.ACMEHTTP01Config.SolverImage, "acme-http01-solver-image", c.ACMEHTTP01Config.SolverImage, ""+
+		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
+		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+
 	// HTTP-01 solver pod configuration via flags is a now deprecated
 	// mechanism- please use pod template instead when adding any new
 	// configuration options
 	// https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 	// These flags however will not be deprecated for backwards compatibility purposes.
-	fs.StringVar(&c.ACMEHTTP01SolverImage, "acme-http01-solver-image", c.ACMEHTTP01SolverImage, ""+
-		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
-		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
-
-	fs.StringVar(&c.ACMEHTTP01SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", c.ACMEHTTP01SolverResourceRequestCPU, ""+
+	fs.StringVar(&c.ACMEHTTP01Config.SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", c.ACMEHTTP01Config.SolverResourceRequestCPU, ""+
 		"Defines the resource request CPU size when spawning new ACME HTTP01 challenge solver pods.")
 
-	fs.StringVar(&c.ACMEHTTP01SolverResourceRequestMemory, "acme-http01-solver-resource-request-memory", c.ACMEHTTP01SolverResourceRequestMemory, ""+
+	fs.StringVar(&c.ACMEHTTP01Config.SolverResourceRequestMemory, "acme-http01-solver-resource-request-memory", c.ACMEHTTP01Config.SolverResourceRequestMemory, ""+
 		"Defines the resource request Memory size when spawning new ACME HTTP01 challenge solver pods.")
 
-	fs.StringVar(&c.ACMEHTTP01SolverResourceLimitsCPU, "acme-http01-solver-resource-limits-cpu", c.ACMEHTTP01SolverResourceLimitsCPU, ""+
+	fs.StringVar(&c.ACMEHTTP01Config.SolverResourceLimitsCPU, "acme-http01-solver-resource-limits-cpu", c.ACMEHTTP01Config.SolverResourceLimitsCPU, ""+
 		"Defines the resource limits CPU size when spawning new ACME HTTP01 challenge solver pods.")
 
-	fs.StringVar(&c.ACMEHTTP01SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", c.ACMEHTTP01SolverResourceLimitsMemory, ""+
+	fs.StringVar(&c.ACMEHTTP01Config.SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", c.ACMEHTTP01Config.SolverResourceLimitsMemory, ""+
 		"Defines the resource limits Memory size when spawning new ACME HTTP01 challenge solver pods.")
 
-	fs.BoolVar(&c.ACMEHTTP01SolverRunAsNonRoot, "acme-http01-solver-run-as-non-root", c.ACMEHTTP01SolverRunAsNonRoot, ""+
+	fs.BoolVar(&c.ACMEHTTP01Config.SolverRunAsNonRoot, "acme-http01-solver-run-as-non-root", c.ACMEHTTP01Config.SolverRunAsNonRoot, ""+
 		"Defines the ability to run the http01 solver as root for troubleshooting issues")
 
-	fs.StringSliceVar(&c.ACMEHTTP01SolverNameservers, "acme-http01-solver-nameservers",
-		c.ACMEHTTP01SolverNameservers, "A list of comma separated dns server endpoints used for "+
+	fs.StringSliceVar(&c.ACMEHTTP01Config.SolverNameservers, "acme-http01-solver-nameservers",
+		c.ACMEHTTP01Config.SolverNameservers, "A list of comma separated dns server endpoints used for "+
 			"ACME HTTP01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 
@@ -146,29 +146,31 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Whether an issuer may make use of ambient credentials. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the Issuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
-	fs.StringSliceVar(&c.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", c.DefaultAutoCertificateAnnotations, ""+
-		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 
-	fs.StringVar(&c.DefaultIssuerName, "default-issuer-name", c.DefaultIssuerName, ""+
+	fs.StringSliceVar(&c.IngressShimConfig.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", c.IngressShimConfig.DefaultAutoCertificateAnnotations, ""+
+		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
+	fs.StringVar(&c.IngressShimConfig.DefaultIssuerName, "default-issuer-name", c.IngressShimConfig.DefaultIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
-	fs.StringVar(&c.DefaultIssuerKind, "default-issuer-kind", c.DefaultIssuerKind, ""+
+	fs.StringVar(&c.IngressShimConfig.DefaultIssuerKind, "default-issuer-kind", c.IngressShimConfig.DefaultIssuerKind, ""+
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
-	fs.StringVar(&c.DefaultIssuerGroup, "default-issuer-group", c.DefaultIssuerGroup, ""+
+	fs.StringVar(&c.IngressShimConfig.DefaultIssuerGroup, "default-issuer-group", c.IngressShimConfig.DefaultIssuerGroup, ""+
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
 
-	fs.StringSliceVar(&c.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
-		[]string{}, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+
+	fs.StringSliceVar(&c.ACMEDNS01Config.RecursiveNameservers, "dns01-recursive-nameservers",
+		c.ACMEDNS01Config.RecursiveNameservers, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+
 			"This should be a list containing entries of the following formats: `<ip address>:<port>` or `https://<DoH RFC 8484 server address>`. "+
 			"For example: `8.8.8.8:53,8.8.4.4:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
 			"To make sure ALL DNS requests happen through DoH, `dns01-recursive-nameservers-only` should also be set to true.")
-
-	fs.BoolVar(&c.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
-		c.DNS01RecursiveNameserversOnly,
+	fs.BoolVar(&c.ACMEDNS01Config.RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
+		c.ACMEDNS01Config.RecursiveNameserversOnly,
 		"When true, cert-manager will only ever query the configured DNS resolvers "+
 			"to perform the ACME DNS01 self check. This is useful in DNS constrained "+
 			"environments, where access to authoritative nameservers is restricted. "+
 			"Enabling this option could cause the DNS01 self check to take longer "+
 			"due to caching performed by the recursive nameservers.")
+	fs.DurationVar(&c.ACMEDNS01Config.CheckRetryPeriod, "dns01-check-retry-period", c.ACMEDNS01Config.CheckRetryPeriod, ""+
+		"The duration the controller should wait between a propagation check. Despite the name, this flag is used to configure the wait period for both DNS01 and HTTP01 challenge propagation checks. For DNS01 challenges the propagation check verifies that a TXT record with the challenge token has been created. For HTTP01 challenges the propagation check verifies that the challenge token is served at the challenge URL."+
+		"This should be a valid duration string, for example 180s or 1h")
 
 	fs.BoolVar(&c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", c.EnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
@@ -184,9 +186,6 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"The number of concurrent workers for each controller.")
 	fs.IntVar(&c.MaxConcurrentChallenges, "max-concurrent-challenges", c.MaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
-	fs.DurationVar(&c.DNS01CheckRetryPeriod, "dns01-check-retry-period", c.DNS01CheckRetryPeriod, ""+
-		"The duration the controller should wait between a propagation check. Despite the name, this flag is used to configure the wait period for both DNS01 and HTTP01 challenge propagation checks. For DNS01 challenges the propagation check verifies that a TXT record with the challenge token has been created. For HTTP01 challenges the propagation check verifies that the challenge token is served at the challenge URL."+
-		"This should be a valid duration string, for example 180s or 1h")
 
 	fs.StringVar(&c.MetricsListenAddress, "metrics-listen-address", c.MetricsListenAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
@@ -208,7 +207,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"The host and port that the healthz server should listen on. "+
 		"The healthz server serves the /livez endpoint, which is called by the LivenessProbe.")
 	fs.MarkHidden("internal-healthz-listen-address")
-	fs.DurationVar(&c.HealthzLeaderElectionTimeout, "internal-healthz-leader-election-timeout", c.HealthzLeaderElectionTimeout, ""+
+
+	fs.DurationVar(&c.LeaderElectionConfig.HealthzTimeout, "internal-healthz-leader-election-timeout", c.LeaderElectionConfig.HealthzTimeout, ""+
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	fs.MarkHidden("internal-healthz-leader-election-timeout")
 

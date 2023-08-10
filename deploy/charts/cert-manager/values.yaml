@@ -129,7 +129,8 @@ config:
 #   logging:
 #    verbosity: 2
 #    format: text
-#   leaderElectionNamespace: kube-system
+#   leaderElectionConfig:
+#    namespace: kube-system
 #   kubernetesAPIQPS: 9000
 #   kubernetesAPIBurst: 9000
 #   numberOfConcurrentWorkers: 200

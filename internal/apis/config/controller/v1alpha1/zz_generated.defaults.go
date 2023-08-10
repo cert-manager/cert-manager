@@ -38,4 +38,8 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_ControllerConfiguration(in *v1alpha1.ControllerConfiguration) {
 	SetDefaults_ControllerConfiguration(in)
+	SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
+	SetDefaults_IngressShimConfig(&in.IngressShimConfig)
+	SetDefaults_ACMEHTTP01Config(&in.ACMEHTTP01Config)
+	SetDefaults_ACMEDNS01Config(&in.ACMEDNS01Config)
 }

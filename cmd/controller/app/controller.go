@@ -133,14 +133,14 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on healthz address %s: %v", opts.HealthzListenAddress, err)
 	}
-	healthzServer := healthz.NewServer(opts.HealthzLeaderElectionTimeout)
+	healthzServer := healthz.NewServer(opts.LeaderElectionConfig.HealthzTimeout)
 	g.Go(func() error {
 		log.V(logf.InfoLevel).Info("starting healthz server", "address", healthzListener.Addr())
 		return healthzServer.Start(rootCtx, healthzListener)
 	})
 
 	elected := make(chan struct{})
-	if opts.LeaderElect {
+	if opts.LeaderElectionConfig.Enabled {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting leader election")
 			ctx, err := ctxFactory.Build("leader-election")
@@ -241,7 +241,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 func buildControllerContextFactory(ctx context.Context, opts *config.ControllerConfiguration) (*controller.ContextFactory, error) {
 	log := logf.FromContext(ctx)
 
-	nameservers := opts.DNS01RecursiveNameservers
+	nameservers := opts.ACMEDNS01Config.RecursiveNameservers
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
 	}
@@ -250,27 +250,27 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		WithValues("nameservers", nameservers).
 		Info("configured acme dns01 nameservers")
 
-	http01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
+	http01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01Config.SolverResourceRequestCPU)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestCPU: %w", err)
 	}
 
-	http01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestMemory)
+	http01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01Config.SolverResourceRequestMemory)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestMemory: %w", err)
 	}
 
-	http01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsCPU)
+	http01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01Config.SolverResourceLimitsCPU)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsCPU: %w", err)
 	}
 
-	http01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsMemory)
+	http01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01Config.SolverResourceLimitsMemory)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %w", err)
 	}
 
-	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01SolverRunAsNonRoot
+	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01Config.SolverRunAsNonRoot
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
@@ -290,13 +290,13 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
 			HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
 			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
-			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
+			HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
 			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-			HTTP01SolverNameservers: opts.ACMEHTTP01SolverNameservers,
+			HTTP01SolverNameservers: opts.ACMEHTTP01Config.SolverNameservers,
 
 			DNS01Nameservers:        nameservers,
-			DNS01CheckRetryPeriod:   opts.DNS01CheckRetryPeriod,
-			DNS01CheckAuthoritative: !opts.DNS01RecursiveNameserversOnly,
+			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
+			DNS01CheckAuthoritative: !opts.ACMEDNS01Config.RecursiveNameserversOnly,
 
 			AccountRegistry: acmeAccountRegistry,
 		},
@@ -312,10 +312,10 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		IngressShimOptions: controller.IngressShimOptions{
-			DefaultIssuerName:                 opts.DefaultIssuerName,
-			DefaultIssuerKind:                 opts.DefaultIssuerKind,
-			DefaultIssuerGroup:                opts.DefaultIssuerGroup,
-			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
+			DefaultIssuerName:                 opts.IngressShimConfig.DefaultIssuerName,
+			DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
+			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
+			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
 		},
 
 		CertificateOptions: controller.CertificateOptions{
@@ -346,7 +346,7 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 	// We only support leases for leader election. Previously we supported ConfigMap & Lease objects for leader
 	// election.
 	ml, err := resourcelock.New(resourcelock.LeasesResourceLock,
-		opts.LeaderElectionNamespace,
+		opts.LeaderElectionConfig.Namespace,
 		lockName,
 		leaderElectionClient.CoreV1(),
 		leaderElectionClient.CoordinationV1(),
@@ -359,9 +359,9 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 	// Try and become the leader and start controller manager loops
 	le, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
 		Lock:            ml,
-		LeaseDuration:   opts.LeaderElectionLeaseDuration,
-		RenewDeadline:   opts.LeaderElectionRenewDeadline,
-		RetryPeriod:     opts.LeaderElectionRetryPeriod,
+		LeaseDuration:   opts.LeaderElectionConfig.LeaseDuration,
+		RenewDeadline:   opts.LeaderElectionConfig.RenewDeadline,
+		RetryPeriod:     opts.LeaderElectionConfig.RetryPeriod,
 		ReleaseOnCancel: true,
 		Callbacks:       callbacks,
 		WatchDog:        healthzAdaptor,
