@@ -1,4 +1,4 @@
-# cert-manager Governance (proposal)
+# cert-manager Governance
 
 This document defines project governance for the cert-manager project.
 
@@ -38,7 +38,7 @@ The cert-manager maintainers are:
 - Ashley Davis (@sgtcodfish)
 - Tim Ramlot (@inteon)
 
-This list is reflected in `OWNERS.md` files present at the root of the projects
+This list is reflected in `OWNERS` files present at the root of the projects
 within the cert-manager organization.
 
 ### Maintainers Responsibilities

@@ -1,4 +1,4 @@
-# Linkerd Steering Committee Charter
+# Steering Committee Charter
 
 The goal of the cert-manager Steering Committee is to ensure that cert-manager
 meets the needs of its current and future users. The Steering Committee
