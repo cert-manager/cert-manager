@@ -96,8 +96,7 @@ func TestValidate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			o, _ := NewControllerConfiguration()
-			o.DNS01RecursiveNameservers = test.DNS01RecursiveServers
-			//defaults.SetDefaults_ControllerConfiguration(o)
+			o.ACMEDNS01Config.RecursiveNameservers = test.DNS01RecursiveServers
 
 			err := validation.ValidateControllerConfiguration(o)
 			if test.expError != "" {

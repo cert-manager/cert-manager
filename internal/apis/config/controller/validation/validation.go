@@ -32,7 +32,7 @@ import (
 )
 
 func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
-	if len(o.DefaultIssuerKind) == 0 {
+	if len(o.IngressShimConfig.DefaultIssuerKind) == 0 {
 		return errors.New("the --default-issuer-kind flag must not be empty")
 	}
 
@@ -48,7 +48,7 @@ func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
 		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
-	for _, server := range o.ACMEHTTP01SolverNameservers {
+	for _, server := range o.ACMEHTTP01Config.SolverNameservers {
 		// ensure all servers have a port number
 		_, _, err := net.SplitHostPort(server)
 		if err != nil {
@@ -56,7 +56,7 @@ func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
 		}
 	}
 
-	for _, server := range o.DNS01RecursiveNameservers {
+	for _, server := range o.ACMEDNS01Config.RecursiveNameservers {
 		// ensure all servers follow one of the following formats:
 		// - <ip address>:<port>
 		// - https://<DoH RFC 8484 server address>

@@ -83,6 +83,7 @@ var (
 
 	defaultDNS01RecursiveNameserversOnly = false
 	defaultDNS01RecursiveNameservers     = []string{}
+	defaultDNS01CheckRetryPeriod         = 10 * time.Second
 
 	defaultNumberOfConcurrentWorkers int32 = 5
 	defaultMaxConcurrentChallenges   int32 = 60
@@ -96,7 +97,6 @@ var (
 	defaultHealthzLeaderElectionTimeout = 20 * time.Second
 
 	// default time period to wait between checking DNS01 and HTTP01 challenge propagation
-	defaultDNS01CheckRetryPeriod                 = 10 * time.Second
 	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
 	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
@@ -191,101 +191,32 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 		obj.KubernetesAPIBurst = &defaultKubernetesAPIBurst
 	}
 
-	if obj.ClusterResourceNamespace == "" {
-		obj.ClusterResourceNamespace = defaultClusterResourceNamespace
-	}
-
 	if obj.Namespace == "" {
 		obj.Namespace = defaultNamespace
 	}
 
-	if obj.LeaderElect == nil {
-		obj.LeaderElect = &defaultLeaderElect
-	}
-
-	if obj.LeaderElectionNamespace == "" {
-		obj.LeaderElectionNamespace = defaultLeaderElectionNamespace
-	}
-
-	// TODO: Does it make sense to have a duration of 0?
-	if obj.LeaderElectionLeaseDuration == time.Duration(0) {
-		obj.LeaderElectionLeaseDuration = defaultLeaderElectionLeaseDuration
-	}
-
-	if obj.LeaderElectionRenewDeadline == time.Duration(0) {
-		obj.LeaderElectionRenewDeadline = defaultLeaderElectionRenewDeadline
-	}
-
-	if obj.LeaderElectionRetryPeriod == time.Duration(0) {
-		obj.LeaderElectionRetryPeriod = defaultLeaderElectionRetryPeriod
+	if obj.ClusterResourceNamespace == "" {
+		obj.ClusterResourceNamespace = defaultClusterResourceNamespace
 	}
 
 	if len(obj.Controllers) == 0 {
 		obj.Controllers = []string{"*"}
 	}
 
-	if obj.ACMEHTTP01SolverImage == "" {
-		obj.ACMEHTTP01SolverImage = defaultACMEHTTP01SolverImage
-	}
-
-	if obj.ACMEHTTP01SolverResourceRequestCPU == "" {
-		obj.ACMEHTTP01SolverResourceRequestCPU = defaultACMEHTTP01SolverResourceRequestCPU
-	}
-
-	if obj.ACMEHTTP01SolverResourceRequestMemory == "" {
-		obj.ACMEHTTP01SolverResourceRequestMemory = defaultACMEHTTP01SolverResourceRequestMemory
-	}
-
-	if obj.ACMEHTTP01SolverResourceLimitsCPU == "" {
-		obj.ACMEHTTP01SolverResourceLimitsCPU = defaultACMEHTTP01SolverResourceLimitsCPU
-	}
-
-	if obj.ACMEHTTP01SolverResourceLimitsMemory == "" {
-		obj.ACMEHTTP01SolverResourceLimitsMemory = defaultACMEHTTP01SolverResourceLimitsMemory
-	}
-
-	if obj.ACMEHTTP01SolverRunAsNonRoot == nil {
-		obj.ACMEHTTP01SolverRunAsNonRoot = &defaultACMEHTTP01SolverRunAsNonRoot
-	}
-
-	if len(obj.ACMEHTTP01SolverNameservers) == 0 {
-		obj.ACMEHTTP01SolverNameservers = defaultACMEHTTP01SolverNameservers
+	if obj.IssuerAmbientCredentials == nil {
+		obj.IssuerAmbientCredentials = &defaultIssuerAmbientCredentials
 	}
 
 	if obj.ClusterIssuerAmbientCredentials == nil {
 		obj.ClusterIssuerAmbientCredentials = &defaultClusterIssuerAmbientCredentials
 	}
 
-	if obj.IssuerAmbientCredentials == nil {
-		obj.IssuerAmbientCredentials = &defaultIssuerAmbientCredentials
-	}
-
-	if obj.DefaultIssuerName == "" {
-		obj.DefaultIssuerName = defaultTLSACMEIssuerName
-	}
-
-	if obj.DefaultIssuerKind == "" {
-		obj.DefaultIssuerKind = defaultTLSACMEIssuerKind
-	}
-
-	if obj.DefaultIssuerGroup == "" {
-		obj.DefaultIssuerGroup = defaultTLSACMEIssuerGroup
-	}
-
-	if len(obj.DefaultAutoCertificateAnnotations) == 0 {
-		obj.DefaultAutoCertificateAnnotations = defaultAutoCertificateAnnotations
-	}
-
-	if len(obj.DNS01RecursiveNameservers) == 0 {
-		obj.DNS01RecursiveNameservers = defaultDNS01RecursiveNameservers
-	}
-
 	if obj.EnableCertificateOwnerRef == nil {
 		obj.EnableCertificateOwnerRef = &defaultEnableCertificateOwnerRef
 	}
 
-	if obj.DNS01RecursiveNameserversOnly == nil {
-		obj.DNS01RecursiveNameserversOnly = &defaultDNS01RecursiveNameserversOnly
+	if len(obj.CopiedAnnotationPrefixes) == 0 {
+		obj.CopiedAnnotationPrefixes = defaultCopiedAnnotationPrefixes
 	}
 
 	if obj.NumberOfConcurrentWorkers == nil {
@@ -310,15 +241,99 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = defaultProfilerAddr
-
 	}
 
 	if obj.Logging == nil {
 		obj.Logging = defaultLogging
 	}
+}
 
-	if len(obj.CopiedAnnotationPrefixes) == 0 {
-		obj.CopiedAnnotationPrefixes = defaultCopiedAnnotationPrefixes
+func SetDefaults_LeaderElectionConfig(obj *v1alpha1.LeaderElectionConfig) {
+	if obj.Enabled == nil {
+		obj.Enabled = &defaultLeaderElect
 	}
 
+	if obj.Namespace == "" {
+		obj.Namespace = defaultLeaderElectionNamespace
+	}
+
+	// TODO: Does it make sense to have a duration of 0?
+	if obj.LeaseDuration == time.Duration(0) {
+		obj.LeaseDuration = defaultLeaderElectionLeaseDuration
+	}
+
+	if obj.RenewDeadline == time.Duration(0) {
+		obj.RenewDeadline = defaultLeaderElectionRenewDeadline
+	}
+
+	if obj.RetryPeriod == time.Duration(0) {
+		obj.RetryPeriod = defaultLeaderElectionRetryPeriod
+	}
+
+	if obj.HealthzTimeout == time.Duration(0) {
+		obj.HealthzTimeout = defaultHealthzLeaderElectionTimeout
+	}
+}
+
+func SetDefaults_IngressShimConfig(obj *v1alpha1.IngressShimConfig) {
+	if obj.DefaultIssuerName == "" {
+		obj.DefaultIssuerName = defaultTLSACMEIssuerName
+	}
+
+	if obj.DefaultIssuerKind == "" {
+		obj.DefaultIssuerKind = defaultTLSACMEIssuerKind
+	}
+
+	if obj.DefaultIssuerGroup == "" {
+		obj.DefaultIssuerGroup = defaultTLSACMEIssuerGroup
+	}
+
+	if len(obj.DefaultAutoCertificateAnnotations) == 0 {
+		obj.DefaultAutoCertificateAnnotations = defaultAutoCertificateAnnotations
+	}
+}
+
+func SetDefaults_ACMEHTTP01Config(obj *v1alpha1.ACMEHTTP01Config) {
+	if obj.SolverImage == "" {
+		obj.SolverImage = defaultACMEHTTP01SolverImage
+	}
+
+	if obj.SolverResourceRequestCPU == "" {
+		obj.SolverResourceRequestCPU = defaultACMEHTTP01SolverResourceRequestCPU
+	}
+
+	if obj.SolverResourceRequestMemory == "" {
+		obj.SolverResourceRequestMemory = defaultACMEHTTP01SolverResourceRequestMemory
+	}
+
+	if obj.SolverResourceLimitsCPU == "" {
+		obj.SolverResourceLimitsCPU = defaultACMEHTTP01SolverResourceLimitsCPU
+	}
+
+	if obj.SolverResourceLimitsMemory == "" {
+		obj.SolverResourceLimitsMemory = defaultACMEHTTP01SolverResourceLimitsMemory
+	}
+
+	if obj.SolverRunAsNonRoot == nil {
+		obj.SolverRunAsNonRoot = &defaultACMEHTTP01SolverRunAsNonRoot
+	}
+
+	if len(obj.SolverNameservers) == 0 {
+		obj.SolverNameservers = defaultACMEHTTP01SolverNameservers
+	}
+
+}
+
+func SetDefaults_ACMEDNS01Config(obj *v1alpha1.ACMEDNS01Config) {
+	if len(obj.RecursiveNameservers) == 0 {
+		obj.RecursiveNameservers = defaultDNS01RecursiveNameservers
+	}
+
+	if obj.RecursiveNameserversOnly == nil {
+		obj.RecursiveNameserversOnly = &defaultDNS01RecursiveNameserversOnly
+	}
+
+	if obj.CheckRetryPeriod == time.Duration(0) {
+		obj.CheckRetryPeriod = defaultDNS01CheckRetryPeriod
+	}
 }
