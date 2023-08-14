@@ -335,7 +335,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	})
 	t.Run("encodePKCS12Keystore *prepends* non-leaf certificates to the supplied CA certificate chain", func(t *testing.T) {
 		const password = "password"
-		var caChainInPEM []byte = mustSelfSignCertificate(t, nil)
+		var caChainInPEM = mustSelfSignCertificate(t, nil)
 		caChainIn, err := pki.DecodeX509CertificateChainBytes(caChainInPEM)
 		require.NoError(t, err)
 

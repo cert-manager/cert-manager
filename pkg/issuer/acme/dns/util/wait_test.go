@@ -280,7 +280,7 @@ func TestResolveConfServers(t *testing.T) {
 // TODO: find a website which uses issuewild?
 func TestValidateCAA(t *testing.T) {
 
-	for _, nameservers := range [][]string{RecursiveNameservers, []string{"https://1.1.1.1/dns-query"}, []string{"https://8.8.8.8/dns-query"}} {
+	for _, nameservers := range [][]string{RecursiveNameservers, {"https://1.1.1.1/dns-query"}, {"https://8.8.8.8/dns-query"}} {
 
 		// google installs a CAA record at google.com
 		// ask for the www.google.com record to test that

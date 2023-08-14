@@ -30,7 +30,7 @@ func TestConvert_Pointer_v1_LoggingConfiguration_To_v1_LoggingConfiguration(t *t
 	testInput := logs.NewOptions()
 	generalInput := &testInput
 	var nilTestInput *logsapi.LoggingConfiguration = nil
-	var nilInput **logsapi.LoggingConfiguration = &nilTestInput
+	var nilInput = &nilTestInput
 
 	testcases := map[string]struct {
 		in       **logsapi.LoggingConfiguration
