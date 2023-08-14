@@ -65,7 +65,7 @@ Members are expected to remain active contributors.
 Reviewers are able to review code for quality and correctness on some part of cert-manager.  
 They are knowledgeable about both the codebase and software engineering principles.
 
-**Defined by:** `reviewers` entry in the cert-manager [OWNERS][] file
+**Defined by:** `reviewers` entry in the cert-manager [OWNERS](./OWNERS) file
 
 ### Requirements
 - You must be a contributor.
@@ -93,7 +93,7 @@ They are knowledgeable about both the codebase and software engineering principl
 
 Code approvers are able to both review and approve code contributions. While code review is focused on code quality and correctness, approval is focused on holistic acceptance of a contribution including: backwards / forwards compatibility, adhering to API and flag conventions, subtle performance and correctness issues, interactions with other parts of the system, etc.
 
-**Defined by:** `approvers` entry in the cert-manager [OWNERS][] file
+**Defined by:** `approvers` entry in the cert-manager [OWNERS](./OWNERS) file
 
 ### Requirements
 - You must be a reviewer.
@@ -120,7 +120,7 @@ Code approvers are able to both review and approve code contributions. While cod
 Someone who can communicate with the CNCF on behalf of the project and who can
 participate in a "maintainers vote".
 
-**Defined by:** the list in the [MAINTAINERS.md][] file
+**Defined by:** the list in the [MAINTAINERS.md](./MAINTAINERS.md) file
 
 ### Requirements
 - You must be an approver.
@@ -156,7 +156,7 @@ If a maintainer is no longer interested in or cannot perform the duties listed
 above, they should move themselves to emeritus status. If necessary, this can
 also occur through the decision-making process outlined above.
 
-A review of the [MAINTAINERS.md][] file is performed every year by the current maintainers.
+A review of the [MAINTAINERS.md](./MAINTAINERS.md) file is performed every year by the current maintainers.
 During this review, the maintainers that have not been active in the last 18 months
 are asked whether they would like to become an emeritus maintainer, they are expected
 to respond within 30 days. If they do not respond, they will automatically be moved to
