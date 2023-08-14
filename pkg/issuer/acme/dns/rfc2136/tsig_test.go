@@ -34,7 +34,7 @@ import (
 
 func Test_tsigHMACProvider_Generate(t *testing.T) {
 	var (
-		someSecret        = base64.StdEncoding.EncodeToString(([]byte("foo-secret")))
+		someSecret        = base64.StdEncoding.EncodeToString([]byte("foo-secret"))
 		someMessage       = "foo-message"
 		someMessageMD5    = md5Message(t, []byte("foo-secret"), []byte("foo-message"))
 		someMessageSHA1   = sha1Message(t, []byte("foo-secret"), []byte("foo-message"))

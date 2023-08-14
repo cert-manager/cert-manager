@@ -30,7 +30,7 @@ func ValidArgsListCertificates(ctx context.Context, factory **Factory) func(_ *c
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		f := (*factory)
+		f := *factory
 		if err := f.complete(); err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -56,7 +56,7 @@ func ValidArgsListSecrets(ctx context.Context, factory **Factory) func(_ *cobra.
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		f := (*factory)
+		f := *factory
 		if err := f.complete(); err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -83,7 +83,7 @@ func ValidArgsListCertificateSigningRequests(ctx context.Context, factory **Fact
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		f := (*factory)
+		f := *factory
 		if err := f.complete(); err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -109,7 +109,7 @@ func ValidArgsListCertificateRequests(ctx context.Context, factory **Factory) fu
 		if len(args) > 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-		f := (*factory)
+		f := *factory
 		if err := f.complete(); err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
