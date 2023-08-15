@@ -146,7 +146,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "return a single Certificate for an ingress with dnsName change to ip address",
+			Name:   "return a single Certificate for an ingress with dnsNames and ipv4 addresses",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -164,7 +164,7 @@ func TestSync(t *testing.T) {
 				Spec: networkingv1.IngressSpec{
 					TLS: []networkingv1.IngressTLS{
 						{
-							Hosts:      []string{"example.com", "www.example.com", "10.112.234.34"},
+							Hosts:      []string{"example.com", "www.example.com", "10.112.234.34", "1.1.1.1"},
 							SecretName: "example-com-tls",
 						},
 					},
@@ -184,7 +184,109 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:    []string{"example.com", "www.example.com"},
-						IPAddresses: []string{"10.112.234.34"},
+						IPAddresses: []string{"10.112.234.34", "1.1.1.1"},
+						CommonName:  "my-cn",
+						SecretName:  "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "return a single Certificate for an ingress with dnsNames and ipv6 addresses",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com", "2a00:1450:4009:819::aaaa", "2a00:1450:4009:819::eeee"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:    []string{"example.com", "www.example.com"},
+						IPAddresses: []string{"2a00:1450:4009:819::aaaa", "2a00:1450:4009:819::eeee"},
+						CommonName:  "my-cn",
+						SecretName:  "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "return a single Certificate for an ingress with dnsNames and ipv4 and ipv6 addresses",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com", "1.1.1.1", "2a00:1450:4009:819::eeee"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:    []string{"example.com", "www.example.com"},
+						IPAddresses: []string{"1.1.1.1", "2a00:1450:4009:819::eeee"},
 						CommonName:  "my-cn",
 						SecretName:  "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
