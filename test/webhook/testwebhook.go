@@ -34,7 +34,6 @@ import (
 	logtesting "github.com/go-logr/logr/testing"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/internal/webhook"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -95,8 +94,8 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	}
 
 	// Listen on a random port number
-	webhookConfig.SecurePort = pointer.Int(0)
-	webhookConfig.HealthzPort = pointer.Int(0)
+	webhookConfig.SecurePort = 0
+	webhookConfig.HealthzPort = 0
 
 	errCh := make(chan error)
 	srv, err := webhook.NewCertManagerWebhookServer(log, *webhookConfig, argumentsForNewServerWithOptions...)

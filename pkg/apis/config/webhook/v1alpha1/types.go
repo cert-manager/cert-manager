@@ -16,7 +16,9 @@ limitations under the License.
 
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -25,11 +27,11 @@ type WebhookConfiguration struct {
 
 	// securePort is the port number to listen on for secure TLS connections from the kube-apiserver.
 	// Defaults to 6443.
-	SecurePort *int `json:"securePort,omitempty"`
+	SecurePort *int32 `json:"securePort,omitempty"`
 
 	// healthzPort is the port number to listen on (using plaintext HTTP) for healthz connections.
 	// Defaults to 6080.
-	HealthzPort *int `json:"healthzPort,omitempty"`
+	HealthzPort *int32 `json:"healthzPort,omitempty"`
 
 	// tlsConfig is used to configure the secure listener's TLS settings.
 	TLSConfig TLSConfig `json:"tlsConfig"`

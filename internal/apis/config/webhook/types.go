@@ -27,11 +27,11 @@ type WebhookConfiguration struct {
 
 	// securePort is the port number to listen on for secure TLS connections from the kube-apiserver.
 	// Defaults to 6443.
-	SecurePort *int
+	SecurePort int32
 
 	// healthzPort is the port number to listen on (using plaintext HTTP) for healthz connections.
 	// Defaults to 6080.
-	HealthzPort *int
+	HealthzPort int32
 
 	// tlsConfig is used to configure the secure listener's TLS settings.
 	TLSConfig TLSConfig
