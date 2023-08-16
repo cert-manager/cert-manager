@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logsapi "k8s.io/component-base/logs/api/v1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -52,6 +53,10 @@ type WebhookConfiguration struct {
 	// pprofAddress configures the address on which /debug/pprof endpoint will be served if enabled.
 	// Defaults to 'localhost:6060'.
 	PprofAddress string `json:"pprofAddress,omitempty"`
+
+	// logging configures the logging behaviour of the webhook.
+	// https://pkg.go.dev/k8s.io/component-base@v0.27.3/logs/api/v1#LoggingConfiguration
+	Logging logsapi.LoggingConfiguration `json:"logging"`
 
 	// featureGates is a map of feature names to bools that enable or disable experimental
 	// features.

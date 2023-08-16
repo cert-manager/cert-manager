@@ -95,7 +95,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				os.Exit(1)
 			}
 
-			if err := logf.ValidateAndApply(webhookFlags.Logging); err != nil {
+			if err := logf.ValidateAndApply(&webhookConfig.Logging); err != nil {
 				log.Error(err, "Failed to validate webhook flags")
 				os.Exit(1)
 			}
@@ -115,6 +115,11 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				// update feature gates based on new config
 				if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(webhookConfig.FeatureGates); err != nil {
 					log.Error(err, "Failed to set feature gates from config file")
+					os.Exit(1)
+				}
+
+				if err := logf.ValidateAndApply(&webhookConfig.Logging); err != nil {
+					log.Error(err, "Failed to validate webhook flags")
 					os.Exit(1)
 				}
 			}

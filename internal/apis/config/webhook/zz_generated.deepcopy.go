@@ -90,6 +90,7 @@ func (in *WebhookConfiguration) DeepCopyInto(out *WebhookConfiguration) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.TLSConfig.DeepCopyInto(&out.TLSConfig)
+	in.Logging.DeepCopyInto(&out.Logging)
 	if in.FeatureGates != nil {
 		in, out := &in.FeatureGates, &out.FeatureGates
 		*out = make(map[string]bool, len(*in))
