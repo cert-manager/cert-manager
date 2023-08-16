@@ -25,12 +25,12 @@ import (
 	"reflect"
 	"testing"
 
-	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/controller-binary/app/options"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 )
 
-func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.WebhookConfiguration, error) {
+func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.ControllerConfiguration, error) {
 	var tempFilePath string
 
 	func() {
@@ -47,11 +47,11 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 		}
 	}()
 
-	var finalConfig *config.WebhookConfiguration
+	var finalConfig *config.ControllerConfiguration
 
 	ctx := logf.NewContext(context.TODO(), logf.Log)
 
-	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.WebhookConfiguration) error {
+	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.ControllerConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -68,17 +68,17 @@ func TestFlagsAndConfigFile(t *testing.T) {
 		yaml      string
 		args      func(string) []string
 		expError  bool
-		expConfig func(string) *config.WebhookConfiguration
+		expConfig func(string) *config.ControllerConfiguration
 	}
 
 	configFromDefaults := func(
-		fn func(string, *config.WebhookConfiguration),
-	) func(string) *config.WebhookConfiguration {
-		defaults, err := options.NewWebhookConfiguration()
+		fn func(string, *config.ControllerConfiguration),
+	) func(string) *config.ControllerConfiguration {
+		defaults, err := options.NewControllerConfiguration()
 		if err != nil {
 			t.Error(err)
 		}
-		return func(tempDir string) *config.WebhookConfiguration {
+		return func(tempDir string) *config.ControllerConfiguration {
 			fn(tempDir, defaults)
 			return defaults
 		}
@@ -87,47 +87,47 @@ func TestFlagsAndConfigFile(t *testing.T) {
 	tests := []testCase{
 		{
 			yaml: `
-apiVersion: webhook.config.cert-manager.io/v1alpha1
-kind: WebhookConfiguration
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
 kubeConfig: "<invalid>"
 `,
 			args: func(tempFilePath string) []string {
 				return []string{"--config=" + tempFilePath, "--kubeconfig=valid"}
 			},
-			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
 				cc.KubeConfig = "valid"
 			}),
 		},
 		{
 			yaml: `
-apiVersion: webhook.config.cert-manager.io/v1alpha1
-kind: WebhookConfiguration
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
 kubeConfig: valid
 `,
 			args: func(tempFilePath string) []string {
 				return []string{"--config=" + tempFilePath}
 			},
-			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
 				cc.KubeConfig = path.Join(tempDir, "valid")
 			}),
 		},
 		{
 			yaml: `
-apiVersion: webhook.config.cert-manager.io/v1alpha1
-kind: WebhookConfiguration
-tlsConfig: {}
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
+ingressShimConfig: {}
 `,
 			args: func(tempFilePath string) []string {
 				return []string{"--config=" + tempFilePath}
 			},
-			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
 			}),
 		},
 		{
 			yaml: `
-apiVersion: webhook.config.cert-manager.io/v1alpha1
-kind: WebhookConfiguration
-tlsConfig: nil
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
+ingressShimConfig: nil
 `,
 			args: func(tempFilePath string) []string {
 				return []string{"--config=" + tempFilePath}
@@ -136,24 +136,23 @@ tlsConfig: nil
 		},
 		{
 			yaml: `
-apiVersion: webhook.config.cert-manager.io/v1alpha1
-kind: WebhookConfiguration
-tlsConfig:
-    filesystem:
-        certFile: aaaa
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
+ingressShimConfig:
+    defaultIssuerName: aaaa
 `,
 			args: func(tempFilePath string) []string {
-				return []string{"--config=" + tempFilePath, "--tls-private-key-file=bbbb"}
+				return []string{"--config=" + tempFilePath, "--default-issuer-kind=bbbb"}
 			},
-			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
-				cc.TLSConfig.Filesystem.CertFile = path.Join(tempDir, "aaaa")
-				cc.TLSConfig.Filesystem.KeyFile = "bbbb"
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
+				cc.IngressShimConfig.DefaultIssuerName = "aaaa"
+				cc.IngressShimConfig.DefaultIssuerKind = "bbbb"
 			}),
 		},
 		{
 			yaml: `
-apiVersion: webhook.config.cert-manager.io/v1alpha1
-kind: WebhookConfiguration
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
 logging:
     verbosity: 2
     format: text
@@ -161,7 +160,7 @@ logging:
 			args: func(tempFilePath string) []string {
 				return []string{"--config=" + tempFilePath}
 			},
-			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
 				cc.Logging.Verbosity = 2
 				cc.Logging.Format = "text"
 			}),

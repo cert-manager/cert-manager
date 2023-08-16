@@ -50,11 +50,6 @@ func (f *ControllerFlags) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&f.Config, "config", "", "Path to a file containing a ControllerConfiguration object used to configure the controller")
 }
 
-func ValidateControllerFlags(f *ControllerFlags) error {
-	// No validation needed today
-	return nil
-}
-
 func NewControllerConfiguration() (*config.ControllerConfiguration, error) {
 	scheme, _, err := configscheme.NewSchemeAndCodecs()
 	if err != nil {
