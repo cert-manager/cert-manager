@@ -26,10 +26,12 @@ type WebhookConfiguration struct {
 	metav1.TypeMeta
 
 	// securePort is the port number to listen on for secure TLS connections from the kube-apiserver.
+	// If 0, a random available port will be chosen.
 	// Defaults to 6443.
 	SecurePort int32
 
 	// healthzPort is the port number to listen on (using plaintext HTTP) for healthz connections.
+	// If 0, a random available port will be chosen.
 	// Defaults to 6080.
 	HealthzPort int32
 
