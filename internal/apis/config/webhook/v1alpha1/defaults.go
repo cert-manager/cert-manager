@@ -29,10 +29,10 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 
 func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	if obj.SecurePort == nil {
-		obj.SecurePort = pointer.Int(6443)
+		obj.SecurePort = pointer.Int32(6443)
 	}
 	if obj.HealthzPort == nil {
-		obj.HealthzPort = pointer.Int(6080)
+		obj.HealthzPort = pointer.Int32(6080)
 	}
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = "localhost:6060"

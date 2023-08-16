@@ -71,8 +71,8 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 	}
 
 	s := &server.Server{
-		ListenAddr:        fmt.Sprintf(":%d", *opts.SecurePort),
-		HealthzAddr:       fmt.Sprintf(":%d", *opts.HealthzPort),
+		ListenAddr:        fmt.Sprintf(":%d", opts.SecurePort),
+		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
 		EnablePprof:       opts.EnablePprof,
 		PprofAddr:         opts.PprofAddress,
 		CertificateSource: buildCertificateSource(log, opts.TLSConfig, restcfg),

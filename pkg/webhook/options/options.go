@@ -64,8 +64,8 @@ func NewWebhookConfiguration() (*config.WebhookConfiguration, error) {
 }
 
 func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
-	fs.IntVar(c.SecurePort, "secure-port", *c.SecurePort, "port number to listen on for secure TLS connections")
-	fs.IntVar(c.HealthzPort, "healthz-port", *c.HealthzPort, "port number to listen on for insecure healthz connections")
+	fs.Int32Var(&c.SecurePort, "secure-port", c.SecurePort, "port number to listen on for secure TLS connections")
+	fs.Int32Var(&c.HealthzPort, "healthz-port", c.HealthzPort, "port number to listen on for insecure healthz connections")
 
 	fs.StringVar(&c.TLSConfig.Filesystem.CertFile, "tls-cert-file", c.TLSConfig.Filesystem.CertFile, "path to the file containing the TLS certificate to serve with")
 	fs.StringVar(&c.TLSConfig.Filesystem.KeyFile, "tls-private-key-file", c.TLSConfig.Filesystem.KeyFile, "path to the file containing the TLS private key to serve with")
