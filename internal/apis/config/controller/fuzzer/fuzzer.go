@@ -17,11 +17,11 @@ limitations under the License.
 package fuzzer
 
 import (
+	"time"
+
 	fuzz "github.com/google/gofuzz"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/component-base/logs"
-
-	"time"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller"
 )
@@ -69,10 +69,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			s.LeaderElectionConfig.HealthzTimeout = defaultTime
 			s.EnablePprof = true
 			s.PprofAddress = "something:1234"
-			temp := logs.NewOptions()
-			s.Logging = *temp
 			s.CopiedAnnotationPrefixes = []string{"*", "-kubectl.kubernetes.io/", "-fluxcd.io/", "-argocd.argoproj.io/"}
 
+			logsapi.SetRecommendedLoggingConfiguration(&s.Logging)
 		},
 	}
 }

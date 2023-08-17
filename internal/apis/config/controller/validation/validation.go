@@ -28,7 +28,6 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
@@ -86,12 +85,6 @@ func ValidateControllerConfiguration(o *config.ControllerConfiguration) error {
 			errs = append(errs, fmt.Errorf("%q is not in the list of known controllers", controller))
 		}
 	}
-
-	err := logf.ValidateAndApply(&o.Logging)
-	if err != nil {
-		errs = append(errs, err)
-	}
-
 	if len(errs) > 0 {
 		return fmt.Errorf("validation failed for '--controllers': %v", errs)
 	}
