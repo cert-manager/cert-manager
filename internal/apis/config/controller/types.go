@@ -19,9 +19,8 @@ package controller
 import (
 	"time"
 
-	"k8s.io/component-base/logs"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logsapi "k8s.io/component-base/logs/api/v1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -110,7 +109,7 @@ type ControllerConfiguration struct {
 	PprofAddress string
 
 	// https://pkg.go.dev/k8s.io/component-base@v0.27.3/logs/api/v1#LoggingConfiguration
-	Logging logs.Options
+	Logging logsapi.LoggingConfiguration
 
 	// featureGates is a map of feature names to bools that enable or disable experimental
 	// features.

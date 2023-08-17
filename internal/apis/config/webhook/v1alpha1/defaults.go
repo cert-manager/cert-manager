@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
@@ -37,4 +38,6 @@ func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = "localhost:6060"
 	}
+
+	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
 }

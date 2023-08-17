@@ -19,6 +19,7 @@ package fuzzer
 import (
 	fuzz "github.com/google/gofuzz"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 )
@@ -32,6 +33,8 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.PprofAddress == "" {
 				s.PprofAddress = "something:1234"
 			}
+
+			logsapi.SetRecommendedLoggingConfiguration(&s.Logging)
 		},
 	}
 }

@@ -68,7 +68,7 @@ func InitLogs() {
 	log.SetFlags(0)
 }
 
-func AddFlagsNonDeprecated(opts *logs.Options, fs *pflag.FlagSet) {
+func AddFlagsNonDeprecated(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 	var allFlags pflag.FlagSet
 	logsapi.AddFlags(opts, &allFlags)
 
@@ -80,7 +80,7 @@ func AddFlagsNonDeprecated(opts *logs.Options, fs *pflag.FlagSet) {
 	})
 }
 
-func AddFlags(opts *logs.Options, fs *pflag.FlagSet) {
+func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 	var allFlags flag.FlagSet
 	klog.InitFlags(&allFlags)
 
@@ -95,7 +95,7 @@ func AddFlags(opts *logs.Options, fs *pflag.FlagSet) {
 	AddFlagsNonDeprecated(opts, fs)
 }
 
-func ValidateAndApply(opts *logs.Options) error {
+func ValidateAndApply(opts *logsapi.LoggingConfiguration) error {
 	return logsapi.ValidateAndApply(opts, nil)
 }
 
