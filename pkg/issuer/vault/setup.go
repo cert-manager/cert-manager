@@ -98,7 +98,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		return nil
 	}
 	if appRoleAuth != nil && len(appRoleAuth.SecretRef.Key) == 0 {
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageTokenAuthNameRequired)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAppRoleAuthKeyRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthKeyRequired)
 		return nil
 	}
