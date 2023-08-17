@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/component-base/logs"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"time"
 
@@ -70,8 +70,6 @@ var (
 
 	defaultEnableProfiling = false
 	defaultProfilerAddr    = "localhost:6060"
-
-	defaultLogging = logs.NewOptions()
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
@@ -243,9 +241,7 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 		obj.PprofAddress = defaultProfilerAddr
 	}
 
-	if obj.Logging == nil {
-		obj.Logging = defaultLogging
-	}
+	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
 }
 
 func SetDefaults_LeaderElectionConfig(obj *v1alpha1.LeaderElectionConfig) {

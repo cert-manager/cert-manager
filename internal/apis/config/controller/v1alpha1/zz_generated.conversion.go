@@ -27,10 +27,9 @@ import (
 
 	controller "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	v1 "k8s.io/component-base/logs/api/v1"
 )
 
 func init() {
@@ -57,6 +56,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*controller.ACMEHTTP01Config)(nil), (*v1alpha1.ACMEHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(a.(*controller.ACMEHTTP01Config), b.(*v1alpha1.ACMEHTTP01Config), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha1.ControllerConfiguration)(nil), (*controller.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(a.(*v1alpha1.ControllerConfiguration), b.(*controller.ControllerConfiguration), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*controller.ControllerConfiguration)(nil), (*v1alpha1.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(a.(*controller.ControllerConfiguration), b.(*v1alpha1.ControllerConfiguration), scope)
 	}); err != nil {
 		return err
 	}
@@ -90,16 +99,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((**v1.LoggingConfiguration)(nil), (*v1.LoggingConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_Pointer_v1_LoggingConfiguration_To_v1_LoggingConfiguration(a.(**v1.LoggingConfiguration), b.(*v1.LoggingConfiguration), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*controller.ControllerConfiguration)(nil), (*v1alpha1.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(a.(*controller.ControllerConfiguration), b.(*v1alpha1.ControllerConfiguration), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddConversionFunc((*float32)(nil), (**float32)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_float32_To_Pointer_float32(a.(*float32), b.(**float32), scope)
 	}); err != nil {
@@ -110,22 +109,12 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1.LoggingConfiguration)(nil), (**v1.LoggingConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_LoggingConfiguration_To_Pointer_v1_LoggingConfiguration(a.(*v1.LoggingConfiguration), b.(**v1.LoggingConfiguration), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*v1alpha1.ControllerConfiguration)(nil), (*controller.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(a.(*v1alpha1.ControllerConfiguration), b.(*controller.ControllerConfiguration), scope)
-	}); err != nil {
-		return err
-	}
 	return nil
 }
 
 func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1alpha1.ACMEDNS01Config, out *controller.ACMEDNS01Config, s conversion.Scope) error {
 	out.RecursiveNameservers = *(*[]string)(unsafe.Pointer(&in.RecursiveNameservers))
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
 	}
 	out.CheckRetryPeriod = time.Duration(in.CheckRetryPeriod)
@@ -139,7 +128,7 @@ func Convert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1alpha1
 
 func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *controller.ACMEDNS01Config, out *v1alpha1.ACMEDNS01Config, s conversion.Scope) error {
 	out.RecursiveNameservers = *(*[]string)(unsafe.Pointer(&in.RecursiveNameservers))
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
 	}
 	out.CheckRetryPeriod = time.Duration(in.CheckRetryPeriod)
@@ -157,7 +146,7 @@ func autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *v1
 	out.SolverResourceRequestMemory = in.SolverResourceRequestMemory
 	out.SolverResourceLimitsCPU = in.SolverResourceLimitsCPU
 	out.SolverResourceLimitsMemory = in.SolverResourceLimitsMemory
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.SolverRunAsNonRoot, &out.SolverRunAsNonRoot, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.SolverRunAsNonRoot, &out.SolverRunAsNonRoot, s); err != nil {
 		return err
 	}
 	out.SolverNameservers = *(*[]string)(unsafe.Pointer(&in.SolverNameservers))
@@ -175,7 +164,7 @@ func autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *co
 	out.SolverResourceRequestMemory = in.SolverResourceRequestMemory
 	out.SolverResourceLimitsCPU = in.SolverResourceLimitsCPU
 	out.SolverResourceLimitsMemory = in.SolverResourceLimitsMemory
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.SolverRunAsNonRoot, &out.SolverRunAsNonRoot, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.SolverRunAsNonRoot, &out.SolverRunAsNonRoot, s); err != nil {
 		return err
 	}
 	out.SolverNameservers = *(*[]string)(unsafe.Pointer(&in.SolverNameservers))
@@ -202,13 +191,13 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 		return err
 	}
 	out.Controllers = *(*[]string)(unsafe.Pointer(&in.Controllers))
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials, s); err != nil {
 		return err
 	}
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials, s); err != nil {
 		return err
 	}
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef, s); err != nil {
 		return err
 	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
@@ -220,13 +209,11 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 	}
 	out.MetricsListenAddress = in.MetricsListenAddress
 	out.HealthzListenAddress = in.HealthzListenAddress
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.EnablePprof, &out.EnablePprof, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnablePprof, &out.EnablePprof, s); err != nil {
 		return err
 	}
 	out.PprofAddress = in.PprofAddress
-	if err := Convert_Pointer_v1_LoggingConfiguration_To_v1_LoggingConfiguration(&in.Logging, &out.Logging, s); err != nil {
-		return err
-	}
+	out.Logging = in.Logging
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
 	if err := Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(&in.IngressShimConfig, &out.IngressShimConfig, s); err != nil {
 		return err
@@ -238,6 +225,11 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 		return err
 	}
 	return nil
+}
+
+// Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration is an autogenerated conversion function.
+func Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *v1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in, out, s)
 }
 
 func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
@@ -255,13 +247,13 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 		return err
 	}
 	out.Controllers = *(*[]string)(unsafe.Pointer(&in.Controllers))
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.IssuerAmbientCredentials, &out.IssuerAmbientCredentials, s); err != nil {
 		return err
 	}
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.ClusterIssuerAmbientCredentials, &out.ClusterIssuerAmbientCredentials, s); err != nil {
 		return err
 	}
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableCertificateOwnerRef, &out.EnableCertificateOwnerRef, s); err != nil {
 		return err
 	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
@@ -273,13 +265,11 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 	}
 	out.MetricsListenAddress = in.MetricsListenAddress
 	out.HealthzListenAddress = in.HealthzListenAddress
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.EnablePprof, &out.EnablePprof, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnablePprof, &out.EnablePprof, s); err != nil {
 		return err
 	}
 	out.PprofAddress = in.PprofAddress
-	if err := Convert_v1_LoggingConfiguration_To_Pointer_v1_LoggingConfiguration(&in.Logging, &out.Logging, s); err != nil {
-		return err
-	}
+	out.Logging = in.Logging
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
 	if err := Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(&in.IngressShimConfig, &out.IngressShimConfig, s); err != nil {
 		return err
@@ -291,6 +281,11 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 		return err
 	}
 	return nil
+}
+
+// Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration is an autogenerated conversion function.
+func Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
+	return autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in, out, s)
 }
 
 func autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *v1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
@@ -320,7 +315,7 @@ func Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *cont
 }
 
 func autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in *v1alpha1.LeaderElectionConfig, out *controller.LeaderElectionConfig, s conversion.Scope) error {
-	if err := metav1.Convert_Pointer_bool_To_bool(&in.Enabled, &out.Enabled, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.Enabled, &out.Enabled, s); err != nil {
 		return err
 	}
 	out.Namespace = in.Namespace
@@ -337,7 +332,7 @@ func Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in
 }
 
 func autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *v1alpha1.LeaderElectionConfig, s conversion.Scope) error {
-	if err := metav1.Convert_bool_To_Pointer_bool(&in.Enabled, &out.Enabled, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.Enabled, &out.Enabled, s); err != nil {
 		return err
 	}
 	out.Namespace = in.Namespace

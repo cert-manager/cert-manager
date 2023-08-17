@@ -114,6 +114,11 @@ to renew certificates at an appropriate time before expiry.`,
 				os.Exit(1)
 			}
 
+			if err := logf.ValidateAndApply(&controllerConfig.Logging); err != nil {
+				log.Error(err, "Failed to validate controller flags")
+				os.Exit(1)
+			}
+
 			if err := options.ValidateControllerFlags(controllerFlags); err != nil {
 				log.Error(err, "Failed to validate controller flags")
 				os.Exit(1)
@@ -133,6 +138,11 @@ to renew certificates at an appropriate time before expiry.`,
 				// update feature gates based on new config
 				if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(controllerConfig.FeatureGates); err != nil {
 					log.Error(err, "Failed to set feature gates from config file")
+					os.Exit(1)
+				}
+
+				if err := logf.ValidateAndApply(&controllerConfig.Logging); err != nil {
+					log.Error(err, "Failed to validate controller flags")
 					os.Exit(1)
 				}
 			}
