@@ -116,14 +116,22 @@ to renew certificates at an appropriate time before expiry.`,
 	return cmd
 }
 
+// loadConfigFromFile loads the configuration from the provided config file
+// path, if one is provided. After loading the config file, the flags are
+// re-parsed to ensure that any flags provided to the command line override
+// those provided in the config file.
+// The newConfigHook is called when the options have been loaded from the
+// flags (but not yet the config file) and is re-called after the config file
+// has been loaded. This allows us to use the logging options and feature flags
+// set by the flags to log errors when loading the config file.
 func loadConfigFromFile(
 	cmd *cobra.Command,
 	allArgs []string,
 	configFilePath string,
 	cfg *config.ControllerConfiguration,
-	fn func() error,
+	newConfigHook func() error,
 ) error {
-	if err := fn(); err != nil {
+	if err := newConfigHook(); err != nil {
 		return err
 	}
 
@@ -155,7 +163,7 @@ func loadConfigFromFile(
 			return fmt.Errorf("failed to re-parse flags: %w", err)
 		}
 
-		if err := fn(); err != nil {
+		if err := newConfigHook(); err != nil {
 			return err
 		}
 	}
