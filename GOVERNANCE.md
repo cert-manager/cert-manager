@@ -1,11 +1,19 @@
+
 # cert-manager Governance
 
-This document defines project governance for the cert-manager project.  
-It contains a list of roles that can be held by humans, and any additional
-requirements, privileges, and responsibilities that come with each role.  
-A role is held by a person, and a person can hold multiple roles.
+This document defines project governance for the cert-manager project. Its
+purpose is to describe how decisions are made on the project and how anyone can
+influence these decisions. We have six levels of responsability, each one
+building on the previous:
 
-## Contributor Role
+- Contributor,
+- GitHub Member,
+- Reviewer,
+- Approver,
+- Maintainer,
+- Admin.
+
+## Contributors
 
 cert-manager is for everyone. Anyone can become a cert-manager contributor
 simply by contributing to the project, whether through code, documentation, blog
@@ -18,129 +26,133 @@ the cert-manager GitHub org must follow the guidelines in [the contributing
 page][contrib]. Whether these contributions are merged into the project is the
 prerogative of the reviewers, approvers and/or maintainers.
 
-### Requirements
-- Contribute to the project in some way.
+## GitHub Members
 
-### Privileges
-- Create issues and pull requests in the cert-manager GitHub org.
+GitHub Members are active contributors to the cert-manager project.
 
-### Responsibilities
-- Follow the [cert-manager Code of Conduct][coc].
-- Follow the [contributing guidelines][contrib].
+A contributor is considered to be active when they have had at least one
+interaction (comment on an issue or PR or message in the #cert-manager or #cert-
+manager-dev channels) within the last 18 months.
 
-## Member Role
+Members that have been inactive over the past 18 months may be removed from the
+GitHub organization.
 
-Members are continuously active contributors.  
-Members are expected to remain active contributors.
+### Becoming a GitHub Member
 
-**Defined by:** Member of the cert-manager GitHub organization
+To be added as a GitHub member of the cert-manager organization, you will need
+to look for two sponsors with at least the `reviewer` role. These two sponsors
+must have had some meaningful interaction with you on an issue on GitHub or on
+the cert-manager or cert-manager-dev channels on Slack.
 
-### Requirements
-- You must be a contributor.
-- Enabled [two-factor authentication] on their GitHub account
-- Must be part of the [cert-manager-dev] Google group
-- Must be part of the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) Slack channel
-- Must be part of the [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channel
-- Sponsored by 2 reviewers. Note the following requirements for sponsors:
-    - Sponsors must have close interactions with the prospective member - e.g. code/design/proposal review, coordinating on issues, etc.
-    - Sponsors must be reviewers or approvers.
-- Open an issue against the cert-manager/org repo
-    - Ensure your sponsors are @mentioned on the issue.
-    - Include a list of your contributions to the project.
-- Have your sponsors reply confirmation of sponsorship: +1
-- Once your sponsors have responded, your request will be reviewed by a cert-manager admin, in accordance with their SLO. Any missing information will be requested.
+Then, open an issue on the `cert-manager/cert-manager` repository and mention
+the sponsors as well as links to the meaningful interations (Slack threads,
+GitHub issues). Ask your sponsors to confirm their sponsorship by commenting on
+your PR. After that, your request will be reviewed by a cert-manager admin, in
+accordance with their SLO.
+
+To be added as a GitHub member, you will also need to enable [two-factor authentication][] on your GitHub account.
+
+GitHub members are encouraged to engage with the [cert-manager-dev][] mailing list as well as the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channels.
 
 [two-factor authentication]: https://help.github.com/articles/about-two-factor-authentication
 [cert-manager-dev]: https://groups.google.com/forum/#!forum/cert-manager-dev
 
-### Privileges
-- Is a member of the cert-manager GitHub organization
+## Reviewers
+
+The mission of the reviewer is to read through PRs for quality and correctness
+on all or some part of cert-manager. Reviewers are knowledgeable about the
+codebase as well as software engineering principles. Reviewers are defined in
+the file [`OWNERS`](./OWNERS).
+
+### Becoming a Reviewer
+
+To become a reviewer, you will need to look for a sponsor with at least the
+`approver` role. Then, create a PR to add your name to the list of `reviewers`
+in the `OWNERS` file. The PR description should list your significant
+contributions.
+
+Your sponsor must have the approver role. Your sponsor must have had close
+interactions with you: he must have been closely reviewed one of your PRs or
+worked with you on a thorny issue. The sponsor is expected to give his approval
+as a comment on the `OWNERS` PR. Additionally, your `OWNERS` PR should list your
+substantial contributions to the project.
 
 ### Responsibilities
-- Remain an active contributor to the project. If you have not been able to contribute to the project in longer than 18 months, you will be removed from the organization. You must respond to any raised member inactivity issues on the cert-manager/org repo in which you are @mentioned as the inactive member within 30 days to prove your activity.
-- Monitor the cert-manager-dev and cert-manager-dev channels on Slack, and help out when possible.
 
-## Reviewer Role
-
-Reviewers are able to review code for quality and correctness on some part of cert-manager.  
-They are knowledgeable about both the codebase and software engineering principles.
-
-**Defined by:** `reviewers` entry in the cert-manager [OWNERS](./OWNERS) file
-
-### Requirements
-- You must be a contributor.
-- You can be trusted to review PRs thoroughly.
-- Knowledgeable about the relevant part of the codebase, and can be referenced for questions about it.
-- Must have made a substantial contribution to the project that indicates their knowledge of (part of) the codebase.
-- Sponsored by 1 approver. Note the following requirements for sponsors:
-    - Sponsors must have close interactions with the prospective reviewer - e.g. code/design/proposal review, coordinating on issues, etc.
-    - Sponsors must be approvers.
-- Open a PR to update the OWNERS file
-    - Ensure your sponsor is @mentioned on the PR.
-    - Include a list of your substantial contributions to the project.
+- When possible, review pull requests, triage issues, and fix bugs in their
+  areas of expertise.
+- Ensure that all changes go through the project's code review and integration
+  processes.
 
 ### Privileges
-- Can /lgtm on pull requests
+
+- Able to `/lgtm` on pull requests.
+
+## Approver
+
+> **Note:** some projects call this role "committer".
+
+As an approver, your role is to make sure the right people reviewed the PRs. The
+approver's focus isn't to review the code; instead, they put a stamp of approval
+on an existing review with the command `/approve`. Note that it is always
+possible to review a PR as an approver with `/lgtm`, in which case the PR will
+be automatically approved.
+
+Approvers are defined under the `approver` section in the
+[`OWNERS`](./OWNERS) file.
+
+### Becoming an Approver
+
+To become an approver and start merging PRs, you must have reviewed 5 PRs.
+
+You will then need to get sponsorship from one of the maintainers. The
+maintainer sponsoring you must have had close work interactions with you and be
+knowledgeable of some of your work. 
+
+To apply, open a PR to update the `OWNERS` file and mention your sponsor in the
+description. The PR description should also list the PRs you have reviewed.
 
 ### Responsibilities
-- When possible, review pull requests, triage issues, and fix bugs in their areas
-  of expertise
-- Ensure that all changes go through the project's code review and integration processes.
 
-## Approver Role
-
-= (in CNCF terms) comitter
-
-Code approvers are able to both review and approve code contributions. While code review is focused on code quality and correctness, approval is focused on holistic acceptance of a contribution including: backwards / forwards compatibility, adhering to API and flag conventions, subtle performance and correctness issues, interactions with other parts of the system, etc.
-
-**Defined by:** `approvers` entry in the cert-manager [OWNERS](./OWNERS) file
-
-### Requirements
-- You must be a reviewer.
-- Your interests mostly align with the project's direction as determined by the maintainers and steering committee.
-- You have successfully reviewed & /lgtm'ed 5 PRs.
-- Sponsored by 1 maintainer. Note the following requirements for sponsors:
-    - Sponsors must have close interactions with the prospective reviewer - e.g. code/design/proposal review, coordinating on issues, etc.
-    - Sponsors must be maintainer.
-- Open a PR to update the OWNERS file
-    - Ensure your sponsor is @mentioned on the PR.
-    - Include a list of the 5 PRs you reviewed & /lgtm'ed.
-
-### Privileges
-- Can /approve on pull requests
-
-### Responsibilities
 - Expected to be responsive to review requests.
-- Stay up to date with the project's direction and goals. eg. by attending the weekly and/or bi-weekly meetings.
-
-## Maintainer Role
-
-= (in CNCF terms) maintainer
-
-Someone who can communicate with the CNCF on behalf of the project and who can
-participate in a "maintainers vote".
-
-**Defined by:** the list in the [MAINTAINERS.md](./MAINTAINERS.md) file
-
-### Requirements
-- You must be an approver.
-- You have successfully reviewed & /approved'ed 10 PRs.
-- Must be able to dedicate time to participate in maintainer meetings.
-- Must be able to dedicate time to participate in maintainer votes.
-- Must be able to dedicate time to monitor the cert-manager-\* mailing lists and help out when possible.
-- Must be able to dedicate time to rapidly respond to any time-sensitive security release processes.
-- Must be able to dedicate time to attend meetings with the cert-manager Steering Committee.
-- Must be able to dedicate time to communicate with the CNCF on behalf of the project.
+- Stay up to date with the project's direction and goals,
+  e.g., by attending some of the bi-weekly meetings, standups,
+  or being around in the cert-manager-dev Slack channel.
 
 ### Privileges
+
+- Can `/approve` on pull requests.
+
+## Maintainer
+
+A maintainer is someone who can communicate with the CNCF on behalf of the
+project and who can participate in a maintainers vote. The list of maintainers
+is available in the file [`MAINTAINERS.md`](./MAINTAINERS.md).
+
+### Becoming a Maintainer
+
+Anyone can become a cert-manager maintainer. Maintainers should be proficient in
+Go; have expertise in at least one of the domains (Kubernetes, PKI, ACME); have
+the time and ability to meet the maintainer expectations above; and demonstrate
+the ability to work with the existing maintainers and project processes.
+
+To become a maintainer, start by expressing interest to existing maintainers.
+Existing maintainers will then ask you to demonstrate the qualifications above
+by contributing PRs, doing code reviews, and other such tasks under their
+guidance. After several months of working together, maintainers will decide
+whether to grant maintainer status.
+
+### Privileges
+
 - Can communicate with the CNCF on behalf of the project.
 - Can participate in a "maintainers vote".
 
 ### Responsibilities
+
 - Monitor cncf-cert-manager-\* emails and help out when possible.
-- Rapidly respond to any time-sensitive security release processes.
+- Respond to time-sensitive security release processes.
 - Attend meetings with the cert-manager Steering Committee.
-- Participate in "maintainer votes".
+- Attend "maintainers vote" meetings when one is scheduled.
 
 ### Maintainer Decision-Making (maintainers vote)
 
@@ -156,30 +168,38 @@ If a maintainer is no longer interested in or cannot perform the duties listed
 above, they should move themselves to emeritus status. If necessary, this can
 also occur through the decision-making process outlined above.
 
-A review of the [MAINTAINERS.md](./MAINTAINERS.md) file is performed every year by the current maintainers.
-During this review, the maintainers that have not been active in the last 18 months
-are asked whether they would like to become an emeritus maintainer, they are expected
-to respond within 30 days. If they do not respond, they will automatically be moved to
-emeritus status.
+A review of the [`MAINTAINERS.md`](./MAINTAINERS.md) file is performed every
+year by the current maintainers. During this review, the maintainers that have
+not been active in the last 18 months are asked whether they would like to
+become an emeritus maintainer, they are expected to respond within 30 days. If
+they do not respond, they will automatically be moved to emeritus status.
 
 [coc]: https://github.com/cert-manager/cert-manager/blob/master/CODE_OF_CONDUCT.md
 [contrib]: https://cert-manager.io/docs/contributing/
 
-## Admin Role
+## Admin
 
-An admin is a maintainer who has admin privileges on the cert-manager infrastructure.
+An admin is a maintainer who has admin privileges on the cert-manager
+infrastructure. 
 
-**Defined by:** Admins of the cert-manager GitHub organization
+The admins aren't defined in any public file. The admins are the GitHub members
+on the cert-manager org that are set as "Owner". Additionally, admins have their
+email listed in GCP so that they can perform releases.
 
-### Requirements
-- You must be a maintainer.
-- You must have a good understanding of the technologies used in the cert-manager infrastructure.
+### Becoming an Admin
+
+To become an admin, you must already be a maintainer for a time and have some
+understanding of the technologies used in the cert-manager infrastructure (e.g.,
+Prow). Then, create an issue on the cert-manager project and mention each
+maintainer. Each maintainer will need to comment on the issue to express their
+approval.
 
 ### Privileges
-- Can perform administrative tasks on the cert-manager infrastructure
-- Can release new versions of cert-manager
+
+- Can remove protected branches and change settings in the GitHub organization.
+- Can run the Google Cloud Build playbooks to release new versions of cert-manager.
 
 ### Responsibilities
+
 - Must be responsible with the privileges granted to them
 - Must manage cert-manager membership requests in a timely manner when requested using the process outlined in the Member Role section above.
-
