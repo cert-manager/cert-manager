@@ -1,4 +1,3 @@
-
 # cert-manager Governance
 
 This document defines project governance for the cert-manager project. Its
@@ -37,6 +36,8 @@ manager-dev channels) within the last 18 months.
 Members that have been inactive over the past 18 months may be removed from the
 GitHub organization.
 
+**Defined by:** Member of the cert-manager GitHub organization.
+
 ### Becoming a GitHub Member
 
 To be added as a GitHub member of the cert-manager organization, you will need
@@ -44,13 +45,14 @@ to look for two sponsors with at least the `reviewer` role. These two sponsors
 must have had some meaningful interaction with you on an issue on GitHub or on
 the cert-manager or cert-manager-dev channels on Slack.
 
-Then, open an issue on the `cert-manager/cert-manager` repository and mention
-the sponsors as well as links to the meaningful interations (Slack threads,
-GitHub issues). Ask your sponsors to confirm their sponsorship by commenting on
-your PR. After that, your request will be reviewed by a cert-manager admin, in
-accordance with their SLO.
+Then, open an issue on the cert-manager repository and mention your sponsors as
+well as links to the meaningful interations (Slack threads, GitHub issues). Ask
+your sponsors to confirm their sponsorship by commenting on your PR. After that,
+your request will be reviewed by a cert-manager admin, in accordance with their
+SLO.
 
-To be added as a GitHub member, you will also need to enable [two-factor authentication][] on your GitHub account.
+To be added as a GitHub member, you will also need to enable [two-factor
+authentication][] on your GitHub account.
 
 GitHub members are encouraged to engage with the [cert-manager-dev][] mailing list as well as the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channels.
 
@@ -61,21 +63,20 @@ GitHub members are encouraged to engage with the [cert-manager-dev][] mailing li
 
 The mission of the reviewer is to read through PRs for quality and correctness
 on all or some part of cert-manager. Reviewers are knowledgeable about the
-codebase as well as software engineering principles. Reviewers are defined in
-the file [`OWNERS`](./OWNERS).
+codebase as well as software engineering principles.
+
+**Defined by:** the `reviewers` section in the file [`OWNERS`](./OWNERS).
 
 ### Becoming a Reviewer
 
 To become a reviewer, you will need to look for a sponsor with at least the
-`approver` role. Then, create a PR to add your name to the list of `reviewers`
-in the `OWNERS` file. The PR description should list your significant
-contributions.
+approver role. Your sponsor must have had close interactions with you: he must
+have been closely reviewed one of your PRs or worked with you on a thorny issue.
 
-Your sponsor must have the approver role. Your sponsor must have had close
-interactions with you: he must have been closely reviewed one of your PRs or
-worked with you on a thorny issue. The sponsor is expected to give his approval
-as a comment on the `OWNERS` PR. Additionally, your `OWNERS` PR should list your
-substantial contributions to the project.
+Then, create a PR to add your name to the list of `reviewers` in the `OWNERS`
+file. The PR description should list your significant contributions and should
+mention your sponsor. Your sponsor is expected to give his approval as a comment
+on your PR.
 
 ### Responsibilities
 
@@ -98,8 +99,7 @@ on an existing review with the command `/approve`. Note that it is always
 possible to review a PR as an approver with `/lgtm`, in which case the PR will
 be automatically approved.
 
-Approvers are defined under the `approver` section in the
-[`OWNERS`](./OWNERS) file.
+**Defined by:** the `approver` section in the [`OWNERS`](./OWNERS) file.
 
 ### Becoming an Approver
 
@@ -126,8 +126,9 @@ description. The PR description should also list the PRs you have reviewed.
 ## Maintainer
 
 A maintainer is someone who can communicate with the CNCF on behalf of the
-project and who can participate in a maintainers vote. The list of maintainers
-is available in the file [`MAINTAINERS.md`](./MAINTAINERS.md).
+project and who can participate in lazy consensus and votes. 
+
+**Defined by:** [`MAINTAINERS.md`](./MAINTAINERS.md).
 
 ### Becoming a Maintainer
 
@@ -145,22 +146,32 @@ whether to grant maintainer status.
 ### Privileges
 
 - Can communicate with the CNCF on behalf of the project.
-- Can participate in a "maintainers vote".
+- Can participate in lazy consensus and votes.
 
 ### Responsibilities
 
 - Monitor cncf-cert-manager-\* emails and help out when possible.
 - Respond to time-sensitive security release processes.
-- Attend meetings with the cert-manager Steering Committee.
+- Create and attend meetings with the cert-manager Steering Committee (not less than once a quarter).
 - Attend "maintainers vote" meetings when one is scheduled.
 
-### Maintainer Decision-Making (maintainers vote)
+### Maintainer Decision-Making
 
-Substantial changes to the project, require a "maintainers vote". This includes,
+Substantial changes to the project require a "maintainers decision". This includes,
 but is not limited to, changes to the project's roadmap, changes to the project's
-scope, fundamental design decisions, and changes to the project's governance. 
+scope, fundamental design decisions, and changes to the project's governance.
 
-A maintainer vote is a simple majority in which each maintainer receives one vote.
+A "maintainers decision" is made using lazy consensus. Email or Slack
+can be used to reach lazy consensus as long as the deliberation date
+and time are specified and the maintainers are CC'ed. You may use the
+following message template:
+
+> Dear maintainers, I'd like us to reach an agreement on the following matter using lazy consensus: [...]
+> - 🧑‍💻 Participants: @cert-manager-maintainers
+> - 📢 Deadline: April 3rd, 2023 23:59 UTC  
+> - 🚨 Note: to speed up the process, you may answer with a :+1: or a comment stating that your are lazy to help reach consensus before the deadline.
+
+Any non-agreements with regards to the decision can be posted as comments on the Slack message or to the email thread.
 
 ### Stepping Down as a Maintainer
 
@@ -196,10 +207,15 @@ approval.
 
 ### Privileges
 
-- Can remove protected branches and change settings in the GitHub organization.
+- Can change settings in the GitHub organization (e.g., remove protected branches, add GitHub members, etc.)
 - Can run the Google Cloud Build playbooks to release new versions of cert-manager.
 
 ### Responsibilities
 
-- Must be responsible with the privileges granted to them
-- Must manage cert-manager membership requests in a timely manner when requested using the process outlined in the Member Role section above.
+- Must have availability to allocate time to perform
+  cert-manager releases.
+- Must be available to perform admin-related tasks (add
+  a GitHub member, promote a GitHub user to "Owner",
+  add someone to the GCP projects, etc.)
+- Must be responsible with the privileges granted to
+  them.
