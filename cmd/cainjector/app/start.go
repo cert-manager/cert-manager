@@ -37,8 +37,10 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/component-base/logs"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/api"
@@ -189,11 +191,22 @@ servers and webhook servers.`,
 }
 
 func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
+	var defaultNamespaces map[string]cache.Config
+	if o.Namespace != "" {
+		// If a namespace has been provided, only watch resources in that namespace
+		defaultNamespaces = map[string]cache.Config{
+			o.Namespace: {},
+		}
+	}
+
 	mgr, err := ctrl.NewManager(
 		util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "cainjector"),
 		ctrl.Options{
-			Scheme:                        api.Scheme,
-			Namespace:                     o.Namespace,
+			Scheme: api.Scheme,
+			Cache: cache.Options{
+				ReaderFailOnMissingInformer: true,
+				DefaultNamespaces:           defaultNamespaces,
+			},
 			LeaderElection:                o.LeaderElect,
 			LeaderElectionNamespace:       o.LeaderElectionNamespace,
 			LeaderElectionID:              "cert-manager-cainjector-leader-election",
@@ -202,7 +215,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 			LeaseDuration:                 &o.LeaseDuration,
 			RenewDeadline:                 &o.RenewDeadline,
 			RetryPeriod:                   &o.RetryPeriod,
-			MetricsBindAddress:            "0",
+			Metrics:                       metricsserver.Options{BindAddress: "0"},
 		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)

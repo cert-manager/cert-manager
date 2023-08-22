@@ -24,25 +24,25 @@ CRI_ARCH := $(HOST_ARCH)
 
 # TODO: this version is also defaulted in ./make/cluster.sh. Make it so that it
 # is set in one place only.
-K8S_VERSION := 1.27
+K8S_VERSION := 1.28
 
-IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
-IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:aec4b029660d47aea025336150fdc2822c991f592d5170d754b6acaf158b513e
-IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:1bcec6bc854720e22f439c6dcea02fcf689f31976babcf03a449d750c2b1f34a
-IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.13.1@sha256:46b978105f46fa5c28851b1ea679f74c2ecbd24a6f92e6c7611c558e44f3baab
-IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
+IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.8.1@sha256:8f754c28c4a98dc818f0fb01a083a3c42694af37fb3874f468d5a2db4d4283e6
+IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:031d2da484f3d89c78007cbb1cf1d7ae992e069683a2cdca0a0efb63a63fc735
+IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:5371ead07ebd09ff858f568a07b6807e8568772af61e626c9a0a5137bd7e62db
+IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
+IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:b6ea4da6cb689985a6729f20a1a2775b9211bdaebd2c956f22871624d4925db2
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:6f7c87979b1e3bd92dc3ab54d037f80628547d7b58a8cb2b3bfa06c006b1ed9d
-IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:39a804ce4b896de168915ae41358932c219443fd4ceffe37296a63f9adef0597
+IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:1570f04e96fb5e0ad71c2de61fee71c8d55b2fe5b7c827ce65e81bf7cc99bcbd
 
-IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
-IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:4355f1f65ea5e952886e929a15628f0c6704905035b4741c6f560378871c9335
-IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:141234fb74242155c7b843180b90ee5fb6a20c9e77598bd9c138c687059cdafd
-IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.13.1@sha256:77a343a0cc93281fc4d476afbe65c2f39d7878c0a2bdc9e513ec3d19461828c5
-IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
+IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:e88220610f88c5e4aa76a07a49da516b0b6701be11b62481105a8a16478d7966
+IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:acf77f4fd08056941b5640d9489d46f2a1777e29d574e51926eac5250144dbd2
+IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:3ec997a6a26f600e4c2e439c3671e9f21c83a73bf486134eb6732481d0e371ca
+IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
+IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:a302cff9f7ecfac0c3cfde1b53a614a81d16f93a247c838d3dac43384fefd9b4
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:4a99caed209cf76fc15e37ad153d20d8b905a895021c799d360bba3402c66392
-IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:fee2b24db85c3ed3487e0e2a325806323997171a2ed722252f8ca85d0bee919d
+IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:abbb2b7fee8eafddfd4ebd8e45510e6c1d86937461bc6934470ffb57211a9a8b
 
-PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
+PEBBLE_COMMIT = b7dddc09eb7051c1ec3838f3771b1647df1288c8
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
@@ -302,7 +302,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 4.0.10 \
+		--version 4.7.1 \
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
@@ -326,9 +326,9 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 		--wait \
 		--namespace kyverno \
 		--create-namespace \
-		--version v2.5.1 \
-		--set image.tag=v1.7.1 \
-		--set initImage.tag=v1.7.1 \
+		--version 3.0.4 \
+		--set image.tag=v1.8.1 \
+		--set initImage.tag=v1.8.1 \
 		--set image.pullPolicy=Never \
 		--set initImage.pullPolicy=Never \
 		kyverno kyverno/kyverno >/dev/null
@@ -396,7 +396,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 11.0.0 \
+		--version 12.2.4 \
 		--namespace projectcontour \
 		--create-namespace \
 		--set contour.ingressClass.create=false \
