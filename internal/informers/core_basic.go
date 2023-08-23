@@ -75,6 +75,10 @@ func (bf *baseFactory) Secrets() SecretInformer {
 	}
 }
 
+func (bf *baseFactory) ConfigMaps() corev1informers.ConfigMapInformer {
+	return bf.f.Core().V1().ConfigMaps()
+}
+
 func (bf *baseFactory) CertificateSigningRequests() certificatesv1.CertificateSigningRequestInformer {
 	return bf.f.Certificates().V1().CertificateSigningRequests()
 }

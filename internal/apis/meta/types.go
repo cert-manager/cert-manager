@@ -82,6 +82,6 @@ type ConfigMapKeySelector struct {
 }
 
 const (
-	// Used as a data key in Secret resources to store a CA certificate.
+	// Used as a data key in Secret or Configmap resources to store a CA certificate.
 	TLSCAKey = "ca.crt"
 )
