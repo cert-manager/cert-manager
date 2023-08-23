@@ -33,8 +33,10 @@ import (
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	corelisters "k8s.io/client-go/listers/core/v1"
 )
 
 const (
@@ -45,7 +47,7 @@ const (
 	defaultAPIKeyKey = "api-key"
 )
 
-type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister,
+type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister, configMapsLister corelisters.ConfigMapLister,
 	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error)
 
 // Interface implements a Venafi client
@@ -63,8 +65,9 @@ type Venafi struct {
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
 	// For ClusterIssuers, this will be the cluster resource namespace.
-	namespace     string
-	secretsLister internalinformers.SecretLister
+	namespace        string
+	secretsLister    internalinformers.SecretLister
+	configMapsLister corelisters.ConfigMapLister
 
 	vcertClient connector
 	tppClient   *tpp.Connector
@@ -85,8 +88,8 @@ type connector interface {
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
-	cfg, err := configForIssuer(issuer, secretsLister, namespace)
+func New(namespace string, secretsLister internalinformers.SecretLister, configMapsLister corelisters.ConfigMapLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
+	cfg, err := configForIssuer(issuer, secretsLister, configMapsLister, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +129,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
-func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string) (*vcert.Config, error) {
+func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, configMapsLister corelisters.ConfigMapLister, namespace string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
 	switch {
 	case venCfg.TPP != nil:
@@ -135,6 +138,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		if err != nil {
 			return nil, err
 		}
+
+		caBundle, err := caBundleForVcertTPP(tpp, secretsLister, configMapsLister, namespace)
 
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
@@ -153,13 +158,13 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			// below. But we want to retain the CA bundle validation errors that
 			// were returned in previous versions of this code.
 			// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/client.go#L55-L61
-			ConnectionTrust: string(tpp.CABundle),
+			ConnectionTrust: string(caBundle),
 			Credentials: &endpoint.Authentication{
 				User:        username,
 				Password:    password,
 				AccessToken: accessToken,
 			},
-			Client: httpClientForVcertTPP(tpp.CABundle),
+			Client: httpClientForVcertTPP(caBundle),
 		}, nil
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
@@ -266,6 +271,71 @@ func httpClientForVcertTPP(caBundle []byte) *http.Client {
 		Transport: transport,
 		Timeout:   time.Second * 30,
 	}
+}
+
+// caBundleForVcertTPP is used to by ConnectionTrust and Client fields of vcert.Config.
+// This function sets appropriate CA based on provided bundle or kubernetes secret or kubernetes configmap
+// If no custom CA bundle is configured, an empty byte slice is returned.
+// Assumes exactly one of the in-line/Secret/ConfigMap CA bundles are defined.
+// If the `key` of the Secret or ConfigMap CA bundle is not defined, its value defaults to
+// `ca.crt`.
+func caBundleForVcertTPP(tpp *cmapi.VenafiTPP, secretsLister internalinformers.SecretLister, configMapsLister corelisters.ConfigMapLister, namespace string) (caBundle []byte, err error) {
+	if len(tpp.CABundle) > 0 {
+		return tpp.CABundle, nil
+	}
+
+	secretRef := tpp.CABundleSecretRef
+	configMapRef := tpp.CABundleConfigMapRef
+	if secretRef == nil && configMapRef == nil {
+		return nil, nil
+	}
+
+	var certBytes []byte
+	var ok bool
+
+	switch {
+	case secretRef != nil:
+		secret, err := secretsLister.Secrets(namespace).Get(secretRef.Name)
+		if err != nil {
+			return nil, fmt.Errorf("could not access secret '%s/%s': %s", namespace, secretRef.Name, err)
+		}
+
+		var key string
+		if secretRef.Key != "" {
+			key = secretRef.Key
+		} else {
+			key = cmmeta.TLSCAKey
+		}
+
+		certBytes, ok = secret.Data[key]
+		if !ok {
+			return nil, fmt.Errorf("no data for %q in secret '%s/%s'", key, namespace, secretRef.Name)
+		}
+
+	case configMapRef != nil:
+		configMap, err := configMapsLister.ConfigMaps(namespace).Get(configMapRef.Name)
+		if err != nil {
+			return nil, fmt.Errorf("could not access configmap '%s/%s': %s", namespace, configMapRef.Name, err)
+		}
+
+		var key string
+		if configMapRef.Key != "" {
+			key = configMapRef.Key
+		} else {
+			key = cmmeta.TLSCAKey
+		}
+
+		certString, ok := configMap.Data[key]
+		if !ok {
+			return nil, fmt.Errorf("no data for %q in configmap '%s/%s'", key, namespace, configMapRef.Name)
+		}
+
+		certBytes = []byte(certString)
+
+	}
+
+	return certBytes, nil
+
 }
 
 func (v *Venafi) Ping() error {

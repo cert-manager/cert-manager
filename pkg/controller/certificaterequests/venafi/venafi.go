@@ -23,6 +23,7 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
 
@@ -46,10 +47,11 @@ const (
 )
 
 type Venafi struct {
-	issuerOptions controllerpkg.IssuerOptions
-	secretsLister internalinformers.SecretLister
-	reporter      *crutil.Reporter
-	cmClient      clientset.Interface
+	issuerOptions    controllerpkg.IssuerOptions
+	secretsLister    internalinformers.SecretLister
+	configMapsLister corelisters.ConfigMapLister
+	reporter         *crutil.Reporter
+	cmClient         clientset.Interface
 
 	clientBuilder venaficlient.VenafiClientBuilder
 
@@ -80,7 +82,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
-	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj, v.metrics, log)
+	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, v.configMapsLister, issuerObj, v.metrics, log)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 

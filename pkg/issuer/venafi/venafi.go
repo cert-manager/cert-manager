@@ -26,6 +26,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	corelisters "k8s.io/client-go/listers/core/v1"
 )
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
@@ -33,7 +34,8 @@ type Venafi struct {
 	issuer cmapi.GenericIssuer
 	*controller.Context
 
-	secretsLister internalinformers.SecretLister
+	secretsLister    internalinformers.SecretLister
+	configMapsLister corelisters.ConfigMapLister
 
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -49,6 +51,7 @@ func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Inte
 	return &Venafi{
 		issuer:            issuer,
 		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
+		configMapsLister:  ctx.KubeSharedInformerFactory.ConfigMaps().Lister(),
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
 		clientBuilder:     client.New,
 		Context:           ctx,

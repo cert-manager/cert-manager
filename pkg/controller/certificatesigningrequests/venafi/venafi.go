@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -52,10 +53,11 @@ const (
 // signing CertificateSigningRequests that reference a cert-manager Venafi
 // Issuer or ClusterIssuer
 type Venafi struct {
-	issuerOptions controllerpkg.IssuerOptions
-	secretsLister internalinformers.SecretLister
-	certClient    certificatesclient.CertificateSigningRequestInterface
-	recorder      record.EventRecorder
+	issuerOptions    controllerpkg.IssuerOptions
+	secretsLister    internalinformers.SecretLister
+	configMapsLister corelisters.ConfigMapLister
+	certClient       certificatesclient.CertificateSigningRequestInterface
+	recorder         record.EventRecorder
 
 	clientBuilder venaficlient.VenafiClientBuilder
 
@@ -99,7 +101,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuerObj, v.metrics, log)
+	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, v.configMapsLister, issuerObj, v.metrics, log)
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		v.recorder.Event(csr, corev1.EventTypeWarning, "SecretNotFound", message)

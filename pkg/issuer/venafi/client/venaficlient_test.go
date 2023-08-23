@@ -214,8 +214,9 @@ func TestConfigForIssuerT(t *testing.T) {
 }
 
 type testConfigForIssuerT struct {
-	iss           cmapi.GenericIssuer
-	secretsLister internalinformers.SecretLister
+	iss              cmapi.GenericIssuer
+	secretsLister    internalinformers.SecretLister
+	configMapsLister corelisters.ConfigMapLister
 
 	expectedErr bool
 
