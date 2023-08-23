@@ -291,6 +291,11 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 8
 
+# enableServiceLinks indicates whether information about services should be
+# injected into pod's environment variables, matching the syntax of Docker
+# links.
+enableServiceLinks: false
+
 webhook:
   replicaCount: 1
   timeoutSeconds: 10
@@ -493,6 +498,11 @@ webhook:
   volumes: []
   volumeMounts: []
 
+  # enableServiceLinks indicates whether information about services should be
+  # injected into pod's environment variables, matching the syntax of Docker
+  # links.
+  enableServiceLinks: false
+
 cainjector:
   enabled: true
   replicaCount: 1
@@ -592,6 +602,11 @@ cainjector:
 
   volumes: []
   volumeMounts: []
+
+  # enableServiceLinks indicates whether information about services should be
+  # injected into pod's environment variables, matching the syntax of Docker
+  # links.
+  enableServiceLinks: false
 
 acmesolver:
   image:
@@ -715,3 +730,8 @@ startupapicheck:
 
   volumes: []
   volumeMounts: []
+
+  # enableServiceLinks indicates whether information about services should be
+  # injected into pod's environment variables, matching the syntax of Docker
+  # links.
+  enableServiceLinks: false

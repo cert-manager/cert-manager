@@ -37,7 +37,7 @@ spec:
       {{- if hasKey .Values.startupapicheck "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.startupapicheck.automountServiceAccountToken }}
       {{- end }}
-      enableServiceLinks: false
+      enableServiceLinks: {{ .Values.startupapicheck.enableServiceLinks }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
