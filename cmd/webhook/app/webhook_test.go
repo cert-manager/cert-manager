@@ -86,6 +86,15 @@ func TestFlagsAndConfigFile(t *testing.T) {
 
 	tests := []testCase{
 		{
+			yaml: ``,
+			args: func(tempFilePath string) []string {
+				return []string{"--kubeconfig=valid"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = "valid"
+			}),
+		},
+		{
 			yaml: `
 apiVersion: webhook.config.cert-manager.io/v1alpha1
 kind: WebhookConfiguration
