@@ -42,7 +42,7 @@ IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:a302cff9f7ecfac0
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:4a99caed209cf76fc15e37ad153d20d8b905a895021c799d360bba3402c66392
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:abbb2b7fee8eafddfd4ebd8e45510e6c1d86937461bc6934470ffb57211a9a8b
 
-PEBBLE_COMMIT = b7dddc09eb7051c1ec3838f3771b1647df1288c8
+PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
