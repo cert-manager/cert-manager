@@ -335,7 +335,6 @@ func caBundleForVcertTPP(tpp *cmapi.VenafiTPP, secretsLister internalinformers.S
 	}
 
 	return certBytes, nil
-
 }
 
 func (v *Venafi) Ping() error {
