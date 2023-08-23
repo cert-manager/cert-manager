@@ -17,17 +17,19 @@ limitations under the License.
 package helm
 
 import (
-	"log"
 	"time"
 
 	"helm.sh/helm/v3/pkg/action"
 	"k8s.io/cli-runtime/pkg/resource"
+
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // CreateCRDs creates cert manager CRDs. Before calling this function, we
 // made sure that the CRDs are not yet installed on the cluster.
 func CreateCRDs(allCRDs []*resource.Info, cfg *action.Configuration) error {
-	log.Printf("Creating the cert-manager CRDs")
+	logf.Log.Info("Creating the cert-manager CRDs")
+
 	// Create all CRDs
 	rr, err := cfg.KubeClient.Create(allCRDs)
 	if err != nil {
@@ -42,7 +44,7 @@ func CreateCRDs(allCRDs []*resource.Info, cfg *action.Configuration) error {
 		return err
 	}
 
-	log.Printf("Clearing discovery cache")
+	logf.Log.Info("Clearing discovery cache")
 	discoveryClient.Invalidate()
 
 	// Give time for the CRD to be recognized.

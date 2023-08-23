@@ -52,7 +52,7 @@ const (
 var (
 	// RequeuePeriod is the default period after which an Order should be re-queued.
 	// It can be overriden in tests.
-	RequeuePeriod time.Duration = time.Second * 5
+	RequeuePeriod = time.Second * 5
 )
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {

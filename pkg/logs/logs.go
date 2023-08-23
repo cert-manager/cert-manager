@@ -68,34 +68,34 @@ func InitLogs() {
 	log.SetFlags(0)
 }
 
-func AddFlags(opts *logs.Options, fs *pflag.FlagSet) {
-	{
-		var allFlags flag.FlagSet
-		klog.InitFlags(&allFlags)
+func AddFlagsNonDeprecated(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
+	var allFlags pflag.FlagSet
+	logsapi.AddFlags(opts, &allFlags)
 
-		allFlags.VisitAll(func(f *flag.Flag) {
-			switch f.Name {
-			case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
-				"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
-				fs.AddGoFlag(f)
-			}
-		})
-	}
-
-	{
-		var allFlags pflag.FlagSet
-		logsapi.AddFlags(opts, &allFlags)
-
-		allFlags.VisitAll(func(f *pflag.Flag) {
-			switch f.Name {
-			case "logging-format", "log-flush-frequency", "v", "vmodule":
-				fs.AddFlag(f)
-			}
-		})
-	}
+	allFlags.VisitAll(func(f *pflag.Flag) {
+		switch f.Name {
+		case "logging-format", "log-flush-frequency", "v", "vmodule":
+			fs.AddFlag(f)
+		}
+	})
 }
 
-func ValidateAndApply(opts *logs.Options) error {
+func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
+	var allFlags flag.FlagSet
+	klog.InitFlags(&allFlags)
+
+	allFlags.VisitAll(func(f *flag.Flag) {
+		switch f.Name {
+		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
+			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
+			fs.AddGoFlag(f)
+		}
+	})
+
+	AddFlagsNonDeprecated(opts, fs)
+}
+
+func ValidateAndApply(opts *logsapi.LoggingConfiguration) error {
 	return logsapi.ValidateAndApply(opts, nil)
 }
 

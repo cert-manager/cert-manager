@@ -26,9 +26,9 @@ CTR=docker
 
 TOOLS :=
 TOOLS += helm=v3.11.2
-TOOLS += kubectl=v1.27.2
-TOOLS += kind=v0.18.0
-TOOLS += controller-gen=v0.12.0
+TOOLS += kubectl=v1.27.4
+TOOLS += kind=v0.20.0
+TOOLS += controller-gen=v0.12.1
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
 TOOLS += release-notes=v0.14.0
@@ -47,7 +47,7 @@ TOOLS += ko=v0.13.0
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.6.2
 
-K8S_CODEGEN_VERSION=v0.27.2
+K8S_CODEGEN_VERSION=v0.27.4
 
 KUBEBUILDER_ASSETS_VERSION=1.27.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
@@ -250,12 +250,11 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 
 # Example commands to discover new kubectl versions and their SHAs:
 # gsutil ls gs://kubernetes-release/release/
-# gsutil cp gs://kubernetes-release/release/<version>/bin/<os>/<arch>/kubectl
-# sha256sum kubelet
-KUBECTL_linux_amd64_SHA256SUM=4f38ee903f35b300d3b005a9c6bfb9a46a57f92e89ae602ef9c129b91dc6c5a5
-KUBECTL_darwin_amd64_SHA256SUM=ec954c580e4f50b5a8aa9e29132374ce54390578d6e95f7ad0b5d528cb025f85
-KUBECTL_darwin_arm64_SHA256SUM=d2b045b1a0804d4c46f646aeb6dcd278202b9da12c773d5e462b1b857d1f37d7
-KUBECTL_linux_arm64_SHA256SUM=1b0966692e398efe71fe59f913eaec44ffd4468cc1acd00bf91c29fa8ff8f578
+# gsutil cat gs://kubernetes-release/release/<version>/bin/<os>/<arch>/kubectl.sha256
+KUBECTL_linux_amd64_SHA256SUM=4685bfcf732260f72fce58379e812e091557ef1dfc1bc8084226c7891dd6028f
+KUBECTL_darwin_amd64_SHA256SUM=7963839cb85028adffcca41b36a05dc273ccd5f8afe4a551106d0654f5c5168b
+KUBECTL_darwin_arm64_SHA256SUM=6abf3d4a2c43812b3ac4565713716f835e2da82b36c8dff0e05e803c68dbdf56
+KUBECTL_linux_arm64_SHA256SUM=5178cbb51dcfff286c20bc847d64dd35cd5993b81a2e3609581377a520a6425d
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$*_SHA256SUM)
@@ -265,10 +264,10 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=705c722b0a87c9068e183f6d8baecd155a97a9683949ca837c2a500c9aa95c63
-KIND_darwin_amd64_SHA256SUM=9c91e3a6f380ee4cab79094d3fade94eb10a4416d8d3a6d3e1bb9c616f392de4
-KIND_darwin_arm64_SHA256SUM=96e0765d385c4e5457dc95dc49f66d385727885dfe1ad77520af0a32b7f8ccb2
-KIND_linux_arm64_SHA256SUM=9c0320ac39b1f82f1011ae4e4ceb9c9865b528f59839b4d4eff7ab2804fac5f2
+KIND_linux_amd64_SHA256SUM=513a7213d6d3332dd9ef27c24dab35e5ef10a04fa27274fe1c14d8a246493ded
+KIND_darwin_amd64_SHA256SUM=bffd8fb2006dc89fa0d1dde5ba6bf48caacb707e4df8551528f49145ebfeb7ad
+KIND_darwin_arm64_SHA256SUM=8df041a5cae55471f3b039c3c9942226eb909821af63b5677fc80904caffaabf
+KIND_linux_arm64_SHA256SUM=639f7808443559aa30c3642d9913b1615d611a071e34f122340afeda97b8f422
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
@@ -401,10 +400,10 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # is possible that these SHAs change, whilst the version does not. To verify the
 # change that has been made to the tools look at
 # https://github.com/kubernetes-sigs/kubebuilder/tree/tools-releases
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=a12ae2dd2a4968530ae4887cd943b86a5ff131723d991303806fcd45defc5220
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=f9699df7b021f71a1ab55329b36b48a798e6ae3a44d2132255fc7e46c6790d4d
 KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=e1913674bacaa70c067e15649237e1f67d891ba53f367c0a50786b4a274ee047
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=0422632a2bbb0d4d14d7d8b0f05497a4d041c11d770a07b7a55c44bcc5e8ce66
-KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=1eb64f8c209952d592bcd2770ed57dcd7ea720cecc0c622633033eab9fd8ce25
+KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=9d2803e8ca85c465b33c12b06d0b2eba3ddb64b53a468628f741e50b462c46ad
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)

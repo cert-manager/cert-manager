@@ -26,6 +26,7 @@ import (
 
 	webhook "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -161,8 +162,12 @@ func Convert_webhook_TLSConfig_To_v1alpha1_TLSConfig(in *webhook.TLSConfig, out 
 }
 
 func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(in *v1alpha1.WebhookConfiguration, out *webhook.WebhookConfiguration, s conversion.Scope) error {
-	out.SecurePort = (*int)(unsafe.Pointer(in.SecurePort))
-	out.HealthzPort = (*int)(unsafe.Pointer(in.HealthzPort))
+	if err := v1.Convert_Pointer_int32_To_int32(&in.SecurePort, &out.SecurePort, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_int32_To_int32(&in.HealthzPort, &out.HealthzPort, s); err != nil {
+		return err
+	}
 	if err := Convert_v1alpha1_TLSConfig_To_webhook_TLSConfig(&in.TLSConfig, &out.TLSConfig, s); err != nil {
 		return err
 	}
@@ -170,6 +175,7 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(i
 	out.APIServerHost = in.APIServerHost
 	out.EnablePprof = in.EnablePprof
 	out.PprofAddress = in.PprofAddress
+	out.Logging = in.Logging
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
 	return nil
 }
@@ -180,8 +186,12 @@ func Convert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(in *v
 }
 
 func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in *webhook.WebhookConfiguration, out *v1alpha1.WebhookConfiguration, s conversion.Scope) error {
-	out.SecurePort = (*int)(unsafe.Pointer(in.SecurePort))
-	out.HealthzPort = (*int)(unsafe.Pointer(in.HealthzPort))
+	if err := v1.Convert_int32_To_Pointer_int32(&in.SecurePort, &out.SecurePort, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_int32_To_Pointer_int32(&in.HealthzPort, &out.HealthzPort, s); err != nil {
+		return err
+	}
 	if err := Convert_webhook_TLSConfig_To_v1alpha1_TLSConfig(&in.TLSConfig, &out.TLSConfig, s); err != nil {
 		return err
 	}
@@ -189,6 +199,7 @@ func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(i
 	out.APIServerHost = in.APIServerHost
 	out.EnablePprof = in.EnablePprof
 	out.PprofAddress = in.PprofAddress
+	out.Logging = in.Logging
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
 	return nil
 }

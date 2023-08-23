@@ -17,7 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"flag"
+
 	"github.com/cert-manager/cert-manager/controller-binary/app"
+
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -29,7 +32,8 @@ func main() {
 	logf.InitLogs()
 	defer logf.FlushLogs()
 
-	cmd := app.NewCommandStartCertManagerController(stopCh)
+	cmd := app.NewServerCommand(stopCh)
+	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	if err := cmd.Execute(); err != nil {
 		logf.Log.Error(err, "error executing command")

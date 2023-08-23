@@ -48,11 +48,11 @@ func ValidateWebhookConfiguration(cfg *config.WebhookConfiguration) error {
 			}
 		}
 	}
-	if cfg.HealthzPort == nil {
-		allErrors = append(allErrors, fmt.Errorf("invalid configuration: healthzPort must be specified"))
+	if cfg.HealthzPort < 0 || cfg.HealthzPort > 65535 {
+		allErrors = append(allErrors, fmt.Errorf("invalid configuration: healthzPort must be a valid port number"))
 	}
-	if cfg.SecurePort == nil {
-		allErrors = append(allErrors, fmt.Errorf("invalid configuration: securePort must be specified"))
+	if cfg.SecurePort < 0 || cfg.SecurePort > 65535 {
+		allErrors = append(allErrors, fmt.Errorf("invalid configuration: securePort must be a valid port number"))
 	}
 	return utilerrors.NewAggregate(allErrors)
 }

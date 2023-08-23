@@ -63,11 +63,11 @@ strategy: {}
 podDisruptionBudget:
   enabled: false
 
-  minAvailable: 1
-  # maxUnavailable: 1
-
   # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
   # or a percentage value (e.g. 25%)
+  # if neither minAvailable or maxUnavailable is set, we default to `minAvailable: 1`
+  # minAvailable: 1
+  # maxUnavailable: 1
 
 # Comma separated list of feature gates that should be enabled on the
 # controller pod.
@@ -118,6 +118,29 @@ serviceAccount:
 
 # When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted
 enableCertificateOwnerRef: false
+
+# Used to configure options for the controller pod.
+# This allows setting options that'd usually be provided via flags.
+# An APIVersion and Kind must be specified in your values.yaml file.
+# Flags will override options that are set here.
+config:
+#   apiVersion: controller.config.cert-manager.io/v1alpha1
+#   kind: ControllerConfiguration
+#   logging:
+#    verbosity: 2
+#    format: text
+#   leaderElectionConfig:
+#    namespace: kube-system
+#   kubernetesAPIQPS: 9000
+#   kubernetesAPIBurst: 9000
+#   numberOfConcurrentWorkers: 200
+#   featureGates:
+#     additionalCertificateOutputFormats: true
+#     experimentalCertificateSigningRequestControllers: true
+#     experimentalGatewayAPISupport: true
+#     serverSideApply: true
+#     literalCertificateSubject: true
+#     useCertificateRequestBasicConstraints: true
 
 # Setting Nameservers for DNS01 Self Check
 # See: https://cert-manager.io/docs/configuration/acme/dns01/#setting-nameservers-for-dns01-self-check
@@ -305,11 +328,11 @@ webhook:
   podDisruptionBudget:
     enabled: false
 
-    minAvailable: 1
-    # maxUnavailable: 1
-
     # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
     # or a percentage value (e.g. 25%)
+    # if neither minAvailable or maxUnavailable is set, we default to `minAvailable: 1`
+    # minAvailable: 1
+    # maxUnavailable: 1
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -490,11 +513,11 @@ cainjector:
   podDisruptionBudget:
     enabled: false
 
-    minAvailable: 1
-    # maxUnavailable: 1
-
     # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
     # or a percentage value (e.g. 25%)
+    # if neither minAvailable or maxUnavailable is set, we default to `minAvailable: 1`
+    # minAvailable: 1
+    # maxUnavailable: 1
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/

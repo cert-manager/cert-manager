@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
-	"k8s.io/component-base/logs"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	configscheme "github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
@@ -32,21 +31,16 @@ import (
 
 // WebhookFlags defines options that can only be configured via flags.
 type WebhookFlags struct {
-	Logging *logs.Options
-
 	// Path to a file containing a WebhookConfiguration resource
 	Config string
 }
 
 func NewWebhookFlags() *WebhookFlags {
-	return &WebhookFlags{
-		Logging: logs.NewOptions(),
-	}
+	return &WebhookFlags{}
 }
 
 func (f *WebhookFlags) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&f.Config, "config", "", "Path to a file containing a WebhookConfiguration object used to configure the webhook")
-	logf.AddFlags(f.Logging, fs)
 }
 
 func NewWebhookConfiguration() (*config.WebhookConfiguration, error) {
@@ -64,8 +58,8 @@ func NewWebhookConfiguration() (*config.WebhookConfiguration, error) {
 }
 
 func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
-	fs.IntVar(c.SecurePort, "secure-port", *c.SecurePort, "port number to listen on for secure TLS connections")
-	fs.IntVar(c.HealthzPort, "healthz-port", *c.HealthzPort, "port number to listen on for insecure healthz connections")
+	fs.Int32Var(&c.SecurePort, "secure-port", c.SecurePort, "port number to listen on for secure TLS connections")
+	fs.Int32Var(&c.HealthzPort, "healthz-port", c.HealthzPort, "port number to listen on for insecure healthz connections")
 
 	fs.StringVar(&c.TLSConfig.Filesystem.CertFile, "tls-cert-file", c.TLSConfig.Filesystem.CertFile, "path to the file containing the TLS certificate to serve with")
 	fs.StringVar(&c.TLSConfig.Filesystem.KeyFile, "tls-private-key-file", c.TLSConfig.Filesystem.KeyFile, "path to the file containing the TLS private key to serve with")
@@ -93,4 +87,6 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
+
+	logf.AddFlags(&c.Logging, fs)
 }

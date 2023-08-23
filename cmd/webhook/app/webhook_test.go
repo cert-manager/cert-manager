@@ -17,41 +17,175 @@ limitations under the License.
 package app
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"reflect"
 	"testing"
 
+	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 )
 
-// Test to ensure flags take precedence over config options.
-func TestWebhookConfigFlagPrecedence_FlagsTakePrecedence(t *testing.T) {
-	cfg, err := options.NewWebhookConfiguration()
-	if err != nil {
-		t.Fatal(err)
-	}
+func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.WebhookConfiguration, error) {
+	var tempFilePath string
 
-	cfg.KubeConfig = "<invalid>"
-	if err := webhookConfigFlagPrecedence(cfg, []string{"--kubeconfig=valid"}); err != nil {
-		t.Fatal(err)
-	}
+	func() {
+		tempFile, err := os.CreateTemp(tempDir, "config-*.yaml")
+		if err != nil {
+			t.Error(err)
+		}
+		defer tempFile.Close()
 
-	if cfg.KubeConfig != "valid" {
-		t.Errorf("unexpected field value %q, expected %q", cfg.KubeConfig, "valid")
-	}
+		tempFilePath = tempFile.Name()
+
+		if _, err := tempFile.WriteString(yaml); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	var finalConfig *config.WebhookConfiguration
+
+	ctx := logf.NewContext(context.TODO(), logf.Log)
+
+	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.WebhookConfiguration) error {
+		finalConfig = cc
+		return nil
+	}, args(tempFilePath))
+
+	cmd.SetErr(io.Discard)
+	cmd.SetOut(io.Discard)
+
+	err := cmd.Execute()
+	return finalConfig, err
 }
 
-// Test to ensure that when flags are not provided, config provided values are preserved.
-func TestWebhookConfigFlagPrecedence_ConfigPersistsWithoutFlags(t *testing.T) {
-	cfg, err := options.NewWebhookConfiguration()
-	if err != nil {
-		t.Fatal(err)
+func TestFlagsAndConfigFile(t *testing.T) {
+	type testCase struct {
+		yaml      string
+		args      func(string) []string
+		expError  bool
+		expConfig func(string) *config.WebhookConfiguration
 	}
 
-	cfg.KubeConfig = "valid"
-	if err := webhookConfigFlagPrecedence(cfg, []string{}); err != nil {
-		t.Fatal(err)
+	configFromDefaults := func(
+		fn func(string, *config.WebhookConfiguration),
+	) func(string) *config.WebhookConfiguration {
+		defaults, err := options.NewWebhookConfiguration()
+		if err != nil {
+			t.Error(err)
+		}
+		return func(tempDir string) *config.WebhookConfiguration {
+			fn(tempDir, defaults)
+			return defaults
+		}
 	}
 
-	if cfg.KubeConfig != "valid" {
-		t.Errorf("unexpected field value %q, expected %q", cfg.KubeConfig, "valid")
+	tests := []testCase{
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+kubeConfig: "<invalid>"
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath, "--kubeconfig=valid"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = "valid"
+			}),
+		},
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+kubeConfig: valid
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = path.Join(tempDir, "valid")
+			}),
+		},
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+tlsConfig: {}
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+			}),
+		},
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+tlsConfig: nil
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath}
+			},
+			expError: true,
+		},
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+tlsConfig:
+    filesystem:
+        certFile: aaaa
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath, "--tls-private-key-file=bbbb"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.TLSConfig.Filesystem.CertFile = path.Join(tempDir, "aaaa")
+				cc.TLSConfig.Filesystem.KeyFile = "bbbb"
+			}),
+		},
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+logging:
+    verbosity: 2
+    format: text
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.Logging.Verbosity = 2
+				cc.Logging.Format = "text"
+			}),
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			tempDir := t.TempDir()
+
+			config, err := testCmdCommand(t, tempDir, tc.yaml, tc.args)
+			if tc.expError != (err != nil) {
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else {
+					t.Errorf("unexpected error: %v", err)
+				}
+			} else if !tc.expError {
+				expConfig := tc.expConfig(tempDir)
+				if !reflect.DeepEqual(config, expConfig) {
+					t.Errorf("expected config %v but got %v", expConfig, config)
+				}
+			}
+		})
 	}
 }

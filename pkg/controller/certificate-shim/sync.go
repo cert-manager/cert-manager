@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
@@ -145,10 +146,11 @@ func SyncFnFor(
 						OwnerReferences: crt.OwnerReferences,
 					},
 					Spec: cmapi.CertificateSpec{
-						DNSNames:   crt.Spec.DNSNames,
-						SecretName: crt.Spec.SecretName,
-						IssuerRef:  crt.Spec.IssuerRef,
-						Usages:     crt.Spec.Usages,
+						DNSNames:    crt.Spec.DNSNames,
+						IPAddresses: crt.Spec.IPAddresses,
+						SecretName:  crt.Spec.SecretName,
+						IssuerRef:   crt.Spec.IssuerRef,
+						Usages:      crt.Spec.Usages,
 					},
 				})
 			} else {
@@ -358,6 +360,17 @@ func buildCertificates(
 			controllerGVK = gatewayGVK
 		}
 
+		var (
+			ipAddress, dnsNames []string
+		)
+		for _, h := range hosts {
+			if ip := net.ParseIP(h); ip != nil {
+				ipAddress = append(ipAddress, h)
+			} else {
+				dnsNames = append(dnsNames, h)
+			}
+		}
+
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            secretRef.Name,
@@ -366,8 +379,9 @@ func buildCertificates(
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
-				DNSNames:   hosts,
-				SecretName: secretRef.Name,
+				DNSNames:    dnsNames,
+				IPAddresses: ipAddress,
+				SecretName:  secretRef.Name,
 				IssuerRef: cmmeta.ObjectReference{
 					Name:  issuerName,
 					Kind:  issuerKind,

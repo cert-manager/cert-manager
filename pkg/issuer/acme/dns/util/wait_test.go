@@ -22,11 +22,17 @@ var lookupNameserversTestsOK = []struct {
 	fqdn string
 	nss  []string
 }{
-	{"books.google.com.ng.",
-		[]string{"ns1.google.com.", "ns2.google.com.", "ns3.google.com.", "ns4.google.com."},
+	{
+		fqdn: "en.wikipedia.org.",
+		nss:  []string{"ns0.wikimedia.org.", "ns1.wikimedia.org.", "ns2.wikimedia.org."},
 	},
-	{"www.google.com.",
-		[]string{"ns1.google.com.", "ns2.google.com.", "ns3.google.com.", "ns4.google.com."},
+	{
+		fqdn: "www.google.com.",
+		nss:  []string{"ns1.google.com.", "ns2.google.com.", "ns3.google.com.", "ns4.google.com."},
+	},
+	{
+		fqdn: "physics.georgetown.edu.",
+		nss:  []string{"ns4.georgetown.edu.", "ns5.georgetown.edu.", "ns6.georgetown.edu."},
 	},
 }
 
@@ -274,7 +280,7 @@ func TestResolveConfServers(t *testing.T) {
 // TODO: find a website which uses issuewild?
 func TestValidateCAA(t *testing.T) {
 
-	for _, nameservers := range [][]string{RecursiveNameservers, []string{"https://1.1.1.1/dns-query"}, []string{"https://8.8.8.8/dns-query"}} {
+	for _, nameservers := range [][]string{RecursiveNameservers, {"https://1.1.1.1/dns-query"}, {"https://8.8.8.8/dns-query"}} {
 
 		// google installs a CAA record at google.com
 		// ask for the www.google.com record to test that

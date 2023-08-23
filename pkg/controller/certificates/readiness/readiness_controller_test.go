@@ -375,7 +375,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				})),
 			reason:         policies.InvalidKeyPair,
-			message:        "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
+			message:        "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains corrupt certificate data": {
@@ -385,8 +385,8 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					corev1.TLSPrivateKeyKey: privKey,
 					corev1.TLSCertKey:       []byte("test"),
 				})),
-			reason:         policies.InvalidKeyPair,
-			message:        "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
+			reason:         policies.InvalidCertificate,
+			message:        "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains a non-matching key-pair": {
@@ -399,7 +399,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 						gen.Certificate("something else", gen.SetCertificateCommonName("example.com"))),
 				})),
 			reason:         policies.InvalidKeyPair,
-			message:        "Issuing certificate as Secret contains an invalid key-pair: tls: private key does not match public key",
+			message:        "Issuing certificate as Secret contains a private key that does not match the certificate",
 			violationFound: true,
 		},
 		"Certificate not Ready when CertificateRequest does not match certificate spec": {

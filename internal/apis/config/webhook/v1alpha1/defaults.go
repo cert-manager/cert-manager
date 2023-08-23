@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
@@ -29,12 +30,14 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 
 func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	if obj.SecurePort == nil {
-		obj.SecurePort = pointer.Int(6443)
+		obj.SecurePort = pointer.Int32(6443)
 	}
 	if obj.HealthzPort == nil {
-		obj.HealthzPort = pointer.Int(6080)
+		obj.HealthzPort = pointer.Int32(6080)
 	}
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = "localhost:6060"
 	}
+
+	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
 }

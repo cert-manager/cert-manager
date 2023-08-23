@@ -53,9 +53,9 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	// some test values
 	var (
-		testName      string = "acmetest"
-		challengeType string = "dns-01"
-		authType      string = "dns"
+		testName      = "acmetest"
+		challengeType = "dns-01"
+		authType      = "dns"
 	)
 
 	// Initial ACME authorization to be returned by GetAuthorization.
