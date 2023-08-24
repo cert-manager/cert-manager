@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
@@ -82,10 +83,6 @@ functionality for cert-manager.`,
 			if err := loadConfigFromFile(
 				cmd, allArgs, webhookFlags.Config, webhookConfig,
 				func() error {
-					if err := logf.ValidateAndApply(&webhookConfig.Logging); err != nil {
-						return fmt.Errorf("failed to validate webhook logging flags: %w", err)
-					}
-
 					// set feature gates from initial flags-based config
 					if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(webhookConfig.FeatureGates); err != nil {
 						return fmt.Errorf("failed to set feature gates from initial flags-based config: %w", err)
@@ -95,6 +92,10 @@ functionality for cert-manager.`,
 				},
 			); err != nil {
 				return err
+			}
+
+			if err := logf.ValidateAndApplyAsField(&webhookConfig.Logging, field.NewPath("logging")); err != nil {
+				return fmt.Errorf("failed to validate webhook logging flags: %w", err)
 			}
 
 			return run(ctx, webhookConfig)
@@ -117,8 +118,8 @@ functionality for cert-manager.`,
 // those provided in the config file.
 // The newConfigHook is called when the options have been loaded from the
 // flags (but not yet the config file) and is re-called after the config file
-// has been loaded. This allows us to use the logging options and feature flags
-// set by the flags to log errors when loading the config file.
+// has been loaded. This allows us to use the feature flags set by the flags
+// while loading the config file.
 func loadConfigFromFile(
 	cmd *cobra.Command,
 	allArgs []string,
