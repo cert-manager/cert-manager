@@ -823,7 +823,7 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	if test.fakeClient != nil {
-		v.clientBuilder = func(namespace string, secretsLister internalinformers.SecretLister,
+		v.clientBuilder = func(namespace string, secretsLister internalinformers.SecretLister, configMapLister corelisters.ConfigMapLister,
 			issuer cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
