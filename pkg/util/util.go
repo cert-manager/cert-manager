@@ -28,6 +28,7 @@ import (
 	"time"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"golang.org/x/exp/slices"
 )
 
 func OnlyOneNotNil(items ...interface{}) (any bool, one bool) {
@@ -98,31 +99,41 @@ func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
 	return true
 }
 
-// Test for equal IP slices even if unsorted
+// EqualIPsUnsorted checks if the given slices of IP addresses contain the same elements, even if in a different order
 func EqualIPsUnsorted(s1, s2 []net.IP) bool {
 	if len(s1) != len(s2) {
 		return false
 	}
-	s1_2, s2_2 := make([]string, len(s1)), make([]string, len(s2))
-	// we may want to implement a sort interface here instead of []byte conversion
-	for i := range s1 {
-		s1_2[i] = string(s1[i])
-		s2_2[i] = string(s2[i])
+
+	// Two IPv4 addresses can compare unequal with bytes.Equal which is why net.IP.Equal exists.
+	// We still want to sort the lists, though, and we don't want different representations of IPv4 addresses
+	// to be sorted differently. That can happen if one is stored as a 4-byte address while
+	// the other is stored as a 16-byte representation
+
+	// To avoid ambiguity, we ensure that only the 16-byte form is used for all addresses we work with.
+
+	s1_2, s2_2 := make([]net.IP, len(s1)), make([]net.IP, len(s2))
+
+	for i := 0; i < len(s1); i++ {
+		s1_2[i] = s1[i].To16()
+		s2_2[i] = s2[i].To16()
 	}
 
-	sort.SliceStable(s1_2, func(i, j int) bool {
-		return s1_2[i] < s1_2[j]
-	})
-	sort.SliceStable(s2_2, func(i, j int) bool {
-		return s2_2[i] < s2_2[j]
+	// TODO: the function signature will change to func(a net.IP, b net.IP) int when we upgrade to go 1.21
+	slices.SortFunc(s1_2, func(a net.IP, b net.IP) bool {
+		// TODO: this will just change to bytes.Compare (without the <= 0) after we upgrade to go 1.21
+		return bytes.Compare([]byte(a), []byte(b)) <= 0
 	})
 
-	for i, s := range s1_2 {
-		if s != s2_2[i] {
-			return false
-		}
-	}
-	return true
+	// TODO: the function signature will change to func(a net.IP, b net.IP) int when we upgrade to go 1.21
+	slices.SortFunc(s2_2, func(a net.IP, b net.IP) bool {
+		// TODO: this will just change to bytes.Compare (without the <= 0) after we upgrade to go 1.21
+		return bytes.Compare([]byte(a), []byte(b)) <= 0
+	})
+
+	return slices.EqualFunc(s1_2, s2_2, func(a net.IP, b net.IP) bool {
+		return a.Equal(b)
+	})
 }
 
 // Test for equal KeyUsage slices even if unsorted
