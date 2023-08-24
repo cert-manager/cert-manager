@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"net"
 
 	"fmt"
 	"reflect"
@@ -103,6 +104,16 @@ func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSp
 	return nil, nil
 }
 
+func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
+	parsedStringIPs := make([]net.IP, len(stringIPs))
+
+	for i, s := range stringIPs {
+		parsedStringIPs[i] = net.ParseIP(s)
+	}
+
+	return util.EqualIPsUnsorted(parsedStringIPs, parsedIPs)
+}
+
 // RequestMatchesSpec compares a CertificateRequest with a CertificateSpec
 // and returns a list of field names on the Certificate that do not match their
 // counterpart fields on the CertificateRequest.
@@ -121,15 +132,18 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 
 	var violations []string
 
-	if !util.EqualUnsorted(IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
+	if !ipSlicesMatch(x509req.IPAddresses, spec.IPAddresses) {
 		violations = append(violations, "spec.ipAddresses")
 	}
+
 	if !util.EqualUnsorted(URLsToString(x509req.URIs), spec.URIs) {
 		violations = append(violations, "spec.uris")
 	}
+
 	if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
 		violations = append(violations, "spec.emailAddresses")
 	}
+
 	if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
 		violations = append(violations, "spec.dnsNames")
 	}
@@ -239,12 +253,14 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 		}
 	}
 
-	if !util.EqualUnsorted(IPAddressesToString(x509cert.IPAddresses), spec.IPAddresses) {
+	if !ipSlicesMatch(x509cert.IPAddresses, spec.IPAddresses) {
 		violations = append(violations, "spec.ipAddresses")
 	}
+
 	if !util.EqualUnsorted(URLsToString(x509cert.URIs), spec.URIs) {
 		violations = append(violations, "spec.uris")
 	}
+
 	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailAddresses) {
 		violations = append(violations, "spec.emailAddresses")
 	}
