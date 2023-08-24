@@ -104,6 +104,10 @@ func (o WebhookServerOptions) Validate(args []string) error {
 		return err
 	}
 
+	if errs := o.RecommendedOptions.Validate(); len(errs) > 0 {
+		return fmt.Errorf("error validating recommended options: %v", errs)
+	}
+
 	return nil
 }
 
