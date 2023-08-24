@@ -98,30 +98,43 @@ func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
 	return true
 }
 
-// Test for equal IP slices even if unsorted
+// EqualIPsUnsorted checks if the given slices of IP addresses contain the same elements, even if in a different order
+// BACKPORT: Changes to this function were backported into this branch to fix an IP address comparison bug, but
+// this function was changed to use sort.Slice instead of https://pkg.go.dev/golang.org/x/exp/slices.Sort as we didn't
+// previously depend on the slices package in this version of cert-manager
 func EqualIPsUnsorted(s1, s2 []net.IP) bool {
 	if len(s1) != len(s2) {
 		return false
 	}
-	s1_2, s2_2 := make([]string, len(s1)), make([]string, len(s2))
-	// we may want to implement a sort interface here instead of []byte conversion
-	for i := range s1 {
-		s1_2[i] = string(s1[i])
-		s2_2[i] = string(s2[i])
+
+	// Two IPv4 addresses can compare unequal with bytes.Equal which is why net.IP.Equal exists.
+	// We still want to sort the lists, though, and we don't want different representations of IPv4 addresses
+	// to be sorted differently. That can happen if one is stored as a 4-byte address while
+	// the other is stored as a 16-byte representation
+
+	// To avoid ambiguity, we ensure that only the 16-byte form is used for all addresses we work with.
+
+	s1_2, s2_2 := make([]net.IP, len(s1)), make([]net.IP, len(s2))
+
+	for i := 0; i < len(s1); i++ {
+		s1_2[i] = s1[i].To16()
+		s2_2[i] = s2[i].To16()
 	}
 
-	sort.SliceStable(s1_2, func(i, j int) bool {
-		return s1_2[i] < s1_2[j]
-	})
-	sort.SliceStable(s2_2, func(i, j int) bool {
-		return s2_2[i] < s2_2[j]
+	sort.Slice(s1_2, func(i int, j int) bool {
+		return bytes.Compare([]byte(s1_2[i]), []byte(s1_2[j])) <= 0
 	})
 
-	for i, s := range s1_2 {
-		if s != s2_2[i] {
+	sort.Slice(s2_2, func(i int, j int) bool {
+		return bytes.Compare([]byte(s2_2[i]), []byte(s2_2[j])) <= 0
+	})
+
+	for i := 0; i < len(s1_2); i++ {
+		if !s1_2[i].Equal(s2_2[i]) {
 			return false
 		}
 	}
+
 	return true
 }
 

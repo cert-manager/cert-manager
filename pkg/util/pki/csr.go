@@ -88,6 +88,8 @@ func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
 	return urls, nil
 }
 
+// IPAddressesToString converts a slice of IP addresses to strings, which can be useful for
+// printing a list of addresses but MUST NOT be used for comparing two slices of IP addresses.
 func IPAddressesToString(ipAddresses []net.IP) []string {
 	var ipNames []string
 	for _, ip := range ipAddresses {
