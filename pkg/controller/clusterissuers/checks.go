@@ -28,7 +28,7 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 	issuers, err := c.clusterIssuerLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
+		return nil, fmt.Errorf("error listing issuers: %s", err.Error())
 	}
 
 	var affected []*v1.ClusterIssuer
@@ -60,6 +60,12 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 					continue
 				}
 			}
+			if iss.Spec.Venafi.TPP.CABundleSecretRef != nil {
+				if iss.Spec.Venafi.TPP.CABundleSecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
 			if iss.Spec.Venafi.Cloud != nil {
 				if iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name {
 					affected = append(affected, iss)
@@ -87,6 +93,32 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 			}
 			if iss.Spec.Vault.CABundleSecretRef != nil {
 				if iss.Spec.Vault.CABundleSecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
+		}
+	}
+
+	return affected, nil
+}
+
+func (c *controller) issuersForConfigMap(configMap *corev1.ConfigMap) ([]*v1.ClusterIssuer, error) {
+	issuers, err := c.clusterIssuerLister.List(labels.NewSelector())
+
+	if err != nil {
+		return nil, fmt.Errorf("error listing issuers: %s", err.Error())
+	}
+
+	var affected []*v1.ClusterIssuer
+	for _, iss := range issuers {
+		if configMap.Namespace != c.clusterResourceNamespace {
+			continue
+		}
+		switch {
+		case iss.Spec.Venafi != nil:
+			if iss.Spec.Venafi.TPP.CABundleConfigMapRef != nil {
+				if iss.Spec.Venafi.TPP.CABundleConfigMapRef.Name == configMap.Name {
 					affected = append(affected, iss)
 					continue
 				}

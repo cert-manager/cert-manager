@@ -212,6 +212,7 @@ func ToSecret(obj interface{}) (*corev1.Secret, bool) {
 			// moment this is okay as there is no path how any
 			// reconcile loop would receive PartialObjectMetadata
 			// for any other type.
+			// TODO: when above item is addressed, changes similar changes should be made to `ToConfigMap` function below
 			return nil, false
 		}
 		secret = &corev1.Secret{}
@@ -220,4 +221,18 @@ func ToSecret(obj interface{}) (*corev1.Secret, bool) {
 	}
 	return secret, true
 
+}
+
+func ToConfigMap(obj interface{}) (*corev1.ConfigMap, bool) {
+	configMap, ok := obj.(*corev1.ConfigMap)
+	if !ok {
+		meta, ok := obj.(*metav1.PartialObjectMetadata)
+		if !ok {
+			return nil, false
+		}
+		configMap = &corev1.ConfigMap{}
+		configMap.SetName(meta.Name)
+		configMap.SetNamespace(meta.Namespace)
+	}
+	return configMap, true
 }
