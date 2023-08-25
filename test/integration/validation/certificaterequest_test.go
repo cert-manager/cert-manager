@@ -177,7 +177,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 			defer cancel()
 
 			// The default is true, but we set it here to make sure it was not changed by other tests
-			utilfeature.DefaultMutableFeatureGate.Set("DontAllowInsecureCSRUsageDefinition=true")
+			utilfeature.DefaultMutableFeatureGate.Set("DisallowInsecureCSRUsageDefinition=true")
 
 			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()
@@ -203,10 +203,10 @@ func TestValidationCertificateRequests(t *testing.T) {
 	}
 }
 
-// TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false makes sure that the
-// validation webhook keeps working as before when the DontAllowInsecureCSRUsageDefinition feature
+// TestValidationCertificateRequests_DisallowInsecureCSRUsageDefinition_false makes sure that the
+// validation webhook keeps working as before when the DisallowInsecureCSRUsageDefinition feature
 // gate is disabled.
-func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false(t *testing.T) {
+func TestValidationCertificateRequests_DisallowInsecureCSRUsageDefinition_false(t *testing.T) {
 	tests := map[string]struct {
 		input       runtime.Object
 		errorSuffix string // is a suffix as the API server sends the whole value back in the error
@@ -338,7 +338,7 @@ func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 			defer cancel()
 
-			utilfeature.DefaultMutableFeatureGate.Set("DontAllowInsecureCSRUsageDefinition=false")
+			utilfeature.DefaultMutableFeatureGate.Set("DisallowInsecureCSRUsageDefinition=false")
 
 			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()

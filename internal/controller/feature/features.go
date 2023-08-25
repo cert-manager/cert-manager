@@ -110,12 +110,12 @@ const (
 	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
 
 	// Owner: @inteon
-	// GA: v1.13
+	// Beta: v1.13
 	//
-	// DontAllowInsecureCSRUsageDefinition will prevent the webhook from allowing
+	// DisallowInsecureCSRUsageDefinition will prevent the webhook from allowing
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
 	// the usages field empty.
-	DontAllowInsecureCSRUsageDefinition featuregate.Feature = "DontAllowInsecureCSRUsageDefinition"
+	DisallowInsecureCSRUsageDefinition featuregate.Feature = "DisallowInsecureCSRUsageDefinition"
 )
 
 func init() {
@@ -126,7 +126,7 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available on the cert-manager controller binary.
 var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	DontAllowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
+	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
 
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
