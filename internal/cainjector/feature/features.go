@@ -26,16 +26,22 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+// see https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages
+
 const (
-	// FeatureName will enable XYZ feature.
-	// Fill this section out with additional details about the feature.
-	//
-	// Owner (responsible for graduating feature through to GA): @username
+	// Copy & paste the following template when you add a new feature gate:
+	// ========================== START TEMPLATE ==========================
+	// Owner: @username
 	// Alpha: vX.Y
 	// Beta: ...
+	//
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
 	// FeatureName featuregate.Feature = "FeatureName"
+	// =========================== END TEMPLATE ===========================
 
-	// alpha: v1.12.0
+	// Owner: @inteon
+	// Alpha: v1.12
 	//
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
