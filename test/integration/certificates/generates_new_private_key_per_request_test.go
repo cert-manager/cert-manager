@@ -144,7 +144,10 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		}
 
 		for _, req := range reqs.Items {
-			if req.Name == firstReq.Name {
+			// We expect a new request to be created (with the same name as the first request)
+			// and the old request to be deleted. We can check this by comparing the UID of the
+			// first request with the UID of the second request.
+			if req.UID == firstReq.UID {
 				continue
 			}
 
@@ -278,7 +281,10 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		}
 
 		for _, req := range reqs.Items {
-			if req.Name == firstReq.Name {
+			// We expect a new request to be created (with the same name as the first request)
+			// and the old request to be deleted. We can check this by comparing the UID of the
+			// first request with the UID of the second request.
+			if req.UID == firstReq.UID {
 				continue
 			}
 
