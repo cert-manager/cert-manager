@@ -109,12 +109,12 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 		return el
 	}
 
-	// If DontAllowInsecureCSRUsageDefinition is disabled and usages is empty,
+	// If DisallowInsecureCSRUsageDefinition is disabled and usages is empty,
 	// then we should allow the request to be created without requiring that the
 	// CSR usages match the default usages, instead we only validate that the
 	// BasicConstraints are valid.
 	// TODO: simplify this logic when we remove the feature gate
-	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DontAllowInsecureCSRUsageDefinition) && len(crSpec.Usages) == 0 {
+	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) && len(crSpec.Usages) == 0 {
 		_, err = pki.CertificateTemplateFromCSRPEM(
 			crSpec.Request,
 			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
