@@ -497,6 +497,7 @@ update-base-images: $(BINDIR)/tools/crane
 
 .PHONY: tidy
 ## Run "go mod tidy" on each module in this repo
+##
 ## @category Development
 tidy:
 	go mod tidy
@@ -511,14 +512,20 @@ tidy:
 .PHONY: go-workspace
 go-workspace: export GOWORK?=$(abspath go.work)
 ## Create a go.work file in the repository root (or GOWORK)
+##
 ## @category Development
 go-workspace:
 	@rm -f $(GOWORK)
 	go work init
 	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/webhook ./test/integration ./test/e2e
 
-# re-download all tools and replace the sha values if changed
-# useful for determining the sha values after upgrading
+.PHONY: learn-sha-tools
+## Re-download all tools and update the tools.mk file with the
+## sha256sums of the downloaded tools. This is useful when you
+## update the version of a tool in the Makefile, and want to
+## automatically update the sha256sums in the tools.mk file.
+##
+## @category Development
 learn-sha-tools:
 	rm -rf ./$(BINDIR)
 	mkdir ./$(BINDIR)
