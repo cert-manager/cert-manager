@@ -119,16 +119,12 @@ func EqualIPsUnsorted(s1, s2 []net.IP) bool {
 		s2_2[i] = s2[i].To16()
 	}
 
-	// TODO: the function signature will change to func(a net.IP, b net.IP) int when we upgrade to go 1.21
-	slices.SortFunc(s1_2, func(a net.IP, b net.IP) bool {
-		// TODO: this will just change to bytes.Compare (without the <= 0) after we upgrade to go 1.21
-		return bytes.Compare([]byte(a), []byte(b)) <= 0
+	slices.SortFunc(s1_2, func(a net.IP, b net.IP) int {
+		return bytes.Compare([]byte(a), []byte(b))
 	})
 
-	// TODO: the function signature will change to func(a net.IP, b net.IP) int when we upgrade to go 1.21
-	slices.SortFunc(s2_2, func(a net.IP, b net.IP) bool {
-		// TODO: this will just change to bytes.Compare (without the <= 0) after we upgrade to go 1.21
-		return bytes.Compare([]byte(a), []byte(b)) <= 0
+	slices.SortFunc(s2_2, func(a net.IP, b net.IP) int {
+		return bytes.Compare([]byte(a), []byte(b))
 	})
 
 	return slices.EqualFunc(s1_2, s2_2, func(a net.IP, b net.IP) bool {

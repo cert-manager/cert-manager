@@ -25,35 +25,55 @@ export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
 CTR=docker
 
 TOOLS :=
-TOOLS += helm=v3.11.2
-TOOLS += kubectl=v1.27.4
+# https://github.com/helm/helm/releases
+TOOLS += helm=v3.12.3
+# https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+TOOLS += kubectl=v1.28.0
+# https://github.com/kubernetes-sigs/kind/releases
 TOOLS += kind=v0.20.0
+# https://github.com/sigstore/cosign/releases
+TOOLS += cosign=v2.1.0
+# https://github.com/rclone/rclone/releases
+TOOLS += rclone=v1.63.1
+# https://github.com/aquasecurity/trivy/releases
+TOOLS += trivy=v0.44.1
+# https://github.com/vmware-tanzu/carvel-ytt/releases
+TOOLS += ytt=v0.45.4
+# https://github.com/mikefarah/yq/releases
+TOOLS += yq=v4.35.1
+# https://github.com/ko-build/ko/releases
+TOOLS += ko=v0.14.1
+
+### go packages
+# https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
 TOOLS += controller-gen=v0.12.1
-TOOLS += cosign=v1.12.1
+# https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
-TOOLS += release-notes=v0.14.0
-TOOLS += goimports=v0.1.12
+# https://pkg.go.dev/k8s.io/release/cmd/release-notes?tab=versions
+TOOLS += release-notes=v0.15.1
+# https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
+TOOLS += goimports=v0.12.0
+# https://pkg.go.dev/github.com/google/go-licenses?tab=versions
 TOOLS += go-licenses=v1.6.0
-TOOLS += gotestsum=v1.8.2
-TOOLS += rclone=v1.59.2
-TOOLS += trivy=v0.32.0
-TOOLS += ytt=v0.43.0
-TOOLS += yq=v4.27.5
-TOOLS += crane=v0.11.0
+# https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
+TOOLS += gotestsum=v1.10.1
+# https://pkg.go.dev/github.com/google/go-containerregistry/cmd/crane?tab=versions
+TOOLS += crane=v0.16.1
+# https://pkg.go.dev/github.com/cert-manager/boilersuite?tab=versions
 TOOLS += boilersuite=v0.1.0
+# https://pkg.go.dev/github.com/onsi/ginkgo/v2/ginkgo?tab=versions
 TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
-TOOLS += ko=v0.13.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
-GATEWAY_API_VERSION=v0.6.2
+GATEWAY_API_VERSION=v0.7.1
 
-K8S_CODEGEN_VERSION=v0.27.4
+K8S_CODEGEN_VERSION=v0.28.0
 
-KUBEBUILDER_ASSETS_VERSION=1.27.1
+KUBEBUILDER_ASSETS_VERSION=1.28.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.20.6
+VENDORED_GO_VERSION := 1.20.7
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
@@ -64,8 +84,8 @@ $(BINDIR)/scratch/%_VERSION: FORCE | $(BINDIR)/scratch
 # binary may not be available in the PATH yet when the Makefiles are
 # evaluated. HOST_OS and HOST_ARCH only support Linux, *BSD and macOS (M1
 # and Intel).
-HOST_OS := $(shell uname -s | tr A-Z a-z)
-HOST_ARCH = $(shell uname -m)
+HOST_OS ?= $(shell uname -s | tr A-Z a-z)
+HOST_ARCH ?= $(shell uname -m)
 
 ifeq (x86_64, $(HOST_ARCH))
 	HOST_ARCH = amd64
@@ -232,10 +252,11 @@ $(foreach GO_DEPENDENCY,$(GO_DEPENDENCIES),$(eval $(call go_dependency,$(word 1,
 # Helm #
 ########
 
-HELM_linux_amd64_SHA256SUM=781d826daec584f9d50a01f0f7dadfd25a3312217a14aa2fbb85107b014ac8ca
-HELM_darwin_amd64_SHA256SUM=404938fd2c6eff9e0dab830b0db943fca9e1572cd3d7ee40904705760faa390f
-HELM_darwin_arm64_SHA256SUM=f61a3aa55827de2d8c64a2063fd744b618b443ed063871b79f52069e90813151
-HELM_linux_arm64_SHA256SUM=0a60baac83c3106017666864e664f52a4e16fbd578ac009f9a85456a9241c5db
+HELM_linux_amd64_SHA256SUM=1b2313cd198d45eab00cc37c38f6b1ca0a948ba279c29e322bdf426d406129b5
+HELM_darwin_amd64_SHA256SUM=1bdbbeec5a12dd0c1cd4efd8948a156d33e1e2f51140e2a51e1e5e7b11b81d47
+HELM_darwin_arm64_SHA256SUM=240b0a7da9cae208000eff3d3fb95e0fa1f4903d95be62c3f276f7630b12dae1
+HELM_linux_arm64_SHA256SUM=79ef06935fb47e432c0c91bdefd140e5b543ec46376007ca14a52e5ed3023088
+
 $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$*_SHA256SUM)
@@ -251,10 +272,11 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # Example commands to discover new kubectl versions and their SHAs:
 # gsutil ls gs://kubernetes-release/release/
 # gsutil cat gs://kubernetes-release/release/<version>/bin/<os>/<arch>/kubectl.sha256
-KUBECTL_linux_amd64_SHA256SUM=4685bfcf732260f72fce58379e812e091557ef1dfc1bc8084226c7891dd6028f
-KUBECTL_darwin_amd64_SHA256SUM=7963839cb85028adffcca41b36a05dc273ccd5f8afe4a551106d0654f5c5168b
-KUBECTL_darwin_arm64_SHA256SUM=6abf3d4a2c43812b3ac4565713716f835e2da82b36c8dff0e05e803c68dbdf56
-KUBECTL_linux_arm64_SHA256SUM=5178cbb51dcfff286c20bc847d64dd35cd5993b81a2e3609581377a520a6425d
+KUBECTL_linux_amd64_SHA256SUM=4717660fd1466ec72d59000bb1d9f5cdc91fac31d491043ca62b34398e0799ce
+KUBECTL_darwin_amd64_SHA256SUM=6db117a55a14a47c0dcf9144c31780c6de0c3c84ccb9a297de0d9e6fc481534d
+KUBECTL_darwin_arm64_SHA256SUM=5d74042f5972b342a02636cf5969d4d73234f2d3afe84fe5ddaaa4baff79cdd8
+KUBECTL_linux_arm64_SHA256SUM=f5484bd9cac66b183c653abed30226b561f537d15346c605cc81d98095f1717c
+
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$*_SHA256SUM)
@@ -268,6 +290,7 @@ KIND_linux_amd64_SHA256SUM=513a7213d6d3332dd9ef27c24dab35e5ef10a04fa27274fe1c14d
 KIND_darwin_amd64_SHA256SUM=bffd8fb2006dc89fa0d1dde5ba6bf48caacb707e4df8551528f49145ebfeb7ad
 KIND_darwin_arm64_SHA256SUM=8df041a5cae55471f3b039c3c9942226eb909821af63b5677fc80904caffaabf
 KIND_linux_arm64_SHA256SUM=639f7808443559aa30c3642d9913b1615d611a071e34f122340afeda97b8f422
+
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
@@ -277,9 +300,10 @@ $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools 
 # cosign #
 ##########
 
-COSIGN_linux_amd64_SHA256SUM=b30fdc7d9aab246bc2f6a760ed8eff063bd37935389302c963c07018e5d48a12
-COSIGN_darwin_amd64_SHA256SUM=87a7e93b1539d988fefe0d00fd5a5a0e02ef43f5f977c2a701170c502a17980d
-COSIGN_darwin_arm64_SHA256SUM=41bc69dae9f06f58e8e61446907b7e53a4db41ef341b235172d3745c937f1777
+COSIGN_linux_amd64_SHA256SUM=c4fef1a4c7e49ce2006493b9aa894b28be247987959698b97de771c129cce8ea
+COSIGN_darwin_amd64_SHA256SUM=7ba6cf7a02a203e1978464f09551164ccacb9aefcfef8d3ec73e67af46417a91
+COSIGN_darwin_arm64_SHA256SUM=f795a6903daadf764a5092599bfe6945cedd7656bef37884a3049ac1a529266c
+COSIGN_linux_arm64_SHA256SUM=f795a6903daadf764a5092599bfe6945cedd7656bef37884a3049ac1a529266c
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
@@ -292,9 +316,10 @@ $(BINDIR)/downloaded/tools/cosign@$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/to
 # rclone #
 ##########
 
-RCLONE_linux_amd64_SHA256SUM=81e7be456369f5957713463e3624023e9159c1cae756e807937046ebc9394383
-RCLONE_darwin_amd64_SHA256SUM=d0a70241212198566028cd3154c418e35cbe73a6cd22c2d851341e88cb650cb7
-RCLONE_darwin_arm64_SHA256SUM=8b98893fa34aa790ae23dd2417e8c9a200326c05feb26101dff09cda479aeb1f
+RCLONE_linux_amd64_SHA256SUM=ca1cb4b1d9a3e45d0704aa77651b0497eacc3e415192936a5be7f7272f2c94c5
+RCLONE_darwin_amd64_SHA256SUM=e6d749a36fc5258973fff424ebf1728d5c41a4482ea4a2b69a7b99ec837297e7
+RCLONE_darwin_arm64_SHA256SUM=45d5b7799b90d8d6cc2d926d7920383a606842162e41303f5044058f5848892c
+RCLONE_linux_arm64_SHA256SUM=eab46bfb4e6567cd42bc14502cfd207582ed611746fa51a03542c8df619cf8f8
 
 $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,osx,$*))
@@ -310,10 +335,11 @@ $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/to
 # trivy #
 #########
 
-TRIVY_linux_amd64_SHA256SUM=e6e1c4767881ab1e40da5f3bb499b1c9176892021c7cb209405078fc096d94d8
-TRIVY_darwin_amd64_SHA256SUM=1cc8b2301f696b71c488d99c917a21a191ab26e1c093287c20112e8bb517ac4c
-TRIVY_darwin_arm64_SHA256SUM=41a3d4c12cd227cf95db6b30144b85e571541f587837f2f3814e2339dd81a21a
-TRIVY_linux_arm64_SHA256SUM=fd6e4b8f9ce7ad138b8fd46c7db308d1343f27ee8029766c939c5f66c5bef048
+TRIVY_linux_amd64_SHA256SUM=2012fb793e72e59c5a7d40724dc1f4d71f991396230929256ad8a5cd5470c0e6
+TRIVY_darwin_amd64_SHA256SUM=2f6601873f8cdf76e9b2aaac168a3763e28ead6bd7e197a28d5757d24b10adcf
+TRIVY_darwin_arm64_SHA256SUM=29318859d85e8150f2fceef24d4c8d09df92aa1fe1dccbf64983e764ba08750d
+TRIVY_linux_arm64_SHA256SUM=70a56578dab1ae5f263e2843d0be52c9eb98dc8349b3cb09ca9577dad28248c6
+
 $(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,macOS,$*))
 	$(eval OS_AND_ARCH := $(subst linux,Linux,$(OS_AND_ARCH)))
@@ -330,9 +356,10 @@ $(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tool
 # ytt #
 #######
 
-YTT_linux_amd64_SHA256SUM=29e647beeacbcc2be5f2f481e405c73bcd6d7563bd229ff924a7997b6f2edd5f
-YTT_darwin_amd64_SHA256SUM=579012ac80cc0d55c3a6dde2dfc0ff5bf8a4f74c775295be99faf691cc18595e
-YTT_darwin_arm64_SHA256SUM=bd8781e76e833c848ecc80580b3588b4ce8f38d8697802ec83c07aae7cf7a66f
+YTT_linux_amd64_SHA256SUM=9bf62175c7cc0b54f9731a5b87ee40250f0457b1fce1b0b36019c2f8d96db8f8
+YTT_darwin_amd64_SHA256SUM=2b6d173dec1b6087e22690386474786fd9a2232c4479d8975cc98ae8160eea76
+YTT_darwin_arm64_SHA256SUM=3e6f092bfe7a121d15126a0de6503797818c6b6745fbc97213f519d35fab08f9
+YTT_linux_arm64_SHA256SUM=cbfc85f11ffd8e61d63accf799b8997caaebe46ee046290cc1c4d05ed1ab145b
 
 $(BINDIR)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/$(YTT_VERSION)/ytt-$(subst _,-,$*) -o $@
@@ -343,10 +370,11 @@ $(BINDIR)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
 # yq #
 ######
 
-YQ_linux_amd64_SHA256SUM=9a54846e81720ae22814941905cd3b056ebdffb76bf09acffa30f5e90b22d615
-YQ_darwin_amd64_SHA256SUM=79a55533b683c5eabdc35b00336aa4c107d7d719db0639a31892fc35d1436cdc
-YQ_darwin_arm64_SHA256SUM=40547a5049f15a1103268fd871baaa34a31ad30136ee27a829cf697737f392be
-YQ_linux_arm64_SHA256SUM=ea360a0ecdff30c8625ccd0b97f8714b8308a429fd839cf8ccc481f311e217c6
+YQ_linux_amd64_SHA256SUM=bd695a6513f1196aeda17b174a15e9c351843fb1cef5f9be0af170f2dd744f08
+YQ_darwin_amd64_SHA256SUM=b2ff70e295d02695b284755b2a41bd889cfb37454e1fa71abc3a6ec13b2676cf
+YQ_darwin_arm64_SHA256SUM=e9fc15db977875de982e0174ba5dc2cf5ae4a644e18432a4262c96d4439b1686
+YQ_linux_arm64_SHA256SUM=1d830254fe5cc2fb046479e6c781032976f5cf88f9d01a6385898c29182f9bed
+
 $(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$* -o $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
@@ -356,9 +384,10 @@ $(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
 # ko #
 ######
 
-KO_linux_amd64_SHA256SUM=80f3e3148fabd5b839cc367ac56bb4794f90e7262b01911316c670b210b574cc
-KO_darwin_amd64_SHA256SUM=8d9daea9bcf25c790f705ea115d1c0a0193cb3d9759e937ab2959c71f88ce29c
-KO_darwin_arm64_SHA256SUM=8b6ad2ca95de9e9a5f697f6a653301ef5405a643b09bdd10628bac0f77eaadff
+KO_linux_amd64_SHA256SUM=3f8f8e3fb4b78a4dfc0708df2b58f202c595a66c34195786f9a279ea991f4eae
+KO_darwin_amd64_SHA256SUM=b879ea58255c9f2be2d4d6c4f6bd18209c78e9e0b890dbce621954ee0d63c4e5
+KO_darwin_arm64_SHA256SUM=8d41c228da3e04e3de293f0f5bfe1775a4c74582ba21c86ad32244967095189f
+KO_linux_arm64_SHA256SUM=9a355b8a9fe88e9d65d3aa1116d943746e3cea86944f4566e47886fd260dd3e9
 
 $(BINDIR)/downloaded/tools/ko@$(KO_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,Darwin,$*))
@@ -400,10 +429,10 @@ $(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_V
 # is possible that these SHAs change, whilst the version does not. To verify the
 # change that has been made to the tools look at
 # https://github.com/kubernetes-sigs/kubebuilder/tree/tools-releases
-KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=f9699df7b021f71a1ab55329b36b48a798e6ae3a44d2132255fc7e46c6790d4d
-KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=e1913674bacaa70c067e15649237e1f67d891ba53f367c0a50786b4a274ee047
-KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=0422632a2bbb0d4d14d7d8b0f05497a4d041c11d770a07b7a55c44bcc5e8ce66
-KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=9d2803e8ca85c465b33c12b06d0b2eba3ddb64b53a468628f741e50b462c46ad
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=8c816871604cbe119ca9dd8072b576552ae369b96eebc3cdaaf50edd7e3c0c7b
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=a02e33a3981712c8d2702520f95357bd6c7d03d24b83a4f8ac1c89a9ba4d78c1
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=c87c6b3c0aec4233e68a12dc9690bcbe2f8d6cd72c23e670602b17b2d7118325
+KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=69bfcdfa468a066d005b0207a07347078f4546f89060f7d9a6131d305d229aad
 
 $(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
@@ -422,7 +451,7 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 # gatewayapi #
 ##############
 
-GATEWAY_API_SHA256SUM=732c370b6e3eb2d2ebf4dbaaeb4b2ac003c39a52e255e85f1e5be13e8dff8e95
+GATEWAY_API_SHA256SUM=717e1a63ca20a1b3206129c13b7da3c3badf3be227989aa80faeadc921b9bbac
 
 $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
@@ -468,6 +497,7 @@ update-base-images: $(BINDIR)/tools/crane
 
 .PHONY: tidy
 ## Run "go mod tidy" on each module in this repo
+##
 ## @category Development
 tidy:
 	go mod tidy
@@ -482,8 +512,31 @@ tidy:
 .PHONY: go-workspace
 go-workspace: export GOWORK?=$(abspath go.work)
 ## Create a go.work file in the repository root (or GOWORK)
+##
 ## @category Development
 go-workspace:
 	@rm -f $(GOWORK)
 	go work init
 	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/webhook ./test/integration ./test/e2e
+
+.PHONY: learn-sha-tools
+## Re-download all tools and update the tools.mk file with the
+## sha256sums of the downloaded tools. This is useful when you
+## update the version of a tool in the Makefile, and want to
+## automatically update the sha256sums in the tools.mk file.
+##
+## @category Development
+learn-sha-tools:
+	rm -rf ./$(BINDIR)
+	mkdir ./$(BINDIR)
+	$(eval export LEARN_FILE=$(PWD)/$(BINDIR)/learn_file)
+	echo -n "" > "$(LEARN_FILE)"
+
+	HOST_OS=linux HOST_ARCH=amd64 $(MAKE) tools
+	HOST_OS=linux HOST_ARCH=arm64 $(MAKE) tools
+	HOST_OS=darwin HOST_ARCH=amd64 $(MAKE) tools
+	HOST_OS=darwin HOST_ARCH=arm64 $(MAKE) tools
+
+	while read p; do \
+		sed -i "$$p" ./make/tools.mk; \
+	done <"$(LEARN_FILE)"
