@@ -27,49 +27,70 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+// see https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages
+
 const (
-	// alpha: v0.7.2
+	///////////////////////////////////////////////////////////////////////
+	// Owner: @username
+	// Alpha: vX.Y
+	// Beta: ...
+	//
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
+	// FeatureName featuregate.Feature = "FeatureName"
+	///////////////////////////////////////////////////////////////////////
+
+	// Owner: N/A
+	// Alpha: v0.7.2
 	//
 	// ValidateCAA enables CAA checking when issuing certificates
 	ValidateCAA featuregate.Feature = "ValidateCAA"
 
-	// alpha: v1.4.0
+	// Owner: N/A
+	// Alpha: v1.4
 	//
 	// ExperimentalCertificateSigningRequestControllers enables all CertificateSigningRequest
 	// controllers that sign Kubernetes CertificateSigningRequest resources
 	ExperimentalCertificateSigningRequestControllers featuregate.Feature = "ExperimentalCertificateSigningRequestControllers"
 
-	// alpha: v1.5.0
+	// Owner: N/A
+	// Alpha: v1.5
 	//
 	// ExperimentalGatewayAPISupport enables the gateway-shim controller and adds support for
 	// the Gateway API to the HTTP-01 challenge solver.
 	ExperimentalGatewayAPISupport featuregate.Feature = "ExperimentalGatewayAPISupport"
 
 	// Owner: @joshvanl
-	// alpha: v1.7.0
+	// Alpha: v1.7
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
 
-	// alpha: v1.8.0
+	// Owner: @joshvanl
+	// Alpha: v1.8
 	//
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
 
-	// Owner (responsible for graduating feature through to GA): @spockz , @irbekrm
+	// Owner: @spockz , @irbekrm
 	// Alpha: v1.9
+	//
 	// LiteralCertificateSubject will enable providing a subject in the Certificate that will be used literally in the CertificateSigningRequest. The subject can be provided via `LiteralSubject` field on `Certificate`'s spec.
 	// This feature gate must be used together with LiteralCertificateSubject webhook feature gate.
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 
+	// Owner: N/A
 	// Alpha: v1.10
+	//
 	// StableCertificateRequestName will enable generation of CertificateRequest resources with a fixed name. The name of the CertificateRequest will be a function of Certificate resource name and its revision
 	// This feature gate will disable auto-generated CertificateRequest name
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/4956
 	StableCertificateRequestName featuregate.Feature = "StableCertificateRequestName"
 
+	// Owner: @SgtCoDFish
 	// Alpha: v1.11
+	//
 	// UseCertificateRequestBasicConstraints will add Basic Constraints section in the Extension Request of the Certificate Signing Request
 	// This feature will add BasicConstraints section with CA field defaulting to false; CA field will be set true if the Certificate resource spec has isCA as true
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/5539
@@ -77,6 +98,7 @@ const (
 
 	// Owner: @irbekrm
 	// Alpha v1.12
+	//
 	// SecretsFilteredCaching reduces controller's memory consumption by
 	// filtering which Secrets are cached in full using
 	// `controller.cert-manager.io/fao` label. By default all Certificate
@@ -86,8 +108,9 @@ const (
 	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md
 	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
 
-	// Owner (responsible for graduating feature through to GA): @inteon
+	// Owner: @inteon
 	// GA: v1.13
+	//
 	// DontAllowInsecureCSRUsageDefinition will prevent the webhook from allowing
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
 	// the usages field empty.

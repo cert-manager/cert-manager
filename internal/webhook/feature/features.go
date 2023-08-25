@@ -26,30 +26,36 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+// see https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages
+
 const (
-	// FeatureName will enable XYZ feature.
-	// Fill this section out with additional details about the feature.
-	//
-	// Owner (responsible for graduating feature through to GA): @username
+	///////////////////////////////////////////////////////////////////////
+	// Owner: @username
 	// Alpha: vX.Y
 	// Beta: ...
-	//FeatureName featuregate.Feature = "FeatureName"
+	//
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
+	// FeatureName featuregate.Feature = "FeatureName"
+	///////////////////////////////////////////////////////////////////////
 
 	// Owner: @joshvanl
-	// alpha: v1.7.1
+	// Alpha: v1.7.1
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
 
-	// Owner (responsible for graduating feature through to GA): @spockz , @irbekrm
+	// Owner: @spockz, @irbekrm
 	// Alpha: v1.9
+	//
 	// LiteralCertificateSubject will enable providing a subject in the Certificate that will be used literally in the CertificateSigningRequest. The subject can be provided via `LiteralSubject` field on `Certificate`'s spec.
 	// This feature gate must be used together with LiteralCertificateSubject webhook feature gate.
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 
-	// Owner (responsible for graduating feature through to GA): @inteon
+	// Owner: @inteon
 	// GA: v1.13
+	//
 	// DontAllowInsecureCSRUsageDefinition will prevent the webhook from allowing
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
 	// the usages field empty.
