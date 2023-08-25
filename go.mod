@@ -13,7 +13,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Venafi/vcert/v4 v4.24.1-0.20230703183014-69f417ae176d
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
-	github.com/aws/aws-sdk-go v1.44.330
+	github.com/aws/aws-sdk-go v1.44.331
 	github.com/cpu/goacmedns v0.1.1
 	github.com/digitalocean/godo v1.102.1
 	github.com/go-ldap/ldap/v3 v3.4.5
@@ -37,15 +37,15 @@ require (
 	golang.org/x/sync v0.3.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	google.golang.org/api v0.138.0
-	k8s.io/api v0.28.0
-	k8s.io/apiextensions-apiserver v0.28.0
-	k8s.io/apimachinery v0.28.0
-	k8s.io/apiserver v0.28.0
-	k8s.io/client-go v0.28.0
-	k8s.io/code-generator v0.28.0
-	k8s.io/component-base v0.28.0
+	k8s.io/api v0.28.1
+	k8s.io/apiextensions-apiserver v0.28.1
+	k8s.io/apimachinery v0.28.1
+	k8s.io/apiserver v0.28.1
+	k8s.io/client-go v0.28.1
+	k8s.io/code-generator v0.28.1
+	k8s.io/component-base v0.28.1
 	k8s.io/klog/v2 v2.100.1
-	k8s.io/kube-aggregator v0.28.0
+	k8s.io/kube-aggregator v0.28.1
 	k8s.io/kube-openapi v0.0.0-20230816210353-14e408962443
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.0
@@ -176,7 +176,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
-	k8s.io/kms v0.28.0 // indirect
+	k8s.io/kms v0.28.1 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
