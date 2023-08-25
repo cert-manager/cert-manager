@@ -30,7 +30,8 @@ import (
 // see https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages
 
 const (
-	///////////////////////////////////////////////////////////////////////
+	// Copy & paste the following template when you add a new feature gate:
+	// ========================== START TEMPLATE ==========================
 	// Owner: @username
 	// Alpha: vX.Y
 	// Beta: ...
@@ -38,7 +39,7 @@ const (
 	// FeatureName will enable XYZ feature.
 	// Fill this section out with additional details about the feature.
 	// FeatureName featuregate.Feature = "FeatureName"
-	///////////////////////////////////////////////////////////////////////
+	// =========================== END TEMPLATE ===========================
 
 	// Owner: N/A
 	// Alpha: v0.7.2
