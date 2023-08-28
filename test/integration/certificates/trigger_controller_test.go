@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
@@ -435,7 +435,7 @@ func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certifica
 		t.Errorf("failed to marshal cert data: %v", err)
 	}
 	_, err = client.CertmanagerV1().Certificates(cert.Namespace).Patch(
-		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: pointer.Bool(true)},
+		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: ptr.To(true)},
 		"status",
 	)
 	if err != nil {

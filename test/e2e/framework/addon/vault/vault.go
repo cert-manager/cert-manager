@@ -35,7 +35,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
@@ -330,7 +330,7 @@ func (v *Vault) Provision() error {
 				CoreV1().
 				Pods(v.proxy.podNamespace).
 				GetLogs(v.proxy.podName, &corev1.PodLogOptions{
-					TailLines: pointer.Int64(100),
+					TailLines: ptr.To(int64(100)),
 				}).
 				DoRaw(context.TODO())
 

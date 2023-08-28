@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/versioning"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -61,7 +61,7 @@ type RunControlPlaneOption func(*controlPlaneOptions)
 // server in tests.
 func WithCRDDirectory(directory string) RunControlPlaneOption {
 	return func(o *controlPlaneOptions) {
-		o.crdsDir = pointer.StringPtr(directory)
+		o.crdsDir = ptr.To(directory)
 	}
 }
 
@@ -80,7 +80,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 	}
 
 	options := &controlPlaneOptions{
-		crdsDir: pointer.StringPtr(crdDirectoryPath),
+		crdsDir: ptr.To(crdDirectoryPath),
 	}
 
 	for _, f := range optionFunctions {

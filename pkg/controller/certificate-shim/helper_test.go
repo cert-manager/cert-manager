@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmutil "github.com/cert-manager/cert-manager/pkg/util"
@@ -67,7 +67,7 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
-				a.Equal(pointer.Int32(7), crt.Spec.RevisionHistoryLimit)
+				a.Equal(ptr.To(int32(7)), crt.Spec.RevisionHistoryLimit)
 				a.Equal("123456", crt.Spec.Subject.SerialNumber)
 
 				splitAddresses, splitErr := cmutil.SplitWithEscapeCSV(`"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`)

@@ -18,7 +18,7 @@ package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -27,7 +27,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 
 func SetDefaults_TestType(obj *TestType) {
 	if obj.TestFieldPtr == nil {
-		obj.TestFieldPtr = pointer.StringPtr("teststr")
+		obj.TestFieldPtr = ptr.To("teststr")
 	}
 	if obj.TestDefaultingField == "" {
 		obj.TestDefaultingField = "set-in-v1"

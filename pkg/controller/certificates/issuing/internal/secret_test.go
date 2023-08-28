@@ -36,7 +36,7 @@ import (
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -185,9 +185,9 @@ func Test_SecretsManager(t *testing.T) {
 						WithData(map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes, corev1.TLSPrivateKeyKey: []byte("test-key"), cmmeta.TLSCAKey: []byte("test-ca")}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
-							Name: pointer.String("test"), UID: &expUID,
-							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
+							Name: ptr.To("test"), UID: &expUID,
+							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -286,9 +286,9 @@ func Test_SecretsManager(t *testing.T) {
 						}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
-							Name: pointer.String("test"), UID: &expUID,
-							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
+							Name: ptr.To("test"), UID: &expUID,
+							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -433,9 +433,9 @@ func Test_SecretsManager(t *testing.T) {
 						}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
-							Name: pointer.String("test"), UID: &expUID,
-							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
+							Name: ptr.To("test"), UID: &expUID,
+							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 

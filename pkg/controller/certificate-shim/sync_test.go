@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -980,7 +980,7 @@ func TestSync(t *testing.T) {
 							Kind: "Issuer",
 						},
 						Usages:               cmapi.DefaultKeyUsages(),
-						RevisionHistoryLimit: pointer.Int32(7),
+						RevisionHistoryLimit: ptr.To(int32(7)),
 					},
 				},
 			},
@@ -1000,7 +1000,7 @@ func TestSync(t *testing.T) {
 							Kind: "Issuer",
 						},
 						Usages:               cmapi.DefaultKeyUsages(),
-						RevisionHistoryLimit: pointer.Int32(1),
+						RevisionHistoryLimit: ptr.To(int32(1)),
 					},
 				},
 			},
