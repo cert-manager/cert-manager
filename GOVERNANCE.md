@@ -2,7 +2,7 @@
 
 This document defines project governance for the cert-manager project. Its
 purpose is to describe how decisions are made on the project and how anyone can
-influence these decisions. We have six levels of responsability, each one
+influence these decisions. We have six levels of responsibility, each one
 building on the previous:
 
 - Contributor,
@@ -169,9 +169,9 @@ following message template:
 > Dear maintainers, I'd like us to reach an agreement on the following matter using lazy consensus: [...]
 > - 🧑‍💻 Participants: @cert-manager-maintainers
 > - 📢 Deadline: April 3rd, 2023 23:59 UTC  
-> - 🚨 Note: to speed up the process, you may answer with a :+1: or a comment stating that your are lazy to help reach consensus before the deadline.
+> - 🚨 Note: to speed up the process, you may answer with a :+1: or a comment stating that you are lazy to help reach consensus before the deadline.
 
-Any non-agreements with regards to the decision can be posted as comments on the Slack message or to the email thread.
+Any disagreements with regards to the decision must be posted as a comment on the Slack message or to the email thread along with an explanation of why. Disagreements posted without justification will not be considered.
 
 ### Stepping Down as a Maintainer
 

@@ -38,16 +38,19 @@ Steering Committee seats remaining, the same group shall vote on the candidates,
 and the candidates with the most votes will become Steering Committee members.
 Any ties will be broken by cert-manager maintainers.
 
-Membership expires if any of the eligibility conditions is unmet, or after one
+Membership expires if any of the eligibility conditions are unmet, or after one
 year. Members may seek reinstatement immediately in accordance with the rules
 above.
 
 ## Steering Committee Meetings
 
-Meetings will happen periodically not less than once a quarter. Recordings and
-minutes will be posted publicly.
+Steering Committee meetings will happen at least once per quarter but can be more frequent if needed.
 
-## Changes to this charter
+All recordings and minutes will be posted publicly.
+
+It is the responsibility of maintainers to ensure that meetings are scheduled and run, and maintainers are generally expected to attend these meetings to provide input and to listen.
+
+## Changes to This Charter
 
 Changes to this document must be approved by a majority of Steering Committee
 members and a majority of cert-manager maintainers, except for the list of
