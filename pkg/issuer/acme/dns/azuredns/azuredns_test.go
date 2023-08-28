@@ -57,6 +57,9 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 
 	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
+
+	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "456d==")
+	assert.NoError(t, err)
 }
 
 func TestLiveAzureDnsCleanUp(t *testing.T) {
@@ -70,6 +73,9 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	assert.NoError(t, err)
+
+	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "456d==")
 	assert.NoError(t, err)
 }
 

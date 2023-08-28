@@ -211,58 +211,60 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 
 // Present creates a TXT record using the specified parameters
 func (c *DNSProvider) Present(domain, fqdn, value string) error {
-	return c.createRecord(fqdn, value, 60)
+	zone, err := c.getHostedZoneName(fqdn)
+	if err != nil {
+		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
+		return err
+	}
+
+	if err = c.updateTXTRecord(zone, c.trimFqdn(fqdn, zone), func(set *dns.RecordSet) {
+		var found bool
+		for _, r := range *set.TxtRecords {
+			rv := *r.Value
+			if len(rv) > 0 && rv[0] == value {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			records := append(*set.TxtRecords, dns.TxtRecord{
+				Value: &[]string{value},
+			})
+
+			set.TxtRecords = &records
+		}
+	}); err != nil {
+		c.log.Error(err, "Error presenting DNS records for:", fqdn)
+		return err
+	}
+
+	return nil
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	z, err := c.getHostedZoneName(fqdn)
+	zone, err := c.getHostedZoneName(fqdn)
 	if err != nil {
 		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
 		return err
 	}
 
-	_, err = c.recordClient.Delete(
-		context.TODO(),
-		c.resourceGroupName,
-		z,
-		c.trimFqdn(fqdn, z),
-		dns.TXT, "")
+	if err = c.updateTXTRecord(zone, c.trimFqdn(fqdn, zone), func(set *dns.RecordSet) {
+		var records []dns.TxtRecord
+		for _, r := range *set.TxtRecords {
+			rv := *r.Value
+			if len(rv) > 0 && rv[0] != value {
+				records = append(records, r)
+			}
+		}
 
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
-	rparams := &dns.RecordSet{
-		RecordSetProperties: &dns.RecordSetProperties{
-			TTL: to.Int64Ptr(int64(ttl)),
-			TxtRecords: &[]dns.TxtRecord{
-				{Value: &[]string{value}},
-			},
-		},
-	}
-
-	z, err := c.getHostedZoneName(fqdn)
-	if err != nil {
-		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
+		set.TxtRecords = &records
+	}); err != nil {
+		c.log.Error(err, "Error cleaning up DNS records for:", fqdn)
 		return err
 	}
 
-	_, err = c.recordClient.CreateOrUpdate(
-		context.TODO(),
-		c.resourceGroupName,
-		z,
-		c.trimFqdn(fqdn, z),
-		dns.TXT,
-		*rparams, "", "")
-
-	if err != nil {
-		c.log.Error(err, "Error creating TXT:", z)
-		return err
-	}
 	return nil
 }
 
@@ -295,4 +297,55 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 		z = c.zoneName
 	}
 	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+z)
+}
+
+// Updates or removes DNS TXT record while respecting optimistic concurrency control
+func (c *DNSProvider) updateTXTRecord(zone, name string, updater func(*dns.RecordSet)) error {
+	set, err := c.recordClient.Get(context.TODO(), c.resourceGroupName, zone, name, dns.TXT)
+	if err != nil {
+		if de, ok := err.(*autorest.DetailedError); ok && de.StatusCode.(int) == 404 {
+			set = dns.RecordSet{
+				RecordSetProperties: &dns.RecordSetProperties{
+					TTL:        to.Int64Ptr(60),
+					TxtRecords: &[]dns.TxtRecord{},
+				},
+				Etag: to.StringPtr(""),
+			}
+		} else {
+			return fmt.Errorf("cannot get DNS record set: %w", err)
+		}
+	}
+
+	updater(&set)
+
+	if len(*set.TxtRecords) == 0 {
+		if *set.Etag != "" {
+			_, err = c.recordClient.Delete(context.TODO(), c.resourceGroupName, zone, name, dns.TXT, *set.Etag)
+			if err != nil {
+				return fmt.Errorf("cannot delete DNS record set: %w", err)
+			}
+		}
+
+		return nil
+	}
+
+	var ifNoneMatch string
+	if *set.Etag == "" {
+		ifNoneMatch = "*"
+	}
+
+	_, err = c.recordClient.CreateOrUpdate(
+		context.TODO(),
+		c.resourceGroupName,
+		zone,
+		name,
+		dns.TXT,
+		set,
+		*set.Etag,
+		ifNoneMatch)
+	if err != nil {
+		return fmt.Errorf("cannot upsert DNS record set: %w", err)
+	}
+
+	return nil
 }
