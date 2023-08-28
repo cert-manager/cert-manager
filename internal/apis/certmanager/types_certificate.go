@@ -25,7 +25,7 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // A Certificate resource should be created to ensure an up to date and signed
-// x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
+// X.509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
 //
 // The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`).
 type Certificate struct {
@@ -76,21 +76,23 @@ type PrivateKeyEncoding string
 const (
 	// PKCS1 private key encoding.
 	// PKCS1 produces a PEM block that contains the private key algorithm
-	// in the header and the private key in the body.
-	// It can be recognised by its `BEGIN RSA PRIVATE KEY` or `BEGIN EC PRIVATE KEY` header.
+	// in the header and the private key in the body. A key that uses this
+	// can be recognised by its `BEGIN RSA PRIVATE KEY` or `BEGIN EC PRIVATE KEY` header.
+	// NOTE: This encoding is not supported for Ed25519 keys. Attempting to use
+	// this encoding with an Ed25519 key will be ignored and default to PKCS8.
 	PKCS1 PrivateKeyEncoding = "PKCS1"
 
 	// PKCS8 private key encoding.
 	// PKCS8 produces a PEM block with a static header and both the private
-	// key algorithm and the private key in the body.
-	// It can be recognised by its `BEGIN PRIVATE KEY` header.
+	// key algorithm and the private key in the body. A key that uses this
+	// encoding can be recognised by its `BEGIN PRIVATE KEY` header.
 	PKCS8 PrivateKeyEncoding = "PKCS8"
 )
 
 // CertificateSpec defines the desired state of Certificate.
 //
 // NOTE: The specification contains a lot of "requested" certificate attributes, it is
-// important to note that the issuer can choose to ignore and/ or change any of
+// important to note that the issuer can choose to ignore or change any of
 // these requested attributes. How the issuer maps a certificate request to a
 // signed certificate is the full responsibility of the issuer itself. For example,
 // as an edge case, an issuer that inverts the isCA value is free to do so.
@@ -105,7 +107,7 @@ type CertificateSpec struct {
 	// Cannot be set if the `literalSubject` field is set.
 	Subject *X509Subject
 
-	// Requested x509 certificate subject, represented using the LDAP "String
+	// Requested X.509 certificate subject, represented using the LDAP "String
 	// Representation of a Distinguished Name" [1].
 	// Important: the LDAP string format also specifies the order of the attributes
 	// in the subject, this is important when issuing certs for LDAP authentication.
@@ -129,7 +131,9 @@ type CertificateSpec struct {
 	// Cannot be set if the `literalSubject` field is set.
 	CommonName string
 
-	// Requested 'duration' (i.e. lifetime) of the Certificate.
+	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
+	// issuer may choose to ignore the requested duration, just like any other
+	// requested attribute.
 	//
 	// If unset, this defaults to 90 days.
 	// Minimum accepted duration is 1 hour.
@@ -189,13 +193,14 @@ type CertificateSpec struct {
 
 	// Requested basic constraints isCA value.
 	// The isCA value is used to set the `isCA` field on the created CertificateRequest
-	// resources.
+	// resources. Note that the issuer may choose to ignore the requested isCA value, just
+	// like any other requested attribute.
 	//
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
 	IsCA bool
 
-	// Requested key usages/ extended key usages.
+	// Requested key usages and extended key usages.
 	// These usages are used to set the `usages` field on the created CertificateRequest
 	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
 	// will additionally be encoded in the `request` field which contains the CSR blob.
@@ -207,10 +212,10 @@ type CertificateSpec struct {
 	// encoding and the rotation policy.
 	PrivateKey *CertificatePrivateKey
 
-	// Whether the KeyUsage/ ExtendedKeyUsage extensions should be set in the encoded CSR.
+	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
 	//
 	// This option defaults to true, and should only be disabled if the target
-	// issuer does not support CSRs with these X509 KeyUsage/ ExtendedKeyUsage extensions.
+	// issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.
 	EncodeUsagesInRequest *bool
 
 	// The maximum number of CertificateRequest revisions that are maintained in
@@ -506,7 +511,7 @@ const (
 	//    `status.certificate` on the CertificateRequest.
 	//   * If no CertificateRequest resource exists for the current revision,
 	//     the options on the Certificate resource are compared against the
-	//     x509 data in the Secret, similar to what's done in earlier versions.
+	//     X.509 data in the Secret, similar to what's done in earlier versions.
 	//     If there is a mismatch, an issuance is triggered.
 	// This condition may also be added by external API consumers to trigger
 	// a re-issuance manually for any other reason.

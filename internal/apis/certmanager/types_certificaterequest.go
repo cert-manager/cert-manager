@@ -85,13 +85,15 @@ type CertificateRequestList struct {
 
 // CertificateRequestSpec defines the desired state of CertificateRequest
 //
-// NOTE: It is important to note that the issuer can choose to ignore and/
-// or change any of the requested attributes. How the issuer maps a certificate
-// request to a signed certificate is the full responsibility of the issuer itself.
+// NOTE: It is important to note that the issuer can choose to ignore or change
+// any of the requested attributes. How the issuer maps a certificate request
+// to a signed certificate is the full responsibility of the issuer itself.
 // For example, as an edge case, an issuer that inverts the isCA value is
 // free to do so.
 type CertificateRequestSpec struct {
-	// Requested 'duration' (i.e. lifetime) of the Certificate.
+	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
+	// issuer may choose to ignore the requested duration, just like any other
+	// requested attribute.
 	Duration *metav1.Duration
 
 	// Reference to the issuer responsible for issuing the certificate.
@@ -102,19 +104,20 @@ type CertificateRequestSpec struct {
 	// The `name` field of the reference must always be specified.
 	IssuerRef cmmeta.ObjectReference
 
-	// The PEM-encoded x509 certificate signing request to be submitted to the
+	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.
 	//
 	// If the CSR has a BasicConstraints extension, its isCA attribute must
 	// match the `isCA` value of this CertificateRequest.
 	// If the CSR has a KeyUsage extension, its key usages must match the
 	// key usages in the `usages` field of this CertificateRequest.
-	// If the CSR has a ExtendedKeyUsage extension, its extended key usages
+	// If the CSR has a ExtKeyUsage extension, its extended key usages
 	// must match the extended key usages in the `usages` field of this
 	// CertificateRequest.
 	Request []byte
 
-	// Requested basic constraints isCA value.
+	// Requested basic constraints isCA value. Note that the issuer may choose
+	// to ignore the requested isCA value, just like any other requested attribute.
 	//
 	// NOTE: If the CSR in the `Request` field has a BasicConstraints extension,
 	// it must have the same isCA value as specified here.
@@ -123,10 +126,10 @@ type CertificateRequestSpec struct {
 	// of requested `usages`.
 	IsCA bool
 
-	// Requested key usages/ extended key usages.
+	// Requested key usages and extended key usages.
 	//
-	// NOTE: If the CSR in the `Request` field has a KeyUsage and/ or
-	// ExtendedKeyUsage extension, these extensions must have the same values
+	// NOTE: If the CSR in the `Request` field has uses the KeyUsage or
+	// ExtKeyUsage extension, these extensions must have the same values
 	// as specified here without any additional values.
 	//
 	// If unset, defaults to `digital signature` and `key encipherment`.
@@ -153,14 +156,14 @@ type CertificateRequestStatus struct {
 	// Known condition types are `Ready`, `InvalidRequest`, `Approved` and `Denied`.
 	Conditions []CertificateRequestCondition
 
-	// The PEM encoded x509 certificate resulting from the certificate
+	// The PEM encoded X.509 certificate resulting from the certificate
 	// signing request.
 	// If not set, the CertificateRequest has either not been completed or has
 	// failed. More information on failure can be found by checking the
 	// `conditions` field.
 	Certificate []byte
 
-	// The PEM encoded x509 certificate of the signer, also known as the CA
+	// The PEM encoded X.509 certificate of the signer, also known as the CA
 	// (Certificate Authority).
 	// This is set on a best-effort basis by different issuers.
 	// If not set, the CA is assumed to be unknown/not available.
