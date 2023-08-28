@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -786,7 +786,7 @@ func (s *Suite) Define() {
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
-			revisionHistoryLimit := pointer.Int32(7)
+			revisionHistoryLimit := ptr.To(int32(7))
 			privateKeyAlgorithm := cmapi.RSAKeyAlgorithm
 			privateKeyEncoding := cmapi.PKCS1
 			privateKeySize := 4096

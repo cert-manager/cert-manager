@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
@@ -116,7 +116,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -156,7 +156,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -278,7 +278,7 @@ func TestValidationCertificateRequests_DisallowInsecureCSRUsageDefinition_false(
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -318,7 +318,7 @@ func TestValidationCertificateRequests_DisallowInsecureCSRUsageDefinition_false(
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},

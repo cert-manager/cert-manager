@@ -31,7 +31,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -415,7 +415,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 				// immediately discarded, let's use the minimal duration
 				// possible. 10 minutes is the minimum allowed by the Kubernetes
 				// API.
-				ExpirationSeconds: pointer.Int64(600),
+				ExpirationSeconds: ptr.To(int64(600)),
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {

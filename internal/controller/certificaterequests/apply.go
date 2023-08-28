@@ -23,7 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -42,7 +42,7 @@ func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, req 
 
 	return cl.CertmanagerV1().CertificateRequests(req.Namespace).Patch(
 		ctx, req.Name, apitypes.ApplyPatchType, reqData,
-		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager})
+		metav1.PatchOptions{Force: ptr.To(true), FieldManager: fieldManager})
 }
 
 // ApplyStatus will make an Apply API call with the given client to the
@@ -59,7 +59,7 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 
 	_, err = cl.CertmanagerV1().CertificateRequests(req.Namespace).Patch(
 		ctx, req.Name, apitypes.ApplyPatchType, reqData,
-		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager}, "status",
+		metav1.PatchOptions{Force: ptr.To(true), FieldManager: fieldManager}, "status",
 	)
 
 	return err

@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -322,7 +322,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					},
 				},
 				Spec: networkingv1.IngressSpec{
-					IngressClassName: pointer.StringPtr("nginx"),
+					IngressClassName: ptr.To("nginx"),
 					TLS: []networkingv1.IngressTLS{
 						{
 							Hosts:      []string{acmeIngressDomain},
@@ -365,7 +365,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					},
 				},
 				Spec: networkingv1beta1.IngressSpec{
-					IngressClassName: pointer.StringPtr("nginx"),
+					IngressClassName: ptr.To("nginx"),
 					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{acmeIngressDomain},

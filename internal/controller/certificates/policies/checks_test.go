@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -2051,7 +2051,7 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
 						},
 					},
 				},
@@ -2067,8 +2067,8 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2084,9 +2084,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2102,9 +2102,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2131,7 +2131,7 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
 						},
 					},
 				},
@@ -2147,8 +2147,8 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2164,9 +2164,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2182,9 +2182,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2200,9 +2200,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "acme.cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "acme.cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2218,9 +2218,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Issuer", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Issuer", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2236,9 +2236,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2254,9 +2254,9 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(false)},
 						},
 					},
 				},

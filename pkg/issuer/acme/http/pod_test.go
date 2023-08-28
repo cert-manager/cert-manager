@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -76,14 +76,14 @@ func TestEnsurePod(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			},
 			Spec: corev1.PodSpec{
-				AutomountServiceAccountToken: pointer.Bool(false),
-				EnableServiceLinks:           pointer.Bool(false),
+				AutomountServiceAccountToken: ptr.To(false),
+				EnableServiceLinks:           ptr.To(false),
 				NodeSelector: map[string]string{
 					"kubernetes.io/os": "linux",
 				},
 				RestartPolicy: corev1.RestartPolicyOnFailure,
 				SecurityContext: &corev1.PodSecurityContext{
-					RunAsNonRoot: pointer.BoolPtr(true),
+					RunAsNonRoot: ptr.To(true),
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
@@ -115,7 +115,7 @@ func TestEnsurePod(t *testing.T) {
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
-							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+							AllowPrivilegeEscalation: ptr.To(false),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},
