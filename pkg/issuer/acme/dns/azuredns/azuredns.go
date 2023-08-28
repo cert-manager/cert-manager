@@ -255,3 +255,63 @@ func stabilizeError(err error) error {
 
 	return err
 }
+
+// Updates or removes DNS TXT record while respecting optimistic concurrency control
+func (c *DNSProvider) updateTXTRecord(zone, name string, updater func(*dns.RecordSet)) error {
+	var set *dns.RecordSet
+
+	resp, err := c.recordClient.Get(context.TODO(), c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.As(err, &respErr); respErr.StatusCode == 404 {
+			set = &dns.RecordSet{
+				Properties: &dns.RecordSetProperties{
+					TTL:        to.Ptr(int64(60)),
+					TxtRecords: []*dns.TxtRecord{},
+				},
+				Etag: to.Ptr(""),
+			}
+		} else {
+			return fmt.Errorf("cannot get DNS record set: %w", err)
+		}
+	} else {
+		set = &resp.RecordSet
+	}
+
+	updater(set)
+
+	if len(set.Properties.TxtRecords) == 0 {
+		if *set.Etag != "" {
+			// Etag will cause the deletion to fail if any updates happen concurrently
+			_, err = c.recordClient.Delete(context.TODO(), c.resourceGroupName, zone, name, dns.RecordTypeTXT, &dns.RecordSetsClientDeleteOptions{IfMatch: set.Etag})
+			if err != nil {
+				return fmt.Errorf("cannot delete DNS record set: %w", err)
+			}
+		}
+
+		return nil
+	}
+
+	opts := &dns.RecordSetsClientCreateOrUpdateOptions{}
+	if *set.Etag == "" {
+		// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
+		// Only relevant when this is a new record, for updates conflicts are solved with Etag
+		opts.IfNoneMatch = to.Ptr("*")
+	} else {
+		opts.IfMatch = set.Etag
+	}
+
+	_, err = c.recordClient.CreateOrUpdate(
+		context.TODO(),
+		c.resourceGroupName,
+		zone,
+		name,
+		dns.RecordTypeTXT,
+		*set,
+		opts)
+	if err != nil {
+		return fmt.Errorf("cannot upsert DNS record set: %w", err)
+	}
+
+	return nil
+}
