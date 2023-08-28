@@ -33,10 +33,20 @@ in the Steering Committee, you must:
 3. Abide by cert-manager's Code of Conduct.
 
 Candidates for membership will be nominated by current Steering Committee
-members or by cert-manager maintainers. If there are more nominations than
-Steering Committee seats remaining, the same group shall vote on the candidates,
-and the candidates with the most votes will become Steering Committee members.
-Any ties will be broken by cert-manager maintainers.
+members or by cert-manager maintainers. To be accepted as a candidate, a
+person must have at least two nominators from this group.
+
+If there are fewer proposed candidates than there are open seats, then the proposed
+candidates may assume their seats immediately.
+
+If there are more nominations than there are open seats remaining, existing
+Steering Committee members may vote for candidates using the
+[single transferable vote](https://en.wikipedia.org/wiki/Single_transferable_vote)
+system wherein candidates are ranked in order.
+
+In the event of a tie, the tie shall be broken by a simple vote among cert-manager maintainers.
+If the vote among maintainers is tied, then the tie shall be broken by random chance using a method
+to be determined fair by all participants.
 
 Membership expires if any of the eligibility conditions are unmet, or after one
 year. Members may seek reinstatement immediately in accordance with the rules
