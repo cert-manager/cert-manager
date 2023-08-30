@@ -81,8 +81,9 @@ const (
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 
-	// Owner: N/A
+	// Owner: @inteon
 	// Alpha: v1.10
+	// Beta: v1.13
 	//
 	// StableCertificateRequestName will enable generation of CertificateRequest resources with a fixed name. The name of the CertificateRequest will be a function of Certificate resource name and its revision
 	// This feature gate will disable auto-generated CertificateRequest name
@@ -99,6 +100,7 @@ const (
 
 	// Owner: @irbekrm
 	// Alpha v1.12
+	// Beta: v1.13
 	//
 	// SecretsFilteredCaching reduces controller's memory consumption by
 	// filtering which Secrets are cached in full using
@@ -127,6 +129,8 @@ func init() {
 // available on the cert-manager controller binary.
 var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
+	StableCertificateRequestName:       {Default: true, PreRelease: featuregate.Beta},
+	SecretsFilteredCaching:             {Default: true, PreRelease: featuregate.Beta},
 
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
@@ -134,7 +138,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
-	StableCertificateRequestName:                     {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
-	SecretsFilteredCaching:                           {Default: false, PreRelease: featuregate.Alpha},
 }
