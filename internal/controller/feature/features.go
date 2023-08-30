@@ -81,7 +81,7 @@ const (
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 
-	// Owner: N/A
+	// Owner: @inteon
 	// Alpha: v1.10
 	// Beta: v1.13
 	//
