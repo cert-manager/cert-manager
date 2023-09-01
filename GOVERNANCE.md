@@ -5,14 +5,14 @@ purpose is to describe how decisions are made on the project and how anyone can
 influence these decisions. We have six levels of responsibility, each one
 building on the previous:
 
-- Contributor,
-- GitHub Member,
-- Reviewer,
-- Approver,
-- Maintainer,
-- Admin.
+- [Contributor](#contributor),
+- [GitHub Member](#github-member),
+- [Reviewer](#reviewer),
+- [Approver](#approver),
+- [Maintainer](#maintainer),
+- [Admin](#admin).
 
-## Contributors
+## Contributor
 
 cert-manager is for everyone. Whether you're an experienced developer, a
 dedicated documenter, a passionate community builder, or simply someone eager to
@@ -29,9 +29,10 @@ or other means.
 - Follow the [cert-manager Code of Conduct][coc].
 - Follow the guidelines in [the Contributing page][contrib].
 
-## GitHub Members
+## GitHub Member
 
-GitHub Members are active contributors to the cert-manager project, or one of the related projects in the cert-manager GitHub organisation.
+GitHub Members are active contributors to the cert-manager project, or one of
+the related projects in the cert-manager GitHub organisation.
 
 A contributor is considered to be active when they have had at least one
 interaction (comment on an issue or PR or message in the #cert-manager or #cert-
@@ -63,7 +64,7 @@ GitHub members are encouraged to engage with the [cert-manager-dev](https://grou
 [two-factor authentication]: https://help.github.com/articles/about-two-factor-authentication
 [cert-manager-dev]: https://groups.google.com/forum/#!forum/cert-manager-dev
 
-## Reviewers
+## Reviewer
 
 The mission of the reviewer is to read through PRs for quality and correctness
 on all or some part of cert-manager. Reviewers are knowledgeable about the
@@ -84,14 +85,14 @@ file. The PR description should list your significant contributions and should
 mention your sponsor. Your sponsor is expected to give their approval as a comment
 on your PR.
 
-### Responsibilities
+### Reviewer Responsibilities
 
 - When possible, review pull requests, triage issues, and fix bugs in their
   areas of expertise.
 - Ensure that all changes go through the project's code review and integration
   processes.
 
-### Privileges
+### Reviewer Privileges
 
 - Able to `/lgtm` on pull requests.
 
@@ -118,14 +119,14 @@ knowledgeable of some of your work.
 To apply, open a PR to update the `OWNERS` file and mention your sponsor in the
 description. The PR description should also list the PRs you have reviewed.
 
-### Responsibilities
+### Approver Responsibilities
 
 - Expected to be responsive to review requests.
 - Stay up to date with the project's direction and goals,
   e.g., by attending some of the bi-weekly meetings, standups,
   or being around in the cert-manager-dev Slack channel.
 
-### Privileges
+### Approver Privileges
 
 - Can `/approve` on pull requests.
 
@@ -149,12 +150,12 @@ by contributing PRs, doing code reviews, and other such tasks under their
 guidance. After several months of working together, maintainers will decide
 whether to grant maintainer status.
 
-### Privileges
+### Maintainer Privileges
 
 - Can communicate with the CNCF on behalf of the project.
 - Can participate in lazy consensus and votes.
 
-### Responsibilities
+### Maintainer Responsibilities
 
 - Monitor cncf-cert-manager-\* emails and help out when possible.
 - Respond to time-sensitive security release processes.
@@ -212,17 +213,16 @@ Prow). Then, create an issue on the cert-manager project and mention each
 maintainer. Each maintainer will need to comment on the issue to express their
 approval.
 
-### Privileges
+### Admin Privileges
 
-- Can change settings in the GitHub organization (e.g., remove protected branches, add GitHub members, etc.)
-- Can run the Google Cloud Build playbooks to release new versions of cert-manager.
+- Can change settings in the GitHub organization (e.g., remove protected
+  branches, add GitHub members, etc.)
+- Can run the Google Cloud Build playbooks to release new versions of
+  cert-manager.
 
-### Responsibilities
+### Admin Responsibilities
 
-- Must have availability to allocate time to perform
-  cert-manager releases.
-- Must be available to perform admin-related tasks (add
-  a GitHub member, promote a GitHub user to "Owner",
-  add someone to the GCP projects, etc.)
-- Must be responsible with the privileges granted to
-  them.
+- Must have availability to allocate time to perform cert-manager releases.
+- Must be available to perform admin-related tasks (add a GitHub member, promote
+  a GitHub user to "Owner", add someone to the GCP projects, etc.)
+- Must be responsible with the privileges granted to them.
