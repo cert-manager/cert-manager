@@ -14,16 +14,20 @@ building on the previous:
 
 ## Contributors
 
-cert-manager is for everyone. Anyone can become a cert-manager contributor
-simply by contributing to the project, whether through code, documentation, blog
-posts, community management, or other means. As with all cert-manager community
-members, contributors are expected to follow the [cert-manager Code of
-Conduct][coc].
+cert-manager is for everyone. Whether you're an experienced developer, a
+dedicated documenter, a passionate community builder, or simply someone eager to
+make a positive impact, cert-manager welcomes you as a valued contributor.
 
-All contributions to cert-manager code, documentation, or other components in
-the cert-manager GitHub org must follow the guidelines in [the contributing
-page][contrib]. Whether these contributions are merged into the project is the
-prerogative of the reviewers, approvers and/or maintainers.
+### Becoming a Contributor
+
+Anyone can become a cert-manager contributor simply by contributing to the
+project, whether through code, documentation, blog posts, community management,
+or other means.
+
+### Contributor Responsibilities
+
+- Follow the [cert-manager Code of Conduct][coc].
+- Follow the guidelines in [the Contributing page][contrib].
 
 ## GitHub Members
 
@@ -107,7 +111,7 @@ To become an approver and start merging PRs, you must have reviewed 5 PRs.
 
 You will then need to get sponsorship from one of the maintainers. The
 maintainer sponsoring you must have had close work interactions with you and be
-knowledgeable of some of your work. 
+knowledgeable of some of your work.
 
 To apply, open a PR to update the `OWNERS` file and mention your sponsor in the
 description. The PR description should also list the PRs you have reviewed.
@@ -126,7 +130,7 @@ description. The PR description should also list the PRs you have reviewed.
 ## Maintainer
 
 A maintainer is someone who can communicate with the CNCF on behalf of the
-project and who can participate in lazy consensus and votes. 
+project and who can participate in lazy consensus and votes.
 
 **Defined by:** [`MAINTAINERS.md`](./MAINTAINERS.md).
 
@@ -167,8 +171,9 @@ and time are specified and the maintainers are CC'ed. You may use the
 following message template:
 
 > Dear maintainers, I'd like us to reach an agreement on the following matter using lazy consensus: [...]
+>
 > - 🧑‍💻 Participants: @cert-manager-maintainers
-> - 📢 Deadline: April 3rd, 2023 23:59 UTC  
+> - 📢 Deadline: April 3rd, 2023 23:59 UTC
 > - 🚨 Note: to speed up the process, you may answer with a :+1: or a comment stating that you are lazy to help reach consensus before the deadline.
 
 Any disagreements with regards to the decision must be posted as a comment on the Slack message or to the email thread along with an explanation of why. Disagreements posted without justification will not be considered.
@@ -191,7 +196,7 @@ they do not respond, they will automatically be moved to emeritus status.
 ## Admin
 
 An admin is a maintainer who has admin privileges on the cert-manager
-infrastructure. 
+infrastructure.
 
 The admins aren't defined in any public file. The admins are the GitHub members
 on the cert-manager org that are set as "Owner". Additionally, admins have their
