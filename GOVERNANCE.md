@@ -26,8 +26,8 @@ or other means.
 
 ### Contributor Responsibilities
 
-- Follow the [cert-manager Code of Conduct][coc].
-- Follow the guidelines in [the Contributing page][contrib].
+- Follow the [cert-manager Code of Conduct](https://github.com/cert-manager/cert-manager/blob/master/CODE_OF_CONDUCT.md).
+- Follow the guidelines in [the Contributing page](https://cert-manager.io/docs/contributing/).
 
 ## GitHub Member
 
@@ -60,9 +60,6 @@ To be added as a GitHub member, you will also need to enable [two-factor
 authentication](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication) on your GitHub account.
 
 GitHub members are encouraged to engage with the [cert-manager-dev](https://groups.google.com/g/cert-manager-dev) mailing list as well as the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channels.
-
-[two-factor authentication]: https://help.github.com/articles/about-two-factor-authentication
-[cert-manager-dev]: https://groups.google.com/forum/#!forum/cert-manager-dev
 
 ## Reviewer
 
@@ -192,9 +189,6 @@ year by the current maintainers. During this review, the maintainers that have
 not been active in the last 18 months are asked whether they would like to
 become an emeritus maintainer, they are expected to respond within 30 days. If
 they do not respond, they will automatically be moved to emeritus status.
-
-[coc]: https://github.com/cert-manager/cert-manager/blob/master/CODE_OF_CONDUCT.md
-[contrib]: https://cert-manager.io/docs/contributing/
 
 ## Admin
 
