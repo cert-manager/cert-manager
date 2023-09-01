@@ -176,7 +176,17 @@ following message template:
 > - 📢 Deadline: April 3rd, 2023 23:59 UTC
 > - 🚨 Note: to speed up the process, you may answer with a :+1: or a comment stating that you are lazy to help reach consensus before the deadline.
 
-Any disagreements with regards to the decision must be posted as a comment on the Slack message or to the email thread along with an explanation of why. Disagreements posted without justification will not be considered.
+Any disagreements with regards to the decision must be posted as a comment on
+the Slack message or to the email thread along with an explanation of why.
+Disagreements posted without justification will not be considered.
+
+While most decisions are typically reached through the principle of lazy
+consensus, there exists the option for a maintainer to propose a formal vote.
+Unless otherwise specified, such a vote would require a simple majority approval
+from all maintainers to be considered successful. Situations that might warrant
+a formal vote include, but are not limited to, cases where a decision
+necessitates explicit input from every participant or when disagreements arise
+during a lazy consensus discussion.
 
 ### Stepping Down as a Maintainer
 
