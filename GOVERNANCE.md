@@ -35,8 +35,8 @@ GitHub Members are active contributors to the cert-manager project, or one of
 the related projects in the cert-manager GitHub organisation.
 
 A contributor is considered to be active when they have had at least one
-interaction (comment on an issue or PR or message in the #cert-manager or #cert-
-manager-dev channels) within the last 18 months.
+interaction (comment on an issue or PR or message in the `#cert-manager` or
+`#cert- manager-dev` channels) within the last 18 months.
 
 Members that have been inactive over the past 18 months may be removed from the
 GitHub organization.
@@ -50,7 +50,7 @@ to look for two sponsors with at least the `reviewer` role. These two sponsors
 must have had some meaningful interaction with you on an issue on GitHub or on
 the cert-manager or cert-manager-dev channels on Slack.
 
-Then, open an issue on the cert-manager repository and mention your sponsors as
+Then, open an issue on the [community][] repository and mention your sponsors as
 well as links to the meaningful interactions (Slack threads, GitHub issues). Ask
 your sponsors to confirm their sponsorship by commenting on your PR. After that,
 your request will be reviewed by a cert-manager admin, in accordance with their
@@ -77,10 +77,10 @@ To become a reviewer, you will need to look for a sponsor with at least the
 approver role. Your sponsor must have had close interactions with you: they must
 have closely reviewed one of your PRs or worked with you on a complex issue.
 
-Then, create a PR to add your name to the list of `reviewers` in the `OWNERS`
-file. The PR description should list your significant contributions and should
-mention your sponsor. Your sponsor is expected to give their approval as a comment
-on your PR.
+Then, create a PR on the [community][] repository to add your name to the list
+of `reviewers` in the `OWNERS` file. The PR description should list your
+significant contributions and should mention your sponsor. Your sponsor is
+expected to give their approval as a comment on your PR.
 
 ### Reviewer Responsibilities
 
@@ -213,9 +213,11 @@ email listed in GCP so that they can perform releases.
 
 To become an admin, you must already be a maintainer for a time and have some
 understanding of the technologies used in the cert-manager infrastructure (e.g.,
-Prow). Then, create an issue on the cert-manager project and mention each
+Prow). Then, create an issue on the [community][] repository and mention each
 maintainer. Each maintainer will need to comment on the issue to express their
 approval.
+
+[community]: https://github.com/cert-manager/community
 
 ### Admin Privileges
 
