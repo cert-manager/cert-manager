@@ -27,7 +27,7 @@ prerogative of the reviewers, approvers and/or maintainers.
 
 ## GitHub Members
 
-GitHub Members are active contributors to the cert-manager project.
+GitHub Members are active contributors to the cert-manager project, or one of the related projects in the cert-manager GitHub organisation.
 
 A contributor is considered to be active when they have had at least one
 interaction (comment on an issue or PR or message in the #cert-manager or #cert-
@@ -46,15 +46,15 @@ must have had some meaningful interaction with you on an issue on GitHub or on
 the cert-manager or cert-manager-dev channels on Slack.
 
 Then, open an issue on the cert-manager repository and mention your sponsors as
-well as links to the meaningful interations (Slack threads, GitHub issues). Ask
+well as links to the meaningful interactions (Slack threads, GitHub issues). Ask
 your sponsors to confirm their sponsorship by commenting on your PR. After that,
 your request will be reviewed by a cert-manager admin, in accordance with their
 SLO.
 
 To be added as a GitHub member, you will also need to enable [two-factor
-authentication][] on your GitHub account.
+authentication](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication) on your GitHub account.
 
-GitHub members are encouraged to engage with the [cert-manager-dev][] mailing list as well as the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channels.
+GitHub members are encouraged to engage with the [cert-manager-dev](https://groups.google.com/g/cert-manager-dev) mailing list as well as the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channels.
 
 [two-factor authentication]: https://help.github.com/articles/about-two-factor-authentication
 [cert-manager-dev]: https://groups.google.com/forum/#!forum/cert-manager-dev
@@ -70,12 +70,12 @@ codebase as well as software engineering principles.
 ### Becoming a Reviewer
 
 To become a reviewer, you will need to look for a sponsor with at least the
-approver role. Your sponsor must have had close interactions with you: he must
-have been closely reviewed one of your PRs or worked with you on a thorny issue.
+approver role. Your sponsor must have had close interactions with you: they must
+have closely reviewed one of your PRs or worked with you on a complex issue.
 
 Then, create a PR to add your name to the list of `reviewers` in the `OWNERS`
 file. The PR description should list your significant contributions and should
-mention your sponsor. Your sponsor is expected to give his approval as a comment
+mention your sponsor. Your sponsor is expected to give their approval as a comment
 on your PR.
 
 ### Responsibilities
