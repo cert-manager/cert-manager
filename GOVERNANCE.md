@@ -67,7 +67,9 @@ GitHub members are encouraged to engage with the [cert-manager-dev](https://grou
 
 The mission of the reviewer is to read through PRs for quality and correctness
 on all or some part of cert-manager. Reviewers are knowledgeable about the
-codebase as well as software engineering principles.
+codebase as well as software engineering principles. Individuals with expertise
+in documentation, website content, and other facets of the project are also
+encouraged to join as reviewers.
 
 **Defined by:** the `reviewers` section in the file [`OWNERS`](./OWNERS).
 
