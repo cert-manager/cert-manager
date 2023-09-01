@@ -2,8 +2,16 @@
 
 This document defines project governance for the cert-manager project. Its
 purpose is to describe how decisions are made on the project and how anyone can
-influence these decisions. We have six levels of responsibility, each one
-building on the previous:
+influence these decisions.
+
+This governance charter applies to every project under the cert-manager GitHub
+organisation. The term "cert-manager project" refers to any work done under the
+cert-manager GitHub organisation and includes the cert-manager/cert-manager
+repository itself as well as cert-manager/trust-manager,
+cert-manager/approver-policy and all the other repositories under the
+cert-manager GitHub organisation.
+
+We have six levels of responsibility, each one building on the previous:
 
 - [Contributor](#contributor),
 - [GitHub Member](#github-member),
