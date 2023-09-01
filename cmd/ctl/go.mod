@@ -12,7 +12,7 @@ go 1.20
 // or a branch name (master).
 
 require (
-	github.com/cert-manager/cert-manager v1.13.0-alpha.0.0.20230825134310-63cf4e0b1c56
+	github.com/cert-manager/cert-manager v1.13.0-alpha.0.0.20230901111739-84a2837c446e
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -154,7 +154,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.28.1 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
-	k8s.io/kube-aggregator v0.28.0 // indirect
+	k8s.io/kube-aggregator v0.28.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230816210353-14e408962443 // indirect
 	oras.land/oras-go v1.2.3 // indirect
 	sigs.k8s.io/gateway-api v0.7.1 // indirect
