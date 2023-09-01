@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/integration-tests
 
-go 1.20
+go 1.21
 
 replace github.com/cert-manager/cert-manager => ../../
 

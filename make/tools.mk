@@ -67,13 +67,13 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v0.7.1
 
-K8S_CODEGEN_VERSION=v0.28.0
+K8S_CODEGEN_VERSION=v0.28.1
 
 KUBEBUILDER_ASSETS_VERSION=1.28.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.20.7
+VENDORED_GO_VERSION := 1.21.0
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
