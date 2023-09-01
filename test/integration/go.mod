@@ -191,5 +191,3 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.2.1 // indirect
 )
-
-replace github.com/miekg/dns v1.1.41 => github.com/miekg/dns v1.1.34
