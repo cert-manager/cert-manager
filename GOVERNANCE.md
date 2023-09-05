@@ -44,7 +44,7 @@ the related projects in the cert-manager GitHub organisation.
 
 A contributor is considered to be active when they have had at least one
 interaction (comment on an issue or PR or message in the `#cert-manager` or
-`#cert- manager-dev` channels) within the last 18 months.
+`#cert-manager-dev` channels in the Kubernetes Slack) within the last 18 months.
 
 Members that have been inactive over the past 18 months may be removed from the
 GitHub organization.
@@ -56,7 +56,7 @@ GitHub organization.
 To be added as a GitHub member of the cert-manager organization, you will need
 to look for two sponsors with at least the `reviewer` role. These two sponsors
 must have had some meaningful interaction with you on an issue on GitHub or on
-the cert-manager or cert-manager-dev channels on Slack.
+the `#cert-manager` or `#cert-manager-dev` channels on the Kubernetes Slack.
 
 Then, open an issue on the [community][] repository and mention your sponsors as
 well as links to the meaningful interactions (Slack threads, GitHub issues). Ask
@@ -67,7 +67,7 @@ SLO.
 To be added as a GitHub member, you will also need to enable [two-factor
 authentication](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication) on your GitHub account.
 
-GitHub members are encouraged to engage with the [cert-manager-dev](https://groups.google.com/g/cert-manager-dev) mailing list as well as the [cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev) Slack channels.
+GitHub members are encouraged to engage with the mailing list [cert-manager-dev@googlegroups.com](https://groups.google.com/g/cert-manager-dev) as well as the [`#cert-manager`](https://kubernetes.slack.com/messages/cert-manager) and [`#cert-manager-dev`](https://kubernetes.slack.com/messages/cert-manager-dev) channels on the Kubernetes Slack.
 
 ## Reviewer
 
@@ -127,9 +127,9 @@ description. The PR description should also list the PRs you have reviewed.
 ### Approver Responsibilities
 
 - Expected to be responsive to review requests.
-- Stay up to date with the project's direction and goals,
-  e.g., by attending some of the bi-weekly meetings, standups,
-  or being around in the cert-manager-dev Slack channel.
+- Stay up to date with the project's direction and goals, e.g., by attending
+  some of the bi-weekly meetings, standups, or being around in the
+  `#cert-manager` and the `#cert-manager-dev` channels on the Kubernetes Slack.
 
 ### Approver Privileges
 
