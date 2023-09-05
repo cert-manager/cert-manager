@@ -22,7 +22,6 @@ webhooks:
           - "v1"
         operations:
           - CREATE
-          - UPDATE
         resources:
           - "certificaterequests"
     admissionReviewVersions: ["v1"]
