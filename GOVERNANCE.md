@@ -69,6 +69,10 @@ authentication](https://docs.github.com/en/authentication/securing-your-account-
 
 GitHub members are encouraged to engage with the mailing list [cert-manager-dev@googlegroups.com](https://groups.google.com/g/cert-manager-dev) as well as the [`#cert-manager`](https://kubernetes.slack.com/messages/cert-manager) and [`#cert-manager-dev`](https://kubernetes.slack.com/messages/cert-manager-dev) channels on the Kubernetes Slack.
 
+### GitHub Member Responsibilities
+
+No extra responsabilities.
+
 ## Reviewer
 
 The mission of the reviewer is to read through PRs for quality and correctness
