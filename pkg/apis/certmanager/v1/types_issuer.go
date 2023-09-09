@@ -219,10 +219,15 @@ type VaultIssuer struct {
 	// +optional
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
 
-	// If true, TLS requests against the Vault server are not verified
-	// for authenticity.  This allows one to issue certificates in a
-	// failure scenario, or when the Vault certificate has expired, for
-	// example.
+	// INSECURE: Enables or disables validation of the Vault server TLS certificate.
+	// If true, requests to the Vault server will not have the TLS certificate chain
+	// validated.
+	// Mutually exclusive with CABundle; prefer using CABundle to prevent various
+	// kinds of security vulnerabilities.
+	// Only enable this option in development environments.
+	// If CABundle and SkipTLSVerify are unset, the system certificate bundle inside
+	// the container is used to validate the TLS connection.
+	// Defaults to false.
 	SkipTLSVerify bool
 }
 
