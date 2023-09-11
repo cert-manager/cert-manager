@@ -89,10 +89,12 @@ To become a reviewer, you will need to look for a sponsor with at least the
 approver role. Your sponsor must have had close interactions with you: they must
 have closely reviewed one of your PRs or worked with you on a complex issue.
 
-Then, create a PR on the [community][] repository to add your name to the list
-of `reviewers` in the `OWNERS` file. The PR description should list your
-significant contributions and should mention your sponsor. Your sponsor is
-expected to give their approval as a comment on your PR.
+Then, create a PR to add your name to the list of `reviewers` in the `OWNERS`
+file on the repository in which you want to become a Reviewer. The PR
+description should list your significant contributions and should mention your
+sponsor. Your sponsor is expected to give their approval as a comment on your
+PR. If you would like to become a reviewer for multiple repositories, you will
+need to repeat the process for each repository.
 
 ### Reviewer Responsibilities
 
@@ -125,8 +127,11 @@ You will then need to get sponsorship from one of the maintainers. The
 maintainer sponsoring you must have had close work interactions with you and be
 knowledgeable of some of your work.
 
-To apply, open a PR to update the `OWNERS` file and mention your sponsor in the
-description. The PR description should also list the PRs you have reviewed.
+To apply, open a PR to update the `OWNERS` file on the repository you would like
+to become an Approver for and mention your sponsor in the description. The PR
+description should also list the PRs you have reviewed. If you would like to
+become an approver for multiple repositories, you will need to repeat the
+process for each repository.
 
 ### Approver Responsibilities
 
