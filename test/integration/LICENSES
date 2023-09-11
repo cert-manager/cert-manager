@@ -104,7 +104,7 @@ github.com/rubenv/sql-migrate/sqlparse,https://github.com/rubenv/sql-migrate/blo
 github.com/russross/blackfriday/v2,https://github.com/russross/blackfriday/blob/v2.1.0/LICENSE.txt,BSD-2-Clause
 github.com/sergi/go-diff/diffmatchpatch,https://github.com/sergi/go-diff/blob/v1.3.1/LICENSE,MIT
 github.com/shopspring/decimal,https://github.com/shopspring/decimal/blob/v1.3.1/LICENSE,MIT
-github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.9.0/LICENSE,MIT
+github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE,MIT
 github.com/spf13/cast,https://github.com/spf13/cast/blob/v1.5.0/LICENSE,MIT
 github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.7.0/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause

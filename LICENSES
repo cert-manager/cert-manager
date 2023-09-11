@@ -99,7 +99,7 @@ github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.10.1/LICENSE,Apache-2.0
 github.com/rogpeppe/go-internal/fmtsort,https://github.com/rogpeppe/go-internal/blob/v1.11.0/LICENSE,BSD-3-Clause
 github.com/ryanuber/go-glob,https://github.com/ryanuber/go-glob/blob/v1.0.0/LICENSE,MIT
-github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.9.0/LICENSE,MIT
+github.com/sirupsen/logrus,https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE,MIT
 github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.7.0/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 github.com/stoewer/go-strcase,https://github.com/stoewer/go-strcase/blob/v1.2.0/LICENSE,MIT
