@@ -5,7 +5,7 @@ github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.2.1/L
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/webhook-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/webhook-binary/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
-github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/v1.1.1/LICENSE,ISC
+github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.1/LICENSE,MIT
 github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.3/LICENSE.txt,MIT
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
