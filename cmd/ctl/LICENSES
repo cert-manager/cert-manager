@@ -13,7 +13,7 @@ github.com/cert-manager/cert-manager/cmd/ctl,https://github.com/cert-manager/cer
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/chai2010/gettext-go,https://github.com/chai2010/gettext-go/blob/v1.0.2/LICENSE,BSD-3-Clause
 github.com/containerd/containerd,https://github.com/containerd/containerd/blob/v1.7.1/LICENSE,Apache-2.0
-github.com/cyphar/filepath-securejoin,https://github.com/cyphar/filepath-securejoin/blob/v0.2.3/LICENSE,BSD-3-Clause
+github.com/cyphar/filepath-securejoin,https://github.com/cyphar/filepath-securejoin/blob/v0.2.4/LICENSE,BSD-3-Clause
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
 github.com/docker/cli/cli/config,https://github.com/docker/cli/blob/v23.0.3/LICENSE,Apache-2.0
 github.com/docker/distribution,https://github.com/docker/distribution/blob/v2.8.2/LICENSE,Apache-2.0
