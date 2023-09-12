@@ -9,7 +9,7 @@ replace github.com/cert-manager/cert-manager/cmd/ctl => ../../cmd/ctl/
 replace github.com/cert-manager/cert-manager/webhook-binary => ../../cmd/webhook/
 
 require (
-	github.com/cert-manager/cert-manager v1.13.0-alpha.0.0.20230901111739-84a2837c446e
+	github.com/cert-manager/cert-manager v1.13.0-beta.0.0.20230912141016-a7a7fabaf551
 	github.com/cert-manager/cert-manager/cmd/ctl v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.2.4
 	github.com/miekg/dns v1.1.55
