@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	"github.com/go-logr/logr"
 	authzv1 "k8s.io/api/authorization/v1"
 	certificatesv1 "k8s.io/api/certificates/v1"
