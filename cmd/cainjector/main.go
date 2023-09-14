@@ -17,10 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
-
-	"os"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/cert-manager/cert-manager/cainjector-binary/app"
@@ -38,8 +34,7 @@ func main() {
 	defer logf.FlushLogs()
 	ctrl.SetLogger(logf.Log)
 
-	ctx := util.ContextWithStopCh(context.Background(), stopCh)
-	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
+	cmd := app.NewCAInjectorCommand(stopCh)
 
 	if err := cmd.Execute(); err != nil {
 		logf.Log.Error(err, "error executing command")
