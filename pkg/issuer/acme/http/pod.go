@@ -175,7 +175,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			Namespace:    ch.Namespace,
 			Labels:       podLabels,
 			Annotations: map[string]string{
-				"sidecar.istio.io/inject": "false",
+				"sidecar.istio.io/inject":                        "false",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
