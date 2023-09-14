@@ -284,7 +284,7 @@ topologySpreadConstraints: []
 # controller-manager. See:
 # https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245
 livenessProbe:
-  enabled: false
+  enabled: true
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 15
