@@ -71,7 +71,8 @@ func TestEnsurePod(t *testing.T) {
 				Namespace:    testNamespace,
 				Labels:       podLabels(chal),
 				Annotations: map[string]string{
-					"sidecar.istio.io/inject": "false",
+					"sidecar.istio.io/inject":                        "false",
+					"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 				},
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			},
@@ -286,8 +287,9 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											cmacme.DomainLabelKey: "44655555555",
 										},
 										Annotations: map[string]string{
-											"sidecar.istio.io/inject": "true",
-											"foo":                     "bar",
+											"sidecar.istio.io/inject":                        "true",
+											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+											"foo": "bar",
 										},
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
@@ -320,8 +322,9 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					cmacme.SolverIdentificationLabelKey: "true",
 				}
 				resultingPod.Annotations = map[string]string{
-					"sidecar.istio.io/inject": "true",
-					"foo":                     "bar",
+					"sidecar.istio.io/inject":                        "true",
+					"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+					"foo": "bar",
 				}
 				resultingPod.Spec.NodeSelector = map[string]string{
 					"kubernetes.io/os": "linux",
