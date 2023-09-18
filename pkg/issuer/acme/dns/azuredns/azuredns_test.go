@@ -57,8 +57,18 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 
 	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
+}
 
-	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "456d==")
+func TestLiveAzureDnsPresentMultiple(t *testing.T) {
+	if !azureLiveTest {
+		t.Skip("skipping live test")
+	}
+	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	assert.NoError(t, err)
+
+	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	assert.NoError(t, err)
+	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -74,8 +84,21 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
+}
 
-	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "456d==")
+func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
+	if !azureLiveTest {
+		t.Skip("skipping live test")
+	}
+
+	time.Sleep(time.Second * 10)
+
+	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	assert.NoError(t, err)
+
+	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	assert.NoError(t, err)
+	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 

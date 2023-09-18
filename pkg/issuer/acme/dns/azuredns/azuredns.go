@@ -12,6 +12,7 @@ package azuredns
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -303,7 +304,8 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 func (c *DNSProvider) updateTXTRecord(zone, name string, updater func(*dns.RecordSet)) error {
 	set, err := c.recordClient.Get(context.TODO(), c.resourceGroupName, zone, name, dns.TXT)
 	if err != nil {
-		if de, ok := err.(*autorest.DetailedError); ok && de.StatusCode.(int) == 404 {
+		var de autorest.DetailedError
+		if errors.As(err, &de); de.StatusCode.(int) == 404 {
 			set = dns.RecordSet{
 				RecordSetProperties: &dns.RecordSetProperties{
 					TTL:        to.Int64Ptr(60),
@@ -320,6 +322,7 @@ func (c *DNSProvider) updateTXTRecord(zone, name string, updater func(*dns.Recor
 
 	if len(*set.TxtRecords) == 0 {
 		if *set.Etag != "" {
+			// Etag will cause the deletion to fail if any updates happen concurrently
 			_, err = c.recordClient.Delete(context.TODO(), c.resourceGroupName, zone, name, dns.TXT, *set.Etag)
 			if err != nil {
 				return fmt.Errorf("cannot delete DNS record set: %w", err)
@@ -329,6 +332,8 @@ func (c *DNSProvider) updateTXTRecord(zone, name string, updater func(*dns.Recor
 		return nil
 	}
 
+	// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
+	// Only relevant when this is a new record, for updates conflicts are solved with Etag
 	var ifNoneMatch string
 	if *set.Etag == "" {
 		ifNoneMatch = "*"
