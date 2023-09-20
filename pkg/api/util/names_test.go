@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"testing"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -107,6 +108,49 @@ func TestComputeName(t *testing.T) {
 			}
 			if len(validation.IsQualifiedName(got)) != 0 {
 				t.Errorf("ComputeName() = %v is not DNS-1123 valid", got)
+			}
+		})
+	}
+}
+
+func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
+	type testcase struct {
+		in     string
+		expOut string
+	}
+
+	tests := []testcase{
+		{
+			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-014e7a7f",
+		},
+		{
+			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		{
+			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
+			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
+		},
+		{
+			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaa",
+			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaa",
+		},
+		{
+			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaa",
+			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-72314ca8",
+		},
+	}
+
+	for i, test := range tests {
+		test := test
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			out, err := ComputeUniqueDeterministicNameFromData(test.in)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if out != test.expOut {
+				t.Errorf("expected %q, got %q", test.expOut, out)
 			}
 		})
 	}
