@@ -24,6 +24,26 @@ import (
 	"k8s.io/utils/clock"
 )
 
+const maxClockSkew = 1 * time.Minute
+
+// The clockHealthAdaptor implements the HealthChecker interface.
+// It checks the system clock is in sync with the internal monotonic clock.
+// This is important because the internal monotonic clock is used to trigger certificate
+// reconciles for renewals. If the monotonic clock is out of sync with the system clock
+// then renewals might not be triggered in time. Ideally we would trigger renewals based
+// on the system clock, but this is not (yet) possible in Go.
+// See https://github.com/golang/go/issues/35012
+//
+// A clock skew can be caused by:
+//  1. The system clock being adjusted
+//     -> this eg. happens when ntp adjusts the system clock
+//  2. Pausing the process (e.g. with SIGSTOP)
+//     -> the monotonic clock will stop, but the system clock will continue
+//     -> this eg. happens when you pause a VM/ hibernate a laptop
+//
+// Small clock skews of < 1m are allowed, because they can happen when the system clock is
+// adjusted. However, we do compound the clock skew over time, so that if the clock skew
+// is small but constant, it will eventually fail the health check.
 type clockHealthAdaptor struct {
 	clock              clock.Clock
 	startTimeReal      time.Time
@@ -31,22 +51,20 @@ type clockHealthAdaptor struct {
 }
 
 func NewClockHealthAdaptor(c clock.Clock) *clockHealthAdaptor {
+	now := c.Now()
 	return &clockHealthAdaptor{
 		clock:              c,
-		startTimeReal:      c.Now().Round(0), // .Round(0) removes the monotonic part from the time
-		startTimeMonotonic: c.Now(),
+		startTimeReal:      now.Round(0), // .Round(0) removes the monotonic part from the time
+		startTimeMonotonic: now,
 	}
 }
 
 func (c *clockHealthAdaptor) skew() time.Duration {
-	realDuration := c.clock.Since(c.startTimeReal)
-	monotonicDuration := c.clock.Since(c.startTimeMonotonic)
+	now := c.clock.Now()
+	realDuration := now.Sub(c.startTimeReal)
+	monotonicDuration := now.Sub(c.startTimeMonotonic)
 
-	if monotonicDuration > realDuration {
-		return monotonicDuration - realDuration
-	}
-
-	return realDuration - monotonicDuration
+	return (realDuration - monotonicDuration).Abs()
 }
 
 // Name returns the name of the health check we are implementing.
@@ -55,10 +73,11 @@ func (l *clockHealthAdaptor) Name() string {
 }
 
 // Check is called by the healthz endpoint handler.
-// It fails (returns an error) if we own the lease but had not been able to renew it.
+// It fails (returns an error) when the system clock is out of sync with the
+// internal monotonic clock by more than the maxClockSkew.
 func (l *clockHealthAdaptor) Check(req *http.Request) error {
-	if skew := l.skew(); skew > 1*time.Minute {
-		return fmt.Errorf("the system clock is out of sync with the internal monotonic clock by %v, which is more than the allowed 1m", skew)
+	if skew := l.skew(); skew > maxClockSkew {
+		return fmt.Errorf("the system clock is out of sync with the internal monotonic clock by %v, which is more than the allowed %v", skew, maxClockSkew)
 	}
 	return nil
 }
