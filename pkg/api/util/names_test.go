@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -119,6 +120,8 @@ func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
 		expOut string
 	}
 
+	randomString61 := cmutil.RandStringRunes(61)
+
 	tests := []testcase{
 		{
 			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -140,6 +143,10 @@ func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
 			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaa",
 			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-72314ca8",
 		},
+		{
+			in:     randomString61,
+			expOut: randomString61,
+		},
 	}
 
 	for i, test := range tests {
@@ -153,5 +160,30 @@ func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
 				t.Errorf("expected %q, got %q", test.expOut, out)
 			}
 		})
+	}
+
+	// Test that the output is unique for different inputs
+	inputs := []string{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaa",
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaa",
+		randomString61,
+		randomString61 + "a",
+		randomString61 + "b",
+		randomString61 + "c",
+	}
+
+	outputs := make(map[string]struct{})
+	for _, in := range inputs {
+		out, err := ComputeUniqueDeterministicNameFromData(in)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if _, ok := outputs[out]; ok {
+			t.Errorf("output %q already seen", out)
+		}
+		outputs[out] = struct{}{}
 	}
 }
