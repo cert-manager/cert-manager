@@ -344,7 +344,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
 				ExpectedEvents: []string{
-					`Normal Created Created Challenge resource "testorder-756011405" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-24207b03" for domain "test.com"`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{

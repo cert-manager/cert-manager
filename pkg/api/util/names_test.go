@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"testing"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -24,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-func TestComputeName(t *testing.T) {
+func TestComputeUniqueDeterministicNameFromObject(t *testing.T) {
 	type args struct {
 		crt *cmapi.Certificate
 	}
@@ -47,7 +48,7 @@ func TestComputeName(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want:    "unit.test.jetstack.io-1683025094",
+			want:    "unit.test.jetstack.io-a985b709",
 		},
 		{
 			name: "Name generation too long domains",
@@ -62,25 +63,10 @@ func TestComputeName(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-108802726",
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-80b03781",
 		},
 		{
-			name: "Name generation for dot as 52nd char",
-			args: args{
-				crt: &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
-					},
-					Spec: cmapi.CertificateSpec{
-						CommonName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
-					},
-				},
-			},
-			wantErr: false,
-			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-225297437",
-		},
-		{
-			name: "Name generation for dot as 54td char",
+			name: "Name generation for dot as 54nd char",
 			args: args{
 				crt: &cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
@@ -92,21 +78,164 @@ func TestComputeName(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-1448584771",
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-b4232761",
+		},
+		{
+			name: "Name generation for dot as 56td char",
+			args: args{
+				crt: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
+					},
+					Spec: cmapi.CertificateSpec{
+						CommonName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
+					},
+				},
+			},
+			wantErr: false,
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-00065a75",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ComputeName(tt.args.crt.Name, tt.args.crt.Spec)
+			got, err := ComputeUniqueDeterministicNameFromObject(tt.args.crt.Name, tt.args.crt.Spec)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ComputeName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ComputeUniqueDeterministicNameFromObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ComputeName() = %v, want %v", got, tt.want)
+				t.Errorf("ComputeUniqueDeterministicNameFromObject() = %v, want %v", got, tt.want)
+			}
+			if len(got) > MaxPodNameLength {
+				t.Errorf("len(ComputeUniqueDeterministicNameFromObject()) <= %v, want %v", len(got), 63)
 			}
 			if len(validation.IsQualifiedName(got)) != 0 {
-				t.Errorf("ComputeName() = %v is not DNS-1123 valid", got)
+				t.Errorf("ComputeUniqueDeterministicNameFromObject() = %v is not DNS-1123 valid", got)
+			}
+		})
+	}
+}
+
+func TestDNSSafeShortenToNCharacters(t *testing.T) {
+	type testcase struct {
+		in        string
+		maxLength int
+		expOut    string
+	}
+
+	tests := []testcase{
+		{
+			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 3,
+			expOut:    "aaa",
+		},
+		{
+			in:        ".....",
+			maxLength: 3,
+			expOut:    "",
+		},
+		{
+			in:        "aa.....",
+			maxLength: 3,
+			expOut:    "aa",
+		},
+		{
+			in:        "aaa.....",
+			maxLength: 3,
+			expOut:    "aaa",
+		},
+		{
+			in:        "a*aa.....",
+			maxLength: 3,
+			expOut:    "a*a",
+		},
+		{
+			in:        "a**aa.....",
+			maxLength: 3,
+			expOut:    "a",
+		},
+	}
+
+	for i, test := range tests {
+		test := test
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			out := DNSSafeShortenToNCharacters(test.in, test.maxLength)
+			if out != test.expOut {
+				t.Errorf("expected %q, got %q", test.expOut, out)
+			}
+		})
+	}
+}
+
+func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
+	type testcase struct {
+		in        string
+		maxLength int
+		extraData [][]byte
+		expOut    string
+		expErr    bool
+	}
+
+	tests := []testcase{
+		{
+			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 3,
+			expOut:    "",
+			expErr:    true,
+		},
+		{
+			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 9,
+			expOut:    "a3f4d65c",
+		},
+		{
+			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 10,
+			expOut:    "a-a3f4d65c",
+		},
+		{
+			in:        "aaaaaaaaaaaaaaa.",
+			maxLength: 10,
+			expOut:    "a-766d72fa",
+		},
+		{
+			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 10,
+			expOut:    "a-fe5193d4",
+			extraData: [][]byte{[]byte("data")},
+		},
+		{
+			in:        ".aaaaaaaaaaaaaaa",
+			maxLength: 10,
+			expOut:    "149b2a00",
+		},
+		{
+			in:        "a.aaaaaaaaaaaaaaa",
+			maxLength: 11,
+			expOut:    "a-4e348967",
+		},
+		{
+			in:        "a.aaa",
+			maxLength: 9,
+			expOut:    "a.aaa",
+		},
+		{
+			in:        "a.aaa",
+			maxLength: 9,
+			extraData: [][]byte{[]byte("data")},
+			expOut:    "38cda5a3",
+		},
+	}
+
+	for i, test := range tests {
+		test := test
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			out, err := ComputeUniqueDeterministicNameFromData(test.in, test.maxLength, test.extraData...)
+			if (err != nil) != test.expErr {
+				t.Errorf("expected err %v, got %v", test.expErr, err)
+			}
+			if out != test.expOut {
+				t.Errorf("expected %q, got %q", test.expOut, out)
 			}
 		})
 	}

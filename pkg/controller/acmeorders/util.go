@@ -69,7 +69,7 @@ func buildPartialChallenge(ctx context.Context, issuer cmapi.GenericIssuer, o *c
 		return nil, err
 	}
 
-	chName, err := util.ComputeName(o.Name, chSpec)
+	chName, err := util.ComputeUniqueDeterministicNameFromObject(o.Name, chSpec)
 	if err != nil {
 		return nil, err
 	}

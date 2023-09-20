@@ -315,7 +315,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 			Spec:    computeNameSpec,
 		}
 	}
-	name, err := apiutil.ComputeName(csr.Name, hashObj)
+	name, err := apiutil.ComputeUniqueDeterministicNameFromObject(csr.Name, hashObj)
 	if err != nil {
 		return nil, err
 	}

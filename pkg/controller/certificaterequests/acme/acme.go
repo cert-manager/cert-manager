@@ -280,7 +280,7 @@ func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enab
 			Spec:   computeNameSpec,
 		}
 	}
-	name, err := apiutil.ComputeName(cr.Name, hashObj)
+	name, err := apiutil.ComputeUniqueDeterministicNameFromObject(cr.Name, hashObj)
 	if err != nil {
 		return nil, err
 	}

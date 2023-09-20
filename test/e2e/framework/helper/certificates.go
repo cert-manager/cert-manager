@@ -81,7 +81,7 @@ func (h *Helper) waitForCertificateCondition(client clientset.CertificateInterfa
 		h.Kubectl(certificate.Namespace).Describe("order", "challenge")
 
 		log.Logf("CertificateRequest description:\n")
-		crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
+		crName, err := apiutil.ComputeUniqueDeterministicNameFromObject(certificate.Name, certificate.Spec)
 		if err != nil {
 			log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
 		} else {

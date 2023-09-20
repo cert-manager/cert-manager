@@ -85,7 +85,7 @@ func CreateCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*Cr
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
-	reqName, err := apiutil.ComputeName(crt.Name, crt.Spec)
+	reqName, err := apiutil.ComputeUniqueDeterministicNameFromObject(crt.Name, crt.Spec)
 	if err != nil {
 		return nil, err
 	}

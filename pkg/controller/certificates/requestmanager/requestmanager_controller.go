@@ -377,8 +377,10 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       crt.Namespace,
-			GenerateName:    apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-",
+			Namespace: crt.Namespace,
+			// we expect kubernetes to append a 5 char hash to this, so we
+			// limit the name to 57 chars to ensure the name is less or equal to 63
+			GenerateName:    apiutil.DNSSafeShortenToNCharacters(crt.Name, apiutil.MaxPodNameLength-5-1) + "-",
 			Annotations:     annotations,
 			Labels:          crt.Labels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
@@ -394,7 +396,16 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.StableCertificateRequestName) {
 		cr.ObjectMeta.GenerateName = ""
-		cr.ObjectMeta.Name = apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-" + fmt.Sprintf("%d", nextRevision)
+
+		// limit the name to 54 chars to leave room for 8 characters that represent the revision
+		// number and a hyphen. This way, we stay within the 63 character limit for pod names (which is not
+		// a hard limit since we are working with CertificateRequest resources).
+		crName, err := apiutil.ComputeUniqueDeterministicNameFromData(crt.Name, apiutil.MaxPodNameLength-8-1)
+		if err != nil {
+			return err
+		}
+
+		cr.ObjectMeta.Name = fmt.Sprintf("%s-%d", crName, nextRevision)
 	}
 
 	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{FieldManager: c.fieldManager})

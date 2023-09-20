@@ -473,7 +473,7 @@ func Test_ProcessItem(t *testing.T) {
 						gen.SetIssuerACME(cmacme.ACMEIssuer{}),
 					)},
 				ExpectedEvents: []string{
-					`Normal OrderCreated Created Order resource default-unit-test-ns/test-csr-3290353799`,
+					`Normal OrderCreated Created Order resource default-unit-test-ns/test-csr-3ccb5fee`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -572,7 +572,7 @@ func Test_ProcessItem(t *testing.T) {
 					),
 				},
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-csr-3290353799 to become ready: order is in "invalid" state: generic error`,
+					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-csr-3ccb5fee to become ready: order is in "invalid" state: generic error`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -611,7 +611,7 @@ func Test_ProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "OrderFailed",
-								Message:            `Failed to wait for order resource default-unit-test-ns/test-csr-3290353799 to become ready: order is in "invalid" state: generic error`,
+								Message:            `Failed to wait for order resource default-unit-test-ns/test-csr-3ccb5fee to become ready: order is in "invalid" state: generic error`,
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),
@@ -640,7 +640,7 @@ func Test_ProcessItem(t *testing.T) {
 					),
 				},
 				ExpectedEvents: []string{
-					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-csr-3290353799: "pending"`,
+					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-csr-3ccb5fee: "pending"`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -689,7 +689,7 @@ func Test_ProcessItem(t *testing.T) {
 					),
 				},
 				ExpectedEvents: []string{
-					"Normal OrderPending Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-csr-3290353799",
+					"Normal OrderPending Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-csr-3ccb5fee",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
