@@ -114,47 +114,146 @@ func TestComputeName(t *testing.T) {
 	}
 }
 
-func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
+func TestDNSSafeShortenToNCharacters(t *testing.T) {
 	type testcase struct {
-		in     string
-		expOut string
+		in        string
+		maxLength int
+		expOut    string
 	}
-
-	randomString61 := cmutil.RandStringRunes(61)
 
 	tests := []testcase{
 		{
-			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-014e7a7f",
+			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 3,
+			expOut:    "aaa",
 		},
 		{
-			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			in:        ".....",
+			maxLength: 3,
+			expOut:    "",
 		},
 		{
-			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
-			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
+			in:        "aa.....",
+			maxLength: 3,
+			expOut:    "aa",
 		},
 		{
-			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaa",
-			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaa",
+			in:        "aaa.....",
+			maxLength: 3,
+			expOut:    "aaa",
 		},
 		{
-			in:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaa",
-			expOut: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-72314ca8",
+			in:        "a*aa.....",
+			maxLength: 3,
+			expOut:    "a*a",
 		},
 		{
-			in:     randomString61,
-			expOut: randomString61,
+			in:        "a**aa.....",
+			maxLength: 3,
+			expOut:    "a",
 		},
 	}
 
 	for i, test := range tests {
 		test := test
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			out, err := ComputeUniqueDeterministicNameFromData(test.in)
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
+			out := DNSSafeShortenToNCharacters(test.in, test.maxLength)
+			if out != test.expOut {
+				t.Errorf("expected %q, got %q", test.expOut, out)
+			}
+		})
+	}
+}
+
+func TestComputeSecureUniqueDeterministicNameFromData(t *testing.T) {
+	type testcase struct {
+		in        string
+		maxLength int
+		expOut    string
+		expErr    bool
+	}
+
+	aString64 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	randomString64 := cmutil.RandStringRunes(64)
+
+	tests := []testcase{
+		{
+			in:        "aaaa",
+			maxLength: 3, // must be at least 64
+			expOut:    "",
+			expErr:    true,
+		},
+		{
+			in:        aString64,
+			maxLength: 64,
+			expOut:    aString64,
+		},
+		{
+			in:        aString64[:10],
+			maxLength: 64,
+			expOut:    aString64[:10],
+		},
+		{
+			in:        "b" + aString64,
+			maxLength: 64,
+			expOut:    "08ba353c3a64d6186cac33ae87b2bd29700803754b34f77dc4d3a45e66316745",
+		},
+		{
+			in:        "b" + aString64,
+			maxLength: 65,
+			expOut:    "b" + aString64,
+		},
+		{
+			in:        "bb" + aString64,
+			maxLength: 65,
+			expOut:    "824cc1084d15d9bff4dda12c92066ff5d15ef2f9847c47347836cee174138ca0",
+		},
+		{
+			in:        "bbb" + aString64,
+			maxLength: 66,
+			expOut:    "b-9a956f515497faf6c2e733e5c2a0e35700ff0b9457e6fd163f30bfe5ec81d13c",
+		},
+		{
+			in:        ".bb" + aString64,
+			maxLength: 66,
+			expOut:    "efd1f8e9b2f02af94b0d00c03eaddbde3a510b626eb92022f1f25bcc74eedb5b",
+		},
+		{
+			in:        "b.b" + aString64,
+			maxLength: 66,
+			expOut:    "b-f0673c1af88891be1ecfe74876e460de28e073a0bb78d3308fb41617db4c2ca5",
+		},
+		{
+			in:        "bbbbbbbbbbbbbc............." + aString64,
+			maxLength: 79,
+			expOut:    "bbbbbbbbbbbbbc-d1b69a0803d97526b868335f95a8bc6fcf02e8e08644264c470faded0ca42033",
+		},
+		{
+			in:        "bbbbbbbbbbbbbc............." + aString64,
+			maxLength: 80,
+			expOut:    "bbbbbbbbbbbbbc-d1b69a0803d97526b868335f95a8bc6fcf02e8e08644264c470faded0ca42033",
+		},
+		{
+			in:        "bbbbbbbbbbbbbc............." + aString64,
+			maxLength: 90,
+			expOut:    "bbbbbbbbbbbbbc-d1b69a0803d97526b868335f95a8bc6fcf02e8e08644264c470faded0ca42033",
+		},
+		{
+			in:        randomString64,
+			maxLength: 64,
+			expOut:    randomString64,
+		},
+	}
+
+	for i, test := range tests {
+		test := test
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			out, err := ComputeSecureUniqueDeterministicNameFromData(test.in, test.maxLength)
+			if (err != nil) != test.expErr {
+				t.Errorf("expected err %v, got %v", test.expErr, err)
+			}
+			if len(out) > test.maxLength {
+				t.Errorf("expected output to be at most %d characters, got %d", test.maxLength, len(out))
 			}
 			if out != test.expOut {
 				t.Errorf("expected %q, got %q", test.expOut, out)
@@ -162,22 +261,28 @@ func TestComputeUniqueDeterministicNameFromData(t *testing.T) {
 		})
 	}
 
+	aString70 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	randomString70 := cmutil.RandStringRunes(70)
+
 	// Test that the output is unique for different inputs
 	inputs := []string{
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaa",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaa",
-		randomString61,
-		randomString61 + "a",
-		randomString61 + "b",
-		randomString61 + "c",
+		aString70,
+		aString70 + "a",
+		aString70 + "b",
+		aString70 + ".",
+		"." + aString70,
+		"...................." + aString70,
+		"...................a" + aString70,
+		"a..................." + aString70,
+		randomString70,
+		randomString70 + "a",
+		randomString70 + "b",
+		randomString70 + "c",
 	}
 
 	outputs := make(map[string]struct{})
 	for _, in := range inputs {
-		out, err := ComputeUniqueDeterministicNameFromData(in)
+		out, err := ComputeSecureUniqueDeterministicNameFromData(in, 80)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
