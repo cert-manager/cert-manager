@@ -82,7 +82,7 @@ func ComputeSecureUniqueDeterministicNameFromData(fullName string, maxNameLength
 	return fmt.Sprintf("%s-%08x", prefix, hashResult), nil
 }
 
-// DNSSafeShortenToNCharacters shortens the input string to 52 chars and ensures the last char is an alpha-numeric character.
+// DNSSafeShortenToNCharacters shortens the input string to N chars and ensures the last char is an alpha-numeric character.
 func DNSSafeShortenToNCharacters(in string, maxLength int) string {
 	var alphaNumeric = regexp.MustCompile(`[a-zA-Z\d]`)
 
