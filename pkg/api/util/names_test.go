@@ -124,6 +124,26 @@ func TestDNSSafeShortenToNCharacters(t *testing.T) {
 	tests := []testcase{
 		{
 			in:        "aaaaaaaaaaaaaaa",
+			maxLength: 0,
+			expOut:    "",
+		},
+		{
+			in:        "aa-----aaaa",
+			maxLength: 5,
+			expOut:    "aa",
+		},
+		{
+			in:        "aa11111aaaa",
+			maxLength: 5,
+			expOut:    "aa111",
+		},
+		{
+			in:        "aaAAAAAaaaa",
+			maxLength: 5,
+			expOut:    "aaAAA",
+		},
+		{
+			in:        "aaaaaaaaaaaaaaa",
 			maxLength: 3,
 			expOut:    "aaa",
 		},
