@@ -57,6 +57,7 @@ type ObjectReference struct {
 	Kind string `json:"kind,omitempty"`
 	// Group of the resource being referred to.
 	// +optional
+	// +kubebuilder:default=cert-manager.io
 	Group string `json:"group,omitempty"`
 }
 
