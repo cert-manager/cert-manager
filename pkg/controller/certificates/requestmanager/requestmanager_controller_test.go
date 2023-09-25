@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -89,6 +90,14 @@ func TestProcessItem(t *testing.T) {
 			UID:       "test",
 		},
 		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-3"}},
+	)
+	bundle4 := mustCreateCryptoBundle(t, &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "testns",
+			Name:      strings.Repeat("a", 167) + "b" + strings.Repeat("c", 85),
+			UID:       "test",
+		},
+		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-4"}},
 	)
 	fixedNow := metav1.NewTime(time.Now())
 	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
@@ -224,6 +233,58 @@ func TestProcessItem(t *testing.T) {
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		"create a CertificateRequest if none exists (with long name)": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle4.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(19),
+			),
+			expectedEvents: []string{
+				fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-20"),
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle4.certificateRequest,
+						gen.SetCertificateRequestName(strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-20"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "20",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		"create a CertificateRequest if none exists (with long name and very large revision)": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle4.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(999999999),
+			),
+			expectedEvents: []string{
+				fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-1000000000"),
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle4.certificateRequest,
+						gen.SetCertificateRequestName(strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-1000000000"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1000000000",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
