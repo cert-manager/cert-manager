@@ -506,6 +506,19 @@ cainjector:
   enabled: true
   replicaCount: 1
 
+  # Used to configure options for the cainjector pod.
+  # This allows setting options that'd usually be provided via flags.
+  # An APIVersion and Kind must be specified in your values.yaml file.
+  # Flags will override options that are set here.
+  config:
+    # apiVersion: cainjector.config.cert-manager.io/v1alpha1
+    # kind: CAInjectorConfiguration
+    # logging:
+    #  verbosity: 2
+    #  format: text
+    # leaderElectionConfig:
+    #  namespace: kube-system
+
   strategy: {}
     # type: RollingUpdate
     # rollingUpdate:
