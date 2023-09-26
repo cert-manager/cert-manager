@@ -29,7 +29,7 @@ github.com/coreos/go-systemd/v22/journal,https://github.com/coreos/go-systemd/bl
 github.com/cpu/goacmedns,https://github.com/cpu/goacmedns/blob/v0.1.1/LICENSE,MIT
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
 github.com/digitalocean/godo,https://github.com/digitalocean/godo/blob/v1.102.1/LICENSE.txt,MIT
-github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.2/LICENSE,MIT
+github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.11.0/LICENSE,MIT
 github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.3/LICENSE.txt,MIT
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
 github.com/go-jose/go-jose/v3,https://github.com/go-jose/go-jose/blob/v3.0.0/LICENSE,Apache-2.0
