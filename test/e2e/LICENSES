@@ -7,7 +7,7 @@ github.com/cert-manager/cert-manager/e2e-tests,https://github.com/cert-manager/c
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/cloudflare/cloudflare-go,https://github.com/cloudflare/cloudflare-go/blob/v0.58.1/LICENSE,BSD-3-Clause
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
-github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.2/LICENSE,MIT
+github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.11.0/LICENSE,MIT
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6.0/v5/LICENSE,BSD-3-Clause
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
 github.com/go-jose/go-jose/v3,https://github.com/go-jose/go-jose/blob/v3.0.0/LICENSE,Apache-2.0

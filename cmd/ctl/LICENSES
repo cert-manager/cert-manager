@@ -22,7 +22,7 @@ github.com/docker/docker-credential-helpers,https://github.com/docker/docker-cre
 github.com/docker/go-connections,https://github.com/docker/go-connections/blob/v0.4.0/LICENSE,Apache-2.0
 github.com/docker/go-metrics,https://github.com/docker/go-metrics/blob/v0.0.1/LICENSE,Apache-2.0
 github.com/docker/go-units,https://github.com/docker/go-units/blob/v0.5.0/LICENSE,Apache-2.0
-github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.2/LICENSE,MIT
+github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.11.0/LICENSE,MIT
 github.com/evanphx/json-patch,https://github.com/evanphx/json-patch/blob/v5.6.0/LICENSE,BSD-3-Clause
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6.0/v5/LICENSE,BSD-3-Clause
 github.com/exponent-io/jsonpath,https://github.com/exponent-io/jsonpath/blob/d6023ce2651d/LICENSE,MIT
