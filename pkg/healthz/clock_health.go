@@ -24,7 +24,7 @@ import (
 	"k8s.io/utils/clock"
 )
 
-const maxClockSkew = 1 * time.Minute
+const maxClockSkew = 5 * time.Minute
 
 // The clockHealthAdaptor implements the HealthChecker interface.
 // It checks the system clock is in sync with the internal monotonic clock.
@@ -41,7 +41,7 @@ const maxClockSkew = 1 * time.Minute
 //     -> the monotonic clock will stop, but the system clock will continue
 //     -> this eg. happens when you pause a VM/ hibernate a laptop
 //
-// Small clock skews of < 1m are allowed, because they can happen when the system clock is
+// Small clock skews of < 5m are allowed, because they can happen when the system clock is
 // adjusted. However, we do compound the clock skew over time, so that if the clock skew
 // is small but constant, it will eventually fail the health check.
 type clockHealthAdaptor struct {
