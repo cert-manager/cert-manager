@@ -86,6 +86,8 @@ type controller struct {
 
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
+
+	ocspManager *internalcertificates.OcspManager
 }
 
 func NewController(
@@ -130,6 +132,8 @@ func NewController(
 		ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
 	)
 
+	ocspManager := internalcertificates.NewOcspManager()
+
 	return &controller{
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
@@ -144,6 +148,7 @@ func NewController(
 		),
 		fieldManager:         ctx.FieldManager,
 		localTemporarySigner: pki.GenerateLocallySignedTemporaryCertificate,
+		ocspManager:          ocspManager,
 	}, queue, mustSync
 }
 
@@ -328,7 +333,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// If the CertificateRequest is valid and ready, verify its status and issue
 	// accordingly.
 	if crReadyCond.Reason == cmapi.CertificateRequestReasonIssued {
-		return c.issueCertificate(ctx, nextRevision, crt, req, pk)
+		return c.issueCertificate(ctx, nextRevision, crt, req, pk, log)
 	}
 
 	// Issue temporary certificate if needed. If a certificate was issued, then
@@ -379,10 +384,18 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
+func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer, log logr.Logger) error {
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
+
+	var stapleBytes []byte
+	ocspResponse, err := c.ocspManager.GetOCSPResponse(ctx, crt, req)
+	if err != nil {
+		log.V(logf.ErrorLevel).Info("Failed to fetch OCSP staple for CertificateRequest %s: %s", err)
+	} else {
+		stapleBytes = ocspResponse.Raw
 	}
 
 	pkData, err := utilpki.EncodePrivateKey(pk, crt.Spec.PrivateKey.Encoding)
@@ -393,6 +406,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 		PrivateKey:      pkData,
 		Certificate:     req.Status.Certificate,
 		CA:              req.Status.CA,
+		OCSPStaple:      stapleBytes,
 		CertificateName: crt.Name,
 		IssuerName:      req.Spec.IssuerRef.Name,
 		IssuerKind:      req.Spec.IssuerRef.Kind,

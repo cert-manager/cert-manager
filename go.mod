@@ -22,6 +22,7 @@ require (
 	github.com/google/gofuzz v1.2.0
 	github.com/hashicorp/vault/api v1.10.0
 	github.com/hashicorp/vault/sdk v0.10.0
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/kr/pretty v0.3.1
 	github.com/miekg/dns v1.1.56
 	github.com/onsi/ginkgo/v2 v2.12.0

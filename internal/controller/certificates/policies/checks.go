@@ -274,6 +274,26 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 	}
 }
 
+// OCSPStapleIsNearingExpiry returns a policy function that can be used to check if OCSP Staple should be renewed
+func OCSPStapleIsNearingExpiry() Func {
+
+	return func(input Input) (string, string, bool) {
+		ocspManager := internalcertificates.NewOcspManager()
+
+		if _, ok := input.Certificate.Labels[internalcertificates.OCSPLabel]; !ok {
+			return "", "", false
+		}
+
+		certificateBytes := input.Secret.Data[corev1.TLSCertKey]
+		ocspStapleBytes := input.Secret.Data[cmmeta.TLSOCSPKey]
+		if !ocspManager.IsOcspStapleValid(certificateBytes, ocspStapleBytes) {
+			return ExpiredOCSPStaple, "The OCSP staple for the certificate has expired and needs to be reissued", true
+		}
+
+		return "", "", false
+	}
+}
+
 // CurrentCertificateHasExpired is used exclusively to check if the current
 // issued certificate has actually expired rather than just nearing expiry.
 func CurrentCertificateHasExpired(c clock.Clock) Func {

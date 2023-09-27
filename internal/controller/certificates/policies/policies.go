@@ -77,6 +77,7 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
 		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
 		CurrentCertificateNearingExpiry(c),                  // Make sure the Certificate in the Secret is not nearing expiry
+		OCSPStapleIsNearingExpiry(),                         // Make sure the Certificate in the Secret is not nearing expiry
 	}
 }
 

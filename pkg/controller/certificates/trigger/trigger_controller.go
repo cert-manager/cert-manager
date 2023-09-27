@@ -332,7 +332,8 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync := NewController(log,
+	ctrl, queue, mustSync := NewController(
+		log,
 		ctx,
 		policies.NewTriggerPolicyChain(ctx.Clock).Evaluate,
 	)
