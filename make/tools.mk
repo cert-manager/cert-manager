@@ -28,15 +28,15 @@ TOOLS :=
 # https://github.com/helm/helm/releases
 TOOLS += helm=v3.12.3
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
-TOOLS += kubectl=v1.28.0
+TOOLS += kubectl=v1.28.1
 # https://github.com/kubernetes-sigs/kind/releases
 TOOLS += kind=v0.20.0
 # https://github.com/sigstore/cosign/releases
-TOOLS += cosign=v2.1.0
+TOOLS += cosign=v2.2.0
 # https://github.com/rclone/rclone/releases
-TOOLS += rclone=v1.63.1
+TOOLS += rclone=v1.64.0
 # https://github.com/aquasecurity/trivy/releases
-TOOLS += trivy=v0.44.1
+TOOLS += trivy=v0.45.0
 # https://github.com/vmware-tanzu/carvel-ytt/releases
 TOOLS += ytt=v0.45.4
 # https://github.com/mikefarah/yq/releases
@@ -46,15 +46,15 @@ TOOLS += ko=v0.14.1
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
-TOOLS += controller-gen=v0.12.1
+TOOLS += controller-gen=v0.13.0
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
 # https://pkg.go.dev/k8s.io/release/cmd/release-notes?tab=versions
 TOOLS += release-notes=v0.15.1
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
-TOOLS += goimports=v0.12.0
+TOOLS += goimports=v0.13.0
 # https://pkg.go.dev/github.com/google/go-licenses?tab=versions
-TOOLS += go-licenses=v1.6.0
+TOOLS += go-licenses=9a41918e8c1e254f6472bdd8454b6030d445b255
 # https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
 TOOLS += gotestsum=v1.10.1
 # https://pkg.go.dev/github.com/google/go-containerregistry/cmd/crane?tab=versions
@@ -73,7 +73,7 @@ KUBEBUILDER_ASSETS_VERSION=1.28.0
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.20.8
+VENDORED_GO_VERSION := 1.21.1
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
@@ -272,10 +272,10 @@ $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 # Example commands to discover new kubectl versions and their SHAs:
 # gsutil ls gs://kubernetes-release/release/
 # gsutil cat gs://kubernetes-release/release/<version>/bin/<os>/<arch>/kubectl.sha256
-KUBECTL_linux_amd64_SHA256SUM=4717660fd1466ec72d59000bb1d9f5cdc91fac31d491043ca62b34398e0799ce
-KUBECTL_darwin_amd64_SHA256SUM=6db117a55a14a47c0dcf9144c31780c6de0c3c84ccb9a297de0d9e6fc481534d
-KUBECTL_darwin_arm64_SHA256SUM=5d74042f5972b342a02636cf5969d4d73234f2d3afe84fe5ddaaa4baff79cdd8
-KUBECTL_linux_arm64_SHA256SUM=f5484bd9cac66b183c653abed30226b561f537d15346c605cc81d98095f1717c
+KUBECTL_linux_amd64_SHA256SUM=e7a7d6f9d06fab38b4128785aa80f65c54f6675a0d2abef655259ddd852274e1
+KUBECTL_darwin_amd64_SHA256SUM=d6b8f2bac5f828478eade0acf15fb7dde02d7613fc9e644dc019a7520d822a1a
+KUBECTL_darwin_arm64_SHA256SUM=8fe9f753383574863959335d8b830908e67a40c3f51960af63892d969bfc1b10
+KUBECTL_linux_arm64_SHA256SUM=46954a604b784a8b0dc16754cfc3fa26aabca9fd4ffd109cd028bfba99d492f6
 
 $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
@@ -300,10 +300,10 @@ $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools 
 # cosign #
 ##########
 
-COSIGN_linux_amd64_SHA256SUM=c4fef1a4c7e49ce2006493b9aa894b28be247987959698b97de771c129cce8ea
-COSIGN_darwin_amd64_SHA256SUM=7ba6cf7a02a203e1978464f09551164ccacb9aefcfef8d3ec73e67af46417a91
-COSIGN_darwin_arm64_SHA256SUM=f795a6903daadf764a5092599bfe6945cedd7656bef37884a3049ac1a529266c
-COSIGN_linux_arm64_SHA256SUM=f795a6903daadf764a5092599bfe6945cedd7656bef37884a3049ac1a529266c
+COSIGN_linux_amd64_SHA256SUM=5e4791fb7a5efaaa98da651534789ec985ce8ac9c31910a810fc249f86ba2ef9
+COSIGN_darwin_amd64_SHA256SUM=a2eea673456929a3f3809b492691183d9af0ea4216ac07410290bff76494cba4
+COSIGN_darwin_arm64_SHA256SUM=5adbb7b1d38ac19a15c6bd9a61725baa16f61e23611534eb5e6d377dc024e102
+COSIGN_linux_arm64_SHA256SUM=5adbb7b1d38ac19a15c6bd9a61725baa16f61e23611534eb5e6d377dc024e102
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
@@ -316,10 +316,10 @@ $(BINDIR)/downloaded/tools/cosign@$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/to
 # rclone #
 ##########
 
-RCLONE_linux_amd64_SHA256SUM=ca1cb4b1d9a3e45d0704aa77651b0497eacc3e415192936a5be7f7272f2c94c5
-RCLONE_darwin_amd64_SHA256SUM=e6d749a36fc5258973fff424ebf1728d5c41a4482ea4a2b69a7b99ec837297e7
-RCLONE_darwin_arm64_SHA256SUM=45d5b7799b90d8d6cc2d926d7920383a606842162e41303f5044058f5848892c
-RCLONE_linux_arm64_SHA256SUM=eab46bfb4e6567cd42bc14502cfd207582ed611746fa51a03542c8df619cf8f8
+RCLONE_linux_amd64_SHA256SUM=7ebdb680e615f690bd52c661487379f9df8de648ecf38743e49fe12c6ace6dc7
+RCLONE_darwin_amd64_SHA256SUM=9ef83833296876f3182b87030b4f2e851b56621bad4ca4d7a14753553bb8b640
+RCLONE_darwin_arm64_SHA256SUM=9183f495b28acb12c872175c6af1f6ba8ca677650cb9d2774caefea273294c8a
+RCLONE_linux_arm64_SHA256SUM=b5a6cb3aef4fd1a2165fb8c21b1b1705f3cb754a202adc81931b47cd39c64749
 
 $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,osx,$*))
@@ -335,10 +335,10 @@ $(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/to
 # trivy #
 #########
 
-TRIVY_linux_amd64_SHA256SUM=2012fb793e72e59c5a7d40724dc1f4d71f991396230929256ad8a5cd5470c0e6
-TRIVY_darwin_amd64_SHA256SUM=2f6601873f8cdf76e9b2aaac168a3763e28ead6bd7e197a28d5757d24b10adcf
-TRIVY_darwin_arm64_SHA256SUM=29318859d85e8150f2fceef24d4c8d09df92aa1fe1dccbf64983e764ba08750d
-TRIVY_linux_arm64_SHA256SUM=70a56578dab1ae5f263e2843d0be52c9eb98dc8349b3cb09ca9577dad28248c6
+TRIVY_linux_amd64_SHA256SUM=b9785455f711e3116c0a97b01ad6be334895143ed680a405e88a4c4c19830d5d
+TRIVY_darwin_amd64_SHA256SUM=997622dee1d07de0764f903b72d16ec4314daaf202d91c957137b4fd1a2f73c3
+TRIVY_darwin_arm64_SHA256SUM=68aa451f395fa5418f5af59ce4081ef71075c857b95a297dc61da49c6a229a45
+TRIVY_linux_arm64_SHA256SUM=a192edfcef8766fa7e3e96a6a5faf50cd861371785891857471548e4af7cb60b
 
 $(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,macOS,$*))
