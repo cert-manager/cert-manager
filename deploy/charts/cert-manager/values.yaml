@@ -497,6 +497,14 @@ webhook:
   volumes: []
   volumeMounts: []
 
+  # Optional DNS settings, useful if you have a busy cluster
+  # NOTE: This requires Kubernetes 1.10 or `CustomPodDNS` feature gate enabled for
+  # the cluster to work.
+  # podDnsPolicy: "ClusterFirst"
+  # podDnsConfig:
+  #   options:
+  #   - name: ndots
+  #     value: "1"
   # enableServiceLinks indicates whether information about services should be
   # injected into pod's environment variables, matching the syntax of Docker
   # links.
@@ -602,6 +610,14 @@ cainjector:
   volumes: []
   volumeMounts: []
 
+  # Optional DNS settings, useful if you have a busy cluster
+  # NOTE: This requires Kubernetes 1.10 or `CustomPodDNS` feature gate enabled for
+  # the cluster to work.
+  # podDnsPolicy: "ClusterFirst"
+  # podDnsConfig:
+  #   options:
+  #   - name: ndots
+  #     value: "1"
   # enableServiceLinks indicates whether information about services should be
   # injected into pod's environment variables, matching the syntax of Docker
   # links.

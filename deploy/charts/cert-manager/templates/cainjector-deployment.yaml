@@ -113,4 +113,11 @@ spec:
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{ - with .Values.cainjector.podDnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{ - end }}
+      {{ - with .Values.cainjector.podDnsConfig }}
+      dnsConfig:
+        {{ - toYaml . | nindent 8 }}
+      {{ - end }}
 {{- end }}

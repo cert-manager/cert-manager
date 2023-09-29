@@ -185,3 +185,10 @@ spec:
         {{- toYaml .Values.webhook.volumes | nindent 8 }}
         {{- end }}
       {{- end }}
+      {{- with .Values.webhook.podDnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{- end }}
+      {{- with .Values.webhook.podDnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
