@@ -75,7 +75,7 @@ spec:
           {{ if not $config.securePort -}}
           - --secure-port={{ .Values.webhook.securePort }}
           {{- end }}
-          {{- if .Values.featureGates }}
+          {{- if .Values.webhook.featureGates }}
           - --feature-gates={{ .Values.webhook.featureGates }}
           {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
