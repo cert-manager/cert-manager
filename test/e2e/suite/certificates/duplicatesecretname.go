@@ -143,12 +143,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 				Expect(err).NotTo(HaveOccurred())
 
 				cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName)
-				if !(cond != nil && cond.Status == cmmeta.ConditionTrue) {
-					return false
-				}
-
-				cond = apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
-				return cond != nil && cond.Status == cmmeta.ConditionFalse
+				return cond != nil && cond.Status == cmmeta.ConditionTrue
 			}, "10s", "1s").Should(BeTrue(), "expected Certificate to reach duplicate SecretName in time")
 		}
 

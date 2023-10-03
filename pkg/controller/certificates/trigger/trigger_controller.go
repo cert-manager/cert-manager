@@ -160,6 +160,24 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// If the Certificate has a duplicate Secret name condition set, we don't continue
+	// with updating the final secret with the certificate data.
+	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
+		condition.Status == cmmeta.ConditionTrue {
+		return nil
+	}
+
+	// If we detect that the Certificate has a duplicate Secret name set, we wait until
+	// the DuplicateSecretName condition is set before we update the Issuing condition.
+	duplicates, err := internalcertificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
+	if err != nil {
+		return err
+	}
+	if len(duplicates) > 0 {
+		log.V(logf.DebugLevel).Info("Certificate has duplicate Secret name with other Certificates in the same namespace, skipping trigger.")
+		return nil
+	}
+
 	input, err := c.dataForCertificate(ctx, crt)
 	if err != nil {
 		return err
@@ -183,7 +201,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	reason, message, reissue := c.shouldReissue(input)
 	if !reissue {
-		// no re-issuance required, return early.
+		// no re-issuance required, return early
 		return nil
 	}
 
@@ -237,23 +255,6 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (bool, time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0
-	}
-
-	// If the Certificate failed issuance because it had a duplicate Secret name,
-	// but this is no longer the case we should immediately reissue. If the
-	// Certificate still has a duplicate Secret name then we backoff like normal.
-	issuingCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
-	duplicateSecretCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName)
-	if issuingCondition != nil &&
-		issuingCondition.Status == cmmeta.ConditionFalse &&
-		issuingCondition.Type == cmapi.CertificateConditionIssuing &&
-		issuingCondition.Reason == cmapi.CertificateIssuingReasonDuplicateSecretName {
-
-		if duplicateSecretCondition == nil || duplicateSecretCondition.Status == cmmeta.ConditionFalse {
-			log.V(logf.InfoLevel).Info("Certificate has been updated to no longer have a duplicate Secret name, not backing off")
-			return false, 0
-		}
-		// We still have a duplicate Secret name, so we backoff like normal.
 	}
 
 	// We want to immediately trigger a re-issuance when the certificate

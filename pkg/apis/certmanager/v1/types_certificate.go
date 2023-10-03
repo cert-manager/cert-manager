@@ -592,13 +592,6 @@ const (
 	CertificateConditionDuplicateSecretName CertificateConditionType = "DuplicateSecretName"
 )
 
-const (
-	// CertificateIssuingReasonDuplicateSecretName is set on a Certificate when
-	// the Secret name specified in the Certificate's spec is already in use by
-	// another Certificate.
-	CertificateIssuingReasonDuplicateSecretName = "DuplicateSecretName"
-)
-
 // CertificateSecretTemplate defines the default labels and annotations
 // to be copied to the Kubernetes Secret resource named in `CertificateSpec.secretName`.
 type CertificateSecretTemplate struct {

@@ -58,7 +58,7 @@ func TestTriggerController(t *testing.T) {
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -72,7 +72,7 @@ func TestTriggerController(t *testing.T) {
 	controllerContext := &controllerpkg.Context{
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
-		CMClient:                  cmClient,
+		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
@@ -94,7 +94,7 @@ func TestTriggerController(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
+	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
@@ -106,7 +106,7 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ensureCertificateHasIssuingCondition(t, ctx, cmClient, namespace, cert.Name)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, cert.Name)
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
@@ -122,7 +122,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// triggering depending on whether a renewal is required.
 	shoudReissue := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock)}.Evaluate
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 
 	namespace := "testns"
 	secretName := "example"
@@ -177,7 +177,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	controllerContext := &controllerpkg.Context{
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
-		CMClient:                  cmClient,
+		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
@@ -200,7 +200,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate
-	cert, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Wait for 2s, polling every 200ms to ensure that the controller does not set
 	// the condition.
 	t.Log("Ensuring Certificate does not have Issuing condition for 2s...")
-	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmClient, namespace, certName)
+	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmCl, namespace, certName)
 
 	// 2. Test that a Certificate does get the Issuing status condition set to
 	// True when the X.509 cert is nearing expiry.
@@ -222,8 +222,8 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	fakeClock.SetTime(renewalTime.Add(time.Millisecond * 2))
 
 	// apply a random condition to cert to ensure the reconciler gets triggered
-	applyTestCondition(t, ctx, cert, cmClient)
-	ensureCertificateHasIssuingCondition(t, ctx, cmClient, namespace, certName)
+	applyTestCondition(t, ctx, cert, cmCl)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
 }
 
 func TestTriggerController_ExpBackoff(t *testing.T) {
@@ -243,7 +243,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// this test.
 	shoudReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 
 	namespace := "testns"
 	secretName := "example"
@@ -272,7 +272,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	controllerContext := &controllerpkg.Context{
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
-		CMClient:                  cmClient,
+		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
@@ -296,25 +296,25 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate
-	_, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// 1. Test that Issuing condition gets set to True
 	t.Log("Ensuring Certificate does get the Issuing condition set to true initially...")
-	ensureCertificateHasIssuingCondition(t, ctx, cmClient, namespace, certName)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
 
 	// Simulate issuance having failed
 	t.Log("Simulate issuance having failed for 7th time in a row")
-	cert, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, certName, metav1.GetOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, certName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "", "")
 	cert.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
 	cert.Status.LastFailureTime = &metaNow
-	cert, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,26 +324,26 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	t.Log("Advance clock to slightly before the end of the backoff period")
 	fakeClock.SetTime(now.Add(backoffPeriod - time.Minute))
 	// apply a random condition to cert to ensure the reconciler gets triggered
-	applyTestCondition(t, ctx, cert, cmClient)
+	applyTestCondition(t, ctx, cert, cmCl)
 
 	t.Log("Ensuring Certificate does not have Issuing condition set to true for 2s...")
-	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmClient, namespace, certName)
+	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmCl, namespace, certName)
 
 	// 3. Test that issuance gets retried once the backoff period is over
 	t.Log("Advance clock to just after the backoff period")
 	fakeClock.SetTime(now.Add(backoffPeriod + time.Second))
 	// apply a random condition to cert to ensure the reconciler gets triggered
-	applyTestCondition(t, ctx, cert, cmClient)
+	applyTestCondition(t, ctx, cert, cmCl)
 
 	t.Log("Ensuring Certificate does get the Issuing condition set to true after the backoff period")
-	ensureCertificateHasIssuingCondition(t, ctx, cmClient, namespace, certName)
+	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
 }
 
-func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Context, cmClient cmclient.Interface, namespace, name string) {
+func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
 	t.Helper()
 
 	err := wait.PollUntilContextTimeout(ctx, time.Millisecond*200, time.Second*2, true, func(ctx context.Context) (bool, error) {
-		c, err := cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -366,9 +366,10 @@ func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Cont
 	}
 }
 
-// Test_TriggerController_DuplicateSecretName ensures that if a Certificate was
-// failed because of a DuplicateSecretName, but this is no longer the case, the
-// trigger controller will set the Issuing condition.
+// Test_TriggerController_DuplicateSecretName ensures that if a Certificate has
+// a DuplicateSecretName condition, the trigger controller will not set the
+// Issuing condition to true. Once the DuplicateSecretName condition is removed,
+// the Issuing condition will be set to true.
 func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
@@ -439,7 +440,6 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 		t.Fatal(err)
 	}
 	cert.Status.Conditions = []cmapi.CertificateCondition{
-		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: cmapi.CertificateIssuingReasonDuplicateSecretName},
 		{Type: cmapi.CertificateConditionDuplicateSecretName, Status: cmmeta.ConditionTrue},
 	}
 	cert.Status.LastFailureTime = &metav1.Time{Time: fakeClock.Now().Add(-time.Minute)}
@@ -454,12 +454,11 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !apiutil.CertificateHasCondition(cert, cmapi.CertificateCondition{
+	if apiutil.CertificateHasCondition(cert, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionIssuing,
-		Status: cmmeta.ConditionFalse,
-		Reason: cmapi.CertificateIssuingReasonDuplicateSecretName,
+		Status: cmmeta.ConditionTrue,
 	}) {
-		t.Errorf("expected Certificate to have Issuing condition with reason %q, got=%#v", cmapi.CertificateIssuingReasonDuplicateSecretName, apiutil.GetCertificateCondition(cert, cmapi.CertificateConditionIssuing))
+		t.Errorf("expected Certificate to not have Issuing condition, got=%#v", apiutil.GetCertificateCondition(cert, cmapi.CertificateConditionIssuing))
 	}
 
 	// Update the Certificate to no longer have a DuplicateSecretName condition.
@@ -467,9 +466,7 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cert.Status.Conditions = []cmapi.CertificateCondition{
-		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: cmapi.CertificateIssuingReasonDuplicateSecretName},
-	}
+	cert.Status.Conditions = []cmapi.CertificateCondition{}
 	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -479,11 +476,11 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 	ensureCertificateHasIssuingCondition(t, ctx, cmClient, namespace, cert.Name)
 }
 
-func ensureCertificateHasIssuingCondition(t *testing.T, ctx context.Context, cmClient cmclient.Interface, namespace, name string) {
+func ensureCertificateHasIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
 	t.Helper()
 
 	err := wait.PollUntilContextCancel(ctx, time.Millisecond*200, true, func(ctx context.Context) (done bool, err error) {
-		c, err := cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

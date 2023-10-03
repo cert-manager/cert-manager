@@ -25,13 +25,13 @@ import (
 	logtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -55,7 +55,8 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 		// Certificate to be synced for the test. If not set, the 'key' will be
 		// passed to ProcessItem instead.
-		existingCertificate *cmapi.Certificate
+		existingCertificate        *cmapi.Certificate
+		existingCertManagerObjects []runtime.Object
 
 		mockDataForCertificateReturn    policies.Input
 		mockDataForCertificateReturnErr error
@@ -239,6 +240,45 @@ func Test_controller_ProcessItem(t *testing.T) {
 				ObservedGeneration: 42,
 			}},
 		},
+		"should not set Issuing=True when DuplicateSecretName condition is present": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("cert-1-uid"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-61*time.Minute))),
+				gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+					Type:    "DuplicateSecretName",
+					Status:  "True",
+					Reason:  "other-secret",
+					Message: "",
+				}),
+			),
+			wantDataForCertificateCalled: false,
+			wantShouldReissueCalled:      false,
+		},
+		"should not set Issuing=True when other Ceritificates with the same secret name are found": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("cert-1-uid"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-61*time.Minute))),
+				gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+				gen.SetCertificateSecretName("secret-1"),
+			),
+			existingCertManagerObjects: []runtime.Object{
+				gen.Certificate("cert-2", gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateUID("cert-1-uid"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example.com"),
+					gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-61*time.Minute))),
+					gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+					gen.SetCertificateSecretName("secret-1"),
+				),
+			},
+			wantDataForCertificateCalled: false,
+			wantShouldReissueCalled:      false,
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -248,6 +288,9 @@ func Test_controller_ProcessItem(t *testing.T) {
 			}
 			if test.existingCertificate != nil {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.existingCertificate)
+			}
+			if test.existingCertManagerObjects != nil {
+				builder.CertManagerObjects = append(builder.CertManagerObjects, test.existingCertManagerObjects...)
 			}
 			builder.Init()
 
@@ -330,7 +373,6 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.Local))
-	fixedNow := metav1.NewTime(clock.Now())
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
@@ -671,60 +713,6 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			)),
 			wantBackoff: false,
 		},
-		"if the Certificate failed issuance due to a DuplicateSecretName, and still has this condition, backoff like normal": {
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
-				gen.SetCertificateUID("cert-1-uid"),
-				gen.SetCertificateRevision(1),
-				gen.SetCertificateDNSNames("example.com"),
-				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-59*time.Minute))),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               cmapi.CertificateConditionIssuing,
-					Status:             cmmeta.ConditionFalse,
-					Reason:             "DuplicateSecretName",
-					Message:            "Duplicate Secret name",
-					LastTransitionTime: &fixedNow,
-					ObservedGeneration: 42,
-				}),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               "DuplicateSecretName",
-					Status:             cmmeta.ConditionTrue,
-					Reason:             "DuplicateSecretName",
-					Message:            "Duplicate Secret name",
-					LastTransitionTime: &fixedNow,
-					ObservedGeneration: 42,
-				}),
-			),
-			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
-				gen.SetCertificateUID("cert-1-uid"),
-				gen.SetCertificateRevision(1),
-				gen.SetCertificateDNSNames("example.com"),
-			)),
-			wantBackoff: true,
-			wantDelay:   1 * time.Minute,
-		},
-		"if the Certificate failed issuance due to a DuplicateSecretName, but no longer has a DuplicateSecretName condition, don't backoff": {
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
-				gen.SetCertificateUID("cert-1-uid"),
-				gen.SetCertificateRevision(1),
-				gen.SetCertificateDNSNames("example.com"),
-				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-59*time.Minute))),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               cmapi.CertificateConditionIssuing,
-					Status:             cmmeta.ConditionFalse,
-					Reason:             "DuplicateSecretName",
-					Message:            "Duplicate Secret name",
-					LastTransitionTime: &fixedNow,
-					ObservedGeneration: 42,
-				}),
-			),
-			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
-				gen.SetCertificateUID("cert-1-uid"),
-				gen.SetCertificateRevision(1),
-				gen.SetCertificateDNSNames("example.com"),
-			)),
-			wantBackoff: false,
-			wantDelay:   0,
-		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -732,5 +720,6 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			assert.Equal(t, test.wantBackoff, gotBackoff)
 			assert.Equal(t, test.wantDelay, gotDelay)
 		})
+
 	}
 }

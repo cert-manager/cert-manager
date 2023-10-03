@@ -176,37 +176,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
 	}) {
-		// Check whether the Issuing condition needs to be removed because the
-		// DuplicateSecretName condition no longer exists.
-		if apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName) == nil {
-			if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil &&
-				cond.Reason == cmapi.CertificateIssuingReasonDuplicateSecretName {
-				crt = crt.DeepCopy()
-				apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
-				return c.updateOrApplyStatus(ctx, crt, true)
-			}
-		}
-
 		// If Certificate doesn't have Issuing=true condition then we should check
 		// to ensure all non-issuing related SecretData is correct on the
 		// Certificate's secret.
 		return c.ensureSecretData(ctx, log, crt)
-	}
-
-	// If the Certificate has a duplicate Secret name condition set, we should
-	// fail the issuance. If we discover that we have a duplicate Secret name set
-	// ourselves, we exit early and wait for that condition to be set.
-	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
-		condition.Status == cmmeta.ConditionTrue {
-		return c.stopIssueCertificateDuplicateSecretName(ctx, log, crt, *condition)
-	}
-	duplicates, err := internalcertificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
-	if err != nil {
-		return err
-	}
-	if len(duplicates) > 0 {
-		log.V(logf.DebugLevel).Info("Certificate has duplicate Secret name with other Certificates in the same namespace, skipping issuance.")
-		return nil
 	}
 
 	if crt.Status.NextPrivateKeySecretName == nil ||
@@ -390,29 +363,6 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	reason = condition.Reason
 	message = fmt.Sprintf("The certificate request has failed to complete and will be retried: %s",
 		condition.Message)
-
-	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
-
-	if err := c.updateOrApplyStatus(ctx, crt, false); err != nil {
-		return err
-	}
-
-	c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
-
-	return nil
-}
-
-// stopIssueCertificateDuplicateSecretName sets the Issuing condition to False
-// on the given Certificate because it references the same SecretName as the
-// Certificate `duplicateCrtName` which resides in the same Namespace.
-func (c *controller) stopIssueCertificateDuplicateSecretName(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, dupeSecretNameCondition cmapi.CertificateCondition) error {
-	log.V(logf.DebugLevel).Info("Certificate spec.secretName matches that of others in the same Namespace, failing issuance")
-
-	reason := cmapi.CertificateIssuingReasonDuplicateSecretName
-	message := fmt.Sprintf(
-		"Certificate references the same spec.secretName as Certificate(s) in Namespace %q. Blocking issuance until there is no longer a Secret name duplicate to prevent CertificateRequest creation runaway. Please use a unique spec.secretName for all Certificates in the same Namespace.",
-		crt.Namespace)
 
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
