@@ -203,10 +203,10 @@ func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) (string, s
 	return "", "", false
 }
 
-func CertificateHasNoDuplicateSecretNameCondition(input Input) (string, string, bool) {
-	if condition := apiutil.GetCertificateCondition(input.Certificate, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
+func CertificateHasNoInConflictCondition(input Input) (string, string, bool) {
+	if condition := apiutil.GetCertificateCondition(input.Certificate, cmapi.CertificateConditionInConflict); condition != nil &&
 		condition.Status == cmmetav1.ConditionTrue {
-		return DuplicateSecretName, fmt.Sprintf("Not ready because Certificate has a %q condition", cmapi.CertificateConditionDuplicateSecretName), true
+		return InConflict, fmt.Sprintf("Not ready because Certificate has a %q condition", cmapi.CertificateConditionInConflict), true
 	}
 
 	return "", "", false

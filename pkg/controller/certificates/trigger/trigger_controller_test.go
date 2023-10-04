@@ -240,7 +240,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				ObservedGeneration: 42,
 			}},
 		},
-		"should not set Issuing=True when DuplicateSecretName condition is present": {
+		"should not set Issuing=True when InConflict condition is present": {
 			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateUID("cert-1-uid"),
 				gen.SetCertificateRevision(1),
@@ -248,7 +248,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				gen.SetCertificateLastFailureTime(metav1.NewTime(fixedNow.Add(-61*time.Minute))),
 				gen.SetCertificateIssuanceAttempts(ptr.To(1)),
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:    "DuplicateSecretName",
+					Type:    "InConflict",
 					Status:  "True",
 					Reason:  "other-secret",
 					Message: "",

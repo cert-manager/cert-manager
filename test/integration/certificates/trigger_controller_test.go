@@ -366,11 +366,11 @@ func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Cont
 	}
 }
 
-// Test_TriggerController_DuplicateSecretName ensures that if a Certificate has
-// a DuplicateSecretName condition, the trigger controller will not set the
-// Issuing condition to true. Once the DuplicateSecretName condition is removed,
+// Test_TriggerController_InConflict ensures that if a Certificate has
+// a InConflictn, the trigger controller will not set the
+// Issuing condition to true. Once the InConflict condition is removed,
 // the Issuing condition will be set to true.
-func Test_TriggerController_DuplicateSecretName(t *testing.T) {
+func Test_TriggerController_InConflict(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
 
@@ -393,7 +393,7 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t),
-		FieldManager: "cert-manager-certificates-trigger-duplicatesecrets-test",
+		FieldManager: "cert-manager-certificates-trigger-inconflict-test",
 	}
 
 	namespace := "testns"
@@ -433,14 +433,14 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 
 	ensureCertificateHasIssuingCondition(t, ctx, cmClient, namespace, cert.Name)
 
-	// Update the Certificate to have a DuplicateSecretName condition and a
-	// Failed issuance with a DuplicateSecretName reason condition.
+	// Update the Certificate to have a InConflict condition and a
+	// Failed issuance with a InConflict reason condition.
 	cert, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	cert.Status.Conditions = []cmapi.CertificateCondition{
-		{Type: cmapi.CertificateConditionDuplicateSecretName, Status: cmmeta.ConditionTrue},
+		{Type: cmapi.CertificateConditionInConflict, Status: cmmeta.ConditionTrue},
 	}
 	cert.Status.LastFailureTime = &metav1.Time{Time: fakeClock.Now().Add(-time.Minute)}
 	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
@@ -461,7 +461,7 @@ func Test_TriggerController_DuplicateSecretName(t *testing.T) {
 		t.Errorf("expected Certificate to not have Issuing condition, got=%#v", apiutil.GetCertificateCondition(cert, cmapi.CertificateConditionIssuing))
 	}
 
-	// Update the Certificate to no longer have a DuplicateSecretName condition.
+	// Update the Certificate to no longer have a InConflict condition.
 	cert, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)

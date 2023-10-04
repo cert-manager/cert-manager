@@ -33,9 +33,9 @@ const (
 	// the Input CertificateRequest could not be parsed or decoded.
 	InvalidCertificateRequest string = "InvalidCertificateRequest"
 
-	// DuplicateSecretName is a policy violation whereby the Certificate has
+	// InConflict is a policy violation whereby the Certificate has
 	// a Secret reference that conflicts with another Certificate's Secret.
-	DuplicateSecretName string = "DuplicateSecretName"
+	InConflict string = "InConflict"
 
 	// SecretMismatch is a policy violation reason for a scenario where Secret's
 	// private key does not match spec.

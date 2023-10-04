@@ -525,7 +525,7 @@ type CertificateStatus struct {
 // CertificateCondition contains condition information for an Certificate.
 type CertificateCondition struct {
 	// Type of the condition, known values are (`Ready`, `Issuing`,
-	// `DuplicateSecretName`).
+	// `InConflict`).
 	Type CertificateConditionType `json:"type"`
 
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
@@ -589,7 +589,7 @@ const (
 	// same Secret name with 1 or more Certificate resources in the same
 	// Namespace. This condition will block issuance until the conflicting
 	// Certificate(s) are deleted or updated with unique Secret name(s).
-	CertificateConditionDuplicateSecretName CertificateConditionType = "DuplicateSecretName"
+	CertificateConditionInConflict CertificateConditionType = "InConflict"
 )
 
 // CertificateSecretTemplate defines the default labels and annotations

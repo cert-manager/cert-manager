@@ -31,14 +31,14 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates/duplicatesecrets"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/inconflict"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // TestIssuingController performs a basic test to ensure that the
-// DuplicateSecretName condition will be set on Certificates which share the
+// InConflict condition will be set on Certificates which share the
 // same spec.secretName as that of another Certificate in the same Namespace.
 func Test_DuplicateSecrets(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
@@ -61,13 +61,13 @@ func Test_DuplicateSecrets(t *testing.T) {
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t),
-		FieldManager: "cert-manager-certificates-duplicatesecrets-test",
+		FieldManager: "cert-manager-certificates-inconflict-test",
 	}
 
-	ctrl, queue, mustSync := duplicatesecrets.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync := inconflict.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
 		ctx,
-		"duplicatesecrets_test",
+		"inconflict_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
@@ -113,7 +113,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 		if err != nil {
 			return false, err
 		}
-		cond := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionDuplicateSecretName)
+		cond := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionInConflict)
 		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "2") {
 			return false, nil
 		}
@@ -122,7 +122,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 		if err != nil {
 			return false, err
 		}
-		cond = apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionDuplicateSecretName)
+		cond = apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionInConflict)
 		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "1") {
 			return false, nil
 		}
@@ -153,15 +153,15 @@ func Test_DuplicateSecrets(t *testing.T) {
 			return false, err
 		}
 
-		cond := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionDuplicateSecretName)
+		cond := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionInConflict)
 		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "2,3") {
 			return false, nil
 		}
-		cond = apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionDuplicateSecretName)
+		cond = apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionInConflict)
 		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "1,3") {
 			return false, nil
 		}
-		cond = apiutil.GetCertificateCondition(crt3, cmapi.CertificateConditionDuplicateSecretName)
+		cond = apiutil.GetCertificateCondition(crt3, cmapi.CertificateConditionInConflict)
 		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "1,2") {
 			return false, nil
 		}
@@ -205,9 +205,9 @@ func Test_DuplicateSecrets(t *testing.T) {
 			return false, err
 		}
 
-		cond1 := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionDuplicateSecretName)
-		cond2 := apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionDuplicateSecretName)
-		cond3 := apiutil.GetCertificateCondition(crt3, cmapi.CertificateConditionDuplicateSecretName)
+		cond1 := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionInConflict)
+		cond2 := apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionInConflict)
+		cond3 := apiutil.GetCertificateCondition(crt3, cmapi.CertificateConditionInConflict)
 
 		return cond1 == nil && cond2 == nil && cond3 == nil, nil
 	}); err != nil {

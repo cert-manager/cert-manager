@@ -36,7 +36,7 @@ import (
 	crselfsignedcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/selfsigned"
 	crvaultcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/vault"
 	crvenaficontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/venafi"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates/duplicatesecrets"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/inconflict"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/keymanager"
 	certificatesmetricscontroller "github.com/cert-manager/cert-manager/pkg/controller/certificates/metrics"
@@ -148,7 +148,7 @@ var (
 		keymanager.ControllerName,
 		requestmanager.ControllerName,
 		readiness.ControllerName,
-		duplicatesecrets.ControllerName,
+		inconflict.ControllerName,
 		revisionmanager.ControllerName,
 	}
 

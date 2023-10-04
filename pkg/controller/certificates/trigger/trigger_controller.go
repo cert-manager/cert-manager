@@ -162,13 +162,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// If the Certificate has a duplicate Secret name condition set, we don't continue
 	// with updating the final secret with the certificate data.
-	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
+	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionInConflict); condition != nil &&
 		condition.Status == cmmeta.ConditionTrue {
 		return nil
 	}
 
 	// If we detect that the Certificate has a duplicate Secret name set, we wait until
-	// the DuplicateSecretName condition is set before we update the Issuing condition.
+	// the InConflict condition is set before we update the Issuing condition.
 	duplicates, err := internalcertificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
 	if err != nil {
 		return err

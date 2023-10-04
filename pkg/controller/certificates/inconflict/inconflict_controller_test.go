@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duplicatesecrets
+package inconflict
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func Test_ProcessItem(t *testing.T) {
 		// whether we expect an update action against the Certificate
 		certShouldUpdate bool
 
-		// Certificate's DuplicateSecretName condition to be applied with the
+		// Certificate's InConflict condition to be applied with the
 		// update
 		condition *cmapi.CertificateCondition
 
@@ -84,7 +84,7 @@ func Test_ProcessItem(t *testing.T) {
 			)},
 			certShouldUpdate: true,
 			condition: &cmapi.CertificateCondition{
-				Type:               "DuplicateSecretName",
+				Type:               "InConflict",
 				Status:             "True",
 				Reason:             "test2",
 				Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -108,7 +108,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			certShouldUpdate: true,
 			condition: &cmapi.CertificateCondition{
-				Type:               "DuplicateSecretName",
+				Type:               "InConflict",
 				Status:             "True",
 				Reason:             "test2,test3",
 				Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2, test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -119,7 +119,7 @@ func Test_ProcessItem(t *testing.T) {
 		"if existing condition does not cover all duplicate existing Certificates, expect condition to be updated": {
 			cert: gen.CertificateFrom(cert,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               "DuplicateSecretName",
+					Type:               "InConflict",
 					Status:             "True",
 					Reason:             "test2",
 					Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -132,7 +132,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			certShouldUpdate: true,
 			condition: &cmapi.CertificateCondition{
-				Type:               "DuplicateSecretName",
+				Type:               "InConflict",
 				Status:             "True",
 				Reason:             "test2,test3",
 				Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2, test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -143,7 +143,7 @@ func Test_ProcessItem(t *testing.T) {
 		"if existing condition is still valid for the current state, expect no update": {
 			cert: gen.CertificateFrom(cert,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               "DuplicateSecretName",
+					Type:               "InConflict",
 					Status:             "True",
 					Reason:             "test2,test3",
 					Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2, test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -159,7 +159,7 @@ func Test_ProcessItem(t *testing.T) {
 		"if existing condition is no longer correct (conflicts have been removed), expect condition to be removed": {
 			cert: gen.CertificateFrom(cert,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               "DuplicateSecretName",
+					Type:               "InConflict",
 					Status:             "True",
 					Reason:             "test2,test3",
 					Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2, test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -175,7 +175,7 @@ func Test_ProcessItem(t *testing.T) {
 			cert: gen.CertificateFrom(cert,
 				gen.SetCertificateSecretName("test-secret2"),
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               "DuplicateSecretName",
+					Type:               "InConflict",
 					Status:             "True",
 					Reason:             "test2,test3",
 					Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2, test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -194,7 +194,7 @@ func Test_ProcessItem(t *testing.T) {
 			cert: gen.CertificateFrom(cert,
 				gen.SetCertificateSecretName("test-secret2"),
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-					Type:               "DuplicateSecretName",
+					Type:               "InConflict",
 					Status:             "True",
 					Reason:             "test2,test3",
 					Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test2, test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -210,7 +210,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			certShouldUpdate: true,
 			condition: &cmapi.CertificateCondition{
-				Type:               "DuplicateSecretName",
+				Type:               "InConflict",
 				Status:             "True",
 				Reason:             "test3",
 				Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test3 ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",
@@ -224,7 +224,7 @@ func Test_ProcessItem(t *testing.T) {
 				gen.CertificateFrom(cert,
 					gen.SetCertificateName("test3"),
 					gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-						Type:               "DuplicateSecretName",
+						Type:               "InConflict",
 						Status:             "True",
 						Reason:             "test",
 						Message:            "Certificate shares the same Secret name as the following Certificates in this Namespace: [ test ]. Issuance will block until this is resolved to prevent CertificateRequest creation runaway.",

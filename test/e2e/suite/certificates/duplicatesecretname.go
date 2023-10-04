@@ -91,7 +91,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		// Here we use a CA issuer because if we didn't, we would often get a
 		// CertificateRequest failure because private keys do not match on
 		// duplicate target Secret names. This failure fails Certificates.
-		// This failure is not the point of this test, and the DuplicateSecretName
+		// This failure is not the point of this test, and the InConflict
 		// condition isn't attempting to catch this case.
 		By("creating a CA Issuer")
 		crt := gen.Certificate(issuerName,
@@ -142,7 +142,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 				crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
-				cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionDuplicateSecretName)
+				cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionInConflict)
 				return cond != nil && cond.Status == cmmeta.ConditionTrue
 			}, "10s", "1s").Should(BeTrue(), "expected Certificate to reach duplicate SecretName in time")
 		}

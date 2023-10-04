@@ -90,7 +90,7 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 
 		SecretIssuerAnnotationsMismatch, // Make sure the Secret's IssuerRef annotations match the Certificate spec
 
-		CertificateHasNoDuplicateSecretNameCondition, // Make sure the Certificate has no duplicate SecretName condition
+		CertificateHasNoInConflictCondition, // Make sure the Certificate has no duplicate SecretName condition
 
 		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
 		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
