@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"os"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -46,8 +47,12 @@ import (
 const (
 	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
 	vaultHelmChartVersion = "0.24.1"
-	vaultImageRepository  = "local/vault"
-	vaultImageTag         = "local"
+	// This local Vault image is only used when the tests are run using make,
+	// because it downloads the Vault image, saves it in the scratch folder on
+	// the filesystem, and copies it to the cluster-under-test before the E2E
+	// tests get executed.
+	vaultImageRepository = "local/vault"
+	vaultImageTag        = "local"
 )
 
 // Vault describes the configuration details for an instance of Vault
@@ -182,19 +187,6 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 				Key:   "server.volumeMounts[0].mountPath",
 				Value: "/vault/tls",
 			},
-			// configure image and repo
-			{
-				Key:   "server.image.repository",
-				Value: vaultImageRepository,
-			},
-			{
-				Key:   "server.image.tag",
-				Value: vaultImageTag,
-			},
-			{
-				Key:   "server.image.pullPolicy",
-				Value: "Never",
-			},
 			// configure resource requests
 			{
 				Key:   "server.resources.requests.cpu",
@@ -206,6 +198,38 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			},
 		},
 	}
+
+	// When the tests have been launched by make, the cluster will be a kind
+	// cluster into which we will have loaded some locally cached Vault images.
+	// But we also want people to be able to compile the E2E test binary and run
+	// the tests on their chosen cluster, in which case we do not override the
+	// Vault image and the default chart image will be downloaded and run
+	// instead.
+	// MAKELEVEL is always set by make so that it can know whether it is being
+	// called recursively, so we use that variable as a marker to know whether
+	// the tests are being executed from our Makefile. See
+	// https://www.gnu.org/software/make/manual/html_node/Variables_002fRecursion.html
+	if os.Getenv("MAKELEVEL") != "" {
+		v.chart.Vars = append(
+			v.chart.Vars,
+			[]chart.StringTuple{
+				// configure image and repo
+				{
+					Key:   "server.image.repository",
+					Value: vaultImageRepository,
+				},
+				{
+					Key:   "server.image.tag",
+					Value: vaultImageTag,
+				},
+				{
+					Key:   "server.image.pullPolicy",
+					Value: "Never",
+				},
+			}...,
+		)
+	}
+
 	_, err := v.chart.Setup(cfg)
 	if err != nil {
 		return nil, err
