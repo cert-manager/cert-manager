@@ -34,7 +34,9 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -196,6 +198,15 @@ func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) (string, s
 	}
 	if !equal {
 		return SecretMismatch, "Secret contains a private key that does not match the current CertificateRequest", true
+	}
+
+	return "", "", false
+}
+
+func CertificateHasNoDuplicateSecretNameCondition(input Input) (string, string, bool) {
+	if condition := apiutil.GetCertificateCondition(input.Certificate, cmapi.CertificateConditionDuplicateSecretName); condition != nil &&
+		condition.Status == cmmetav1.ConditionTrue {
+		return DuplicateSecretName, fmt.Sprintf("Not ready because Certificate has a %q condition", cmapi.CertificateConditionDuplicateSecretName), true
 	}
 
 	return "", "", false
