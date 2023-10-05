@@ -128,7 +128,7 @@ func reverseBitsInAByte(in byte) byte {
 
 // Adapted from x509.go
 func MarshalKeyUsage(usage x509.KeyUsage) (pkix.Extension, error) {
-	ext := pkix.Extension{Id: OIDExtensionKeyUsage}
+	ext := pkix.Extension{Id: OIDExtensionKeyUsage, Critical: true}
 
 	var a [2]byte
 	a[0] = reverseBitsInAByte(byte(usage))

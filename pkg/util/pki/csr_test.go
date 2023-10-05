@@ -407,8 +407,9 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	defaultExtraExtensions := []pkix.Extension{
 		{
-			Id:    OIDExtensionKeyUsage,
-			Value: asn1KeyUsage,
+			Id:       OIDExtensionKeyUsage,
+			Value:    asn1KeyUsage,
+			Critical: true,
 		},
 	}
 
@@ -418,8 +419,9 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	ipsecExtraExtensions := []pkix.Extension{
 		{
-			Id:    OIDExtensionKeyUsage,
-			Value: asn1KeyUsage,
+			Id:       OIDExtensionKeyUsage,
+			Value:    asn1KeyUsage,
+			Critical: true,
 		},
 		{
 			Id:    OIDExtensionExtendedKeyUsage,
@@ -503,8 +505,9 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
-						Id:    OIDExtensionKeyUsage,
-						Value: asn1KeyUsageWithCa,
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsageWithCa,
+						Critical: true,
 					},
 				},
 			},
@@ -519,12 +522,14 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
-						Id:    OIDExtensionKeyUsage,
-						Value: asn1KeyUsage,
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsage,
+						Critical: true,
 					},
 					{
-						Id:    OIDExtensionBasicConstraints,
-						Value: basicConstraintsWithoutCA,
+						Id:       OIDExtensionBasicConstraints,
+						Value:    basicConstraintsWithoutCA,
+						Critical: true,
 					},
 				},
 			},
@@ -540,12 +545,14 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
-						Id:    OIDExtensionKeyUsage,
-						Value: asn1KeyUsageWithCa,
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsageWithCa,
+						Critical: true,
 					},
 					{
-						Id:    OIDExtensionBasicConstraints,
-						Value: basicConstraintsWithCA,
+						Id:       OIDExtensionBasicConstraints,
+						Value:    basicConstraintsWithCA,
+						Critical: true,
 					},
 				},
 			},
@@ -655,8 +662,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			crt:  &cmapi.Certificate{},
 			want: []pkix.Extension{
 				{
-					Id:    OIDExtensionKeyUsage,
-					Value: asn1DefaultKeyUsage,
+					Id:       OIDExtensionKeyUsage,
+					Value:    asn1DefaultKeyUsage,
+					Critical: true,
 				},
 			},
 			wantErr: false,
@@ -670,8 +678,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			},
 			want: []pkix.Extension{
 				{
-					Id:    OIDExtensionKeyUsage,
-					Value: asn1DefaultKeyUsage,
+					Id:       OIDExtensionKeyUsage,
+					Value:    asn1DefaultKeyUsage,
+					Critical: true,
 				},
 				{
 					Id:    OIDExtensionExtendedKeyUsage,
@@ -689,8 +698,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			},
 			want: []pkix.Extension{
 				{
-					Id:    OIDExtensionKeyUsage,
-					Value: asn1DefaultKeyUsage,
+					Id:       OIDExtensionKeyUsage,
+					Value:    asn1DefaultKeyUsage,
+					Critical: true,
 				},
 				{
 					Id:    OIDExtensionExtendedKeyUsage,
