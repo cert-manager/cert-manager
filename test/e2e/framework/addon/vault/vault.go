@@ -225,6 +225,22 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 		)
 	}
 
+	// Set E2E_OPENSHIFT=true if you're running the E2E tests against an OpenShift
+	// cluster.
+	// OpenShift requires some different settings. See
+	// https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-openshift
+	if os.Getenv("E2E_OPENSHIFT") == "true" {
+		v.chart.Vars = append(
+			v.chart.Vars,
+			[]chart.StringTuple{
+				{
+					Key:   "global.openshift",
+					Value: "true",
+				},
+			}...,
+		)
+	}
+
 	_, err := v.chart.Setup(cfg)
 	if err != nil {
 		return nil, err
