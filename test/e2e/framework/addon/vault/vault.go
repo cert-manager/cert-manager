@@ -47,7 +47,7 @@ import (
 
 const (
 	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
-	vaultHelmChartVersion = "0.24.1"
+	vaultHelmChartVersion = "0.25.0"
 )
 
 // Vault describes the configuration details for an instance of Vault
