@@ -66,9 +66,12 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	//
 	// Note that resetting won't affect the existing certificate if one was
 	// already issued.
-	tppConnector, isTPP := v.vcertClient.(*tpp.Connector)
-	if isTPP {
-		err := tppConnector.ResetCertificate(vreq, false)
+	if v.tppClient != nil {
+		// We can't use the instrumented v.vcertClient because its concrete
+		// value is `instrumentedConnector`, which doesn't give access to the
+		// *tpp.Connector it wraps. Also, `instrumentedConnector` doesn't
+		// support `ResetCertificate`.
+		err := v.tppClient.ResetCertificate(vreq, false)
 		notFoundErr := &tpp.ErrCertNotFound{}
 		if err != nil && !errors.As(err, &notFoundErr) {
 			return "", err
