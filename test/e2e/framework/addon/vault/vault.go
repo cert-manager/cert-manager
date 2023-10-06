@@ -30,6 +30,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -46,13 +47,7 @@ import (
 
 const (
 	vaultHelmChartRepo    = "https://helm.releases.hashicorp.com"
-	vaultHelmChartVersion = "0.24.1"
-	// This local Vault image is only used when the tests are run using make,
-	// because it downloads the Vault image, saves it in the scratch folder on
-	// the filesystem, and copies it to the cluster-under-test before the E2E
-	// tests get executed.
-	vaultImageRepository = "local/vault"
-	vaultImageTag        = "local"
+	vaultHelmChartVersion = "0.25.0"
 )
 
 // Vault describes the configuration details for an instance of Vault
@@ -205,11 +200,11 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 	// the tests on their chosen cluster, in which case we do not override the
 	// Vault image and the default chart image will be downloaded and run
 	// instead.
-	// MAKELEVEL is always set by make so that it can know whether it is being
-	// called recursively, so we use that variable as a marker to know whether
-	// the tests are being executed from our Makefile. See
-	// https://www.gnu.org/software/make/manual/html_node/Variables_002fRecursion.html
-	if os.Getenv("MAKELEVEL") != "" {
+	// E2E_VAULT_IMAGE is exported by `make/e2e-setup.mk`.
+	if vaultImage := os.Getenv("E2E_VAULT_IMAGE"); vaultImage != "" {
+		parts := strings.Split(vaultImage, ":")
+		vaultImageRepository := parts[0]
+		vaultImageTag := parts[1]
 		v.chart.Vars = append(
 			v.chart.Vars,
 			[]chart.StringTuple{
@@ -225,6 +220,22 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 				{
 					Key:   "server.image.pullPolicy",
 					Value: "Never",
+				},
+			}...,
+		)
+	}
+
+	// Set E2E_OPENSHIFT=true if you're running the E2E tests against an OpenShift
+	// cluster.
+	// OpenShift requires some different settings. See
+	// https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-openshift
+	if os.Getenv("E2E_OPENSHIFT") == "true" {
+		v.chart.Vars = append(
+			v.chart.Vars,
+			[]chart.StringTuple{
+				{
+					Key:   "global.openshift",
+					Value: "true",
 				},
 			}...,
 		)

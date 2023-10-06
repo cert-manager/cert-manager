@@ -106,6 +106,13 @@ setup-integration-tests: test/integration/versionchecker/testdata/test_manifests
 integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	cd test/integration && $(GOTESTSUM) ./...
 
+## (optional) Set this to true to run the E2E tests against an OpenShift cluster.
+## When set to true, the Hashicorp Vault Helm chart will be installed with
+## settings appropriate for OpenShift.
+##
+## @category Development
+E2E_OPENSHIFT ?= false
+
 .PHONY: e2e
 ## Run the end-to-end tests. Before running this, you need to run:
 ##

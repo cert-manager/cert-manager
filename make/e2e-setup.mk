@@ -55,6 +55,12 @@ IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
 # Once that is done, we can consume this variable from ./make/config/lib.sh
 SERVICE_IP_PREFIX = 10.0.0
 
+# This variable is exported so that the Vault add-on in the E2E tests can set
+# the image reference of the locally loaded Docker image when it installs the
+# Vault Helm chart.
+# The Vault Docker image is loaded into kind by `make e2e-setup`.
+export E2E_VAULT_IMAGE := $(LOCALIMAGE_vaultretagged)
+
 .PHONY: e2e-setup-kind
 ## Create a Kubernetes cluster using Kind, which is required for `make e2e`.
 ## The Kind image is pre-pulled to avoid 'kind create' from blocking other make
