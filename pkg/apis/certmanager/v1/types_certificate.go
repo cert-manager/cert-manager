@@ -585,10 +585,13 @@ const (
 	// It will be removed by the 'issuing' controller upon completing issuance.
 	CertificateConditionIssuing CertificateConditionType = "Issuing"
 
-	// A condition added to Certificate resources when the Certificate shares the
-	// same Secret name with 1 or more Certificate resources in the same
-	// Namespace. This condition will block issuance until the conflicting
-	// Certificate(s) are deleted or updated with unique Secret name(s).
+	// A condition added to Certificate resources when the Certificate is in a
+	// conflicting state. This means that there will be no new automatic issuance
+	// attempts for the Certificate as long as it is in this state. Additionally,
+	// this condition causes the Ready condition to be set to False.
+	// This condition will for example be set when there are multiple Certificate
+	// resources with the same Secret target. This prevents the certificates from
+	// competing resulting in a CertificateRequest creation runaway.
 	CertificateConditionInConflict CertificateConditionType = "InConflict"
 )
 
