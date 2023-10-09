@@ -41,9 +41,16 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+var keyFunc = controllerpkg.KeyFunc
+
 const (
 	// ControllerName is the name of the certificate inconflict controller.
 	ControllerName = "certificates-inconflict"
+
+	// ReasonDuplicateSecretName is the reason set on the Certificate InConflict
+	// condition when the Certificate is in conflict with another Certificate
+	// in the same Namespace.
+	ReasonDuplicateSecretName = "DuplicateSecretName"
 )
 
 type controller struct {
@@ -94,32 +101,41 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	crt, err := c.certificateLister.Certificates(namespace).Get(name)
-	if apierrors.IsNotFound(err) {
-		// If the Certificate is not found, we can assume it has been deleted
-		// unfortunately. We cannot rely on the resource's InConflict
-		// condition to determine what Certificates it was conflicting with, so
-		// we need to loop over all Certificates in the Namespace and requeue
-		// Certificates which have this Certificate's name in their
-		// InConflict condition.
-
-		// Get all Certificates in the Namespace.
-		crts, err := c.certificateLister.Certificates(namespace).List(labels.NewSelector())
+	rereconcileAll := func() error {
+		crts, err := c.certificateLister.Certificates(namespace).List(labels.Everything())
 		if err != nil {
 			return err
 		}
 
-		// Loop over all Certificates and requeue those which have this
-		// Certificate's name in their InConflict condition.
 		for _, crt := range crts {
-			if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionInConflict); condition != nil &&
-				condition.Status == cmmeta.ConditionTrue &&
-				stringSliceContains(strings.Split(condition.Reason, ","), name) {
-				c.queue.Add(crt.Namespace + "/" + crt.Name)
+			// Skip Certificates that don't have the InConflict condition set.
+			if apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionInConflict) == nil {
+				continue
 			}
+
+			// Skip the Certificate we are currently processing.
+			if crt.Name == name {
+				continue
+			}
+
+			key, err := keyFunc(crt)
+			if err != nil {
+				log.Error(err, "error computing key for resource")
+				continue
+			}
+			c.queue.Add(key)
 		}
 
 		return nil
+	}
+
+	crt, err := c.certificateLister.Certificates(namespace).Get(name)
+	if apierrors.IsNotFound(err) {
+		// If the Certificate is not found, we can assume it has been deleted.
+		// We need to re-reconcile all Certificates in the same Namespace that
+		// are in conflict.
+
+		return rereconcileAll()
 	}
 	if err != nil {
 		log.V(logf.DebugLevel).Info("certificate not found for key", "error", err.Error())
@@ -129,12 +145,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log = logf.WithResource(log, crt)
 	ctx = logf.NewContext(ctx, log)
 
-	oldDuplicates := []string{}
-	if condition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionInConflict); condition != nil &&
-		condition.Status == cmmeta.ConditionTrue {
-		oldDuplicates = strings.Split(condition.Reason, ",")
-	}
-
 	// Get the Certificates in the same Namespace which have the same Secret name
 	// set.
 	duplicates, err := internalcertificates.DuplicateCertificateSecretNames(ctx, c.certificateLister, crt)
@@ -142,12 +152,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
+	condition := buildDuplicateSecretNameCondition(duplicates)
+
 	// If we don't need to update the status, return early.
-	if !needsUpdate(crt, duplicates) {
+	if !needsUpdate(crt, condition) {
 		return nil
 	}
 
-	condition := buildInConflictCondition(duplicates)
 	crt = crt.DeepCopy()
 	if condition != nil {
 		apiutil.SetCertificateCondition(crt, crt.Generation, condition.Type, condition.Status, condition.Reason, condition.Message)
@@ -166,38 +177,20 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	// We also need to re-reconcile all other Certificates which have the same
-	// Secret name set so their conditions can be evaluated.
-	for _, duplicate := range oldDuplicates {
-		c.queue.Add(crt.Namespace + "/" + duplicate)
-	}
-
+	// Reconcile all conflicting Certificates in the same Namespace.
 	for _, duplicate := range duplicates {
-		c.queue.Add(crt.Namespace + "/" + duplicate)
+		c.queue.Add(namespace + "/" + duplicate)
 	}
 
-	return nil
-}
-
-func stringSliceContains(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
+	// We also need to re-reconcile all other Certificates which are in conflict.
+	return rereconcileAll()
 }
 
 // needsUpdate returns true if the Certificate needs a state change because the
 // Certificate doesn't have a InConflict condition when it should, or
 // that condition does not reflect the state of the world.
-func needsUpdate(crt *cmapi.Certificate, duplicates []string) bool {
+func needsUpdate(crt *cmapi.Certificate, condition *cmapi.CertificateCondition) bool {
 	existingCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionInConflict)
-	if len(duplicates) == 0 && existingCondition == nil {
-		return false
-	}
-
-	condition := buildInConflictCondition(duplicates)
 
 	// Check so that the switch below doesn't panic.
 	if existingCondition == nil && condition == nil {
@@ -216,9 +209,9 @@ func needsUpdate(crt *cmapi.Certificate, duplicates []string) bool {
 	}
 }
 
-// buildInConflictCondition returns a nil condition if there are no
+// buildDuplicateSecretNameCondition returns a nil condition if there are no
 // duplicates, else, returns a InConflict condition.
-func buildInConflictCondition(duplicates []string) *cmapi.CertificateCondition {
+func buildDuplicateSecretNameCondition(duplicates []string) *cmapi.CertificateCondition {
 	if len(duplicates) == 0 {
 		return nil
 	}
@@ -227,7 +220,7 @@ func buildInConflictCondition(duplicates []string) *cmapi.CertificateCondition {
 	return &cmapi.CertificateCondition{
 		Type:    cmapi.CertificateConditionInConflict,
 		Status:  cmmeta.ConditionTrue,
-		Reason:  strings.Join(duplicates, ","),
+		Reason:  ReasonDuplicateSecretName,
 		Message: fmt.Sprintf(msg, strings.Join(duplicates, ", ")),
 	}
 }

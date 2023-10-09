@@ -589,9 +589,9 @@ const (
 	// conflicting state. This means that there will be no new automatic issuance
 	// attempts for the Certificate as long as it is in this state. Additionally,
 	// this condition causes the Ready condition to be set to False.
-	// This condition will for example be set when there are multiple Certificate
+	// This condition will, for example, be set when there are multiple Certificate
 	// resources with the same Secret target. This prevents the certificates from
-	// competing resulting in a CertificateRequest creation runaway.
+	// competing resulting in runaway CertificateRequest creation.
 	CertificateConditionInConflict CertificateConditionType = "InConflict"
 )
 
