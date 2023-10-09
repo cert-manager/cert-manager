@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
@@ -114,7 +115,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 			return false, err
 		}
 		cond := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionInConflict)
-		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "2") {
+		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "DuplicateSecretName") {
 			return false, nil
 		}
 
@@ -123,7 +124,7 @@ func Test_DuplicateSecrets(t *testing.T) {
 			return false, err
 		}
 		cond = apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionInConflict)
-		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "1") {
+		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "DuplicateSecretName") {
 			return false, nil
 		}
 
@@ -154,15 +155,15 @@ func Test_DuplicateSecrets(t *testing.T) {
 		}
 
 		cond := apiutil.GetCertificateCondition(crt1, cmapi.CertificateConditionInConflict)
-		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "2,3") {
+		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "DuplicateSecretName") {
 			return false, nil
 		}
 		cond = apiutil.GetCertificateCondition(crt2, cmapi.CertificateConditionInConflict)
-		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "1,3") {
+		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "DuplicateSecretName") {
 			return false, nil
 		}
 		cond = apiutil.GetCertificateCondition(crt3, cmapi.CertificateConditionInConflict)
-		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "1,2") {
+		if !(cond != nil && cond.Status == cmmeta.ConditionTrue && cond.Reason == "DuplicateSecretName") {
 			return false, nil
 		}
 
@@ -171,21 +172,41 @@ func Test_DuplicateSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Updating the Secret name of all Certificates so they are unique, should
-	// remove the condition from all Certificates.
-	crt1.Spec.SecretName = "1"
-	crt2.Spec.SecretName = "2"
-	crt3.Spec.SecretName = "3"
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "1", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "2", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Get(ctx, "3", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 
-	crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt1, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt2, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt3, metav1.UpdateOptions{})
+		// Updating the Secret name of all Certificates so they are unique, should
+		// remove the condition from all Certificates.
+		crt1.Spec.SecretName = "1"
+		crt2.Spec.SecretName = "2"
+		crt3.Spec.SecretName = "3"
+
+		crt1, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt1, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+		crt2, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt2, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+		crt3, err = cmClient.CertmanagerV1().Certificates(namespace).Update(ctx, crt3, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
