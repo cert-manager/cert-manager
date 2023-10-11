@@ -40,40 +40,45 @@ func CertificateOwnsSecret(
 		return false, nil, err
 	}
 
-	sort.Slice(crts, func(i, j int) bool {
-		return crts[i].CreationTimestamp.Before(&crts[j].CreationTimestamp) ||
-			crts[i].Name < crts[j].Name
-	})
-
-	var duplicates []string
+	var duplicateCrts []*cmapi.Certificate
 	for _, namespaceCrt := range crts {
 		// Check if it has the same Secret.
 		if namespaceCrt.Spec.SecretName == crt.Spec.SecretName {
 			// If it does, mark the Certificate as having a duplicate Secret.
-			duplicates = append(duplicates, namespaceCrt.Name)
+			duplicateCrts = append(duplicateCrts, namespaceCrt)
 		}
 	}
 
 	// If there are no duplicates, return early.
-	if len(duplicates) == 1 && duplicates[0] == crt.Name {
+	if len(duplicateCrts) == 1 && duplicateCrts[0].Name == crt.Name {
 		return true, nil, nil
 	}
 
-	ownerCertificate := duplicates[0]
+	sort.Slice(duplicateCrts, func(i, j int) bool {
+		return crts[i].CreationTimestamp.Before(&crts[j].CreationTimestamp) ||
+			crts[i].Name < crts[j].Name
+	})
+
+	duplicateNames := make([]string, len(duplicateCrts))
+	for i, crt := range duplicateCrts {
+		duplicateNames[i] = crt.Name
+	}
+
+	ownerCertificate := duplicateNames[0]
 
 	// Fetch the Secret and determine if it is owned by any of the Certificates.
 	secret, err := secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return false, nil, err
 	} else if err == nil {
-		if annotation, hasAnnotation := secret.GetAnnotations()[cmapi.CertificateNameKey]; hasAnnotation && slices.Contains(duplicates, annotation) {
+		if annotation, hasAnnotation := secret.GetAnnotations()[cmapi.CertificateNameKey]; hasAnnotation && slices.Contains(duplicateNames, annotation) {
 			ownerCertificate = annotation
 		}
 	}
 
 	// If the Secret does not exist, only the first Certificate in the list
 	// is the owner of the Secret.
-	return crt.Name == ownerCertificate, sliceWithoutValue(duplicates, crt.Name), nil
+	return crt.Name == ownerCertificate, sliceWithoutValue(duplicateNames, crt.Name), nil
 }
 
 func sliceWithoutValue(slice []string, value string) []string {
