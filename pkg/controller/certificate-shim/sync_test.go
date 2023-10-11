@@ -1701,7 +1701,7 @@ func TestSync(t *testing.T) {
 						{
 							Hostname: ptrHostname("example.com"),
 							Port:     443,
-							Protocol: "HTTPS",
+							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.GatewayTLSConfig{
 								Mode: ptrMode(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
@@ -1762,7 +1762,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -1825,7 +1825,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -1884,7 +1884,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -1937,7 +1937,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -1991,7 +1991,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2048,7 +2048,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2100,7 +2100,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2156,7 +2156,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2193,7 +2193,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2207,7 +2207,7 @@ func TestSync(t *testing.T) {
 					}, {
 						Hostname: nil, // 🔥
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2262,7 +2262,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode:            ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{},
@@ -2270,7 +2270,7 @@ func TestSync(t *testing.T) {
 					}, {
 						Hostname: ptrHostname("www.example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2334,7 +2334,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2388,7 +2388,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2450,7 +2450,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2528,7 +2528,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2580,7 +2580,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2684,7 +2684,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2759,7 +2759,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2773,7 +2773,7 @@ func TestSync(t *testing.T) {
 					}, {
 						Hostname: ptrHostname("www.example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2787,7 +2787,7 @@ func TestSync(t *testing.T) {
 					}, {
 						Hostname: ptrHostname("foo.example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2844,7 +2844,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("foo.example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2858,7 +2858,7 @@ func TestSync(t *testing.T) {
 					}, {
 						Hostname: ptrHostname("bar.example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2933,7 +2933,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
@@ -2971,7 +2971,7 @@ func TestSync(t *testing.T) {
 					Listeners: []gwapi.Listener{{
 						Hostname: ptrHostname("example.com"),
 						Port:     443,
-						Protocol: "HTTPS",
+						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.GatewayTLSConfig{
 							Mode: ptrMode(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
