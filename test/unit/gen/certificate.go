@@ -225,6 +225,12 @@ func SetCertificateGeneration(gen int64) CertificateModifier {
 	}
 }
 
+func SetCertificateCreationTimestamp(creationTimestamp metav1.Time) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.ObjectMeta.CreationTimestamp = creationTimestamp
+	}
+}
+
 func AddCertificateAnnotations(annotations map[string]string) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		if crt.Annotations == nil {
