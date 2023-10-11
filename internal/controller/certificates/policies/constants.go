@@ -39,6 +39,9 @@ const (
 	// IncorrectIssuer is a policy violation reason for a scenario where
 	// Certificate has been issued by incorrect Issuer.
 	IncorrectIssuer string = "IncorrectIssuer"
+	// IncorrectCertificate is a policy violation reason for a scenario where
+	// Certificate has been issued by incorrect Certificate.
+	IncorrectCertificate string = "IncorrectCertificate"
 	// RequestChanged is a policy violation reason for a scenario where
 	// CertificateRequest not valid for Certificate's spec.
 	RequestChanged string = "RequestChanged"

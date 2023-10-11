@@ -160,6 +160,19 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// If we detect that the Certificate has a duplicate Secret name set, we don't trigger issuance.
+	isOwner, duplicates, err := internalcertificates.CertificateOwnsSecret(ctx, c.certificateLister, c.secretLister, crt)
+	if err != nil {
+		return err
+	}
+	if !isOwner {
+		log.V(logf.DebugLevel).Info("Certificate has duplicate Secret name with other Certificates in the same namespace, skipping trigger.", "duplicates", duplicates)
+
+		c.scheduledWorkQueue.Add(key, 3*time.Minute)
+
+		return nil
+	}
+
 	input, err := c.dataForCertificate(ctx, crt)
 	if err != nil {
 		return err
