@@ -70,3 +70,13 @@ func (m *Metrics) updateCertificateRequestReadyStatus(cr *cmapi.CertificateReque
 		}).Set(value)
 	}
 }
+
+// RemoveCertificateRequest will delete the CertificateRequest metrics from continuing to be exposed.
+func (m *Metrics) RemoveCertificateRequest(key string) {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		m.log.Error(err, "failed to get namespace and name from key")
+		return
+	}
+	m.certificateRequestStatus.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
+}

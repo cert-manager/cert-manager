@@ -33,6 +33,7 @@ import (
 	cracmecontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/acme"
 	crapprovercontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/approver"
 	crcacontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/ca"
+	certificaterequestsmetricscontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/metrics"
 	crselfsignedcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/selfsigned"
 	crvaultcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/vault"
 	crvenaficontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/venafi"
@@ -109,6 +110,7 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
+		certificaterequestsmetricscontroller.ControllerName,
 		shimingresscontroller.ControllerName,
 		shimgatewaycontroller.ControllerName,
 		orderscontroller.ControllerName,
@@ -132,6 +134,7 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
+		certificaterequestsmetricscontroller.ControllerName,
 		shimingresscontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
