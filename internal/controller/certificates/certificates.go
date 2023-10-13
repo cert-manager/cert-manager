@@ -29,6 +29,21 @@ import (
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 )
 
+// We determine whether a Certificate owns its Secret in order to prevent a CertificateRequest
+// creation runaway. We use an annotation on the Secret to determine whether it is owned by a
+// Certificate. We do not use the ownerReferences field on the Secret because the owner reference
+// will not be set if the `--enable-certificate-owner-ref` flag is not set.
+//
+// We determine if the passed Certificate owns its Secret as follows:
+//  1. If the target Secret exists and it is annotated with the name of this
+//     Certificate, then this Certificate is the owner.
+//  2. If the target Secret exists and it is annotated with the name of another
+//     Certificate that has the Secret as its secretRef, then that Certificate
+//     is the owner instead.
+//  3. If the target Secret exists and it is not annotated with the name of any
+//     Certificate, or it is annotated with the name of a Certificate that does
+//     not exist, or does not have the Secret as its secretRef, then the oldest
+//     Certificate which references it will be assumed to be the future owner.
 func CertificateOwnsSecret(
 	ctx context.Context,
 	certificateLister cmlisters.CertificateLister,
