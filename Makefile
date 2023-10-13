@@ -51,7 +51,8 @@ CGO_ENABLED ?= 0
 ## verbose output.
 ## @category Build
 GOFLAGS := -trimpath
-
+RELEASE_VERSION:=v3.7.6
+KO_REGISTRY := quay.io/giantswarm/cert-manager-upstream
 ## Extra linking flags passed to 'go' via '-ldflags' when building.
 ## @category Build
 GOLDFLAGS := -w -s \
