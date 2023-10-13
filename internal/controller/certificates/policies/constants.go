@@ -40,7 +40,9 @@ const (
 	// Certificate has been issued by incorrect Issuer.
 	IncorrectIssuer string = "IncorrectIssuer"
 	// IncorrectCertificate is a policy violation reason for a scenario where
-	// Certificate has been issued by incorrect Certificate.
+	// the Secret referred to by this Certificate's spec.secretName,
+	// already has a `cert-manager.io/certificate-name` annotation
+	// with the name of another Certificate.
 	IncorrectCertificate string = "IncorrectCertificate"
 	// RequestChanged is a policy violation reason for a scenario where
 	// CertificateRequest not valid for Certificate's spec.

@@ -172,8 +172,8 @@ func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-// SecretCertificateNameAnnotationsMismatch - When the issuer annotations are defined,
-// it must match the issuer ref.
+// SecretCertificateNameAnnotationsMismatch - When the CertificateName annotation is defined,
+// it must match the name of the Certificate.
 func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool) {
 	name, ok := input.Secret.Annotations[cmapi.CertificateNameKey]
 	if (ok) && // only check if an annotation is present
