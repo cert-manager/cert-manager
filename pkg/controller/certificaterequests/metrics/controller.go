@@ -25,8 +25,8 @@ type controllerWrapper struct {
 	*controller
 }
 
-// This controller is synced on all Certificate 'create', 'update', and
-// 'delete' events which will update the metrics for that Certificate.
+// This controller is synced on all CertificateRequest 'create', 'update', and
+// 'delete' events which will update the metrics for that CertificateRequest.
 type controller struct {
 	certificateRequestLister cmlisters.CertificateRequestLister
 
