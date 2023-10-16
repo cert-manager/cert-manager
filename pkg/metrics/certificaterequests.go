@@ -27,6 +27,13 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+const (
+	CertificateRequestPending = "Pending"
+	CertificateRequestDenied  = "Denied"
+	CertificateRequestFailed  = "Failed"
+	CertificateRequestIssued  = "Issued"
+)
+
 // UpdateCertificateRequest updates the metrics for the given CertificateRequest's status.
 func (m *Metrics) UpdateCertificateRequest(ctx context.Context, cr *cmapi.CertificateRequest) {
 	key, err := cache.MetaNamespaceKeyFunc(cr)
@@ -40,35 +47,36 @@ func (m *Metrics) UpdateCertificateRequest(ctx context.Context, cr *cmapi.Certif
 
 // updateCertificateRequestStatus will update the metric for that CertificateRequest
 func (m *Metrics) updateCertificateRequestStatus(key string, cr *cmapi.CertificateRequest) {
+	var status string
+
 	for _, c := range cr.Status.Conditions {
-		// Assuming there's a ConditionReady similar to Certificate for CertificateRequest
 		if c.Type == cmapi.CertificateRequestConditionReady {
-			m.updateCertificateRequestReadyStatus(cr, c.Status)
-			return
+			if c.Status == cmmeta.ConditionTrue {
+				status = CertificateRequestIssued
+			} else if c.Reason == cmapi.CertificateRequestReasonDenied {
+				status = CertificateRequestDenied
+			} else if c.Reason == cmapi.CertificateRequestReasonFailed {
+				status = CertificateRequestFailed
+			} else {
+				status = CertificateRequestPending
+			}
+			break
 		}
 	}
 
-	// If no status condition set yet, set to Unknown
-	m.updateCertificateRequestReadyStatus(cr, cmmeta.ConditionUnknown)
-}
-
-func (m *Metrics) updateCertificateRequestReadyStatus(cr *cmapi.CertificateRequest, current cmmeta.ConditionStatus) {
-	for _, condition := range readyConditionStatuses {
-		value := 0.0
-
-		if current == condition {
-			value = 1.0
-		}
-
-		m.certificateRequestStatus.With(prometheus.Labels{
-			"name":         cr.Name,
-			"namespace":    cr.Namespace,
-			"condition":    string(condition),
-			"issuer_name":  cr.Spec.IssuerRef.Name,
-			"issuer_kind":  cr.Spec.IssuerRef.Kind,
-			"issuer_group": cr.Spec.IssuerRef.Group,
-		}).Set(value)
+	// If no status determined, set to Pending as default
+	if status == "" {
+		status = CertificateRequestPending
 	}
+
+	m.certificateRequestStatus.With(prometheus.Labels{
+		"name":         cr.Name,
+		"namespace":    cr.Namespace,
+		"condition":    status,
+		"issuer_name":  cr.Spec.IssuerRef.Name,
+		"issuer_kind":  cr.Spec.IssuerRef.Kind,
+		"issuer_group": cr.Spec.IssuerRef.Group,
+	}).Set(1)
 }
 
 // RemoveCertificateRequest will delete the CertificateRequest metrics from continuing to be exposed.
