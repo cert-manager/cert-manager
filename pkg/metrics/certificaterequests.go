@@ -64,19 +64,21 @@ func (m *Metrics) updateCertificateRequestStatus(key string, cr *cmapi.Certifica
 		}
 	}
 
-	// If no status determined, set to Pending as default
-	if status == "" {
-		status = CertificateRequestPending
+	allStatuses := []string{CertificateRequestPending, CertificateRequestDenied, CertificateRequestFailed, CertificateRequestIssued}
+	for _, s := range allStatuses {
+		value := 0.0
+		if s == status {
+			value = 1.0
+		}
+		m.certificateRequestStatus.With(prometheus.Labels{
+			"name":         cr.Name,
+			"namespace":    cr.Namespace,
+			"condition":    s,
+			"issuer_name":  cr.Spec.IssuerRef.Name,
+			"issuer_kind":  cr.Spec.IssuerRef.Kind,
+			"issuer_group": cr.Spec.IssuerRef.Group,
+		}).Set(value)
 	}
-
-	m.certificateRequestStatus.With(prometheus.Labels{
-		"name":         cr.Name,
-		"namespace":    cr.Namespace,
-		"condition":    status,
-		"issuer_name":  cr.Spec.IssuerRef.Name,
-		"issuer_kind":  cr.Spec.IssuerRef.Kind,
-		"issuer_group": cr.Spec.IssuerRef.Group,
-	}).Set(1)
 }
 
 // RemoveCertificateRequest will delete the CertificateRequest metrics from continuing to be exposed.
