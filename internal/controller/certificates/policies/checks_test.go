@@ -2324,7 +2324,7 @@ func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
 				},
 			},
 			expReason:    "IncorrectCertificate",
-			expMessage:   "Issuing certificate as Secret was previously issued for \"foo\"",
+			expMessage:   "Secret was issued for \"foo\". If this message is not transient, you might have two conflicting Certificates pointing to the same secret.",
 			expViolation: true,
 		},
 	}
