@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	route53TTL = 10
+	route53TTL = 300
 )
 
 // DNSProvider implements the util.ChallengeProvider interface
