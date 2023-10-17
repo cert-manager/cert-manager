@@ -178,7 +178,7 @@ func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool
 	name, ok := input.Secret.Annotations[cmapi.CertificateNameKey]
 	if (ok) && // only check if an annotation is present
 		name != input.Certificate.Name {
-		return IncorrectCertificate, fmt.Sprintf("Issuing certificate as Secret was previously issued for %q", name), true
+		return IncorrectCertificate, fmt.Sprintf("Secret was issued for %q. If this message is not transient, you might have two conflicting Certificates pointing to the same secret.", name), true
 	}
 	return "", "", false
 }
