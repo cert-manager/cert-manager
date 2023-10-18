@@ -18,9 +18,9 @@ package certificates
 
 import (
 	"context"
-	"slices"
 	"sort"
 
+	"golang.org/x/exp/slices"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 
