@@ -71,7 +71,8 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 		SecretIsMissingData,    // Make sure the Secret has the required keys set
 		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
 
-		SecretIssuerAnnotationsMismatch, // Make sure the Secret's IssuerRef annotations match the Certificate spec
+		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
+		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
 
 		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
 		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
@@ -88,7 +89,8 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 		SecretIsMissingData,    // Make sure the Secret has the required keys set
 		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
 
-		SecretIssuerAnnotationsMismatch, // Make sure the Secret's IssuerRef annotations match the Certificate spec
+		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
+		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
 
 		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
 		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
