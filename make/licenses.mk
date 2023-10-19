@@ -51,12 +51,12 @@ $(LICENSES_GO_WORK): $(BINDIR)/scratch
 
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
-	$(GO-LICENSES) csv ./...  > $@
+	GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > $@
 
 cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: export GOWORK=$(abspath $(LICENSES_GO_WORK))
 cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd cmd/$* && $(GO-LICENSES) csv ./...  > ../../$@
+	cd cmd/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@
 
 test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: export GOWORK=$(abspath $(LICENSES_GO_WORK))
 test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd test/$* && $(GO-LICENSES) csv ./...  > ../../$@
+	cd test/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@

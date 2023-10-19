@@ -66,7 +66,9 @@ github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,B
 github.com/jmoiron/sqlx,https://github.com/jmoiron/sqlx/blob/v1.3.5/LICENSE,MIT
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
+github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.16.5/LICENSE,MIT
 github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.16.5/LICENSE,Apache-2.0
+github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.16.5/LICENSE,BSD-3-Clause
 github.com/klauspost/compress/internal/snapref,https://github.com/klauspost/compress/blob/v1.16.5/internal/snapref/LICENSE,BSD-3-Clause
 github.com/klauspost/compress/zstd/internal/xxhash,https://github.com/klauspost/compress/blob/v1.16.5/zstd/internal/xxhash/LICENSE.txt,MIT
 github.com/lann/builder,https://github.com/lann/builder/blob/47ae307949d0/LICENSE,MIT
@@ -169,9 +171,11 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client,https://github.com/kuber
 sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.16.1/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v0.8.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
+sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,BSD-3-Clause
 sigs.k8s.io/kustomize/api,https://github.com/kubernetes-sigs/kustomize/blob/6ce0bf390ce3/api/LICENSE,Apache-2.0
 sigs.k8s.io/kustomize/kyaml,https://github.com/kubernetes-sigs/kustomize/blob/6ce0bf390ce3/kyaml/LICENSE,Apache-2.0
 sigs.k8s.io/kustomize/kyaml/internal/forked/github.com/go-yaml/yaml,https://github.com/kubernetes-sigs/kustomize/blob/6ce0bf390ce3/kyaml/internal/forked/github.com/go-yaml/yaml/LICENSE,MIT
 sigs.k8s.io/kustomize/kyaml/internal/forked/github.com/qri-io/starlib/util,https://github.com/kubernetes-sigs/kustomize/blob/6ce0bf390ce3/kyaml/internal/forked/github.com/qri-io/starlib/util/LICENSE,MIT
 sigs.k8s.io/structured-merge-diff/v4,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.3.0/LICENSE,Apache-2.0
 sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.3.0/LICENSE,MIT
+sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.3.0/LICENSE,BSD-3-Clause
