@@ -76,7 +76,7 @@ github.com/hashicorp/hcl,https://github.com/hashicorp/hcl/blob/v1.0.1-vault-5/LI
 github.com/hashicorp/vault/api,https://github.com/hashicorp/vault/blob/api/v1.10.0/api/LICENSE,MPL-2.0
 github.com/hashicorp/vault/sdk/helper,https://github.com/hashicorp/vault/blob/sdk/v0.10.0/sdk/LICENSE,MPL-2.0
 github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,BSD-3-Clause
-github.com/jmespath/go-jmespath,Unknown,Unknown
+github.com/jmespath/go-jmespath,https://github.com/jmespath/go-jmespath/blob/b0104c826a24/LICENSE,Apache-2.0
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
 github.com/kr/pretty,https://github.com/kr/pretty/blob/v0.3.1/License,MIT
