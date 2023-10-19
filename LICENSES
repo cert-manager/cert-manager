@@ -20,7 +20,6 @@ github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENS
 github.com/cenkalti/backoff/v3,https://github.com/cenkalti/backoff/blob/v3.0.0/LICENSE,MIT
 github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.2.1/LICENSE,MIT
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
-github.com/cert-manager/cert-manager/make/config/samplewebhook/sample,https://github.com/cert-manager/cert-manager/blob/HEAD/make/licenses.mk,Apache-2.0
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/azuredns/LICENSE,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/clouddns/LICENSE,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare,https://github.com/cert-manager/cert-manager/blob/HEAD/pkg/issuer/acme/dns/cloudflare/LICENSE,MIT
@@ -32,6 +31,7 @@ github.com/coreos/go-systemd/v22,https://github.com/coreos/go-systemd/blob/v22.5
 github.com/cpu/goacmedns,https://github.com/cpu/goacmedns/blob/v0.1.1/LICENSE,MIT
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
 github.com/digitalocean/godo,https://github.com/digitalocean/godo/blob/v1.93.0/LICENSE.txt,MIT
+github.com/digitalocean/godo,https://github.com/digitalocean/godo/blob/v1.93.0/LICENSE.txt,BSD-3-Clause
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.1/LICENSE,MIT
 github.com/evanphx/json-patch,https://github.com/evanphx/json-patch/blob/v5.6.0/LICENSE,BSD-3-Clause
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6.0/v5/LICENSE,BSD-3-Clause
@@ -51,6 +51,7 @@ github.com/golang/groupcache/lru,https://github.com/golang/groupcache/blob/41bb1
 github.com/golang/protobuf,https://github.com/golang/protobuf/blob/v1.5.3/LICENSE,BSD-3-Clause
 github.com/golang/snappy,https://github.com/golang/snappy/blob/v0.0.4/LICENSE,BSD-3-Clause
 github.com/google/cel-go,https://github.com/google/cel-go/blob/v0.12.6/LICENSE,Apache-2.0
+github.com/google/cel-go,https://github.com/google/cel-go/blob/v0.12.6/LICENSE,BSD-3-Clause
 github.com/google/gnostic,https://github.com/google/gnostic/blob/v0.6.9/LICENSE,Apache-2.0
 github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.5.9/LICENSE,BSD-3-Clause
 github.com/google/go-querystring/query,https://github.com/google/go-querystring/blob/v1.1.0/LICENSE,BSD-3-Clause
@@ -72,7 +73,7 @@ github.com/hashicorp/hcl,https://github.com/hashicorp/hcl/blob/v1.0.0/LICENSE,MP
 github.com/hashicorp/vault/api,https://github.com/hashicorp/vault/blob/api/v1.9.1/api/LICENSE,MPL-2.0
 github.com/hashicorp/vault/sdk/helper,https://github.com/hashicorp/vault/blob/sdk/v0.9.0/sdk/LICENSE,MPL-2.0
 github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,BSD-3-Clause
-github.com/jmespath/go-jmespath,https://github.com/jmespath/go-jmespath/blob/v0.4.0/LICENSE,Apache-2.0
+github.com/jmespath/go-jmespath,Unknown,Unknown
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
 github.com/kr/pretty,https://github.com/kr/pretty/blob/v0.3.1/License,MIT
@@ -163,6 +164,8 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client,https://github.com/kuber
 sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.15.0/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v0.7.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
+sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,BSD-3-Clause
 sigs.k8s.io/structured-merge-diff/v4,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.2.3/LICENSE,Apache-2.0
 sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.3.0/LICENSE,MIT
+sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.3.0/LICENSE,BSD-3-Clause
 software.sslmate.com/src/go-pkcs12,https://github.com/SSLMate/go-pkcs12/blob/v0.2.0/LICENSE,BSD-3-Clause

@@ -33,7 +33,10 @@ TOOLS += cosign=v1.12.1
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
 TOOLS += release-notes=v0.14.0
 TOOLS += goimports=v0.1.12
-TOOLS += go-licenses=v1.6.0
+# https://pkg.go.dev/github.com/google/go-licenses?tab=versions
+# This uses a hash because the upstream project has been slow to release
+# We want the latest changes which massively speed up license checking
+TOOLS += go-licenses=9a41918e8c1e254f6472bdd8454b6030d445b255
 TOOLS += gotestsum=v1.8.2
 TOOLS += rclone=v1.59.2
 TOOLS += trivy=v0.32.0
