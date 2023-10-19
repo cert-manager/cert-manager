@@ -54,7 +54,9 @@ TOOLS += release-notes=v0.15.1
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 TOOLS += goimports=v0.12.0
 # https://pkg.go.dev/github.com/google/go-licenses?tab=versions
-TOOLS += go-licenses=v1.6.0
+# This uses a hash because the upstream project has been slow to release
+# We want the latest changes which massively speed up license checking
+TOOLS += go-licenses=9a41918e8c1e254f6472bdd8454b6030d445b255
 # https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
 TOOLS += gotestsum=v1.10.1
 # https://pkg.go.dev/github.com/google/go-containerregistry/cmd/crane?tab=versions
