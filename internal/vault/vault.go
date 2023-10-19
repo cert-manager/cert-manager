@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -224,6 +225,14 @@ func (v *Vault) setToken(client Client) error {
 func (v *Vault) newConfig() (*vault.Config, error) {
 	cfg := vault.DefaultConfig()
 	cfg.Address = v.issuer.GetSpec().Vault.Server
+
+	urlParse, err := url.Parse(cfg.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing vault url: %w", err)
+	}
+	if urlParse.Host == "" {
+		return nil, fmt.Errorf("host not found in vault server url: %s", cfg.Address)
+	}
 
 	caBundle, err := v.caBundle()
 	if err != nil {
