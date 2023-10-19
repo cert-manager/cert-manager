@@ -172,6 +172,17 @@ func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 	return "", "", false
 }
 
+// SecretCertificateNameAnnotationsMismatch - When the CertificateName annotation is defined,
+// it must match the name of the Certificate.
+func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool) {
+	name, ok := input.Secret.Annotations[cmapi.CertificateNameKey]
+	if (ok) && // only check if an annotation is present
+		name != input.Certificate.Name {
+		return IncorrectCertificate, fmt.Sprintf("Secret was issued for %q. If this message is not transient, you might have two conflicting Certificates pointing to the same secret.", name), true
+	}
+	return "", "", false
+}
+
 // SecretPublicKeyDiffersFromCurrentCertificateRequest checks that the current CertificateRequest
 // contains a CSR that is signed by the key stored in the Secret. A failure is often caused by the
 // Secret being changed outside of the control of cert-manager, causing the current CertificateRequest

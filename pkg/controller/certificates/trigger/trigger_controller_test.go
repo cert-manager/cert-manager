@@ -24,7 +24,9 @@ import (
 
 	logtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
@@ -54,7 +56,9 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 		// Certificate to be synced for the test. If not set, the 'key' will be
 		// passed to ProcessItem instead.
-		existingCertificate *cmapi.Certificate
+		existingCertificate        *cmapi.Certificate
+		existingCertManagerObjects []runtime.Object
+		existingKubeObjects        []runtime.Object
 
 		mockDataForCertificateReturn    policies.Input
 		mockDataForCertificateReturnErr error
@@ -238,6 +242,136 @@ func Test_controller_ProcessItem(t *testing.T) {
 				ObservedGeneration: 42,
 			}},
 		},
+		"should not set Issuing=True when other Ceritificates with the same secret name are found, the secret does not exist and the certificate is not the first": {
+			existingCertificate: gen.Certificate("cert-2",
+				gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateSecretName("secret-1"),
+			),
+			existingCertManagerObjects: []runtime.Object{
+				gen.Certificate("cert-1",
+					gen.SetCertificateCreationTimestamp(fixedNow),
+					gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example.com"),
+					gen.SetCertificateSecretName("secret-1"),
+				),
+			},
+			wantDataForCertificateCalled: false,
+			wantShouldReissueCalled:      false,
+		},
+		"should set Issuing=True when other Ceritificates with the same secret name are found, the secret does not exist and the certificate is the first": {
+			existingCertificate: gen.Certificate("cert-1",
+				gen.SetCertificateCreationTimestamp(fixedNow),
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateSecretName("secret-1"),
+			),
+			existingCertManagerObjects: []runtime.Object{
+				gen.Certificate("cert-2",
+					gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
+					gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example.com"),
+					gen.SetCertificateSecretName("secret-1"),
+				),
+			},
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{},
+			wantShouldReissueCalled:      true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return "ForceTriggered", "Re-issuance forced by unit test case", true
+				}
+			},
+			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantConditions: []cmapi.CertificateCondition{{
+				Type:               "Issuing",
+				Status:             "True",
+				Reason:             "ForceTriggered",
+				Message:            "Re-issuance forced by unit test case",
+				LastTransitionTime: &fixedNow,
+			}},
+		},
+		"should set Issuing=True when other Ceritificates with the same secret name are found, the secret does exist and the certificate is the owner": {
+			existingCertificate: gen.Certificate("cert-2",
+				gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateSecretName("secret-1"),
+			),
+			existingCertManagerObjects: []runtime.Object{
+				gen.Certificate("cert-1",
+					gen.SetCertificateCreationTimestamp(fixedNow),
+					gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example.com"),
+					gen.SetCertificateSecretName("secret-1"),
+				),
+			},
+			existingKubeObjects: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-1",
+						Namespace: "testns",
+						Annotations: map[string]string{
+							cmapi.CertificateNameKey: "cert-2",
+						},
+					},
+				},
+			},
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{},
+			wantShouldReissueCalled:      true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return "ForceTriggered", "Re-issuance forced by unit test case", true
+				}
+			},
+			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantConditions: []cmapi.CertificateCondition{{
+				Type:               "Issuing",
+				Status:             "True",
+				Reason:             "ForceTriggered",
+				Message:            "Re-issuance forced by unit test case",
+				LastTransitionTime: &fixedNow,
+			}},
+		},
+		"should not set Issuing=True when other Ceritificates with the same secret name are found, the secret does exist and the certificate is first but not the owner": {
+			existingCertificate: gen.Certificate("cert-1",
+				gen.SetCertificateCreationTimestamp(fixedNow),
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateSecretName("secret-1"),
+			),
+			existingCertManagerObjects: []runtime.Object{
+				gen.Certificate("cert-2",
+					gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
+					gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example.com"),
+					gen.SetCertificateSecretName("secret-1"),
+				),
+			},
+			existingKubeObjects: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-1",
+						Namespace: "testns",
+						Annotations: map[string]string{
+							cmapi.CertificateNameKey: "cert-2",
+						},
+					},
+				},
+			},
+			wantDataForCertificateCalled: false,
+			wantShouldReissueCalled:      false,
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -247,6 +381,12 @@ func Test_controller_ProcessItem(t *testing.T) {
 			}
 			if test.existingCertificate != nil {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.existingCertificate)
+			}
+			if test.existingCertManagerObjects != nil {
+				builder.CertManagerObjects = append(builder.CertManagerObjects, test.existingCertManagerObjects...)
+			}
+			if test.existingKubeObjects != nil {
+				builder.KubeObjects = append(builder.KubeObjects, test.existingKubeObjects...)
 			}
 			builder.Init()
 

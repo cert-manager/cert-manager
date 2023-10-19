@@ -2277,3 +2277,64 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 		})
 	}
 }
+
+func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
+	crt := gen.Certificate("test-certificate")
+
+	tests := map[string]struct {
+		input Input
+
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"without a CertificateName annotation, should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret:      &corev1.Secret{},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"with a matching CertificateName annotation, should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							cmapi.CertificateNameKey: "test-certificate",
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"with a non-matching CertificateName annotation, should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							cmapi.CertificateNameKey: "foo",
+						},
+					},
+				},
+			},
+			expReason:    "IncorrectCertificate",
+			expMessage:   "Secret was issued for \"foo\". If this message is not transient, you might have two conflicting Certificates pointing to the same secret.",
+			expViolation: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretCertificateNameAnnotationsMismatch(test.input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expMessage, gotMessage)
+			assert.Equal(t, test.expViolation, gotViolation)
+		})
+	}
+}
