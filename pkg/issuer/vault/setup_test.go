@@ -384,14 +384,14 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectErr: "host not found in vault server url: https:/vault.example.com",
+			expectErr: "Get \"https:///vault.example.com/v1/sys/health\": http: no Host in request URL",
 		},
 		{
 			name: "server with leading whitespace should fail to parse",
 			givenIssuer: v1.IssuerConfig{
 				Vault: &v1.VaultIssuer{
 					Path:   "pki_int",
-					Server: " https:///vault.example.com",
+					Server: " https://vault.example.com",
 					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
@@ -402,7 +402,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectErr: "error parsing vault url: parse \" https:///vault.example.com\": first path segment in URL cannot contain colon",
+			expectErr: "error initializing Vault client: parse \" https://vault.example.com\": first path segment in URL cannot contain colon",
 		},
 	}
 	for _, tt := range tests {
