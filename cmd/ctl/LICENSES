@@ -105,8 +105,9 @@ github.com/xeipuuv/gojsonpointer,https://github.com/xeipuuv/gojsonpointer/blob/0
 github.com/xeipuuv/gojsonreference,https://github.com/xeipuuv/gojsonreference/blob/bd5ef7bd5415/LICENSE-APACHE-2.0.txt,Apache-2.0
 github.com/xeipuuv/gojsonschema,https://github.com/xeipuuv/gojsonschema/blob/v1.2.0/LICENSE-APACHE-2.0.txt,Apache-2.0
 github.com/xlab/treeprint,https://github.com/xlab/treeprint/blob/v1.2.0/LICENSE,MIT
-go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob/v1.15.0/LICENSE,Apache-2.0
-go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.15.0/trace/LICENSE,Apache-2.0
+go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob/v1.19.0/LICENSE,Apache-2.0
+go.opentelemetry.io/otel/metric,https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.19.0/metric/LICENSE,Apache-2.0
+go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.19.0/trace/LICENSE,Apache-2.0
 go.starlark.net,https://github.com/google/starlark-go/blob/a134d8f9ddca/LICENSE,BSD-3-Clause
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.25.0/LICENSE.txt,MIT
@@ -120,7 +121,7 @@ golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.13.0:LICENSE,BSD-3
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.13.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
 google.golang.org/genproto/googleapis/rpc/status,https://github.com/googleapis/go-genproto/blob/2d3300fd4832/googleapis/rpc/LICENSE,Apache-2.0
-google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.57.0/LICENSE,Apache-2.0
+google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.58.2/LICENSE,Apache-2.0
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.31.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
