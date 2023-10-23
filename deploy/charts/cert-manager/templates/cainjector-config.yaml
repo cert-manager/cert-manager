@@ -1,6 +1,6 @@
 {{- if .Values.cainjector.config -}}
-{{- required ".Values.cainjector.config.apiVersion must be set !" .Values.cainjector.config.apiVersion -}}
-{{- required ".Values.cainjector.config.kind must be set !" .Values.cainjector.config.kind -}}
+{{- $_ := .Values.cainjector.config.apiVersion | required ".Values.cainjector.config.apiVersion must be set !" -}}
+{{- $_ := .Values.cainjector.config.kind | required ".Values.cainjector.config.kind must be set !" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
