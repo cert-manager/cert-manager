@@ -26,7 +26,7 @@ CRI_ARCH := $(HOST_ARCH)
 # is set in one place only.
 K8S_VERSION := 1.28
 
-IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.8.1@sha256:8f754c28c4a98dc818f0fb01a083a3c42694af37fb3874f468d5a2db4d4283e6
+IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:0115d7e01987c13e1be90b09c223c3e0d8e9a92e97c0421e712ad3577e2d78e5
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:031d2da484f3d89c78007cbb1cf1d7ae992e069683a2cdca0a0efb63a63fc735
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:5371ead07ebd09ff858f568a07b6807e8568772af61e626c9a0a5137bd7e62db
 IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
@@ -34,7 +34,7 @@ IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:b6ea4da6cb689985
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
 IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:1570f04e96fb5e0ad71c2de61fee71c8d55b2fe5b7c827ce65e81bf7cc99bcbd
 
-IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:e88220610f88c5e4aa76a07a49da516b0b6701be11b62481105a8a16478d7966
+IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:3cdc716f0395886008c5e49972297adf1af87eeef472f71ff8de11bf53f25766
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:acf77f4fd08056941b5640d9489d46f2a1777e29d574e51926eac5250144dbd2
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:3ec997a6a26f600e4c2e439c3671e9f21c83a73bf486134eb6732481d0e371ca
 IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
@@ -173,21 +173,12 @@ $(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists | $(NEEDS_KIND)
 # We don't pull using both the digest and tag because crane replaces the
 # tag with "i-was-a-digest". We still check that the downloaded image
 # matches the digest.
-$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
+$(call image-tar,kind) $(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
 	@mkdir -p $(dir $@)
-	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest --platform=linux/$(CRI_ARCH) $(IMAGE) | sha256sum)
-	$(CRANE) pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
-
-# Same as above, except it supports multiarch images.
-$(call image-tar,kind) $(call image-tar,vault): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
-	@$(eval IMAGE=$(subst +,:,$*))
-	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
-	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
-	@mkdir -p $(dir $@)
-	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest $(IMAGE) | sha256sum)
+	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest --platform=linux/$(CRI_ARCH) $(IMAGE_WITHOUT_DIGEST) | sha256sum)
 	$(CRANE) pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
 
 # Since we dynamically install Vault via Helm during the end-to-end tests,
@@ -308,7 +299,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 4.7.1 \
+		--version 4.7.3 \
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
