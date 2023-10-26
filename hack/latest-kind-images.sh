@@ -64,7 +64,7 @@ LATEST_127_DIGEST=$(crane digest $KIND_IMAGE_REPO:$LATEST_127_TAG)
 
 # k8s 1.28 is manually added to ensure that we use the exact documented tag as per kind recommendation
 LATEST_128_TAG=v1.28.0
-LATEST_128_DIGEST=sha256:9f3ff58f19dcf1a0611d11e8ac989fdb30a28f40f236f59f0bea31fb956ccf5c
+LATEST_128_DIGEST=sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31
 
 cat << EOF > ./make/kind_images.sh
 # Copyright 2022 The cert-manager Authors.
