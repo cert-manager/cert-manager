@@ -155,10 +155,10 @@ endef
 # get the message "warning: undefined variable 'CI'".
 .PHONY: preload-kind-image
 ifeq ($(shell printenv CI),)
-preload-kind-image: | $(NEEDS_CRANE)
+preload-kind-image:
 	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
-preload-kind-image: $(call image-tar,kind) | $(NEEDS_CRANE)
+preload-kind-image: $(call image-tar,kind)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
@@ -167,19 +167,49 @@ LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) 
 $(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists | $(NEEDS_KIND)
 	$(KIND) load image-archive --name=$(shell cat $(BINDIR)/scratch/kind-exists) $*
 
+# Download a single-arch image
+#
+# The input variable IMAGE_example_ARCH must contain the digest of the single-arch image manifest,
+# NOT the multi-arch manifest.
+#
 # We use crane instead of docker when pulling images, which saves some time
 # since we don't care about having the image available to docker.
 #
 # We don't pull using both the digest and tag because crane replaces the
 # tag with "i-was-a-digest". We still check that the downloaded image
 # matches the digest.
-$(call image-tar,kind) $(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
+#
+# We check that the remote image tag and digest still match what is pinned in
+# the `IMAGE_example_arch` variables (above).
+# This is useful because:
+# 1. It tells us if the image maintainers have deliberately or maliciously
+#    pushed a different image and re-used an existing tag.
+# 2. It makes it easy to learn the new digest when updating the pinned image
+#    tag. The rule will fail and the new digest will be printed out.
+# 3. It prevents us accidentally using the wrong digest when we pin the images
+#    in the variables above.
+$(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
 	@mkdir -p $(dir $@)
 	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest --platform=linux/$(CRI_ARCH) $(IMAGE_WITHOUT_DIGEST) | sha256sum)
 	$(CRANE) pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
+
+# Download the Kind node image
+#
+# This is handled differently from the other image downloads, because:
+# 1. The pinned Kind image references are automatically generated using
+#    `hack/latest-kind-image.sh`.
+# 2. It uses digests that point to the multi-arch manifest, rather than the
+#    actual image.
+# 3. The Kind image tags DO change; each new Kind release has a set of Kind node
+#    images tagged using the Kubernetes version. Subsequent Kind releases may
+#    have an incompatible Kind node image format, but re-use the same Kubernetes
+#    version tags.
+$(call image-tar,kind): $(NEEDS_CRANE)
+	@mkdir -p $(dir $@)
+	$(CRANE) pull $(IMAGE_kind_$(CRI_ARCH)) $@ --platform linux/$(CRI_ARCH)
 
 # Since we dynamically install Vault via Helm during the end-to-end tests,
 # we need its image to be retagged to a well-known tag "local/vault:local".
