@@ -487,6 +487,40 @@ apiVersion: kyverno.io/v1
 kind: Policy
 metadata:
   annotations:
+    policies.kyverno.io/category: Best Practices, EKS Best Practices, PSP Migration
+    policies.kyverno.io/description: 'A read-only root file system helps to enforce
+      an immutable infrastructure strategy; the container only needs to write on the
+      mounted volume that persists the state. An immutable root filesystem can also
+      prevent malicious binaries from writing to the host system. This policy validates
+      that containers define a securityContext with `readOnlyRootFilesystem: true`.'
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Require Read-Only Root Filesystem
+  name: require-ro-rootfs
+  namespace: cert-manager
+spec:
+  background: true
+  rules:
+  - match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: validate-readOnlyRootFilesystem
+    validate:
+      message: Root filesystem must be read-only.
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              readOnlyRootFilesystem: true
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
     kyverno.io/kyverno-version: 1.6.0
     policies.kyverno.io/category: Pod Security Standards (Restricted)
