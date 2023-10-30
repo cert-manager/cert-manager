@@ -214,6 +214,18 @@ podLabels: {}
 #     - "1.1.1.1"
 #     - "8.8.8.8"
 
+# Optional hostAliases, useful if you have issues with the selfCheck.
+hostAliases: []
+# - ip: 127.0.0.1
+#   hostnames:
+#   - foo.local
+#   - bar.local
+# - ip: 10.1.2.3
+#   hostnames:
+#   - foo.remote
+#   - bar.remote
+
+
 nodeSelector:
   kubernetes.io/os: linux
 

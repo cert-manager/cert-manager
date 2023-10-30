@@ -133,6 +133,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `podDisruptionBudget.maxUnavailable` | Configures the maximum unavailable pods for voluntary disruptions. Cannot used if `minAvailable` is set. |  |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
 | `podDnsConfig` | Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config) |  |
+| `hostAliases` | HostAliases to add to the cert-manager pod | `[]` |
 | `podLabels` | Labels to add to the cert-manager pod | `{}` |
 | `serviceLabels` | Labels to add to the cert-manager controller service | `{}` |
 | `serviceAnnotations` | Annotations to add to the cert-manager service | `{}` |
