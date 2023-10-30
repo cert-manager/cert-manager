@@ -238,7 +238,7 @@ E2E_SETUP_OPTION_BESTPRACTICE ?=
 ## Kyverno and the policies in make/config/kyverno have been applied.
 ##
 ## @category Development
-E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/f0cc0f3b88846969dd7e9894cddd43391a3135d1/public/docs/installation/best-practice/values.best-practice.yaml
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/ea5db62772e6b9d1430b9d63f581e74d5c18b627/public/docs/installation/best-practice/values.best-practice.yaml
 E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL_SUM := $(shell sha256sum <<<$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) | cut -d ' ' -f 1)
 
 ## A local Helm values file containing best-practice configuration values.
