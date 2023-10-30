@@ -235,7 +235,17 @@ prometheus:
     annotations: {}
     honorLabels: false
     endpointAdditionalProperties: {}
-
+  # Note: Enabling both PodMonitor and ServiceMonitor is mutually exclusive, enabling both will result in a error.
+  podmonitor:
+    enabled: false
+    prometheusInstance: default
+    path: /metrics
+    interval: 60s
+    scrapeTimeout: 30s
+    labels: {}
+    annotations: {}
+    honorLabels: false
+    endpointAdditionalProperties: {}
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
 # https_proxy: "https://proxy:8080"
