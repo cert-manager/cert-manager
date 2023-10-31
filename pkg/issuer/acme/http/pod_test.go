@@ -116,6 +116,7 @@ func TestEnsurePod(t *testing.T) {
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
+							ReadOnlyRootFilesystem:   ptr.To(true),
 							AllowPrivilegeEscalation: ptr.To(false),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},

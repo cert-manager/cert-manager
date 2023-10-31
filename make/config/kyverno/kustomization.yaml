@@ -1,24 +1,40 @@
-# This Kustomization is used to adapt the upstream Pod security policy for use
-# specifically in the cert-manager namespace.
-# * Changes ClusterPolicy resources to namespaced Policy.
-# * Changes the failure action of the restrict_automount_sa_token policy from Audit to Enforce.
+# This Kustomization is used to adapt the Kyverno policies downloaded from
+# https://kyverno.io/policies/, for use in the cert-manager
+# namespace and in the E2E test namespaces.
+#
+# * Changes the failure action of all ClusterPolicy resources from Audit to Enforce.
+# * Adds exclude` fields to all ClusterPolicy resources to allow the
+#   installation of non-compliant E2E test components such as ingress-nginx and
+#   pebble.
+#   The method used is a bit of a hack, because it is difficult to get Kustomize
+#   to patch **all** the rules in the Kyverno ClusterPolicy custom resource.
+#   See https://github.com/kyverno/kyverno/issues/2408#issuecomment-1125926525
 #
 # Use as follows:
 #  kustomize build . > policy.yaml
+#
 resources:
   - https://github.com/kyverno/policies/pod-security/enforce
   - https://raw.githubusercontent.com/kyverno/policies/main/other/res/restrict-automount-sa-token/restrict-automount-sa-token.yaml
   - https://github.com/kyverno/policies/raw/main//best-practices/require-ro-rootfs/require-ro-rootfs.yaml
+
 patches:
-  - patch: |-
-      - op: replace
-        path: /kind
-        value: Policy
-      - op: add
-        path: /metadata/namespace
-        value: cert-manager
+  - target:
+      kind: ClusterPolicy
+    patch: |-
       - op: replace
         path: /spec/validationFailureAction
         value: Enforce
-    target:
-      kind: ClusterPolicy
+      - op: add
+        path: /spec/rules/0/exclude
+        value:
+          resources:
+            namespaces:
+              - bind
+              - e2e-vault
+              - gateway-system
+              - ingress-nginx
+              - pebble
+              - projectcontour
+              - sample-external-issuer-system
+              - samplewebhook
