@@ -564,6 +564,10 @@ cainjector:
   # Enable profiling for cainjector
   # - --enable-profiling=true
 
+  # Comma separated list of feature gates that should be enabled on the
+  # cainjector pod.
+  featureGates: ""
+
   resources: {}
     # requests:
     #   cpu: 10m
