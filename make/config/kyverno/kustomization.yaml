@@ -9,16 +9,24 @@ resources:
   - https://github.com/kyverno/policies/pod-security/enforce
   - https://raw.githubusercontent.com/kyverno/policies/main/other/res/restrict-automount-sa-token/restrict-automount-sa-token.yaml
   - https://github.com/kyverno/policies/raw/main//best-practices/require-ro-rootfs/require-ro-rootfs.yaml
+
 patches:
-  - patch: |-
-      - op: replace
-        path: /kind
-        value: Policy
-      - op: add
-        path: /metadata/namespace
-        value: cert-manager
+  - target:
+      kind: ClusterPolicy
+    patch: |-
       - op: replace
         path: /spec/validationFailureAction
         value: Enforce
-    target:
-      kind: ClusterPolicy
+      - op: add
+        path: /spec/rules/0/exclude
+        value:
+          resources:
+            namespaces:
+              - bind
+              - e2e-vault
+              - gateway-system
+              - ingress-nginx
+              - pebble
+              - projectcontour
+              - sample-external-issuer-system
+              - samplewebhook

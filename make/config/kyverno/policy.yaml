@@ -1,5 +1,5 @@
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -12,11 +12,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow Capabilities
   name: disallow-capabilities
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -54,7 +64,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -67,11 +77,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow Capabilities (Strict)
   name: disallow-capabilities-strict
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -118,7 +138,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -133,11 +153,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow Host Namespaces
   name: disallow-host-namespaces
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -154,7 +184,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -168,11 +198,21 @@ metadata:
     policies.kyverno.io/subject: Pod,Volume
     policies.kyverno.io/title: Disallow hostPath
   name: disallow-host-path
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -188,7 +228,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -201,11 +241,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow hostPorts
   name: disallow-host-ports
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -229,7 +279,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -244,11 +294,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow hostProcess
   name: disallow-host-process
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -276,7 +336,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -289,11 +349,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow Privilege Escalation
   name: disallow-privilege-escalation
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -317,7 +387,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -330,11 +400,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow Privileged Containers
   name: disallow-privileged-containers
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -358,7 +438,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -372,11 +452,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow procMount
   name: disallow-proc-mount
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -401,7 +491,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -414,11 +504,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Disallow SELinux
   name: disallow-selinux
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -484,7 +584,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     policies.kyverno.io/category: Best Practices, EKS Best Practices, PSP Migration
@@ -498,11 +598,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Require Read-Only Root Filesystem
   name: require-ro-rootfs
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -518,7 +628,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -531,11 +641,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Require Run As Non-Root User
   name: require-run-as-non-root-user
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -562,7 +682,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -576,11 +696,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Require runAsNonRoot
   name: require-run-as-nonroot
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -617,7 +747,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -633,11 +763,21 @@ metadata:
     policies.kyverno.io/subject: Pod, Annotation
     policies.kyverno.io/title: Restrict AppArmor
   name: restrict-apparmor-profiles
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -654,7 +794,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     policies.kyverno.io/category: Sample, EKS Best Practices
@@ -669,11 +809,21 @@ metadata:
     policies.kyverno.io/subject: Pod,ServiceAccount
     policies.kyverno.io/title: Restrict Auto-Mount of Service Account Tokens
   name: restrict-automount-sa-token
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -693,7 +843,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -706,11 +856,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Restrict Seccomp
   name: restrict-seccomp
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -741,7 +901,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -757,11 +917,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Restrict Seccomp (Strict)
   name: restrict-seccomp-strict
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -805,7 +975,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -820,11 +990,21 @@ metadata:
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/title: Restrict sysctls
   name: restrict-sysctls
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
@@ -844,7 +1024,7 @@ spec:
   validationFailureAction: Enforce
 ---
 apiVersion: kyverno.io/v1
-kind: Policy
+kind: ClusterPolicy
 metadata:
   annotations:
     kyverno.io/kubernetes-version: 1.22-1.23
@@ -859,11 +1039,21 @@ metadata:
     policies.kyverno.io/subject: Pod,Volume
     policies.kyverno.io/title: Restrict Volume Types
   name: restrict-volume-types
-  namespace: cert-manager
 spec:
   background: true
   rules:
-  - match:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
       any:
       - resources:
           kinds:
