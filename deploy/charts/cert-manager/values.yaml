@@ -181,7 +181,7 @@ containerSecurityContext:
   capabilities:
     drop:
     - ALL
-  # readOnlyRootFilesystem: true
+  readOnlyRootFilesystem: true
   # runAsNonRoot: true
 
 
@@ -345,7 +345,7 @@ webhook:
     capabilities:
       drop:
       - ALL
-    # readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
   # Optional additional annotations to add to the webhook Deployment
@@ -548,7 +548,7 @@ cainjector:
     capabilities:
       drop:
       - ALL
-    # readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
 
@@ -658,7 +658,7 @@ startupapicheck:
     capabilities:
       drop:
       - ALL
-    # readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
   # Timeout for 'kubectl check api' command

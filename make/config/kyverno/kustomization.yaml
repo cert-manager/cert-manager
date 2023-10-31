@@ -5,9 +5,10 @@
 #
 # Use as follows:
 #  kustomize build . > policy.yaml
-bases:
+resources:
   - https://github.com/kyverno/policies/pod-security/enforce
-  - https://raw.githubusercontent.com/kyverno/policies/main/other/restrict_automount_sa_token/restrict_automount_sa_token.yaml
+  - https://raw.githubusercontent.com/kyverno/policies/main/other/res/restrict-automount-sa-token/restrict-automount-sa-token.yaml
+  - https://github.com/kyverno/policies/raw/main//best-practices/require-ro-rootfs/require-ro-rootfs.yaml
 patches:
   - patch: |-
       - op: replace
@@ -18,6 +19,6 @@ patches:
         value: cert-manager
       - op: replace
         path: /spec/validationFailureAction
-        value: enforce
+        value: Enforce
     target:
       kind: ClusterPolicy
