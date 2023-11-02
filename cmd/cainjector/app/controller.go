@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/sync/errgroup"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,6 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
@@ -76,8 +76,6 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		return fmt.Errorf("error creating manager: %v", err)
 	}
 
-	g, gctx := errgroup.WithContext(ctx)
-
 	// if a PprofAddr is provided, start the pprof listener
 	if opts.EnablePprof {
 		pprofListener, err := net.Listen("tcp", opts.PprofAddress)
@@ -92,23 +90,23 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		server := &http.Server{
 			Handler: profilerMux,
 		}
-		g.Go(func() error {
-			<-gctx.Done()
+
+		mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+			<-ctx.Done()
+
 			// allow a timeout for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			if err := server.Shutdown(ctx); err != nil {
-				return err
-			}
-			return nil
-		})
-		g.Go(func() error {
+			return server.Shutdown(shutdownCtx)
+		}))
+
+		mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 			if err := server.Serve(pprofListener); err != http.ErrServerClosed {
 				return err
 			}
 			return nil
-		})
+		}))
 	}
 
 	// If cainjector has been configured to watch Certificate CRDs (true by default)
@@ -152,13 +150,16 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			cainjector.CustomResourceDefinitionName:       opts.EnableInjectableConfig.CustomResourceDefinitions,
 		},
 	}
-	err = cainjector.RegisterAllInjectors(gctx, mgr, setupOptions)
+
+	err = cainjector.RegisterAllInjectors(ctx, mgr, setupOptions)
 	if err != nil {
 		log.Error(err, "failed to register controllers", err)
 		return err
 	}
-	if err = mgr.Start(gctx); err != nil {
+
+	if err = mgr.Start(ctx); err != nil {
 		return fmt.Errorf("error running manager: %v", err)
 	}
+
 	return nil
 }

@@ -40,7 +40,6 @@ go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.25.0/LICENSE.txt,MIT
 golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/92128663:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.17.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.12.0:LICENSE,BSD-3-Clause
-golang.org/x/sync/errgroup,https://cs.opensource.google/go/x/sync/+/v0.3.0:LICENSE,BSD-3-Clause
 golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.13.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.13.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.13.0:LICENSE,BSD-3-Clause
