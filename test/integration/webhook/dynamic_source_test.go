@@ -46,7 +46,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -111,7 +111,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 

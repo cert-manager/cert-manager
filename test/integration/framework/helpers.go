@@ -23,39 +23,58 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"k8s.io/kubectl/pkg/util/openapi"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 )
 
-func NewEventRecorder(t *testing.T) record.EventRecorder {
+func NewEventRecorder(t *testing.T, scheme *runtime.Scheme) record.EventRecorder {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(t.Logf)
-	return eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: t.Name()})
+	return eventBroadcaster.NewRecorder(scheme, corev1.EventSource{Component: t.Name()})
 }
 
-func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, internalinformers.KubeInformerFactory, cmclient.Interface, cminformers.SharedInformerFactory) {
-	cl, err := kubernetes.NewForConfig(config)
+func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, internalinformers.KubeInformerFactory, cmclient.Interface, cminformers.SharedInformerFactory, *runtime.Scheme) {
+	httpClient, err := rest.HTTPClientFor(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl, err := kubernetes.NewForConfigAndClient(config, httpClient)
 	if err != nil {
 		t.Fatal(err)
 	}
 	factory := internalinformers.NewBaseKubeInformerFactory(cl, 0, "")
-	cmCl, err := cmclient.NewForConfig(config)
+
+	cmCl, err := cmclient.NewForConfigAndClient(config, httpClient)
 	if err != nil {
 		t.Fatal(err)
 	}
 	cmFactory := cminformers.NewSharedInformerFactory(cmCl, 0)
-	return cl, factory, cmCl, cmFactory
+
+	scheme := runtime.NewScheme()
+	kscheme.AddToScheme(scheme)
+	certmgrscheme.AddToScheme(scheme)
+	apiext.AddToScheme(scheme)
+	apireg.AddToScheme(scheme)
+	gwapi.AddToScheme(scheme)
+
+	return cl, factory, cmCl, cmFactory, scheme
 }
 
 func StartInformersAndController(t *testing.T, factory internalinformers.KubeInformerFactory, cmFactory cminformers.SharedInformerFactory, c controllerpkg.Interface) StopFunc {

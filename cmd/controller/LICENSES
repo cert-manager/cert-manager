@@ -140,7 +140,6 @@ k8s.io/apiserver/pkg,https://github.com/kubernetes/apiserver/blob/v0.28.1/LICENS
 k8s.io/client-go,https://github.com/kubernetes/client-go/blob/v0.28.1/LICENSE,Apache-2.0
 k8s.io/component-base,https://github.com/kubernetes/component-base/blob/v0.28.1/LICENSE,Apache-2.0
 k8s.io/klog/v2,https://github.com/kubernetes/klog/blob/v2.100.1/LICENSE,Apache-2.0
-k8s.io/kube-aggregator/pkg/apis/apiregistration,https://github.com/kubernetes/kube-aggregator/blob/v0.28.1/LICENSE,Apache-2.0
 k8s.io/kube-openapi/pkg,https://github.com/kubernetes/kube-openapi/blob/d090da108d2f/LICENSE,Apache-2.0
 k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json,https://github.com/kubernetes/kube-openapi/blob/d090da108d2f/pkg/internal/third_party/go-json-experiment/json/LICENSE,BSD-3-Clause
 k8s.io/kube-openapi/pkg/validation/spec,https://github.com/kubernetes/kube-openapi/blob/d090da108d2f/pkg/validation/spec/LICENSE,Apache-2.0

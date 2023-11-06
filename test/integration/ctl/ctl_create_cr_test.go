@@ -68,7 +68,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 	defer stopFn()
 
 	// Build clients
-	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
+	kubernetesCl, _, cmCl, _, _ := framework.NewClients(t, config)
 
 	testdataPath := getTestDataDir(t)
 
@@ -170,7 +170,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 	defer stopFn()
 
 	// Build clients
-	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
+	kubernetesCl, _, cmCl, _, _ := framework.NewClients(t, config)
 
 	testdataPath := getTestDataDir(t)
 

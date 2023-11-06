@@ -51,7 +51,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -99,7 +99,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
