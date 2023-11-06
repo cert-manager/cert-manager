@@ -70,7 +70,7 @@ func TestCtlStatusCert(t *testing.T) {
 	defer stopFn()
 
 	// Build clients
-	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
+	kubernetesCl, _, cmCl, _, _ := framework.NewClients(t, config)
 
 	var (
 		crt1Name  = "testcrt-1"

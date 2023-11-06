@@ -25,9 +25,12 @@ import (
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,7 +38,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
-	"github.com/cert-manager/cert-manager/pkg/api"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -54,10 +57,16 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		}
 	}
 
+	scheme := runtime.NewScheme()
+	kscheme.AddToScheme(scheme)
+	cmscheme.AddToScheme(scheme)
+	apiext.AddToScheme(scheme)
+	apireg.AddToScheme(scheme)
+
 	mgr, err := ctrl.NewManager(
 		util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "cainjector"),
 		ctrl.Options{
-			Scheme: api.Scheme,
+			Scheme: scheme,
 			Cache: cache.Options{
 				ReaderFailOnMissingInformer: true,
 				DefaultNamespaces:           defaultNamespaces,

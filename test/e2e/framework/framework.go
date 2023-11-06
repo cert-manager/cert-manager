@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gwapiclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
@@ -47,19 +47,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-// TODO: not all this code is required to be externally accessible. Separate the
-// bits that do and the bits that don't. Perhaps we should have an external
-// testing lib shared across projects?
-// TODO: this really should be done somewhere in cert-manager proper
-var Scheme = runtime.NewScheme()
-
-func init() {
-	kscheme.AddToScheme(Scheme)
-	certmgrscheme.AddToScheme(Scheme)
-	apiext.AddToScheme(Scheme)
-	apireg.AddToScheme(Scheme)
-}
-
 // DefaultConfig contains the default shared config the is likely parsed from
 // command line arguments.
 var DefaultConfig = &config.Config{}
@@ -72,10 +59,12 @@ type Framework struct {
 
 	// KubeClientConfig which was used to create the connection.
 	KubeClientConfig *rest.Config
+	// Scheme which is used to encode/decode kubernetes objects.
+	Scheme *runtime.Scheme
 
 	// Kubernetes API clientsets
 	KubeClientSet          kubernetes.Interface
-	GWClientSet            gwapi.Interface
+	GWClientSet            gwapiclient.Interface
 	CertManagerClientSet   clientset.Interface
 	APIExtensionsClientSet apiextcs.Interface
 
@@ -105,9 +94,16 @@ func NewDefaultFramework(baseName string) *Framework {
 // you (you can write additional before/after each functions).
 // It uses the config provided to it for the duration of the tests.
 func NewFramework(baseName string, cfg *config.Config) *Framework {
+	scheme := runtime.NewScheme()
+	kscheme.AddToScheme(scheme)
+	certmgrscheme.AddToScheme(scheme)
+	apiext.AddToScheme(scheme)
+	apireg.AddToScheme(scheme)
+
 	f := &Framework{
 		Config:   cfg,
 		BaseName: baseName,
+		Scheme:   scheme,
 	}
 
 	f.helper = helper.NewHelper(cfg)
@@ -142,11 +138,11 @@ func (f *Framework) BeforeEach() {
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating a controller-runtime client")
-	f.CRClient, err = crclient.New(kubeConfig, crclient.Options{Scheme: Scheme})
+	f.CRClient, err = crclient.New(kubeConfig, crclient.Options{Scheme: f.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating a gateway-api client")
-	f.GWClientSet, err = gwapi.NewForConfig(kubeConfig)
+	f.GWClientSet, err = gwapiclient.NewForConfig(kubeConfig)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Building a namespace api object")
