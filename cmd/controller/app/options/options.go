@@ -150,6 +150,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerGroup, "default-issuer-group", c.IngressShimConfig.DefaultIssuerGroup, ""+
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
+	fs.StringSliceVar(&c.IngressShimConfig.SkipIngressLabels, "skip-ingress-labels", c.IngressShimConfig.SkipIngressLabels, ""+
+		"The labels on the ingress that shouldn't be copied to certificates.")
 
 	fs.StringSliceVar(&c.ACMEDNS01Config.RecursiveNameservers, "dns01-recursive-nameservers",
 		c.ACMEDNS01Config.RecursiveNameservers, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+

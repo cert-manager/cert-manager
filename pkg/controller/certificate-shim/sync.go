@@ -122,7 +122,7 @@ func SyncFnFor(
 			return nil
 		}
 
-		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup)
+		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, defaults.SkipIngressLabels)
 		if err != nil {
 			return err
 		}
@@ -300,6 +300,7 @@ func buildCertificates(
 	cmLister cmlisters.CertificateLister,
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
+	skipLabels []string,
 ) (new, update []*cmapi.Certificate, _ error) {
 
 	var newCrts []*cmapi.Certificate
@@ -376,11 +377,16 @@ func buildCertificates(
 			}
 		}
 
+		labels := ingLike.GetLabels()
+		for _, label := range skipLabels {
+			delete(labels, label)
+		}
+
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
-				Labels:          ingLike.GetLabels(),
+				Labels:          labels,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{

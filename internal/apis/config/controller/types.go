@@ -171,6 +171,9 @@ type IngressShimConfig struct {
 	// The annotation consumed by the ingress-shim controller to indicate a ingress
 	// is requesting a certificate
 	DefaultAutoCertificateAnnotations []string
+
+	// These labels are not copied to any certificates created from the ingress
+	SkipIngressLabels []string
 }
 
 type ACMEHTTP01Config struct {

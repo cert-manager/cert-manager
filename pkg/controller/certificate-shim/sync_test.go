@@ -103,7 +103,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Labels: map[string]string{
-						"my-test-label": "should be copied",
+						"my-test-label":  "should be copied",
+						"my-other-label": "should not be copied",
 					},
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
@@ -3133,6 +3134,7 @@ func TestSync(t *testing.T) {
 				DefaultIssuerKind:                 test.DefaultIssuerKind,
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,
 				DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
+				SkipIngressLabels:                 []string{"my-other-label"},
 			}, "cert-manager-test")
 			b.Start()
 
