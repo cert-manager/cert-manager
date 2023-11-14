@@ -26,8 +26,8 @@ CRANE=crane
 
 TARGET=make/base_images.mk
 
-STATIC_BASE=gcr.io/distroless/static
-DYNAMIC_BASE=gcr.io/distroless/base
+STATIC_BASE=gcr.io/distroless/static-debian11
+DYNAMIC_BASE=gcr.io/distroless/base-debian11
 
 mkdir -p make
 
