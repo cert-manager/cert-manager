@@ -497,15 +497,22 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 		defer healthResp.Body.Close()
 	}
 
+	// 200 = if initialized, unsealed, and active
 	// 429 = if unsealed and standby
 	// 472 = if disaster recovery mode replication secondary and active
 	// 473 = if performance standby
+	// 501 = if not initialized
+	// 503 = if sealed
 	if err != nil {
 		switch {
 		case healthResp == nil:
 			return err
 		case healthResp.StatusCode == 429, healthResp.StatusCode == 472, healthResp.StatusCode == 473:
 			return nil
+		case healthResp.StatusCode == 501:
+			return fmt.Errorf("Vault is not initialized")
+		case healthResp.StatusCode == 503:
+			return fmt.Errorf("Vault is sealed")
 		default:
 			return fmt.Errorf("error calling Vault %s: %w", healthURL, err)
 		}
