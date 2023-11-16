@@ -552,6 +552,24 @@ func TestCA_Sign(t *testing.T) {
 				assert.Equal(t, []string{"http://ocsp-v3.example.org"}, got.OCSPServer)
 			},
 		},
+		"when the Issuer has IssuingCertificateURL set, it should appear on the signed ca": {
+			givenCASecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"), gen.SetSecretData(secretDataFor(t, rootPK, rootCert))),
+			givenCAIssuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName:             "secret-1",
+				IssuingCertificateURLs: []string{"http://ca.letsencrypt.org/ca.crt"},
+			})),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, []string{"http://ca.letsencrypt.org/ca.crt"}, got.IssuingCertificateURL)
+			},
+		},
 		"when the Issuer has crlDistributionPoints set, it should appear on the signed ca ": {
 			givenCASecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"), gen.SetSecretData(secretDataFor(t, rootPK, rootCert))),
 			givenCAIssuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{

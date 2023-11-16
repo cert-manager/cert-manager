@@ -1081,6 +1081,11 @@ spec:
                       type: array
                       items:
                         type: string
+                    issuingCertificateURLs:
+                      description: IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details. As an example, such a URL might be "http://ca.domain.com/ca.crt".
+                      type: array
+                      items:
+                        type: string
                     ocspServers:
                       description: The OCSP server list is an X.509 v3 extension that defines a list of URLs of OCSP responders. The OCSP responders can be queried for the revocation status of an issued certificate. If not set, the certificate will be issued with no OCSP servers set. For example, an OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
                       type: array
