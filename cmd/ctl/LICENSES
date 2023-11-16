@@ -12,12 +12,12 @@ github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manage
 github.com/cert-manager/cert-manager/cmd/ctl,https://github.com/cert-manager/cert-manager/blob/HEAD/cmd/ctl/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/chai2010/gettext-go,https://github.com/chai2010/gettext-go/blob/v1.0.2/LICENSE,BSD-3-Clause
-github.com/containerd/containerd,https://github.com/containerd/containerd/blob/v1.7.1/LICENSE,Apache-2.0
+github.com/containerd/containerd,https://github.com/containerd/containerd/blob/v1.7.6/LICENSE,Apache-2.0
 github.com/cyphar/filepath-securejoin,https://github.com/cyphar/filepath-securejoin/blob/v0.2.4/LICENSE,BSD-3-Clause
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
-github.com/docker/cli/cli/config,https://github.com/docker/cli/blob/v23.0.6/LICENSE,Apache-2.0
+github.com/docker/cli/cli/config,https://github.com/docker/cli/blob/v24.0.6/LICENSE,Apache-2.0
 github.com/docker/distribution,https://github.com/docker/distribution/blob/v2.8.2/LICENSE,Apache-2.0
-github.com/docker/docker,https://github.com/docker/docker/blob/v23.0.6/LICENSE,Apache-2.0
+github.com/docker/docker,https://github.com/docker/docker/blob/v24.0.7/LICENSE,Apache-2.0
 github.com/docker/docker-credential-helpers,https://github.com/docker/docker-credential-helpers/blob/v0.7.0/LICENSE,MIT
 github.com/docker/go-connections,https://github.com/docker/go-connections/blob/v0.4.0/LICENSE,Apache-2.0
 github.com/docker/go-metrics,https://github.com/docker/go-metrics/blob/v0.0.1/LICENSE,Apache-2.0
@@ -84,7 +84,7 @@ github.com/monochromegane/go-gitignore,https://github.com/monochromegane/go-giti
 github.com/morikuni/aec,https://github.com/morikuni/aec/blob/v1.0.0/LICENSE,MIT
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/opencontainers/go-digest,https://github.com/opencontainers/go-digest/blob/v1.0.0/LICENSE,Apache-2.0
-github.com/opencontainers/image-spec/specs-go,https://github.com/opencontainers/image-spec/blob/3a7f492d3f1b/LICENSE,Apache-2.0
+github.com/opencontainers/image-spec/specs-go,https://github.com/opencontainers/image-spec/blob/v1.1.0-rc5/LICENSE,Apache-2.0
 github.com/peterbourgon/diskv,https://github.com/peterbourgon/diskv/blob/v2.0.1/LICENSE,MIT
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
 github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.16.0/LICENSE,Apache-2.0
@@ -143,7 +143,7 @@ k8s.io/kube-openapi/pkg/validation/spec,https://github.com/kubernetes/kube-opena
 k8s.io/kubectl/pkg,https://github.com/kubernetes/kubectl/blob/v0.28.1/LICENSE,Apache-2.0
 k8s.io/utils,https://github.com/kubernetes/utils/blob/3b25d923346b/LICENSE,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/3b25d923346b/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
-oras.land/oras-go/pkg,https://github.com/oras-project/oras-go/blob/v1.2.3/LICENSE,Apache-2.0
+oras.land/oras-go/pkg,https://github.com/oras-project/oras-go/blob/v1.2.4/LICENSE,Apache-2.0
 sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.16.2/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api/apis/v1beta1,https://github.com/kubernetes-sigs/gateway-api/blob/v0.8.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
