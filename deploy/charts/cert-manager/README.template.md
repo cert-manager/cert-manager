@@ -145,7 +145,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `config` | ControllerConfiguration YAML used to configure flags for the controller. Generates a ConfigMap containing contents of the field. See `values.yaml` for example. | `{}` |
 | `enableServiceLinks` | Indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links. | `false` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
-| `webhook.timeoutSeconds` | Seconds the API server should wait the webhook to respond before treating the call as a failure. | `10` |
+| `webhook.timeoutSeconds` | Seconds the API server should wait for the webhook to respond before treating the call as a failure. Value must be between 1 and 30 seconds. | `30` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.podLabels` | Labels to add to the cert-manager webhook pod | `{}` |
 | `webhook.serviceLabels` | Labels to add to the cert-manager webhook service | `{}` |
