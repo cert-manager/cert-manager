@@ -32,8 +32,6 @@ import (
 
 var secretsGVR = corev1.SchemeGroupVersion.WithResource("secrets")
 
-const pleaseOpenIssue = "Please report this by opening an issue with this error and cert-manager controller logs and stack trace https://github.com/cert-manager/cert-manager/issues/new/choose"
-
 // KubeSharedInformerFactory represents a subset of methods in
 // informers.sharedInformerFactory. It allows us to use a wrapper around
 // informers.sharedInformerFactory to enforce particular custom informers for

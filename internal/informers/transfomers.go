@@ -33,8 +33,8 @@ func partialMetadataRemoveAll(obj interface{}) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("internal error: cannot cast object %#+v to PartialObjectMetadata", obj)
 	}
+	partialMeta.Labels = nil
 	partialMeta.Annotations = nil
 	partialMeta.ManagedFields = nil
-	partialMeta.Labels = nil
 	return partialMeta, nil
 }
