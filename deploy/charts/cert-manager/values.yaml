@@ -127,20 +127,24 @@ config:
 #   apiVersion: controller.config.cert-manager.io/v1alpha1
 #   kind: ControllerConfiguration
 #   logging:
-#    verbosity: 2
-#    format: text
+#     verbosity: 2
+#     format: text
 #   leaderElectionConfig:
-#    namespace: kube-system
+#     namespace: kube-system
 #   kubernetesAPIQPS: 9000
 #   kubernetesAPIBurst: 9000
 #   numberOfConcurrentWorkers: 200
 #   featureGates:
-#     additionalCertificateOutputFormats: true
-#     experimentalCertificateSigningRequestControllers: true
-#     experimentalGatewayAPISupport: true
-#     serverSideApply: true
-#     literalCertificateSubject: true
-#     useCertificateRequestBasicConstraints: true
+#     AdditionalCertificateOutputFormats: true
+#     DisallowInsecureCSRUsageDefinition: true
+#     ExperimentalCertificateSigningRequestControllers: true
+#     ExperimentalGatewayAPISupport: true
+#     LiteralCertificateSubject: true
+#     SecretsFilteredCaching: true
+#     ServerSideApply: true
+#     StableCertificateRequestName: true
+#     UseCertificateRequestBasicConstraints: true
+#     ValidateCAA: true
 
 # Setting Nameservers for DNS01 Self Check
 # See: https://cert-manager.io/docs/configuration/acme/dns01/#setting-nameservers-for-dns01-self-check
