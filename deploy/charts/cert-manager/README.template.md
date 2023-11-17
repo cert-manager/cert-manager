@@ -225,7 +225,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `startupapicheck.backoffLimit` | Job backoffLimit | `4` |
 | `startupapicheck.jobAnnotations` | Optional additional annotations to add to the startupapicheck Job | `{}` |
 | `startupapicheck.podAnnotations` | Optional additional annotations to add to the startupapicheck Pods | `{}` |
-| `startupapicheck.extraArgs` | Optional additional arguments for startupapicheck | `[]` |
+| `startupapicheck.extraArgs` | Optional additional arguments for startupapicheck | `["-v"]` |
 | `startupapicheck.resources` | CPU/memory resource requests/limits for the startupapicheck pod | `{}` |
 | `startupapicheck.nodeSelector` | Node labels for startupapicheck pod assignment | `{}` |
 | `startupapicheck.affinity` | Node affinity for startupapicheck pod assignment | `{}` |

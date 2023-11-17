@@ -703,7 +703,12 @@ startupapicheck:
 
   # Additional command line flags to pass to startupapicheck binary.
   # To see all available flags run docker run quay.io/jetstack/cert-manager-ctl:<version> --help
-  extraArgs: []
+  #
+  # We enable verbose logging by default so that if startupapicheck fails, users
+  # can know what exactly caused the failure. Verbose logs include details of
+  # the webhook URL, IP address and TCP connect errors for example.
+  extraArgs:
+  - -v
 
   resources: {}
     # requests:
