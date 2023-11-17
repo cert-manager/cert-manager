@@ -737,6 +737,30 @@ func TestValidateIssuerSpec(t *testing.T) {
 				field.Invalid(fldPath.Child("ca", "ocspServer").Index(0), "", `must be a valid URL, e.g., http://ocsp.int-x3.letsencrypt.org`),
 			},
 		},
+		"valid IssuingCertificateURLs": {
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
+						SecretName:             "valid",
+						IssuingCertificateURLs: []string{"http://ca.example.com/ca.crt"},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"invalid IssuingCertificateURLs": {
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
+						SecretName:             "valid",
+						IssuingCertificateURLs: []string{""},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ca", "issuingCertificateURLs").Index(0), "", `must be a valid URL`),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
