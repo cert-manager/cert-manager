@@ -186,6 +186,7 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 
 type generateCSROptions struct {
 	EncodeBasicConstraintsInRequest bool
+	EncodeNameConstraintsInRequest  bool
 	UseLiteralSubject               bool
 }
 
@@ -200,6 +201,13 @@ func WithEncodeBasicConstraintsInRequest(encode bool) GenerateCSROption {
 	}
 }
 
+func WithEncodeNameConstraintsInRequest(encode bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.EncodeNameConstraintsInRequest = encode
+	}
+}
+
+
 func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
 		o.UseLiteralSubject = useLiteralSubject
@@ -213,6 +221,7 @@ func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
 func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.CertificateRequest, error) {
 	opts := &generateCSROptions{
 		EncodeBasicConstraintsInRequest: false,
+		EncodeNameConstraintsInRequest:  false,
 		UseLiteralSubject:               false,
 	}
 	for _, opt := range optFuncs {
@@ -308,6 +317,14 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 			return nil, err
 		}
 		extraExtensions = append(extraExtensions, basicExtension)
+	}
+
+	if opts.EncodeNameConstraintsInRequest && crt.Spec.NameConstraints != nil {
+		extension, err := MarshalNameConstraints(crt.Spec.NameConstraints)
+		if err != nil {
+			return nil, err
+		}
+		extraExtensions = append(extraExtensions, extension)
 	}
 
 	cr := &x509.CertificateRequest{

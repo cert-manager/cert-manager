@@ -679,6 +679,42 @@ func TestValidateCertificate(t *testing.T) {
 						"alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
 			},
 		},
+		"valid with name constraints": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA: 	 true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							DNSDomains: []string{"example.com"},
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"invalid with name constraints": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA: 	 true,
+					NameConstraints: &internalcmapi.NameConstraints{},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("nameConstraints"), &internalcmapi.NameConstraints{}, "either permitted or excluded must be set"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

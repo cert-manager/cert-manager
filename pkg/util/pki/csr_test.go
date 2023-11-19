@@ -23,6 +23,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"math/big"
+	"net"
 	"reflect"
 	"testing"
 	"time"
@@ -345,6 +346,28 @@ func TestGenerateCSR(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_, permittedIPNet, err := net.ParseCIDR("10.10.0.0/16")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, excludedIPNet, err := net.ParseCIDR("10.10.0.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nameConstraints := NameConstraints{
+		PermittedDNSDomainsCritical: true,
+		PermittedDNSDomains:         []string{"example.org"},
+		PermittedIPRanges: 		     []net.IPNet{*permittedIPNet},
+		PermittedEmailAddresses:    []string{"email@email.org"},
+		ExcludedIPRanges: 		    []net.IPNet{*excludedIPNet},
+	}
+	asn1NameConstraints, err := asn1.Marshal(nameConstraints)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// 0xa0 = DigitalSignature, Encipherment and KeyCertSign usage
 	asn1KeyUsageWithCa, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa4}, BitLength: asn1BitLength([]byte{0xa4})})
 	if err != nil {
@@ -370,6 +393,7 @@ func TestGenerateCSR(t *testing.T) {
 		wantErr                                 bool
 		literalCertificateSubjectFeatureEnabled bool
 		basicConstraintsFeatureEnabled          bool
+		nameConstraintsFeatureEnabled           bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
@@ -599,12 +623,50 @@ func TestGenerateCSR(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Generate CSR from certificate with UseCertificateRequestNameConstraints flag enabled",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "example.org",
+				IsCA:       true,
+				NameConstraints: &cmapi.NameConstraints{
+					Critical: true,
+					Permitted: &cmapi.NameConstraintItem{
+						DNSDomains:     []string{"example.org"},
+						IPRanges:       []string{"10.10.0.0/16"},
+						EmailAddresses: []string{"email@email.org"},
+					},
+					Excluded: &cmapi.NameConstraintItem{
+						IPRanges: []string{"10.10.0.0/24"},
+					},
+				},
+			}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsageWithCa,
+						Critical: true,
+					},
+					{
+						Id:       OIDExtensionNameConstraints,
+						Value:    asn1NameConstraints,
+						Critical: true,
+					},
+				},
+			},
+			nameConstraintsFeatureEnabled: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GenerateCSR(
 				tt.crt,
 				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
+				WithEncodeNameConstraintsInRequest(tt.nameConstraintsFeatureEnabled),
 				WithUseLiteralSubject(tt.literalCertificateSubjectFeatureEnabled),
 			)
 			if (err != nil) != tt.wantErr {

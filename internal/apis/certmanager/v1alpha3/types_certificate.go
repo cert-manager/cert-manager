@@ -221,6 +221,12 @@ type CertificateSpec struct {
 	// the controller and webhook components.
 	// +optional
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
+
+	// x.509 certificate NameConstraint extension which MUST be used only in a CA certificate.
+	// More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+	//
+	// +optional
+	NameConstraints *NameConstraints `json:"nameConstraints,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -507,4 +513,42 @@ type CertificateAdditionalOutputFormat struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
 	Type CertificateOutputFormatType `json:"type"`
+}
+
+// NameConstraints is a type to represent x509 NameConstraints
+type NameConstraints struct {
+	// Permitted contains the constraints in which the names must be located.
+	//
+	// +optional
+	Permitted *NameConstraintItem`json:"permitted,omitempty"`
+	// Excluded contains the constraints which must be disallowed. Any name matching a 
+	// restriction in the excluded field is invalid regardless 
+	// of information appearing in the permitted
+	//
+	// +optional
+	Excluded *NameConstraintItem `json:"excluded,omitempty"`
+}
+
+type NameConstraintItem struct {
+	// DNSDomains is a list of DNS domains that are permitted or excluded.
+	//
+	// +optional
+	DNSDomains []string `json:"dnsDomains,omitempty"`
+	// IPRanges is a list of IP Ranges that are permitted or excluded.
+	// This should be a valid CIDR notation.
+	//
+	// +optional
+	IPRanges []string `json:"ipRanges,omitempty"`
+	// EmailAddresses is a list of DNS domains that are permitted or excluded.
+	//
+	// +optional
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
+	// URIDomains is a list of DNS domains that are permitted or excluded.
+	//
+	// +optional
+	URIDomains []string `json:"uriDomains,omitempty"`
+	// if true then the name constraints are marked critical.
+	//
+	// +optional
+	Critical bool `json:"critical,omitempty"`
 }
