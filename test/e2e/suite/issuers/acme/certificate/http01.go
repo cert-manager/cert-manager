@@ -286,9 +286,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				"cert-manager.io/issuer": issuerName,
 			}, acmeIngressDomain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = ingClient.Create(context.TODO(), util.NewIngress(ingressName2, certificateSecondSecretName, map[string]string{
-				"cert-manager.io/issuer": issuerName,
-			}, acmeIngressDomain), metav1.CreateOptions{})
+
+			ingress2 := util.NewIngress(ingressName2, certificateSecondSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName}, acmeIngressDomain)
+			ingress2.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Path = "/different"
+
+			_, err = ingClient.Create(context.TODO(), ingress2, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
