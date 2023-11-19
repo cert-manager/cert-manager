@@ -57,6 +57,9 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	issuerName := "test-acme-issuer"
 	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
+	certificateSecondSecretName := "test-acme-certificate-secondary"
+	ingressName := "test-acme-ingress"
+	ingressName2 := "test-acme-ingress-secondary"
 	// fixedIngressName is the name of an ingress resource that is configured
 	// with a challenge solve.
 	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
@@ -273,6 +276,59 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("should obtain two separate signed certificates with the same CN rom the ACME server when creating two annotated ingress resources", func() {
+
+		switch {
+		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+			ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
+			By("Creating two Ingresses with the issuer name annotation set")
+			_, err := ingClient.Create(context.TODO(), util.NewIngress(ingressName, certificateSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName,
+			}, acmeIngressDomain), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = ingClient.Create(context.TODO(), util.NewIngress(ingressName2, certificateSecondSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName,
+			}, acmeIngressDomain), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+			By("Creating two Ingresses with the issuer name annotation set")
+			_, err := ingClient.Create(context.TODO(), util.NewV1Beta1Ingress(ingressName, certificateSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName,
+			}, acmeIngressDomain), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = ingClient.Create(context.TODO(), util.NewV1Beta1Ingress(ingressName2, certificateSecondSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName,
+			}, acmeIngressDomain), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		default:
+			Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+		}
+
+		By("Waiting for first Certificate to exist")
+		cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateName, time.Second*60)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for seond Certificate to exist")
+		cert2, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecondSecretName, time.Second*60)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Certificate to be issued...")
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for second the Certificate to be issued...")
+		cert2, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert2, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(cert, validations...)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the second issued Certificate...")
+		err = f.Helper().ValidateCertificate(cert2, validations...)
+		Expect(err).NotTo(HaveOccurred())
+	})
 	It("should obtain a signed certificate with a single CN from the ACME server when redirected", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
