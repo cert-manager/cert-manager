@@ -609,8 +609,8 @@ type NameConstraints struct {
 	//
 	// +optional
 	Permitted *NameConstraintItem `json:"permitted,omitempty"`
-	// Excluded contains the constraints which must be disallowed. Any name matching a 
-	// restriction in the excluded field is invalid regardless 
+	// Excluded contains the constraints which must be disallowed. Any name matching a
+	// restriction in the excluded field is invalid regardless
 	// of information appearing in the permitted
 	//
 	// +optional

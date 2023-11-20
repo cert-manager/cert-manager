@@ -684,7 +684,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IsCA: 	 true,
+					IsCA:       true,
 					NameConstraints: &internalcmapi.NameConstraints{
 						Permitted: &internalcmapi.NameConstraintItem{
 							DNSDomains: []string{"example.com"},
@@ -700,9 +700,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid with name constraints": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					CommonName: "testcn",
-					SecretName: "abc",
-					IsCA: 	 true,
+					CommonName:      "testcn",
+					SecretName:      "abc",
+					IsCA:            true,
 					NameConstraints: &internalcmapi.NameConstraints{},
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "valid",

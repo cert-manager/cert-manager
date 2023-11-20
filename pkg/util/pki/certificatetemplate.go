@@ -198,16 +198,16 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			if err != nil {
 				return err
 			}
-			
+
 			template.PermittedDNSDomainsCritical = nameConstraints.PermittedDNSDomainsCritical
 			template.PermittedDNSDomains = nameConstraints.PermittedDNSDomains
-			template.ExcludedDNSDomains  = nameConstraints.ExcludedDNSDomains
+			template.ExcludedDNSDomains = nameConstraints.ExcludedDNSDomains
 			template.PermittedIPRanges = ConvertIPNeSliceToIPNetPointerSlice(nameConstraints.PermittedIPRanges)
-			template.ExcludedIPRanges  = ConvertIPNeSliceToIPNetPointerSlice(nameConstraints.ExcludedIPRanges)
+			template.ExcludedIPRanges = ConvertIPNeSliceToIPNetPointerSlice(nameConstraints.ExcludedIPRanges)
 			template.PermittedEmailAddresses = nameConstraints.PermittedEmailAddresses
 			template.ExcludedEmailAddresses = nameConstraints.ExcludedEmailAddresses
 			template.PermittedURIDomains = nameConstraints.PermittedURIDomains
-			template.ExcludedURIDomains  = nameConstraints.ExcludedEmailAddresses
+			template.ExcludedURIDomains = nameConstraints.ExcludedEmailAddresses
 		}
 
 		// RFC 5280, 4.2.1.3

@@ -207,7 +207,6 @@ func WithEncodeNameConstraintsInRequest(encode bool) GenerateCSROption {
 	}
 }
 
-
 func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
 		o.UseLiteralSubject = useLiteralSubject
@@ -382,6 +381,10 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 	}
 
 	issuingCACert := caCerts[0]
+	err := validateNameConstraints(issuingCACert, template)
+	if err != nil {
+		return PEMBundle{}, fmt.Errorf("cert not present in the namesConstraints specified by cacert: %s", err.Error())
+	}
 
 	_, cert, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
 	if err != nil {

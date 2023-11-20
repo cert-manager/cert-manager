@@ -99,7 +99,7 @@ const (
 	UseCertificateRequestBasicConstraints featuregate.Feature = "UseCertificateRequestBasicConstraints"
 
 	// Owner: @tanujd11
-	// Alpha: v1.13
+	// Alpha: v1.14
 	//
 	// UseCertificateRequestNameConstraints will add Name Constraints section in the Extension Request of the Certificate Signing Request
 	// This feature will add NameConstraints section in CSR with CA field as true
@@ -147,5 +147,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
-	UseCertificateRequestNameConstraints:            {Default: false, PreRelease: featuregate.Alpha},
+	UseCertificateRequestNameConstraints:             {Default: false, PreRelease: featuregate.Alpha},
 }

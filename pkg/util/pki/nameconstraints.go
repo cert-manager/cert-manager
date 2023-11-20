@@ -32,15 +32,15 @@ var (
 
 // NameConstraints represents the NameConstraints extension.
 type NameConstraints struct {
-	PermittedDNSDomainsCritical bool     `asn1:"optional,explicit,tag:0"`
-	PermittedDNSDomains         []string  `asn1:"optional,explicit,tag:1"`
-	ExcludedDNSDomains          []string  `asn1:"optional,explicit,tag:2"`
+	PermittedDNSDomainsCritical bool        `asn1:"optional,explicit,tag:0"`
+	PermittedDNSDomains         []string    `asn1:"optional,explicit,tag:1"`
+	ExcludedDNSDomains          []string    `asn1:"optional,explicit,tag:2"`
 	PermittedIPRanges           []net.IPNet `asn1:"optional,explicit,tag:3"`
 	ExcludedIPRanges            []net.IPNet `asn1:"optional,explicit,tag:4"`
-	PermittedEmailAddresses     []string  `asn1:"optional,explicit,tag:5"`
-	ExcludedEmailAddresses      []string  `asn1:"optional,explicit,tag:6"`
-	PermittedURIDomains         []string  `asn1:"optional,explicit,tag:7"`
-	ExcludedURIDomains          []string  `asn1:"optional,explicit,tag:8"`
+	PermittedEmailAddresses     []string    `asn1:"optional,explicit,tag:5"`
+	ExcludedEmailAddresses      []string    `asn1:"optional,explicit,tag:6"`
+	PermittedURIDomains         []string    `asn1:"optional,explicit,tag:7"`
+	ExcludedURIDomains          []string    `asn1:"optional,explicit,tag:8"`
 }
 
 // Adapted from x509.go
@@ -54,10 +54,10 @@ func MarshalNameConstraints(nameConstraints *v1.NameConstraints) (pkix.Extension
 		}
 		nameConstraintsForMarshalling = NameConstraints{
 			PermittedDNSDomainsCritical: nameConstraints.Permitted.Critical,
-			PermittedDNSDomains: nameConstraints.Permitted.DNSDomains,
-			PermittedIPRanges: permittedIPRanges,
-			PermittedEmailAddresses: nameConstraints.Permitted.EmailAddresses,
-			PermittedURIDomains: nameConstraints.Permitted.URIDomains,
+			PermittedDNSDomains:         nameConstraints.Permitted.DNSDomains,
+			PermittedIPRanges:           permittedIPRanges,
+			PermittedEmailAddresses:     nameConstraints.Permitted.EmailAddresses,
+			PermittedURIDomains:         nameConstraints.Permitted.URIDomains,
 		}
 	}
 
@@ -78,7 +78,7 @@ func MarshalNameConstraints(nameConstraints *v1.NameConstraints) (pkix.Extension
 
 func parseCIDRs(cidrs []string) ([]net.IPNet, error) {
 	ipRanges := []net.IPNet{}
-	for _, cidr := range(cidrs) {
+	for _, cidr := range cidrs {
 		_, ipNet, err := net.ParseCIDR(cidr)
 		ipRanges = append(ipRanges, net.IPNet{
 			IP:   ipNet.IP,
@@ -105,7 +105,10 @@ func UnmarshalNameConstraints(value []byte) (NameConstraints, error) {
 }
 
 // ConvertIPNeSliceToIPNetPointerSlice converts []net.IPNet to []*net.IPNet.
-func ConvertIPNeSliceToIPNetPointerSlice(ipNetPointerSlice []net.IPNet) ([]*net.IPNet) {
+func ConvertIPNeSliceToIPNetPointerSlice(ipNetPointerSlice []net.IPNet) []*net.IPNet {
+	if ipNetPointerSlice == nil {
+		return nil
+	}
 	var ipNets []*net.IPNet
 	for _, ipNet := range ipNetPointerSlice {
 		ipNets = append(ipNets, &ipNet)

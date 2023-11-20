@@ -359,9 +359,9 @@ func TestGenerateCSR(t *testing.T) {
 	nameConstraints := NameConstraints{
 		PermittedDNSDomainsCritical: true,
 		PermittedDNSDomains:         []string{"example.org"},
-		PermittedIPRanges: 		     []net.IPNet{*permittedIPNet},
-		PermittedEmailAddresses:    []string{"email@email.org"},
-		ExcludedIPRanges: 		    []net.IPNet{*excludedIPNet},
+		PermittedIPRanges:           []net.IPNet{*permittedIPNet},
+		PermittedEmailAddresses:     []string{"email@email.org"},
+		ExcludedIPRanges:            []net.IPNet{*excludedIPNet},
 	}
 	asn1NameConstraints, err := asn1.Marshal(nameConstraints)
 	if err != nil {
@@ -685,9 +685,13 @@ func TestSignCSRTemplate(t *testing.T) {
 	// for that, we construct a chain of four certificates:
 	// a root CA, two intermediate CA, and a leaf certificate.
 
-	mustCreatePair := func(issuerCert *x509.Certificate, issuerPK crypto.Signer, name string, isCA bool) ([]byte, *x509.Certificate, *x509.Certificate, crypto.Signer) {
+	mustCreatePair := func(issuerCert *x509.Certificate, issuerPK crypto.Signer, name string, isCA bool, nameConstraints *NameConstraints) ([]byte, *x509.Certificate, *x509.Certificate, crypto.Signer) {
 		pk, err := GenerateECPrivateKey(256)
 		require.NoError(t, err)
+		var permittedIPRanges []*net.IPNet
+		if nameConstraints != nil {
+			permittedIPRanges = ConvertIPNeSliceToIPNetPointerSlice(nameConstraints.PermittedIPRanges)
+		}
 		tmpl := &x509.Certificate{
 			Version:               3,
 			BasicConstraintsValid: true,
@@ -701,6 +705,7 @@ func TestSignCSRTemplate(t *testing.T) {
 			KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 			PublicKey:          pk.Public(),
 			IsCA:               isCA,
+			PermittedIPRanges:  permittedIPRanges,
 		}
 
 		if isCA {
@@ -719,10 +724,16 @@ func TestSignCSRTemplate(t *testing.T) {
 		return pem, cert, tmpl, pk
 	}
 
-	rootPEM, rootCert, rootTmpl, rootPK := mustCreatePair(nil, nil, "root", true)
-	int1PEM, int1Cert, int1Tmpl, int1PK := mustCreatePair(rootCert, rootPK, "int1", true)
-	int2PEM, int2Cert, int2Tmpl, int2PK := mustCreatePair(int1Cert, int1PK, "int2", true)
-	leafPEM, _, leafTmpl, _ := mustCreatePair(int2Cert, int2PK, "leaf", false)
+	rootPEM, rootCert, rootTmpl, rootPK := mustCreatePair(nil, nil, "root", true, nil)
+	int1PEM, int1Cert, int1Tmpl, int1PK := mustCreatePair(rootCert, rootPK, "int1", true, nil)
+	int2PEM, int2Cert, int2Tmpl, int2PK := mustCreatePair(int1Cert, int1PK, "int2", true, nil)
+	leafPEM, _, leafTmpl, _ := mustCreatePair(int2Cert, int2PK, "leaf", false, nil)
+
+	// vars for testing name constraints
+	_, permittedIPNet, _ := net.ParseCIDR("10.10.0.0/16")
+	_, ncRootCert, _, ncRootPK := mustCreatePair(nil, nil, "ncroot", true, &NameConstraints{PermittedIPRanges: []net.IPNet{*permittedIPNet}})
+	_, _, ncLeafTmpl, _ := mustCreatePair(ncRootCert, ncRootPK, "ncleaf", false, nil)
+	ncLeafTmpl.IPAddresses = []net.IP{net.ParseIP("10.20.0.5")}
 
 	tests := map[string]struct {
 		caCerts           []*x509.Certificate
@@ -767,6 +778,12 @@ func TestSignCSRTemplate(t *testing.T) {
 		"Error on no CA": {
 			caKey:    rootPK,
 			template: rootTmpl,
+			wantErr:  true,
+		},
+		"Error: Non-compliance with NameConstraints in the leaf certificate.": {
+			caCerts:  []*x509.Certificate{ncRootCert},
+			caKey:    ncRootPK,
+			template: ncLeafTmpl,
 			wantErr:  true,
 		},
 	}
