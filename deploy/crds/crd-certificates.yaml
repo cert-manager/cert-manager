@@ -188,7 +188,7 @@ spec:
                           items:
                             type: string
                         emailAddresses:
-                          description: EmailAddresses is a list of DNS domains that are permitted or excluded.
+                          description: EmailAddresses is a list of Email Addresses that are permitted or excluded.
                           type: array
                           items:
                             type: string
@@ -198,7 +198,7 @@ spec:
                           items:
                             type: string
                         uriDomains:
-                          description: URIDomains is a list of DNS domains that are permitted or excluded.
+                          description: URIDomains is a list of URI domains that are permitted or excluded.
                           type: array
                           items:
                             type: string
@@ -215,7 +215,7 @@ spec:
                           items:
                             type: string
                         emailAddresses:
-                          description: EmailAddresses is a list of DNS domains that are permitted or excluded.
+                          description: EmailAddresses is a list of Email Addresses that are permitted or excluded.
                           type: array
                           items:
                             type: string
@@ -225,7 +225,7 @@ spec:
                           items:
                             type: string
                         uriDomains:
-                          description: URIDomains is a list of DNS domains that are permitted or excluded.
+                          description: URIDomains is a list of URI domains that are permitted or excluded.
                           type: array
                           items:
                             type: string

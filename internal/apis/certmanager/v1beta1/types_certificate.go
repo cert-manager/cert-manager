@@ -537,11 +537,11 @@ type NameConstraintItem struct {
 	//
 	// +optional
 	IPRanges []string `json:"ipRanges,omitempty"`
-	// EmailAddresses is a list of DNS domains that are permitted or excluded.
+	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
 	//
 	// +optional
 	EmailAddresses []string `json:"emailAddresses,omitempty"`
-	// URIDomains is a list of DNS domains that are permitted or excluded.
+	// URIDomains is a list of URI domains that are permitted or excluded.
 	//
 	// +optional
 	URIDomains []string `json:"uriDomains,omitempty"`
