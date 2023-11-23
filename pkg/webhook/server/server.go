@@ -51,6 +51,9 @@ var (
 	defaultScheme = runtime.NewScheme()
 
 	ErrNotListening = errors.New("Server is not listening yet")
+
+	// based on https://github.com/kubernetes/kubernetes/blob/c28c2009181fcc44c5f6b47e10e62dacf53e4da0/staging/src/k8s.io/pod-security-admission/cmd/webhook/server/server.go
+	maxRequestSize = int64(3 * 1024 * 1024)
 )
 
 func init() {
@@ -316,12 +319,30 @@ func (s *Server) convert(_ context.Context, obj runtime.Object) (runtime.Object,
 
 func (s *Server) handle(inner handleFunc) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		defer req.Body.Close()
+		defer runtimeutil.HandleCrash(func(_ interface{}) {
+			// Assume the crash happened before the response was written.
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		})
 
-		data, err := io.ReadAll(req.Body)
+		if req.Body == nil || req.Body == http.NoBody {
+			err := errors.New("request body is empty")
+			s.log.Error(err, "bad request")
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer req.Body.Close()
+		limitedReader := &io.LimitedReader{R: req.Body, N: maxRequestSize}
+		data, err := io.ReadAll(limitedReader)
 		if err != nil {
-			s.log.Error(err, "failed to read request body")
-			w.WriteHeader(http.StatusBadRequest)
+			s.log.Error(err, "unable to read the body from the incoming request")
+			http.Error(w, "unable to read the body from the incoming request", http.StatusBadRequest)
+			return
+		}
+		if limitedReader.N <= 0 {
+			err := fmt.Errorf("request entity is too large; limit is %d bytes", maxRequestSize)
+			s.log.Error(err, "unable to read the body from the incoming request; limit reached")
+			http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
 			return
 		}
 
