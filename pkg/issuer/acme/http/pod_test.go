@@ -189,7 +189,7 @@ func TestEnsurePod(t *testing.T) {
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
-										SecurityContext: &corev1.PodSecurityContext{
+										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
 											RunAsUser: ptr.To(int64(1020)),
 											SeccompProfile: &corev1.SeccompProfile{
 												Type: corev1.SeccompProfileTypeRuntimeDefault,

@@ -293,7 +293,16 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 	pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, podTempl.Spec.ImagePullSecrets...)
 
 	if podTempl.Spec.SecurityContext != nil {
-		pod.Spec.SecurityContext = podTempl.Spec.SecurityContext
+		pod.Spec.SecurityContext = &corev1.PodSecurityContext{}
+		pod.Spec.SecurityContext.SELinuxOptions = podTempl.Spec.SecurityContext.SELinuxOptions
+		pod.Spec.SecurityContext.RunAsUser = podTempl.Spec.SecurityContext.RunAsUser
+		pod.Spec.SecurityContext.RunAsGroup = podTempl.Spec.SecurityContext.RunAsGroup
+		pod.Spec.SecurityContext.RunAsNonRoot = podTempl.Spec.SecurityContext.RunAsNonRoot
+		pod.Spec.SecurityContext.SupplementalGroups = podTempl.Spec.SecurityContext.SupplementalGroups
+		pod.Spec.SecurityContext.FSGroup = podTempl.Spec.SecurityContext.FSGroup
+		pod.Spec.SecurityContext.Sysctls = podTempl.Spec.SecurityContext.Sysctls
+		pod.Spec.SecurityContext.FSGroupChangePolicy = podTempl.Spec.SecurityContext.FSGroupChangePolicy
+		pod.Spec.SecurityContext.SeccompProfile = podTempl.Spec.SecurityContext.SeccompProfile
 	}
 
 	return pod
