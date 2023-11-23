@@ -19,7 +19,6 @@ package http
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -33,7 +32,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/stretchr/testify/assert"
-	coretesting "k8s.io/client-go/testing"
 )
 
 func TestEnsurePod(t *testing.T) {
@@ -136,6 +134,11 @@ func TestEnsurePod(t *testing.T) {
 			ObjectMeta: pod.ObjectMeta,
 		}
 	)
+	scPod := pod.DeepCopy()
+	scPod.Spec.SecurityContext.RunAsUser = ptr.To(int64(1020))
+	scPod.Spec.SecurityContext.RunAsNonRoot = nil
+	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
+	scPod.Spec.Tolerations = []corev1.Toleration{}
 	tests := map[string]testT{
 		"should do nothing if pod already exists": {
 			builder: &testpkg.Builder{
@@ -152,7 +155,10 @@ func TestEnsurePod(t *testing.T) {
 			chal: chal,
 		},
 		"should have the correct default security context": {
-			Challenge: &cmacme.Challenge{
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -164,43 +170,16 @@ func TestEnsurePod(t *testing.T) {
 					},
 				},
 			},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedPod := s.Solver.buildPod(s.Challenge)
-				// create a reactor that fails the test if a pod is created
-				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-					pod := action.(coretesting.CreateAction).GetObject().(*corev1.Pod)
-					// clear pod name as we don't know it yet in the expectedPod
-					pod.Name = ""
-					if !reflect.DeepEqual(pod, expectedPod) {
-						t.Errorf("Expected %v to equal %v", pod, expectedPod)
-					}
-					return false, ret, nil
-				})
-
-				s.Builder.Sync()
-			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resp := args[0].(*corev1.Pod)
-				err := args[1]
-				if resp == nil && err == nil {
-					t.Errorf("unexpected pod = nil")
-					t.Fail()
-					return
-				}
-				expected := &corev1.PodSecurityContext{
-					RunAsNonRoot: ptr.BoolPtr(true),
-					SeccompProfile: &corev1.SeccompProfile{
-						Type: corev1.SeccompProfileTypeRuntimeDefault,
-					},
-				}
-				if !reflect.DeepEqual(resp.Spec.SecurityContext, expected) {
-					t.Errorf("Expected %v to equal %v", resp.Spec.SecurityContext, expected)
-				}
-
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
 			},
 		},
 		"security context should be configurable": {
-			Challenge: &cmacme.Challenge{
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -211,7 +190,7 @@ func TestEnsurePod(t *testing.T) {
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										SecurityContext: &corev1.PodSecurityContext{
-											RunAsUser: ptr.Int64(1020),
+											RunAsUser: ptr.To(int64(1020)),
 											SeccompProfile: &corev1.SeccompProfile{
 												Type: corev1.SeccompProfileTypeRuntimeDefault,
 											},
@@ -223,39 +202,9 @@ func TestEnsurePod(t *testing.T) {
 					},
 				},
 			},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedPod := s.Solver.buildPod(s.Challenge)
-				// create a reactor that fails the test if a pod is created
-				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-					pod := action.(coretesting.CreateAction).GetObject().(*corev1.Pod)
-					// clear pod name as we don't know it yet in the expectedPod
-					pod.Name = ""
-					if !reflect.DeepEqual(pod, expectedPod) {
-						t.Errorf("Expected %v to equal %v", pod, expectedPod)
-					}
-					return false, ret, nil
-				})
-
-				s.Builder.Sync()
-			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resp := args[0].(*corev1.Pod)
-				err := args[1]
-				if resp == nil && err == nil {
-					t.Errorf("unexpected pod = nil")
-					t.Fail()
-					return
-				}
-				expected := &corev1.PodSecurityContext{
-					RunAsUser: ptr.Int64(1020),
-					SeccompProfile: &corev1.SeccompProfile{
-						Type: corev1.SeccompProfileTypeRuntimeDefault,
-					},
-				}
-				if !reflect.DeepEqual(resp.Spec.SecurityContext, expected) {
-					t.Errorf("Expected %v to equal %v", resp.Spec.SecurityContext, expected)
-				}
-
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
 			},
 		},
 		"should clean up if multiple pods exist": {
