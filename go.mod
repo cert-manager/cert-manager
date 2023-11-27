@@ -52,7 +52,7 @@ require (
 	sigs.k8s.io/controller-tools v0.13.0
 	sigs.k8s.io/gateway-api v0.8.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.3.0
-	software.sslmate.com/src/go-pkcs12 v0.2.1
+	software.sslmate.com/src/go-pkcs12 v0.4.0
 )
 
 require (
