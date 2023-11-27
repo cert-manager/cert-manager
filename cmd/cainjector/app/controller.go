@@ -100,7 +100,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			Handler: profilerMux,
 		}
 
-		mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
 			<-ctx.Done()
 
 			// allow a timeout for graceful shutdown
@@ -110,7 +110,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			return server.Shutdown(shutdownCtx)
 		}))
 
-		mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
 			if err := server.Serve(pprofListener); err != http.ErrServerClosed {
 				return err
 			}
@@ -172,3 +172,19 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 	return nil
 }
+
+type runnableNoLeaderElectionFunc func(context.Context) error
+
+func (r runnableNoLeaderElectionFunc) Start(ctx context.Context) error {
+	return r(ctx)
+}
+
+func (runnableNoLeaderElectionFunc) NeedLeaderElection() bool {
+	// By default, a runnable in c/r is leader election aware.
+	// Since we need to run this runnable for all replicas, this runnable must NOT be leader election aware.
+	return false
+}
+
+var _ manager.Runnable = runnableNoLeaderElectionFunc(nil)
+
+var _ manager.LeaderElectionRunnable = runnableNoLeaderElectionFunc(nil)
