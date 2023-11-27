@@ -72,4 +72,7 @@ type SecretKeySelector struct {
 const (
 	// Used as a data key in Secret resources to store a CA certificate.
 	TLSCAKey = "ca.crt"
+
+	// Used as a data ket in Secret resource to store an OCSP Staple.
+	TLSOCSPKey = "tls.ocsp-staple"
 )

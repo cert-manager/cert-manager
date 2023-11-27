@@ -59,9 +59,9 @@ type SecretsManager struct {
 
 // SecretData is a structure wrapping private key, Certificate and CA data
 type SecretData struct {
-	PrivateKey, Certificate, CA         []byte
-	CertificateName                     string
-	IssuerName, IssuerKind, IssuerGroup string
+	PrivateKey, Certificate, CA, OCSPStaple []byte
+	CertificateName                         string
+	IssuerName, IssuerKind, IssuerGroup     string
 }
 
 // NewSecretsManager returns a new SecretsManager. Setting
