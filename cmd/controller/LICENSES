@@ -152,4 +152,4 @@ sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICEN
 sigs.k8s.io/structured-merge-diff/v4,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.3.0/LICENSE,Apache-2.0
 sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.3.0/LICENSE,MIT
 sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.3.0/LICENSE,BSD-3-Clause
-software.sslmate.com/src/go-pkcs12,https://github.com/SSLMate/go-pkcs12/blob/v0.2.1/LICENSE,BSD-3-Clause
+software.sslmate.com/src/go-pkcs12,https://github.com/SSLMate/go-pkcs12/blob/v0.4.0/LICENSE,BSD-3-Clause
