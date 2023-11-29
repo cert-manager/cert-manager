@@ -106,6 +106,13 @@ setup-integration-tests: test/integration/versionchecker/testdata/test_manifests
 integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	cd test/integration && $(GOTESTSUM) ./...
 
+## (optional) Set this to true to run the E2E tests against an OpenShift cluster.
+## When set to true, the Hashicorp Vault Helm chart will be installed with
+## settings appropriate for OpenShift.
+##
+## @category Development
+E2E_OPENSHIFT ?= false
+
 .PHONY: e2e
 ## Run the end-to-end tests. Before running this, you need to run:
 ##
@@ -128,7 +135,7 @@ e2e-ci: | $(NEEDS_GO)
 	make/e2e-ci.sh
 
 $(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
-	$(GINKGO) build --tags e2e_test test/e2e
+	CGO_ENABLED=0 $(GINKGO) build --ldflags="-w -s" --trimpath --tags e2e_test test/e2e
 	mv test/e2e/e2e.test $(BINDIR)/test/e2e.test
 
 .PHONY: e2e-build
@@ -150,7 +157,7 @@ $(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
 ## Here's an example of how you might run a subset of the end-to-end tests
 ## which only require cert-manager to be installed:
 ##
-##  ./e2e --repo-root=/dev/null --ginkgo.focus="CA\ Issuer" --ginkgo.skip="Gateway"
+##  ./_bin/test/e2e.test --repo-root=/dev/null --ginkgo.focus="CA\ Issuer" --ginkgo.skip="Gateway"
 ##
 ## @category Development
 e2e-build: $(BINDIR)/test/e2e.test

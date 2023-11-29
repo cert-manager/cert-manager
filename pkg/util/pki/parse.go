@@ -165,16 +165,23 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 }
 
 // ParseSingleCertificateChain returns the PEM-encoded chain of certificates as
-// well as the PEM-encoded CA certificate. The certificate chain contains the
-// leaf certificate first.
+// well as the PEM-encoded CA certificate.
 //
-// The CA may not be a true root, but the highest intermediate certificate.
-// The returned CA may be empty if a single certificate was passed.
+// The CA (CAPEM) may not be a true root, but the highest intermediate certificate.
+// The certificate is chosen as follows:
+//   - If the chain has a self-signed root, the root certificate.
+//   - If the chain has no self-signed root and has > 1 certificates, the highest certificate in the chain.
+//   - If the chain has no self-signed root and has == 1 certificate, nil.
+//
+// The certificate chain (ChainPEM) starts with the leaf certificate and ends with the
+// highest certificate in the chain which is not self-signed. Self-signed certificates
+// are not included in the chain because we are certain they are known and trusted by the
+// client already.
 //
 // This function removes duplicate certificate entries as well as comments and
 // unnecessary white space.
 //
-// An error is returned if the passed bundle is not a valid flat tree chain,
+// An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// De-duplicate certificates. This moves "complicated" logic away from

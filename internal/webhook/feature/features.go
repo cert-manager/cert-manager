@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// feature contains webhook's feature gate setup functionality. Do not import
+// this package into any code that's shared with other components to prevent
+// overwriting other component's featue gates, see i.e
+// https://github.com/cert-manager/cert-manager/issues/6011
 package feature
 
 import (
@@ -22,27 +26,41 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+// see https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages
+
 const (
-	// FeatureName will enable XYZ feature.
-	// Fill this section out with additional details about the feature.
-	//
-	// Owner (responsible for graduating feature through to GA): @username
+	// Copy & paste the following template when you add a new feature gate:
+	// ========================== START TEMPLATE ==========================
+	// Owner: @username
 	// Alpha: vX.Y
 	// Beta: ...
-	//FeatureName featuregate.Feature = "FeatureName"
+	//
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
+	// FeatureName featuregate.Feature = "FeatureName"
+	// =========================== END TEMPLATE ===========================
 
 	// Owner: @joshvanl
-	// alpha: v1.7.1
+	// Alpha: v1.7.1
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
 
-	// Owner (responsible for graduating feature through to GA): @spockz , @irbekrm
+	// Owner: @spockz, @irbekrm
 	// Alpha: v1.9
+	//
 	// LiteralCertificateSubject will enable providing a subject in the Certificate that will be used literally in the CertificateSigningRequest. The subject can be provided via `LiteralSubject` field on `Certificate`'s spec.
 	// This feature gate must be used together with LiteralCertificateSubject webhook feature gate.
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
+
+	// Owner: @inteon
+	// Beta: v1.13
+	//
+	// DisallowInsecureCSRUsageDefinition will prevent the webhook from allowing
+	// CertificateRequest's usages to be only defined in the CSR, while leaving
+	// the usages field empty.
+	DisallowInsecureCSRUsageDefinition featuregate.Feature = "DisallowInsecureCSRUsageDefinition"
 )
 
 func init() {
@@ -57,6 +75,8 @@ func init() {
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
+
 	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
 }

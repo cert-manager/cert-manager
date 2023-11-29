@@ -24,7 +24,7 @@ import (
 
 	"github.com/kr/pretty"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -170,7 +170,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Solver: cmacme.ACMEChallengeSolver{
 					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Class: pointer.StringPtr("test-class-to-override"),
+							Class: ptr.To("test-class-to-override"),
 						},
 					},
 				},
@@ -752,7 +752,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "example.com",
-				Wildcard:   pointer.BoolPtr(true),
+				Wildcard:   ptr.To(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
@@ -880,7 +880,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Wildcard:   pointer.BoolPtr(true),
+				Wildcard:   ptr.To(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
@@ -939,7 +939,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   pointer.BoolPtr(true),
+				Wildcard:   ptr.To(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
@@ -998,7 +998,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   pointer.BoolPtr(true),
+				Wildcard:   ptr.To(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{

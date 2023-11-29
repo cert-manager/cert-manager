@@ -52,7 +52,7 @@ type ACMEIssuer struct {
 	// chains that has a certificate with this value as its issuer's CN
 	// +optional
 	// +kubebuilder:validation:MaxLength=64
-	PreferredChain string `json:"preferredChain"`
+	PreferredChain string `json:"preferredChain,omitempty"`
 
 	// Base64-encoded bundle of PEM CAs which can be used to validate the certificate
 	// chain presented by the ACME server.
@@ -641,4 +641,10 @@ type ACMEIssuerStatus struct {
 	// associated with the  Issuer
 	// +optional
 	LastRegisteredEmail string `json:"lastRegisteredEmail,omitempty"`
+
+	// LastPrivateKeyHash is a hash of the private key associated with the latest
+	// registered ACME account, in order to track changes made to registered account
+	// associated with the Issuer
+	// +optional
+	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
 }

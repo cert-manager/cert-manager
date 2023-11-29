@@ -23,13 +23,13 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/build"
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/versionchecker"
 )
@@ -131,7 +131,10 @@ func (o *Options) Complete() error {
 		return nil
 	}
 
-	versionChecker, err := versionchecker.New(o.RESTConfig, scheme.Scheme)
+	versionChecker, err := versionchecker.New(
+		o.RESTConfig,
+		runtime.NewScheme(),
+	)
 	if err != nil {
 		return err
 	}

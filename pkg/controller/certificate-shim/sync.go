@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
@@ -145,10 +146,11 @@ func SyncFnFor(
 						OwnerReferences: crt.OwnerReferences,
 					},
 					Spec: cmapi.CertificateSpec{
-						DNSNames:   crt.Spec.DNSNames,
-						SecretName: crt.Spec.SecretName,
-						IssuerRef:  crt.Spec.IssuerRef,
-						Usages:     crt.Spec.Usages,
+						DNSNames:    crt.Spec.DNSNames,
+						IPAddresses: crt.Spec.IPAddresses,
+						SecretName:  crt.Spec.SecretName,
+						IssuerRef:   crt.Spec.IssuerRef,
+						Usages:      crt.Spec.Usages,
 					},
 				})
 			} else {
@@ -320,6 +322,11 @@ func buildCertificates(
 		}
 	case *gwapi.Gateway:
 		for i, l := range ingLike.Spec.Listeners {
+			// TLS is only supported for a limited set of protocol types: https://gateway-api.sigs.k8s.io/guides/tls/#listeners-and-tls
+			if l.Protocol != gwapi.HTTPSProtocolType && l.Protocol != gwapi.TLSProtocolType {
+				continue
+			}
+
 			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
@@ -358,6 +365,17 @@ func buildCertificates(
 			controllerGVK = gatewayGVK
 		}
 
+		var (
+			ipAddress, dnsNames []string
+		)
+		for _, h := range hosts {
+			if ip := net.ParseIP(h); ip != nil {
+				ipAddress = append(ipAddress, h)
+			} else {
+				dnsNames = append(dnsNames, h)
+			}
+		}
+
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            secretRef.Name,
@@ -366,8 +384,9 @@ func buildCertificates(
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
-				DNSNames:   hosts,
-				SecretName: secretRef.Name,
+				DNSNames:    dnsNames,
+				IPAddresses: ipAddress,
+				SecretName:  secretRef.Name,
 				IssuerRef: cmmeta.ObjectReference{
 					Name:  issuerName,
 					Kind:  issuerKind,

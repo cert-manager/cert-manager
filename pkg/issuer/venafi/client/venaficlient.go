@@ -24,11 +24,11 @@ import (
 	"net/http"
 	"time"
 
-	vcert "github.com/Venafi/vcert/v4"
-	"github.com/Venafi/vcert/v4/pkg/certificate"
-	"github.com/Venafi/vcert/v4/pkg/endpoint"
-	"github.com/Venafi/vcert/v4/pkg/venafi/cloud"
-	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
+	vcert "github.com/Venafi/vcert/v5"
+	"github.com/Venafi/vcert/v5/pkg/certificate"
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
+	"github.com/Venafi/vcert/v5/pkg/venafi/cloud"
+	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
 	"github.com/go-logr/logr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"

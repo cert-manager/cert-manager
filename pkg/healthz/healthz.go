@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/utils/clock"
 )
 
 const (
@@ -51,8 +52,9 @@ type Server struct {
 // leader lease time, the leader election will be considered to have failed.
 func NewServer(leaderElectionHealthzAdaptorTimeout time.Duration) *Server {
 	leaderHealthzAdaptor := leaderelection.NewLeaderHealthzAdaptor(leaderElectionHealthzAdaptorTimeout)
+	clockHealthAdaptor := NewClockHealthAdaptor(clock.RealClock{})
 	mux := http.NewServeMux()
-	healthz.InstallLivezHandler(mux, leaderHealthzAdaptor)
+	healthz.InstallLivezHandler(mux, leaderHealthzAdaptor, clockHealthAdaptor)
 	return &Server{
 		server: &http.Server{
 			ReadTimeout:    healthzServerReadTimeout,

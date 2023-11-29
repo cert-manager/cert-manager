@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/create/certificaterequest"
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/create/certificaterequest"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -68,7 +68,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 	defer stopFn()
 
 	// Build clients
-	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
+	kubernetesCl, _, cmCl, _, _ := framework.NewClients(t, config)
 
 	testdataPath := getTestDataDir(t)
 
@@ -170,7 +170,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 	defer stopFn()
 
 	// Build clients
-	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
+	kubernetesCl, _, cmCl, _, _ := framework.NewClients(t, config)
 
 	testdataPath := getTestDataDir(t)
 
@@ -254,7 +254,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				},
 			},
 			expRunErr:          true,
-			expErrMsg:          "error when waiting for CertificateRequest to be signed: timed out waiting for the condition",
+			expErrMsg:          "error when waiting for CertificateRequest to be signed: context deadline exceeded",
 			expNamespace:       ns1,
 			expName:            cr7Name,
 			expKeyFilename:     cr7Name + ".key",
@@ -312,13 +312,13 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				}()
 				go func() {
 					defer close(errCh)
-					err = wait.PollImmediateUntil(time.Second, func() (done bool, err error) {
-						req, err = cmCl.CertmanagerV1().CertificateRequests(test.inputNamespace).Get(pollCtx, test.inputArgs[0], metav1.GetOptions{})
+					err = wait.PollUntilContextCancel(pollCtx, time.Second, true, func(ctx context.Context) (done bool, err error) {
+						req, err = cmCl.CertmanagerV1().CertificateRequests(test.inputNamespace).Get(ctx, test.inputArgs[0], metav1.GetOptions{})
 						if err != nil {
 							return false, nil
 						}
 						return true, nil
-					}, pollCtx.Done())
+					})
 					if err != nil {
 						errCh <- fmt.Errorf("timeout when waiting for CertificateRequest to be created, error: %v", err)
 						return
@@ -377,7 +377,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			// If applicable, check the file where the certificate is stored
 			// If the expected error message is the one below, we skip checking
 			// because no certificate will have been written to file
-			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: timed out waiting for the condition" {
+			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: context deadline exceeded" {
 				certData, err := os.ReadFile(test.expCertFilename)
 				if err != nil {
 					t.Errorf("error when reading file storing private key: %v", err)

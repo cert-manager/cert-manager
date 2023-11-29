@@ -82,7 +82,7 @@ func NewCA(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		certClient:        ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		fieldManager:      ctx.FieldManager,
 		recorder:          ctx.Recorder,
-		templateGenerator: pki.GenerateTemplateFromCertificateSigningRequest,
+		templateGenerator: pki.CertificateTemplateFromCertificateSigningRequest,
 		signingFn:         pki.SignCSRTemplate,
 	}
 }
@@ -129,6 +129,7 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
+	template.IssuingCertificateURL = issuerObj.GetSpec().CA.IssuingCertificateURLs
 
 	bundle, err := c.signingFn(caCerts, caKey, template)
 	if err != nil {

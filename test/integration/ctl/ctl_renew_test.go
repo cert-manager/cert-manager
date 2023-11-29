@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/renew"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -45,7 +45,7 @@ func TestCtlRenew(t *testing.T) {
 	defer stopFn()
 
 	// Build clients
-	kubeClient, _, cmCl, _ := framework.NewClients(t, config)
+	kubeClient, _, cmCl, _, _ := framework.NewClients(t, config)
 
 	var (
 		crt1Name = "testcrt-1"

@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	"github.com/go-logr/logr"
 	authzv1 "k8s.io/api/authorization/v1"
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -70,7 +70,12 @@ func TestProcessItem(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rootTmpl, err := pki.GenerateTemplateFromCSRPEM(rootCSRPEM, time.Hour, true)
+	rootTmpl, err := pki.CertificateTemplateFromCSRPEM(
+		rootCSRPEM,
+		pki.CertificateTemplateOverrideDuration(time.Hour),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(true, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +90,12 @@ func TestProcessItem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	leafTmpl, err := pki.GenerateTemplateFromCSRPEM(leafCSRPEM, time.Hour, false)
+	leafTmpl, err := pki.CertificateTemplateFromCSRPEM(
+		leafCSRPEM,
+		pki.CertificateTemplateOverrideDuration(time.Hour),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(false, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

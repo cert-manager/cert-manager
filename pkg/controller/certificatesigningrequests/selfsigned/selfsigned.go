@@ -160,7 +160,7 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 		return err
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateSigningRequest(csr)
+	template, err := pki.CertificateTemplateFromCertificateSigningRequest(csr)
 	if err != nil {
 		message := fmt.Sprintf("Error generating certificate template: %s", err)
 		log.Error(err, message)

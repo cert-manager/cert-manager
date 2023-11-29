@@ -21,7 +21,7 @@ ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen ve
 
 .PHONY: verify-modules
 verify-modules: | $(NEEDS_CMREL)
-	$(CMREL) validate-gomod --path $(shell pwd)
+	$(CMREL) validate-gomod --path $(shell pwd) --direct-import-modules github.com/cert-manager/cert-manager/cmd/ctl --no-dummy-modules github.com/cert-manager/cert-manager/integration-tests
 
 .PHONY: verify-imports
 verify-imports: | $(NEEDS_GOIMPORTS)
@@ -35,12 +35,9 @@ verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz
 verify-errexit:
 	./hack/verify-errexit.sh
 
-__PYTHON := python3
-
 .PHONY: verify-boilerplate
-verify-boilerplate:
-	@command -v $(__PYTHON) >/dev/null || (echo "couldn't find python3 at '$(__PYTHON)', required for $@. Install python3 or set '__PYTHON'" && exit 1)
-	$(__PYTHON) hack/verify_boilerplate.py
+verify-boilerplate: | $(NEEDS_BOILERSUITE)
+	$(BOILERSUITE) .
 
 .PHONY: verify-licenses
 ## Check that the LICENSES file is up to date; must pass before a change to go.mod can be merged
@@ -92,7 +89,8 @@ verify-codegen: | k8s-codegen-tools $(NEEDS_GO)
 		./$(BINDIR)/tools/informer-gen \
 		./$(BINDIR)/tools/lister-gen \
 		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen
+		./$(BINDIR)/tools/conversion-gen \
+		./$(BINDIR)/tools/openapi-gen
 
 .PHONY: update-codegen
 update-codegen: | k8s-codegen-tools $(NEEDS_GO)
@@ -103,7 +101,8 @@ update-codegen: | k8s-codegen-tools $(NEEDS_GO)
 		./$(BINDIR)/tools/informer-gen \
 		./$(BINDIR)/tools/lister-gen \
 		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen
+		./$(BINDIR)/tools/conversion-gen \
+		./$(BINDIR)/tools/openapi-gen
 
 .PHONY: update-all
 ## Update CRDs, code generation and licenses to the latest versions.

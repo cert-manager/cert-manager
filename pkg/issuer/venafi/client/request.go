@@ -23,8 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Venafi/vcert/v4/pkg/certificate"
+	"github.com/Venafi/vcert/v5/pkg/certificate"
 
+	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -49,6 +50,34 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	if err != nil {
 		return "", err
 	}
+
+	// If the connector is TPP, we unconditionally reset any prior failed enrollment
+	// so that we don't get stuck with "Fix any errors, and then click Retry."
+	// (60% of the time) or "WebSDK CertRequest" (40% of the time).
+	//
+	// It would be preferable to only reset when necessary to avoid the extra
+	// call. We tried that in https://github.com/Venafi/vcert/pull/269. It turns
+	// out that calling "request" followed by "reset(restart=true)" causes a
+	// race in TPP.
+	//
+	// Unconditionally resetting isn't optimal, but "reset(restart=false)" is
+	// lightweight. We haven't verified that it doesn't slow things down on
+	// large TPP instances.
+	//
+	// Note that resetting won't affect the existing certificate if one was
+	// already issued.
+	if v.tppClient != nil {
+		// We can't use the instrumented v.vcertClient because its concrete
+		// value is `instrumentedConnector`, which doesn't give access to the
+		// *tpp.Connector it wraps. Also, `instrumentedConnector` doesn't
+		// support `ResetCertificate`.
+		err := v.tppClient.ResetCertificate(vreq, false)
+		notFoundErr := &tpp.ErrCertNotFound{}
+		if err != nil && !errors.As(err, &notFoundErr) {
+			return "", err
+		}
+	}
+
 	return v.vcertClient.RequestCertificate(vreq)
 }
 
@@ -83,7 +112,7 @@ func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields [
 		return nil, err
 	}
 
-	tmpl, err := pki.GenerateTemplateFromCSRPEM(csrPEM, duration, false)
+	tmpl, err := pki.CertificateTemplateFromCSRPEM(csrPEM)
 	if err != nil {
 		return nil, err
 	}

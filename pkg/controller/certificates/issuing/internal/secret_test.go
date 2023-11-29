@@ -36,7 +36,7 @@ import (
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -110,7 +110,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertBundle.Certificate,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: []byte("test-cert"), CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: []byte("test-cert"), CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
 					t.Error("unexpected apply call")
@@ -124,7 +127,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertBundle.Certificate,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -159,7 +165,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
 			certificate:        baseCertBundle.Certificate,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expUID := apitypes.UID("test-uid")
@@ -176,9 +185,9 @@ func Test_SecretsManager(t *testing.T) {
 						WithData(map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes, corev1.TLSPrivateKeyKey: []byte("test-key"), cmmeta.TLSCAKey: []byte("test-ca")}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
-							Name: pointer.String("test"), UID: &expUID,
-							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
+							Name: ptr.To("test"), UID: &expUID,
+							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -204,7 +213,10 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
-			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -248,7 +260,10 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
-			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expUID := apitypes.UID("test-uid")
@@ -271,9 +286,9 @@ func Test_SecretsManager(t *testing.T) {
 						}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
-							Name: pointer.String("test"), UID: &expUID,
-							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
+							Name: ptr.To("test"), UID: &expUID,
+							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -299,7 +314,10 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
-			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -346,7 +364,10 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
-			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -384,7 +405,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
 			certificate:        baseCertWithSecretTemplate,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expUID := apitypes.UID("test-uid")
@@ -409,9 +433,9 @@ func Test_SecretsManager(t *testing.T) {
 						}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
-							Name: pointer.String("test"), UID: &expUID,
-							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
+							Name: ptr.To("test"), UID: &expUID,
+							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -428,7 +452,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithAdditionalOutputFormatDER,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -465,7 +492,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithAdditionalOutputFormatCombinedPEM,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -502,7 +532,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithAdditionalOutputFormats,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -539,7 +572,10 @@ func Test_SecretsManager(t *testing.T) {
 		"if secret exists, with tls-combined.pem and key.der but no additional formats specified": {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertBundle.Certificate,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: gen.DefaultTestNamespace,
@@ -595,7 +631,10 @@ func Test_SecretsManager(t *testing.T) {
 		"if secret exists, with tls-combined.pem and key.der but only DER Format specified": {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithAdditionalOutputFormatDER,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: gen.DefaultTestNamespace,
@@ -652,7 +691,10 @@ func Test_SecretsManager(t *testing.T) {
 		"if secret exists, with tls-combined.pem and key.der but only Combined PEM Format specified": {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithAdditionalOutputFormatCombinedPEM,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: gen.DefaultTestNamespace,
@@ -709,7 +751,10 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
 			certificate:        baseCertWithSecretTemplate,
 			existingSecret:     nil,
-			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					return nil, errors.New("this is an error")

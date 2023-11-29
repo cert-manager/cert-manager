@@ -29,12 +29,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 func buildCertificate(cn string, dnsNames ...string) *cmapi.Certificate {
@@ -410,8 +407,9 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	defaultExtraExtensions := []pkix.Extension{
 		{
-			Id:    OIDExtensionKeyUsage,
-			Value: asn1KeyUsage,
+			Id:       OIDExtensionKeyUsage,
+			Value:    asn1KeyUsage,
+			Critical: true,
 		},
 	}
 
@@ -421,8 +419,9 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	ipsecExtraExtensions := []pkix.Extension{
 		{
-			Id:    OIDExtensionKeyUsage,
-			Value: asn1KeyUsage,
+			Id:       OIDExtensionKeyUsage,
+			Value:    asn1KeyUsage,
+			Critical: true,
 		},
 		{
 			Id:    OIDExtensionExtendedKeyUsage,
@@ -432,7 +431,7 @@ func TestGenerateCSR(t *testing.T) {
 
 	basicConstraintsGenerator := func(isCA bool) ([]byte, error) {
 		return asn1.Marshal(struct {
-			IsCA bool
+			IsCA bool `asn1:"optional"`
 		}{
 			IsCA: isCA,
 		})
@@ -506,8 +505,9 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
-						Id:    OIDExtensionKeyUsage,
-						Value: asn1KeyUsageWithCa,
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsageWithCa,
+						Critical: true,
 					},
 				},
 			},
@@ -522,12 +522,14 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
-						Id:    OIDExtensionKeyUsage,
-						Value: asn1KeyUsage,
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsage,
+						Critical: true,
 					},
 					{
-						Id:    OIDExtensionBasicConstraints,
-						Value: basicConstraintsWithoutCA,
+						Id:       OIDExtensionBasicConstraints,
+						Value:    basicConstraintsWithoutCA,
+						Critical: true,
 					},
 				},
 			},
@@ -543,12 +545,14 @@ func TestGenerateCSR(t *testing.T) {
 				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
-						Id:    OIDExtensionKeyUsage,
-						Value: asn1KeyUsageWithCa,
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1KeyUsageWithCa,
+						Critical: true,
 					},
 					{
-						Id:    OIDExtensionBasicConstraints,
-						Value: basicConstraintsWithCA,
+						Id:       OIDExtensionBasicConstraints,
+						Value:    basicConstraintsWithCA,
+						Critical: true,
 					},
 				},
 			},
@@ -614,9 +618,11 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, tt.literalCertificateSubjectFeatureEnabled)()
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.UseCertificateRequestBasicConstraints, tt.basicConstraintsFeatureEnabled)()
-			got, err := GenerateCSR(tt.crt)
+			got, err := GenerateCSR(
+				tt.crt,
+				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
+				WithUseLiteralSubject(tt.literalCertificateSubjectFeatureEnabled),
+			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -656,8 +662,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			crt:  &cmapi.Certificate{},
 			want: []pkix.Extension{
 				{
-					Id:    OIDExtensionKeyUsage,
-					Value: asn1DefaultKeyUsage,
+					Id:       OIDExtensionKeyUsage,
+					Value:    asn1DefaultKeyUsage,
+					Critical: true,
 				},
 			},
 			wantErr: false,
@@ -671,8 +678,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			},
 			want: []pkix.Extension{
 				{
-					Id:    OIDExtensionKeyUsage,
-					Value: asn1DefaultKeyUsage,
+					Id:       OIDExtensionKeyUsage,
+					Value:    asn1DefaultKeyUsage,
+					Critical: true,
 				},
 				{
 					Id:    OIDExtensionExtendedKeyUsage,
@@ -690,8 +698,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			},
 			want: []pkix.Extension{
 				{
-					Id:    OIDExtensionKeyUsage,
-					Value: asn1DefaultKeyUsage,
+					Id:       OIDExtensionKeyUsage,
+					Value:    asn1DefaultKeyUsage,
+					Critical: true,
 				},
 				{
 					Id:    OIDExtensionExtendedKeyUsage,
@@ -724,7 +733,7 @@ func TestSignCSRTemplate(t *testing.T) {
 		pk, err := GenerateECPrivateKey(256)
 		require.NoError(t, err)
 		tmpl := &x509.Certificate{
-			Version:               2,
+			Version:               3,
 			BasicConstraintsValid: true,
 			SerialNumber:          big.NewInt(0),
 			Subject: pkix.Name{

@@ -32,7 +32,7 @@ import (
 )
 
 func init() {
-	logs.InitLogs(flag.CommandLine)
+	logs.InitLogs()
 	cfg.AddFlags(flag.CommandLine)
 
 	wait.ForeverTestTimeout = time.Second * 60

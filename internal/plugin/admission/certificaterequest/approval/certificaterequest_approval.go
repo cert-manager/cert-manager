@@ -204,7 +204,7 @@ func (c *certificateRequestApproval) cacheAPIResource(groupKind schema.GroupKind
 
 var errNoResourceExists = fmt.Errorf("no resource registered")
 
-// signerNameForAPIResource returns the computed signerName for a given API resource
+// signerNamesForAPIResource returns the computed signerName for a given API resource
 // referenced by a CertificateRequest in a namespace.
 func signerNamesForAPIResource(name, namespace string, info resourceInfo) []string {
 	signerNames := make([]string, 0, 2)

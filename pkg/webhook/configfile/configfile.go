@@ -18,107 +18,68 @@ package configfile
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-// Filesystem is an interface used to mock out calls to ReadFile
-type Filesystem interface {
-	ReadFile(filename string) ([]byte, error)
+type WebhookConfigFile struct {
+	Config *config.WebhookConfiguration
 }
 
-type realFS struct{}
-
-func (fs realFS) ReadFile(filename string) ([]byte, error) {
-	return os.ReadFile(filename)
-}
-
-// NewRealFS builds a Filesystem that wraps around `os.ReadFile`.
-func NewRealFS() Filesystem {
-	return realFS{}
-}
-
-type Loader interface {
-	Load() (*config.WebhookConfiguration, error)
-}
-
-type fsLoader struct {
-	fs       Filesystem
-	filename string
-	codec    *serializer.CodecFactory
-}
-
-var _ Loader = &fsLoader{}
-
-func (f *fsLoader) Load() (*config.WebhookConfiguration, error) {
-	data, err := f.fs.ReadFile(f.filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read webhook config file %q, error: %v", f.filename, err)
+func New() *WebhookConfigFile {
+	return &WebhookConfigFile{
+		Config: &config.WebhookConfiguration{},
 	}
+}
 
-	if len(data) == 0 {
-		return nil, fmt.Errorf("webhook config file %q was empty", f.filename)
-	}
-
-	cfg, err := decodeWebhookConfiguration(f.codec, data)
+func decodeConfiguration(data []byte) (*config.WebhookConfiguration, error) {
+	_, codec, err := scheme.NewSchemeAndCodecs(serializer.EnableStrict)
 	if err != nil {
 		return nil, err
 	}
 
-	// make all paths absolute
-	resolveRelativePaths(webhookConfigurationPathRefs(cfg), filepath.Dir(f.filename))
-	return cfg, nil
-}
-
-func NewFSLoader(fs Filesystem, name string) (Loader, error) {
-	_, webhookCodec, err := scheme.NewSchemeAndCodecs(serializer.EnableStrict)
-	if err != nil {
-		return nil, err
-	}
-
-	return &fsLoader{
-		fs:       fs,
-		filename: name,
-		codec:    webhookCodec,
-	}, nil
-}
-
-func resolveRelativePaths(paths []*string, root string) {
-	for _, path := range paths {
-		// leave empty paths alone, "no path" is a valid input
-		// do not attempt to resolve paths that are already absolute
-		if len(*path) > 0 && !filepath.IsAbs(*path) {
-			*path = filepath.Join(root, *path)
-		}
-	}
-}
-
-func decodeWebhookConfiguration(codec *serializer.CodecFactory, data []byte) (*config.WebhookConfiguration, error) {
-	obj, gvk, err := codec.UniversalDecoder().Decode(data, nil, nil)
+	obj, _, err := codec.UniversalDecoder().Decode(data, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode: %w", err)
 	}
 
-	internalObj, ok := obj.(*config.WebhookConfiguration)
+	c, ok := obj.(*config.WebhookConfiguration)
 	if !ok {
-		return nil, fmt.Errorf("failed to cast object to WebhookConfiguration, unexpected type: %v", gvk)
+		return nil, fmt.Errorf("failed to cast object to WebhookConfiguration, unexpected type")
 	}
 
-	return internalObj, nil
+	return c, nil
+
+}
+
+func (cfg *WebhookConfigFile) DecodeAndConfigure(data []byte) error {
+	config, err := decodeConfiguration(data)
+	if err != nil {
+		return err
+	}
+	cfg.Config = config
+
+	return nil
+}
+
+func (cfg *WebhookConfigFile) GetPathRefs() ([]*string, error) {
+	paths, err := WebhookConfigurationPathRefs(cfg.Config)
+	if err != nil {
+		return nil, err
+	}
+	return paths, err
+
 }
 
 // webhookConfigurationPathRefs returns pointers to all the WebhookConfiguration fields that contain filepaths.
 // You might use this, for example, to resolve all relative paths against some common root before
 // passing the configuration to the application. This method must be kept up to date as new fields are added.
-func webhookConfigurationPathRefs(cfg *config.WebhookConfiguration) []*string {
+func WebhookConfigurationPathRefs(cfg *config.WebhookConfiguration) ([]*string, error) {
 	return []*string{
 		&cfg.TLSConfig.Filesystem.KeyFile,
 		&cfg.TLSConfig.Filesystem.CertFile,
 		&cfg.KubeConfig,
-	}
+	}, nil
 }

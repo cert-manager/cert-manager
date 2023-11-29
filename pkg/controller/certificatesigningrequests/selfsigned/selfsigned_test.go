@@ -320,7 +320,7 @@ func TestProcessItem(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				KubeObjects:        []runtime.Object{csrBundle.secret},
 				ExpectedEvents: []string{
-					"Warning ErrorGenerating Error generating certificate template: failed to decode csr",
+					"Warning ErrorGenerating Error generating certificate template: error decoding certificate request PEM block",
 				},
 
 				ExpectedActions: []testpkg.Action{
@@ -364,7 +364,7 @@ func TestProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "ErrorGenerating",
-								Message:            "Error generating certificate template: failed to decode csr",
+								Message:            "Error generating certificate template: error decoding certificate request PEM block",
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),

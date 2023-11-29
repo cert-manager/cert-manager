@@ -59,7 +59,9 @@ type SecretsManager struct {
 
 // SecretData is a structure wrapping private key, Certificate and CA data
 type SecretData struct {
-	PrivateKey, Certificate, CA []byte
+	PrivateKey, Certificate, CA         []byte
+	CertificateName                     string
+	IssuerName, IssuerKind, IssuerGroup string
 }
 
 // NewSecretsManager returns a new SecretsManager. Setting
@@ -150,27 +152,13 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Data[cmmeta.TLSCAKey] = data.CA
 	}
 
-	var certificate *x509.Certificate
-	if len(data.Certificate) > 0 {
-		var err error
-		certificate, err = utilpki.DecodeX509CertificateBytes(data.Certificate)
-		// TODO: handle InvalidData here?
-		if err != nil {
-			return err
-		}
-	}
-
-	var err error
-	secret.Annotations, err = certificates.AnnotationsForCertificateSecret(crt, certificate)
-	if err != nil {
-		return err
+	if secret.Annotations == nil {
+		secret.Annotations = make(map[string]string)
 	}
 
 	if secret.Labels == nil {
 		secret.Labels = make(map[string]string)
 	}
-
-	secret.Labels[cmapi.PartOfCertManagerControllerLabelKey] = "true"
 
 	if crt.Spec.SecretTemplate != nil {
 		for k, v := range crt.Spec.SecretTemplate.Labels {
@@ -180,6 +168,39 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 			secret.Annotations[k] = v
 		}
 	}
+
+	var certificate *x509.Certificate
+	if len(data.Certificate) > 0 {
+		var err error
+		certificate, err = utilpki.DecodeX509CertificateBytes(data.Certificate)
+		// TODO: handle InvalidData here? Maybe we should still patch the secret
+		// when we detect that the certificate bytes are invalid.
+		if err != nil {
+			return err
+		}
+	}
+
+	certificateDetailsAnnotations, err := certificates.AnnotationsForCertificate(certificate)
+	if err != nil {
+		return err
+	}
+	for k, v := range certificateDetailsAnnotations {
+		secret.Annotations[k] = v
+	}
+
+	// Add the certificate name and issuer details to the secret annotations.
+	// If the annotations are not set/ empty, we do not use them to determine
+	// if the secret needs to be updated.
+	if data.CertificateName != "" {
+		secret.Annotations[cmapi.CertificateNameKey] = data.CertificateName
+	}
+	if data.IssuerName != "" || data.IssuerKind != "" || data.IssuerGroup != "" {
+		secret.Annotations[cmapi.IssuerNameAnnotationKey] = data.IssuerName
+		secret.Annotations[cmapi.IssuerKindAnnotationKey] = data.IssuerKind
+		secret.Annotations[cmapi.IssuerGroupAnnotationKey] = data.IssuerGroup
+	}
+
+	secret.Labels[cmapi.PartOfCertManagerControllerLabelKey] = "true"
 
 	return nil
 }

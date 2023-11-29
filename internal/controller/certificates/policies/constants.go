@@ -29,12 +29,21 @@ const (
 	// InvalidCertificate is a policy violation whereby the signed certificate in
 	// the Input Secret could not be parsed or decoded.
 	InvalidCertificate string = "InvalidCertificate"
+	// InvalidCertificateRequest is a policy violation whereby the CSR in
+	// the Input CertificateRequest could not be parsed or decoded.
+	InvalidCertificateRequest string = "InvalidCertificateRequest"
+
 	// SecretMismatch is a policy violation reason for a scenario where Secret's
 	// private key does not match spec.
 	SecretMismatch string = "SecretMismatch"
 	// IncorrectIssuer is a policy violation reason for a scenario where
 	// Certificate has been issued by incorrect Issuer.
 	IncorrectIssuer string = "IncorrectIssuer"
+	// IncorrectCertificate is a policy violation reason for a scenario where
+	// the Secret referred to by this Certificate's spec.secretName,
+	// already has a `cert-manager.io/certificate-name` annotation
+	// with the name of another Certificate.
+	IncorrectCertificate string = "IncorrectCertificate"
 	// RequestChanged is a policy violation reason for a scenario where
 	// CertificateRequest not valid for Certificate's spec.
 	RequestChanged string = "RequestChanged"
@@ -48,10 +57,9 @@ const (
 	// SecretTemplate is not reflected on the target Secret, either by having
 	// extra, missing, or wrong Annotations or Labels.
 	SecretTemplateMismatch string = "SecretTemplateMismatch"
-
-	// SecretBaseLabelsMissing is a policy violation whereby the Secret is
+	// SecretManagedMetadataMismatch is a policy violation whereby the Secret is
 	// missing labels that should have been added by cert-manager
-	SecretBaseLabelsMissing string = "SecretBaseLabelsMissing"
+	SecretManagedMetadataMismatch string = "SecretManagedMetadataMismatch"
 
 	// AdditionalOutputFormatsMismatch is a policy violation whereby the
 	// Certificate's AdditionalOutputFormats is not reflected on the target

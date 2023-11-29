@@ -557,4 +557,9 @@ type ACMEIssuerStatus struct {
 	// ACME account, in order to track changes made to registered account
 	// associated with the  Issuer
 	LastRegisteredEmail string
+
+	// LastPrivateKeyHash is a hash of the private key associated with the latest
+	// registered ACME account, in order to track changes made to registered account
+	// associated with the Issuer
+	LastPrivateKeyHash string
 }

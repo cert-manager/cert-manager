@@ -67,13 +67,17 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 // should cause a Certificate to be marked for issuance.
 func NewTriggerPolicyChain(c clock.Clock) Chain {
 	return Chain{
-		SecretDoesNotExist,
-		SecretIsMissingData,
-		SecretPublicKeysDiffer,
-		SecretPrivateKeyMatchesSpec,
-		SecretIssuerAnnotationsNotUpToDate,
-		CurrentCertificateRequestNotValidForSpec,
-		CurrentCertificateNearingExpiry(c),
+		SecretDoesNotExist,     // Make sure the Secret exists
+		SecretIsMissingData,    // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
+
+		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
+		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
+
+		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
+		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
+		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
+		CurrentCertificateNearingExpiry(c),                  // Make sure the Certificate in the Secret is not nearing expiry
 	}
 }
 
@@ -81,11 +85,17 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 // true, would cause a Certificate to be marked as not ready.
 func NewReadinessPolicyChain(c clock.Clock) Chain {
 	return Chain{
-		SecretDoesNotExist,
-		SecretIsMissingData,
-		SecretPublicKeysDiffer,
-		CurrentCertificateRequestNotValidForSpec,
-		CurrentCertificateHasExpired(c),
+		SecretDoesNotExist,     // Make sure the Secret exists
+		SecretIsMissingData,    // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
+
+		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
+		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
+
+		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
+		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
+		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
+		CurrentCertificateHasExpired(c),                     // Make sure the Certificate in the Secret has not expired
 	}
 }
 
@@ -94,14 +104,17 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 // correctness of metadata and output formats of Certificate's Secrets.
 func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string) Chain {
 	return Chain{
-		SecretTemplateMismatchesSecret,
-		SecretTemplateMismatchesSecretManagedFields(fieldManager),
-		SecretAdditionalOutputFormatsDataMismatch,
-		SecretAdditionalOutputFormatsOwnerMismatch(fieldManager),
+		SecretBaseLabelsMismatch,                                             // Make sure the managed labels have the correct values
+		SecretCertificateDetailsAnnotationsMismatch,                          // Make sure the managed certificate details annotations have the correct values
+		SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager), // Make sure the only the expected managed labels and annotations exist
+		SecretSecretTemplateMismatch,                                         // Make sure the template label and annotation values match the secret
+		SecretSecretTemplateManagedFieldsMismatch(fieldManager),              // Make sure the only the expected template labels and annotations exist
+		SecretAdditionalOutputFormatsMismatch,
+		SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager),
+		SecretOwnerReferenceMismatch(ownerRefEnabled),
 		SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled, fieldManager),
-		SecretOwnerReferenceValueMismatch(ownerRefEnabled),
-		SecretKeystoreFormatMatchesSpec,
-		SecretBaseLabelsAreMissing,
+
+		SecretKeystoreFormatMismatch,
 	}
 }
 
@@ -109,8 +122,8 @@ func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string)
 // temporary certificate is valid.
 func NewTemporaryCertificatePolicyChain() Chain {
 	return Chain{
-		SecretDoesNotExist,
-		SecretIsMissingData,
-		SecretPublicKeysDiffer,
+		SecretDoesNotExist,     // Make sure the Secret exists
+		SecretIsMissingData,    // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
 	}
 }

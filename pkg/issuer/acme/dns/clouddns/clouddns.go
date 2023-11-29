@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -155,9 +156,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 		Ttl:     int64(60),
 		Type:    "TXT",
 	}
-	change := &dns.Change{
-		Additions: []*dns.ResourceRecordSet{rec},
-	}
+	change := &dns.Change{}
 
 	// Look for existing records.
 	list, err := c.client.ResourceRecordSets.List(c.project, zone).Name(fqdn).Type("TXT").Do()
@@ -165,9 +164,23 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 		return err
 	}
 	if len(list.Rrsets) > 0 {
-		// Attempt to delete the existing records when adding our new one.
+		// Merge the existing RR Data into the new one, requires a delete and an add operation, or it will fail.
+		// The operations are applied atomically to the zone, so there is no point in time where the entire TXT record is deleted.
+		// Reference; https://cloud.google.com/dns/docs/reference/v1/changes
 		change.Deletions = list.Rrsets
+		for _, r := range list.Rrsets {
+			if r.Type == "TXT" && r.Name == fqdn {
+				// Check if record is already present
+				for _, s := range r.Rrdatas {
+					if strings.Trim(s, "\"") == value {
+						return nil
+					}
+				}
+				rec.Rrdatas = append(rec.Rrdatas, r.Rrdatas...)
+			}
+		}
 	}
+	change.Additions = []*dns.ResourceRecordSet{rec}
 
 	chg, err := c.client.Changes.Create(c.project, zone, change).Do()
 	if err != nil {
@@ -194,7 +207,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		return err
 	}
 
-	records, err := c.findTxtRecords(zone, fqdn)
+	records, err := c.findTxtRecords(zone, fqdn, value)
 	if err != nil {
 		return err
 	}
@@ -202,6 +215,19 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	for _, rec := range records {
 		change := &dns.Change{
 			Deletions: []*dns.ResourceRecordSet{rec},
+		}
+		// If more than our rrdata, then filter it out but keep the rest
+		// Like in the Present() call, to keep the other rrdata we must delete, and re-add it, in one atomic operation.
+		if len(rec.Rrdatas) > 1 {
+			filtered := new(dns.ResourceRecordSet)
+			*filtered = *rec // shallow copy
+			filtered.Rrdatas = make([]string, 0, len(rec.Rrdatas))
+			for _, r := range rec.Rrdatas {
+				if strings.Trim(r, "\"") != value {
+					filtered.Rrdatas = append(filtered.Rrdatas, r)
+				}
+			}
+			change.Additions = []*dns.ResourceRecordSet{filtered}
 		}
 		_, err = c.client.Changes.Create(c.project, zone, change).Do()
 		if err != nil {
@@ -246,16 +272,22 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 	return zones.ManagedZones[0].Name, nil
 }
 
-func (c *DNSProvider) findTxtRecords(zone, fqdn string) ([]*dns.ResourceRecordSet, error) {
+func (c *DNSProvider) findTxtRecords(zone, fqdn, value string) ([]*dns.ResourceRecordSet, error) {
 	recs, err := c.client.ResourceRecordSets.List(c.project, zone).Do()
 	if err != nil {
 		return nil, err
 	}
 
 	found := []*dns.ResourceRecordSet{}
+RecLoop:
 	for _, r := range recs.Rrsets {
 		if r.Type == "TXT" && r.Name == fqdn {
-			found = append(found, r)
+			for _, s := range r.Rrdatas {
+				if strings.Trim(s, "\"") == value {
+					found = append(found, r)
+					continue RecLoop
+				}
+			}
 		}
 	}
 

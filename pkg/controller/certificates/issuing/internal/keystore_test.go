@@ -56,7 +56,7 @@ func mustSelfSignCertificate(t *testing.T, pkBytes []byte) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	x509Crt, err := pki.GenerateTemplate(&cmapi.Certificate{
+	x509Crt, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{
 			DNSNames: []string{"example.com"},
 		},
@@ -84,7 +84,7 @@ func mustCert(t *testing.T, commonName string, isCA bool) *keyAndCert {
 	keyPEM, err := pki.EncodePrivateKey(key, cmapi.PKCS8)
 	require.NoError(t, err)
 
-	cert, err := pki.GenerateTemplate(&cmapi.Certificate{
+	cert, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{
 			CommonName: commonName,
 			IsCA:       isCA,
@@ -335,7 +335,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	})
 	t.Run("encodePKCS12Keystore *prepends* non-leaf certificates to the supplied CA certificate chain", func(t *testing.T) {
 		const password = "password"
-		var caChainInPEM []byte = mustSelfSignCertificate(t, nil)
+		caChainInPEM := mustSelfSignCertificate(t, nil)
 		caChainIn, err := pki.DecodeX509CertificateChainBytes(caChainInPEM)
 		require.NoError(t, err)
 

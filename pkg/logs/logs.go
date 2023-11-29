@@ -21,13 +21,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/component-base/logs"
+	logsapi "k8s.io/component-base/logs/api/v1"
+	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 
@@ -35,7 +38,7 @@ import (
 )
 
 var (
-	Log = klogr.New().WithName("cert-manager")
+	Log = klogr.NewWithOptions().WithName("cert-manager")
 )
 
 const (
@@ -49,8 +52,6 @@ const (
 	TraceLevel        = 5
 )
 
-var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
-
 // GlogWriter serves as a bridge between the standard log package and the glog package.
 type GlogWriter struct{}
 
@@ -61,23 +62,53 @@ func (writer GlogWriter) Write(data []byte) (n int, err error) {
 }
 
 // InitLogs initializes logs the way we want for kubernetes.
-func InitLogs(fs *flag.FlagSet) {
-	if fs == nil {
-		fs = flag.CommandLine
-	}
-	klog.InitFlags(fs)
-	_ = fs.Set("logtostderr", "true")
+func InitLogs() {
+	logs.InitLogs()
 
 	log.SetOutput(GlogWriter{})
 	log.SetFlags(0)
+}
 
-	// The default glog flush interval is 30 seconds, which is frighteningly long.
-	go wait.Until(klog.Flush, *logFlushFreq, wait.NeverStop)
+func AddFlagsNonDeprecated(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
+	var allFlags pflag.FlagSet
+	logsapi.AddFlags(opts, &allFlags)
+
+	allFlags.VisitAll(func(f *pflag.Flag) {
+		switch f.Name {
+		case "logging-format", "log-flush-frequency", "v", "vmodule":
+			fs.AddFlag(f)
+		}
+	})
+}
+
+func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
+	var allFlags flag.FlagSet
+	klog.InitFlags(&allFlags)
+
+	allFlags.VisitAll(func(f *flag.Flag) {
+		switch f.Name {
+		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
+			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
+			pf := pflag.PFlagFromGoFlag(f)
+			pf.Deprecated = "this flag may be removed in the future"
+			fs.AddFlag(pf)
+		}
+	})
+
+	AddFlagsNonDeprecated(opts, fs)
+}
+
+func ValidateAndApply(opts *logsapi.LoggingConfiguration) error {
+	return logsapi.ValidateAndApply(opts, nil)
+}
+
+func ValidateAndApplyAsField(opts *logsapi.LoggingConfiguration, fldPath *field.Path) error {
+	return logsapi.ValidateAndApplyAsField(opts, nil, fldPath)
 }
 
 // FlushLogs flushes logs immediately.
 func FlushLogs() {
-	klog.Flush()
+	logs.FlushLogs()
 }
 
 const (
@@ -135,8 +166,6 @@ func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.L
 		RelatedResourceKindKey, kind,
 	)
 }
-
-var contextKey = &struct{}{}
 
 func FromContext(ctx context.Context, names ...string) logr.Logger {
 	l, err := logr.FromContext(ctx)

@@ -1,0 +1,18 @@
+{{- if .Values.config -}}
+{{- $_ := .Values.config.apiVersion | required ".Values.config.apiVersion must be set !" -}}
+{{- $_ := .Values.config.kind | required ".Values.config.kind must be set !" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cert-manager.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .Values.config | toYaml | nindent 4 }}
+{{- end -}}

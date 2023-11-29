@@ -51,7 +51,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -84,7 +84,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 
 	cl := kubernetes.NewForConfigOrDie(config)
 	// allow the controller to provision the Secret
-	if err := wait.PollImmediateUntil(time.Millisecond*500, authoritySecretReadyConditionFunc(t, ctx, cl, auth.SecretNamespace, auth.SecretName), ctx.Done()); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, authoritySecretReadyConditionFunc(t, cl, auth.SecretNamespace, auth.SecretName)); err != nil {
 		t.Errorf("Failed waiting for Secret to contain valid certificate: %v", err)
 		return
 	}
@@ -99,7 +99,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -132,7 +132,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 
 	cl := kubernetes.NewForConfigOrDie(config)
 	// allow the controller to provision the Secret
-	if err := wait.PollImmediateUntil(time.Millisecond*500, authoritySecretReadyConditionFunc(t, ctx, cl, auth.SecretNamespace, auth.SecretName), ctx.Done()); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, authoritySecretReadyConditionFunc(t, cl, auth.SecretNamespace, auth.SecretName)); err != nil {
 		t.Errorf("Failed waiting for Secret to contain valid certificate: %v", err)
 		return
 	}
@@ -143,7 +143,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	}
 
 	// allow the controller to provision the Secret again
-	if err := wait.PollImmediateUntil(time.Millisecond*500, authoritySecretReadyConditionFunc(t, ctx, cl, auth.SecretNamespace, auth.SecretName), ctx.Done()); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, authoritySecretReadyConditionFunc(t, cl, auth.SecretNamespace, auth.SecretName)); err != nil {
 		t.Errorf("Failed waiting for Secret to be recreated: %v", err)
 		return
 	}
@@ -152,8 +152,8 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 // authoritySecretReadyConditionFunc will check a named Secret resource and
 // check if it contains a valid CA keypair used by the authority.
 // This can be used with the `k8s.io/apimachinery/pkg/util/wait` package.
-func authoritySecretReadyConditionFunc(t *testing.T, ctx context.Context, cl kubernetes.Interface, namespace, name string) wait.ConditionFunc {
-	return func() (done bool, err error) {
+func authoritySecretReadyConditionFunc(t *testing.T, cl kubernetes.Interface, namespace, name string) wait.ConditionWithContextFunc {
+	return func(ctx context.Context) (done bool, err error) {
 		s, err := cl.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			t.Logf("Secret resource %s/%s does not yet exist, waiting...", namespace, name)

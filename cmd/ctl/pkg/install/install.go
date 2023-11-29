@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -36,8 +35,9 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/build"
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/install/helm"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/install/helm"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type InstallOptions struct {
@@ -160,8 +160,7 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 // This creates a Helm "release" artifact in a Secret in the target namespace, which contains
 // a record of all the resources installed by Helm (except the CRDs).
 func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, error) {
-	log.SetFlags(0)         // Disable prefixing logs with timestamps.
-	log.SetOutput(o.ErrOut) // Log everything to stderr so dry-run output does not get corrupted.
+	log := logf.FromContext(ctx, "install")
 
 	// Find chart
 	cp, err := o.client.ChartPathOptions.LocateChart(o.ChartName, o.settings)
@@ -181,7 +180,7 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 
 	// Console print if chart is deprecated
 	if chart.Metadata.Deprecated {
-		log.Printf("This chart is deprecated")
+		log.Error(fmt.Errorf("chart.Metadata.Deprecated is true"), "This chart is deprecated")
 	}
 
 	// Merge all values flags
@@ -214,7 +213,9 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 		return dryRunResult, nil
 	}
 
-	if err := o.cfg.Init(o.settings.RESTClientGetter(), o.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+	if err := o.cfg.Init(o.settings.RESTClientGetter(), o.settings.Namespace(), os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
+		log.Info(fmt.Sprintf(format, v...))
+	}); err != nil {
 		return nil, err
 	}
 

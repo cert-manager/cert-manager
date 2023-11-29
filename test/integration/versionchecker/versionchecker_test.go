@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
-	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/cert-manager/cert-manager/pkg/util/versionchecker"
@@ -127,7 +127,7 @@ func transformObjects(objects []runtime.RawExtension) ([]runtime.Object, error) 
 func setupFakeVersionChecker(manifest io.Reader) (*versionchecker.VersionChecker, error) {
 	scheme := runtime.NewScheme()
 
-	if err := kubernetesscheme.AddToScheme(scheme); err != nil {
+	if err := kscheme.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := appsv1.AddToScheme(scheme); err != nil {

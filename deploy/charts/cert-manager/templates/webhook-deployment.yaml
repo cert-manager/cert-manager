@@ -44,6 +44,7 @@ spec:
       {{- if hasKey .Values.webhook "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.webhook.automountServiceAccountToken }}
       {{- end }}
+      enableServiceLinks: {{ .Values.webhook.enableServiceLinks }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
@@ -54,11 +55,12 @@ spec:
       {{- if .Values.webhook.hostNetwork }}
       hostNetwork: true
       {{- end }}
+      {{- if .Values.webhook.hostNetwork }}
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}-webhook
-          {{- with .Values.webhook.image }}
-          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{ .digest }}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
-          {{- end }}
+          image: "{{ template "image" (tuple .Values.webhook.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
           {{- if .Values.global.logLevel }}
@@ -71,8 +73,8 @@ spec:
           {{ if not $config.securePort -}}
           - --secure-port={{ .Values.webhook.securePort }}
           {{- end }}
-          {{- if .Values.featureGates }}
-          - --feature-gates={{ .Values.featureGates }}
+          {{- if .Values.webhook.featureGates }}
+          - --feature-gates={{ .Values.webhook.featureGates }}
           {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}

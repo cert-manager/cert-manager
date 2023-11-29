@@ -23,7 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -43,7 +43,7 @@ func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt 
 
 	_, err = cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
 		ctx, crt.Name, apitypes.ApplyPatchType, crtData,
-		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager},
+		metav1.PatchOptions{Force: ptr.To(true), FieldManager: fieldManager},
 	)
 
 	return err
@@ -62,7 +62,7 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 
 	_, err = cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
 		ctx, crt.Name, apitypes.ApplyPatchType, crtData,
-		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager}, "status",
+		metav1.PatchOptions{Force: ptr.To(true), FieldManager: fieldManager}, "status",
 	)
 
 	return err

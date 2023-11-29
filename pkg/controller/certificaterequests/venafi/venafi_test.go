@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +83,7 @@ func TestSign(t *testing.T) {
 	}
 
 	rootTmpl := &x509.Certificate{
-		Version:               2,
+		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
@@ -211,7 +211,7 @@ func TestSign(t *testing.T) {
 		},
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	template, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Fatal(err)
 	}

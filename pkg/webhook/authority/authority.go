@@ -138,19 +138,14 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 	// been  missed that could cause us to get into an idle state where the
 	// Secret resource does not exist and so the informers handler functions
 	// are not triggered.
-	if err = wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Second*10, true, func(ctx context.Context) (done bool, err error) {
 		if err := d.ensureCA(ctx); err != nil {
 			d.log.Error(err, "error ensuring CA")
 		}
 		// never return 'done'.
 		// this poll only ends when stopCh is closed.
 		return false, nil
-	}, ctx.Done()); err != nil {
-		// If error cause was context, return that error instead
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
+	}); err != nil {
 		return err
 	}
 
@@ -336,7 +331,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 	cert := &x509.Certificate{
-		Version:               2,
+		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,

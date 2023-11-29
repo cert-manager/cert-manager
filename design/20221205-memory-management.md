@@ -154,7 +154,7 @@ See issue description here https://github.com/cert-manager/cert-manager/issues/4
 ## Design details
 ### Implementation
 
-Ensure that `certificate.Spec.SecretName` `Secret` as well as the `Secret` with temporary private key are labelled with a `controller.cert-manager.io/fao: true` label.
+Ensure that `certificate.Spec.SecretName` `Secret` as well as the `Secret` with temporary private key are labelled with a `controller.cert-manager.io/fao: true` [^2] label.
 The temporary private key `Secret` is short lived so it should be okay to only label it on creation.
 The `certificate.Spec.SecretName` `Secret` should be checked for the label value on every reconcile of the owning `Certificate`, same as with the secret template labels and annotations, see [here](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/controller/certificates/issuing/issuing_controller.go#L187-L191).
 
@@ -705,3 +705,5 @@ This should ensure that a `Secret` that our control loop needs, but is not label
 - complexity of implementation and maintenance of a custom caching mechanism
 
 [^1]: We thought this might happen when the known cert-manager label gets added to or removed from a `Secret`. There is a mechanism for removing such `Secret` from a cache that should no longer have it, see [this Slack conversation](https://kubernetes.slack.com/archives/C0EG7JC6T/p1671476139766499) and when experimenting with the prototype implementation I have not observed stale cache when adding/removing labels
+
+[^2]: fao = 'for attention of'

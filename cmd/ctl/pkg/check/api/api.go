@@ -20,19 +20,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"runtime"
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/kubectl/pkg/scheme"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/factory"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
 	cmcmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/cmapichecker"
 )
 
@@ -47,9 +47,6 @@ type Options struct {
 
 	// Time between checks when waiting
 	Interval time.Duration
-
-	// Print details regarding encountered errors
-	Verbose bool
 
 	genericclioptions.IOStreams
 	*factory.Factory
@@ -73,12 +70,13 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 func (o *Options) Complete() error {
 	var err error
 
-	// We pass the scheme that is used in the RESTConfig's NegotiatedSerializer,
-	// this makes sure that the cmapi is also added to NegotiatedSerializer's scheme
-	// see: https://github.com/cert-manager/cert-manager/pull/4205#discussion_r668660271
-	o.APIChecker, err = cmapichecker.New(o.RESTConfig, scheme.Scheme, o.Namespace)
+	o.APIChecker, err = cmapichecker.New(
+		o.RESTConfig,
+		runtime.NewScheme(),
+		o.Namespace,
+	)
 	if err != nil {
-		return fmt.Errorf("Error: %v", err)
+		return err
 	}
 
 	return nil
@@ -92,19 +90,13 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 		Use:   "api",
 		Short: "Check if the cert-manager API is ready",
 		Long:  checkApiDesc,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := o.Complete(); err != nil {
-				return err
-			}
-			o.Run(ctx)
-			return nil
+		Run: func(cmd *cobra.Command, args []string) {
+			cmdutil.CheckErr(o.Complete())
+			cmdutil.CheckErr(o.Run(ctx))
 		},
-		SilenceUsage:  true,
-		SilenceErrors: true,
 	}
-	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s)")
+	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s = poll once)")
 	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
-	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print detailed error messages")
 
 	o.Factory = factory.New(ctx, cmd)
 
@@ -112,39 +104,43 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 }
 
 // Run executes check api command
-func (o *Options) Run(ctx context.Context) {
-	if !o.Verbose {
-		log.SetFlags(0) // Disable prefixing logs with timestamps.
-	}
-	log.SetOutput(o.ErrOut) // Log all intermediate errors to stderr
+func (o *Options) Run(ctx context.Context) error {
+	log := logf.FromContext(ctx, "checkAPI")
 
-	pollContext, cancel := context.WithTimeout(ctx, o.Wait)
-	defer cancel()
-
-	pollErr := wait.PollImmediateUntil(o.Interval, func() (done bool, err error) {
+	start := time.Now()
+	var lastError error
+	pollErr := wait.PollUntilContextCancel(ctx, o.Interval, true, func(ctx context.Context) (bool, error) {
 		if err := o.APIChecker.Check(ctx); err != nil {
-			if !o.Verbose && errors.Unwrap(err) != nil {
-				err = errors.Unwrap(err)
+			simpleError := cmapichecker.TranslateToSimpleError(err)
+			if simpleError != nil {
+				log.V(2).Info("Not ready", "err", simpleError, "underlyingError", err)
+				lastError = simpleError
+			} else {
+				log.V(2).Info("Not ready", "err", err)
+				lastError = err
 			}
 
-			log.Printf("Not ready: %v", err)
+			if time.Since(start) > o.Wait {
+				return false, context.DeadlineExceeded
+			}
 			return false, nil
 		}
 
 		return true, nil
-	}, pollContext.Done())
-
-	log.SetOutput(o.Out) // Log conclusion to stdout
+	})
 
 	if pollErr != nil {
-		if errors.Is(pollContext.Err(), context.DeadlineExceeded) && o.Wait > 0 {
-			log.Printf("Timed out after %s", o.Wait)
+		if errors.Is(pollErr, context.DeadlineExceeded) && o.Wait > 0 {
+			log.V(2).Info("Timed out", "after", o.Wait, "err", pollErr)
+			cmcmdutil.SetExitCode(pollErr)
+		} else {
+			cmcmdutil.SetExitCode(lastError)
 		}
 
-		cmcmdutil.SetExitCode(pollContext.Err())
-
-		runtime.Goexit() // Do soft exit (handle all defers, that should set correct exit code)
+		return lastError
 	}
 
-	log.Printf("The cert-manager API is ready")
+	fmt.Fprintln(o.Out, "The cert-manager API is ready")
+
+	return nil
 }

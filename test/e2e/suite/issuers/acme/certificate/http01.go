@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -153,7 +153,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		order := &cmacme.Order{}
 		logf, done := log.LogBackoff()
 		defer done()
-		err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 			orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -322,7 +322,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					},
 				},
 				Spec: networkingv1.IngressSpec{
-					IngressClassName: pointer.StringPtr("nginx"),
+					IngressClassName: ptr.To("nginx"),
 					TLS: []networkingv1.IngressTLS{
 						{
 							Hosts:      []string{acmeIngressDomain},
@@ -365,7 +365,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					},
 				},
 				Spec: networkingv1beta1.IngressSpec{
-					IngressClassName: pointer.StringPtr("nginx"),
+					IngressClassName: ptr.To("nginx"),
 					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{acmeIngressDomain},
@@ -440,26 +440,24 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		var pod corev1.Pod
 		logf, done := log.LogBackoff()
 		defer done()
-		err = wait.PollImmediate(1*time.Second, time.Minute*3,
-			func() (bool, error) {
-				logf("Waiting for solver pod to exist")
-				podlist, err := podClient.List(context.TODO(), metav1.ListOptions{})
-				if err != nil {
-					return false, err
-				}
+		err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, time.Minute*3, true, func(ctx context.Context) (bool, error) {
+			logf("Waiting for solver pod to exist")
+			podlist, err := podClient.List(ctx, metav1.ListOptions{})
+			if err != nil {
+				return false, err
+			}
 
-				for _, p := range podlist.Items {
-					logf("solver pod %s", p.Name)
-					// TODO(dmo): make this cleaner instead of just going by name
-					if strings.Contains(p.Name, "http-solver") {
-						pod = p
-						return true, nil
-					}
+			for _, p := range podlist.Items {
+				logf("solver pod %s", p.Name)
+				// TODO(dmo): make this cleaner instead of just going by name
+				if strings.Contains(p.Name, "http-solver") {
+					pod = p
+					return true, nil
 				}
-				return false, nil
+			}
+			return false, nil
 
-			},
-		)
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		err = podClient.Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})

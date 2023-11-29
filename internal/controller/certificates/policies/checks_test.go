@@ -25,10 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/stretchr/testify/assert"
@@ -92,7 +93,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
+			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains corrupt certificate data": {
@@ -103,8 +104,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				},
 			},
-			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
+			reason:  InvalidCertificate,
+			message: "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains corrupt private key data": {
@@ -118,7 +119,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in key input",
+			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains a non-matching key-pair": {
@@ -132,10 +133,10 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains an invalid key-pair: tls: private key does not match public key",
+			message: "Issuing certificate as Secret contains a private key that does not match the certificate",
 			reissue: true,
 		},
-		"trigger issuance as Secret has old/incorrect 'issuer name' annotation": {
+		"trigger issuance as Secret has old or incorrect 'issuer name' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
 				IssuerRef: cmmeta.ObjectReference{
@@ -156,10 +157,10 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  IncorrectIssuer,
-			message: "Issuing certificate as Secret was previously issued by Issuer.cert-manager.io/oldissuer",
+			message: "Issuing certificate as Secret was previously issued by \"Issuer.cert-manager.io/oldissuer\"",
 			reissue: true,
 		},
-		"trigger issuance as Secret has old/incorrect 'issuer kind' annotation": {
+		"trigger issuance as Secret has old or incorrect 'issuer kind' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
 				IssuerRef: cmmeta.ObjectReference{
@@ -182,10 +183,10 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  IncorrectIssuer,
-			message: "Issuing certificate as Secret was previously issued by OldIssuerKind.cert-manager.io/testissuer",
+			message: "Issuing certificate as Secret was previously issued by \"OldIssuerKind.cert-manager.io/testissuer\"",
 			reissue: true,
 		},
-		"trigger issuance as Secret has old/incorrect 'issuer group' annotation": {
+		"trigger issuance as Secret has old or incorrect 'issuer group' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
 				IssuerRef: cmmeta.ObjectReference{
@@ -210,7 +211,61 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  IncorrectIssuer,
-			message: "Issuing certificate as Secret was previously issued by IssuerKind.new.example.com/testissuer",
+			message: "Issuing certificate as Secret was previously issued by \"IssuerKind.new.example.com/testissuer\"",
+			reissue: true,
+		},
+		"trigger issuance as private key properties do not meet the requested properties": {
+			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
+				Data: func() map[string][]byte {
+					// generate a 521 bit EC private key, which is not the type of key
+					// configured in the Certificate resource
+					pk, err := pki.GenerateECPrivateKey(521)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					return map[string][]byte{
+						corev1.TLSPrivateKeyKey: pkData,
+						corev1.TLSCertKey: testcrypto.MustCreateCert(
+							t, pkData,
+							&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						),
+					}
+				}(),
+			},
+			reason:  SecretMismatch,
+			message: "Existing private key is not up to date for spec: [spec.privateKey.algorithm]",
+			reissue: true,
+		},
+		"trigger if the Secret contains a different private key than was used to sign the CSR": {
+			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(
+						t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+					),
+				},
+			},
+			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
+				IssuerRef: cmmeta.ObjectReference{
+					Name:  "testissuer",
+					Kind:  "IssuerKind",
+					Group: "group.example.com",
+				},
+				Request: testcrypto.MustGenerateCSRImpl(t, testcrypto.MustCreatePEMPrivateKey(t), &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+				}}),
+			}},
+			reason:  SecretMismatch,
+			message: "Secret contains a private key that does not match the current CertificateRequest",
 			reissue: true,
 		},
 		// we only have a basic test here for this as unit tests for the
@@ -319,7 +374,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  SecretMismatch,
-			message: "Existing issued Secret is not up to date for spec: [spec.commonName]",
+			message: "Issuing certificate as Existing issued Secret is not up to date for spec: [spec.commonName]",
 			reissue: true,
 		},
 		"do nothing if signed x509 certificate in Secret matches spec (when request does not exist)": {
@@ -512,7 +567,126 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 	}
 }
 
-func Test_SecretTemplateMismatchesSecret(t *testing.T) {
+func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
+	const fieldManager = "cert-manager-unit-test"
+
+	var (
+		fixedClockStart = time.Now()
+		fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
+		baseCertBundle  = testcrypto.MustCreateCryptoBundle(t,
+			gen.Certificate("test-certificate", gen.SetCertificateCommonName("cert-manager")), fixedClock)
+	)
+
+	tests := map[string]struct {
+		secretManagedFields []metav1.ManagedFieldsEntry
+		secretData          map[string][]byte
+
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"if there are no cert-manager annotations and the certificate data is nil, should return false": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if optional cert-manager annotations are present with no certificate data, should return false": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							},
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if cert-manager annotations are present with certificate data, should return false": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							},
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {},
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names":  {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			secretData:   map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if required and optional cert-manager annotations are present with certificate data but certificate data is nil, should return true": {
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:controller.cert-manager.io/fao": {}
+							},
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {},
+								"f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretManagedMetadataMismatch,
+			expMessage:   "Secret has these extra Annotations: [cert-manager.io/uri-sans]",
+			expViolation: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager)(Input{
+				Secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: test.secretData},
+			})
+
+			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
+			assert.Equal(t, test.expMessage, gotMessage, "unexpected message")
+			assert.Equal(t, test.expViolation, gotViolation, "unexpected violation")
+		})
+	}
+}
+
+func Test_SecretSecretTemplateMismatch(t *testing.T) {
 	tests := map[string]struct {
 		tmpl         *cmapi.CertificateSecretTemplate
 		secret       *corev1.Secret
@@ -590,7 +764,7 @@ func Test_SecretTemplateMismatchesSecret(t *testing.T) {
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
 		},
-		"if SecretTemplate is non-nil, Secret Annoations match but Labels don't match keys, return true": {
+		"if SecretTemplate is non-nil, Secret Annotations match but Labels don't match keys, return true": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
@@ -646,7 +820,7 @@ func Test_SecretTemplateMismatchesSecret(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecret(Input{
+			gotReason, gotMessage, gotViolation := SecretSecretTemplateMismatch(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
 				Secret:      test.secret,
 			})
@@ -658,20 +832,12 @@ func Test_SecretTemplateMismatchesSecret(t *testing.T) {
 	}
 }
 
-func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
+func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 	const fieldManager = "cert-manager-unit-test"
-
-	var (
-		fixedClockStart = time.Now()
-		fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
-		baseCertBundle  = testcrypto.MustCreateCryptoBundle(t,
-			gen.Certificate("test-certificate", gen.SetCertificateCommonName("cert-manager")), fixedClock)
-	)
 
 	tests := map[string]struct {
 		tmpl                *cmapi.CertificateSecretTemplate
 		secretManagedFields []metav1.ManagedFieldsEntry
-		secretData          map[string][]byte
 
 		expReason    string
 		expMessage   string
@@ -716,7 +882,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			},
 			secretManagedFields: nil,
 			expReason:           SecretTemplateMismatch,
-			expMessage:          "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:          "Secret is missing these Template Labels: [abc]",
 			expViolation:        true,
 		},
 		"if template is nil but managed fields is not nil, should return true": {
@@ -734,7 +900,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "SecretTemplate is nil, but Secret contains extra managed entries",
+			expMessage:   "Secret has these extra Labels: [abc]",
 			expViolation: true,
 		},
 		"if template annotations do not match managed fields, should return true": {
@@ -757,7 +923,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Annotations: [foo2]",
 			expViolation: true,
 		},
 		"if template labels do not match managed fields, should return true": {
@@ -780,7 +946,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Labels: [def]",
 			expViolation: true,
 		},
 		"if template annotations and labels match managed fields, should return false": {
@@ -827,7 +993,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret has these extra Annotations: [foo3]",
 			expViolation: true,
 		},
 		"if template labels is a subset of managed fields, return true": {
@@ -851,7 +1017,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret has these extra Labels: [ghi]",
 			expViolation: true,
 		},
 		"if managed fields annotations is a subset of template, return true": {
@@ -874,7 +1040,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Annotations: [foo3]",
 			expViolation: true,
 		},
 		"if managed fields labels is a subset of template, return true": {
@@ -897,7 +1063,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expMessage:   "Secret is missing these Template Labels: [ghi]",
 			expViolation: true,
 		},
 		"if managed fields matches template but is split across multiple managed fields, should return false": {
@@ -943,7 +1109,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			expMessage:   "",
 			expViolation: false,
 		},
-		"if managed fields matches template and base cert-manager annotations are present with no certificate data, should return false": {
+		"if managed fields matches template and cert-manager annotations are present, should return false": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 			},
@@ -953,10 +1119,8 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {},
-								"f:cert-manager.io/certificate-name": {},
-								"f:cert-manager.io/issuer-name": {},
-								"f:cert-manager.io/issuer-kind": {},
-								"f:cert-manager.io/issuer-group": {}
+								"f:cert-manager.io/foo1": {},
+								"f:cert-manager.io/foo2": {}
 							}
 						}}`),
 				}},
@@ -965,64 +1129,13 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			expMessage:   "",
 			expViolation: false,
 		},
-		"if managed fields matches template and base cert-manager annotations are present with certificate data, should return false": {
-			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-			},
-			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:foo1": {},
-								"f:foo2": {},
-								"f:cert-manager.io/certificate-name": {},
-								"f:cert-manager.io/issuer-name": {},
-								"f:cert-manager.io/issuer-kind": {},
-								"f:cert-manager.io/issuer-group": {},
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names":  {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {}
-							}
-						}}`),
-				}},
-			},
-			secretData:   map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes},
-			expViolation: false,
-		},
-		"if managed fields matches template and base cert-manager annotations are present with certificate data but certificate data is nil, should return true": {
-			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-			},
-			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:foo1": {},
-								"f:foo2": {},
-								"f:cert-manager.io/certificate-name": {},
-								"f:cert-manager.io/issuer-name": {},
-								"f:cert-manager.io/issuer-kind": {},
-								"f:cert-manager.io/issuer-group": {},
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names":  {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {}
-							}
-						}}`),
-				}},
-			},
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
-			expViolation: true,
-		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecretManagedFields(fieldManager)(Input{
+			gotReason, gotMessage, gotViolation := SecretSecretTemplateManagedFieldsMismatch(fieldManager)(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
-				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: test.secretData},
+				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: map[string][]byte{}},
 			})
 
 			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
@@ -1032,7 +1145,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 	}
 }
 
-func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
+func Test_SecretAdditionalOutputFormatsMismatch(t *testing.T) {
 	cert := []byte("a")
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
 	block, _ := pem.Decode(pk)
@@ -1289,7 +1402,7 @@ func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsDataMismatch(test.input)
+			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsMismatch(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -1297,7 +1410,7 @@ func Test_SecretAdditionalOutputFormatsDataMismatch(t *testing.T) {
 	}
 }
 
-func Test_SecretAdditionalOutputFormatsOwnerMismatch(t *testing.T) {
+func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 	const fieldManager = "cert-manager-test"
 
 	tests := map[string]struct {
@@ -1721,7 +1834,7 @@ func Test_SecretAdditionalOutputFormatsOwnerMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsOwnerMismatch(fieldManager)(test.input)
+			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -1909,7 +2022,7 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 	}
 }
 
-func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
+func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 	crt := gen.Certificate("test-certificate",
 		gen.SetCertificateUID(types.UID("uid-123")),
 	)
@@ -1938,7 +2051,7 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
 						},
 					},
 				},
@@ -1954,8 +2067,8 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -1971,9 +2084,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -1989,9 +2102,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2018,7 +2131,7 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
 						},
 					},
 				},
@@ -2034,8 +2147,8 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2051,9 +2164,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2069,9 +2182,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "foo", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2087,9 +2200,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "acme.cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "acme.cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2105,9 +2218,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Issuer", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Issuer", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2123,9 +2236,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(true)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(true)},
 						},
 					},
 				},
@@ -2141,9 +2254,9 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						OwnerReferences: []metav1.OwnerReference{
-							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)},
-							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true)},
-							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(false)},
+							{APIVersion: "foo.bar/v1", Kind: "Foo", Name: "foo", UID: types.UID("abc"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)},
+							{APIVersion: "bar.foo/v1", Kind: "Bar", Name: "bar", UID: types.UID("def"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+							{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-certificate", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(false)},
 						},
 					},
 				},
@@ -2157,7 +2270,68 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceValueMismatch(test.ownerRefEnabled)(test.input)
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.ownerRefEnabled)(test.input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expMessage, gotMessage)
+			assert.Equal(t, test.expViolation, gotViolation)
+		})
+	}
+}
+
+func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
+	crt := gen.Certificate("test-certificate")
+
+	tests := map[string]struct {
+		input Input
+
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"without a CertificateName annotation, should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret:      &corev1.Secret{},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"with a matching CertificateName annotation, should return false": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							cmapi.CertificateNameKey: "test-certificate",
+						},
+					},
+				},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"with a non-matching CertificateName annotation, should return true": {
+			input: Input{
+				Certificate: crt,
+				Secret: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							cmapi.CertificateNameKey: "foo",
+						},
+					},
+				},
+			},
+			expReason:    "IncorrectCertificate",
+			expMessage:   "Secret was issued for \"foo\". If this message is not transient, you might have two conflicting Certificates pointing to the same secret.",
+			expViolation: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretCertificateNameAnnotationsMismatch(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)

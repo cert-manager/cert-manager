@@ -49,7 +49,7 @@ type injectableTest struct {
 }
 
 var _ = framework.CertManagerDescribe("CA Injector", func() {
-	f := framework.NewDefaultFramework("ca-injector")
+	f := framework.NewDefaultFramework("cainjector")
 
 	issuerName := "inject-cert-issuer"
 	secretName := "serving-certs-data"

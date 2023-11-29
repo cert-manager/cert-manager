@@ -22,16 +22,14 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 )
 
-type Addon interface {
-	Setup(*config.Config) error
-	Provision() error
-	Deprovision() error
-	SupportsGlobal() bool
-}
+type Addon = internal.Addon
+type AddonTransferableData = internal.AddonTransferableData
 
 // This file is used to define global shared addon instances for the e2e suite.
 // We have to define these somewhere that can be imported by the framework and
@@ -40,7 +38,8 @@ type Addon interface {
 
 var (
 	// Base is a base addon containing Kubernetes clients
-	Base = &base.Base{}
+	Base  = &base.Base{}
+	Vault = &vault.Vault{}
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
@@ -61,33 +60,71 @@ func InitGlobals(cfg *config.Config) {
 	}
 	globalsInited = true
 	*Base = base.Base{}
+	*Vault = vault.Vault{
+		Base:      Base,
+		Namespace: "e2e-vault",
+		Name:      "vault",
+	}
 	allAddons = []Addon{
 		Base,
+		Vault,
 	}
 }
 
-// ProvisionGlobals provisions all of the global addons, including calling Setup.
-// This should be called by the test suite entrypoint in a SynchronizedBeforeSuite
-// block to ensure it is run once per suite.
-func ProvisionGlobals(cfg *config.Config) error {
-	// TODO: if we want to provision dependencies in parallel we will need
-	// to improve the logic here.
-	for _, g := range allAddons {
-		if err := provisionGlobal(g, cfg); err != nil {
+// SetupGlobals setups all of the global addons.
+// The primary ginkgo process is the process with index 1.
+// This function should be called by the test suite entrypoint in a SynchronizedBeforeSuite
+// block to ensure it is run only on ginkgo process #1. It has to be run before
+// any other ginkgo processes are started, because the return value of this function
+// has to be transferred to the other ginkgo processes.
+func SetupGlobalsPrimary(cfg *config.Config) ([]AddonTransferableData, error) {
+	toBeTransferred := make([]AddonTransferableData, len(allAddons))
+	for addonIdx, g := range allAddons {
+		data, err := g.Setup(cfg)
+		if err != nil {
+			return nil, err
+		}
+		if !g.SupportsGlobal() {
+			return nil, fmt.Errorf("requested global plugin does not support shared mode with current configuration")
+		}
+		toBeTransferred[addonIdx] = data
+	}
+	return toBeTransferred, nil
+}
+
+// SetupGlobalsNonPrimary setups all of the global addons.
+// A non-primary ginkgo process is one that is not process #1 (process #2 and above).
+// This function should be called by the test suite entrypoint in a SynchronizedBeforeSuite
+// block on all ginkgo processes except #1. It has to be run after the primary process has
+// run SetupGlobalsPrimary, so that the data returned by SetupGlobalsPrimary on process #1
+// can be passed into this function. This function calls Setup on all of the non-primary
+// processes (processes #2 and above) and passes in the AddonTransferableData data returned
+// by the primary process.
+func SetupGlobalsNonPrimary(cfg *config.Config, transferred []AddonTransferableData) error {
+	for addonIdx, g := range allAddons {
+		_, err := g.Setup(cfg, transferred[addonIdx])
+		if err != nil {
 			return err
+		}
+		if !g.SupportsGlobal() {
+			return fmt.Errorf("requested global plugin does not support shared mode with current configuration")
 		}
 	}
 	return nil
 }
 
-// SetupGlobals will call Setup on all of the global addons, but not provision.
-// This should be called by the test suite entrypoint in a BeforeSuite block
-// on all ginkgo nodes to ensure global instances are configured for each test
-// runner.
-func SetupGlobals(cfg *config.Config) error {
+// ProvisionGlobals calls Provision on all of the global addons.
+// This should be called by the test suite in a SynchronizedBeforeSuite block
+// after the Setup data has been transferred to all ginkgo processes, so that
+// not all processes have to wait for the addons to be provisioned. Instead,
+// the individual test has to check that the addon is provisioned (eg. by querying
+// the API server for a resource that the addon creates or by checking that an
+// HTTP endpoint is available)
+// This function should be run only on ginkgo process #1.
+func ProvisionGlobals(cfg *config.Config) error {
 	for _, g := range allAddons {
-		err := g.Setup(cfg)
-		if err != nil {
+		provisioned = append(provisioned, g)
+		if err := g.Provision(); err != nil {
 			return err
 		}
 	}
@@ -123,7 +160,8 @@ func GlobalLogs() (map[string]string, error) {
 
 // DeprovisionGlobals deprovisions all of the global addons.
 // This should be called by the test suite in a SynchronizedAfterSuite to ensure
-// all global addons are cleaned up after a run.
+// all global addons are cleaned up after a run. This should be run only on ginkgo
+// process #1.
 func DeprovisionGlobals(cfg *config.Config) error {
 	if !cfg.Cleanup {
 		log.Logf("Skipping deprovisioning as cleanup set to false.")
@@ -136,24 +174,4 @@ func DeprovisionGlobals(cfg *config.Config) error {
 		errs = append(errs, a.Deprovision())
 	}
 	return utilerrors.NewAggregate(errs)
-}
-
-func provisionGlobal(a Addon, cfg *config.Config) error {
-	if err := a.Setup(cfg); err != nil {
-		return err
-	}
-	if !a.SupportsGlobal() {
-		return fmt.Errorf("Requested global plugin does not support shared mode with current configuration")
-	}
-	if cfg.Cleanup {
-		err := a.Deprovision()
-		if err != nil {
-			return err
-		}
-	}
-	provisioned = append(provisioned, a)
-	if err := a.Provision(); err != nil {
-		return err
-	}
-	return nil
 }

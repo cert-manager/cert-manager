@@ -31,7 +31,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -415,7 +415,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 				// immediately discarded, let's use the minimal duration
 				// possible. 10 minutes is the minimum allowed by the Kubernetes
 				// API.
-				ExpirationSeconds: pointer.Int64(600),
+				ExpirationSeconds: ptr.To(int64(600)),
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
@@ -497,15 +497,22 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 		defer healthResp.Body.Close()
 	}
 
+	// 200 = if initialized, unsealed, and active
 	// 429 = if unsealed and standby
 	// 472 = if disaster recovery mode replication secondary and active
 	// 473 = if performance standby
+	// 501 = if not initialized
+	// 503 = if sealed
 	if err != nil {
 		switch {
 		case healthResp == nil:
 			return err
 		case healthResp.StatusCode == 429, healthResp.StatusCode == 472, healthResp.StatusCode == 473:
 			return nil
+		case healthResp.StatusCode == 501:
+			return fmt.Errorf("Vault is not initialized")
+		case healthResp.StatusCode == 503:
+			return fmt.Errorf("Vault is sealed")
 		default:
 			return fmt.Errorf("error calling Vault %s: %w", healthURL, err)
 		}

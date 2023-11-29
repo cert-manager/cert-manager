@@ -37,6 +37,7 @@ spec:
       {{- if hasKey .Values.startupapicheck "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.startupapicheck.automountServiceAccountToken }}
       {{- end }}
+      enableServiceLinks: {{ .Values.startupapicheck.enableServiceLinks }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
@@ -46,9 +47,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-startupapicheck
-          {{- with .Values.startupapicheck.image }}
-          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{ .digest }}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
-          {{- end }}
+          image: "{{ template "image" (tuple .Values.startupapicheck.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.startupapicheck.image.pullPolicy }}
           args:
           - check

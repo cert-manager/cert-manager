@@ -26,6 +26,7 @@ informergen=$4
 listergen=$5
 defaultergen=$6
 conversiongen=$7
+openapigen=$8
 
 # If the envvar "VERIFY_ONLY" is set, we only check if everything's up to date
 # and don't actually generate anything
@@ -57,8 +58,12 @@ deepcopy_inputs=(
   internal/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
   internal/apis/acme \
+  pkg/apis/config/cainjector/v1alpha1 \
+  internal/apis/config/cainjector \
   pkg/apis/config/webhook/v1alpha1 \
   internal/apis/config/webhook \
+  pkg/apis/config/controller/v1alpha1 \
+  internal/apis/config/controller \
   pkg/apis/meta/v1 \
   internal/apis/meta \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
@@ -85,7 +90,9 @@ defaulter_inputs=(
   internal/apis/acme/v1alpha3 \
   internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
+  internal/apis/config/cainjector/v1alpha1 \
   internal/apis/config/webhook/v1alpha1 \
+  internal/apis/config/controller/v1alpha1 \
   internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -101,7 +108,9 @@ conversion_inputs=(
   internal/apis/acme/v1alpha3 \
   internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
+  internal/apis/config/cainjector/v1alpha1 \
   internal/apis/config/webhook/v1alpha1 \
+  internal/apis/config/controller/v1alpha1 \
   internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -132,6 +141,25 @@ mkcp() {
 # Export mkcp for use in sub-shells
 export -f mkcp
 
+gen-openapi-acme() {
+  clean pkg/acme/webhook/openapi '*.go'
+  echo "+++ ${VERB} ACME openapi..." >&2
+  mkdir -p hack/openapi_reports
+  "$openapigen" \
+    ${VERIFY_FLAGS} \
+    --go-header-file "hack/boilerplate-go.txt" \
+    --report-filename "hack/openapi_reports/acme.txt" \
+    --input-dirs "k8s.io/apimachinery/pkg/version" \
+    --input-dirs "k8s.io/apimachinery/pkg/runtime" \
+    --input-dirs "k8s.io/apimachinery/pkg/apis/meta/v1" \
+    --input-dirs "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1" \
+    --input-dirs "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1" \
+    --trim-path-prefix "github.com/cert-manager/cert-manager" \
+    --output-package "github.com/cert-manager/cert-manager/pkg/acme/webhook/openapi" \
+    --output-base ./ \
+		-O zz_generated.openapi
+}
+
 gen-deepcopy() {
   clean pkg/apis 'zz_generated.deepcopy.go'
   clean pkg/acme/webhook/apis 'zz_generated.deepcopy.go'
@@ -141,7 +169,7 @@ gen-deepcopy() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$deepcopygen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --output-file-base zz_generated.deepcopy \
     --trim-path-prefix="$module_name" \
@@ -156,7 +184,7 @@ gen-clientsets() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$clientgen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
@@ -172,7 +200,7 @@ gen-listers() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$listergen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/listers \
@@ -186,7 +214,7 @@ gen-informers() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$informergen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --versioned-clientset-package "${client_package}"/clientset/versioned \
     --listers-package "${client_package}"/listers \
@@ -203,7 +231,7 @@ gen-defaulters() {
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$defaultergen" \
     ${VERIFY_FLAGS} \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --go-header-file hack/boilerplate-go.txt \
     --input-dirs "$joined" \
     --trim-path-prefix="$module_name" \
     -O zz_generated.defaults \
@@ -224,7 +252,7 @@ gen-conversions() {
 
   "$conversiongen" \
       ${VERIFY_FLAGS} \
-      --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+      --go-header-file hack/boilerplate-go.txt \
       --extra-peer-dirs $( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" ) \
       --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
       --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
@@ -233,6 +261,7 @@ gen-conversions() {
       --output-base ./
 }
 
+gen-openapi-acme
 gen-deepcopy
 gen-clientsets
 gen-listers

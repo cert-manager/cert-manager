@@ -27,11 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/cert-manager/cert-manager/internal/cainjector/feature"
 	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // This file contains logic to create reconcilers. By default a
@@ -56,6 +59,9 @@ type reconciler struct {
 
 	// if set, the reconciler is namespace scoped
 	namespace string
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 
 	resourceName string // just used for logging
 }
@@ -117,10 +123,22 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	target.SetCA(caData)
 
 	// actually update with injected CA data
-	if err := r.Client.Update(ctx, target.AsObject()); err != nil {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		obj, patch := target.AsApplyObject()
+		if patch != nil {
+			err = r.Client.Patch(ctx, obj, patch, &client.PatchOptions{
+				Force: ptr.To(true), FieldManager: r.fieldManager,
+			})
+		}
+	} else {
+		err = r.Client.Update(ctx, target.AsObject())
+	}
+
+	if err != nil {
 		log.Error(err, "unable to update target object with new CA data")
 		return ctrl.Result{}, err
 	}
+
 	log.V(logf.InfoLevel).Info("Updated object")
 
 	return ctrl.Result{}, nil

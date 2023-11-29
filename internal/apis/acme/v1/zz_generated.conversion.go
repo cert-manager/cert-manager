@@ -1286,6 +1286,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1_ACMEIssuerDNS01ProviderWe
 func autoConvert_v1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *v1.ACMEIssuerStatus, out *acme.ACMEIssuerStatus, s conversion.Scope) error {
 	out.URI = in.URI
 	out.LastRegisteredEmail = in.LastRegisteredEmail
+	out.LastPrivateKeyHash = in.LastPrivateKeyHash
 	return nil
 }
 
@@ -1297,6 +1298,7 @@ func Convert_v1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *v1.ACMEIssuerStatu
 func autoConvert_acme_ACMEIssuerStatus_To_v1_ACMEIssuerStatus(in *acme.ACMEIssuerStatus, out *v1.ACMEIssuerStatus, s conversion.Scope) error {
 	out.URI = in.URI
 	out.LastRegisteredEmail = in.LastRegisteredEmail
+	out.LastPrivateKeyHash = in.LastPrivateKeyHash
 	return nil
 }
 

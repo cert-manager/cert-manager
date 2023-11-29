@@ -68,8 +68,9 @@ func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.
 		return false, err
 	}
 	secretData := internal.SecretData{
-		Certificate: certData,
-		PrivateKey:  pkData,
+		Certificate:     certData,
+		PrivateKey:      pkData,
+		CertificateName: crt.Name,
 	}
 	if err := c.secretsUpdateData(ctx, crt, secretData); err != nil {
 		return false, err

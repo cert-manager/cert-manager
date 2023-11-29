@@ -32,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // this file contains the logic to set up the different reconcile loops run by cainjector
@@ -90,14 +90,10 @@ var (
 		listType:            &apiext.CustomResourceDefinitionList{},
 		objType:             &apiext.CustomResourceDefinition{},
 	}
-
-	injectorSetups = []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 )
 
-// registerAllInjectors registers all injectors and based on the
-// graduation state of the injector decides how to log no kind/resource match errors
+// RegisterAllInjectors sets up watches for all injectable and injector types that cainjector should watch
 func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptions) error {
-	// TODO: refactor
 	sds := &secretDataSource{
 		client: mgr.GetClient(),
 	}
@@ -114,7 +110,6 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 	}
 	injectorSetups := []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 	// Registers a c/r controller for each of APIService, CustomResourceDefinition, Mutating/ValidatingWebhookConfiguration
-	// TODO: add a flag to allow users to configure which of these controllers should be registered
 	for _, setup := range injectorSetups {
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
 		if !opts.EnabledReconcilersFor[setup.resourceName] {
@@ -134,6 +129,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				cds,
 				kds,
 			},
+			fieldManager: util.PrefixFromUserAgent(mgr.GetConfig().UserAgent),
 		}
 
 		// Index injectable with a new field. If the injectable's CA is
@@ -169,11 +165,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				// injectables is here where we define which
 				// objects' events should trigger a reconcile.
 				builder.WithPredicates(predicates)).
-			Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForInjectableMapper{
-				Client:             mgr.GetClient(),
-				log:                log,
-				secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
-			}).Map))
+			Watches(new(corev1.Secret), handler.EnqueueRequestsFromMapFunc(secretForInjectableMapFuncBuilder(mgr.GetClient(), log, setup)))
 		if opts.EnableCertificatesDataSource {
 			// Index injectable with a new field. If the injectable's CA is
 			// to be sourced from a Certificate's Secret, the field's value will be the
@@ -184,21 +176,13 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
 				return err
 			}
-			b.Watches(&source.Kind{Type: new(corev1.Secret)}, handler.EnqueueRequestsFromMapFunc((&secretForCertificateMapper{
-				Client:                  mgr.GetClient(),
-				log:                     log,
-				certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
-			}).Map)).
-				Watches(&source.Kind{Type: new(cmapi.Certificate)},
-					handler.EnqueueRequestsFromMapFunc((&certMapper{
-						Client:       mgr.GetClient(),
-						log:          log,
-						toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
-					}).Map))
+			b.Watches(new(corev1.Secret), handler.EnqueueRequestsFromMapFunc(
+				certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup))).
+				Watches(new(cmapi.Certificate),
+					handler.EnqueueRequestsFromMapFunc(certToInjectableMapFuncBuilder(mgr.GetClient(), log, setup)))
 		}
-		err := b.Complete(r)
-		if err != nil {
-			err = fmt.Errorf("error registering controller for %s: %w", setup.objType.GetName(), err)
+		if err := b.Complete(r); err != nil {
+			return fmt.Errorf("error registering controller for %s: %w", setup.objType.GetName(), err)
 		}
 	}
 	return nil

@@ -19,9 +19,8 @@ package predicate
 import (
 	"testing"
 
-	"k8s.io/utils/pointer"
-
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"k8s.io/utils/ptr"
 )
 
 func TestCertificateSecretName(t *testing.T) {
@@ -69,12 +68,12 @@ func TestCertificateNextPrivateKeySecretName(t *testing.T) {
 	}{
 		"returns true if secret name matches": {
 			secretName: "abc",
-			cert:       certWithSecretName(pointer.StringPtr("abc")),
+			cert:       certWithSecretName(ptr.To("abc")),
 			expected:   true,
 		},
 		"returns false if secret name does not match": {
 			secretName: "abc",
-			cert:       certWithSecretName(pointer.StringPtr("abcd")),
+			cert:       certWithSecretName(ptr.To("abcd")),
 			expected:   false,
 		},
 		"returns false if secret name is nil": {

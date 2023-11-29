@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/diff"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
@@ -49,7 +49,7 @@ func TestConversion(t *testing.T) {
 					Name:      "test",
 					Namespace: "default",
 				},
-				TestFieldPtr: pointer.StringPtr("test1"),
+				TestFieldPtr: ptr.To("test1"),
 			},
 			targetGVK: testv2.SchemeGroupVersion.WithKind("TestType"),
 			output: &testv2.TestType{
@@ -57,7 +57,7 @@ func TestConversion(t *testing.T) {
 					Name:      "test",
 					Namespace: "default",
 				},
-				TestFieldPtrAlt: pointer.StringPtr("test1"),
+				TestFieldPtrAlt: ptr.To("test1"),
 			},
 		},
 		"should convert from v2 to v1": {
@@ -66,7 +66,7 @@ func TestConversion(t *testing.T) {
 					Name:      "test",
 					Namespace: "default",
 				},
-				TestFieldPtrAlt: pointer.StringPtr("test1"),
+				TestFieldPtrAlt: ptr.To("test1"),
 			},
 			targetGVK: testv1.SchemeGroupVersion.WithKind("TestType"),
 			output: &testv1.TestType{
@@ -74,7 +74,7 @@ func TestConversion(t *testing.T) {
 					Name:      "test",
 					Namespace: "default",
 				},
-				TestFieldPtr: pointer.StringPtr("test1"),
+				TestFieldPtr: ptr.To("test1"),
 			},
 		},
 	}

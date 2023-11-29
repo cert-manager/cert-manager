@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -165,7 +165,7 @@ func TestProcessItem(t *testing.T) {
 					&cmapi.Certificate{
 						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 						Status: cmapi.CertificateStatus{
-							NextPrivateKeySecretName: pointer.StringPtr("test-notrandom"),
+							NextPrivateKeySecretName: ptr.To("test-notrandom"),
 							Conditions: []cmapi.CertificateCondition{
 								{
 									Type:   cmapi.CertificateConditionIssuing,
@@ -194,7 +194,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -226,7 +226,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -287,7 +287,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -317,7 +317,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -360,7 +360,7 @@ func TestProcessItem(t *testing.T) {
 					&cmapi.Certificate{
 						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 						Status: cmapi.CertificateStatus{
-							NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+							NextPrivateKeySecretName: ptr.To("fixed-name"),
 							Conditions: []cmapi.CertificateCondition{
 								{
 									Type:   cmapi.CertificateConditionIssuing,
@@ -376,7 +376,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name-2"),
+					NextPrivateKeySecretName: ptr.To("fixed-name-2"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -400,7 +400,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -424,7 +424,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
@@ -449,7 +449,7 @@ func TestProcessItem(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
-					NextPrivateKeySecretName: pointer.StringPtr("fixed-name"),
+					NextPrivateKeySecretName: ptr.To("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,

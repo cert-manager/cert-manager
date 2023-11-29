@@ -69,7 +69,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 
 func generateSelfSignedCACert(t *testing.T, key crypto.Signer, name string) (*x509.Certificate, []byte) {
 	tmpl := &x509.Certificate{
-		Version:               2,
+		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{
@@ -161,7 +161,7 @@ func TestSign(t *testing.T) {
 	badDataSecret := rsaCASecret.DeepCopy()
 	badDataSecret.Data[corev1.TLSPrivateKeyKey] = []byte("bad key")
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	template, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,7 +360,7 @@ func TestSign(t *testing.T) {
 		"a successful signing should set condition to Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
-				_, err := pki.GenerateTemplateFromCertificateRequest(cr)
+				_, err := pki.CertificateTemplateFromCertificateRequest(cr)
 				if err != nil {
 					return nil, err
 				}
@@ -552,6 +552,24 @@ func TestCA_Sign(t *testing.T) {
 				assert.Equal(t, []string{"http://ocsp-v3.example.org"}, got.OCSPServer)
 			},
 		},
+		"when the Issuer has IssuingCertificateURL set, it should appear on the signed ca": {
+			givenCASecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"), gen.SetSecretData(secretDataFor(t, rootPK, rootCert))),
+			givenCAIssuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName:             "secret-1",
+				IssuingCertificateURLs: []string{"http://ca.letsencrypt.org/ca.crt"},
+			})),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, []string{"http://ca.letsencrypt.org/ca.crt"}, got.IssuingCertificateURL)
+			},
+		},
 		"when the Issuer has crlDistributionPoints set, it should appear on the signed ca ": {
 			givenCASecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"), gen.SetSecretData(secretDataFor(t, rootPK, rootCert))),
 			givenCAIssuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
@@ -586,7 +604,7 @@ func TestCA_Sign(t *testing.T) {
 				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
 					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
-				templateGenerator: pki.GenerateTemplateFromCertificateRequest,
+				templateGenerator: pki.CertificateTemplateFromCertificateRequest,
 				signingFn:         pki.SignCSRTemplate,
 			}
 

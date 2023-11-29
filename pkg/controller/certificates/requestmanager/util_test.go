@@ -20,7 +20,6 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,12 +101,8 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
-	if crt.Status.Revision != nil {
-		annotations[cmapi.CertificateRequestRevisionAnnotationKey] = fmt.Sprintf("%d", crt.Status.Revision)
-	} else {
-		annotations[cmapi.CertificateRequestRevisionAnnotationKey] = "1"
-	}
 
+	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = "NOT SET"
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 	if crt.Status.NextPrivateKeySecretName != nil {
@@ -115,7 +110,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 	}
 	certificateRequest := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    crt.Name + "-",
+			Name:            "NOT SET",
 			Namespace:       crt.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 			Annotations:     annotations,
@@ -128,7 +123,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 		},
 	}
 
-	unsignedCert, err := pki.GenerateTemplateFromCertificateRequest(certificateRequest)
+	unsignedCert, err := pki.CertificateTemplateFromCertificateRequest(certificateRequest)
 	if err != nil {
 		return nil, err
 	}

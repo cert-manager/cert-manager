@@ -24,7 +24,6 @@ package internal
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/x509"
 	"time"
 
@@ -60,7 +59,7 @@ func encodePKCS12Keystore(password string, rawKey []byte, certPem []byte, caPem 
 	if len(certs) > 1 {
 		cas = append(certs[1:], cas...)
 	}
-	return pkcs12.Encode(rand.Reader, key, certs[0], cas, password)
+	return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
 }
 
 func encodePKCS12Truststore(password string, caPem []byte) ([]byte, error) {
@@ -70,7 +69,7 @@ func encodePKCS12Truststore(password string, caPem []byte) ([]byte, error) {
 	}
 
 	var cas = []*x509.Certificate{ca}
-	return pkcs12.EncodeTrustStore(rand.Reader, cas, password)
+	return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
 }
 
 func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {

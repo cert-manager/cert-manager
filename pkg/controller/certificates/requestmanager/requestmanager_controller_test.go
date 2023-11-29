@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,6 +91,14 @@ func TestProcessItem(t *testing.T) {
 		},
 		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-3"}},
 	)
+	bundle4 := mustCreateCryptoBundle(t, &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "testns",
+			Name:      strings.Repeat("a", 167) + "b" + strings.Repeat("c", 85),
+			UID:       "test",
+		},
+		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-4"}},
+	)
 	fixedNow := metav1.NewTime(time.Now())
 	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
 	failedCRConditionPreviousIssuance := cmapi.CertificateRequestCondition{
@@ -111,7 +120,7 @@ func TestProcessItem(t *testing.T) {
 		key string
 
 		// Featuregates to set for a particular test.
-		featuresToEnable []featuregate.Feature
+		featuresFlags map[featuregate.Feature]bool
 
 		// Certificate to be synced for the test.
 		// if not set, the 'key' will be passed to ProcessItem instead.
@@ -178,7 +187,10 @@ func TestProcessItem(t *testing.T) {
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
 			),
 		},
-		"create a CertificateRequest if none exists": {
+		"create a CertificateRequest if none exists and StableCertificateRequestName disabled": {
+			featuresFlags: map[featuregate.Feature]bool{
+				feature.StableCertificateRequestName: false,
+			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: bundle1.certificate.Namespace, Name: "exists"},
@@ -193,6 +205,8 @@ func TestProcessItem(t *testing.T) {
 			expectedActions: []testpkg.Action{
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName(""),
+						gen.SetCertificateRequestGenerateName("test-"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -200,8 +214,7 @@ func TestProcessItem(t *testing.T) {
 					)), relaxedCertificateRequestMatcher),
 			},
 		},
-		"create a CertificateRequest if none exists and StableCertificateRequestName enabled": {
-			featuresToEnable: []featuregate.Feature{feature.StableCertificateRequestName},
+		"create a CertificateRequest if none exists": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
@@ -217,10 +230,61 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle3.certificateRequest,
 						gen.SetCertificateRequestName("test-1"),
-						gen.SetCertificateRequestGenerateName(""),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		"create a CertificateRequest if none exists (with long name)": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle4.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(19),
+			),
+			expectedEvents: []string{
+				fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-20"),
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle4.certificateRequest,
+						gen.SetCertificateRequestName(strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-20"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "20",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		"create a CertificateRequest if none exists (with long name and very large revision)": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle4.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(999999999),
+			),
+			expectedEvents: []string{
+				fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-1000000000"),
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle4.certificateRequest,
+						gen.SetCertificateRequestName(strings.Repeat("a", 167)+"b-d3f4fc40a686edfd404adf1d3fb1530653988c878e6c9c07b2e2fa4001a21269-1000000000"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1000000000",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -238,17 +302,19 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "random-value")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -269,17 +335,19 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "invalid",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "random-value")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -300,6 +368,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -320,6 +389,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -327,11 +397,12 @@ func TestProcessItem(t *testing.T) {
 					gen.SetCertificateRequestCSR([]byte("invalid")),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "random-value")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -352,23 +423,25 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-3"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "3",
 					}),
 				),
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
-					gen.SetCertificateRequestName("testing-number-2"),
+					gen.SetCertificateRequestName("test-4"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "4",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
 			expectedActions: []testpkg.Action{
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -389,6 +462,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-1"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -397,18 +471,19 @@ func TestProcessItem(t *testing.T) {
 				// included here just to ensure it does not get deleted as it is not for the
 				// 'next' revision that is being requested
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
-					gen.SetCertificateRequestName("testing-number-2"),
+					gen.SetCertificateRequestName("test-4"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "4",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
 			expectedActions: []testpkg.Action{
 				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
@@ -430,6 +505,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -438,18 +514,19 @@ func TestProcessItem(t *testing.T) {
 				// included here just to ensure it does not get deleted as it is not for the
 				// 'next' revision that is being requested
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
-					gen.SetCertificateRequestName("testing-number-2"),
+					gen.SetCertificateRequestName("test-5"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "5",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle2.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -471,17 +548,19 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -504,17 +583,19 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -536,6 +617,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -557,13 +639,14 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value-1"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
-					gen.SetCertificateRequestName("another-name-2"),
+					gen.SetCertificateRequestName("random-value-2"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -585,6 +668,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -593,11 +677,12 @@ func TestProcessItem(t *testing.T) {
 					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(time.Hour * -1)}),
 				),
 			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
 						gen.SetCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -619,6 +704,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
@@ -656,8 +742,8 @@ func TestProcessItem(t *testing.T) {
 			}
 
 			// Enable any features for a particular test
-			for _, feature := range test.featuresToEnable {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature, true)()
+			for feature, value := range test.featuresFlags {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature, value)()
 			}
 
 			// Start the informers and begin processing updates

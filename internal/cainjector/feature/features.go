@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// feature contains cainjector feature gate setup code. Do not import this
+// package into any code that's shared with other components to prevent
+// overwriting other component's featue gates, see i.e
+// https://github.com/cert-manager/cert-manager/issues/6011
 package feature
 
 import (
@@ -22,14 +26,25 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+// see https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages
+
 const (
-// FeatureName will enable XYZ feature.
-// Fill this section out with additional details about the feature.
-//
-// Owner (responsible for graduating feature through to GA): @username
-// Alpha: vX.Y
-// Beta: ...
-// FeatureName featuregate.Feature = "FeatureName"
+	// Copy & paste the following template when you add a new feature gate:
+	// ========================== START TEMPLATE ==========================
+	// Owner: @username
+	// Alpha: vX.Y
+	// Beta: ...
+	//
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
+	// FeatureName featuregate.Feature = "FeatureName"
+	// =========================== END TEMPLATE ===========================
+
+	// Owner: @inteon
+	// Alpha: v1.12
+	//
+	// ServerSideApply enables the use of ServerSideApply in all API calls.
+	ServerSideApply featuregate.Feature = "ServerSideApply"
 )
 
 func init() {
@@ -43,4 +58,6 @@ func init() {
 //	utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
-var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{}
+var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	ServerSideApply: {Default: false, PreRelease: featuregate.Alpha},
+}

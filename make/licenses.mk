@@ -18,9 +18,8 @@
 # As such, this is hardcoded to avoid needless complexity
 LICENSE_YEAR=2022
 
-# Creates the boilerplate header for YAML files, assumed to be the same as the one in
-# shell scripts (hence the use of boilerplate.sh.txt)
-$(BINDIR)/scratch/license.yaml: hack/boilerplate/boilerplate.sh.txt | $(BINDIR)/scratch
+# Creates the boilerplate header for YAML files from the template in hack/
+$(BINDIR)/scratch/license.yaml: hack/boilerplate-yaml.txt | $(BINDIR)/scratch
 	sed -e "s/YEAR/$(LICENSE_YEAR)/g" < $< > $@
 
 # The references LICENSES file is 1.4MB at the time of writing. Bundling it into every container image
@@ -52,12 +51,12 @@ $(LICENSES_GO_WORK): $(BINDIR)/scratch
 
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
 LICENSES $(BINDIR)/scratch/LATEST-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
-	$(GO-LICENSES) csv ./...  > $@
+	GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > $@
 
 cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: export GOWORK=$(abspath $(LICENSES_GO_WORK))
 cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd cmd/$* && $(GO-LICENSES) csv ./...  > ../../$@
+	cd cmd/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@
 
 test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: export GOWORK=$(abspath $(LICENSES_GO_WORK))
 test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd test/$* && $(GO-LICENSES) csv ./...  > ../../$@
+	cd test/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@

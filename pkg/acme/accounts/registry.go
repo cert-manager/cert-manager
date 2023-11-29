@@ -20,6 +20,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"sync"
@@ -45,7 +46,7 @@ type Registry interface {
 
 	// IsKeyCheckSumCached checks if the private key checksum is cached with registered client.
 	// If not cached, the account is re-verified for the private key.
-	IsKeyCheckSumCached(uid string, privateKey *rsa.PrivateKey) bool
+	IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
 
 	Getter
 }
@@ -195,19 +196,19 @@ func (r *registry) ListClients() map[string]acmecl.Interface {
 // IsKeyCheckSumCached returns true when there is no difference in private key checksum.
 // This can be used to identify if the private key has changed for the existing
 // registered client.
-func (r *registry) IsKeyCheckSumCached(uid string, privateKey *rsa.PrivateKey) bool {
+func (r *registry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	if privateKey != nil {
+	if privateKey != nil && lastPrivateKeyHash != "" {
 		privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 		checksum := sha256.Sum256(privateKeyBytes)
+		checksumString := base64.StdEncoding.EncodeToString(checksum[:])
 
-		if clientMeta, ok := r.clients[uid]; ok {
-			if clientMeta.keyChecksum == checksum {
-				return true
-			}
+		if lastPrivateKeyHash == checksumString {
+			return true
 		}
+
 	}
 
 	// Either there is no entry found in client cache for uid

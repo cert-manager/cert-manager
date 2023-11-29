@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cert-manager/cert-manager/cmctl-binary/pkg/build"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/spf13/cobra"

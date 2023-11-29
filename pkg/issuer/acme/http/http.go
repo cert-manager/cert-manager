@@ -166,7 +166,11 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 			return err
 		}
 		log.V(logf.DebugLevel).Info("reachability test passed, re-checking in 2s time")
-		time.Sleep(time.Second * 2)
+
+		if i != s.requiredPasses-1 {
+			// sleep for 2s between checks
+			time.Sleep(time.Second * 2)
+		}
 	}
 
 	log.V(logf.DebugLevel).Info("self check succeeded")
@@ -290,13 +294,13 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		log.V(logf.DebugLevel).Info("failed to perform self check GET request", "error", err)
 		return fmt.Errorf("failed to perform self check GET request '%s': %v", url, err)
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		log.V(logf.DebugLevel).Info("received HTTP status code was not StatusOK (200)", "code", response.StatusCode)
 		return fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)
 	}
 
-	defer response.Body.Close()
 	presentedKey, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to decode response body", "error", err)

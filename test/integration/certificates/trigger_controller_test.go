@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
@@ -58,7 +58,7 @@ func TestTriggerController(t *testing.T) {
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -70,6 +70,7 @@ func TestTriggerController(t *testing.T) {
 	}
 	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	controllerContext := &controllerpkg.Context{
+		Scheme:                    scheme,
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
@@ -77,7 +78,7 @@ func TestTriggerController(t *testing.T) {
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
@@ -122,7 +123,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// triggering depending on whether a renewal is required.
 	shoudReissue := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock)}.Evaluate
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	namespace := "testns"
 	secretName := "example"
@@ -175,6 +176,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	}
 
 	controllerContext := &controllerpkg.Context{
+		Scheme:                    scheme,
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
@@ -182,7 +184,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 	// Start the trigger controller
@@ -243,7 +245,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// this test.
 	shoudReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	namespace := "testns"
 	secretName := "example"
@@ -270,6 +272,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	controllerContext := &controllerpkg.Context{
+		Scheme:                    scheme,
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
@@ -277,7 +280,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 
@@ -341,10 +344,8 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 
 func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
 	t.Helper()
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*2)
-	defer cancel()
 
-	err := wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, time.Millisecond*200, time.Second*2, true, func(ctx context.Context) (bool, error) {
 		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -357,15 +358,11 @@ func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Cont
 			return true, nil
 		}
 		return false, nil
-	}, timeoutCtx.Done())
+	})
 	switch {
 	case err == nil:
 		t.Fatal("expected Certificate to not have the Issuing condition")
-	case err == wait.ErrWaitTimeout:
-		if ctx.Err() != nil {
-			t.Error(ctx.Err())
-		}
-
+	case err == context.DeadlineExceeded:
 		// this is the expected 'happy case'
 	default:
 		t.Fatal(err)
@@ -374,7 +371,7 @@ func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Cont
 func ensureCertificateHasIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
 	t.Helper()
 
-	err := wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
+	err := wait.PollUntilContextCancel(ctx, time.Millisecond*200, true, func(ctx context.Context) (done bool, err error) {
 		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -386,7 +383,7 @@ func ensureCertificateHasIssuingCondition(t *testing.T, ctx context.Context, cmC
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done())
+	})
 	if err != nil {
 		t.Error("Failed waiting for Certificate to have Issuing condition")
 	}
@@ -399,7 +396,7 @@ func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cm
 		t.Fatal(err)
 	}
 
-	template, err := pki.GenerateTemplate(spec)
+	template, err := pki.CertificateTemplateFromCertificate(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -441,7 +438,7 @@ func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certifica
 		t.Errorf("failed to marshal cert data: %v", err)
 	}
 	_, err = client.CertmanagerV1().Certificates(cert.Namespace).Patch(
-		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: pointer.Bool(true)},
+		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: ptr.To(true)},
 		"status",
 	)
 	if err != nil {

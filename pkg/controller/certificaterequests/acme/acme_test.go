@@ -93,7 +93,7 @@ func TestSign(t *testing.T) {
 	}
 
 	rootTmpl := &x509.Certificate{
-		Version:               2,
+		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{
@@ -153,7 +153,7 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	template, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Errorf("error generating template: %v", err)
 	}
@@ -169,7 +169,12 @@ func TestSign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	template2, err := pki.GenerateTemplateFromCSRPEM(generateCSR(t, sk2, "example.com", "example.com", "foo.com"), time.Hour, false)
+	template2, err := pki.CertificateTemplateFromCSRPEM(
+		generateCSR(t, sk2, "example.com", "example.com", "foo.com"),
+		pki.CertificateTemplateOverrideDuration(time.Hour),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(false, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

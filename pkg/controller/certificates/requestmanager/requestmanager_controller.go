@@ -349,7 +349,12 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 
 func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int, nextPrivateKeySecretName string) error {
 	log := logf.FromContext(ctx)
-	x509CSR, err := pki.GenerateCSR(crt)
+
+	x509CSR, err := pki.GenerateCSR(
+		crt,
+		pki.WithUseLiteralSubject(utilfeature.DefaultMutableFeatureGate.Enabled(feature.LiteralCertificateSubject)),
+		pki.WithEncodeBasicConstraintsInRequest(utilfeature.DefaultMutableFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints)),
+	)
 	if err != nil {
 		log.Error(err, "Failed to generate CSR - will not retry")
 		return nil
@@ -372,7 +377,10 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       crt.Namespace,
+			Namespace: crt.Namespace,
+			// We limit the GenerateName to 52 + 1 characters to stay within the 63 - 5 character limit that
+			// is used in Kubernetes when generating names.
+			// see https://github.com/kubernetes/apiserver/blob/696768606f546f71a1e90546613be37d1aa37f64/pkg/storage/names/generate.go
 			GenerateName:    apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-",
 			Annotations:     annotations,
 			Labels:          crt.Labels,
@@ -389,7 +397,20 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.StableCertificateRequestName) {
 		cr.ObjectMeta.GenerateName = ""
-		cr.ObjectMeta.Name = apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-" + fmt.Sprintf("%d", nextRevision)
+
+		// The CertificateRequest name is limited to 253 characters, assuming the nextRevision and hyphen
+		// can be represented using 20 characters, we can directly accept certificate names up to 233
+		// characters. Certificate names that are longer than this will be hashed to a shorter name. We want
+		// to make crafting two Certificates with the same truncated name as difficult as possible, so we
+		// use a cryptographic hash function to hash the full certificate name to 64 characters.
+		// Finally, for Certificates with a name longer than 233 characters, we build the CertificateRequest
+		// name as follows: <first-168-chars-of-certificate-name>-<64-char-hash>-<19-char-nextRevision>
+		crName, err := apiutil.ComputeSecureUniqueDeterministicNameFromData(crt.Name, 233)
+		if err != nil {
+			return err
+		}
+
+		cr.ObjectMeta.Name = fmt.Sprintf("%s-%d", crName, nextRevision)
 	}
 
 	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{FieldManager: c.fieldManager})
@@ -414,7 +435,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 }
 
 func (c *controller) waitForCertificateRequestToExist(namespace, name string) error {
-	return wait.Poll(time.Millisecond*100, time.Second*5, func() (bool, error) {
+	return wait.PollUntilContextTimeout(context.TODO(), time.Millisecond*100, time.Second*5, false, func(ctx context.Context) (bool, error) {
 		_, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 		if apierrors.IsNotFound(err) {
 			return false, nil

@@ -65,7 +65,7 @@ func TestMetricsController(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log, fixedClock)
 
@@ -96,6 +96,7 @@ func TestMetricsController(t *testing.T) {
 	}()
 
 	controllerContext := controllerpkg.Context{
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
@@ -150,14 +151,14 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	waitForMetrics := func(expectedOutput string) {
-		err := wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 			if err := testMetrics(expectedOutput); err != nil {
 				lastErr = err
 				return false, nil
 			}
 
 			return true, nil
-		}, ctx.Done())
+		})
 		if err != nil {
 			t.Fatalf("%s: failed to wait for expected metrics to be exposed: %s", err, lastErr)
 		}

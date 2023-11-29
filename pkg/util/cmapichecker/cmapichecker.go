@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"regexp"
 
-	errors "github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -32,19 +31,20 @@ import (
 )
 
 var (
-	ErrCertManagerCRDsNotFound   = errors.New("the cert-manager CRDs are not yet installed on the Kubernetes API server")
-	ErrWebhookServiceFailure     = errors.New("the cert-manager webhook service is not created yet")
-	ErrWebhookDeploymentFailure  = errors.New("the cert-manager webhook deployment is not ready yet")
-	ErrWebhookCertificateFailure = errors.New("the cert-manager webhook CA bundle is not injected yet")
+	ErrCertManagerCRDsNotFound   = fmt.Errorf("the cert-manager CRDs are not yet installed on the Kubernetes API server")
+	ErrWebhookServiceFailure     = fmt.Errorf("the cert-manager webhook service is not created yet")
+	ErrWebhookDeploymentFailure  = fmt.Errorf("the cert-manager webhook deployment is not ready yet")
+	ErrWebhookCertificateFailure = fmt.Errorf("the cert-manager webhook CA bundle is not injected yet")
 )
 
 const (
-	crdsMappingError  = `error finding the scope of the object: failed to get restmapping: no matches for kind "Certificate" in group "cert-manager.io"`
+	crdsMapping1Error = `error finding the scope of the object: failed to get restmapping: failed to find API group "cert-manager.io"`
+	crdsMapping2Error = `error finding the scope of the object: failed to get restmapping: no matches for kind "Certificate" in group "cert-manager.io"`
 	crdsNotFoundError = `the server could not find the requested resource (post certificates.cert-manager.io)`
 )
 
 var (
-	regexErrCertManagerCRDsNotFound   = regexp.MustCompile(`^(` + regexp.QuoteMeta(crdsMappingError) + `|` + regexp.QuoteMeta(crdsNotFoundError) + `)$`)
+	regexErrCertManagerCRDsNotFound   = regexp.MustCompile(`^(` + regexp.QuoteMeta(crdsMapping1Error) + `|` + regexp.QuoteMeta(crdsMapping2Error) + `|` + regexp.QuoteMeta(crdsNotFoundError) + `)$`)
 	regexErrWebhookServiceFailure     = regexp.MustCompile(`Post "(.*)": service "(.*)-webhook" not found`)
 	regexErrWebhookDeploymentFailure  = regexp.MustCompile(`Post "(.*)": (.*): connect: connection refused`)
 	regexErrWebhookCertificateFailure = regexp.MustCompile(`Post "(.*)": x509: certificate signed by unknown authority`)
@@ -62,14 +62,14 @@ type cmapiChecker struct {
 // New returns a cert-manager API checker
 func New(restcfg *rest.Config, scheme *runtime.Scheme, namespace string) (Interface, error) {
 	if err := cmapi.AddToScheme(scheme); err != nil {
-		return nil, errors.Wrap(err, "while configuring scheme")
+		return nil, fmt.Errorf("while configuring scheme: %w", err)
 	}
 
 	cl, err := client.New(restcfg, client.Options{
 		Scheme: scheme,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "while creating client")
+		return nil, fmt.Errorf("while creating client: %w", err)
 	}
 
 	return &cmapiChecker{
@@ -99,34 +99,12 @@ func (o *cmapiChecker) Check(ctx context.Context) error {
 	}
 
 	if err := o.client.Create(ctx, cert); err != nil {
-		return &ApiCheckError{
-			SimpleError:     translateToSimpleError(err),
-			UnderlyingError: err,
-		}
+		return err
 	}
 	return nil
 }
 
-type ApiCheckError struct {
-	SimpleError     error
-	UnderlyingError error
-}
-
-func (e *ApiCheckError) Error() string {
-	// If no simple error exists, print underlying error
-	if e.SimpleError == nil {
-		return e.UnderlyingError.Error()
-	}
-	return fmt.Sprintf("%v (%v)", e.SimpleError.Error(), e.UnderlyingError.Error())
-}
-
-// If no simple error exists, this function will return nil
-// which indicates that the error is not unwrappable
-func (e *ApiCheckError) Unwrap() error {
-	return e.SimpleError
-}
-
-// This translateToSimpleError function detects errors based on the error message.
+// TranslateToSimpleError detects errors based on the error message.
 // It tries to map these error messages to a better understandable error message that
 // explains what is wrong. If it cannot create a simple error, it will return nil.
 // ErrCertManagerCRDsNotFound:
@@ -137,18 +115,19 @@ func (e *ApiCheckError) Unwrap() error {
 // - Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": dial tcp 10.96.38.90:443: connect: connection refused
 // ErrWebhookCertificateFailure:
 // - Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" while trying to verify candidate authority certificate "cert-manager-webhook-ca")
-func translateToSimpleError(err error) error {
+func TranslateToSimpleError(err error) error {
 	s := err.Error()
 
-	if regexErrCertManagerCRDsNotFound.MatchString(s) {
+	switch {
+	case regexErrCertManagerCRDsNotFound.MatchString(s):
 		return ErrCertManagerCRDsNotFound
-	} else if regexErrWebhookServiceFailure.MatchString(s) {
+	case regexErrWebhookServiceFailure.MatchString(s):
 		return ErrWebhookServiceFailure
-	} else if regexErrWebhookDeploymentFailure.MatchString(s) {
+	case regexErrWebhookDeploymentFailure.MatchString(s):
 		return ErrWebhookDeploymentFailure
-	} else if regexErrWebhookCertificateFailure.MatchString(s) {
+	case regexErrWebhookCertificateFailure.MatchString(s):
 		return ErrWebhookCertificateFailure
+	default:
+		return nil
 	}
-
-	return nil
 }

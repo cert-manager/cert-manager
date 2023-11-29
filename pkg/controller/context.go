@@ -28,10 +28,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -83,6 +84,9 @@ type Context struct {
 	FieldManager string
 	// RESTConfig is the loaded Kubernetes apiserver rest client configuration
 	RESTConfig *rest.Config
+	// Scheme is the Kubernetes scheme that should be used when serialising and
+	// deserialising API objects
+	Scheme *runtime.Scheme
 	// Client is a Kubernetes clientset
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset
@@ -322,6 +326,11 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	restConfig := util.RestConfigWithUserAgent(c.baseRestConfig, component...)
 
+	scheme := runtime.NewScheme()
+	kscheme.AddToScheme(scheme)
+	cmscheme.AddToScheme(scheme)
+	gwscheme.AddToScheme(scheme)
+
 	clients, err := buildClients(restConfig)
 	if err != nil {
 		return nil, err
@@ -330,17 +339,17 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	// Create event broadcaster.
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly.
-	cmscheme.AddToScheme(scheme.Scheme)
-	gwscheme.AddToScheme(scheme.Scheme)
+
 	c.log.V(logf.DebugLevel).Info("creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(logf.WithInfof(c.log.V(logf.DebugLevel)).Infof)
 	eventBroadcaster.StartRecordingToSink(&clientv1.EventSinkImpl{Interface: clients.kubeClient.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: util.PrefixFromUserAgent(restConfig.UserAgent)})
+	recorder := eventBroadcaster.NewRecorder(scheme, corev1.EventSource{Component: util.PrefixFromUserAgent(restConfig.UserAgent)})
 
 	ctx := *c.ctx
 	ctx.FieldManager = util.PrefixFromUserAgent(restConfig.UserAgent)
 	ctx.RESTConfig = restConfig
+	ctx.Scheme = scheme
 	ctx.Client = clients.kubeClient
 	ctx.CMClient = clients.cmClient
 	ctx.GWClient = clients.gwClient
@@ -363,20 +372,28 @@ type contextClients struct {
 // buildClients builds all required clients for the context using the given
 // REST config.
 func buildClients(restConfig *rest.Config) (contextClients, error) {
-	// Create a cert-manager api client
-	cmClient, err := clientset.NewForConfig(restConfig)
+	httpClient, err := rest.HTTPClientFor(restConfig)
 	if err != nil {
-		return contextClients{}, fmt.Errorf("error creating internal group client: %w", err)
+		return contextClients{}, fmt.Errorf("error creating HTTP client: %w", err)
+	}
+
+	// Create a cert-manager api client
+	cmClient, err := clientset.NewForConfigAndClient(restConfig, httpClient)
+	if err != nil {
+		return contextClients{}, fmt.Errorf("error creating cert-manager client: %w", err)
 	}
 
 	// Create a Kubernetes api client
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	kubeClient, err := kubernetes.NewForConfigAndClient(restConfig, httpClient)
 	if err != nil {
 		return contextClients{}, fmt.Errorf("error creating kubernetes client: %w", err)
 	}
 
 	// create a metadata-only client
-	metadataOnlyClient := metadata.NewForConfigOrDie(restConfig)
+	metadataOnlyClient, err := metadata.NewForConfigAndClient(restConfig, httpClient)
+	if err != nil {
+		return contextClients{}, fmt.Errorf("error creating metadata-only client: %w", err)
+	}
 
 	var gatewayAvailable bool
 	// Check if the Gateway API feature gate was enabled
@@ -400,7 +417,7 @@ func buildClients(restConfig *rest.Config) (contextClients, error) {
 	}
 
 	// Create a GatewayAPI client.
-	gwClient, err := gwclient.NewForConfig(restConfig)
+	gwClient, err := gwclient.NewForConfigAndClient(restConfig, httpClient)
 	if err != nil {
 		return contextClients{}, fmt.Errorf("error creating kubernetes client: %w", err)
 	}

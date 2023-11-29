@@ -17,30 +17,27 @@ limitations under the License.
 package validation
 
 import (
-	"crypto/x509"
-	"encoding/asn1"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/kr/pretty"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	"github.com/cert-manager/cert-manager/pkg/apis/acme"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
-	"github.com/cert-manager/cert-manager/pkg/util"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}
-
 func ValidateCertificateRequest(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
 	cr := obj.(*cmapi.CertificateRequest)
-	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
+	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"))
 	allErrs = append(allErrs,
 		ValidateCertificateRequestApprovalCondition(cr.Status.Conditions, field.NewPath("status", "conditions"))...)
 
@@ -83,30 +80,58 @@ func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest,
 	return el
 }
 
-func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, validateCSRContent bool) field.ErrorList {
+func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	el = append(el, validateIssuerRef(crSpec.IssuerRef, fldPath)...)
 
+	el = append(el, validateCertificateRequestSpecRequest(crSpec, fldPath)...)
+
+	return el
+}
+
+func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
 	if len(crSpec.Request) == 0 {
 		el = append(el, field.Required(fldPath.Child("request"), "must be specified"))
-	} else {
-		csr, err := pki.DecodeX509CertificateRequestBytes(crSpec.Request)
+		return el
+	}
+
+	usages := make([]cmapiv1.KeyUsage, 0, len(crSpec.Usages))
+	for _, usage := range crSpec.Usages {
+		usages = append(usages, cmapiv1.KeyUsage(usage))
+	}
+
+	keyUsage, extKeyUsage, err := pki.KeyUsagesForCertificateOrCertificateRequest(usages, crSpec.IsCA)
+	if err != nil {
+		el = append(el, field.Invalid(fldPath.Child("usages"), crSpec.Usages, err.Error()))
+		return el
+	}
+
+	// If DisallowInsecureCSRUsageDefinition is disabled and usages is empty,
+	// then we should allow the request to be created without requiring that the
+	// CSR usages match the default usages, instead we only validate that the
+	// BasicConstraints are valid.
+	// TODO: simplify this logic when we remove the feature gate
+	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) && len(crSpec.Usages) == 0 {
+		_, err = pki.CertificateTemplateFromCSRPEM(
+			crSpec.Request,
+			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
+		)
 		if err != nil {
-			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
-		} else {
-			// only compare usages if set on CR and in the CSR
-			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && validateCSRContent && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
-				if crSpec.IsCA {
-					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
-				}
-				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
-				if len(err) > 0 {
-					el = append(el, err...)
-				} else if len(csrUsages) > 0 && !isUsageEqual(csrUsages, crSpec.Usages) && !isUsageEqual(csrUsages, defaultInternalKeyUsages) {
-					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages, these should match if both are set: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)))))
-				}
-			}
+			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
+			return el
+		}
+	} else {
+		_, err = pki.CertificateTemplateFromCSRPEM(
+			crSpec.Request,
+			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
+			pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
+		)
+		if err != nil {
+			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
+			return el
 		}
 	}
 
@@ -189,100 +214,6 @@ func ValidateUpdateCertificateRequestApprovalCondition(oldCRConds, newCRConds []
 	}
 
 	return append(el, ValidateCertificateRequestApprovalCondition(newCRConds, fldPath)...)
-}
-
-func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, csr *x509.CertificateRequest, el field.ErrorList) ([]cmapi.KeyUsage, field.ErrorList) {
-	var ekus []x509.ExtKeyUsage
-	var ku x509.KeyUsage
-
-	for _, extension := range csr.Extensions {
-		if extension.Id.String() == asn1.ObjectIdentifier(pki.OIDExtensionExtendedKeyUsage).String() {
-			var asn1ExtendedUsages []asn1.ObjectIdentifier
-			_, err := asn1.Unmarshal(extension.Value, &asn1ExtendedUsages)
-			if err != nil {
-				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr extended usages: %s", err)))
-			} else {
-				for _, asnExtUsage := range asn1ExtendedUsages {
-					eku, ok := pki.ExtKeyUsageFromOID(asnExtUsage)
-					if ok {
-						ekus = append(ekus, eku)
-					}
-				}
-			}
-		}
-		if extension.Id.String() == asn1.ObjectIdentifier(pki.OIDExtensionKeyUsage).String() {
-			// RFC 5280, 4.2.1.3
-			var asn1bits asn1.BitString
-			_, err := asn1.Unmarshal(extension.Value, &asn1bits)
-			if err != nil {
-				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr usages: %s", err)))
-			} else {
-				var usage int
-				for i := 0; i < 9; i++ {
-					if asn1bits.At(i) != 0 {
-						usage |= 1 << uint(i)
-					}
-				}
-				ku = x509.KeyUsage(usage)
-			}
-		}
-	}
-
-	// convert usages to the internal API
-	var out []cmapi.KeyUsage
-	for _, usage := range pki.BuildCertManagerKeyUsages(ku, ekus) {
-		out = append(out, cmapi.KeyUsage(usage))
-	}
-	return out, el
-}
-
-func patchDuplicateKeyUsage(usages []cmapi.KeyUsage) []cmapi.KeyUsage {
-	// usage signing and digital signature are the same key use in x509
-	// we should patch this for proper validation
-
-	newUsages := []cmapi.KeyUsage(nil)
-	hasUsageSigning := false
-	for _, usage := range usages {
-		if (usage == cmapi.UsageSigning || usage == cmapi.UsageDigitalSignature) && !hasUsageSigning {
-			newUsages = append(newUsages, cmapi.UsageDigitalSignature)
-			// prevent having 2 UsageDigitalSignature in the slice
-			hasUsageSigning = true
-		} else if usage != cmapi.UsageSigning && usage != cmapi.UsageDigitalSignature {
-			newUsages = append(newUsages, usage)
-		}
-	}
-
-	return newUsages
-}
-
-func isUsageEqual(a, b []cmapi.KeyUsage) bool {
-	a = patchDuplicateKeyUsage(a)
-	b = patchDuplicateKeyUsage(b)
-
-	var aStrings, bStrings []string
-
-	for _, usage := range a {
-		aStrings = append(aStrings, string(usage))
-	}
-
-	for _, usage := range b {
-		bStrings = append(bStrings, string(usage))
-	}
-
-	return util.EqualUnsorted(aStrings, bStrings)
-}
-
-// ensureCertSignIsSet adds UsageCertSign in case it is not set
-// TODO: add a mutating webhook to make sure this is always set
-// when isCA is true.
-func ensureCertSignIsSet(list []cmapi.KeyUsage) []cmapi.KeyUsage {
-	for _, usage := range list {
-		if usage == cmapi.UsageCertSign {
-			return list
-		}
-	}
-
-	return append(list, cmapi.UsageCertSign)
 }
 
 func getCertificateRequestCondition(conds []cmapi.CertificateRequestCondition, conditionType cmapi.CertificateRequestConditionType) *cmapi.CertificateRequestCondition {

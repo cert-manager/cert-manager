@@ -277,7 +277,7 @@ func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
 		t.Fatal(err)
 	}
 
-	template, err := GenerateTemplate(&cmapi.Certificate{Spec: spec})
+	template, err := CertificateTemplateFromCertificate(&cmapi.Certificate{Spec: spec})
 	if err != nil {
 		t.Fatal(err)
 	}
