@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	vcert "github.com/Venafi/vcert/v4"
+	vcert "github.com/Venafi/vcert/v5"
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 

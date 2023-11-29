@@ -25,167 +25,227 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // A Certificate resource should be created to ensure an up to date and signed
-// x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
+// X.509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
 //
 // The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`).
 type Certificate struct {
 	metav1.TypeMeta
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	metav1.ObjectMeta
 
-	// Desired state of the Certificate resource.
+	// Specification of the desired state of the Certificate resource.
+	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 	Spec CertificateSpec
 
-	// Status of the Certificate. This is set and managed automatically.
+	// Status of the Certificate.
+	// This is set and managed automatically.
+	// Read-only.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 	Status CertificateStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CertificateList is a list of Certificates
+// CertificateList is a list of Certificates.
 type CertificateList struct {
 	metav1.TypeMeta
+	// Standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	metav1.ListMeta
 
-	Items []Certificate
+	// List of Certificates
+	Items []Certificate `json:"items"`
 }
 
 type PrivateKeyAlgorithm string
 
 const (
-	// Denotes the RSA private key type.
+	// RSA private key algorithm.
 	RSAKeyAlgorithm PrivateKeyAlgorithm = "RSA"
 
-	// Denotes the ECDSA private key type.
+	// ECDSA private key algorithm.
 	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
 
-	// Denotes the Ed25519 private key type.
+	// Ed25519 private key algorithm.
 	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
 )
 
 type PrivateKeyEncoding string
 
 const (
-	// PKCS1 key encoding will produce PEM files that include the type of
-	// private key as part of the PEM header, e.g. `BEGIN RSA PRIVATE KEY`.
-	// If the keyAlgorithm is set to 'ECDSA', this will produce private keys
-	// that use the `BEGIN EC PRIVATE KEY` header.
+	// PKCS1 private key encoding.
+	// PKCS1 produces a PEM block that contains the private key algorithm
+	// in the header and the private key in the body. A key that uses this
+	// can be recognised by its `BEGIN RSA PRIVATE KEY` or `BEGIN EC PRIVATE KEY` header.
+	// NOTE: This encoding is not supported for Ed25519 keys. Attempting to use
+	// this encoding with an Ed25519 key will be ignored and default to PKCS8.
 	PKCS1 PrivateKeyEncoding = "PKCS1"
 
-	// PKCS8 key encoding will produce PEM files with the `BEGIN PRIVATE KEY`
-	// header. It encodes the keyAlgorithm of the private key as part of the
-	// DER encoded PEM block.
+	// PKCS8 private key encoding.
+	// PKCS8 produces a PEM block with a static header and both the private
+	// key algorithm and the private key in the body. A key that uses this
+	// encoding can be recognised by its `BEGIN PRIVATE KEY` header.
 	PKCS8 PrivateKeyEncoding = "PKCS8"
 )
 
 // CertificateSpec defines the desired state of Certificate.
-// A valid Certificate requires at least one of a CommonName, DNSName, or
-// URISAN to be valid.
+//
+// NOTE: The specification contains a lot of "requested" certificate attributes, it is
+// important to note that the issuer can choose to ignore or change any of
+// these requested attributes. How the issuer maps a certificate request to a
+// signed certificate is the full responsibility of the issuer itself. For example,
+// as an edge case, an issuer that inverts the isCA value is free to do so.
+//
+// A valid Certificate requires at least one of a CommonName, LiteralSubject, DNSName, or
+// URI to be valid.
 type CertificateSpec struct {
-	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+	// Requested set of X509 certificate subject attributes.
+	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
+	//
+	// The common name attribute is specified separately in the `commonName` field.
+	// Cannot be set if the `literalSubject` field is set.
 	Subject *X509Subject
 
-	// LiteralSubject is an LDAP formatted string that represents the [X.509 Subject field](https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6).
-	// Use this *instead* of the Subject field if you need to ensure the correct ordering of the RDN sequence, such as when issuing certs for LDAP authentication. See https://github.com/cert-manager/cert-manager/issues/3203, https://github.com/cert-manager/cert-manager/issues/4424.
-	// This field is alpha level and is only supported by cert-manager installations where LiteralCertificateSubject feature gate is enabled on both cert-manager controller and webhook.
-	// +optional
-	LiteralSubject string `json:"literalSubject,omitempty"`
+	// Requested X.509 certificate subject, represented using the LDAP "String
+	// Representation of a Distinguished Name" [1].
+	// Important: the LDAP string format also specifies the order of the attributes
+	// in the subject, this is important when issuing certs for LDAP authentication.
+	// Example: `CN=foo,DC=corp,DC=example,DC=com`
+	// More info [1]: https://datatracker.ietf.org/doc/html/rfc4514
+	// More info: https://github.com/cert-manager/cert-manager/issues/3203
+	// More info: https://github.com/cert-manager/cert-manager/issues/4424
+	//
+	// Cannot be set if the `subject` or `commonName` field is set.
+	// This is an Alpha Feature and is only enabled with the
+	// `--feature-gates=LiteralCertificateSubject=true` option set on both
+	// the controller and webhook components.
+	LiteralSubject string
 
-	// CommonName is a common name to be used on the Certificate.
-	// The CommonName should have a length of 64 characters or fewer to avoid
-	// generating invalid CSRs.
-	// This value is ignored by TLS clients when any subject alt name is set.
-	// This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4
+	// Requested common name X509 certificate subject attribute.
+	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
+	// NOTE: TLS clients will ignore this value when any subject alternative name is
+	// set (see https://tools.ietf.org/html/rfc6125#section-6.4.4).
+	//
+	// Should have a length of 64 characters or fewer to avoid generating invalid CSRs.
+	// Cannot be set if the `literalSubject` field is set.
 	CommonName string
 
-	// The requested 'duration' (i.e. lifetime) of the Certificate.
-	// This option may be ignored/overridden by some issuer types.
-	// If overridden and `renewBefore` is greater than the actual certificate
-	// duration, the certificate will be automatically renewed 2/3rds of the
-	// way through the certificate's duration.
+	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
+	// issuer may choose to ignore the requested duration, just like any other
+	// requested attribute.
+	//
+	// If unset, this defaults to 90 days.
+	// Minimum accepted duration is 1 hour.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
 	Duration *metav1.Duration
 
-	// The amount of time before the currently issued certificate's `notAfter`
-	// time that cert-manager will begin to attempt to renew the certificate.
-	// If this value is greater than the total duration of the certificate
-	// (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of
-	// the way through the certificate's duration.
+	// How long before the currently issued certificate's expiry cert-manager should
+	// renew the certificate. For example, if a certificate is valid for 60 minutes,
+	// and `renewBefore=10m`, cert-manager will begin to attempt to renew the certificate
+	// 50 minutes after it was issued (i.e. when there are 10 minutes remaining until
+	// the certificate is no longer valid).
+	//
+	// NOTE: The actual lifetime of the issued certificate is used to determine the
+	// renewal time. If an issuer returns a certificate with a different lifetime than
+	// the one requested, cert-manager will use the lifetime of the issued certificate.
+	//
+	// If unset, this defaults to 1/3 of the issued certificate's lifetime.
+	// Minimum accepted value is 5 minutes.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
 	RenewBefore *metav1.Duration
 
-	// DNSNames is a list of DNS subjectAltNames to be set on the Certificate.
+	// Requested DNS subject alternative names.
 	DNSNames []string
 
-	// IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
+	// Requested IP address subject alternative names.
 	IPAddresses []string
 
-	// URISANs is a list of URI subjectAltNames to be set on the Certificate.
+	// Requested URI subject alternative names.
 	URISANs []string
 
-	// EmailSANs is a list of email subjectAltNames to be set on the Certificate.
+	// Requested email subject alternative names.
 	EmailSANs []string
 
-	// SecretName is the name of the secret resource that will be automatically
-	// created and managed by this Certificate resource.
-	// It will be populated with a private key and certificate, signed by the
-	// denoted issuer.
+	// Name of the Secret resource that will be automatically created and
+	// managed by this Certificate resource. It will be populated with a
+	// private key and certificate, signed by the denoted issuer. The Secret
+	// resource lives in the same namespace as the Certificate resource.
 	SecretName string
 
-	// SecretTemplate defines annotations and labels to be copied to the
-	// Certificate's Secret. Labels and annotations on the Secret will be changed
-	// as they appear on the SecretTemplate when added or removed. SecretTemplate
-	// annotations are added in conjunction with, and cannot overwrite, the base
-	// set of annotations cert-manager sets on the Certificate's Secret.
+	// Defines annotations and labels to be copied to the Certificate's Secret.
+	// Labels and annotations on the Secret will be changed as they appear on the
+	// SecretTemplate when added or removed. SecretTemplate annotations are added
+	// in conjunction with, and cannot overwrite, the base set of annotations
+	// cert-manager sets on the Certificate's Secret.
 	SecretTemplate *CertificateSecretTemplate
 
-	// Keystores configures additional keystore output formats stored in the
-	// `secretName` Secret resource.
+	// Additional keystore output formats to be stored in the Certificate's Secret.
 	Keystores *CertificateKeystores
 
-	// IssuerRef is a reference to the issuer for this certificate.
-	// If the `kind` field is not set, or set to `Issuer`, an Issuer resource
-	// with the given name in the same namespace as the Certificate will be used.
-	// If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the
-	// provided name will be used.
-	// The `name` field in this stanza is required at all times.
+	// Reference to the issuer responsible for issuing the certificate.
+	// If the issuer is namespace-scoped, it must be in the same namespace
+	// as the Certificate. If the issuer is cluster-scoped, it can be used
+	// from any namespace.
+	//
+	// The `name` field of the reference must always be specified.
 	IssuerRef cmmeta.ObjectReference
 
-	// IsCA will mark this Certificate as valid for certificate signing.
-	// This will automatically add the `cert sign` usage to the list of `usages`.
+	// Requested basic constraints isCA value.
+	// The isCA value is used to set the `isCA` field on the created CertificateRequest
+	// resources. Note that the issuer may choose to ignore the requested isCA value, just
+	// like any other requested attribute.
+	//
+	// If true, this will automatically add the `cert sign` usage to the list
+	// of requested `usages`.
 	IsCA bool
 
-	// Usages is the set of x509 usages that are requested for the certificate.
-	// Defaults to `digital signature` and `key encipherment` if not specified.
+	// Requested key usages and extended key usages.
+	// These usages are used to set the `usages` field on the created CertificateRequest
+	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
+	// will additionally be encoded in the `request` field which contains the CSR blob.
+	//
+	// If unset, defaults to `digital signature` and `key encipherment`.
 	Usages []KeyUsage
 
-	// Options to control private keys used for the Certificate.
+	// Private key options. These include the key algorithm and size, the used
+	// encoding and the rotation policy.
 	PrivateKey *CertificatePrivateKey
 
-	// EncodeUsagesInRequest controls whether key usages should be present
-	// in the CertificateRequest
+	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
+	//
+	// This option defaults to true, and should only be disabled if the target
+	// issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.
 	EncodeUsagesInRequest *bool
 
-	// revisionHistoryLimit is the maximum number of CertificateRequest revisions
-	// that are maintained in the Certificate's history. Each revision represents
-	// a single `CertificateRequest` created by this Certificate, either when it
-	// was created, renewed, or Spec was changed. Revisions will be removed by
-	// oldest first if the number of revisions exceeds this number. If set,
-	// revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`),
-	// revisions will not be garbage collected. Default value is `nil`.
+	// The maximum number of CertificateRequest revisions that are maintained in
+	// the Certificate's history. Each revision represents a single `CertificateRequest`
+	// created by this Certificate, either when it was created, renewed, or Spec
+	// was changed. Revisions will be removed by oldest first if the number of
+	// revisions exceeds this number.
+	//
+	// If set, revisionHistoryLimit must be a value of `1` or greater.
+	// If unset (`nil`), revisions will not be garbage collected.
+	// Default value is `nil`.
 	RevisionHistoryLimit *int32
 
-	// AdditionalOutputFormats defines extra output formats of the private key
-	// and signed certificate chain to be written to this Certificate's target
-	// Secret. This is an Alpha Feature and is only enabled with the
-	// `--feature-gates=AdditionalCertificateOutputFormats=true` option on both
+	// Defines extra output formats of the private key and signed certificate chain
+	// to be written to this Certificate's target Secret.
+	//
+	// This is an Alpha Feature and is only enabled with the
+	// `--feature-gates=AdditionalCertificateOutputFormats=true` option set on both
 	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
 }
 
 // CertificatePrivateKey contains configuration options for private keys
 // used by the Certificate controller.
-// This allows control of how private keys are rotated.
+// These include the key algorithm and size, the used encoding and the
+// rotation policy.
 type CertificatePrivateKey struct {
 	// RotationPolicy controls how private keys should be regenerated when a
 	// re-issuance is being processed.
+	//
 	// If set to `Never`, a private key will only be generated if one does not
 	// already exist in the target `spec.secretName`. If one does exists but it
 	// does not have the correct algorithm or size, a warning will be raised
@@ -197,58 +257,31 @@ type CertificatePrivateKey struct {
 
 	// The private key cryptography standards (PKCS) encoding for this
 	// certificate's private key to be encoded in.
+	//
 	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to `PKCS1` if not specified.
 	Encoding PrivateKeyEncoding
 
 	// Algorithm is the private key algorithm of the corresponding private key
-	// for this certificate. If provided, allowed values are either `RSA` or `ECDSA`
+	// for this certificate.
+	//
+	// If provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`.
 	// If `algorithm` is specified and `size` is not provided,
-	// key size of `256` will be used for `ECDSA` key algorithm and
-	// key size of `2048` will be used for `RSA` key algorithm.
+	// key size of 2048 will be used for `RSA` key algorithm and
+	// key size of 256 will be used for `ECDSA` key algorithm.
+	// key size is ignored when using the `Ed25519` key algorithm.
 	Algorithm PrivateKeyAlgorithm
 
 	// Size is the key bit size of the corresponding private key for this certificate.
+	//
 	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
 	// and will default to `2048` if not specified.
 	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
+	// If `algorithm` is set to `Ed25519`, Size is ignored.
 	// No other values are allowed.
 	Size int
-}
-
-// CertificateOutputFormatType specifies which additional output formats should
-// be written to the Certificate's target Secret.
-// Allowed values are `DER` or `CombinedPEM`.
-// When Type is set to `DER` an additional entry `key.der` will be written to
-// the Secret, containing the binary format of the private key.
-// When Type is set to `CombinedPEM` an additional entry `tls-combined.pem`
-// will be written to the Secret, containing the PEM formatted private key and
-// signed certificate chain (tls.key + tls.crt concatenated).
-type CertificateOutputFormatType string
-
-const (
-	// AdditionalCertificateOutputFormatDER  writes the Certificate's private key
-	// in DER binary format to the `key.der` target Secret Data key.
-	AdditionalCertificateOutputFormatDER CertificateOutputFormatType = "DER"
-
-	// AdditionalCertificateOutputFormatCombinedPEM  writes the Certificate's
-	// signed certificate chain and private key, in PEM format, to the
-	// `tls-combined.pem` target Secret Data key. The value at this key will
-	// include the private key PEM document, followed by at least one new line
-	// character, followed by the chain of signed certificate PEM documents
-	// (`<private key> + \n + <signed certificate chain>`).
-	AdditionalCertificateOutputFormatCombinedPEM CertificateOutputFormatType = "CombinedPEM"
-)
-
-// CertificateAdditionalOutputFormat defines an additional output format of a
-// Certificate resource. These contain supplementary data formats of the signed
-// certificate chain and paired private key.
-type CertificateAdditionalOutputFormat struct {
-	// Type is the name of the format type that should be written to the
-	// Certificate's target Secret.
-	Type CertificateOutputFormatType
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
@@ -266,6 +299,39 @@ var (
 	// requirements will be generated whenever a re-issuance occurs.
 	RotationPolicyAlways PrivateKeyRotationPolicy = "Always"
 )
+
+// CertificateOutputFormatType specifies which additional output formats should
+// be written to the Certificate's target Secret.
+// Allowed values are `DER` or `CombinedPEM`.
+// When Type is set to `DER` an additional entry `key.der` will be written to
+// the Secret, containing the binary format of the private key.
+// When Type is set to `CombinedPEM` an additional entry `tls-combined.pem`
+// will be written to the Secret, containing the PEM formatted private key and
+// signed certificate chain (tls.key + tls.crt concatenated).
+type CertificateOutputFormatType string
+
+const (
+	// CertificateOutputFormatDER  writes the Certificate's private key in DER
+	// binary format to the `key.der` target Secret Data key.
+	CertificateOutputFormatDER CertificateOutputFormatType = "DER"
+
+	// CertificateOutputFormatCombinedPEM  writes the Certificate's signed
+	// certificate chain and private key, in PEM format, to the
+	// `tls-combined.pem` target Secret Data key. The value at this key will
+	// include the private key PEM document, followed by at least one new line
+	// character, followed by the chain of signed certificate PEM documents
+	// (`<private key> + \n + <signed certificate chain>`).
+	CertificateOutputFormatCombinedPEM CertificateOutputFormatType = "CombinedPEM"
+)
+
+// CertificateAdditionalOutputFormat defines an additional output format of a
+// Certificate resource. These contain supplementary data formats of the signed
+// certificate chain and paired private key.
+type CertificateAdditionalOutputFormat struct {
+	// Type is the name of the format type that should be written to the
+	// Certificate's target Secret.
+	Type CertificateOutputFormatType
+}
 
 // X509Subject Full X509 name specification
 type X509Subject struct {
@@ -306,7 +372,11 @@ type JKSKeystore struct {
 	// If true, a file named `keystore.jks` will be created in the target
 	// Secret resource, encrypted using the password stored in
 	// `passwordSecretRef`.
-	// The keystore file will only be updated upon re-issuance.
+	// The keystore file will be updated immediately.
+	// If the issuer provided a CA certificate, a file named `truststore.jks`
+	// will also be created in the target Secret resource, encrypted using the
+	// password stored in `passwordSecretRef`
+	// containing the issuing Certificate Authority
 	Create bool
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
@@ -321,7 +391,11 @@ type PKCS12Keystore struct {
 	// If true, a file named `keystore.p12` will be created in the target
 	// Secret resource, encrypted using the password stored in
 	// `passwordSecretRef`.
-	// The keystore file will only be updated upon re-issuance.
+	// The keystore file will be updated immediately.
+	// If the issuer provided a CA certificate, a file named `truststore.p12` will
+	// also be created in the target Secret resource, encrypted using the
+	// password stored in `passwordSecretRef` containing the issuing Certificate
+	// Authority
 	Create bool
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
@@ -335,15 +409,15 @@ type CertificateStatus struct {
 	// Known condition types are `Ready` and `Issuing`.
 	Conditions []CertificateCondition
 
-	// LastFailureTime is the time as recorded by the Certificate controller
-	// of the most recent failure to complete a CertificateRequest for this
-	// Certificate resource.
-	// If set, cert-manager will not re-request another Certificate until
-	// 1 hour has elapsed from this time.
+	// LastFailureTime is set only if the lastest issuance for this
+	// Certificate failed and contains the time of the failure. If an
+	// issuance has failed, the delay till the next issuance will be
+	// calculated using formula time.Hour * 2 ^ (failedIssuanceAttempts -
+	// 1). If the latest issuance has succeeded this field will be unset.
 	LastFailureTime *metav1.Time
 
 	// The time after which the certificate stored in the secret named
-	// by this resource in spec.secretName is valid.
+	// by this resource in `spec.secretName` is valid.
 	NotBefore *metav1.Time
 
 	// The expiration time of the certificate stored in the secret named
@@ -384,7 +458,7 @@ type CertificateStatus struct {
 	// 1 if unset and an issuance has failed. If an issuance has failed, the
 	// delay till the next issuance will be calculated using formula
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
-	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
+	FailedIssuanceAttempts *int
 }
 
 // CertificateCondition contains condition information for an Certificate.
@@ -437,7 +511,7 @@ const (
 	//    `status.certificate` on the CertificateRequest.
 	//   * If no CertificateRequest resource exists for the current revision,
 	//     the options on the Certificate resource are compared against the
-	//     x509 data in the Secret, similar to what's done in earlier versions.
+	//     X.509 data in the Secret, similar to what's done in earlier versions.
 	//     If there is a mismatch, an issuance is triggered.
 	// This condition may also be added by external API consumers to trigger
 	// a re-issuance manually for any other reason.

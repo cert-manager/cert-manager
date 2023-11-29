@@ -989,6 +989,7 @@ func TestNewConfig(t *testing.T) {
 		"a bad cert bundle should error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server:   "https://vault.example.com",
 					CABundle: []byte("a bad cert bundle"),
 				}),
 			),
@@ -998,6 +999,7 @@ func TestNewConfig(t *testing.T) {
 		"a good cert bundle should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server:   "https://vault.example.com",
 					CABundle: []byte(testLeafCertificate),
 				}),
 			),
@@ -1025,6 +1027,7 @@ func TestNewConfig(t *testing.T) {
 		"a good bundle from a caBundleSecretRef should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						Key: "my-bundle.crt",
 						LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1060,6 +1063,7 @@ func TestNewConfig(t *testing.T) {
 		"a good bundle from a caBundleSecretRef with default key should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
 							Name: "bundle",
@@ -1094,6 +1098,7 @@ func TestNewConfig(t *testing.T) {
 		"a bad bundle from a caBundleSecretRef should error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						Key: "my-bundle.crt",
 						LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1108,7 +1113,8 @@ func TestNewConfig(t *testing.T) {
 		"the tokenCreate func should be called with the correct namespace": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
-					Path: "my-path",
+					Server: "https://vault.example.com",
+					Path:   "my-path",
 					Auth: cmapi.VaultAuth{
 						Kubernetes: &cmapi.VaultKubernetesAuth{
 							Role: "my-role",
@@ -1320,6 +1326,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 					Spec: v1.IssuerSpec{
 						IssuerConfig: v1.IssuerConfig{
 							Vault: &v1.VaultIssuer{
+								Server:    "https://vault.example.com",
 								Namespace: tc.vaultNS,
 								Auth: cmapi.VaultAuth{
 									TokenSecretRef: &cmmeta.SecretKeySelector{

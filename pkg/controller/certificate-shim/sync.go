@@ -322,6 +322,11 @@ func buildCertificates(
 		}
 	case *gwapi.Gateway:
 		for i, l := range ingLike.Spec.Listeners {
+			// TLS is only supported for a limited set of protocol types: https://gateway-api.sigs.k8s.io/guides/tls/#listeners-and-tls
+			if l.Protocol != gwapi.HTTPSProtocolType && l.Protocol != gwapi.TLSProtocolType {
+				continue
+			}
+
 			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())

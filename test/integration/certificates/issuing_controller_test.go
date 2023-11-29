@@ -34,7 +34,7 @@ import (
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/utils/clock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
@@ -65,12 +65,13 @@ func TestIssuingController(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
@@ -78,7 +79,7 @@ func TestIssuingController(t *testing.T) {
 			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
@@ -281,12 +282,13 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
@@ -294,7 +296,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
@@ -506,12 +508,13 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
@@ -519,7 +522,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
@@ -754,13 +757,14 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: true,
 	}
 
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
@@ -768,7 +772,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
@@ -994,12 +998,13 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t, ctx)
 	defer stopFn()
 
-	kubeClient, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
 		EnableOwnerRef: false,
 	}
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
@@ -1007,7 +1012,7 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: fieldManager,
 	}
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
@@ -1076,7 +1081,7 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 	t.Log("added owner reference to Secret for non Certificate UID with field manager should not get removed")
 	secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(ctx, secret.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: types.UID("not-cert"), Controller: pointer.Bool(false), BlockOwnerDeletion: pointer.Bool(false)}
+	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: types.UID("not-cert"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)}
 	applyCnf.OwnerReferences = []applymetav1.OwnerReferenceApplyConfiguration{{
 		APIVersion: &fooRef.APIVersion, Kind: &fooRef.Kind, Name: &fooRef.Name,
 		UID: &fooRef.UID, Controller: fooRef.Controller, BlockOwnerDeletion: fooRef.BlockOwnerDeletion,
@@ -1091,11 +1096,12 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 
 	t.Log("restarting controller with secret owner reference option enabled")
 	stopControllerNoOwnerRef()
-	kubeClient, factory, cmClient, cmFactory = framework.NewClients(t, config)
+	kubeClient, factory, cmClient, cmFactory, _ = framework.NewClients(t, config)
 	stopControllerNoOwnerRef = nil
 	controllerOptions.EnableOwnerRef = true
 	controllerContext = controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
@@ -1103,7 +1109,7 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: fieldManager,
 	}
 	ctrl, queue, mustSync = issuing.NewController(logf.Log, &controllerContext)

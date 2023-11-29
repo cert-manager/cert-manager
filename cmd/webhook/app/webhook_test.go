@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"testing"
 
+	logsapi "k8s.io/component-base/logs/api/v1"
+
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
@@ -49,6 +51,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 
 	var finalConfig *config.WebhookConfiguration
 
+	logsapi.ResetForTest(nil)
 	ctx := logf.NewContext(context.TODO(), logf.Log)
 
 	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.WebhookConfiguration) error {
@@ -85,6 +88,15 @@ func TestFlagsAndConfigFile(t *testing.T) {
 	}
 
 	tests := []testCase{
+		{
+			yaml: ``,
+			args: func(tempFilePath string) []string {
+				return []string{"--kubeconfig=valid"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = "valid"
+			}),
+		},
 		{
 			yaml: `
 apiVersion: webhook.config.cert-manager.io/v1alpha1

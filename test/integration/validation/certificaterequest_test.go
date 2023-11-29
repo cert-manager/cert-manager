@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
@@ -116,7 +116,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -156,7 +156,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -177,7 +177,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 			defer cancel()
 
 			// The default is true, but we set it here to make sure it was not changed by other tests
-			utilfeature.DefaultMutableFeatureGate.Set("DontAllowInsecureCSRUsageDefinition=true")
+			utilfeature.DefaultMutableFeatureGate.Set("DisallowInsecureCSRUsageDefinition=true")
 
 			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()
@@ -203,10 +203,10 @@ func TestValidationCertificateRequests(t *testing.T) {
 	}
 }
 
-// TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false makes sure that the
-// validation webhook keeps working as before when the DontAllowInsecureCSRUsageDefinition feature
+// TestValidationCertificateRequests_DisallowInsecureCSRUsageDefinition_false makes sure that the
+// validation webhook keeps working as before when the DisallowInsecureCSRUsageDefinition feature
 // gate is disabled.
-func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false(t *testing.T) {
+func TestValidationCertificateRequests_DisallowInsecureCSRUsageDefinition_false(t *testing.T) {
 	tests := map[string]struct {
 		input       runtime.Object
 		errorSuffix string // is a suffix as the API server sends the whole value back in the error
@@ -278,7 +278,7 @@ func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -318,7 +318,7 @@ func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false
 						Spec: cmapi.CertificateSpec{
 							DNSNames:              []string{"example.com"},
 							Usages:                []cmapi.KeyUsage{},
-							EncodeUsagesInRequest: pointer.Bool(false),
+							EncodeUsagesInRequest: ptr.To(false),
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
@@ -338,7 +338,7 @@ func TestValidationCertificateRequests_DontAllowInsecureCSRUsageDefinition_false
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 			defer cancel()
 
-			utilfeature.DefaultMutableFeatureGate.Set("DontAllowInsecureCSRUsageDefinition=false")
+			utilfeature.DefaultMutableFeatureGate.Set("DisallowInsecureCSRUsageDefinition=false")
 
 			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()

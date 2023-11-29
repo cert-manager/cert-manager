@@ -21,7 +21,14 @@ set -eu -o pipefail
 
 SHASUM=$(./hack/util/hash.sh "$1")
 
-if [ $SHASUM != "$2"  ]; then
+# When running 'make learn-sha-tools', we don't want this script to fail.
+# Instead we log what sha values are wrong, so the make.mk file can be updated.
+if [ "$SHASUM" != "$2" ] && [ "${LEARN_FILE:-}" != "" ]; then
+	echo "s/$2/$SHASUM/g" >> "${LEARN_FILE:-}"
+	exit 0
+fi
+
+if [ "$SHASUM" != "$2"  ]; then
 	echo "invalid checksum for \"$1\": wanted \"$2\" but got \"$SHASUM\""
 	exit 1
 fi

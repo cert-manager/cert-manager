@@ -57,7 +57,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	stopControllers := runAllControllers(t, ctx, config)
 	defer stopControllers()
 
-	_, _, cmCl, _ := framework.NewClients(t, config)
+	_, _, cmCl, _, _ := framework.NewClients(t, config)
 	crt, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt"},
 		Spec: cmapi.CertificateSpec{
@@ -144,7 +144,10 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		}
 
 		for _, req := range reqs.Items {
-			if req.Name == firstReq.Name {
+			// We expect a new request to be created (with the same name as the first request)
+			// and the old request to be deleted. We can check this by comparing the UID of the
+			// first request with the UID of the second request.
+			if req.UID == firstReq.UID {
 				continue
 			}
 
@@ -191,7 +194,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	stopControllers := runAllControllers(t, ctx, config)
 	defer stopControllers()
 
-	_, _, cmCl, _ := framework.NewClients(t, config)
+	_, _, cmCl, _, _ := framework.NewClients(t, config)
 	crt, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt"},
 		Spec: cmapi.CertificateSpec{
@@ -278,7 +281,10 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		}
 
 		for _, req := range reqs.Items {
-			if req.Name == firstReq.Name {
+			// We expect a new request to be created (with the same name as the first request)
+			// and the old request to be deleted. We can check this by comparing the UID of the
+			// first request with the UID of the second request.
+			if req.UID == firstReq.UID {
 				continue
 			}
 
@@ -315,12 +321,13 @@ type comparablePublicKey interface {
 }
 
 func runAllControllers(t *testing.T, ctx context.Context, config *rest.Config) framework.StopFunc {
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 	log := logf.Log
 	clock := clock.RealClock{}
 	metrics := metrics.New(log, clock)
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
@@ -328,7 +335,7 @@ func runAllControllers(t *testing.T, ctx context.Context, config *rest.Config) f
 			Metrics: metrics,
 			Clock:   clock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 

@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"testing"
 
+	logsapi "k8s.io/component-base/logs/api/v1"
+
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -49,6 +51,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 
 	var finalConfig *config.ControllerConfiguration
 
+	logsapi.ResetForTest(nil)
 	ctx := logf.NewContext(context.TODO(), logf.Log)
 
 	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.ControllerConfiguration) error {
@@ -85,6 +88,15 @@ func TestFlagsAndConfigFile(t *testing.T) {
 	}
 
 	tests := []testCase{
+		{
+			yaml: ``,
+			args: func(tempFilePath string) []string {
+				return []string{"--kubeconfig=valid"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
+				cc.KubeConfig = "valid"
+			}),
+		},
 		{
 			yaml: `
 apiVersion: controller.config.cert-manager.io/v1alpha1

@@ -24,23 +24,23 @@ CRI_ARCH := $(HOST_ARCH)
 
 # TODO: this version is also defaulted in ./make/cluster.sh. Make it so that it
 # is set in one place only.
-K8S_VERSION := 1.27
+K8S_VERSION := 1.28
 
-IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:7464dc90abfaa084204176bcc0728f182b0611849395787143f6854dc6c38c85
-IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:aec4b029660d47aea025336150fdc2822c991f592d5170d754b6acaf158b513e
-IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:1bcec6bc854720e22f439c6dcea02fcf689f31976babcf03a449d750c2b1f34a
-IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.13.1@sha256:46b978105f46fa5c28851b1ea679f74c2ecbd24a6f92e6c7611c558e44f3baab
-IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-9f74179f@sha256:0b8c766f5bedbcbe559c7970c8e923aa0c4ca771e62fcf8dba64ffab980c9a51
-IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:6f7c87979b1e3bd92dc3ab54d037f80628547d7b58a8cb2b3bfa06c006b1ed9d
-IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:39a804ce4b896de168915ae41358932c219443fd4ceffe37296a63f9adef0597
+IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:0115d7e01987c13e1be90b09c223c3e0d8e9a92e97c0421e712ad3577e2d78e5
+IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:031d2da484f3d89c78007cbb1cf1d7ae992e069683a2cdca0a0efb63a63fc735
+IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:5371ead07ebd09ff858f568a07b6807e8568772af61e626c9a0a5137bd7e62db
+IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
+IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:b6ea4da6cb689985a6729f20a1a2775b9211bdaebd2c956f22871624d4925db2
+IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
+IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:1570f04e96fb5e0ad71c2de61fee71c8d55b2fe5b7c827ce65e81bf7cc99bcbd
 
-IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.1.0@sha256:86be28e506653cbe29214cb272d60e7c8841ddaf530da29aa22b1b1017faa956
-IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.7.1@sha256:4355f1f65ea5e952886e929a15628f0c6704905035b4741c6f560378871c9335
-IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.7.1@sha256:141234fb74242155c7b843180b90ee5fb6a20c9e77598bd9c138c687059cdafd
-IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.13.1@sha256:77a343a0cc93281fc4d476afbe65c2f39d7878c0a2bdc9e513ec3d19461828c5
-IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-9f74179f@sha256:85de273f24762c0445035d36290a440e8c5a6a64e9ae6227d92e8b0b0dc7dd6d
-IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.3.0@sha256:4a99caed209cf76fc15e37ad153d20d8b905a895021c799d360bba3402c66392
-IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.24.1@sha256:fee2b24db85c3ed3487e0e2a325806323997171a2ed722252f8ca85d0bee919d
+IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:3cdc716f0395886008c5e49972297adf1af87eeef472f71ff8de11bf53f25766
+IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:acf77f4fd08056941b5640d9489d46f2a1777e29d574e51926eac5250144dbd2
+IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:3ec997a6a26f600e4c2e439c3671e9f21c83a73bf486134eb6732481d0e371ca
+IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
+IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:a302cff9f7ecfac0c3cfde1b53a614a81d16f93a247c838d3dac43384fefd9b4
+IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
+IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:abbb2b7fee8eafddfd4ebd8e45510e6c1d86937461bc6934470ffb57211a9a8b
 
 PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
@@ -54,6 +54,12 @@ IMAGE_kind_arm64 := $(IMAGE_kind_amd64)
 # TODO: considering moving the installation commands in this file to separate scripts for readability
 # Once that is done, we can consume this variable from ./make/config/lib.sh
 SERVICE_IP_PREFIX = 10.0.0
+
+# This variable is exported so that the Vault add-on in the E2E tests can set
+# the image reference of the locally loaded Docker image when it installs the
+# Vault Helm chart.
+# The Vault Docker image is loaded into kind by `make e2e-setup`.
+export E2E_VAULT_IMAGE := $(LOCALIMAGE_vaultretagged)
 
 .PHONY: e2e-setup-kind
 ## Create a Kubernetes cluster using Kind, which is required for `make e2e`.
@@ -149,10 +155,10 @@ endef
 # get the message "warning: undefined variable 'CI'".
 .PHONY: preload-kind-image
 ifeq ($(shell printenv CI),)
-preload-kind-image: | $(NEEDS_CRANE)
+preload-kind-image:
 	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
-preload-kind-image: $(call image-tar,kind) | $(NEEDS_CRANE)
+preload-kind-image: $(call image-tar,kind)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
@@ -161,28 +167,49 @@ LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) 
 $(LOAD_TARGETS): load-%: % $(BINDIR)/scratch/kind-exists | $(NEEDS_KIND)
 	$(KIND) load image-archive --name=$(shell cat $(BINDIR)/scratch/kind-exists) $*
 
+# Download a single-arch image
+#
+# The input variable IMAGE_example_ARCH must contain the digest of the single-arch image manifest,
+# NOT the multi-arch manifest.
+#
 # We use crane instead of docker when pulling images, which saves some time
 # since we don't care about having the image available to docker.
 #
 # We don't pull using both the digest and tag because crane replaces the
 # tag with "i-was-a-digest". We still check that the downloaded image
 # matches the digest.
-$(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
+#
+# We check that the remote image tag and digest still match what is pinned in
+# the `IMAGE_example_arch` variables (above).
+# This is useful because:
+# 1. It tells us if the image maintainers have deliberately or maliciously
+#    pushed a different image and re-used an existing tag.
+# 2. It makes it easy to learn the new digest when updating the pinned image
+#    tag. The rule will fail and the new digest will be printed out.
+# 3. It prevents us accidentally using the wrong digest when we pin the images
+#    in the variables above.
+$(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
 	@mkdir -p $(dir $@)
-	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest --platform=linux/$(CRI_ARCH) $(IMAGE) | sha256sum)
+	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest --platform=linux/$(CRI_ARCH) $(IMAGE_WITHOUT_DIGEST) | sha256sum)
 	$(CRANE) pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
 
-# Same as above, except it supports multiarch images.
-$(call image-tar,kind) $(call image-tar,vault): $(BINDIR)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
-	@$(eval IMAGE=$(subst +,:,$*))
-	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
-	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
+# Download the Kind node image
+#
+# This is handled differently from the other image downloads, because:
+# 1. The pinned Kind image references are automatically generated using
+#    `hack/latest-kind-image.sh`.
+# 2. It uses digests that point to the multi-arch manifest, rather than the
+#    actual image.
+# 3. The Kind image tags DO change; each new Kind release has a set of Kind node
+#    images tagged using the Kubernetes version. Subsequent Kind releases may
+#    have an incompatible Kind node image format, but re-use the same Kubernetes
+#    version tags.
+$(call image-tar,kind): $(NEEDS_CRANE)
 	@mkdir -p $(dir $@)
-	diff <(echo "$(DIGEST)  -" | cut -d: -f2) <($(CRANE) manifest $(IMAGE) | sha256sum)
-	$(CRANE) pull $(IMAGE_WITHOUT_DIGEST) $@ --platform=linux/$(CRI_ARCH)
+	$(CRANE) pull $(IMAGE_kind_$(CRI_ARCH)) $@ --platform linux/$(CRI_ARCH)
 
 # Since we dynamically install Vault via Helm during the end-to-end tests,
 # we need its image to be retagged to a well-known tag "local/vault:local".
@@ -211,7 +238,7 @@ E2E_SETUP_OPTION_BESTPRACTICE ?=
 ## Kyverno and the policies in make/config/kyverno have been applied.
 ##
 ## @category Development
-E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/f0cc0f3b88846969dd7e9894cddd43391a3135d1/public/docs/installation/best-practice/values.best-practice.yaml
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/ea5db62772e6b9d1430b9d63f581e74d5c18b627/public/docs/installation/best-practice/values.best-practice.yaml
 E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL_SUM := $(shell sha256sum <<<$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) | cut -d ' ' -f 1)
 
 ## A local Helm values file containing best-practice configuration values.
@@ -302,7 +329,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 4.0.10 \
+		--version 4.7.3 \
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
@@ -326,9 +353,9 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 		--wait \
 		--namespace kyverno \
 		--create-namespace \
-		--version v2.5.1 \
-		--set image.tag=v1.7.1 \
-		--set initImage.tag=v1.7.1 \
+		--version 3.0.4 \
+		--set image.tag=v1.8.1 \
+		--set initImage.tag=v1.8.1 \
 		--set image.pullPolicy=Never \
 		--set initImage.pullPolicy=Never \
 		kyverno kyverno/kyverno >/dev/null
@@ -396,7 +423,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 11.0.0 \
+		--version 12.2.4 \
 		--namespace projectcontour \
 		--create-namespace \
 		--set contour.ingressClass.create=false \
@@ -414,7 +441,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 
 .PHONY: e2e-setup-sampleexternalissuer
 e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL)
-	$(KUBECTL) apply -n sample-external-issuer-system -f https://github.com/cert-manager/sample-external-issuer/releases/download/v0.3.0/install.yaml >/dev/null
+	$(KUBECTL) apply -n sample-external-issuer-system -f https://github.com/cert-manager/sample-external-issuer/releases/download/v0.4.0/install.yaml >/dev/null
 	$(KUBECTL) patch -n sample-external-issuer-system deployments.apps sample-external-issuer-controller-manager --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/1/imagePullPolicy", "value": "Never"}]' >/dev/null
 
 # Note that the end-to-end tests are dealing with the Helm installation. We

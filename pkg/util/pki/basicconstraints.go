@@ -35,7 +35,7 @@ type basicConstraints struct {
 
 // Adapted from x509.go
 func MarshalBasicConstraints(isCA bool, maxPathLen *int) (pkix.Extension, error) {
-	ext := pkix.Extension{Id: OIDExtensionBasicConstraints}
+	ext := pkix.Extension{Id: OIDExtensionBasicConstraints, Critical: true}
 
 	// A value of -1 causes encoding/asn1 to omit the value as desired.
 	maxPathLenValue := -1

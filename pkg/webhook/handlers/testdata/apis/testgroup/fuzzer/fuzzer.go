@@ -19,7 +19,7 @@ package fuzzer
 import (
 	fuzz "github.com/google/gofuzz"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 )
@@ -31,7 +31,7 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
 
 			if s.TestFieldPtr == nil {
-				s.TestFieldPtr = pointer.StringPtr("teststr")
+				s.TestFieldPtr = ptr.To("teststr")
 			}
 		},
 	}

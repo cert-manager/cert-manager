@@ -73,20 +73,12 @@ func CertificateTemplateValidateAndOverrideBasicConstraints(isCA bool, maxPathLe
 				return fmt.Errorf("encoded CSR error: IsCA %v does not match expected value %v", cert.IsCA, isCA)
 			}
 
-			expectedMaxPathLen := 0
-			expectedMaxPathLenZero := false
-			if maxPathLen != nil {
-				expectedMaxPathLen = *maxPathLen
-				expectedMaxPathLenZero = *maxPathLen == 0
-			}
-
-			if cert.MaxPathLen != expectedMaxPathLen {
-				return fmt.Errorf("encoded CSR error: MaxPathLen %v does not match expected value %v", cert.MaxPathLen, expectedMaxPathLen)
-			}
-
-			if cert.MaxPathLenZero != expectedMaxPathLenZero {
-				return fmt.Errorf("encoded CSR error: MaxPathLenZero %v does not match expected value %v", cert.MaxPathLenZero, expectedMaxPathLenZero)
-			}
+			// We explicitly do not check the MaxPathLen and MaxPathLenZero fields here, as there is no way to
+			// configure these fields in a CertificateRequest or CSR object yet. If we ever add a way to configure
+			// these fields, we should add a check here to ensure that the values match the expected values.
+			// The provided maxPathLen is only used to override the value, not to validate it.
+			// TODO: if we add support for maxPathLen, we should add a check here to ensure that the value in the
+			// CertificateRequest or CSR matches the value encoded in the CSR blob.
 		}
 
 		cert.BasicConstraintsValid = true

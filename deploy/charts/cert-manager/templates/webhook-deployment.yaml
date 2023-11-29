@@ -44,7 +44,7 @@ spec:
       {{- if hasKey .Values.webhook "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.webhook.automountServiceAccountToken }}
       {{- end }}
-      enableServiceLinks: false
+      enableServiceLinks: {{ .Values.webhook.enableServiceLinks }}
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
@@ -60,9 +60,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-webhook
-          {{- with .Values.webhook.image }}
-          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{ .digest }}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
-          {{- end }}
+          image: "{{ template "image" (tuple .Values.webhook.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
           {{- if .Values.global.logLevel }}
@@ -75,7 +73,7 @@ spec:
           {{ if not $config.securePort -}}
           - --secure-port={{ .Values.webhook.securePort }}
           {{- end }}
-          {{- if .Values.featureGates }}
+          {{- if .Values.webhook.featureGates }}
           - --feature-gates={{ .Values.webhook.featureGates }}
           {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}

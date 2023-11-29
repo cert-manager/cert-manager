@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -90,10 +90,8 @@ func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) 
 
 func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge, svcName string) (*gwapi.HTTPRoute, error) {
 	labels := podLabels(ch)
-	if ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels != nil {
-		for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
-			labels[k] = v
-		}
+	for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
+		labels[k] = v
 	}
 	httpRoute := &gwapi.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,10 +114,8 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	expectedSpec := generateHTTPRouteSpec(ch, svcName)
 	actualSpec := httpRoute.Spec
 	expectedLabels := podLabels(ch)
-	if ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels != nil {
-		for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
-			expectedLabels[k] = v
-		}
+	for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
+		expectedLabels[k] = v
 	}
 	actualLabels := ch.Labels
 	if reflect.DeepEqual(expectedSpec, actualSpec) && reflect.DeepEqual(expectedLabels, actualLabels) {
@@ -161,7 +157,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 					{
 						Path: &gwapi.HTTPPathMatch{
 							Type:  func() *gwapi.PathMatchType { p := gwapi.PathMatchExact; return &p }(),
-							Value: pointer.String(fmt.Sprintf("/.well-known/acme-challenge/%s", ch.Spec.Token)),
+							Value: ptr.To(fmt.Sprintf("/.well-known/acme-challenge/%s", ch.Spec.Token)),
 						},
 					},
 				},
@@ -174,7 +170,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 								Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
 								Port:      func() *gwapi.PortNumber { p := gwapi.PortNumber(acmeSolverListenPort); return &p }(),
 							},
-							Weight: pointer.Int32(1),
+							Weight: ptr.To(int32(1)),
 						},
 					},
 				},

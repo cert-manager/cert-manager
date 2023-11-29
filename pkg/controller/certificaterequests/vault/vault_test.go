@@ -88,7 +88,9 @@ func generateSelfSignedCertFromCR(cr *cmapi.CertificateRequest, key crypto.Signe
 func TestSign(t *testing.T) {
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	baseIssuer := gen.Issuer("vault-issuer",
-		gen.SetIssuerVault(cmapi.VaultIssuer{}),
+		gen.SetIssuerVault(cmapi.VaultIssuer{
+			Server: "https://example.vault.com",
+		}),
 		gen.AddIssuerCondition(cmapi.IssuerCondition{
 			Type:   cmapi.IssuerConditionReady,
 			Status: cmmeta.ConditionTrue,
@@ -234,6 +236,7 @@ func TestSign(t *testing.T) {
 								},
 							},
 						},
+						Server: "https://example.vault.com",
 					})),
 				},
 				ExpectedEvents: []string{
@@ -274,6 +277,7 @@ func TestSign(t *testing.T) {
 								},
 							},
 						},
+						Server: "https://example.vault.com",
 					}),
 				)},
 				ExpectedEvents: []string{

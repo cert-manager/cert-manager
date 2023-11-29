@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -71,19 +71,20 @@ func TestEnsurePod(t *testing.T) {
 				Namespace:    testNamespace,
 				Labels:       podLabels(chal),
 				Annotations: map[string]string{
-					"sidecar.istio.io/inject": "false",
+					"sidecar.istio.io/inject":                        "false",
+					"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 				},
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			},
 			Spec: corev1.PodSpec{
-				AutomountServiceAccountToken: pointer.Bool(false),
-				EnableServiceLinks:           pointer.Bool(false),
+				AutomountServiceAccountToken: ptr.To(false),
+				EnableServiceLinks:           ptr.To(false),
 				NodeSelector: map[string]string{
 					"kubernetes.io/os": "linux",
 				},
 				RestartPolicy: corev1.RestartPolicyOnFailure,
 				SecurityContext: &corev1.PodSecurityContext{
-					RunAsNonRoot: pointer.BoolPtr(true),
+					RunAsNonRoot: ptr.To(true),
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
@@ -115,7 +116,8 @@ func TestEnsurePod(t *testing.T) {
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
-							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+							ReadOnlyRootFilesystem:   ptr.To(true),
+							AllowPrivilegeEscalation: ptr.To(false),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},
@@ -286,8 +288,9 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											cmacme.DomainLabelKey: "44655555555",
 										},
 										Annotations: map[string]string{
-											"sidecar.istio.io/inject": "true",
-											"foo":                     "bar",
+											"sidecar.istio.io/inject":                        "true",
+											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+											"foo": "bar",
 										},
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
@@ -320,8 +323,9 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					cmacme.SolverIdentificationLabelKey: "true",
 				}
 				resultingPod.Annotations = map[string]string{
-					"sidecar.istio.io/inject": "true",
-					"foo":                     "bar",
+					"sidecar.istio.io/inject":                        "true",
+					"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+					"foo": "bar",
 				}
 				resultingPod.Spec.NodeSelector = map[string]string{
 					"kubernetes.io/os": "linux",

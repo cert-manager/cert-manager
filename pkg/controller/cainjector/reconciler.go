@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -127,7 +127,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		obj, patch := target.AsApplyObject()
 		if patch != nil {
 			err = r.Client.Patch(ctx, obj, patch, &client.PatchOptions{
-				Force: pointer.Bool(true), FieldManager: r.fieldManager,
+				Force: ptr.To(true), FieldManager: r.fieldManager,
 			})
 		}
 	} else {

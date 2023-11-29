@@ -113,8 +113,6 @@ type ControllerConfiguration struct {
 
 	// featureGates is a map of feature names to bools that enable or disable experimental
 	// features.
-	// Default: nil
-	// +optional
 	FeatureGates map[string]bool
 
 	// IngressShimConfig configures the behaviour of the ingress-shim controller

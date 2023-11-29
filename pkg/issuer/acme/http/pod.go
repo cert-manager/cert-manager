@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -175,7 +175,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			Namespace:    ch.Namespace,
 			Labels:       podLabels,
 			Annotations: map[string]string{
-				"sidecar.istio.io/inject": "false",
+				"sidecar.istio.io/inject":                        "false",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
@@ -184,14 +185,14 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			// Kubernetes API server, so we turn off automounting of
 			// the Kubernetes ServiceAccount token.
 			// See https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting
-			AutomountServiceAccountToken: pointer.Bool(false),
+			AutomountServiceAccountToken: ptr.To(false),
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
 			RestartPolicy:      corev1.RestartPolicyOnFailure,
-			EnableServiceLinks: pointer.Bool(false),
+			EnableServiceLinks: ptr.To(false),
 			SecurityContext: &corev1.PodSecurityContext{
-				RunAsNonRoot: pointer.BoolPtr(s.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot),
+				RunAsNonRoot: ptr.To(s.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot),
 				SeccompProfile: &corev1.SeccompProfile{
 					Type: corev1.SeccompProfileTypeRuntimeDefault,
 				},
@@ -225,7 +226,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 						},
 					},
 					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: pointer.BoolPtr(false),
+						ReadOnlyRootFilesystem:   ptr.To(true),
+						AllowPrivilegeEscalation: ptr.To(false),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
 						},

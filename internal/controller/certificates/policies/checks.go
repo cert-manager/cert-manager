@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 	"sigs.k8s.io/structured-merge-diff/v4/value"
 
@@ -168,6 +168,17 @@ func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 		!issuerKindsEqual(kind, input.Certificate.Spec.IssuerRef.Kind) ||
 		!issuerGroupsEqual(group, input.Certificate.Spec.IssuerRef.Group) {
 		return IncorrectIssuer, fmt.Sprintf("Issuing certificate as Secret was previously issued by %q", formatIssuerRef(name, kind, group)), true
+	}
+	return "", "", false
+}
+
+// SecretCertificateNameAnnotationsMismatch - When the CertificateName annotation is defined,
+// it must match the name of the Certificate.
+func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool) {
+	name, ok := input.Secret.Annotations[cmapi.CertificateNameKey]
+	if (ok) && // only check if an annotation is present
+		name != input.Certificate.Name {
+		return IncorrectCertificate, fmt.Sprintf("Secret was issued for %q. If this message is not transient, you might have two conflicting Certificates pointing to the same secret.", name), true
 	}
 	return "", "", false
 }
@@ -384,13 +395,13 @@ func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager
 
 		// Extract the labels and annotations of the managed fields.
 		metadata := fieldset.Children.Descend(fieldpath.PathElement{
-			FieldName: pointer.String("metadata"),
+			FieldName: ptr.To("metadata"),
 		})
 		labels := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: pointer.String("labels"),
+			FieldName: ptr.To("labels"),
 		})
 		annotations := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: pointer.String("annotations"),
+			FieldName: ptr.To("annotations"),
 		})
 
 		// Gather the annotations and labels on the managed fields. Remove the '.'
@@ -666,15 +677,15 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 			}
 
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: pointer.String("data")},
-				{FieldName: pointer.String(cmapi.CertificateOutputFormatCombinedPEMKey)},
+				{FieldName: ptr.To("data")},
+				{FieldName: ptr.To(cmapi.CertificateOutputFormatCombinedPEMKey)},
 			}) {
 				secretHasCombinedPEM = true
 			}
 
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: pointer.String("data")},
-				{FieldName: pointer.String(cmapi.CertificateOutputFormatDERKey)},
+				{FieldName: ptr.To("data")},
+				{FieldName: ptr.To(cmapi.CertificateOutputFormatDERKey)},
 			}) {
 				secretHasDER = true
 			}
@@ -711,8 +722,8 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: pointer.String("metadata")},
-				{FieldName: pointer.String("ownerReferences")},
+				{FieldName: ptr.To("metadata")},
+				{FieldName: ptr.To("ownerReferences")},
 				{Key: &value.FieldList{{Name: "uid", Value: value.NewValueInterface(string(input.Certificate.UID))}}},
 			}) {
 				hasOwnerRefManagedField = true

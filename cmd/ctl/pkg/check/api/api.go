@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
@@ -70,10 +70,11 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 func (o *Options) Complete() error {
 	var err error
 
-	// We pass the scheme that is used in the RESTConfig's NegotiatedSerializer,
-	// this makes sure that the cmapi is also added to NegotiatedSerializer's scheme
-	// see: https://github.com/cert-manager/cert-manager/pull/4205#discussion_r668660271
-	o.APIChecker, err = cmapichecker.New(o.RESTConfig, scheme.Scheme, o.Namespace)
+	o.APIChecker, err = cmapichecker.New(
+		o.RESTConfig,
+		runtime.NewScheme(),
+		o.Namespace,
+	)
 	if err != nil {
 		return err
 	}

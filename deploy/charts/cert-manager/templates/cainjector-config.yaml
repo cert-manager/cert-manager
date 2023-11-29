@@ -1,0 +1,18 @@
+{{- if .Values.cainjector.config -}}
+{{- $_ := .Values.cainjector.config.apiVersion | required ".Values.cainjector.config.apiVersion must be set !" -}}
+{{- $_ := .Values.cainjector.config.kind | required ".Values.cainjector.config.kind must be set !" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cainjector.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .Values.cainjector.config | toYaml | nindent 4 }}
+{{- end -}}

@@ -143,8 +143,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `dns01RecursiveNameserversOnly` | Forces cert-manager to only use the recursive nameservers for verification.  | `false` |
 | `enableCertificateOwnerRef` | When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted | `false` |
 | `config` | ControllerConfiguration YAML used to configure flags for the controller. Generates a ConfigMap containing contents of the field. See `values.yaml` for example. | `{}` |
+| `enableServiceLinks` | Indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links. | `false` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
-| `webhook.timeoutSeconds` | Seconds the API server should wait the webhook to respond before treating the call as a failure. | `10` |
+| `webhook.timeoutSeconds` | Seconds the API server should wait for the webhook to respond before treating the call as a failure. Value must be between 1 and 30 seconds. | `30` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.podLabels` | Labels to add to the cert-manager webhook pod | `{}` |
 | `webhook.serviceLabels` | Labels to add to the cert-manager webhook service | `{}` |
@@ -189,6 +190,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.readinessProbe.periodSeconds` | The readiness probe period (in seconds) | `5` |
 | `webhook.readinessProbe.successThreshold` | The readiness probe success threshold | `1` |
 | `webhook.readinessProbe.timeoutSeconds` | The readiness probe timeout (in seconds) | `1` |
+| `webhook.enableServiceLinks` | Indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links. | `false` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
@@ -212,6 +214,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | refer to [Default Security Contexts](#default-security-contexts) |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | refer to [Default Security Contexts](#default-security-contexts) |
+| `cainjector.enableServiceLinks` | Indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links. | `false` |
 | `acmesolver.image.repository` | acmesolver image repository | `quay.io/jetstack/cert-manager-acmesolver` |
 | `acmesolver.image.tag` | acmesolver image tag | `{{RELEASE_VERSION}}` |
 | `acmesolver.image.pullPolicy` | acmesolver image pull policy | `IfNotPresent` |
@@ -222,7 +225,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `startupapicheck.backoffLimit` | Job backoffLimit | `4` |
 | `startupapicheck.jobAnnotations` | Optional additional annotations to add to the startupapicheck Job | `{}` |
 | `startupapicheck.podAnnotations` | Optional additional annotations to add to the startupapicheck Pods | `{}` |
-| `startupapicheck.extraArgs` | Optional additional arguments for startupapicheck | `[]` |
+| `startupapicheck.extraArgs` | Optional additional arguments for startupapicheck | `["-v"]` |
 | `startupapicheck.resources` | CPU/memory resource requests/limits for the startupapicheck pod | `{}` |
 | `startupapicheck.nodeSelector` | Node labels for startupapicheck pod assignment | `{}` |
 | `startupapicheck.affinity` | Node affinity for startupapicheck pod assignment | `{}` |
@@ -235,6 +238,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `startupapicheck.serviceAccount.name` | Service account for the startupapicheck component to be used. If not set and `startupapicheck.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `startupapicheck.serviceAccount.annotations` | Annotations to add to the service account for the startupapicheck component |  |
 | `startupapicheck.serviceAccount.automountServiceAccountToken` | Automount API credentials for the startupapicheck Service Account | `true` |
+| `startupapicheck.enableServiceLinks` | Indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links. | `false` |
 | `maxConcurrentChallenges` | The maximum number of challenges that can be scheduled as 'processing' at once | `60` |
 
 ### Default Security Contexts

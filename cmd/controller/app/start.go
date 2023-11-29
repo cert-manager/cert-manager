@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
@@ -87,10 +88,6 @@ to renew certificates at an appropriate time before expiry.`,
 			if err := loadConfigFromFile(
 				cmd, allArgs, controllerFlags.Config, controllerConfig,
 				func() error {
-					if err := logf.ValidateAndApply(&controllerConfig.Logging); err != nil {
-						return fmt.Errorf("failed to validate controller logging flags: %w", err)
-					}
-
 					// set feature gates from initial flags-based config
 					if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(controllerConfig.FeatureGates); err != nil {
 						return fmt.Errorf("failed to set feature gates from initial flags-based config: %w", err)
@@ -100,6 +97,10 @@ to renew certificates at an appropriate time before expiry.`,
 				},
 			); err != nil {
 				return err
+			}
+
+			if err := logf.ValidateAndApplyAsField(&controllerConfig.Logging, field.NewPath("logging")); err != nil {
+				return fmt.Errorf("failed to validate controller logging flags: %w", err)
 			}
 
 			return run(ctx, controllerConfig)
@@ -122,8 +123,8 @@ to renew certificates at an appropriate time before expiry.`,
 // those provided in the config file.
 // The newConfigHook is called when the options have been loaded from the
 // flags (but not yet the config file) and is re-called after the config file
-// has been loaded. This allows us to use the logging options and feature flags
-// set by the flags to log errors when loading the config file.
+// has been loaded. This allows us to use the feature flags set by the flags
+// while loading the config file.
 func loadConfigFromFile(
 	cmd *cobra.Command,
 	allArgs []string,

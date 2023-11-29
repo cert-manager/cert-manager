@@ -89,7 +89,8 @@ verify-codegen: | k8s-codegen-tools $(NEEDS_GO)
 		./$(BINDIR)/tools/informer-gen \
 		./$(BINDIR)/tools/lister-gen \
 		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen
+		./$(BINDIR)/tools/conversion-gen \
+		./$(BINDIR)/tools/openapi-gen
 
 .PHONY: update-codegen
 update-codegen: | k8s-codegen-tools $(NEEDS_GO)
@@ -100,7 +101,8 @@ update-codegen: | k8s-codegen-tools $(NEEDS_GO)
 		./$(BINDIR)/tools/informer-gen \
 		./$(BINDIR)/tools/lister-gen \
 		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen
+		./$(BINDIR)/tools/conversion-gen \
+		./$(BINDIR)/tools/openapi-gen
 
 .PHONY: update-all
 ## Update CRDs, code generation and licenses to the latest versions.

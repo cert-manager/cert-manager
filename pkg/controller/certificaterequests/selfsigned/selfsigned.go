@@ -150,7 +150,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	}
 
 	var template *x509.Certificate
-	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DontAllowInsecureCSRUsageDefinition) {
+	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) {
 		template, err = pki.DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition(cr)
 	} else {
 		template, err = pki.CertificateTemplateFromCertificateRequest(cr)

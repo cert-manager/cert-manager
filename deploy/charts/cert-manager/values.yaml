@@ -127,20 +127,24 @@ config:
 #   apiVersion: controller.config.cert-manager.io/v1alpha1
 #   kind: ControllerConfiguration
 #   logging:
-#    verbosity: 2
-#    format: text
+#     verbosity: 2
+#     format: text
 #   leaderElectionConfig:
-#    namespace: kube-system
+#     namespace: kube-system
 #   kubernetesAPIQPS: 9000
 #   kubernetesAPIBurst: 9000
 #   numberOfConcurrentWorkers: 200
 #   featureGates:
-#     additionalCertificateOutputFormats: true
-#     experimentalCertificateSigningRequestControllers: true
-#     experimentalGatewayAPISupport: true
-#     serverSideApply: true
-#     literalCertificateSubject: true
-#     useCertificateRequestBasicConstraints: true
+#     AdditionalCertificateOutputFormats: true
+#     DisallowInsecureCSRUsageDefinition: true
+#     ExperimentalCertificateSigningRequestControllers: true
+#     ExperimentalGatewayAPISupport: true
+#     LiteralCertificateSubject: true
+#     SecretsFilteredCaching: true
+#     ServerSideApply: true
+#     StableCertificateRequestName: true
+#     UseCertificateRequestBasicConstraints: true
+#     ValidateCAA: true
 
 # Setting Nameservers for DNS01 Self Check
 # See: https://cert-manager.io/docs/configuration/acme/dns01/#setting-nameservers-for-dns01-self-check
@@ -181,8 +185,7 @@ containerSecurityContext:
   capabilities:
     drop:
     - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
+  readOnlyRootFilesystem: true
 
 
 volumes: []
@@ -235,13 +238,23 @@ prometheus:
     annotations: {}
     honorLabels: false
     endpointAdditionalProperties: {}
-
+  # Note: Enabling both PodMonitor and ServiceMonitor is mutually exclusive, enabling both will result in a error.
+  podmonitor:
+    enabled: false
+    prometheusInstance: default
+    path: /metrics
+    interval: 60s
+    scrapeTimeout: 30s
+    labels: {}
+    annotations: {}
+    honorLabels: false
+    endpointAdditionalProperties: {}
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
 # https_proxy: "https://proxy:8080"
 # no_proxy: 127.0.0.1,localhost
 
-# A Kubernetes Affinty, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core
+# A Kubernetes Affinity, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core
 # for example:
 #   affinity:
 #     nodeAffinity:
@@ -277,23 +290,42 @@ topologySpreadConstraints: []
 
 # LivenessProbe settings for the controller container of the controller Pod.
 #
-# Disabled by default, because the controller has a leader election mechanism
-# which should cause it to exit if it is unable to renew its leader election
-# record.
+# Enabled by default, because we want to enable the clock-skew liveness probe that
+# restarts the controller in case of a skew between the system clock and the monotonic clock.
 # LivenessProbe durations and thresholds are based on those used for the Kubernetes
 # controller-manager. See:
 # https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245
 livenessProbe:
-  enabled: false
+  enabled: true
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 15
   successThreshold: 1
   failureThreshold: 8
 
+# enableServiceLinks indicates whether information about services should be
+# injected into pod's environment variables, matching the syntax of Docker
+# links.
+enableServiceLinks: false
+
 webhook:
   replicaCount: 1
-  timeoutSeconds: 10
+
+  # Seconds the API server should wait for the webhook to respond before treating the call as a failure.
+  # Value must be between 1 and 30 seconds. See:
+  # https://kubernetes.io/docs/reference/kubernetes-api/extend-resources/validating-webhook-configuration-v1/
+  #
+  # We set the default to the maximum value of 30 seconds. Here's why:
+  # Users sometimes report that the connection between the K8S API server and
+  # the cert-manager webhook server times out.
+  # If *this* timeout is reached, the error message will be "context deadline exceeded",
+  # which doesn't help the user diagnose what phase of the HTTPS connection timed out.
+  # For example, it could be during DNS resolution, TCP connection, TLS
+  # negotiation, HTTP negotiation, or slow HTTP response from the webhook
+  # server.
+  # So by setting this timeout to its maximum value the underlying timeout error
+  # message has more chance of being returned to the end user.
+  timeoutSeconds: 30
 
   # Used to configure options for the webhook pod.
   # This allows setting options that'd usually be provided via flags.
@@ -341,8 +373,7 @@ webhook:
     capabilities:
       drop:
       - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
+    readOnlyRootFilesystem: true
 
   # Optional additional annotations to add to the webhook Deployment
   # deploymentAnnotations: {}
@@ -493,9 +524,27 @@ webhook:
   volumes: []
   volumeMounts: []
 
+  # enableServiceLinks indicates whether information about services should be
+  # injected into pod's environment variables, matching the syntax of Docker
+  # links.
+  enableServiceLinks: false
+
 cainjector:
   enabled: true
   replicaCount: 1
+
+  # Used to configure options for the cainjector pod.
+  # This allows setting options that'd usually be provided via flags.
+  # An APIVersion and Kind must be specified in your values.yaml file.
+  # Flags will override options that are set here.
+  config:
+    # apiVersion: cainjector.config.cert-manager.io/v1alpha1
+    # kind: CAInjectorConfiguration
+    # logging:
+    #  verbosity: 2
+    #  format: text
+    # leaderElectionConfig:
+    #  namespace: kube-system
 
   strategy: {}
     # type: RollingUpdate
@@ -526,8 +575,7 @@ cainjector:
     capabilities:
       drop:
       - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
+    readOnlyRootFilesystem: true
 
 
   # Optional additional annotations to add to the cainjector Deployment
@@ -541,6 +589,10 @@ cainjector:
   extraArgs: []
   # Enable profiling for cainjector
   # - --enable-profiling=true
+
+  # Comma separated list of feature gates that should be enabled on the
+  # cainjector pod.
+  featureGates: ""
 
   resources: {}
     # requests:
@@ -593,6 +645,11 @@ cainjector:
   volumes: []
   volumeMounts: []
 
+  # enableServiceLinks indicates whether information about services should be
+  # injected into pod's environment variables, matching the syntax of Docker
+  # links.
+  enableServiceLinks: false
+
 acmesolver:
   image:
     repository: quay.io/jetstack/cert-manager-acmesolver
@@ -631,8 +688,7 @@ startupapicheck:
     capabilities:
       drop:
       - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
+    readOnlyRootFilesystem: true
 
   # Timeout for 'kubectl check api' command
   timeout: 1m
@@ -651,7 +707,12 @@ startupapicheck:
 
   # Additional command line flags to pass to startupapicheck binary.
   # To see all available flags run docker run quay.io/jetstack/cert-manager-ctl:<version> --help
-  extraArgs: []
+  #
+  # We enable verbose logging by default so that if startupapicheck fails, users
+  # can know what exactly caused the failure. Verbose logs include details of
+  # the webhook URL, IP address and TCP connect errors for example.
+  extraArgs:
+  - -v
 
   resources: {}
     # requests:
@@ -715,3 +776,8 @@ startupapicheck:
 
   volumes: []
   volumeMounts: []
+
+  # enableServiceLinks indicates whether information about services should be
+  # injected into pod's environment variables, matching the syntax of Docker
+  # links.
+  enableServiceLinks: false

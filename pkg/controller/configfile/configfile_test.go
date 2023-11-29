@@ -27,7 +27,7 @@ func TestFSLoader_Load(t *testing.T) {
 	const expectedFilename = "/path/to/config/file"
 	const kubeConfigPath = "path/to/kubeconfig/file"
 
-	webhookConfig := New()
+	controllerConfig := New()
 
 	loader, err := configfile.NewConfigurationFSLoader(func(filename string) ([]byte, error) {
 		if filename != expectedFilename {
@@ -42,13 +42,13 @@ kubeConfig: %s`, kubeConfigPath)), nil
 		t.Fatal(err)
 	}
 
-	if err := loader.Load(webhookConfig); err != nil {
+	if err := loader.Load(controllerConfig); err != nil {
 		t.Fatal(err)
 	}
 
 	// the config loader will force paths to be 'absolute' if they are provided as relative.
 	absKubeConfigPath := "/path/to/config/path/to/kubeconfig/file"
-	if webhookConfig.Config.KubeConfig != absKubeConfigPath {
-		t.Errorf("expected kubeConfig to be set to %q but got %q", absKubeConfigPath, webhookConfig.Config.KubeConfig)
+	if controllerConfig.Config.KubeConfig != absKubeConfigPath {
+		t.Errorf("expected kubeConfig to be set to %q but got %q", absKubeConfigPath, controllerConfig.Config.KubeConfig)
 	}
 }

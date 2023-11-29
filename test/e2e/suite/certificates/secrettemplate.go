@@ -27,7 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -323,13 +323,13 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 				}
 
 				metadata := fieldset.Children.Descend(fieldpath.PathElement{
-					FieldName: pointer.String("metadata"),
+					FieldName: ptr.To("metadata"),
 				})
 				labels := metadata.Children.Descend(fieldpath.PathElement{
-					FieldName: pointer.String("labels"),
+					FieldName: ptr.To("labels"),
 				})
 				annotations := metadata.Children.Descend(fieldpath.PathElement{
-					FieldName: pointer.String("annotations"),
+					FieldName: ptr.To("annotations"),
 				})
 
 				labels.Iterate(func(path fieldpath.Path) {

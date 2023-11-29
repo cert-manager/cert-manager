@@ -1,12 +1,6 @@
 {{- if .Values.config -}}
-  {{- if not .Values.config.apiVersion -}}
-    {{- fail "config.apiVersion must be set" -}}
-  {{- end -}}
-
-  {{- if not .Values.config.kind -}}
-    {{- fail "config.kind must be set" -}}
-  {{- end -}}
-{{- end -}}
+{{- $_ := .Values.config.apiVersion | required ".Values.config.apiVersion must be set !" -}}
+{{- $_ := .Values.config.kind | required ".Values.config.kind must be set !" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -19,7 +13,6 @@ metadata:
     app.kubernetes.io/component: "controller"
     {{- include "labels" . | nindent 4 }}
 data:
-  {{- if .Values.config }}
   config.yaml: |
-    {{ .Values.config | toYaml | nindent 4 }}
-  {{- end }}
+    {{- .Values.config | toYaml | nindent 4 }}
+{{- end -}}

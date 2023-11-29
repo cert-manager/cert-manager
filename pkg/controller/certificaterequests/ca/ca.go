@@ -72,7 +72,7 @@ func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
-			if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DontAllowInsecureCSRUsageDefinition) {
+			if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) {
 				return pki.DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition(cr)
 			}
 
@@ -128,6 +128,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
+	template.IssuingCertificateURL = issuerObj.GetSpec().CA.IssuingCertificateURLs
 
 	bundle, err := c.signingFn(caCerts, caKey, template)
 	if err != nil {

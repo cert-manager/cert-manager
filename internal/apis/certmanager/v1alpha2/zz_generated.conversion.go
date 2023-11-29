@@ -399,6 +399,7 @@ func autoConvert_v1alpha2_CAIssuer_To_certmanager_CAIssuer(in *CAIssuer, out *ce
 	out.SecretName = in.SecretName
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
+	out.IssuingCertificateURLs = *(*[]string)(unsafe.Pointer(&in.IssuingCertificateURLs))
 	return nil
 }
 
@@ -411,6 +412,7 @@ func autoConvert_certmanager_CAIssuer_To_v1alpha2_CAIssuer(in *certmanager.CAIss
 	out.SecretName = in.SecretName
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
+	out.IssuingCertificateURLs = *(*[]string)(unsafe.Pointer(&in.IssuingCertificateURLs))
 	return nil
 }
 

@@ -25,7 +25,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -186,7 +186,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			return fmt.Errorf("%w %q: revision history limit must be a positive number %q", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, revisionHistoryLimit)
 		}
 
-		crt.Spec.RevisionHistoryLimit = pointer.Int32(int32(limit))
+		crt.Spec.RevisionHistoryLimit = ptr.To(int32(limit))
 	}
 
 	if privateKeyAlgorithm, found := ingLikeAnnotations[cmapi.PrivateKeyAlgorithmAnnotationKey]; found {

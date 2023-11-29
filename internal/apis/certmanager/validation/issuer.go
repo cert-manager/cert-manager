@@ -244,6 +244,11 @@ func ValidateCAIssuerConfig(iss *certmanager.CAIssuer, fldPath *field.Path) fiel
 			el = append(el, field.Invalid(fldPath.Child("ocspServer").Index(i), ocspURL, "must be a valid URL, e.g., http://ocsp.int-x3.letsencrypt.org"))
 		}
 	}
+	for i, issuerURL := range iss.IssuingCertificateURLs {
+		if issuerURL == "" {
+			el = append(el, field.Invalid(fldPath.Child("issuingCertificateURLs").Index(i), issuerURL, "must be a valid URL"))
+		}
+	}
 	return el
 }
 

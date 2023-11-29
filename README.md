@@ -15,6 +15,9 @@
 <br />
 <a href="https://artifacthub.io/packages/search?repo=cert-manager"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cert-manager" /></a>
 <a href="https://api.securityscorecards.dev/projects/github.com/cert-manager/cert-manager"><img src="https://api.securityscorecards.dev/projects/github.com/cert-manager/cert-manager/badge" alt="Scorecard score"/></a>
+<a href="https://clomonitor.io/projects/cncf/cert-manager"><img src="https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/cert-manager/badge" alt="CLOMonitor"/></a>
+<br />
+<a href="https://www.bestpractices.dev/projects/8079"><img src="https://www.bestpractices.dev/projects/8079/badge"></a>
 </p>
 
 # cert-manager
@@ -45,7 +48,7 @@ For a more comprensive guide to issuing your first certificate, see our [getting
 If you encounter any issues whilst using cert-manager, we have a number of ways to get help:
 
 - A [troubleshooting guide](https://cert-manager.io/docs/faq/troubleshooting/) on our website.
-- Our official [Kubernetes Slack channel](https://cert-manager.io/docs/contributing/#slack) - the quickest way to ask!
+- Our official [Kubernetes Slack channel](https://cert-manager.io/docs/contributing/#slack) - the quickest way to ask! ([#cert-manager](https://kubernetes.slack.com/messages/cert-manager) and [#cert-manager-dev](https://kubernetes.slack.com/messages/cert-manager-dev))
 - [Searching for an existing issue](https://github.com/cert-manager/cert-manager/issues).
 
 If you believe you've found a bug and cannot find an existing issue, feel free to [open a new issue](https://github.com/cert-manager/cert-manager/issues)!

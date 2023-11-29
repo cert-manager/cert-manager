@@ -65,7 +65,7 @@ func TestMetricsController(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log, fixedClock)
 
@@ -96,6 +96,7 @@ func TestMetricsController(t *testing.T) {
 	}()
 
 	controllerContext := controllerpkg.Context{
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
