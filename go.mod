@@ -13,7 +13,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Venafi/vcert/v5 v5.1.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
-	github.com/aws/aws-sdk-go v1.45.8
+	github.com/aws/aws-sdk-go v1.48.7
 	github.com/cpu/goacmedns v0.1.1
 	github.com/digitalocean/godo v1.102.1
 	github.com/go-ldap/ldap/v3 v3.4.5
