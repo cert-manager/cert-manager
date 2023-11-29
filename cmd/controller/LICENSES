@@ -10,8 +10,8 @@ github.com/Azure/go-autorest/tracing,https://github.com/Azure/go-autorest/blob/t
 github.com/Azure/go-ntlmssp,https://github.com/Azure/go-ntlmssp/blob/754e69321358/LICENSE,MIT
 github.com/Venafi/vcert/v5,https://github.com/Venafi/vcert/blob/v5.1.1/LICENSE,Apache-2.0
 github.com/akamai/AkamaiOPEN-edgegrid-golang,https://github.com/akamai/AkamaiOPEN-edgegrid-golang/blob/v1.2.2/LICENSE,Apache-2.0
-github.com/aws/aws-sdk-go,https://github.com/aws/aws-sdk-go/blob/v1.45.8/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go/internal/sync/singleflight,https://github.com/aws/aws-sdk-go/blob/v1.45.8/internal/sync/singleflight/LICENSE,BSD-3-Clause
+github.com/aws/aws-sdk-go,https://github.com/aws/aws-sdk-go/blob/v1.48.7/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go/internal/sync/singleflight,https://github.com/aws/aws-sdk-go/blob/v1.48.7/internal/sync/singleflight/LICENSE,BSD-3-Clause
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
 github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
 github.com/cenkalti/backoff/v3,https://github.com/cenkalti/backoff/blob/v3.2.2/LICENSE,MIT
