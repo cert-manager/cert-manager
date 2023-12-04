@@ -270,7 +270,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		len(crt.Spec.EmailAddresses) == 0 &&
 		len(crt.Spec.DNSNames) == 0 &&
 		len(uris) == 0 &&
-		len(ipAddresses) == 0 {
+		len(ipAddresses) == 0 && len(crt.Spec.OtherNameSANs) == 0 {
 		return nil, fmt.Errorf("no common name, DNS name, URI SAN, Email SAN, IP or OtherName SAN specified on certificate")
 	}
 
@@ -306,6 +306,14 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 			}
 			extraExtensions = append(extraExtensions, extendedUsages)
 		}
+	}
+
+	if len(crt.Spec.OtherNameSANs) != 0 {
+		SANwithotherNameExtension, err := buildSANExtensionIncludingOtherNameSANsForCertificate(crt)
+		if err != nil {
+			return nil, err
+		}
+		extraExtensions = append(extraExtensions, SANwithotherNameExtension)
 	}
 
 	// NOTE(@inteon): opts.EncodeBasicConstraintsInRequest is a temporary solution and will

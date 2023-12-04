@@ -285,12 +285,38 @@ Outer:
 	return found
 }
 
+func OtherNameSANRawVal(expectedOID asn1.ObjectIdentifier) (asn1.RawValue, error) {
+	otherNameDer, err := asn1.MarshalWithParams(OtherName{
+		TypeID: expectedOID, // UPN OID
+		Value: StringValueLikeType{
+			A: "user@example.org",
+		}}, otherNameParam)
+
+	if err != nil {
+		return asn1.NullRawValue, err
+	}
+	rawVal := asn1.RawValue{
+		FullBytes: otherNameDer,
+	}
+	return rawVal, nil
+}
+
+func MustMarshalSAN(generalNames []asn1.RawValue) pkix.Extension {
+	val, err := asn1.Marshal(generalNames)
+	if err != nil {
+		panic(err)
+	}
+	return pkix.Extension{
+		Id:    oidExtensionSubjectAltName,
+		Value: val,
+	}
+}
+
 func TestGenerateCSR(t *testing.T) {
+
 	// 0xa0 = DigitalSignature and Encipherment usage
 	asn1KeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	defaultExtraExtensions := []pkix.Extension{
 		{
 			Id:       OIDExtensionKeyUsage,
@@ -299,8 +325,17 @@ func TestGenerateCSR(t *testing.T) {
 		},
 	}
 
-	// 0xa0 = DigitalSignature and Encipherment usage
-	asn1DefaultKeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
+	asn1otherNameUpnSANRawVal, err := OtherNameSANRawVal(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}) // UPN OID
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	asn1otherNamesAMAAccountNameRawVal, err := OtherNameSANRawVal(asn1.ObjectIdentifier{1, 2, 840, 113556, 1, 4, 221}) // sAMAccountName OID
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	asn1ExtKeyUsage, err := asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageIPSECEndSystem})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -481,6 +516,57 @@ func TestGenerateCSR(t *testing.T) {
 			},
 		},
 		{
+			name: "Generate CSR from certificate with a single otherNameSAN set to an oid (UPN)", // only a shallow validation is expected
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{OtherNameSANs: []cmapi.OtherNameSAN{
+				{
+					OID:         "1.3.6.1.4.1.311.20.2.3",
+					StringValue: "user@example.org",
+				},
+			}}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				ExtraExtensions:    append(defaultExtraExtensions, MustMarshalSAN([]asn1.RawValue{asn1otherNameUpnSANRawVal})),
+			},
+		},
+		{
+			name: "Generate CSR from certificate with multiple valid otherName oids and emailSANs set",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				EmailAddresses: []string{"user@example.org", "alt-email@example.org"},
+				OtherNameSANs: []cmapi.OtherNameSAN{
+					{
+						OID:         "1.3.6.1.4.1.311.20.2.3",
+						StringValue: "user@example.org",
+					},
+					{
+						OID:         "oid:1.2.840.113556.1.4.221", // this is the legacy sAMAccountName to make example 'realistic' but could be any oid
+						StringValue: "user@example.org",
+					},
+				}}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				ExtraExtensions: append(defaultExtraExtensions, MustMarshalSAN([]asn1.RawValue{
+					asn1otherNameUpnSANRawVal,
+					asn1otherNamesAMAAccountNameRawVal,
+					{Tag: nameTypeEmail, Class: 2, Bytes: []byte("user@example.org")},
+					{Tag: nameTypeEmail, Class: 2, Bytes: []byte("alt-email@example.org")}})),
+				EmailAddresses: []string{"user@example.org", "alt-email@example.org"},
+			},
+		},
+		{
+			name: "Generate CSR from certificate with malformed otherName oid type",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{OtherNameSANs: []cmapi.OtherNameSAN{
+				{
+					OID:         "NOTANOID@garbage",
+					StringValue: "user@example.org",
+				},
+			}}},
+			wantErr: true,
+		},
+		{
 			name: "Generate CSR from certificate with double signing key usages",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageSigning}}},
 			want: &x509.CertificateRequest{
@@ -521,7 +607,7 @@ func TestGenerateCSR(t *testing.T) {
 			literalCertificateSubjectFeatureEnabled: true,
 		},
 		{
-			name:                                    "Error on generating CSR from certificate without CommonName in LiteralSubject, uri names, email address, or ip addresses",
+			name:                                    "Error on generating CSR from certificate without CommonName in LiteralSubject, uri names, email address, ip addresses or otherName set",
 			crt:                                     &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: "O=EmptyOrg"}},
 			wantErr:                                 true,
 			literalCertificateSubjectFeatureEnabled: true,
@@ -652,7 +738,27 @@ func TestGenerateCSR(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want.ExtraExtensions)
+				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want)
+				return
+			}
+
+			// TODO find a better way around the nil check
+			if got != nil {
+				// also check CSR generates valid certificate
+				pk, err := GenerateRSAPrivateKey(2048)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				csrDER, err := EncodeCSR(got, pk)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				_, err = x509.ParseCertificateRequest(csrDER)
+				if err != nil {
+					t.Errorf("Failed to parse generated certificate %s, Der: %v", err.Error(), csrDER)
+				}
 			}
 		})
 	}

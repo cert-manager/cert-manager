@@ -167,6 +167,11 @@ type CertificateSpec struct {
 	// Requested email subject alternative names.
 	EmailAddresses []string
 
+	// You should ensure that the OID is valid for the string type as we do not validate this.
+	// otherName is most commonly as a user identifier called the UPN (User Principal Name) in LDAP
+	// technically any oid can be used in `otherName` as it is a kind of escape hatch for SANs
+	OtherNameSANs []OtherNameSAN
+
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
 	// private key and certificate, signed by the denoted issuer. The Secret
@@ -245,6 +250,13 @@ type CertificateSpec struct {
 	// the controller and webhook components.
 	// +optional
 	NameConstraints *NameConstraints
+}
+
+// for example, OID can be "1.3.6.1.4.1.311.20.2.3" for UPN
+// and StringValue to "user@example.org"
+type OtherNameSAN struct {
+	OID         string `json:"oid,omitempty"`         // can be any string like oid, oid:1.3.6.x.x"
+	StringValue string `json:"stringValue,omitempty"` // any type will be encoded as UTF8String
 }
 
 // CertificatePrivateKey contains configuration options for private keys

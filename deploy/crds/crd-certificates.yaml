@@ -226,6 +226,17 @@ spec:
                           type: array
                           items:
                             type: string
+                otherNameSANs:
+                  description: Any String-like OID type using oid:x.x.x.x type and StringValue value can be used for `otherName`. `otherName` is an escape hatch for SAN that allows any type but we restrict to string like, cf RFC 5280 p 37 You should ensure that the OID is valid for the string type as we do not validate this.
+                  type: array
+                  items:
+                    description: for example, Type can be "oid:1.3.6.1.4.1.311.20.2.3" for UPN and StringValue to "user@example.org"
+                    type: object
+                    properties:
+                      oid:
+                        type: string
+                      stringValue:
+                        type: string
                 privateKey:
                   description: Private key options. These include the key algorithm and size, the used encoding and the rotation policy.
                   type: object

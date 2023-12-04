@@ -133,6 +133,12 @@ type CertificateSpec struct {
 	// +optional
 	EmailSANs []string `json:"emailSANs,omitempty"`
 
+	// Any String-like OID type using oid:x.x.x.x type and StringValue value can be used for `otherName`.
+	// `otherName` is an escape hatch for SAN that allows any type but we restrict to string like, cf RFC 5280 p 37
+	// You should ensure that the OID is valid for the string type as we do not validate this.
+	// +optional
+	OtherNameSANs []OtherNameSAN `json:"otherNameSANs,omitempty"`
+
 	// SecretName is the name of the secret resource that will be automatically
 	// created and managed by this Certificate resource.
 	// It will be populated with a private key and certificate, signed by the
@@ -230,6 +236,13 @@ type CertificateSpec struct {
 	// the controller and webhook components.
 	// +optional
 	NameConstraints *NameConstraints `json:"nameConstraints,omitempty"`
+}
+
+// for example, OID can be "1.3.6.1.4.1.311.20.2.3" for UPN
+// and StringValue to "user@example.org"
+type OtherNameSAN struct {
+	OID         string `json:"oid,omitempty"`         // can be any string like oid, oid:1.3.6.x.x"
+	StringValue string `json:"stringValue,omitempty"` // any type will be encoded as UTF8String
 }
 
 // CertificatePrivateKey contains configuration options for private keys
