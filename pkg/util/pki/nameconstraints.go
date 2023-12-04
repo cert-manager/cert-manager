@@ -53,7 +53,7 @@ func MarshalNameConstraints(nameConstraints *v1.NameConstraints) (pkix.Extension
 			return pkix.Extension{}, err
 		}
 		nameConstraintsForMarshalling = NameConstraints{
-			PermittedDNSDomainsCritical: nameConstraints.Permitted.Critical,
+			PermittedDNSDomainsCritical: nameConstraints.Critical,
 			PermittedDNSDomains:         nameConstraints.Permitted.DNSDomains,
 			PermittedIPRanges:           permittedIPRanges,
 			PermittedEmailAddresses:     nameConstraints.Permitted.EmailAddresses,

@@ -510,6 +510,10 @@ type CertificateAdditionalOutputFormat struct {
 
 // NameConstraints is a type to represent x509 NameConstraints
 type NameConstraints struct {
+	// if true then the name constraints are marked critical.
+	//
+	// +optional
+	Critical bool `json:"critical,omitempty"`
 	// Permitted contains the constraints in which the names must be located.
 	//
 	// +optional
@@ -540,8 +544,4 @@ type NameConstraintItem struct {
 	//
 	// +optional
 	URIDomains []string `json:"uriDomains,omitempty"`
-	// if true then the name constraints are marked critical.
-	//
-	// +optional
-	Critical bool `json:"critical,omitempty"`
 }

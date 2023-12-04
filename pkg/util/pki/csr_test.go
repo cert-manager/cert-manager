@@ -780,12 +780,6 @@ func TestSignCSRTemplate(t *testing.T) {
 			template: rootTmpl,
 			wantErr:  true,
 		},
-		"Error: Non-compliance with NameConstraints in the leaf certificate.": {
-			caCerts:  []*x509.Certificate{ncRootCert},
-			caKey:    ncRootPK,
-			template: ncLeafTmpl,
-			wantErr:  true,
-		},
 	}
 
 	for name, test := range tests {

@@ -175,13 +175,13 @@ spec:
                   description: 'x.509 certificate NameConstraint extension which MUST be used only in a CA certificate. More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10'
                   type: object
                   properties:
+                    critical:
+                      description: if true then the name constraints are marked critical.
+                      type: boolean
                     excluded:
                       description: Excluded contains the constraints which must be disallowed. Any name matching a restriction in the excluded field is invalid regardless of information appearing in the permitted
                       type: object
                       properties:
-                        critical:
-                          description: if true then the name constraints are marked critical.
-                          type: boolean
                         dnsDomains:
                           description: DNSDomains is a list of DNS domains that are permitted or excluded.
                           type: array
@@ -206,9 +206,6 @@ spec:
                       description: Permitted contains the constraints in which the names must be located.
                       type: object
                       properties:
-                        critical:
-                          description: if true then the name constraints are marked critical.
-                          type: boolean
                         dnsDomains:
                           description: DNSDomains is a list of DNS domains that are permitted or excluded.
                           type: array

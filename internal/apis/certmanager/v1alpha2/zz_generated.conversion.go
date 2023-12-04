@@ -1286,7 +1286,6 @@ func autoConvert_v1alpha2_NameConstraintItem_To_certmanager_NameConstraintItem(i
 	out.IPRanges = *(*[]string)(unsafe.Pointer(&in.IPRanges))
 	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
 	out.URIDomains = *(*[]string)(unsafe.Pointer(&in.URIDomains))
-	out.Critical = in.Critical
 	return nil
 }
 
@@ -1300,7 +1299,6 @@ func autoConvert_certmanager_NameConstraintItem_To_v1alpha2_NameConstraintItem(i
 	out.IPRanges = *(*[]string)(unsafe.Pointer(&in.IPRanges))
 	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
 	out.URIDomains = *(*[]string)(unsafe.Pointer(&in.URIDomains))
-	out.Critical = in.Critical
 	return nil
 }
 
@@ -1310,6 +1308,7 @@ func Convert_certmanager_NameConstraintItem_To_v1alpha2_NameConstraintItem(in *c
 }
 
 func autoConvert_v1alpha2_NameConstraints_To_certmanager_NameConstraints(in *NameConstraints, out *certmanager.NameConstraints, s conversion.Scope) error {
+	out.Critical = in.Critical
 	out.Permitted = (*certmanager.NameConstraintItem)(unsafe.Pointer(in.Permitted))
 	out.Excluded = (*certmanager.NameConstraintItem)(unsafe.Pointer(in.Excluded))
 	return nil
@@ -1321,6 +1320,7 @@ func Convert_v1alpha2_NameConstraints_To_certmanager_NameConstraints(in *NameCon
 }
 
 func autoConvert_certmanager_NameConstraints_To_v1alpha2_NameConstraints(in *certmanager.NameConstraints, out *NameConstraints, s conversion.Scope) error {
+	out.Critical = in.Critical
 	out.Permitted = (*NameConstraintItem)(unsafe.Pointer(in.Permitted))
 	out.Excluded = (*NameConstraintItem)(unsafe.Pointer(in.Excluded))
 	return nil
