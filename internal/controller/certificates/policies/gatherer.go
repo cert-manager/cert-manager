@@ -280,7 +280,7 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 
 	// Attempt fetching the CertificateRequest for the next status.revision.
 	var nextCR *cmapi.CertificateRequest
-	nextCRRevision := 1
+	nextCRRevision := int64(1)
 	if crt.Status.Revision != nil {
 		// As depicted in the above diagram (A), the "next" certificate request
 		// revision always starts at 1 when the certificate's status.revision is

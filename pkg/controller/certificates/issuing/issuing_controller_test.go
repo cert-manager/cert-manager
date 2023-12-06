@@ -291,7 +291,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -305,7 +305,7 @@ func TestIssuingController(t *testing.T) {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
-					gen.CertificateFrom(issuingCert, gen.SetCertificateIssuanceAttempts(ptr.To(4))),
+					gen.CertificateFrom(issuingCert, gen.SetCertificateIssuanceAttempts(ptr.To(int32(4)))),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
@@ -343,7 +343,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(5)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(5))),
 						),
 					)),
 				},
@@ -637,7 +637,7 @@ func TestIssuingController(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert, gen.SetCertificateLastFailureTime(metaFixedClockStart),
-						gen.SetCertificateIssuanceAttempts(ptr.To(4))),
+						gen.SetCertificateIssuanceAttempts(ptr.To(int32(4)))),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
@@ -1023,7 +1023,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -1075,7 +1075,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -1133,7 +1133,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -1191,7 +1191,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -1243,7 +1243,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -1301,7 +1301,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},
@@ -1359,7 +1359,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
-							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+							gen.SetCertificateIssuanceAttempts(ptr.To(int32(1))),
 						),
 					)),
 				},

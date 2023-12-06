@@ -26,7 +26,7 @@ import (
 
 // CertificateRequestRevision returns a predicate that used to filter
 // CertificateRequest to only those with a given 'revision' number.
-func CertificateRequestRevision(revision int) Func {
+func CertificateRequestRevision(revision int64) Func {
 	return func(obj runtime.Object) bool {
 		req := obj.(*cmapi.CertificateRequest)
 		if req.Annotations == nil {

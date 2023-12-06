@@ -81,8 +81,8 @@ func TestCtlStatusCert(t *testing.T) {
 		req1Name  = "testreq-1"
 		req2Name  = "testreq-2"
 		req3Name  = "testreq-3"
-		revision1 = 1
-		revision2 = 2
+		revision1 = int64(1)
+		revision2 = int64(2)
 
 		crtReadyAndUpToDateCond = cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}

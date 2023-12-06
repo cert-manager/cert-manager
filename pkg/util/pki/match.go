@@ -66,7 +66,7 @@ func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) 
 	// The default RSA keySize is set to 2048.
 	keySize := MinRSAKeySize
 	if spec.PrivateKey.Size > 0 {
-		keySize = spec.PrivateKey.Size
+		keySize = int(spec.PrivateKey.Size)
 	}
 	if rsaPk.N.BitLen() != keySize {
 		violations = append(violations, "spec.privateKey.size")
@@ -87,7 +87,7 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 	// The default EC curve type is EC256
 	expectedKeySize := ECCurve256
 	if spec.PrivateKey.Size > 0 {
-		expectedKeySize = spec.PrivateKey.Size
+		expectedKeySize = int(spec.PrivateKey.Size)
 	}
 	if expectedKeySize != ecdsaPk.Curve.Params().BitSize {
 		violations = append(violations, "spec.privateKey.size")

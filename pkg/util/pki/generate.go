@@ -61,7 +61,7 @@ func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error
 		keySize := MinRSAKeySize
 
 		if crt.Spec.PrivateKey.Size > 0 {
-			keySize = crt.Spec.PrivateKey.Size
+			keySize = int(crt.Spec.PrivateKey.Size)
 		}
 
 		return GenerateRSAPrivateKey(keySize)
@@ -69,7 +69,7 @@ func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error
 		keySize := ECCurve256
 
 		if crt.Spec.PrivateKey.Size > 0 {
-			keySize = crt.Spec.PrivateKey.Size
+			keySize = int(crt.Spec.PrivateKey.Size)
 		}
 
 		return GenerateECPrivateKey(keySize)

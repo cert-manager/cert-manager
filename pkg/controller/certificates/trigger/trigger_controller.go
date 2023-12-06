@@ -289,7 +289,7 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 
 	initialDelay := time.Hour
 	delay := initialDelay
-	failedIssuanceAttempts := 0
+	failedIssuanceAttempts := int32(0)
 	// It is possible that crt.Status.LastFailureTime != nil &&
 	// crt.Status.FailedIssuanceAttempts == nil (in case of the Certificate having
 	// failed for an installation of cert-manager before the issuance

@@ -312,7 +312,7 @@ type CertificatePrivateKey struct {
 	// If `algorithm` is set to `Ed25519`, Size is ignored.
 	// No other values are allowed.
 	// +optional
-	Size int `json:"size,omitempty"`
+	Size int32 `json:"size,omitempty"`
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
@@ -502,7 +502,7 @@ type CertificateStatus struct {
 	// checking if the revision value in the annotation is greater than this
 	// field.
 	// +optional
-	Revision *int `json:"revision,omitempty"`
+	Revision *int64 `json:"revision,omitempty"`
 
 	// The name of the Secret resource containing the private key to be used
 	// for the next certificate iteration.
@@ -519,7 +519,7 @@ type CertificateStatus struct {
 	// delay till the next issuance will be calculated using formula
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
 	// +optional
-	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
+	FailedIssuanceAttempts *int32 `json:"failedIssuanceAttempts,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.

@@ -54,7 +54,7 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 	tests := map[string]struct {
 		key          crypto.PrivateKey
 		expectedAlgo cmapi.PrivateKeyAlgorithm
-		expectedSize int
+		expectedSize int32
 		violations   []string
 		err          string
 	}{

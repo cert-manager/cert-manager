@@ -789,7 +789,7 @@ func (s *Suite) Define() {
 			revisionHistoryLimit := ptr.To(int32(7))
 			privateKeyAlgorithm := cmapi.RSAKeyAlgorithm
 			privateKeyEncoding := cmapi.PKCS1
-			privateKeySize := 4096
+			privateKeySize := int32(4096)
 			privateKeyRotationPolicy := cmapi.RotationPolicyAlways
 
 			switch {
@@ -810,7 +810,7 @@ func (s *Suite) Define() {
 					"cert-manager.io/revision-history-limit":      strconv.FormatInt(int64(*revisionHistoryLimit), 10),
 					"cert-manager.io/private-key-algorithm":       string(privateKeyAlgorithm),
 					"cert-manager.io/private-key-encoding":        string(privateKeyEncoding),
-					"cert-manager.io/private-key-size":            strconv.Itoa(privateKeySize),
+					"cert-manager.io/private-key-size":            strconv.Itoa(int(privateKeySize)),
 					"cert-manager.io/private-key-rotation-policy": string(privateKeyRotationPolicy),
 				}, domain), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
@@ -833,7 +833,7 @@ func (s *Suite) Define() {
 					"cert-manager.io/revision-history-limit":      strconv.FormatInt(int64(*revisionHistoryLimit), 10),
 					"cert-manager.io/private-key-algorithm":       string(privateKeyAlgorithm),
 					"cert-manager.io/private-key-encoding":        string(privateKeyEncoding),
-					"cert-manager.io/private-key-size":            strconv.Itoa(privateKeySize),
+					"cert-manager.io/private-key-size":            strconv.Itoa(int(privateKeySize)),
 					"cert-manager.io/private-key-rotation-policy": string(privateKeyRotationPolicy),
 				}, domain), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())

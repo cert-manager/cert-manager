@@ -34,7 +34,7 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) *v1.Certificate {
+func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int32) *v1.Certificate {
 	return &v1.Certificate{
 		Spec: v1.CertificateSpec{
 			CommonName: "test",
@@ -159,7 +159,7 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(test.keyAlgo, test.keySize))
+			privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(test.keyAlgo, int32(test.keySize)))
 			if test.expectErr {
 				if err == nil {
 					t.Error("expected err, but got no error")

@@ -248,9 +248,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		}
 
 		if crt.Spec.PrivateKey == nil {
-			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{Size: size}
+			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{Size: int32(size)}
 		} else {
-			crt.Spec.PrivateKey.Size = size
+			crt.Spec.PrivateKey.Size = int32(size)
 		}
 	}
 

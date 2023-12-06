@@ -513,7 +513,7 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 	}
 	if in.Revision != nil {
 		in, out := &in.Revision, &out.Revision
-		*out = new(int)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.NextPrivateKeySecretName != nil {
@@ -523,7 +523,7 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 	}
 	if in.FailedIssuanceAttempts != nil {
 		in, out := &in.FailedIssuanceAttempts, &out.FailedIssuanceAttempts
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	return

@@ -98,7 +98,7 @@ func TestIssuingController(t *testing.T) {
 
 	var (
 		crtName                  = "testcrt"
-		revision                 = 1
+		revision                 = int64(1)
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
@@ -315,7 +315,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	var (
 		crtName                  = "testcrt"
-		revision                 = 1
+		revision                 = int64(1)
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
@@ -541,7 +541,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	var (
 		crtName                  = "testcrt"
-		revision                 = 1
+		revision                 = int64(1)
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
@@ -791,7 +791,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	var (
 		crtName                  = "testcrt"
-		revision                 = 1
+		revision                 = int64(1)
 		namespace                = "testns"
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"

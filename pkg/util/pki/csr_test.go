@@ -228,7 +228,7 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 	type testT struct {
 		name            string
 		keyAlgo         cmapi.PrivateKeyAlgorithm
-		keySize         int
+		keySize         int32
 		expectErr       bool
 		expectedSigAlgo x509.SignatureAlgorithm
 		expectedKeyType x509.PublicKeyAlgorithm

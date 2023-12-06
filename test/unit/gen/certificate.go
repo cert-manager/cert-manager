@@ -98,7 +98,7 @@ func SetCertificateKeyAlgorithm(keyAlgorithm v1.PrivateKeyAlgorithm) Certificate
 	}
 }
 
-func SetCertificateKeySize(keySize int) CertificateModifier {
+func SetCertificateKeySize(keySize int32) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.PrivateKey.Size = keySize
 	}
@@ -165,7 +165,7 @@ func SetCertificateLastFailureTime(p metav1.Time) CertificateModifier {
 		crt.Status.LastFailureTime = &p
 	}
 }
-func SetCertificateIssuanceAttempts(ia *int) CertificateModifier {
+func SetCertificateIssuanceAttempts(ia *int32) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Status.FailedIssuanceAttempts = ia
 	}
@@ -207,7 +207,7 @@ func SetCertificateKeyUsages(usages ...v1.KeyUsage) CertificateModifier {
 	}
 }
 
-func SetCertificateRevision(revision int) CertificateModifier {
+func SetCertificateRevision(revision int64) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Status.Revision = &revision
 	}

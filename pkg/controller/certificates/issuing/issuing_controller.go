@@ -219,7 +219,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// CertificateRequest revisions begin from 1. If no revision is set on the
 	// status then assume no revision yet set.
-	nextRevision := 1
+	nextRevision := int64(1)
 	if crt.Status.Revision != nil {
 		nextRevision = *crt.Status.Revision + 1
 	}
@@ -351,7 +351,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	nowTime := metav1.NewTime(c.clock.Now())
 	crt.Status.LastFailureTime = &nowTime
 
-	failedIssuanceAttempts := 1
+	failedIssuanceAttempts := int32(1)
 	if crt.Status.FailedIssuanceAttempts != nil {
 		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts + 1
 	}
@@ -379,7 +379,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
+func (c *controller) issueCertificate(ctx context.Context, nextRevision int64, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}

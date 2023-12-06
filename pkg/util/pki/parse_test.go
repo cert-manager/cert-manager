@@ -34,7 +34,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
+func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int32) ([]byte, error) {
 	cert := buildCertificateWithKeyParams(keyAlgo, keySize)
 	privateKey, err := GeneratePrivateKeyForCertificate(cert)
 	if err != nil {
@@ -44,7 +44,7 @@ func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byt
 	return EncodePrivateKey(privateKey, cert.Spec.PrivateKey.Encoding)
 }
 
-func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
+func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int32) ([]byte, error) {
 	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize))
 	if err != nil {
 		return nil, err

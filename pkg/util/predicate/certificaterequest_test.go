@@ -36,7 +36,7 @@ func TestCertificateRequestRevision(t *testing.T) {
 		}
 	}
 	tests := map[string]struct {
-		revision int
+		revision int64
 		request  *cmapi.CertificateRequest
 		expected bool
 	}{

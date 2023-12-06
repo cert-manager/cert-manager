@@ -605,7 +605,7 @@ func autoConvert_v1_CertificatePrivateKey_To_certmanager_CertificatePrivateKey(i
 	out.RotationPolicy = certmanager.PrivateKeyRotationPolicy(in.RotationPolicy)
 	out.Encoding = certmanager.PrivateKeyEncoding(in.Encoding)
 	out.Algorithm = certmanager.PrivateKeyAlgorithm(in.Algorithm)
-	out.Size = in.Size
+	out.Size = int(in.Size)
 	return nil
 }
 
@@ -618,7 +618,7 @@ func autoConvert_certmanager_CertificatePrivateKey_To_v1_CertificatePrivateKey(i
 	out.RotationPolicy = v1.PrivateKeyRotationPolicy(in.RotationPolicy)
 	out.Encoding = v1.PrivateKeyEncoding(in.Encoding)
 	out.Algorithm = v1.PrivateKeyAlgorithm(in.Algorithm)
-	out.Size = in.Size
+	out.Size = int32(in.Size)
 	return nil
 }
 
@@ -843,7 +843,15 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
-	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
+	if in.PrivateKey != nil {
+		in, out := &in.PrivateKey, &out.PrivateKey
+		*out = new(certmanager.CertificatePrivateKey)
+		if err := Convert_v1_CertificatePrivateKey_To_certmanager_CertificatePrivateKey(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PrivateKey = nil
+	}
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]certmanager.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
@@ -881,7 +889,15 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]v1.KeyUsage)(unsafe.Pointer(&in.Usages))
-	out.PrivateKey = (*v1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
+	if in.PrivateKey != nil {
+		in, out := &in.PrivateKey, &out.PrivateKey
+		*out = new(v1.CertificatePrivateKey)
+		if err := Convert_certmanager_CertificatePrivateKey_To_v1_CertificatePrivateKey(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PrivateKey = nil
+	}
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]v1.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
@@ -899,9 +915,21 @@ func autoConvert_v1_CertificateStatus_To_certmanager_CertificateStatus(in *v1.Ce
 	out.NotBefore = (*metav1.Time)(unsafe.Pointer(in.NotBefore))
 	out.NotAfter = (*metav1.Time)(unsafe.Pointer(in.NotAfter))
 	out.RenewalTime = (*metav1.Time)(unsafe.Pointer(in.RenewalTime))
-	out.Revision = (*int)(unsafe.Pointer(in.Revision))
+	if in.Revision != nil {
+		in, out := &in.Revision, &out.Revision
+		*out = new(int)
+		**out = int(**in)
+	} else {
+		out.Revision = nil
+	}
 	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
-	out.FailedIssuanceAttempts = (*int)(unsafe.Pointer(in.FailedIssuanceAttempts))
+	if in.FailedIssuanceAttempts != nil {
+		in, out := &in.FailedIssuanceAttempts, &out.FailedIssuanceAttempts
+		*out = new(int)
+		**out = int(**in)
+	} else {
+		out.FailedIssuanceAttempts = nil
+	}
 	return nil
 }
 
@@ -916,9 +944,21 @@ func autoConvert_certmanager_CertificateStatus_To_v1_CertificateStatus(in *certm
 	out.NotBefore = (*metav1.Time)(unsafe.Pointer(in.NotBefore))
 	out.NotAfter = (*metav1.Time)(unsafe.Pointer(in.NotAfter))
 	out.RenewalTime = (*metav1.Time)(unsafe.Pointer(in.RenewalTime))
-	out.Revision = (*int)(unsafe.Pointer(in.Revision))
+	if in.Revision != nil {
+		in, out := &in.Revision, &out.Revision
+		*out = new(int64)
+		**out = int64(**in)
+	} else {
+		out.Revision = nil
+	}
 	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
-	out.FailedIssuanceAttempts = (*int)(unsafe.Pointer(in.FailedIssuanceAttempts))
+	if in.FailedIssuanceAttempts != nil {
+		in, out := &in.FailedIssuanceAttempts, &out.FailedIssuanceAttempts
+		*out = new(int32)
+		**out = int32(**in)
+	} else {
+		out.FailedIssuanceAttempts = nil
+	}
 	return nil
 }
 

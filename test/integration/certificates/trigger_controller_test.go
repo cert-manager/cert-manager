@@ -251,7 +251,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	secretName := "example"
 	certName := "testcrt"
 
-	failedIssuanceAttempts := 7
+	failedIssuanceAttempts := int32(7)
 	backoffPeriod := time.Hour * 32
 
 	// Create namespace

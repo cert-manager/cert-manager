@@ -567,7 +567,7 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 
 	// for Ed25519 private key size is ignored
 	if aAlgorithm != cmapi.Ed25519KeyAlgorithm {
-		var aSize, bSize int
+		var aSize, bSize int32
 		if a.Spec.PrivateKey != nil && a.Spec.PrivateKey.Size != 0 {
 			aSize = a.Spec.PrivateKey.Size
 		}

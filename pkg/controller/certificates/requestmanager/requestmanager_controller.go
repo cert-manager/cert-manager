@@ -181,7 +181,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	currentCertificateRevision := 0
+	currentCertificateRevision := int64(0)
 	if crt.Status.Revision != nil {
 		currentCertificateRevision = *crt.Status.Revision
 	}
@@ -287,7 +287,7 @@ func (c *controller) deleteRequestsWithoutRevision(ctx context.Context, reqs ...
 	return remaining, nil
 }
 
-func requestsWithRevision(reqs []*cmapi.CertificateRequest, revision int) ([]*cmapi.CertificateRequest, error) {
+func requestsWithRevision(reqs []*cmapi.CertificateRequest, revision int64) ([]*cmapi.CertificateRequest, error) {
 	var remaining []*cmapi.CertificateRequest
 	for _, req := range reqs {
 		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
@@ -299,7 +299,7 @@ func requestsWithRevision(reqs []*cmapi.CertificateRequest, revision int) ([]*cm
 			return nil, err
 		}
 
-		if reqRevision == int64(revision) {
+		if reqRevision == revision {
 			remaining = append(remaining, req)
 		}
 	}
@@ -347,7 +347,7 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 	return remaining, nil
 }
 
-func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int, nextPrivateKeySecretName string) error {
+func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int64, nextPrivateKeySecretName string) error {
 	log := logf.FromContext(ctx)
 
 	x509CSR, err := pki.GenerateCSR(
@@ -371,7 +371,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	}
 
 	annotations := controllerpkg.BuildAnnotationsToCopy(crt.Annotations, c.copiedAnnotationPrefixes)
-	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.Itoa(nextRevision)
+	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.FormatInt(nextRevision, 10)
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = nextPrivateKeySecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 

@@ -98,7 +98,7 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
 				a.Equal(cmapi.RSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
 				a.Equal(cmapi.PKCS1, crt.Spec.PrivateKey.Encoding)
-				a.Equal(2048, crt.Spec.PrivateKey.Size)
+				a.Equal(int32(2048), crt.Spec.PrivateKey.Size)
 				a.Equal(cmapi.RotationPolicyAlways, crt.Spec.PrivateKey.RotationPolicy)
 			},
 		},
@@ -121,7 +121,7 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
 				a.Equal(cmapi.ECDSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
 				a.Equal(cmapi.PKCS1, crt.Spec.PrivateKey.Encoding)
-				a.Equal(256, crt.Spec.PrivateKey.Size)
+				a.Equal(int32(256), crt.Spec.PrivateKey.Size)
 				a.Equal(cmapi.RotationPolicyAlways, crt.Spec.PrivateKey.RotationPolicy)
 			},
 		},
