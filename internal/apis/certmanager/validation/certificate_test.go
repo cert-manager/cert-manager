@@ -61,10 +61,10 @@ func int32Ptr(i int32) *int32 {
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
-		cfg      *internalcmapi.Certificate
-		a        *admissionv1.AdmissionRequest
-		errs     []*field.Error
-		warnings []string
+		cfg                                  *internalcmapi.Certificate
+		a                                    *admissionv1.AdmissionRequest
+		errs                                 []*field.Error
+		warnings                             []string
 		useCertificateRequestNameConstraints bool
 	}{
 		"valid basic certificate": {
@@ -696,7 +696,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
-			a: someAdmissionRequest,
+			a:                                    someAdmissionRequest,
 			useCertificateRequestNameConstraints: true,
 		},
 		"invalid with name constraints": {

@@ -85,7 +85,7 @@ func init() {
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
 
-	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
+	AdditionalCertificateOutputFormats:   {Default: false, PreRelease: featuregate.Alpha},
+	LiteralCertificateSubject:            {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestNameConstraints: {Default: false, PreRelease: featuregate.Alpha},
 }

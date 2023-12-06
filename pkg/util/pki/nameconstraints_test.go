@@ -37,12 +37,12 @@ func TestMarshalNameConstraints(t *testing.T) {
 		{
 			name: "Permitted constraints",
 			input: &v1.NameConstraints{
-				Critical:           true,
+				Critical: true,
 				Permitted: &v1.NameConstraintItem{
-					DNSDomains:         []string{"example.com"},
-					IPRanges:           []string{"192.168.0.1/24"},
-					EmailAddresses:     []string{"user@example.com"},
-					URIDomains:         []string{"https://example.com"},
+					DNSDomains:     []string{"example.com"},
+					IPRanges:       []string{"192.168.0.1/24"},
+					EmailAddresses: []string{"user@example.com"},
+					URIDomains:     []string{"https://example.com"},
 				},
 			},
 			expectedErr: nil,
@@ -55,18 +55,18 @@ func TestMarshalNameConstraints(t *testing.T) {
 		{
 			name: "Mixed constraints",
 			input: &v1.NameConstraints{
-				Critical:           true,
+				Critical: true,
 				Permitted: &v1.NameConstraintItem{
-					DNSDomains:         []string{"example.com"},
-					IPRanges:           []string{"192.168.0.1/24"},
-					EmailAddresses:     []string{"user@example.com"},
-					URIDomains:         []string{"https://example.com"},
+					DNSDomains:     []string{"example.com"},
+					IPRanges:       []string{"192.168.0.1/24"},
+					EmailAddresses: []string{"user@example.com"},
+					URIDomains:     []string{"https://example.com"},
 				},
 				Excluded: &v1.NameConstraintItem{
-					DNSDomains:         []string{"excluded.com"},
-					IPRanges:           []string{"192.168.0.0/24"},
-					EmailAddresses:     []string{"user@excluded.com"},
-					URIDomains:         []string{"https://excluded.com"},
+					DNSDomains:     []string{"excluded.com"},
+					IPRanges:       []string{"192.168.0.0/24"},
+					EmailAddresses: []string{"user@excluded.com"},
+					URIDomains:     []string{"https://excluded.com"},
 				},
 			},
 			expectedErr: nil,
@@ -77,8 +77,8 @@ func TestMarshalNameConstraints(t *testing.T) {
 			},
 		},
 		{
-			name: "Empty constraints",
-			input: &v1.NameConstraints{},
+			name:        "Empty constraints",
+			input:       &v1.NameConstraints{},
 			expectedErr: nil,
 			expectedResult: pkix.Extension{
 				Id:       OIDExtensionNameConstraints,
@@ -90,10 +90,10 @@ func TestMarshalNameConstraints(t *testing.T) {
 			name: "Excluded constraints",
 			input: &v1.NameConstraints{
 				Excluded: &v1.NameConstraintItem{
-					DNSDomains:         []string{"excluded.com"},
-					IPRanges:           []string{"192.168.0.0/24"},
-					EmailAddresses:     []string{"user@excluded.com"},
-					URIDomains:         []string{"https://excluded.com"},
+					DNSDomains:     []string{"excluded.com"},
+					IPRanges:       []string{"192.168.0.0/24"},
+					EmailAddresses: []string{"user@excluded.com"},
+					URIDomains:     []string{"https://excluded.com"},
 				},
 			},
 			expectedErr: nil,
@@ -107,10 +107,10 @@ func TestMarshalNameConstraints(t *testing.T) {
 			name: "Invalid NameConstraints",
 			input: &v1.NameConstraints{
 				Excluded: &v1.NameConstraintItem{
-					IPRanges:           []string{"invalidCIDR"},
+					IPRanges: []string{"invalidCIDR"},
 				},
 			},
-			expectedErr: fmt.Errorf("invalid CIDR address: invalidCIDR"),
+			expectedErr:    fmt.Errorf("invalid CIDR address: invalidCIDR"),
 			expectedResult: pkix.Extension{},
 		},
 	}
