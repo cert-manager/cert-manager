@@ -1,0 +1,23 @@
+# This golangci-lint configuration is for use in CI.
+# It has a non-standard filename so that maintainers can still easily run the
+# full `golangci-lint` suite locally on their laptops.
+# This configuration limits golangci-lint to check only for those issues that
+# have already been fixed. to allow us to incrementally fix the remaining
+# issues.
+# Please contribute small PRs where a new linter is added or a particular
+# exclude is removed in the first commit, wait for golangci-lint-action to
+# report the issues and then fix those issues in a subsequent commit.
+linters:
+  disable-all: true
+  enable:
+    - gosec
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gosec
+    # Ignore some of the gosec warnings until we have time to address them.
+    - linters:
+        - gosec
+      text: "G(101|107|204|306|402|404|501|505|601)"
