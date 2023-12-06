@@ -44,6 +44,17 @@ import (
 	servertls "github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
 )
 
+const (
+	// This is intended to mitigate "slowloris" attacks by limiting the time a
+	// deliberately slow client can spend sending HTTP headers.
+	// This default value is copied from:
+	// * kubernetes api-server:
+	//   https://github.com/kubernetes/kubernetes/blob/9e028b40b9e970142191259effe796b3dab39828/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L165-L173
+	// * controller-runtime:
+	//   https://github.com/kubernetes-sigs/controller-runtime/blob/1ea2be573f7887a9fbd766e9a921c5af344da6eb/pkg/internal/httpserver/server.go#L14
+	defaultReadHeaderTimeout = 32 * time.Second
+)
+
 var (
 	// defaultScheme is used to encode and decode the AdmissionReview and
 	// ConversionReview resources submitted to the webhook server.
@@ -135,7 +146,8 @@ func (s *Server) Run(ctx context.Context) error {
 		healthMux.HandleFunc("/livez", s.handleLivez)
 		s.log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
 		server := &http.Server{
-			Handler: healthMux,
+			Handler:           healthMux,
+			ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 		}
 		g.Go(func() error {
 			<-gctx.Done()
@@ -168,7 +180,8 @@ func (s *Server) Run(ctx context.Context) error {
 		profiling.Install(profilerMux)
 		s.log.V(logf.InfoLevel).Info("running go profiler on", "address", s.PprofAddr)
 		server := &http.Server{
-			Handler: profilerMux,
+			Handler:           profilerMux,
+			ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 		}
 		g.Go(func() error {
 			<-gctx.Done()
@@ -228,7 +241,8 @@ func (s *Server) Run(ctx context.Context) error {
 	serverMux.HandleFunc("/mutate", s.handle(s.mutate))
 	serverMux.HandleFunc("/convert", s.handle(s.convert))
 	server := &http.Server{
-		Handler: serverMux,
+		Handler:           serverMux,
+		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
 	g.Go(func() error {
 		<-gctx.Done()

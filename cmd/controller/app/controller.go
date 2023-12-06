@@ -48,6 +48,17 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
+const (
+	// This is intended to mitigate "slowloris" attacks by limiting the time a
+	// deliberately slow client can spend sending HTTP headers.
+	// This default value is copied from:
+	// * kubernetes api-server:
+	//   https://github.com/kubernetes/kubernetes/blob/9e028b40b9e970142191259effe796b3dab39828/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L165-L173
+	// * controller-runtime:
+	//   https://github.com/kubernetes-sigs/controller-runtime/blob/1ea2be573f7887a9fbd766e9a921c5af344da6eb/pkg/internal/httpserver/server.go#L14
+	defaultReadHeaderTimeout = 32 * time.Second
+)
+
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	rootCtx, cancelContext := context.WithCancel(cmdutil.ContextWithStopCh(context.Background(), stopCh))
 	defer cancelContext()
@@ -106,7 +117,8 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 		// Add pprof endpoints to this mux
 		profiling.Install(profilerMux)
 		profilerServer := &http.Server{
-			Handler: profilerMux,
+			Handler:           profilerMux,
+			ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 		}
 
 		g.Go(func() error {
