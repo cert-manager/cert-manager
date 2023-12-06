@@ -690,7 +690,7 @@ func TestSignCSRTemplate(t *testing.T) {
 		require.NoError(t, err)
 		var permittedIPRanges []*net.IPNet
 		if nameConstraints != nil {
-			permittedIPRanges = ConvertIPNeSliceToIPNetPointerSlice(nameConstraints.PermittedIPRanges)
+			permittedIPRanges = convertIPNetSliceToIPNetPointerSlice(nameConstraints.PermittedIPRanges)
 		}
 		tmpl := &x509.Certificate{
 			Version:               3,

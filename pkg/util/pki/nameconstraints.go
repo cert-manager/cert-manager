@@ -104,8 +104,8 @@ func UnmarshalNameConstraints(value []byte) (NameConstraints, error) {
 	return constraints, nil
 }
 
-// ConvertIPNeSliceToIPNetPointerSlice converts []net.IPNet to []*net.IPNet.
-func ConvertIPNeSliceToIPNetPointerSlice(ipNetPointerSlice []net.IPNet) []*net.IPNet {
+// convertIPNetSliceToIPNetPointerSlice converts []net.IPNet to []*net.IPNet.
+func convertIPNetSliceToIPNetPointerSlice(ipNetPointerSlice []net.IPNet) []*net.IPNet {
 	if ipNetPointerSlice == nil {
 		return nil
 	}
