@@ -54,9 +54,23 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	var commonName = crt.CommonName
 	if crt.LiteralSubject != "" {
-
 		if !utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject) {
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
+		}
+
+		if len(crt.CommonName) != 0 {
+			el = append(el, field.Invalid(fldPath.Child("commonName"), crt.CommonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
+		}
+
+		if crt.Subject != nil && (len(crt.Subject.Organizations) > 0 ||
+			len(crt.Subject.Countries) > 0 ||
+			len(crt.Subject.OrganizationalUnits) > 0 ||
+			len(crt.Subject.Localities) > 0 ||
+			len(crt.Subject.Provinces) > 0 ||
+			len(crt.Subject.StreetAddresses) > 0 ||
+			len(crt.Subject.PostalCodes) > 0 ||
+			len(crt.Subject.SerialNumber) > 0) {
+			el = append(el, field.Invalid(fldPath.Child("subject"), crt.Subject, "When providing a `LiteralSubject` no `Subject` properties may be provided."))
 		}
 
 		sequence, err := pki.UnmarshalSubjectStringToRDNSequence(crt.LiteralSubject)
@@ -85,15 +99,6 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 				}
 			}
 		}
-
-		if len(crt.CommonName) != 0 {
-			el = append(el, field.Invalid(fldPath.Child("commonName"), crt.CommonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
-		}
-
-		if crt.Subject != nil && len(crt.Subject.Organizations)+len(crt.Subject.Countries)+len(crt.Subject.OrganizationalUnits)+len(crt.Subject.Localities)+len(crt.Subject.Provinces)+len(crt.Subject.StreetAddresses)+len(crt.Subject.PostalCodes) != 0 {
-			el = append(el, field.Invalid(fldPath.Child("subject"), crt.Subject, "When providing a `LiteralSubject` no `Subject` properties may be provided with the exception of `Subject.serialNumber`"))
-		}
-
 	}
 
 	if len(commonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URIs) == 0 && len(crt.EmailAddresses) == 0 && len(crt.IPAddresses) == 0 {
