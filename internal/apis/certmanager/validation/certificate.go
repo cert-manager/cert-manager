@@ -96,7 +96,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	}
 
-	if len(commonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 && len(crt.IPAddresses) == 0 {
+	if len(commonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URIs) == 0 && len(crt.EmailAddresses) == 0 && len(crt.IPAddresses) == 0 {
 		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"))
 	}
 
@@ -109,7 +109,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
 
-	if len(crt.EmailSANs) > 0 {
+	if len(crt.EmailAddresses) > 0 {
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
 	}
 
@@ -199,11 +199,11 @@ func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) 
 }
 
 func validateEmailAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.EmailSANs) <= 0 {
+	if len(a.EmailAddresses) <= 0 {
 		return nil
 	}
 	el := field.ErrorList{}
-	for i, d := range a.EmailSANs {
+	for i, d := range a.EmailAddresses {
 		e, err := mail.ParseAddress(d)
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("emailAddresses").Index(i), d, fmt.Sprintf("invalid email address: %s", err)))

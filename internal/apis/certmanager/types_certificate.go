@@ -162,10 +162,10 @@ type CertificateSpec struct {
 	IPAddresses []string
 
 	// Requested URI subject alternative names.
-	URISANs []string
+	URIs []string
 
 	// Requested email subject alternative names.
-	EmailSANs []string
+	EmailAddresses []string
 
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
