@@ -813,8 +813,8 @@ func autoConvert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *Cer
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
-	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
+	// WARNING: in.URISANs requires manual conversion: does not exist in peer-type
+	// WARNING: in.EmailSANs requires manual conversion: does not exist in peer-type
 	out.SecretName = in.SecretName
 	out.SecretTemplate = (*certmanager.CertificateSecretTemplate)(unsafe.Pointer(in.SecretTemplate))
 	if in.Keystores != nil {
@@ -865,8 +865,8 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *cer
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
-	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
+	// WARNING: in.URIs requires manual conversion: does not exist in peer-type
+	// WARNING: in.EmailAddresses requires manual conversion: does not exist in peer-type
 	out.SecretName = in.SecretName
 	out.SecretTemplate = (*CertificateSecretTemplate)(unsafe.Pointer(in.SecretTemplate))
 	if in.Keystores != nil {

@@ -496,7 +496,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					URISANs: []string{
+					URIs: []string{
 						"foo.bar",
 					},
 				},
@@ -506,9 +506,9 @@ func TestValidateCertificate(t *testing.T) {
 		"valid certificate with only email SAN": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"alice@example.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"alice@example.com"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -516,9 +516,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with incorrect email": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"aliceexample.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"aliceexample.com"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -529,9 +529,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with email formatted with name": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"Alice <alice@example.com>"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"Alice <alice@example.com>"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -542,9 +542,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with email formatted with mailto": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"mailto:alice@example.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"mailto:alice@example.com"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
