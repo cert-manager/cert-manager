@@ -955,13 +955,17 @@ func Test_validateLiteralSubject(t *testing.T) {
 					IssuerRef:      validIssuerRef,
 				},
 			},
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("subject"),
+					&internalcmapi.X509Subject{SerialNumber: "1"}, "When providing a `LiteralSubject` no `Subject` properties may be provided."),
+			},
 			a: someAdmissionRequest,
 		},
 		"valid with a `literalSubject` containing CN with special characters, multiple DC and well-known rfc4514 and rfc5280 RDN OIDs": {
 			featureEnabled: true,
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					Subject:        &internalcmapi.X509Subject{SerialNumber: "1"},
 					LiteralSubject: "CN=James \\\"Jim\\\" Smith\\, III,DC=dc,DC=net,UID=jamessmith,STREET=La Rambla,L=Barcelona,C=Spain,O=Acme,OU=IT,OU=Admins",
 					SecretName:     "abc",
 					IssuerRef:      validIssuerRef,
@@ -997,7 +1001,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			errs: []*field.Error{
 				field.Invalid(
 					fldPath.Child("subject"),
-					&internalcmapi.X509Subject{Organizations: []string{"US"}}, "When providing a `LiteralSubject` no `Subject` properties may be provided with the exception of `Subject.serialNumber`"),
+					&internalcmapi.X509Subject{Organizations: []string{"US"}}, "When providing a `LiteralSubject` no `Subject` properties may be provided."),
 			},
 		},
 		"invalid with a `literalSubject` and a `commonName`": {
