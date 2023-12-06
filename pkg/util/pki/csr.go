@@ -187,6 +187,7 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 type generateCSROptions struct {
 	EncodeBasicConstraintsInRequest bool
 	EncodeNameConstraintsInRequest  bool
+	EncodeOtherNameSANs             bool
 	UseLiteralSubject               bool
 }
 
@@ -207,6 +208,12 @@ func WithEncodeNameConstraintsInRequest(encode bool) GenerateCSROption {
 	}
 }
 
+func WithEncodeOtherNameSANs(encodeOtherNameSANs bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.EncodeOtherNameSANs = encodeOtherNameSANs
+	}
+}
+
 func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
 		o.UseLiteralSubject = useLiteralSubject
@@ -221,6 +228,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	opts := &generateCSROptions{
 		EncodeBasicConstraintsInRequest: false,
 		EncodeNameConstraintsInRequest:  false,
+		EncodeOtherNameSANs:             false,
 		UseLiteralSubject:               false,
 	}
 	for _, opt := range optFuncs {
@@ -308,7 +316,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		}
 	}
 
-	if len(crt.Spec.OtherNameSANs) != 0 {
+	if len(otherNameSANs) != 0 {
 		SANwithotherNameExtension, err := buildSANExtensionIncludingOtherNameSANsForCertificate(crt)
 		if err != nil {
 			return nil, err

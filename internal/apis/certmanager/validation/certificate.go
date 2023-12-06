@@ -118,6 +118,21 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
 	}
 
+	if len(crt.OtherNameSANs) > 0 {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.OtherNameSANs) {
+			el = append(el, field.Forbidden(fldPath.Child("OtherNameSANs"), "Feature gate OtherNameSANs must be enabled on both webhook and controller to use the alpha `otherNameSANs` field"))
+		}
+
+		for i, otherName := range crt.OtherNameSANs {
+			if otherName.OID == "" {
+				el = append(el, field.Required(fldPath.Child("otherNameSANs").Index(i).Child("oid"), "must be specified"))
+			}
+			if otherName.StringValue == "" {
+				el = append(el, field.Required(fldPath.Child("otherNameSANs").Index(i).Child("stringValue"), "must be specified"))
+			}
+		}
+	}
+
 	if crt.PrivateKey != nil {
 		switch crt.PrivateKey.Algorithm {
 		case "", internalcmapi.RSAKeyAlgorithm:

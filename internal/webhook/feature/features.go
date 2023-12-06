@@ -69,6 +69,14 @@ const (
 	// This feature will add NameConstraints section in CSR with CA field as true
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/3655
 	UseCertificateRequestNameConstraints featuregate.Feature = "UseCertificateRequestNameConstraints"
+
+	// Owner: @SpectralHiss
+	// Alpha: v1.14
+	//
+	// OtherNameSANs adds support for OtherName Subject Alternative Name values in
+	// Certificate resources.
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/6393
+	OtherNameSANs featuregate.Feature = "OtherNameSANs"
 )
 
 func init() {
@@ -88,4 +96,5 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AdditionalCertificateOutputFormats:   {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:            {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestNameConstraints: {Default: false, PreRelease: featuregate.Alpha},
+	OtherNameSANs:                        {Default: false, PreRelease: featuregate.Alpha},
 }
