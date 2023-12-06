@@ -237,7 +237,7 @@ type CertificateSpec struct {
 	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
 
-	// x.509 certificate NameConstraint extension which MUST be used only in a CA certificate.
+	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
 	// More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
 	//
 	// +optional

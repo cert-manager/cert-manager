@@ -65,6 +65,7 @@ func TestValidateCertificate(t *testing.T) {
 		a        *admissionv1.AdmissionRequest
 		errs     []*field.Error
 		warnings []string
+		useCertificateRequestNameConstraints bool
 	}{
 		"valid basic certificate": {
 			cfg: &internalcmapi.Certificate{
@@ -696,6 +697,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			a: someAdmissionRequest,
+			useCertificateRequestNameConstraints: true,
 		},
 		"invalid with name constraints": {
 			cfg: &internalcmapi.Certificate{
@@ -714,10 +716,34 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(
 					fldPath.Child("nameConstraints"), &internalcmapi.NameConstraints{}, "either permitted or excluded must be set"),
 			},
+			useCertificateRequestNameConstraints: true,
+		},
+		"valid name constraints with feature gate disabled": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							DNSDomains: []string{"example.com"},
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Forbidden(
+					fldPath.Child("nameConstraints"), "feature gate UseCertificateRequestNameConstraints must be enabled"),
+			},
 		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.UseCertificateRequestNameConstraints, s.useCertificateRequestNameConstraints)()
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
 			assert.ElementsMatch(t, warnings, s.warnings)

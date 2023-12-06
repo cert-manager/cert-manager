@@ -80,13 +80,13 @@ func parseCIDRs(cidrs []string) ([]net.IPNet, error) {
 	ipRanges := []net.IPNet{}
 	for _, cidr := range cidrs {
 		_, ipNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			return nil, err
+		}
 		ipRanges = append(ipRanges, net.IPNet{
 			IP:   ipNet.IP,
 			Mask: ipNet.Mask,
 		})
-		if err != nil {
-			return nil, err
-		}
 	}
 	return ipRanges, nil
 }
