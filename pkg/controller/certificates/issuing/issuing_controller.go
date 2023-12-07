@@ -128,6 +128,7 @@ func NewController(
 	secretsManager := internal.NewSecretsManager(
 		ctx.Client.CoreV1(), secretsInformer.Lister(),
 		ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
+		ctx.DefaultSecretCleanupPolicy,
 	)
 
 	return &controller{
@@ -140,6 +141,7 @@ func NewController(
 		secretsUpdateData:        secretsManager.UpdateData,
 		postIssuancePolicyChain: policies.NewSecretPostIssuancePolicyChain(
 			ctx.CertificateOptions.EnableOwnerRef,
+			ctx.DefaultSecretCleanupPolicy,
 			ctx.FieldManager,
 		),
 		fieldManager:         ctx.FieldManager,

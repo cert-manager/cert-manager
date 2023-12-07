@@ -19,6 +19,7 @@ package options
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -40,11 +41,160 @@ import (
 type ControllerFlags struct {
 	// Path to a file containing a ControllerConfiguration resource
 	Config string
+type ControllerOptions struct {
+	Logging *logs.Options
+
+	APIServerHost      string
+	Kubeconfig         string
+	KubernetesAPIQPS   float32
+	KubernetesAPIBurst int
+
+	ClusterResourceNamespace string
+	Namespace                string
+
+	LeaderElect                 bool
+	LeaderElectionNamespace     string
+	LeaderElectionLeaseDuration time.Duration
+	LeaderElectionRenewDeadline time.Duration
+	LeaderElectionRetryPeriod   time.Duration
+
+	controllers []string
+
+	ACMEHTTP01SolverImage                 string
+	ACMEHTTP01SolverResourceRequestCPU    string
+	ACMEHTTP01SolverResourceRequestMemory string
+	ACMEHTTP01SolverResourceLimitsCPU     string
+	ACMEHTTP01SolverResourceLimitsMemory  string
+	ACMEHTTP01SolverRunAsNonRoot          bool
+	// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
+	ACMEHTTP01SolverNameservers []string
+
+	ClusterIssuerAmbientCredentials bool
+	IssuerAmbientCredentials        bool
+
+	// Default issuer/certificates details consumed by ingress-shim
+	DefaultIssuerName                 string
+	DefaultIssuerKind                 string
+	DefaultIssuerGroup                string
+	DefaultAutoCertificateAnnotations []string
+
+	// Allows specifying a list of custom nameservers to perform DNS checks on.
+	// Each nameserver can be either the IP address and port of a standard
+	// recursive DNS server, or the endpoint to an RFC 8484 DNS over HTTPS
+	// endpoint. For example, the following values are valid:
+	//  - "8.8.8.8:53" (Standard DNS)
+	//  - "https://1.1.1.1/dns-query" (DNS over HTTPS)
+	DNS01RecursiveNameservers []string
+	// Allows controlling if recursive nameservers are only used for all checks.
+	// Normally authoritative nameservers are used for checking propagation.
+	DNS01RecursiveNameserversOnly bool
+
+	EnableCertificateOwnerRef  bool
+	DefaultSecretCleanupPolicy string
+
+	// The number of concurrent workers for each controller.
+	NumberOfConcurrentWorkers int
+	// MaxConcurrentChallenges determines the maximum number of challenges that can be
+	// scheduled as 'processing' at once.
+	MaxConcurrentChallenges int
+
+	// The host and port address, separated by a ':', that the Prometheus server
+	// should expose metrics on.
+	MetricsListenAddress string
+	// The host and port address, separated by a ':', that the healthz server
+	// should listen on.
+	HealthzListenAddress string
+	// Leader election healthz checks within this timeout period after the lease
+	// expires will still return healthy.
+	HealthzLeaderElectionTimeout time.Duration
+	// PprofAddress is the address on which Go profiler will run. Should be
+	// in form <host>:<port>.
+	PprofAddress string
+	// EnablePprof determines whether pprof should be enabled.
+	EnablePprof bool
+
+	// DNSO1CheckRetryPeriod is the period of time after which to check if
+	// challenge URL can be reached by cert-manager controller. This is used
+	// for both DNS-01 and HTTP-01 challenges.
+	DNS01CheckRetryPeriod time.Duration
+
+	// Annotations copied Certificate -> CertificateRequest,
+	// CertificateRequest -> Order. Slice of string literals that are
+	// treated as prefixes for annotation keys.
+	CopiedAnnotationPrefixes []string
 }
 
 func NewControllerFlags() *ControllerFlags {
 	return &ControllerFlags{}
 }
+const (
+	defaultAPIServerHost              = ""
+	defaultKubeconfig                 = ""
+	defaultKubernetesAPIQPS   float32 = 20
+	defaultKubernetesAPIBurst         = 50
+
+	defaultClusterResourceNamespace = "kube-system"
+	defaultNamespace                = ""
+
+	defaultClusterIssuerAmbientCredentials = true
+	defaultIssuerAmbientCredentials        = false
+
+	defaultTLSACMEIssuerName         = ""
+	defaultTLSACMEIssuerKind         = "Issuer"
+	defaultTLSACMEIssuerGroup        = cm.GroupName
+	defaultEnableCertificateOwnerRef = false
+
+	defaultSecretCleanupStrategyNever    = "Never"
+	defaultSecretCleanupStrategyOnDelete = "OnDelete"
+
+	defaultDNS01RecursiveNameserversOnly = false
+
+	defaultNumberOfConcurrentWorkers = 5
+	defaultMaxConcurrentChallenges   = 60
+
+	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+	defaultHealthzServerAddress           = "0.0.0.0:9403"
+	// This default value is the same as used in Kubernetes controller-manager.
+	// See:
+	// https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kube-controller-manager/app/controllermanager.go#L202-L209
+	defaultHealthzLeaderElectionTimeout = 20 * time.Second
+
+	// default time period to wait between checking DNS01 and HTTP01 challenge propagation
+	defaultDNS01CheckRetryPeriod = 10 * time.Second
+)
+
+var (
+	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
+	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
+	defaultACMEHTTP01SolverResourceLimitsCPU     = "100m"
+	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
+	defaultACMEHTTP01SolverRunAsNonRoot          = true
+
+	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
+
+	allControllers = []string{
+		issuerscontroller.ControllerName,
+		clusterissuerscontroller.ControllerName,
+		certificatesmetricscontroller.ControllerName,
+		shimingresscontroller.ControllerName,
+		shimgatewaycontroller.ControllerName,
+		orderscontroller.ControllerName,
+		challengescontroller.ControllerName,
+		cracmecontroller.CRControllerName,
+		crapprovercontroller.ControllerName,
+		crcacontroller.CRControllerName,
+		crselfsignedcontroller.CRControllerName,
+		crvaultcontroller.CRControllerName,
+		crvenaficontroller.CRControllerName,
+		// certificate controllers
+		trigger.ControllerName,
+		issuing.ControllerName,
+		keymanager.ControllerName,
+		requestmanager.ControllerName,
+		readiness.ControllerName,
+		revisionmanager.ControllerName,
+	}
 
 func (f *ControllerFlags) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&f.Config, "config", "", "Path to a file containing a ControllerConfiguration object used to configure the controller")
@@ -171,6 +321,17 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
+		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted."+
+		"This flag is deprecated, but takes precedence over --default-secret-cleanup-policy for backward compatibility."+
+		"Use --default-secret-cleanup-policy instead of it.")
+
+	fs.StringVar(&s.DefaultSecretCleanupPolicy, "default-secret-cleanup-policy", defaultSecretCleanupStrategyNever, ""+
+		"When this field is set to `OnDelete`, the owner reference is always created on the Secret resource"+
+		"and the secret will be automatically removed when the certificate resource is deleted."+
+		"When this field is set to `Never`, the owner reference is never created on the Secret resource and"+
+		"the secret will not be automatically removed when the certificate resource is deleted.")
+
+	fs.StringSliceVar(&s.CopiedAnnotationPrefixes, "copied-annotation-prefixes", defaultCopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
@@ -209,6 +370,71 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 
 	logf.AddFlags(&c.Logging, fs)
 }
+
+func (o *ControllerOptions) Validate() error {
+	if len(o.DefaultIssuerKind) == 0 {
+		return errors.New("the --default-issuer-kind flag must not be empty")
+	}
+
+	if o.KubernetesAPIBurst <= 0 {
+		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher than 0", o.KubernetesAPIBurst)
+	}
+
+	if o.KubernetesAPIQPS <= 0 {
+		return fmt.Errorf("invalid value for kube-api-qps: %v must be higher than 0", o.KubernetesAPIQPS)
+	}
+
+	if o.DefaultSecretCleanupPolicy != defaultSecretCleanupStrategyNever && o.DefaultSecretCleanupPolicy != defaultSecretCleanupStrategyOnDelete {
+		return fmt.Errorf("invalid value for default-secret-cleanup-policy: %v must be one of (%s|%s)", o.DefaultSecretCleanupPolicy, defaultSecretCleanupStrategyNever, defaultSecretCleanupStrategyOnDelete)
+	}
+
+	if float32(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
+		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
+	}
+
+	for _, server := range o.ACMEHTTP01SolverNameservers {
+		// ensure all servers have a port number
+		_, _, err := net.SplitHostPort(server)
+		if err != nil {
+			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+		}
+	}
+
+	for _, server := range o.DNS01RecursiveNameservers {
+		// ensure all servers follow one of the following formats:
+		// - <ip address>:<port>
+		// - https://<DoH RFC 8484 server address>
+
+		if strings.HasPrefix(server, "https://") {
+			_, err := url.ParseRequestURI(server)
+			if err != nil {
+				return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+			}
+		} else {
+			_, _, err := net.SplitHostPort(server)
+			if err != nil {
+				return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+			}
+		}
+	}
+
+	errs := []error{}
+	allControllersSet := sets.NewString(allControllers...)
+	for _, controller := range o.controllers {
+		if controller == "*" {
+			continue
+		}
+
+		controller = strings.TrimPrefix(controller, "-")
+		if !allControllersSet.Has(controller) {
+			errs = append(errs, fmt.Errorf("%q is not in the list of known controllers", controller))
+		}
+	}
+
+	err := logf.ValidateAndApply(o.Logging)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 func EnabledControllers(o *config.ControllerConfiguration) sets.String {
 	var disabled []string

@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 	"sigs.k8s.io/structured-merge-diff/v4/value"
 
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -745,8 +746,11 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 // SecretOwnerReferenceMismatch validates that the Secret has the expected
 // owner reference if it is enabled. Returns true (violation) if:
 // * owner reference is enabled, but the reference has an incorrect value
-func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
+func SecretOwnerReferenceMismatch(ownerRefEnabled bool, defaultSecretCleanupPolicy certmanager.CleanupPolicy) Func {
 	return func(input Input) (string, string, bool) {
+		// Get current cleanup policy for certificate
+		cleanupPolicy := input.Certificate.Spec.CleanupPolicy
+
 		// If the Owner Reference is not enabled, we don't need to check the value
 		// and can exit early.
 		if !ownerRefEnabled {
@@ -770,11 +774,31 @@ func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
 			}
 		}
 
+		switch cleanupPolicy {
+		case certmanager.CleanupPolicyNever:
+			if hasOwnerRefMatchingCertificate {
+				return SecretOwnerRefMismatch,
+					fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t certificate cleanupPolicy=%s", ownerRefEnabled, cleanupPolicy), true
+			}
+			return "", "", false
+		case certmanager.CleanupPolicyOnDelete:
+			if !hasOwnerRefMatchingCertificate {
+				return SecretOwnerRefMismatch,
+					fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t certificate cleanupPolicy=%s", ownerRefEnabled, cleanupPolicy), true
+			}
+			return "", "", false
+		}
+
 		// Owner reference is enabled at this point. If the Owner Reference value
 		// doesn't match the expected value, return violation.
-		if !hasOwnerRefMatchingCertificate {
+		if ownerRefEnabled && !hasOwnerRefMatchingCertificate {
 			return SecretOwnerRefMismatch,
 				fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+		}
+
+		if defaultSecretCleanupPolicy == certmanager.CleanupPolicyOnDelete && !hasOwnerRefMatchingCertificate {
+			return SecretOwnerRefMismatch,
+				fmt.Sprintf("unexpected Secret Owner Reference value on Secret --default-secret-cleanup-policy=%s", defaultSecretCleanupPolicy), true
 		}
 
 		return "", "", false
