@@ -271,7 +271,6 @@ type CertificateSpec struct {
 	// `--feature-gates=useCertificateRequestNameConstraints=true` option set on both
 	// the controller and webhook components.
 	// +optional
-	// +optional
 	NameConstraints *NameConstraints `json:"nameConstraints,omitempty"`
 }
 

@@ -644,7 +644,6 @@ func TestGenerateCSR(t *testing.T) {
 				Version:            0,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
-				Subject:            pkix.Name{CommonName: "example.org"},
 				ExtraExtensions: []pkix.Extension{
 					{
 						Id:       OIDExtensionKeyUsage,
@@ -657,6 +656,7 @@ func TestGenerateCSR(t *testing.T) {
 						Critical: true,
 					},
 				},
+				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
 			},
 			nameConstraintsFeatureEnabled: true,
 		},
@@ -674,7 +674,7 @@ func TestGenerateCSR(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want)
+				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want.ExtraExtensions)
 			}
 		})
 	}
