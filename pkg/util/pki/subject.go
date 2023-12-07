@@ -104,6 +104,21 @@ func UnmarshalRawDerBytesToRDNSequence(der []byte) (rdnSequence pkix.RDNSequence
 	}
 }
 
+func ExtractCommonNameFromRDNSequence(rdns pkix.RDNSequence) string {
+	for _, rdn := range rdns {
+		for _, atv := range rdn {
+			if atv.Type.Equal(OIDConstants.CommonName) {
+				if str, ok := atv.Value.(string); ok {
+					return str
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// DEPRECATED: this function will be removed in a future release.
 func ParseSubjectStringToRawDERBytes(subject string) ([]byte, error) {
 	rdnSequence, err := UnmarshalSubjectStringToRDNSequence(subject)
 	if err != nil {
