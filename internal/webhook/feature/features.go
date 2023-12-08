@@ -61,6 +61,14 @@ const (
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
 	// the usages field empty.
 	DisallowInsecureCSRUsageDefinition featuregate.Feature = "DisallowInsecureCSRUsageDefinition"
+
+	// Owner: @tanujd11
+	// Alpha: v1.14
+	//
+	// UseCertificateRequestNameConstraints will add Name Constraints section in the Extension Request of the Certificate Signing Request
+	// This feature will add NameConstraints section in CSR with CA field as true
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/3655
+	UseCertificateRequestNameConstraints featuregate.Feature = "UseCertificateRequestNameConstraints"
 )
 
 func init() {
@@ -77,6 +85,7 @@ func init() {
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
 
-	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
+	AdditionalCertificateOutputFormats:   {Default: false, PreRelease: featuregate.Alpha},
+	LiteralCertificateSubject:            {Default: false, PreRelease: featuregate.Alpha},
+	UseCertificateRequestNameConstraints: {Default: false, PreRelease: featuregate.Alpha},
 }

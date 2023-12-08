@@ -193,6 +193,23 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			}
 		}
 
+		if val.Id.Equal(OIDExtensionNameConstraints) {
+			nameConstraints, err := UnmarshalNameConstraints(val.Value)
+			if err != nil {
+				return err
+			}
+
+			template.PermittedDNSDomainsCritical = nameConstraints.PermittedDNSDomainsCritical
+			template.PermittedDNSDomains = nameConstraints.PermittedDNSDomains
+			template.ExcludedDNSDomains = nameConstraints.ExcludedDNSDomains
+			template.PermittedIPRanges = convertIPNetSliceToIPNetPointerSlice(nameConstraints.PermittedIPRanges)
+			template.ExcludedIPRanges = convertIPNetSliceToIPNetPointerSlice(nameConstraints.ExcludedIPRanges)
+			template.PermittedEmailAddresses = nameConstraints.PermittedEmailAddresses
+			template.ExcludedEmailAddresses = nameConstraints.ExcludedEmailAddresses
+			template.PermittedURIDomains = nameConstraints.PermittedURIDomains
+			template.ExcludedURIDomains = nameConstraints.ExcludedEmailAddresses
+		}
+
 		// RFC 5280, 4.2.1.3
 		if val.Id.Equal(OIDExtensionKeyUsage) {
 			usage, err := UnmarshalKeyUsage(val.Value)

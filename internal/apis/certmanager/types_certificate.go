@@ -55,7 +55,7 @@ type CertificateList struct {
 	metav1.ListMeta
 
 	// List of Certificates
-	Items []Certificate `json:"items"`
+	Items []Certificate
 }
 
 type PrivateKeyAlgorithm string
@@ -236,6 +236,15 @@ type CertificateSpec struct {
 	// `--feature-gates=AdditionalCertificateOutputFormats=true` option set on both
 	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
+
+	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
+	// More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+	//
+	// This is an Alpha Feature and is only enabled with the
+	// `--feature-gates=useCertificateRequestNameConstraints=true` option set on both
+	// the controller and webhook components.
+	// +optional
+	NameConstraints *NameConstraints
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -530,4 +539,42 @@ type CertificateSecretTemplate struct {
 	// Labels is a key value map to be copied to the target Kubernetes Secret.
 	// +optional
 	Labels map[string]string
+}
+
+// NameConstraints is a type to represent x509 NameConstraints
+type NameConstraints struct {
+	// if true then the name constraints are marked critical.
+	//
+	// +optional
+	Critical bool
+	// Permitted contains the constraints in which the names must be located.
+	//
+	// +optional
+	Permitted *NameConstraintItem
+	// Excluded contains the constraints which must be disallowed. Any name matching a
+	// restriction in the excluded field is invalid regardless
+	// of information appearing in the permitted
+	//
+	// +optional
+	Excluded *NameConstraintItem
+}
+
+type NameConstraintItem struct {
+	// DNSDomains is a list of DNS domains that are permitted or excluded.
+	//
+	// +optional
+	DNSDomains []string
+	// IPRanges is a list of IP Ranges that are permitted or excluded.
+	// This should be a valid CIDR notation.
+	//
+	// +optional
+	IPRanges []string
+	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
+	//
+	// +optional
+	EmailAddresses []string
+	// URIDomains is a list of URI domains that are permitted or excluded.
+	//
+	// +optional
+	URIDomains []string
 }

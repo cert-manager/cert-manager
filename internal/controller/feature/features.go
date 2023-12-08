@@ -98,6 +98,14 @@ const (
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/5539
 	UseCertificateRequestBasicConstraints featuregate.Feature = "UseCertificateRequestBasicConstraints"
 
+	// Owner: @tanujd11
+	// Alpha: v1.14
+	//
+	// UseCertificateRequestNameConstraints will add Name Constraints section in the Extension Request of the Certificate Signing Request
+	// This feature will add NameConstraints section in CSR with CA field as true
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/3655
+	UseCertificateRequestNameConstraints featuregate.Feature = "UseCertificateRequestNameConstraints"
+
 	// Owner: @irbekrm
 	// Alpha v1.12
 	// Beta: v1.13
@@ -139,4 +147,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
+	UseCertificateRequestNameConstraints:             {Default: false, PreRelease: featuregate.Alpha},
 }
