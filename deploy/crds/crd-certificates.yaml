@@ -94,6 +94,9 @@ spec:
                   type: array
                   items:
                     type: string
+                encodeBasicConstraintsInRequest:
+                  description: "Whether the BasicConstraints extension should be set in the encoded CSR. \n IMPORTANT: This option is only available if `UseCertificateRequestBasicConstraints` feature gate is set. Otherwise, the CSR will not have the BasicConstraints extension. This option defaults to true, and should only be disabled if the target issuer does not support CSRs with a X509 BasicConstraints extension."
+                  type: boolean
                 encodeUsagesInRequest:
                   description: "Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR. \n This option defaults to true, and should only be disabled if the target issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions."
                   type: boolean
@@ -171,6 +174,10 @@ spec:
                 literalSubject:
                   description: "Requested X.509 certificate subject, represented using the LDAP \"String Representation of a Distinguished Name\" [1]. Important: the LDAP string format also specifies the order of the attributes in the subject, this is important when issuing certs for LDAP authentication. Example: `CN=foo,DC=corp,DC=example,DC=com` More info [1]: https://datatracker.ietf.org/doc/html/rfc4514 More info: https://github.com/cert-manager/cert-manager/issues/3203 More info: https://github.com/cert-manager/cert-manager/issues/4424 \n Cannot be set if the `subject` or `commonName` field is set. This is an Alpha Feature and is only enabled with the `--feature-gates=LiteralCertificateSubject=true` option set on both the controller and webhook components."
                   type: string
+                maxPathLen:
+                  description: "Requested basic constraints maxPathLen value. The maxPathLen value is used to set the `maxPathLen` field on the created CertificateRequest resources. Note that the issuer may choose to ignore the requested maxPathLen value, just like any other requested attribute. If the `UseCertificateRequestBasicConstraints` feature gate is set and the `encodeBasicConstraintsInRequest` field is not set to `false`, the encoded CSR will have a BasicConstraints extension with the provided maxPathLen value. \n If set, maxPathLen must be a value of `0` or greater. If unset (`nil`), there is no maximum. Default value is `nil`."
+                  type: integer
+                  format: int32
                 nameConstraints:
                   description: "x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate. More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10 \n This is an Alpha Feature and is only enabled with the `--feature-gates=useCertificateRequestNameConstraints=true` option set on both the controller and webhook components."
                   type: object

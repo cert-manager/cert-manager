@@ -102,6 +102,10 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                maxPathLen:
+                  description: "Requested basic constraints maxPathLen value. Note that the issuer may choose to ignore the requested maxPathLen value, just like any other requested attribute. \n NOTE: If the CSR in the `Request` field has a BasicConstraints extension, it must have the same maxPathLen value as specified here. \n If set, maxPathLen must be a value of `0` or greater. If unset (`nil`), there is no maximum. Default value is `nil`."
+                  type: integer
+                  format: int32
                 request:
                   description: "The PEM-encoded X.509 certificate signing request to be submitted to the issuer for signing. \n If the CSR has a BasicConstraints extension, its isCA attribute must match the `isCA` value of this CertificateRequest. If the CSR has a KeyUsage extension, its key usages must match the key usages in the `usages` field of this CertificateRequest. If the CSR has a ExtKeyUsage extension, its extended key usages must match the extended key usages in the `usages` field of this CertificateRequest."
                   type: string

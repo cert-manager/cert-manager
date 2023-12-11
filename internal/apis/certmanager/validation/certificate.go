@@ -118,6 +118,16 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
 	}
 
+	if crt.EncodeBasicConstraintsInRequest != nil {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints) {
+			el = append(el, field.Forbidden(fldPath.Child("encodeBasicConstraintsInRequest"), "Feature gate UseCertificateRequestBasicConstraints must be enabled on the webhook to use the alpha `encodeBasicConstraintsInRequest` field"))
+		}
+	}
+
+	if crt.MaxPathLen != nil && !crt.IsCA {
+		el = append(el, field.Forbidden(fldPath.Child("maxPathLen"), "must not be set unless the certificate is a CA"))
+	}
+
 	if crt.PrivateKey != nil {
 		switch crt.PrivateKey.Algorithm {
 		case "", internalcmapi.RSAKeyAlgorithm:

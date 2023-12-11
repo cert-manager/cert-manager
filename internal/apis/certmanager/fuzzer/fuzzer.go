@@ -41,6 +41,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.Spec.Duration == nil {
 				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
+
+			s.Spec.EncodeBasicConstraintsInRequest = nil
+			s.Spec.MaxPathLen = nil
 		},
 		func(s *certmanager.CertificateRequest, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
@@ -51,6 +54,8 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.Spec.Duration == nil {
 				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
+
+			s.Spec.MaxPathLen = nil
 		},
 	}...)
 }
