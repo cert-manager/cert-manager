@@ -17,22 +17,37 @@ limitations under the License.
 package pki
 
 import (
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"os"
 	"testing"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/assert"
 )
 
+// TestMarshalNameConstraints tests the MarshalNameConstraints function
+// To generate the testdata at testdata/nameconstraints, do something like this:
+// openssl req -new -key private_key.pem -out csr1.pem -subj "/CN=example.org" -config config.cnf
+//
+// where config.cnf is(replace nameConstraints with the values mentioned in the testcase):
+// [req]
+// default_bits        = 2048
+// prompt              = no
+// default_md          = sha256
+// req_extensions      = req_ext
+
+// [req_ext]
+// nameConstraints = critical,permitted;DNS:example.com,permitted;IP:192.168.1.0/255.255.255.0,permitted;email:user@example.com,permitted;URI:https://example.com,excluded;DNS:excluded.com,excluded;IP:192.168.0.0/255.255.255.0,excluded;email:user@excluded.com,excluded;URI:https://excluded.com
 func TestMarshalNameConstraints(t *testing.T) {
 	// Test data
 	testCases := []struct {
-		name           string
-		input          *v1.NameConstraints
-		expectedErr    error
-		expectedResult pkix.Extension
+		name         string
+		input        *v1.NameConstraints
+		expectedErr  error
+		expectedFile string
 	}{
 		{
 			name: "Permitted constraints",
@@ -40,17 +55,14 @@ func TestMarshalNameConstraints(t *testing.T) {
 				Critical: true,
 				Permitted: &v1.NameConstraintItem{
 					DNSDomains:     []string{"example.com"},
-					IPRanges:       []string{"192.168.0.1/24"},
+					IPRanges:       []string{"192.168.1.0/24"},
 					EmailAddresses: []string{"user@example.com"},
 					URIDomains:     []string{"https://example.com"},
 				},
 			},
 			expectedErr: nil,
-			expectedResult: pkix.Extension{
-				Id:       OIDExtensionNameConstraints,
-				Critical: true,
-				Value:    []byte{0x30, 0x48, 0xa0, 0x46, 0x30, 0xd, 0x82, 0xb, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0xa, 0x87, 0x8, 0xc0, 0xa8, 0x0, 0x0, 0xff, 0xff, 0xff, 0x0, 0x30, 0x12, 0x81, 0x10, 0x75, 0x73, 0x65, 0x72, 0x40, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0x15, 0x86, 0x13, 0x68, 0x74, 0x74, 0x70, 0x73, 0x3a, 0x2f, 0x2f, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d},
-			},
+			// nameConstraints = critical,permitted;DNS:example.com,permitted;IP:192.168.1.0/255.255.255.0,permitted;email:user@example.com,permitted;URI:https://example.com
+			expectedFile: "permitted-constraints.pem",
 		},
 		{
 			name: "Mixed constraints",
@@ -58,7 +70,7 @@ func TestMarshalNameConstraints(t *testing.T) {
 				Critical: true,
 				Permitted: &v1.NameConstraintItem{
 					DNSDomains:     []string{"example.com"},
-					IPRanges:       []string{"192.168.0.1/24"},
+					IPRanges:       []string{"192.168.1.0/24"},
 					EmailAddresses: []string{"user@example.com"},
 					URIDomains:     []string{"https://example.com"},
 				},
@@ -70,17 +82,14 @@ func TestMarshalNameConstraints(t *testing.T) {
 				},
 			},
 			expectedErr: nil,
-			expectedResult: pkix.Extension{
-				Id:       OIDExtensionNameConstraints,
-				Critical: true,
-				Value:    []byte{0x30, 0x81, 0x93, 0xa0, 0x46, 0x30, 0xd, 0x82, 0xb, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0xa, 0x87, 0x8, 0xc0, 0xa8, 0x0, 0x0, 0xff, 0xff, 0xff, 0x0, 0x30, 0x12, 0x81, 0x10, 0x75, 0x73, 0x65, 0x72, 0x40, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0x15, 0x86, 0x13, 0x68, 0x74, 0x74, 0x70, 0x73, 0x3a, 0x2f, 0x2f, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0xa1, 0x49, 0x30, 0xe, 0x82, 0xc, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x64, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0xa, 0x87, 0x8, 0xc0, 0xa8, 0x0, 0x0, 0xff, 0xff, 0xff, 0x0, 0x30, 0x13, 0x81, 0x11, 0x75, 0x73, 0x65, 0x72, 0x40, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x64, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0x16, 0x86, 0x14, 0x68, 0x74, 0x74, 0x70, 0x73, 0x3a, 0x2f, 0x2f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x64, 0x2e, 0x63, 0x6f, 0x6d},
-			},
+			// nameConstraints = critical,permitted;DNS:example.com,permitted;IP:192.168.1.0/255.255.255.0,permitted;email:user@example.com,permitted;URI:https://example.com,excluded;DNS:excluded.com,excluded;IP:192.168.0.0/255.255.255.0,excluded;email:user@excluded.com,excluded;URI:https://excluded.com
+			expectedFile: "mixed-constraints.pem",
 		},
 		{
-			name:           "Empty constraints",
-			input:          &v1.NameConstraints{},
-			expectedErr:    nil,
-			expectedResult: pkix.Extension{},
+			name:         "Empty constraints",
+			input:        &v1.NameConstraints{},
+			expectedErr:  nil,
+			expectedFile: "",
 		},
 		{
 			name: "Excluded constraints",
@@ -94,11 +103,8 @@ func TestMarshalNameConstraints(t *testing.T) {
 				},
 			},
 			expectedErr: nil,
-			expectedResult: pkix.Extension{
-				Id:       OIDExtensionNameConstraints,
-				Critical: true,
-				Value:    []byte{0x30, 0x4b, 0xa1, 0x49, 0x30, 0xe, 0x82, 0xc, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x64, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0xa, 0x87, 0x8, 0xc0, 0xa8, 0x0, 0x0, 0xff, 0xff, 0xff, 0x0, 0x30, 0x13, 0x81, 0x11, 0x75, 0x73, 0x65, 0x72, 0x40, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x64, 0x2e, 0x63, 0x6f, 0x6d, 0x30, 0x16, 0x86, 0x14, 0x68, 0x74, 0x74, 0x70, 0x73, 0x3a, 0x2f, 0x2f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x64, 0x2e, 0x63, 0x6f, 0x6d},
-			},
+			// nameConstraints = critical,excluded;DNS:excluded.com,excluded;IP:192.168.0.0/255.255.255.0,excluded;email:user@excluded.com,excluded;URI:https://excluded.com
+			expectedFile: "excluded-constraints.pem",
 		},
 		{
 			name: "Invalid NameConstraints",
@@ -107,26 +113,54 @@ func TestMarshalNameConstraints(t *testing.T) {
 					IPRanges: []string{"invalidCIDR"},
 				},
 			},
-			expectedErr:    fmt.Errorf("invalid CIDR address: invalidCIDR"),
-			expectedResult: pkix.Extension{},
+			expectedErr:  fmt.Errorf("invalid CIDR address: invalidCIDR"),
+			expectedFile: "",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			expectedResult, err := getExtensionFromFile(tc.expectedFile)
+			assert.NoError(t, err)
 			result, err := MarshalNameConstraints(tc.input)
 			if tc.expectedErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, err, tc.expectedErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedResult.Id, result.Id)
-				assert.Equal(t, tc.expectedResult.Critical, result.Critical)
-
-				expectedPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE EXTENSION", Bytes: tc.expectedResult.Value})
-				actualPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE EXTENSION", Bytes: result.Value})
-				assert.Equal(t, expectedPEM, actualPEM)
+				assert.Equal(t, expectedResult.Id, result.Id)
+				assert.Equal(t, expectedResult.Critical, result.Critical)
+				assert.Equal(t, expectedResult.Value, result.Value)
 			}
 		})
 	}
+}
+
+func getExtensionFromFile(csrPath string) (pkix.Extension, error) {
+	if csrPath == "" {
+		return pkix.Extension{}, nil
+	}
+
+	csrPEM, err := os.ReadFile("testdata/nameconstraints/" + csrPath)
+	if err != nil {
+		return pkix.Extension{}, fmt.Errorf("Error reading CSR file: %v", err)
+	}
+
+	block, _ := pem.Decode(csrPEM)
+	if block == nil || block.Type != "CERTIFICATE REQUEST" {
+		return pkix.Extension{}, fmt.Errorf("Failed to decode PEM block or the type is not 'CERTIFICATE REQUEST'")
+	}
+
+	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		return pkix.Extension{}, fmt.Errorf("Error parsing CSR: %v", err)
+	}
+
+	for _, ext := range csr.Extensions {
+		if ext.Id.Equal(OIDExtensionNameConstraints) {
+			return ext, nil
+		}
+	}
+
+	return pkix.Extension{}, nil
 }
