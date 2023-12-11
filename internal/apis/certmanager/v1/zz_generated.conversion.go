@@ -1339,7 +1339,7 @@ func Convert_certmanager_NameConstraints_To_v1_NameConstraints(in *certmanager.N
 
 func autoConvert_v1_OtherNameSAN_To_certmanager_OtherNameSAN(in *v1.OtherNameSAN, out *certmanager.OtherNameSAN, s conversion.Scope) error {
 	out.OID = in.OID
-	out.StringValue = in.StringValue
+	out.Utf8Value = in.Utf8Value
 	return nil
 }
 
@@ -1350,7 +1350,7 @@ func Convert_v1_OtherNameSAN_To_certmanager_OtherNameSAN(in *v1.OtherNameSAN, ou
 
 func autoConvert_certmanager_OtherNameSAN_To_v1_OtherNameSAN(in *certmanager.OtherNameSAN, out *v1.OtherNameSAN, s conversion.Scope) error {
 	out.OID = in.OID
-	out.StringValue = in.StringValue
+	out.Utf8Value = in.Utf8Value
 	return nil
 }
 

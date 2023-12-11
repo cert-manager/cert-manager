@@ -22,7 +22,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
-	"fmt"
 	"time"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -46,7 +45,6 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 
 	var (
 		oidExtensionSubjectAltName = asn1.ObjectIdentifier{2, 5, 29, 17}
-		otherNameParam             = fmt.Sprintf("tag:0")
 		emailAddresses             = []string{"email@domain.com"}
 	)
 	// StringValueLikeType type for asn1 encoding. This will hold
@@ -101,12 +99,12 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	It("Should create a certificate with the supplied otherName SAN values and emailAddresses included", func() {
 		crt, err := createCertificate(f, []cmapi.OtherNameSAN{
 			{
-				OID:         "1.3.6.1.4.1.311.20.2.3",
-				StringValue: "userprincipal@domain.com",
+				OID:       "1.3.6.1.4.1.311.20.2.3",
+				Utf8Value: "userprincipal@domain.com",
 			},
 			{
-				OID:         "1.2.840.113556.1.4.221", // this is the legacy sAMAccountName but could be any oid
-				StringValue: "user@example.org",
+				OID:       "1.2.840.113556.1.4.221", // this is the legacy samAccountName but could be any oid
+				Utf8Value: "user@example.org",
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -126,12 +124,12 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 
 		By("Including the supplied otherName values in SAN Extension")
 
-		OtherNameSANRawVal := func(expectedOID asn1.ObjectIdentifier, value string) asn1.RawValue {
+		otherNameSANRawVal := func(expectedOID asn1.ObjectIdentifier, value string) asn1.RawValue {
 			otherNameDer, err := asn1.MarshalWithParams(OtherName{
 				OID: expectedOID, // UPN OID
 				Value: StringValueLikeType{
 					A: value,
-				}}, otherNameParam)
+				}}, "tag:0")
 
 			Expect(err).To(BeNil())
 			rawVal := asn1.RawValue{
@@ -140,10 +138,10 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 			return rawVal
 		}
 
-		asn1otherNameUpnSANRawVal := OtherNameSANRawVal(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}, "userprincipal@domain.com") // UPN OID
-		asn1otherNamesAMAAccountNameRawVal := OtherNameSANRawVal(asn1.ObjectIdentifier{1, 2, 840, 113556, 1, 4, 221}, "user@example.org")   // sAMAccountName OID
+		asn1otherNameUpnSANRawVal := otherNameSANRawVal(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}, "userprincipal@domain.com") // UPN OID
+		asn1otherNamesAMAAccountNameRawVal := otherNameSANRawVal(asn1.ObjectIdentifier{1, 2, 840, 113556, 1, 4, 221}, "user@example.org")   // sAMAccountName OID
 
-		MustMarshalSAN := func(generalNames []asn1.RawValue) pkix.Extension {
+		mustMarshalSAN := func(generalNames []asn1.RawValue) pkix.Extension {
 			val, err := asn1.Marshal(generalNames)
 			Expect(err).To(BeNil())
 			return pkix.Extension{
@@ -151,10 +149,10 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 				Value: val,
 			}
 		}
-		expectedSanExtension := MustMarshalSAN([]asn1.RawValue{
+		expectedSanExtension := mustMarshalSAN([]asn1.RawValue{
+			{Tag: nameTypeEmail, Class: 2, Bytes: []byte("email@domain.com")},
 			asn1otherNameUpnSANRawVal,
 			asn1otherNamesAMAAccountNameRawVal,
-			{Tag: nameTypeEmail, Class: 2, Bytes: []byte("email@domain.com")},
 		})
 		Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
 	})

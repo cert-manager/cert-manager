@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"unicode"
 
 	"golang.org/x/crypto/cryptobyte"
 	cryptobyte_asn1 "golang.org/x/crypto/cryptobyte/asn1"
@@ -153,17 +152,6 @@ func MarshalNameConstraints(nameConstraints *NameConstraints, critical bool) (pk
 		Critical: critical,
 		Value:    bytes,
 	}, nil
-}
-
-func isIA5String(s string) error {
-	for _, r := range s {
-		// Per RFC5280 "IA5String is limited to the set of ASCII characters"
-		if r > unicode.MaxASCII {
-			return fmt.Errorf("x509: %q cannot be encoded as an IA5String", s)
-		}
-	}
-
-	return nil
 }
 
 func parseCIDRs(cidrs []string) ([]*net.IPNet, error) {

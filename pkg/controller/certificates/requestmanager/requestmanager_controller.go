@@ -355,6 +355,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		pki.WithUseLiteralSubject(utilfeature.DefaultMutableFeatureGate.Enabled(feature.LiteralCertificateSubject)),
 		pki.WithEncodeBasicConstraintsInRequest(utilfeature.DefaultMutableFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints)),
 		pki.WithEncodeNameConstraintsInRequest(utilfeature.DefaultMutableFeatureGate.Enabled(feature.UseCertificateRequestNameConstraints)),
+		pki.WithEncodeOtherNameSANs(utilfeature.DefaultMutableFeatureGate.Enabled(feature.OtherNameSANs)),
 	)
 	if err != nil {
 		log.Error(err, "Failed to generate CSR - will not retry")

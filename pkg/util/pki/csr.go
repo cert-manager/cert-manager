@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -269,16 +270,40 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		return nil, err
 	}
 
-	uris, err := URLsFromStrings(crt.Spec.URIs)
-	if err != nil {
-		return nil, err
+	sans := GeneralNames{
+		RFC822Names:                crt.Spec.EmailAddresses,
+		DNSNames:                   crt.Spec.DNSNames,
+		UniformResourceIdentifiers: crt.Spec.URIs,
+		IPAddresses:                ipAddresses,
 	}
 
-	if len(commonName) == 0 &&
-		len(crt.Spec.EmailAddresses) == 0 &&
-		len(crt.Spec.DNSNames) == 0 &&
-		len(uris) == 0 &&
-		len(ipAddresses) == 0 && len(crt.Spec.OtherNameSANs) == 0 {
+	if opts.EncodeOtherNameSANs {
+		for _, otherName := range crt.Spec.OtherNameSANs {
+			oid, err := ParseObjectIdentifier(otherName.OID)
+			if err != nil {
+				return nil, err
+			}
+
+			value, err := MarshalUniversalValue(UniversalValue{
+				Utf8String: otherName.Utf8Value,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			sans.OtherNames = append(sans.OtherNames, OtherName{
+				TypeID: oid,
+				Value: asn1.RawValue{
+					Tag:        0,
+					Class:      asn1.ClassContextSpecific,
+					IsCompound: true,
+					Bytes:      value,
+				},
+			})
+		}
+	}
+
+	if len(commonName) == 0 && sans.Empty() {
 		return nil, fmt.Errorf("no common name, DNS name, URI SAN, Email SAN, IP or OtherName SAN specified on certificate")
 	}
 
@@ -293,6 +318,18 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	var extraExtensions []pkix.Extension
+
+	if !sans.Empty() {
+		// emptyASN1Subject is the ASN.1 DER encoding of an empty Subject, which is
+		// just an empty SEQUENCE.
+		var emptyASN1Subject = []byte{0x30, 0}
+
+		sanExtension, err := MarshalSANs(sans, bytes.Equal(asn1Subject, emptyASN1Subject))
+		if err != nil {
+			return nil, err
+		}
+		extraExtensions = append(extraExtensions, sanExtension)
+	}
 
 	if crt.Spec.EncodeUsagesInRequest == nil || *crt.Spec.EncodeUsagesInRequest {
 		ku, ekus, err := KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
@@ -314,14 +351,6 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 			}
 			extraExtensions = append(extraExtensions, extendedUsages)
 		}
-	}
-
-	if len(otherNameSANs) != 0 {
-		SANwithotherNameExtension, err := buildSANExtensionIncludingOtherNameSANsForCertificate(crt)
-		if err != nil {
-			return nil, err
-		}
-		extraExtensions = append(extraExtensions, SANwithotherNameExtension)
 	}
 
 	// NOTE(@inteon): opts.EncodeBasicConstraintsInRequest is a temporary solution and will
@@ -376,11 +405,6 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		PublicKeyAlgorithm: pubKeyAlgo,
 		RawSubject:         asn1Subject,
 		ExtraExtensions:    extraExtensions,
-
-		DNSNames:       crt.Spec.DNSNames,
-		EmailAddresses: crt.Spec.EmailAddresses,
-		IPAddresses:    ipAddresses,
-		URIs:           uris,
 	}
 
 	return cr, nil

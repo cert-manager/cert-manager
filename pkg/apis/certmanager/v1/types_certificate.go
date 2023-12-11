@@ -280,11 +280,15 @@ type CertificateSpec struct {
 	NameConstraints *NameConstraints `json:"nameConstraints,omitempty"`
 }
 
-// for example, Type can be "oid:1.3.6.1.4.1.311.20.2.3" for UPN
-// and StringValue to "user@example.org"
 type OtherNameSAN struct {
-	OID         string `json:"oid,omitempty"`
-	StringValue string `json:"stringValue,omitempty"`
+	// OID is the object identifier for the otherName SAN.
+	// The object identifier must be expressed as a dotted string, for
+	// example, "1.2.840.113549.1.9.1".
+	OID string `json:"oid,omitempty"`
+
+	// Utf8Value is the string value of the otherName SAN.
+	// The string value represents a UTF-8 encoded asn1 value.
+	Utf8Value string `json:"utf8Value,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
