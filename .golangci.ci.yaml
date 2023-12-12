@@ -20,4 +20,4 @@ issues:
     # Ignore some of the gosec warnings until we have time to address them.
     - linters:
         - gosec
-      text: "G(101|107|204|306|402|404|501|505|601)"
+      text: "G(101|107|204|306|402|404|501|505)"
