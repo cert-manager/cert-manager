@@ -89,3 +89,21 @@ $(BINDIR)/server/cainjector-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/se
 
 $(BINDIR)/server/cainjector-linux-arm: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/server
 	cd cmd/cainjector && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
+.PHONY: startupapicheck
+cainjector: $(BINDIR)/server/startupapicheck-linux-amd64 $(BINDIR)/server/startupapicheck-linux-arm64 $(BINDIR)/server/startupapicheck-linux-s390x $(BINDIR)/server/startupapicheck-linux-ppc64le $(BINDIR)/server/startupapicheck-linux-arm | $(NEEDS_GO) $(BINDIR)/server
+
+$(BINDIR)/server/startupapicheck-linux-amd64: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/server
+	cd cmd/startupapicheck && GOOS=linux GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
+$(BINDIR)/server/startupapicheck-linux-arm64: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/server
+	cd cmd/startupapicheck && GOOS=linux GOARCH=arm64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
+$(BINDIR)/server/startupapicheck-linux-s390x: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/server
+	cd cmd/startupapicheck && GOOS=linux GOARCH=s390x $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
+$(BINDIR)/server/startupapicheck-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/server
+	cd cmd/startupapicheck && GOOS=linux GOARCH=ppc64le $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
+$(BINDIR)/server/startupapicheck-linux-arm: $(SOURCES) | $(NEEDS_GO) $(BINDIR)/server
+	cd cmd/startupapicheck && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go

@@ -508,6 +508,7 @@ tidy:
 	cd cmd/cainjector && go mod tidy
 	cd cmd/controller && go mod tidy
 	cd cmd/ctl && go mod tidy
+	cd cmd/startupapicheck && go mod tidy
 	cd cmd/webhook && go mod tidy
 	cd test/integration && go mod tidy
 	cd test/e2e && go mod tidy
@@ -520,7 +521,7 @@ go-workspace: export GOWORK?=$(abspath go.work)
 go-workspace:
 	@rm -f $(GOWORK)
 	go work init
-	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/webhook ./test/integration ./test/e2e
+	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/startupapicheck ./cmd/webhook ./test/integration ./test/e2e
 
 .PHONY: learn-sha-tools
 ## Re-download all tools and update the tools.mk file with the
