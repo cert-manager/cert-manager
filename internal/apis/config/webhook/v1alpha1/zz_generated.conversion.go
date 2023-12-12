@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	time "time"
 	unsafe "unsafe"
 
 	webhook "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
@@ -85,6 +86,7 @@ func autoConvert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig(i
 	out.SecretNamespace = in.SecretNamespace
 	out.SecretName = in.SecretName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	out.LeafDuration = time.Duration(in.LeafDuration)
 	return nil
 }
 
@@ -97,6 +99,7 @@ func autoConvert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(i
 	out.SecretNamespace = in.SecretNamespace
 	out.SecretName = in.SecretName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	out.LeafDuration = time.Duration(in.LeafDuration)
 	return nil
 }
 

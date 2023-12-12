@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logsapi "k8s.io/component-base/logs/api/v1"
 )
@@ -103,6 +105,9 @@ type DynamicServingConfig struct {
 
 	// DNSNames that must be present on serving certificates signed by the CA.
 	DNSNames []string `json:"dnsNames,omitempty"`
+
+	// LeafDuration is a customizable duration on serving certificates signed by the CA.
+	LeafDuration time.Duration
 }
 
 // FilesystemServingConfig enables using a certificate and private key found on the local filesystem.
