@@ -312,7 +312,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := encodePKCS12Keystore(test.password, test.rawKey, test.certPEM, test.caPEM)
+			out, err := encodePKCS12Keystore("", test.password, test.rawKey, test.certPEM, test.caPEM)
 			test.verify(t, out, err)
 		})
 	}
@@ -321,7 +321,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		var emptyCAChain []byte = nil
 
 		chain := mustLeafWithChain(t)
-		out, err := encodePKCS12Keystore(password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
+		out, err := encodePKCS12Keystore("", password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
 		require.NoError(t, err)
 
 		pkOut, certOut, caChain, err := pkcs12.DecodeChain(out, password)
@@ -340,7 +340,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		require.NoError(t, err)
 
 		chain := mustLeafWithChain(t)
-		out, err := encodePKCS12Keystore(password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
+		out, err := encodePKCS12Keystore("", password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
 		require.NoError(t, err)
 
 		pkOut, certOut, caChainOut, err := pkcs12.DecodeChain(out, password)
@@ -387,7 +387,7 @@ func TestEncodePKCS12Truststore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := encodePKCS12Truststore(test.password, test.caPEM)
+			out, err := encodePKCS12Truststore("", test.password, test.caPEM)
 			test.verify(t, test.caPEM, out, err)
 		})
 	}

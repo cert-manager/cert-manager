@@ -258,7 +258,8 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 			return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
 		}
 		pw := pwSecret.Data[ref.Key]
-		keystoreData, err := encodePKCS12Keystore(string(pw), data.PrivateKey, data.Certificate, data.CA)
+		algorithm := crt.Spec.Keystores.PKCS12.Algorithm
+		keystoreData, err := encodePKCS12Keystore(algorithm, string(pw), data.PrivateKey, data.Certificate, data.CA)
 		if err != nil {
 			return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
 		}
@@ -266,7 +267,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 		secret.Data[cmapi.PKCS12SecretKey] = keystoreData
 
 		if len(data.CA) > 0 {
-			truststoreData, err := encodePKCS12Truststore(string(pw), data.CA)
+			truststoreData, err := encodePKCS12Truststore(algorithm, string(pw), data.CA)
 			if err != nil {
 				return fmt.Errorf("error encoding PKCS12 trust store bundle: %w", err)
 			}
