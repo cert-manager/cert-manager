@@ -148,7 +148,7 @@ func MarshalNameConstraints(nameConstraints *NameConstraints) (pkix.Extension, e
 
 func doMarshalNameConstraints(nameConstraints *NameConstraints) bool {
 	return nameConstraints != nil &&
-			(len(nameConstraints.PermittedDNSDomains) > 0 ||
+		(len(nameConstraints.PermittedDNSDomains) > 0 ||
 			len(nameConstraints.PermittedIPRanges) > 0 ||
 			len(nameConstraints.PermittedEmailAddresses) > 0 ||
 			len(nameConstraints.PermittedURIDomains) > 0 ||

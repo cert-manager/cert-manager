@@ -44,20 +44,20 @@ import (
 func TestMarshalNameConstraints(t *testing.T) {
 	// Test data
 	testCases := []struct {
-		name         string
-		input        *NameConstraints
-		expectedErr  error
+		name        string
+		input       *NameConstraints
+		expectedErr error
 		expectedPEM string
 	}{
 		{
 			name: "Permitted constraints",
 			input: &NameConstraints{
 				PermittedDNSDomainsCritical: true,
-				PermittedDNSDomains:     []string{"example.com"},
-				PermittedIPRanges:       []*net.IPNet{{IP: net.IPv4(192, 168, 1, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
-				PermittedEmailAddresses: []string{"user@example.com"},
-				PermittedURIDomains:     []string{"https://example.com"},
-				},
+				PermittedDNSDomains:         []string{"example.com"},
+				PermittedIPRanges:           []*net.IPNet{{IP: net.IPv4(192, 168, 1, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
+				PermittedEmailAddresses:     []string{"user@example.com"},
+				PermittedURIDomains:         []string{"https://example.com"},
+			},
 			expectedErr: nil,
 			// nameConstraints = critical,permitted;DNS:example.com,permitted;IP:192.168.1.0/255.255.255.0,permitted;email:user@example.com,permitted;URI:https://example.com
 			expectedPEM: `-----BEGIN CERTIFICATE REQUEST-----
@@ -82,14 +82,14 @@ Nu6OGP4KFgW0HWyeGeNBzioGUeyIHFKILLvj2n94WJMqXNyT5eE=
 			name: "Mixed constraints",
 			input: &NameConstraints{
 				PermittedDNSDomainsCritical: true,
-				PermittedDNSDomains:     []string{"example.com"},
-				PermittedIPRanges:        []*net.IPNet{{IP: net.IPv4(192, 168, 1, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
-				PermittedEmailAddresses: []string{"user@example.com"},
-				PermittedURIDomains:     []string{"https://example.com"},
-				ExcludedDNSDomains:     []string{"excluded.com"},
-				ExcludedIPRanges:        []*net.IPNet{{IP: net.IPv4(192, 168, 0, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
-				ExcludedEmailAddresses: []string{"user@excluded.com"},
-				ExcludedURIDomains:     []string{"https://excluded.com"},
+				PermittedDNSDomains:         []string{"example.com"},
+				PermittedIPRanges:           []*net.IPNet{{IP: net.IPv4(192, 168, 1, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
+				PermittedEmailAddresses:     []string{"user@example.com"},
+				PermittedURIDomains:         []string{"https://example.com"},
+				ExcludedDNSDomains:          []string{"excluded.com"},
+				ExcludedIPRanges:            []*net.IPNet{{IP: net.IPv4(192, 168, 0, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
+				ExcludedEmailAddresses:      []string{"user@excluded.com"},
+				ExcludedURIDomains:          []string{"https://excluded.com"},
 			},
 			expectedErr: nil,
 			// nameConstraints = critical,permitted;DNS:example.com,permitted;IP:192.168.1.0/255.255.255.0,permitted;email:user@example.com,permitted;URI:https://example.com,excluded;DNS:excluded.com,excluded;IP:192.168.0.0/255.255.255.0,excluded;email:user@excluded.com,excluded;URI:https://excluded.com
@@ -114,19 +114,19 @@ AHpUq+yDI0oaIz6BIfn2Vs7jUSXCZIoQBwajALg9kGqh3O6+ds617+AzxGXk0LBQ
 -----END CERTIFICATE REQUEST-----`,
 		},
 		{
-			name:         "Empty constraints",
-			input:        &NameConstraints{},
-			expectedErr:  nil,
+			name:        "Empty constraints",
+			input:       &NameConstraints{},
+			expectedErr: nil,
 			expectedPEM: "",
 		},
 		{
 			name: "Excluded constraints",
 			input: &NameConstraints{
 				PermittedDNSDomainsCritical: true,
-				ExcludedDNSDomains:     []string{"excluded.com"},
-				ExcludedIPRanges:       []*net.IPNet{{IP: net.IPv4(192, 168, 0, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
-				ExcludedEmailAddresses: []string{"user@excluded.com"},
-				ExcludedURIDomains:     []string{"https://excluded.com"},
+				ExcludedDNSDomains:          []string{"excluded.com"},
+				ExcludedIPRanges:            []*net.IPNet{{IP: net.IPv4(192, 168, 0, 0), Mask: net.IPv4Mask(255, 255, 255, 0)}},
+				ExcludedEmailAddresses:      []string{"user@excluded.com"},
+				ExcludedURIDomains:          []string{"https://excluded.com"},
 			},
 			expectedErr: nil,
 			// nameConstraints = critical,excluded;DNS:excluded.com,excluded;IP:192.168.0.0/255.255.255.0,excluded;email:user@excluded.com,excluded;URI:https://excluded.com
@@ -175,7 +175,7 @@ func getExtensionFromPem(pemData string) (pkix.Extension, error) {
 	pemData = strings.TrimSpace(pemData)
 	fmt.Println(pemData)
 	csrPEM := []byte(pemData)
-	
+
 	block, _ := pem.Decode(csrPEM)
 	if block == nil || block.Type != "CERTIFICATE REQUEST" {
 		return pkix.Extension{}, fmt.Errorf("Failed to decode PEM block or the type is not 'CERTIFICATE REQUEST'")
