@@ -332,7 +332,26 @@ type PKCS12Keystore struct {
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the PKCS12 keystore.
 	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+
+	// Algorithm is the encryption and MAC algorithms used to create the PKCS12 keystore.
+	//
+	// If provided, allowed values are either `RC2-40-CBC:HMAC-SHA-1` or `AES-256-CBC:HMAC-SHA-2`.
+	// Default value is `RC2-40-CBC:HMAC-SHA-1` for backward compatibility.
+	// Note: By default, OpenSSL 3 can't decode PKCS#12 files created using `RC2-40-CBC:HMAC-SHA-1`.
+	// +optional
+	Algorithm PKCS12Algorithm `json:"algorithm,omitempty"`
 }
+
+// +kubebuilder:validation:Enum="RC2-40-CBC:HMAC-SHA-1";"AES-256-CBC:HMAC-SHA-2"
+type PKCS12Algorithm string
+
+const (
+	// PBE with RC2 certificate algorithm, PBE with 3DES key algorithm and HMAC-SHA-1 MAC algorithm.
+	RC2PKCS12Algorithm PKCS12Algorithm = "RC2-40-CBC:HMAC-SHA-1"
+
+	// PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC certificate and key algorithm and HMAC-SHA-2 MAC algorithm.
+	AESPKCS12Algorithm PKCS12Algorithm = "AES-256-CBC:HMAC-SHA-2"
+)
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
