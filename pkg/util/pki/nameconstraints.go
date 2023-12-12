@@ -34,128 +34,125 @@ var (
 
 // NameConstraints represents the NameConstraints extension.
 type NameConstraints struct {
-	PermittedDNSDomainsCritical bool
-	PermittedDNSDomains         []string
-	ExcludedDNSDomains          []string
-	PermittedIPRanges           []*net.IPNet
-	ExcludedIPRanges            []*net.IPNet
-	PermittedEmailAddresses     []string
-	ExcludedEmailAddresses      []string
-	PermittedURIDomains         []string
-	ExcludedURIDomains          []string
+	PermittedDNSDomains     []string
+	ExcludedDNSDomains      []string
+	PermittedIPRanges       []*net.IPNet
+	ExcludedIPRanges        []*net.IPNet
+	PermittedEmailAddresses []string
+	ExcludedEmailAddresses  []string
+	PermittedURIDomains     []string
+	ExcludedURIDomains      []string
+}
+
+func (nc NameConstraints) IsEmpty() bool {
+	return len(nc.PermittedDNSDomains) == 0 &&
+		len(nc.PermittedIPRanges) == 0 &&
+		len(nc.PermittedEmailAddresses) == 0 &&
+		len(nc.PermittedURIDomains) == 0 &&
+		len(nc.ExcludedDNSDomains) == 0 &&
+		len(nc.ExcludedIPRanges) == 0 &&
+		len(nc.ExcludedEmailAddresses) == 0 &&
+		len(nc.ExcludedURIDomains) == 0
 }
 
 // Adapted from x509.go
-func MarshalNameConstraints(nameConstraints *NameConstraints) (pkix.Extension, error) {
-	ext := pkix.Extension{}
-	if doMarshalNameConstraints(nameConstraints) {
-		ext.Id = OIDExtensionNameConstraints
-		ext.Critical = nameConstraints.PermittedDNSDomainsCritical
-
-		ipAndMask := func(ipNet *net.IPNet) []byte {
-			maskedIP := ipNet.IP.Mask(ipNet.Mask)
-			ipAndMask := make([]byte, 0, len(maskedIP)+len(ipNet.Mask))
-			ipAndMask = append(ipAndMask, maskedIP...)
-			ipAndMask = append(ipAndMask, ipNet.Mask...)
-			return ipAndMask
-		}
-
-		serialiseConstraints := func(dns []string, ips []*net.IPNet, emails []string, uriDomains []string) (der []byte, err error) {
-			var b cryptobyte.Builder
-
-			for _, name := range dns {
-				if err = isIA5String(name); err != nil {
-					return nil, err
-				}
-
-				b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
-					b.AddASN1(cryptobyte_asn1.Tag(2).ContextSpecific(), func(b *cryptobyte.Builder) {
-						b.AddBytes([]byte(name))
-					})
-				})
-			}
-
-			for _, ipNet := range ips {
-				b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
-					b.AddASN1(cryptobyte_asn1.Tag(7).ContextSpecific(), func(b *cryptobyte.Builder) {
-						b.AddBytes(ipAndMask(ipNet))
-					})
-				})
-			}
-
-			for _, email := range emails {
-				if err = isIA5String(email); err != nil {
-					return nil, err
-				}
-
-				b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
-					b.AddASN1(cryptobyte_asn1.Tag(1).ContextSpecific(), func(b *cryptobyte.Builder) {
-						b.AddBytes([]byte(email))
-					})
-				})
-			}
-
-			for _, uriDomain := range uriDomains {
-				if err = isIA5String(uriDomain); err != nil {
-					return nil, err
-				}
-
-				b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
-					b.AddASN1(cryptobyte_asn1.Tag(6).ContextSpecific(), func(b *cryptobyte.Builder) {
-						b.AddBytes([]byte(uriDomain))
-					})
-				})
-			}
-
-			return b.Bytes()
-		}
-
-		var permitted []byte
-		var err error
-		permitted, err = serialiseConstraints(nameConstraints.PermittedDNSDomains, nameConstraints.PermittedIPRanges, nameConstraints.PermittedEmailAddresses, nameConstraints.PermittedURIDomains)
-		if err != nil {
-			return pkix.Extension{}, err
-		}
-
-		var excluded []byte
-		excluded, err = serialiseConstraints(nameConstraints.ExcludedDNSDomains, nameConstraints.ExcludedIPRanges, nameConstraints.ExcludedEmailAddresses, nameConstraints.ExcludedURIDomains)
-		if err != nil {
-			return pkix.Extension{}, err
-		}
-
-		var b cryptobyte.Builder
-		b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
-			if len(permitted) > 0 {
-				b.AddASN1(cryptobyte_asn1.Tag(0).ContextSpecific().Constructed(), func(b *cryptobyte.Builder) {
-					b.AddBytes(permitted)
-				})
-			}
-
-			if len(excluded) > 0 {
-				b.AddASN1(cryptobyte_asn1.Tag(1).ContextSpecific().Constructed(), func(b *cryptobyte.Builder) {
-					b.AddBytes(excluded)
-				})
-			}
-		})
-
-		ext.Value, err = b.Bytes()
-		if err != nil {
-			return pkix.Extension{}, err
-		}
+func MarshalNameConstraints(nameConstraints *NameConstraints, critical bool) (pkix.Extension, error) {
+	ipAndMask := func(ipNet *net.IPNet) []byte {
+		maskedIP := ipNet.IP.Mask(ipNet.Mask)
+		ipAndMask := make([]byte, 0, len(maskedIP)+len(ipNet.Mask))
+		ipAndMask = append(ipAndMask, maskedIP...)
+		ipAndMask = append(ipAndMask, ipNet.Mask...)
+		return ipAndMask
 	}
-	return ext, nil
-}
 
-func doMarshalNameConstraints(nameConstraints *NameConstraints) bool {
-	return nameConstraints != nil &&
-		(len(nameConstraints.PermittedDNSDomains) > 0 ||
-			len(nameConstraints.PermittedIPRanges) > 0 ||
-			len(nameConstraints.PermittedEmailAddresses) > 0 ||
-			len(nameConstraints.PermittedURIDomains) > 0 ||
-			len(nameConstraints.ExcludedDNSDomains) > 0 ||
-			len(nameConstraints.ExcludedIPRanges) > 0 ||
-			len(nameConstraints.ExcludedEmailAddresses) > 0 ||
-			len(nameConstraints.ExcludedURIDomains) > 0)
+	serialiseConstraints := func(dns []string, ips []*net.IPNet, emails []string, uriDomains []string) (der []byte, err error) {
+		var b cryptobyte.Builder
+
+		for _, name := range dns {
+			if err = isIA5String(name); err != nil {
+				return nil, err
+			}
+
+			b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
+				b.AddASN1(cryptobyte_asn1.Tag(2).ContextSpecific(), func(b *cryptobyte.Builder) {
+					b.AddBytes([]byte(name))
+				})
+			})
+		}
+
+		for _, ipNet := range ips {
+			b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
+				b.AddASN1(cryptobyte_asn1.Tag(7).ContextSpecific(), func(b *cryptobyte.Builder) {
+					b.AddBytes(ipAndMask(ipNet))
+				})
+			})
+		}
+
+		for _, email := range emails {
+			if err = isIA5String(email); err != nil {
+				return nil, err
+			}
+
+			b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
+				b.AddASN1(cryptobyte_asn1.Tag(1).ContextSpecific(), func(b *cryptobyte.Builder) {
+					b.AddBytes([]byte(email))
+				})
+			})
+		}
+
+		for _, uriDomain := range uriDomains {
+			if err = isIA5String(uriDomain); err != nil {
+				return nil, err
+			}
+
+			b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
+				b.AddASN1(cryptobyte_asn1.Tag(6).ContextSpecific(), func(b *cryptobyte.Builder) {
+					b.AddBytes([]byte(uriDomain))
+				})
+			})
+		}
+
+		return b.Bytes()
+	}
+
+	var permitted []byte
+	var err error
+	permitted, err = serialiseConstraints(nameConstraints.PermittedDNSDomains, nameConstraints.PermittedIPRanges, nameConstraints.PermittedEmailAddresses, nameConstraints.PermittedURIDomains)
+	if err != nil {
+		return pkix.Extension{}, err
+	}
+
+	var excluded []byte
+	excluded, err = serialiseConstraints(nameConstraints.ExcludedDNSDomains, nameConstraints.ExcludedIPRanges, nameConstraints.ExcludedEmailAddresses, nameConstraints.ExcludedURIDomains)
+	if err != nil {
+		return pkix.Extension{}, err
+	}
+
+	var b cryptobyte.Builder
+	b.AddASN1(cryptobyte_asn1.SEQUENCE, func(b *cryptobyte.Builder) {
+		if len(permitted) > 0 {
+			b.AddASN1(cryptobyte_asn1.Tag(0).ContextSpecific().Constructed(), func(b *cryptobyte.Builder) {
+				b.AddBytes(permitted)
+			})
+		}
+
+		if len(excluded) > 0 {
+			b.AddASN1(cryptobyte_asn1.Tag(1).ContextSpecific().Constructed(), func(b *cryptobyte.Builder) {
+				b.AddBytes(excluded)
+			})
+		}
+	})
+
+	bytes, err := b.Bytes()
+	if err != nil {
+		return pkix.Extension{}, err
+	}
+
+	return pkix.Extension{
+		Id:       OIDExtensionNameConstraints,
+		Critical: critical,
+		Value:    bytes,
+	}, nil
 }
 
 func isIA5String(s string) error {
@@ -297,7 +294,6 @@ func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
 	if out.ExcludedDNSDomains, out.ExcludedIPRanges, out.ExcludedEmailAddresses, out.ExcludedURIDomains, err = getValues(excluded); err != nil {
 		return out, err
 	}
-	out.PermittedDNSDomainsCritical = e.Critical
 
 	return out, nil
 }

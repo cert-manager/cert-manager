@@ -320,7 +320,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 
 	if opts.EncodeNameConstraintsInRequest && crt.Spec.NameConstraints != nil {
 		nameConstraints := &NameConstraints{}
-		nameConstraints.PermittedDNSDomainsCritical = crt.Spec.NameConstraints.Critical
+
 		if crt.Spec.NameConstraints.Permitted != nil {
 			nameConstraints.PermittedDNSDomains = crt.Spec.NameConstraints.Permitted.DNSDomains
 			nameConstraints.PermittedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Permitted.IPRanges)
@@ -340,11 +340,15 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 			nameConstraints.ExcludedEmailAddresses = crt.Spec.NameConstraints.Excluded.EmailAddresses
 			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Excluded.URIDomains
 		}
-		extension, err := MarshalNameConstraints(nameConstraints)
-		if err != nil {
-			return nil, err
+
+		if !nameConstraints.IsEmpty() {
+			extension, err := MarshalNameConstraints(nameConstraints, crt.Spec.NameConstraints.Critical)
+			if err != nil {
+				return nil, err
+			}
+
+			extraExtensions = append(extraExtensions, extension)
 		}
-		extraExtensions = append(extraExtensions, extension)
 	}
 
 	cr := &x509.CertificateRequest{
