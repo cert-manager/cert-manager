@@ -182,8 +182,7 @@ func parseCIDRs(cidrs []string) ([]*net.IPNet, error) {
 }
 
 // Adapted from crypto/x509/parser.go
-func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
-	out := &NameConstraints{}
+func UnmarshalNameConstraints(value []byte) (*NameConstraints, error) {
 	// RFC 5280, 4.2.1.10
 
 	// NameConstraints ::= SEQUENCE {
@@ -199,7 +198,7 @@ func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
 	//
 	// BaseDistance ::= INTEGER (0..MAX)
 
-	outer := cryptobyte.String(e.Value)
+	outer := cryptobyte.String(value)
 	var toplevel, permitted, excluded cryptobyte.String
 	var havePermitted, haveExcluded bool
 	if !outer.ReadASN1(&toplevel, cryptobyte_asn1.SEQUENCE) ||
@@ -207,7 +206,7 @@ func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
 		!toplevel.ReadOptionalASN1(&permitted, &havePermitted, cryptobyte_asn1.Tag(0).ContextSpecific().Constructed()) ||
 		!toplevel.ReadOptionalASN1(&excluded, &haveExcluded, cryptobyte_asn1.Tag(1).ContextSpecific().Constructed()) ||
 		!toplevel.Empty() {
-		return out, errors.New("x509: invalid NameConstraints extension")
+		return nil, errors.New("x509: invalid NameConstraints extension")
 	}
 
 	if !havePermitted && !haveExcluded || len(permitted) == 0 && len(excluded) == 0 {
@@ -215,7 +214,7 @@ func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
 		//   “either the permittedSubtrees field
 		//   or the excludedSubtrees MUST be
 		//   present”
-		return out, errors.New("x509: empty name constraints extension")
+		return nil, errors.New("x509: empty name constraints extension")
 	}
 
 	getValues := func(subtrees cryptobyte.String) (dnsNames []string, ips []*net.IPNet, emails, uriDomains []string, err error) {
@@ -248,13 +247,13 @@ func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
 				var ip, mask []byte
 
 				switch l {
-				case 8:
-					ip = value[:4]
-					mask = value[4:]
+				case 2 * net.IPv4len:
+					ip = value[:net.IPv4len]
+					mask = value[net.IPv4len:]
 
-				case 32:
-					ip = value[:16]
-					mask = value[16:]
+				case 2 * net.IPv6len:
+					ip = value[:net.IPv6len]
+					mask = value[net.IPv6len:]
 
 				default:
 					return nil, nil, nil, nil, fmt.Errorf("x509: IP constraint contained value of length %d", l)
@@ -287,12 +286,14 @@ func UnmarshalNameConstraints(e pkix.Extension) (*NameConstraints, error) {
 		return dnsNames, ips, emails, uriDomains, nil
 	}
 
+	out := &NameConstraints{}
+
 	var err error
 	if out.PermittedDNSDomains, out.PermittedIPRanges, out.PermittedEmailAddresses, out.PermittedURIDomains, err = getValues(permitted); err != nil {
-		return out, err
+		return nil, err
 	}
 	if out.ExcludedDNSDomains, out.ExcludedIPRanges, out.ExcludedEmailAddresses, out.ExcludedURIDomains, err = getValues(excluded); err != nil {
-		return out, err
+		return nil, err
 	}
 
 	return out, nil

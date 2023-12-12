@@ -17,6 +17,7 @@ limitations under the License.
 package pki
 
 import (
+	"bytes"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -41,7 +42,7 @@ import (
 
 // [req_ext]
 // nameConstraints = critical,permitted;DNS:example.com,permitted;IP:192.168.1.0/255.255.255.0,permitted;email:user@example.com,permitted;URI:https://example.com,excluded;DNS:excluded.com,excluded;IP:192.168.0.0/255.255.255.0,excluded;email:user@excluded.com,excluded;URI:https://excluded.com
-func TestMarshalNameConstraints(t *testing.T) {
+func TestMarshalUnmarshalNameConstraints(t *testing.T) {
 	// Test data
 	testCases := []struct {
 		name        string
@@ -141,8 +142,22 @@ mYfy24EOPhpvyIyYS+lbkc9wdYT4BSIjQCFNAjcBD+/04SkHgtbFLy0i8xsKcfOy
 		},
 	}
 
+	compareIPArrays := func(a, b []*net.IPNet) bool {
+		if len(a) != len(b) {
+			return false
+		}
+
+		for i, ipNet := range a {
+			if !ipNet.IP.Equal(b[i].IP) || !bytes.Equal(ipNet.Mask, b[i].Mask) {
+				return false
+			}
+		}
+
+		return true
+	}
+
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name+"_marshal", func(t *testing.T) {
 			expectedResult, err := getExtensionFromPem(tc.expectedPEM)
 			assert.NoError(t, err)
 			result, err := MarshalNameConstraints(tc.input, expectedResult.Critical)
@@ -154,6 +169,26 @@ mYfy24EOPhpvyIyYS+lbkc9wdYT4BSIjQCFNAjcBD+/04SkHgtbFLy0i8xsKcfOy
 				assert.Equal(t, expectedResult.Id, result.Id)
 				assert.Equal(t, expectedResult.Critical, result.Critical)
 				assert.Equal(t, expectedResult.Value, result.Value)
+			}
+		})
+
+		t.Run(tc.name+"_unmarshal", func(t *testing.T) {
+			expectedResult, err := getExtensionFromPem(tc.expectedPEM)
+			assert.NoError(t, err)
+			constraints, err := UnmarshalNameConstraints(expectedResult.Value)
+			if tc.expectedErr != nil {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tc.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, constraints.ExcludedDNSDomains, tc.input.ExcludedDNSDomains)
+				assert.Equal(t, constraints.ExcludedEmailAddresses, tc.input.ExcludedEmailAddresses)
+				assert.True(t, compareIPArrays(constraints.ExcludedIPRanges, tc.input.ExcludedIPRanges))
+				assert.Equal(t, constraints.ExcludedURIDomains, tc.input.ExcludedURIDomains)
+				assert.Equal(t, constraints.PermittedDNSDomains, tc.input.PermittedDNSDomains)
+				assert.Equal(t, constraints.PermittedEmailAddresses, tc.input.PermittedEmailAddresses)
+				assert.True(t, compareIPArrays(constraints.PermittedIPRanges, tc.input.PermittedIPRanges))
+				assert.Equal(t, constraints.PermittedURIDomains, tc.input.PermittedURIDomains)
 			}
 		})
 	}

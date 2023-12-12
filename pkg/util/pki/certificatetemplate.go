@@ -194,7 +194,7 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 		}
 
 		if val.Id.Equal(OIDExtensionNameConstraints) {
-			nameConstraints, err := UnmarshalNameConstraints(val)
+			nameConstraints, err := UnmarshalNameConstraints(val.Value)
 			if err != nil {
 				return err
 			}
