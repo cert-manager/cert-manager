@@ -346,28 +346,6 @@ func TestGenerateCSR(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, permittedIPNet, err := net.ParseCIDR("10.10.0.0/16")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, excludedIPNet, err := net.ParseCIDR("10.10.0.0/24")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	nameConstraints := NameConstraints{
-		PermittedDNSDomainsCritical: true,
-		PermittedDNSDomains:         []string{"example.org"},
-		PermittedIPRanges:           []net.IPNet{*permittedIPNet},
-		PermittedEmailAddresses:     []string{"email@email.org"},
-		ExcludedIPRanges:            []net.IPNet{*excludedIPNet},
-	}
-	asn1NameConstraints, err := asn1.Marshal(nameConstraints)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// 0xa0 = DigitalSignature, Encipherment and KeyCertSign usage
 	asn1KeyUsageWithCa, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa4}, BitLength: asn1BitLength([]byte{0xa4})})
 	if err != nil {
@@ -652,7 +630,7 @@ func TestGenerateCSR(t *testing.T) {
 					},
 					{
 						Id:       OIDExtensionNameConstraints,
-						Value:    asn1NameConstraints,
+						Value:    []byte{0x30, 0x3e, 0xa0, 0x2e, 0x30, 0xd, 0x82, 0xb, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x6f, 0x72, 0x67, 0x30, 0xa, 0x87, 0x8, 0xa, 0xa, 0x0, 0x0, 0xff, 0xff, 0x0, 0x0, 0x30, 0x11, 0x81, 0xf, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x40, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x2e, 0x6f, 0x72, 0x67, 0xa1, 0xc, 0x30, 0xa, 0x87, 0x8, 0xa, 0xa, 0x0, 0x0, 0xff, 0xff, 0xff, 0x0},
 						Critical: true,
 					},
 				},
@@ -690,7 +668,7 @@ func TestSignCSRTemplate(t *testing.T) {
 		require.NoError(t, err)
 		var permittedIPRanges []*net.IPNet
 		if nameConstraints != nil {
-			permittedIPRanges = convertIPNetSliceToIPNetPointerSlice(nameConstraints.PermittedIPRanges)
+			permittedIPRanges = nameConstraints.PermittedIPRanges
 		}
 		tmpl := &x509.Certificate{
 			Version:               3,
@@ -731,7 +709,7 @@ func TestSignCSRTemplate(t *testing.T) {
 
 	// vars for testing name constraints
 	_, permittedIPNet, _ := net.ParseCIDR("10.10.0.0/16")
-	_, ncRootCert, _, ncRootPK := mustCreatePair(nil, nil, "ncroot", true, &NameConstraints{PermittedIPRanges: []net.IPNet{*permittedIPNet}})
+	_, ncRootCert, _, ncRootPK := mustCreatePair(nil, nil, "ncroot", true, &NameConstraints{PermittedIPRanges: []*net.IPNet{permittedIPNet}})
 	_, _, ncLeafTmpl, _ := mustCreatePair(ncRootCert, ncRootPK, "ncleaf", false, nil)
 	ncLeafTmpl.IPAddresses = []net.IP{net.ParseIP("10.20.0.5")}
 

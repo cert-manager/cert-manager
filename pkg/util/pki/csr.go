@@ -319,11 +319,36 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	if opts.EncodeNameConstraintsInRequest && crt.Spec.NameConstraints != nil {
-		extension, err := MarshalNameConstraints(crt.Spec.NameConstraints)
-		if err != nil {
-			return nil, err
+		nameConstraints := &NameConstraints{}
+
+		if crt.Spec.NameConstraints.Permitted != nil {
+			nameConstraints.PermittedDNSDomains = crt.Spec.NameConstraints.Permitted.DNSDomains
+			nameConstraints.PermittedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Permitted.IPRanges)
+			if err != nil {
+				return nil, err
+			}
+			nameConstraints.PermittedEmailAddresses = crt.Spec.NameConstraints.Permitted.EmailAddresses
+			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
 		}
-		extraExtensions = append(extraExtensions, extension)
+
+		if crt.Spec.NameConstraints.Excluded != nil {
+			nameConstraints.ExcludedDNSDomains = crt.Spec.NameConstraints.Excluded.DNSDomains
+			nameConstraints.ExcludedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Excluded.IPRanges)
+			if err != nil {
+				return nil, err
+			}
+			nameConstraints.ExcludedEmailAddresses = crt.Spec.NameConstraints.Excluded.EmailAddresses
+			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Excluded.URIDomains
+		}
+
+		if !nameConstraints.IsEmpty() {
+			extension, err := MarshalNameConstraints(nameConstraints, crt.Spec.NameConstraints.Critical)
+			if err != nil {
+				return nil, err
+			}
+
+			extraExtensions = append(extraExtensions, extension)
+		}
 	}
 
 	cr := &x509.CertificateRequest{
