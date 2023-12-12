@@ -471,7 +471,7 @@ type PKCS12Keystore struct {
 	Algorithm PKCS12Algorithm `json:"algorithm,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=RC2-40-CBC:HMAC-SHA-1;AES-256-CBC:HMAC-SHA-2
+// +kubebuilder:validation:Enum="RC2-40-CBC:HMAC-SHA-1";"AES-256-CBC:HMAC-SHA-2"
 type PKCS12Algorithm string
 
 const (
