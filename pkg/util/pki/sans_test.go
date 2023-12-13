@@ -131,25 +131,33 @@ KkR5sV2iISL9klJn+YmoLOcr92mg/WfSE3bvaDYnjEGiunSNh+nZlBcRZVUA
 					{
 						TypeID: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3},
 						Value: generateOtherName(t, UniversalValue{
-							Utf8String: "3goats@acme.com",
+							Utf8String: "upn@domain.test",
 						}),
 					},
 				},
+				RFC822Names: []string{"email@domain.test"},
 			},
-			sanExtension: extractSANsFromCertificateRequest(t, `-----BEGIN CERTIFICATE REQUEST-----
-MIICnDCCAYQCAQAwGjEYMBYGA1UEAwwPM2dvYXRzLmFjbWUuY29tMIIBIjANBgkqhkiG9w0BAQEF
-AAOCAQ8AMIIBCgKCAQEAuLTGpuFQyUDPZAqCw7sqO352GYG8AfkjP5eUCXjdWgmZqvnfGODmJ1Lp
-3xndPwfEdr+g3Bgg/ZEFyi67bePEo9+mzGJRSxerC/sMs/9vduNBwQrYAK1AvdlfHk9Lh5K86y6M
-+JgvFiZOYzI3mEpX1bMiOajk+pQtB+x66xfPE1mWcjY5TLBHvzhfyKXMRVayxUPb80FuWGsVXd+S
-c8jvunG4qf51ZF4omV/koc4z2RaY+s4eaB4z3zaH23FK5kW+APt5krBxM082kfsSDo3zMJ1hY0Op
-IqRagNYHlFLDeG1N5MGJJ/CBfq4QDudtVVetr5sEq2REBqCkAwVtytv2qQIDAQABoD0wOwYJKoZI
-hvcNAQkOMS4wLDAqBgNVHREEIzAhoB8GCisGAQQBgjcUAgOgEQwPM2dvYXRzQGFjbWUuY29tMA0G
-CSqGSIb3DQEBCwUAA4IBAQB+YDsTOg2/+Jd3SMrbB3y5qzx17wYfIKec6j6wNYDv7grnFL3kNXDG
-SVU3UM1j07rfe/zb19ilSydcCqSM9cT466PxGvnVuBxXzlrZmVCl0agpidwKhF9JT6dH7F4+Lr+8
-t89uTGhAX2f0XnYgR0fhMMQRdZ32yfNCz5oWf7OIKJTFNgy1r69+RI13aY+W79f7PS9HU9FIfJyj
-uUDkDUb6Rp/7Jo8qknDkiiTI2cSHzQhOdUIQbasNy1ZeDmdpofjCW6+WQJvz8Xzj9NUSQEjoQbq0
-enV5YeJkS8ZDUyJ6baKdaNFVsoyG4aMqm5Ru0WLSAlb9/lMaZ7Ew8HVM2SDY
------END CERTIFICATE REQUEST-----`),
+			sanExtension: extractSANsFromCertificateRequest(t, `
+generated with: openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
+ -addext 'subjectAltName=otherName:msUPN;UTF8:upn@domain.test,email:email@domain.test
+-----BEGIN CERTIFICATE REQUEST-----
+MIICpjCCAY4CAQAwETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAv/K6rYe4eJWc0lpmfkyDPdYHiEr3FdQYrLVjhUKEnczh
+kh2sSTB/KxgrnM5q2lBdYtD9DC8kDtkRXPPaoUNBaG04ajOhbNkixrjniQj/gyE9
+Pi2+jTy+rhx+4LD9Rbkwr9LHi43ttU6BHH7D+q0IqLYwD+Q0Of/Dc3VOGRKWdNl2
+3aRAaVzovqtkTlhX2Awq32VjEoQcbuZNZYwdE42DkmoCWVkA7BWsDxZRSkW5tDXp
+eQM3oey09v4rC9mA9KyScxglnMT3L1qAxwv3TCpMVxRY+OEKuoygBvvYtRUxPUk9
+UxQwS+SlFHsx7FSFsFA3ESL3Dqz7e/2vSYwycIm1zwIDAQABoFAwTgYJKoZIhvcN
+AQkOMUEwPzA9BgNVHREENjA0oB8GCisGAQQBgjcUAgOgEQwPdXBuQGRvbWFpbi50
+ZXN0gRFlbWFpbEBkb21haW4udGVzdDANBgkqhkiG9w0BAQsFAAOCAQEARLAtGEsP
+biMKMpSVHfBXHYG4isu3UvKmI14shGxF2flwqgFRxSUzsJ+URnT69po2fcQWwGoo
+yrq3LHkJgSFQblzLLWHk7lBB8QpSMc4r5doGBMnSJfMuXCsXvspEWfgE3zvwizyl
+yU5Rw5tB6tWG6M7/XGL/n2cb9Po9GXlBI3J/ll8aVQtxRP2XvAT6M9PBOctgKfv3
+FErFrvGWmrnhuGhQYcpXUv+ROLEd7b6vfocUKf8rSFbY5kot4mckmgeSmzt1nhyF
+sYxhnyLtZp8LVvT28a66jPz1QBCMkPrqkeXf276ySvw4Dfb6HPkT5EFVwy4XPlU8
+Im17c/85tkZPEA==
+-----END CERTIFICATE REQUEST-----
+`),
 		},
 		{
 			hasSubject: true,
