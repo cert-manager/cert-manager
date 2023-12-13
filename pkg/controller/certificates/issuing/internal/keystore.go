@@ -61,9 +61,14 @@ func encodePKCS12Keystore(algorithm cmapi.PKCS12Algorithm, password string, rawK
 		cas = append(certs[1:], cas...)
 	}
 
-	if algorithm == cmapi.AESPKCS12Algorithm {
+	switch algorithm {
+	case cmapi.AESPKCS12Algorithm:
 		return pkcs12.Modern2023.Encode(key, certs[0], cas, password)
-	} else {
+	case cmapi.DES3PKCS12Algorithm:
+		return pkcs12.LegacyDES.Encode(key, certs[0], cas, password)
+	case cmapi.RC2PKCS12Algorithm:
+		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
+	default:
 		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
 	}
 }
@@ -76,9 +81,14 @@ func encodePKCS12Truststore(algorithm cmapi.PKCS12Algorithm, password string, ca
 
 	var cas = []*x509.Certificate{ca}
 
-	if algorithm == cmapi.AESPKCS12Algorithm {
+	switch algorithm {
+	case cmapi.AESPKCS12Algorithm:
 		return pkcs12.Modern2023.EncodeTrustStore(cas, password)
-	} else {
+	case cmapi.DES3PKCS12Algorithm:
+		return pkcs12.LegacyDES.EncodeTrustStore(cas, password)
+	case cmapi.RC2PKCS12Algorithm:
+		return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
+	default:
 		return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
 	}
 }

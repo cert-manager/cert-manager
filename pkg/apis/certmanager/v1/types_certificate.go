@@ -462,24 +462,29 @@ type PKCS12Keystore struct {
 	// containing the password used to encrypt the PKCS12 keystore.
 	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 
-	// Algorithm is the encryption and MAC algorithms used to create the PKCS12 keystore.
+	// Algorithm is the encryption algorithm used to create the PKCS12 keystore.
+	// Default value is `RC2` for backward compatibility.
 	//
-	// If provided, allowed values are either `RC2-40-CBC:HMAC-SHA-1` or `AES-256-CBC:HMAC-SHA-2`.
-	// Default value is `RC2-40-CBC:HMAC-SHA-1` for backward compatibility.
-	// Note: By default, OpenSSL 3 can't decode PKCS#12 files created using `RC2-40-CBC:HMAC-SHA-1`.
+	// If provided, allowed values are:
+	// `RC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
+	// `DES3`: Less secure, used for maximal compatibility.
+	// `SHA256`: Preferred for security, used when indicated by policy. (PEM format also stored in Secret.)
 	// +optional
 	Algorithm PKCS12Algorithm `json:"algorithm,omitempty"`
 }
 
-// +kubebuilder:validation:Enum="RC2-40-CBC:HMAC-SHA-1";"AES-256-CBC:HMAC-SHA-2"
+// +kubebuilder:validation:Enum=RC2;DES3;AES256
 type PKCS12Algorithm string
 
 const (
 	// PBE with RC2 certificate algorithm, PBE with 3DES key algorithm and HMAC-SHA-1 MAC algorithm.
-	RC2PKCS12Algorithm PKCS12Algorithm = "RC2-40-CBC:HMAC-SHA-1"
+	RC2PKCS12Algorithm PKCS12Algorithm = "RC2"
+
+	// PBE with 3DES certificate and key algorithm and HMAC-SHA-1 MAC algorithm.
+	DES3PKCS12Algorithm PKCS12Algorithm = "DES3"
 
 	// PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC certificate and key algorithm and HMAC-SHA-2 MAC algorithm.
-	AESPKCS12Algorithm PKCS12Algorithm = "AES-256-CBC:HMAC-SHA-2"
+	AESPKCS12Algorithm PKCS12Algorithm = "AES256"
 )
 
 // CertificateStatus defines the observed state of Certificate

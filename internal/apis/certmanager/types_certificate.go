@@ -423,10 +423,13 @@ type PKCS12Algorithm string
 
 const (
 	// PBE with RC2 certificate algorithm, PBE with 3DES key algorithm and HMAC-SHA-1 MAC algorithm.
-	RC2PKCS12Algorithm PKCS12Algorithm = "RC2-40-CBC:HMAC-SHA-1"
+	RC2PKCS12Algorithm PKCS12Algorithm = "RC2"
+
+	// PBE with 3DES certificate and key algorithm and HMAC-SHA-1 MAC algorithm.
+	DES3PKCS12Algorithm PKCS12Algorithm = "DES3"
 
 	// PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC certificate and key algorithm and HMAC-SHA-2 MAC algorithm.
-	AESPKCS12Algorithm PKCS12Algorithm = "AES-256-CBC:HMAC-SHA-2"
+	AESPKCS12Algorithm PKCS12Algorithm = "AES256"
 )
 
 // CertificateStatus defines the observed state of Certificate
