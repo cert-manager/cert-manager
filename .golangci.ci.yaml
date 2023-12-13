@@ -25,10 +25,6 @@ issues:
   max-same-issues: 0
   # Ignore some of the gosec warnings until we have time to address them.
   exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - gosec
     - linters:
         - gosec
       text: "G(101|107|204|306|402|404|501|505)"
