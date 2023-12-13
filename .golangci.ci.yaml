@@ -12,12 +12,23 @@ linters:
   enable:
     - gosec
 issues:
+  # When we enable a new linter or a new issue check, we want to show **all**
+  # instances of each issue in the GitHub UI or in the CLI report. This allows
+  # the all the issues to be addressed in a single commit or addressed in a
+  # series of followup commits grouped per-package or per-module.
+  # By default golangci-lint only shows 50 issues per linter and only shows the
+  # first three instances of any particular issue. Why? We do not know, but
+  # perhaps it's to avoid overwhelming the user when there are a large number of
+  # issues.
+  # The value 0 below means show all.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  # Ignore some of the gosec warnings until we have time to address them.
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
         - gosec
-    # Ignore some of the gosec warnings until we have time to address them.
     - linters:
         - gosec
       text: "G(101|107|204|306|402|404|501|505)"
