@@ -226,17 +226,17 @@ spec:
                           type: array
                           items:
                             type: string
-                otherNameSANs:
-                  description: Any String-like OID type using oid:x.x.x.x type and StringValue value can be used for `otherName`. `otherName` is an escape hatch for SAN that allows any type but we restrict to string like, cf RFC 5280 p 37 You should ensure that the OID is valid for the string type as we do not validate this.
+                otherNames:
+                  description: '`otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37 Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`. Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3 You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.'
                   type: array
                   items:
                     type: object
                     properties:
-                      oid:
-                        description: OID is the object identifier for the otherName SAN. The object identifier must be expressed as a dotted string, for example, "1.2.840.113549.1.9.1".
-                        type: string
-                      utf8Value:
+                      UTF8Value:
                         description: Utf8Value is the string value of the otherName SAN. The string value represents a UTF-8 encoded asn1 value.
+                        type: string
+                      oid:
+                        description: OID is the object identifier for the otherName SAN. The object identifier must be expressed as a dotted string, for example, "1.2.840.113556.1.4.221".
                         type: string
                 privateKey:
                   description: Private key options. These include the key algorithm and size, the used encoding and the rotation policy.

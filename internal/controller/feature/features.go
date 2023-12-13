@@ -130,10 +130,10 @@ const (
 	// Owner: @SpectralHiss
 	// Alpha: v1.14
 	//
-	// OtherNameSANs adds support for OtherName Subject Alternative Name values in
+	// OtherNames adds support for OtherName Subject Alternative Name values in
 	// Certificate resources.
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/6393
-	OtherNameSANs featuregate.Feature = "OtherNameSANs"
+	OtherNames featuregate.Feature = "OtherNames"
 )
 
 func init() {
@@ -156,5 +156,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestNameConstraints:             {Default: false, PreRelease: featuregate.Alpha},
-	OtherNameSANs:                                    {Default: false, PreRelease: featuregate.Alpha},
+	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 }

@@ -167,10 +167,12 @@ type CertificateSpec struct {
 	// Requested email subject alternative names.
 	EmailAddresses []string
 
-	// You should ensure that the OID is valid for the string type as we do not validate this.
-	// otherName is most commonly as a user identifier called the UPN (User Principal Name) in LDAP
-	// technically any oid can be used in `otherName` as it is a kind of escape hatch for SANs
-	OtherNameSANs []OtherNameSAN
+	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
+	// Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`.
+	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
+	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
+	// +optional
+	OtherNames []OtherName `json:"otherNames,omitempty"`
 
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
@@ -252,15 +254,15 @@ type CertificateSpec struct {
 	NameConstraints *NameConstraints
 }
 
-type OtherNameSAN struct {
+type OtherName struct {
 	// OID is the object identifier for the otherName SAN.
 	// The object identifier must be expressed as a dotted string, for
-	// example, "1.2.840.113549.1.9.1".
-	OID string
+	// example, "1.2.840.113556.1.4.221".
+	OID string `json:"oid,omitempty"`
 
 	// Utf8Value is the string value of the otherName SAN.
 	// The string value represents a UTF-8 encoded asn1 value.
-	Utf8Value string
+	UTF8Value string `json:"UTF8Value,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys

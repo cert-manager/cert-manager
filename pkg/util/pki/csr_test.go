@@ -409,7 +409,7 @@ func TestGenerateCSR(t *testing.T) {
 		literalCertificateSubjectFeatureEnabled bool
 		basicConstraintsFeatureEnabled          bool
 		nameConstraintsFeatureEnabled           bool
-		encodeOtherNameSANsFeatureEnabled       bool
+		encodeOtherNamesFeatureEnabled          bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
@@ -538,10 +538,10 @@ func TestGenerateCSR(t *testing.T) {
 		},
 		{
 			name: "Generate CSR from certificate with a single otherNameSAN set to an oid (UPN)", // only a shallow validation is expected
-			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{OtherNameSANs: []cmapi.OtherNameSAN{
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{OtherNames: []cmapi.OtherName{
 				{
 					OID:       "1.3.6.1.4.1.311.20.2.3",
-					Utf8Value: "user@example.org",
+					UTF8Value: "user@example.org",
 				},
 			}}},
 			want: &x509.CertificateRequest{
@@ -562,20 +562,20 @@ func TestGenerateCSR(t *testing.T) {
 				},
 				RawSubject: subjectGenerator(t, pkix.Name{}),
 			},
-			encodeOtherNameSANsFeatureEnabled: true,
+			encodeOtherNamesFeatureEnabled: true,
 		},
 		{
 			name: "Generate CSR from certificate with multiple valid otherName oids and emailSANs set",
 			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				EmailAddresses: []string{"user@example.org", "alt-email@example.org"},
-				OtherNameSANs: []cmapi.OtherNameSAN{
+				OtherNames: []cmapi.OtherName{
 					{
 						OID:       "1.3.6.1.4.1.311.20.2.3",
-						Utf8Value: "user@example.org",
+						UTF8Value: "user@example.org",
 					},
 					{
 						OID:       "1.2.840.113556.1.4.221",
-						Utf8Value: "user@example.org",
+						UTF8Value: "user@example.org",
 					},
 				}}},
 			want: &x509.CertificateRequest{
@@ -601,14 +601,14 @@ func TestGenerateCSR(t *testing.T) {
 				},
 				RawSubject: subjectGenerator(t, pkix.Name{}),
 			},
-			encodeOtherNameSANsFeatureEnabled: true,
+			encodeOtherNamesFeatureEnabled: true,
 		},
 		{
 			name: "Generate CSR from certificate with malformed otherName oid type",
-			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{OtherNameSANs: []cmapi.OtherNameSAN{
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{OtherNames: []cmapi.OtherName{
 				{
 					OID:       "NOTANOID@garbage",
-					Utf8Value: "user@example.org",
+					UTF8Value: "user@example.org",
 				},
 			}}},
 			wantErr: true,
@@ -815,7 +815,7 @@ func TestGenerateCSR(t *testing.T) {
 				tt.crt,
 				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
 				WithEncodeNameConstraintsInRequest(tt.nameConstraintsFeatureEnabled),
-				WithEncodeOtherNameSANs(tt.encodeOtherNameSANsFeatureEnabled),
+				WithEncodeOtherNames(tt.encodeOtherNamesFeatureEnabled),
 				WithUseLiteralSubject(tt.literalCertificateSubjectFeatureEnabled),
 			)
 			if (err != nil) != tt.wantErr {

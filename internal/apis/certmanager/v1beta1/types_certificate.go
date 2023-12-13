@@ -134,11 +134,12 @@ type CertificateSpec struct {
 	// +optional
 	EmailSANs []string `json:"emailSANs,omitempty"`
 
-	// Any String-like OID type using oid:x.x.x.x type and StringValue value can be used for `otherName`.
-	// `otherName` is an escape hatch for SAN that allows any type but we restrict to string like, cf RFC 5280 p 37
-	// You should ensure that the OID is valid for the string type as we do not validate this.
+	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
+	// Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`.
+	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
+	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
 	// +optional
-	OtherNameSANs []OtherNameSAN `json:"otherNameSANs,omitempty"`
+	OtherNames []OtherName `json:"otherNames,omitempty"`
 
 	// SecretName is the name of the secret resource that will be automatically
 	// created and managed by this Certificate resource.
@@ -215,15 +216,15 @@ type CertificateSpec struct {
 	NameConstraints *NameConstraints `json:"nameConstraints,omitempty"`
 }
 
-type OtherNameSAN struct {
+type OtherName struct {
 	// OID is the object identifier for the otherName SAN.
 	// The object identifier must be expressed as a dotted string, for
-	// example, "1.2.840.113549.1.9.1".
+	// example, "1.2.840.113556.1.4.221".
 	OID string `json:"oid,omitempty"`
 
 	// Utf8Value is the string value of the otherName SAN.
 	// The string value represents a UTF-8 encoded asn1 value.
-	Utf8Value string `json:"utf8Value,omitempty"`
+	UTF8Value string `json:"UTF8Value,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys

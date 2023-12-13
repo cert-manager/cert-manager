@@ -106,8 +106,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		len(crt.URIs) == 0 &&
 		len(crt.EmailAddresses) == 0 &&
 		len(crt.IPAddresses) == 0 &&
-		len(crt.OtherNameSANs) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNameSANs must be set"))
+		len(crt.OtherNames) == 0 {
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
@@ -123,17 +123,17 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
 	}
 
-	if len(crt.OtherNameSANs) > 0 {
-		if !utilfeature.DefaultFeatureGate.Enabled(feature.OtherNameSANs) {
-			el = append(el, field.Forbidden(fldPath.Child("OtherNameSANs"), "Feature gate OtherNameSANs must be enabled on both webhook and controller to use the alpha `otherNameSANs` field"))
+	if len(crt.OtherNames) > 0 {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.OtherNames) {
+			el = append(el, field.Forbidden(fldPath.Child("OtherNames"), "Feature gate OtherNames must be enabled on both webhook and controller to use the alpha `otherNames` field"))
 		}
 
-		for i, otherName := range crt.OtherNameSANs {
+		for i, otherName := range crt.OtherNames {
 			if otherName.OID == "" {
-				el = append(el, field.Required(fldPath.Child("otherNameSANs").Index(i).Child("oid"), "must be specified"))
+				el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("oid"), "must be specified"))
 			}
-			if otherName.Utf8Value == "" {
-				el = append(el, field.Required(fldPath.Child("otherNameSANs").Index(i).Child("utf8Value"), "must be specified"))
+			if otherName.UTF8Value == "" {
+				el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("utf8Value"), "must be specified"))
 			}
 		}
 	}

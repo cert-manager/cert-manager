@@ -188,7 +188,7 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 type generateCSROptions struct {
 	EncodeBasicConstraintsInRequest bool
 	EncodeNameConstraintsInRequest  bool
-	EncodeOtherNameSANs             bool
+	EncodeOtherNames                bool
 	UseLiteralSubject               bool
 }
 
@@ -209,9 +209,9 @@ func WithEncodeNameConstraintsInRequest(encode bool) GenerateCSROption {
 	}
 }
 
-func WithEncodeOtherNameSANs(encodeOtherNameSANs bool) GenerateCSROption {
+func WithEncodeOtherNames(encodeOtherNames bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
-		o.EncodeOtherNameSANs = encodeOtherNameSANs
+		o.EncodeOtherNames = encodeOtherNames
 	}
 }
 
@@ -229,7 +229,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	opts := &generateCSROptions{
 		EncodeBasicConstraintsInRequest: false,
 		EncodeNameConstraintsInRequest:  false,
-		EncodeOtherNameSANs:             false,
+		EncodeOtherNames:                false,
 		UseLiteralSubject:               false,
 	}
 	for _, opt := range optFuncs {
@@ -277,15 +277,15 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		IPAddresses:                ipAddresses,
 	}
 
-	if opts.EncodeOtherNameSANs {
-		for _, otherName := range crt.Spec.OtherNameSANs {
+	if opts.EncodeOtherNames {
+		for _, otherName := range crt.Spec.OtherNames {
 			oid, err := ParseObjectIdentifier(otherName.OID)
 			if err != nil {
 				return nil, err
 			}
 
 			value, err := MarshalUniversalValue(UniversalValue{
-				Utf8String: otherName.Utf8Value,
+				Utf8String: otherName.UTF8Value,
 			})
 			if err != nil {
 				return nil, err

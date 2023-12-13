@@ -59,7 +59,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	}
 
 	f := framework.NewDefaultFramework("certificate-othername-san-processing")
-	createCertificate := func(f *framework.Framework, OtherNameSANs []cmapi.OtherNameSAN) (*cmapi.Certificate, error) {
+	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherNameSAN) (*cmapi.Certificate, error) {
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: testName + "-",
@@ -71,11 +71,11 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 				IssuerRef: cmmeta.ObjectReference{
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
-				OtherNameSANs:  OtherNameSANs,
+				OtherNames:     OtherNames,
 				EmailAddresses: emailAddresses,
 			},
 		}
-		By("creating Certificate with OtherNameSANs")
+		By("creating Certificate with OtherNames")
 		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
 	}
 
