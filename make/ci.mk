@@ -19,6 +19,10 @@
 ## @category CI
 ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-modules
 
+.PHONY: verify-golangci-lint
+verify-golangci-lint: test/integration/versionchecker/testdata/test_manifests.tar | $(NEEDS_GOLANGCI-LINT)
+	find . -name go.mod -not \( -path "./$(BINDIR)/*" -prune \)  -execdir $(GOLANGCI-LINT) run --timeout=30m --config=$(CURDIR)/.golangci.ci.yaml \;
+
 .PHONY: verify-modules
 verify-modules: | $(NEEDS_CMREL)
 	$(CMREL) validate-gomod --path $(shell pwd) --direct-import-modules github.com/cert-manager/cert-manager/cmd/ctl --no-dummy-modules github.com/cert-manager/cert-manager/integration-tests
