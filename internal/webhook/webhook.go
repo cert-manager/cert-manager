@@ -131,6 +131,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg
 			Authority: &authority.DynamicAuthority{
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
+				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
 				RESTConfig:      restCfg,
 			},
 		}
