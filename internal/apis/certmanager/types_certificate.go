@@ -411,27 +411,27 @@ type PKCS12Keystore struct {
 	// containing the password used to encrypt the PKCS12 keystore.
 	PasswordSecretRef cmmeta.SecretKeySelector
 
-	// Algorithm is the encryption algorithm used to create the PKCS12 keystore.
-	// Default value is `RC2` for backward compatibility.
+	// Algorithms are specifying the key and certificate encryption algorithms and the HMAC algorithm
+	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	//
 	// If provided, allowed values are:
-	// `RC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
-	// `DES3`: Less secure, used for maximal compatibility.
-	// `SHA256`: Preferred for security, used when indicated by policy. (PEM format also stored in Secret.)
-	Algorithm PKCS12Algorithm
+	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
+	// `LegacyDES`: Less secure, used for maximal compatibility.
+	// `Modern2023`: Preferred for security, used when indicated by policy. PEM format also stored in Secret.
+	Algorithms PKCS12Algorithms
 }
 
-type PKCS12Algorithm string
+type PKCS12Algorithms string
 
 const (
-	// PBE with RC2 certificate algorithm, PBE with 3DES key algorithm and HMAC-SHA-1 MAC algorithm.
-	RC2PKCS12Algorithm PKCS12Algorithm = "RC2"
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#LegacyRC2
+	LegacyRC2PKCS12Algorithms PKCS12Algorithms = "LegacyRC2"
 
-	// PBE with 3DES certificate and key algorithm and HMAC-SHA-1 MAC algorithm.
-	DES3PKCS12Algorithm PKCS12Algorithm = "DES3"
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#LegacyDES
+	LegacyDESPKCS12Algorithms PKCS12Algorithms = "LegacyDES"
 
-	// PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC certificate and key algorithm and HMAC-SHA-2 MAC algorithm.
-	AESPKCS12Algorithm PKCS12Algorithm = "AES256"
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
+	Modern2023PKCS12Algorithms PKCS12Algorithms = "Modern2023"
 )
 
 // CertificateStatus defines the observed state of Certificate

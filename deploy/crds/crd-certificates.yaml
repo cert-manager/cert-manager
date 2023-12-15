@@ -153,13 +153,13 @@ spec:
                         - create
                         - passwordSecretRef
                       properties:
-                        algorithm:
-                          description: "Algorithm is the encryption algorithm used to create the PKCS12 keystore. Default value is `RC2` for backward compatibility. \n If provided, allowed values are: `RC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20. `DES3`: Less secure, used for maximal compatibility. `SHA256`: Preferred for security, used when indicated by policy. (PEM format also stored in Secret.)"
+                        algorithms:
+                          description: "Algorithms are specifying the key and certificate encryption algorithms and the HMAC algorithm used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility. \n If provided, allowed values are: `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20. `LegacyDES`: Less secure, used for maximal compatibility. `Modern2023`: Preferred for security, used when indicated by policy. PEM format also stored in Secret."
                           type: string
                           enum:
-                            - RC2
-                            - DES3
-                            - AES256
+                            - LegacyRC2
+                            - LegacyDES
+                            - Modern2023
                         create:
                           description: Create enables PKCS12 keystore creation for the Certificate. If true, a file named `keystore.p12` will be created in the target Secret resource, encrypted using the password stored in `passwordSecretRef`. The keystore file will be updated immediately. If the issuer provided a CA certificate, a file named `truststore.p12` will also be created in the target Secret resource, encrypted using the password stored in `passwordSecretRef` containing the issuing Certificate Authority
                           type: boolean

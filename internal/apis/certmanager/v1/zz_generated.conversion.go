@@ -1330,7 +1330,7 @@ func autoConvert_v1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1.PKCS12Ke
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
-	out.Algorithm = certmanager.PKCS12Algorithm(in.Algorithm)
+	out.Algorithms = certmanager.PKCS12Algorithms(in.Algorithms)
 	return nil
 }
 
@@ -1344,7 +1344,7 @@ func autoConvert_certmanager_PKCS12Keystore_To_v1_PKCS12Keystore(in *certmanager
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
-	out.Algorithm = v1.PKCS12Algorithm(in.Algorithm)
+	out.Algorithms = v1.PKCS12Algorithms(in.Algorithms)
 	return nil
 }
 
