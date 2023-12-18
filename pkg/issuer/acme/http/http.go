@@ -32,7 +32,7 @@ import (
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	k8snet "k8s.io/utils/net"
-	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
+	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -77,7 +77,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		podLister:        ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 		serviceLister:    ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
 		ingressLister:    ctx.KubeSharedInformerFactory.Ingresses().Lister(),
-		httpRouteLister:  ctx.GWShared.Gateway().V1beta1().HTTPRoutes().Lister(),
+		httpRouteLister:  ctx.GWShared.Gateway().V1().HTTPRoutes().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,
 	}, nil

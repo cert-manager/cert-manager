@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"k8s.io/kubectl/pkg/util/openapi"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
