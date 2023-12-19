@@ -59,7 +59,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	}
 
 	f := framework.NewDefaultFramework("certificate-othername-san-processing")
-	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherNameSAN) (*cmapi.Certificate, error) {
+	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: testName + "-",
@@ -97,14 +97,14 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	})
 
 	It("Should create a certificate with the supplied otherName SAN values and emailAddresses included", func() {
-		crt, err := createCertificate(f, []cmapi.OtherNameSAN{
+		crt, err := createCertificate(f, []cmapi.OtherName{
 			{
 				OID:       "1.3.6.1.4.1.311.20.2.3",
-				Utf8Value: "userprincipal@domain.com",
+				UTF8Value: "userprincipal@domain.com",
 			},
 			{
 				OID:       "1.2.840.113556.1.4.221", // this is the legacy samAccountName but could be any oid
-				Utf8Value: "user@example.org",
+				UTF8Value: "user@example.org",
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -155,5 +155,36 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 			asn1otherNamesAMAAccountNameRawVal,
 		})
 		Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
+	})
+
+	FIt("Should error if a certificate is supplied with an othername containing an invalid oid value", func() {
+		_, err := createCertificate(f, []cmapi.OtherName{
+			{
+				OID:       "BAD_OID",
+				UTF8Value: "userprincipal@domain.com",
+			},
+			{
+				OID:       "1.2.840.113556.1.4.221", // this is the legacy sAMAccountName
+				UTF8Value: "user@example.org",
+			},
+		})
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].oid: Invalid value: \"BAD_OID\": oid syntax invalid"))
+
+	})
+
+	It("Should error if a certificate is supplied with an othername without a UTF8 value", func() {
+		_, err := createCertificate(f, []cmapi.OtherName{
+			{
+				OID: "1.3.6.1.4.1.311.20.2.3",
+			},
+			{
+				OID:       "1.2.840.113556.1.4.221", // this is the legacy sAMAccountName
+				UTF8Value: "user@example.org",
+			},
+		})
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].utf8Value: Required value: must be specified"))
+
 	})
 })

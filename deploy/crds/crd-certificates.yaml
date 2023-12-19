@@ -233,7 +233,7 @@ spec:
                     type: object
                     properties:
                       UTF8Value:
-                        description: Utf8Value is the string value of the otherName SAN. The string value represents a UTF-8 encoded asn1 value.
+                        description: Utf8Value is the string value of the otherName SAN. The UTF8value accepts any valid UTF8 string to set as value for the otherName SAN.
                         type: string
                       oid:
                         description: OID is the object identifier for the otherName SAN. The object identifier must be expressed as a dotted string, for example, "1.2.840.113556.1.4.221".

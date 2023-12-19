@@ -186,7 +186,7 @@ func TestIsIA5String(t *testing.T) {
 		err := isIA5String(ia5String)
 
 		if err != nil {
-			t.Errorf("Expected IA5 string %q, got: %w", ia5String, err)
+			t.Errorf("Expected IA5 string %q, got: %s", ia5String, err.Error())
 		}
 	}
 
@@ -198,7 +198,7 @@ func TestIsIA5String(t *testing.T) {
 		err := isIA5String(nonIA5String)
 
 		if err != nil {
-			t.Errorf("Expected non-IA5 string %q, got: %w", nonIA5String, err)
+			t.Errorf("Expected non-IA5 string %q, got: %s", nonIA5String, err.Error())
 		}
 	}
 }
