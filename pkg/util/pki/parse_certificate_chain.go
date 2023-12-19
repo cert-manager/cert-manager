@@ -17,7 +17,9 @@ limitations under the License.
 package pki
 
 import (
+	"bytes"
 	"crypto/x509"
+	"slices"
 
 	"github.com/cert-manager/cert-manager/pkg/util/errors"
 )
@@ -65,18 +67,26 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
-	// De-duplicate certificates. This moves "complicated" logic away from
-	// consumers and into a shared function, who would otherwise have to do this
-	// anyway.
-	for i := 0; i < len(certs)-1; i++ {
-		for j := 1; j < len(certs); j++ {
-			if i == j {
-				continue
-			}
-			if certs[i].Equal(certs[j]) {
-				certs = append(certs[:j], certs[j+1:]...)
-			}
-		}
+	{
+		// De-duplicate certificates. This moves "complicated" logic away from
+		// consumers and into a shared function, who would otherwise have to do this
+		// anyway.
+		// For lots of certificates, the time complexity is O(n log n).
+		uniqueCerts := append([]*x509.Certificate{}, certs...)
+		slices.SortFunc(uniqueCerts, func(a, b *x509.Certificate) int {
+			return bytes.Compare(a.Raw, b.Raw)
+		})
+		uniqueCerts = slices.CompactFunc(uniqueCerts, func(a, b *x509.Certificate) bool {
+			return bytes.Equal(a.Raw, b.Raw)
+		})
+		certs = uniqueCerts
+	}
+
+	// To prevent a malicious input from causing a DoS, we limit the number of unique
+	// certificates to 1000. This helps us avoid issues with O(n^2) time complexity
+	// in the algorithm below.
+	if len(certs) > 1000 {
+		return PEMBundle{}, errors.NewInvalidData("certificate chain is too long, must be less than 1000 certificates")
 	}
 
 	// A certificate chain can be well described as a linked list. Here we build
@@ -90,8 +100,9 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// The task is to build a single list which represents a single certificate
 	// chain. The strategy is to iteratively attempt to join items in the list to
 	// build this single chain. Once we have a single list, we have built the
-	// chain. If the number of lists do not decrease after a pass, then the list
-	// can never be reduced to a single chain and we error.
+	// chain. If no match is found after a pass, then the list can never be reduced
+	// to a single chain and we error.
+	// For lots of certificates, the time complexity is O(n^2).
 	for {
 		// If a single list is left, then we have built the entire chain. Stop
 		// iterating.
@@ -99,31 +110,30 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 			break
 		}
 
-		// lastChainsLength is used to ensure that at every pass, the number of
-		// tested chains gets smaller.
-		lastChainsLength := len(chains)
+		// If we were not able to merge two chains in this pass, then the chain is
+		// broken and cannot be built. Error.
+		mergedTwoChains := false
 
-		for i := 0; i < len(chains)-1; i++ {
-			for j := 1; j < len(chains); j++ {
-				if i == j {
-					continue
-				}
+		// Pop the last chain off the list and attempt to find a chain it can be
+		// merged with.
+		lastChain := chains[len(chains)-1]
+		chains = chains[:len(chains)-1]
 
-				// attempt to add both chains together
-				chain, ok := chains[i].tryMergeChain(chains[j])
-				if ok {
-					// If adding the chains together was successful, remove inner chain from
-					// list
-					chains = append(chains[:j], chains[j+1:]...)
-				}
-
+		for i, chain := range chains {
+			// attempt to add both chains together
+			chain, ok := lastChain.tryMergeChain(chain)
+			if ok {
+				// If adding the chains together was successful, replace the chain at
+				// index i with the new chain.
 				chains[i] = chain
+				mergedTwoChains = true
+				break
 			}
 		}
 
 		// If no chains were merged in this pass, the chain can never be built as a
 		// single list. Error.
-		if lastChainsLength == len(chains) {
+		if !mergedTwoChains {
 			return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
 		}
 	}
@@ -216,23 +226,27 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 //	leaf certificate                            root certificate
 //
 // The function returns false if the chains A and B are not gluable.
-func (c *chainNode) tryMergeChain(chain *chainNode) (*chainNode, bool) {
-	// The given chain's root has been signed by this node. Add this node on top
-	// of the given chain.
-	if chain.root().cert.CheckSignatureFrom(c.cert) == nil {
-		chain.root().issuer = c
-		return chain, true
+func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
+	bRoot := b.root()
+
+	// b's root has been signed by a. Add a as parent of b's root.
+	if bytes.Equal(bRoot.cert.RawIssuer, a.cert.RawSubject) &&
+		bRoot.cert.CheckSignatureFrom(a.cert) == nil {
+		bRoot.issuer = a
+		return b, true
 	}
 
-	// The given chain is the issuer of the root of this node. Add the given
-	// chain on top of the root of this node.
-	if c.root().cert.CheckSignatureFrom(chain.cert) == nil {
-		c.root().issuer = chain
-		return c, true
+	aRoot := a.root()
+
+	// a's root has been signed by b. Add b as parent of a's root.
+	if bytes.Equal(aRoot.cert.RawIssuer, b.cert.RawSubject) &&
+		aRoot.cert.CheckSignatureFrom(b.cert) == nil {
+		aRoot.issuer = b
+		return a, true
 	}
 
 	// Chains cannot be added together.
-	return c, false
+	return a, false
 }
 
 // Return the root most node of this chain.
