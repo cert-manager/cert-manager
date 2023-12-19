@@ -67,6 +67,16 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
+	for _, cert := range certs {
+		if cert == nil {
+			return PEMBundle{}, errors.NewInvalidData("certificate chain contains nil certificate")
+		}
+
+		if len(cert.Raw) == 0 {
+			return PEMBundle{}, errors.NewInvalidData("certificate chain contains certificate without Raw set")
+		}
+	}
+
 	{
 		// De-duplicate certificates. This moves "complicated" logic away from
 		// consumers and into a shared function, who would otherwise have to do this
