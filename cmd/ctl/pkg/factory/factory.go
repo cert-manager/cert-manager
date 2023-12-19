@@ -58,6 +58,10 @@ type Factory struct {
 	// KubeClient is a Kubernetes clientset for interacting with the base
 	// Kubernetes APIs.
 	KubeClient kubernetes.Interface
+
+	// RESTClientGetter is used to get RESTConfig, DiscoveryClients and
+	// RESTMapper implementations
+	RESTClientGetter genericclioptions.RESTClientGetter
 }
 
 // New returns a new Factory. The supplied command will have flags registered
@@ -108,6 +112,8 @@ func (f *Factory) complete() error {
 	if err != nil {
 		return err
 	}
+
+	f.RESTClientGetter = factory
 
 	return nil
 }

@@ -25,20 +25,22 @@ import (
 
 	"github.com/spf13/cobra"
 	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/install/helm"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type options struct {
-	settings *cli.EnvSettings
+	settings *helm.NormalisedEnvSettings
 	client   *action.Uninstall
 	cfg      *action.Configuration
+	logFn    func(format string, v ...interface{})
 
+	releaseName  string
 	disableHooks bool
 	dryRun       bool
 	wait         bool
@@ -47,8 +49,7 @@ type options struct {
 }
 
 const (
-	defaultCertManagerNamespace = "cert-manager"
-	releaseName                 = "cert-manager"
+	releaseName = "cert-manager"
 )
 
 func description() string {
@@ -70,13 +71,19 @@ or
 }
 
 func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	settings := cli.New()
-	cfg := new(action.Configuration)
+	log := logf.FromContext(ctx, "install")
+	logFn := func(format string, v ...interface{}) {
+		log.Info(fmt.Sprintf(format, v...))
+	}
+
+	settings := helm.NewNormalisedEnvSettings()
+	cfg := &action.Configuration{Log: logFn}
 
 	options := options{
 		settings: settings,
 		cfg:      cfg,
 		client:   action.NewUninstall(cfg),
+		logFn:    logFn,
 
 		IOStreams: ioStreams,
 	}
@@ -102,20 +109,10 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 		SilenceErrors: true,
 	}
 
-	settings.AddFlags(cmd.Flags())
-
-	// The Helm cli.New function does not provide an easy way to
-	// override the default of the namespace flag.
-	// See https://github.com/helm/helm/issues/9790
-	//
-	// set the default value shown in the usage message.
-	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
-
-	// The returned error is ignored because
-	// pflag.stringValue.Set always returns a nil.
-	cmd.Flag("namespace").Value.Set(defaultCertManagerNamespace)
+	settings.Setup(ctx, cmd)
 
 	cmd.Flags().DurationVar(&options.client.Timeout, "timeout", 5*time.Minute, "time to wait for any individual Kubernetes operation (like Jobs for hooks)")
+	cmd.Flags().StringVar(&options.releaseName, "release-name", releaseName, "name of the helm release to uninstall")
 	cmd.Flags().BoolVar(&options.wait, "wait", true, "if set, will wait until all the resources are deleted before returning. It will wait for as long as --timeout")
 	cmd.Flags().BoolVar(&options.dryRun, "dry-run", false, "simulate uninstall and output manifests to be deleted")
 	cmd.Flags().BoolVar(&options.disableHooks, "no-hooks", false, "prevent hooks from running during uninstallation (pre- and post-uninstall hooks)")
@@ -126,11 +123,7 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 // run assumes cert-manager was installed as a Helm release named cert-manager.
 // this is not configurable to avoid uninstalling non-cert-manager releases.
 func run(ctx context.Context, o options) (*release.UninstallReleaseResponse, error) {
-	log := logf.FromContext(ctx, "install")
-
-	if err := o.cfg.Init(o.settings.RESTClientGetter(), o.settings.Namespace(), os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
-		log.Info(fmt.Sprintf(format, v...))
-	}); err != nil {
+	if err := o.cfg.Init(o.settings.Factory.RESTClientGetter, o.settings.Namespace(), os.Getenv("HELM_DRIVER"), o.logFn); err != nil {
 		return nil, fmt.Errorf("o.cfg.Init: %v", err)
 	}
 
@@ -138,7 +131,7 @@ func run(ctx context.Context, o options) (*release.UninstallReleaseResponse, err
 	o.client.DryRun = o.dryRun
 	o.client.Wait = o.wait
 
-	res, err := o.client.Run(releaseName)
+	res, err := o.client.Run(o.releaseName)
 
 	if errors.Is(err, driver.ErrReleaseNotFound) {
 		return nil, fmt.Errorf("release %v not found in namespace %v, did you use the correct namespace?", releaseName, o.settings.Namespace())
