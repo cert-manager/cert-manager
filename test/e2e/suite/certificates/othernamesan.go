@@ -157,7 +157,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 		Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
 	})
 
-	FIt("Should error if a certificate is supplied with an othername containing an invalid oid value", func() {
+	It("Should error if a certificate is supplied with an othername containing an invalid oid value", func() {
 		_, err := createCertificate(f, []cmapi.OtherName{
 			{
 				OID:       "BAD_OID",

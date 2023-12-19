@@ -232,11 +232,11 @@ spec:
                   items:
                     type: object
                     properties:
-                      UTF8Value:
-                        description: Utf8Value is the string value of the otherName SAN. The UTF8value accepts any valid UTF8 string to set as value for the otherName SAN.
-                        type: string
                       oid:
                         description: OID is the object identifier for the otherName SAN. The object identifier must be expressed as a dotted string, for example, "1.2.840.113556.1.4.221".
+                        type: string
+                      utf8Value:
+                        description: utf8Value is the string value of the otherName SAN. The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
                         type: string
                 privateKey:
                   description: Private key options. These include the key algorithm and size, the used encoding and the rotation policy.
