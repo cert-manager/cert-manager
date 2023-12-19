@@ -2,6 +2,15 @@ module github.com/cert-manager/cert-manager/cmd/ctl
 
 go 1.21
 
+// Gateway API requires both:
+// - k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 (https://github.com/kubernetes-sigs/gateway-api/blob/v1.0.0/go.mod#L76)
+// - k8s.io/apiextensions-apiserver v0.28.3 (https://github.com/kubernetes-sigs/gateway-api/blob/v1.0.0/go.mod#L11)
+//
+// These do not work together because of this change https://github.com/kubernetes/kube-openapi/commit/406ddbd41478ad8ad12365533a557a629098d102#diff-37485652a240e5e7ea1f29a40f7d1eda2d9dee5ea29c0c5a16a81f3f103bdcf9L323
+//
+// This will be fixed when the k8s.io libraries are bumped to v0.29
+replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230905202853-d090da108d2f
+
 // Note on cert-manager versioning:
 // Because cmctl and the core cert-manager module live in the same repository, but cmctl depends on a specific
 // cert-manager version (rather than using replace statements or a go.work file), there's a need to be able
