@@ -18,11 +18,15 @@ package helm
 
 import (
 	"context"
-	"strconv"
+	"fmt"
+	"os"
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 )
 
@@ -30,13 +34,16 @@ const defaultCertManagerNamespace = "cert-manager"
 const debugLogLevel = 3
 
 type NormalisedEnvSettings struct {
-	EnvSettings *cli.EnvSettings
-	Factory     *factory.Factory
+	logger              logr.Logger
+	EnvSettings         *cli.EnvSettings
+	ActionConfiguration *action.Configuration
+	Factory             *factory.Factory
 }
 
 func NewNormalisedEnvSettings() *NormalisedEnvSettings {
 	return &NormalisedEnvSettings{
-		EnvSettings: cli.New(),
+		EnvSettings:         cli.New(),
+		ActionConfiguration: &action.Configuration{},
 	}
 }
 
@@ -45,46 +52,71 @@ func (n *NormalisedEnvSettings) Namespace() string {
 }
 
 func (n *NormalisedEnvSettings) Setup(ctx context.Context, cmd *cobra.Command) {
+	log := logf.FromContext(ctx)
+	n.logger = log
+
 	n.Factory = factory.New(ctx, cmd)
-	n.addEnvSettingsFlags(cmd)
+	n.setupEnvSettings(ctx, cmd)
+
+	{
+		// Add a PreRunE hook to initialise the action configuration.
+		existingPreRunE := cmd.PreRunE
+		cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+			if err := n.InitActionConfiguration(); err != nil {
+				return err
+			}
+
+			if existingPreRunE != nil {
+				return existingPreRunE(cmd, args)
+			}
+
+			return nil
+		}
+	}
 
 	// Fix the default namespace to be cert-manager
 	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
 	cmd.Flag("namespace").Value.Set(defaultCertManagerNamespace)
 }
 
-func (n *NormalisedEnvSettings) addEnvSettingsFlags(cmd *cobra.Command) {
-	fs := cmd.Flags()
+func (n *NormalisedEnvSettings) setupEnvSettings(ctx context.Context, cmd *cobra.Command) {
+	{
+		// Create a tempoary flag set to add the EnvSettings flags to, this
+		// can then be iterated over to copy the flags we want to the command
+		var tmpFlagSet pflag.FlagSet
+		n.EnvSettings.AddFlags(&tmpFlagSet)
 
-	// Create a tempoary flag set to add the EnvSettings flags to, this
-	// can then be iterated over to copy the flags we want to the command
-	var tmpFlagSet pflag.FlagSet
-	n.EnvSettings.AddFlags(&tmpFlagSet)
-
-	tmpFlagSet.VisitAll(func(f *pflag.Flag) {
-		switch f.Name {
-		case "debug":
-			// Setup a PreRun to set the helm debug flag. Catch the
-			// existing PreRun Debug command if one was defined, and execute
-			// it second.
-			existingPreRun := cmd.PreRun
-			cmd.PreRun = func(cmd *cobra.Command, args []string) {
-				if isLogLevelDebug(cmd) {
-					f.Value.Set("true")
-				}
-
-				if existingPreRun != nil {
-					existingPreRun(cmd, args)
-				}
+		tmpFlagSet.VisitAll(func(f *pflag.Flag) {
+			switch f.Name {
+			case "registry-config", "repository-config", "repository-cache":
+				cmd.Flags().AddFlag(f)
 			}
-		case "registry-config", "repository-config", "repository-cache":
-			fs.AddFlag(f)
+		})
+	}
+
+	{
+		// Add a PreRun hook to set the debug value to true if the log level is
+		// >= 3.
+		existingPreRun := cmd.PreRun
+		cmd.PreRun = func(cmd *cobra.Command, args []string) {
+			if n.logger.V(debugLogLevel).Enabled() {
+				n.EnvSettings.Debug = true
+			}
+
+			if existingPreRun != nil {
+				existingPreRun(cmd, args)
+			}
 		}
-	})
+	}
 }
 
-func isLogLevelDebug(cmd *cobra.Command) bool {
-	flagValue := cmd.Flag("v").Value.String()
-	logLevel, _ := strconv.Atoi(flagValue)
-	return logLevel >= debugLogLevel
+func (n *NormalisedEnvSettings) InitActionConfiguration() error {
+	return n.ActionConfiguration.Init(
+		n.Factory.RESTClientGetter,
+		n.EnvSettings.Namespace(),
+		os.Getenv("HELM_DRIVER"),
+		func(format string, v ...interface{}) {
+			n.logger.Info(fmt.Sprintf(format, v...))
+		},
+	)
 }

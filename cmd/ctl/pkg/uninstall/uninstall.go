@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -31,14 +30,11 @@ import (
 
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/install/helm"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type options struct {
 	settings *helm.NormalisedEnvSettings
 	client   *action.Uninstall
-	cfg      *action.Configuration
-	logFn    func(format string, v ...interface{})
 
 	releaseName  string
 	disableHooks bool
@@ -71,19 +67,11 @@ or
 }
 
 func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	log := logf.FromContext(ctx, "uninstall")
-	logFn := func(format string, v ...interface{}) {
-		log.Info(fmt.Sprintf(format, v...))
-	}
-
 	settings := helm.NewNormalisedEnvSettings()
-	cfg := &action.Configuration{Log: logFn}
 
 	options := options{
 		settings: settings,
-		cfg:      cfg,
-		client:   action.NewUninstall(cfg),
-		logFn:    logFn,
+		client:   action.NewUninstall(settings.ActionConfiguration),
 
 		IOStreams: ioStreams,
 	}
@@ -123,10 +111,6 @@ func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.C
 // run assumes cert-manager was installed as a Helm release named cert-manager.
 // this is not configurable to avoid uninstalling non-cert-manager releases.
 func run(ctx context.Context, o options) (*release.UninstallReleaseResponse, error) {
-	if err := o.cfg.Init(o.settings.Factory.RESTClientGetter, o.settings.Namespace(), os.Getenv("HELM_DRIVER"), o.logFn); err != nil {
-		return nil, fmt.Errorf("o.cfg.Init: %v", err)
-	}
-
 	o.client.DisableHooks = o.disableHooks
 	o.client.DryRun = o.dryRun
 	o.client.Wait = o.wait

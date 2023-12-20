@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -42,9 +41,7 @@ import (
 type InstallOptions struct {
 	settings  *helm.NormalisedEnvSettings
 	client    *action.Install
-	cfg       *action.Configuration
 	valueOpts *values.Options
-	logFn     func(format string, v ...interface{})
 
 	ChartName string
 	DryRun    bool
@@ -79,19 +76,11 @@ pass in a file or use the '--set' flag and pass configuration from the command l
 }
 
 func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	log := logf.FromContext(ctx, "install")
-	logFn := func(format string, v ...interface{}) {
-		log.Info(fmt.Sprintf(format, v...))
-	}
-
 	settings := helm.NewNormalisedEnvSettings()
-	cfg := &action.Configuration{Log: logFn}
 
 	options := &InstallOptions{
 		settings:  settings,
-		cfg:       cfg,
-		logFn:     logFn,
-		client:    action.NewInstall(cfg),
+		client:    action.NewInstall(settings.ActionConfiguration),
 		valueOpts: &values.Options{},
 
 		IOStreams: ioStreams,
@@ -207,12 +196,14 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 		return dryRunResult, nil
 	}
 
-	if err := o.cfg.Init(o.settings.Factory.RESTClientGetter, o.settings.Namespace(), os.Getenv("HELM_DRIVER"), o.logFn); err != nil {
+	// The o.client.Run() call above will have altered the settings.ActionConfiguration
+	// object, so we need to re-initialise it.
+	if err := o.settings.InitActionConfiguration(); err != nil {
 		return nil, err
 	}
 
 	// Extract the resource.Info objects from the manifest
-	resources, err := helm.ParseMultiDocumentYAML(dryRunResult.Manifest, o.cfg.KubeClient)
+	resources, err := helm.ParseMultiDocumentYAML(dryRunResult.Manifest, o.settings.ActionConfiguration.KubeClient)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +217,7 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	}
 
 	// Make sure that no CRDs are currently installed
-	originalCRDs, err := helm.FetchResources(crds, o.cfg.KubeClient)
+	originalCRDs, err := helm.FetchResources(crds, o.settings.ActionConfiguration.KubeClient)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +227,7 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	}
 
 	// Install CRDs
-	if err := helm.CreateCRDs(crds, o.cfg); err != nil {
+	if err := helm.CreateCRDs(crds, o.settings.ActionConfiguration); err != nil {
 		return nil, err
 	}
 

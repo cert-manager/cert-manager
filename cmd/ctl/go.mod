@@ -22,6 +22,7 @@ replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230905202853-d090da1
 
 require (
 	github.com/cert-manager/cert-manager v1.13.0-beta.0.0.20230912132115-a91834eec9b3
+	github.com/go-logr/logr v1.2.4
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -75,7 +76,6 @@ require (
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.5 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.2.4 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
