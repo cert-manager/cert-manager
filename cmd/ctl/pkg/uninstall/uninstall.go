@@ -71,7 +71,7 @@ or
 }
 
 func NewCmd(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	log := logf.FromContext(ctx, "install")
+	log := logf.FromContext(ctx, "uninstall")
 	logFn := func(format string, v ...interface{}) {
 		log.Info(fmt.Sprintf(format, v...))
 	}
