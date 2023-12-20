@@ -275,6 +275,7 @@ func Test_translateAnnotations(t *testing.T) {
 		},
 	}
 	for name, tc := range tests {
+		tc := tc // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(name, func(t *testing.T) {
 			if tc.mutate != nil {
 				tc.mutate(&tc)

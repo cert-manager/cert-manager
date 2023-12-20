@@ -123,7 +123,7 @@ func partialChallengeSpecForAuthorization(ctx context.Context, issuer cmapi.Gene
 
 	// 2. filter solvers to only those that matchLabels
 	for _, cfg := range solvers {
-		acmech := challengeForSolver(&cfg)
+		acmech := challengeForSolver(&cfg) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 		if acmech == nil {
 			dbg.Info("cannot use solver as the ACME authorization does not allow solvers of this type")
 			continue

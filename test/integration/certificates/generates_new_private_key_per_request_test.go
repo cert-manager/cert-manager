@@ -151,7 +151,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 				continue
 			}
 
-			secondReq = &req
+			secondReq = &req // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 			return true, nil
 		}
 
@@ -288,7 +288,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 				continue
 			}
 
-			secondReq = &req
+			secondReq = &req // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 			return true, nil
 		}
 
