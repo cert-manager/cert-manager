@@ -27,6 +27,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
+	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
@@ -86,6 +87,10 @@ servers and webhook servers.`,
 				},
 			); err != nil {
 				return err
+			}
+
+			if err := validation.ValidateCAInjectorConfiguration(cainjectorConfig); err != nil {
+				return fmt.Errorf("error validating flags: %w", err)
 			}
 
 			if err := logf.ValidateAndApplyAsField(&cainjectorConfig.Logging, field.NewPath("logging")); err != nil {

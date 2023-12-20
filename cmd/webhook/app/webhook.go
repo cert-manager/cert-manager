@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -92,6 +93,10 @@ functionality for cert-manager.`,
 				},
 			); err != nil {
 				return err
+			}
+
+			if err := validation.ValidateWebhookConfiguration(webhookConfig); err != nil {
+				return fmt.Errorf("error validating flags: %w", err)
 			}
 
 			if err := logf.ValidateAndApplyAsField(&webhookConfig.Logging, field.NewPath("logging")); err != nil {
