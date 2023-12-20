@@ -346,8 +346,10 @@ type PKCS12Keystore struct {
 	//
 	// If provided, allowed values are:
 	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
-	// `LegacyDES`: Less secure, used for maximal compatibility.
-	// `Modern2023`: Preferred for security, used when indicated by policy. PEM format also stored in Secret.
+	// `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility.
+	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
+	// (eg. because of company policy). Please note that the security of the algorithm is not that important
+	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	// +optional
 	Algorithms PKCS12Algorithms `json:"algorithms,omitempty"`
 }
