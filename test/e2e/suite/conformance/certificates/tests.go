@@ -18,9 +18,11 @@ package certificates
 
 import (
 	"context"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -218,6 +220,109 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
+
+		s.it(f, "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress", func(issuerRef cmmeta.ObjectReference) {
+			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.OtherNames)
+			emailAddresses := []string{"email@domain.com"}
+			otherNames := []cmapi.OtherName{
+				{
+					OID:       "1.3.6.1.4.1.311.20.2.3",
+					UTF8Value: "userprincipal@domain.com",
+				},
+				{
+					OID:       "1.2.840.113556.1.4.221", // this is the legacy samAccountName but could be any oid
+					UTF8Value: "user@example.org",
+				},
+			}
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "testcert-tls",
+					IssuerRef:      issuerRef,
+					OtherNames:     otherNames,
+					EmailAddresses: emailAddresses,
+				}}
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			valFunc := func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+				certBytes, ok := secret.Data[corev1.TLSCertKey]
+				if !ok {
+					return fmt.Errorf("no certificate data found for Certificate %q (secret %q)", certificate.Name, certificate.Spec.SecretName)
+				}
+
+				pemBlock, _ := pem.Decode(certBytes)
+				cert, err := x509.ParseCertificate(pemBlock.Bytes)
+				Expect(err).To(BeNil())
+
+				By("Including the supplied RFC822 email Address")
+				Expect(cert.EmailAddresses).To(Equal(emailAddresses))
+
+				By("Including the supplied otherName values in SAN Extension")
+				oidExtensionSubjectAltName := asn1.ObjectIdentifier{2, 5, 29, 17}
+
+				otherNameSANRawVal := func(expectedOID asn1.ObjectIdentifier, value string) asn1.RawValue {
+					// StringValueLikeType type for asn1 encoding. This will hold
+					// our utf-8 encoded string.
+					type StringValueLikeType struct {
+						A string `asn1:"utf8"`
+					}
+
+					type OtherName struct {
+						OID   asn1.ObjectIdentifier
+						Value StringValueLikeType `asn1:"tag:0"`
+					}
+
+					otherNameDer, err := asn1.MarshalWithParams(OtherName{
+						OID: expectedOID, // UPN OID
+						Value: StringValueLikeType{
+							A: value,
+						}}, "tag:0")
+
+					Expect(err).To(BeNil())
+					rawVal := asn1.RawValue{
+						FullBytes: otherNameDer,
+					}
+					return rawVal
+				}
+
+				asn1otherNameUpnSANRawVal := otherNameSANRawVal(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}, "userprincipal@domain.com") // UPN OID
+				asn1otherNamesAMAAccountNameRawVal := otherNameSANRawVal(asn1.ObjectIdentifier{1, 2, 840, 113556, 1, 4, 221}, "user@example.org")   // sAMAccountName OID
+
+				mustMarshalSAN := func(generalNames []asn1.RawValue) pkix.Extension {
+					val, err := asn1.Marshal(generalNames)
+					Expect(err).To(BeNil())
+					return pkix.Extension{
+						Id:    oidExtensionSubjectAltName,
+						Value: val,
+					}
+				}
+				nameTypeEmail := 1
+				expectedSanExtension := mustMarshalSAN([]asn1.RawValue{
+					{Tag: nameTypeEmail, Class: 2, Bytes: []byte("email@domain.com")},
+					asn1otherNameUpnSANRawVal,
+					asn1otherNamesAMAAccountNameRawVal,
+				})
+				Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
+
+				return nil
+			}
+			By("Validating the issued Certificate...")
+
+			err = f.Helper().ValidateCertificate(testCertificate, valFunc)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OtherNamesFeature)
 
 		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name with a literal subject", func(issuerRef cmmeta.ObjectReference) {
 			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)

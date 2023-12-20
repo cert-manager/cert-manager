@@ -59,6 +59,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
+		featureset.OtherNamesFeature,
 	)
 
 	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Copy().Add(
@@ -79,6 +80,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
+		featureset.OtherNamesFeature,
 	)
 
 	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
@@ -93,6 +95,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		// 64 bytes. Skip the long domain test in this case.
 		featureset.LongDomainFeatureSet,
 		featureset.LiteralSubjectFeature,
+		featureset.OtherNamesFeature,
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
