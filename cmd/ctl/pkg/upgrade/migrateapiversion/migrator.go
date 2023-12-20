@@ -183,7 +183,9 @@ func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custo
 		}, func(err error) bool {
 			// Retry on any errors that are not otherwise skipped/ignored
 			return handleUpdateErr(err) != nil
-		}, func() error { return m.Client.Update(ctx, &obj) }); handleUpdateErr(err) != nil {
+		}, func() error {
+			return m.Client.Update(ctx, &obj) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+		}); handleUpdateErr(err) != nil {
 			return err
 		}
 	}

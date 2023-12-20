@@ -195,6 +195,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	}
 
 	for _, crt := range crts {
+		// #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 		if err := o.renewCertificate(ctx, &crt); err != nil {
 			return err
 		}

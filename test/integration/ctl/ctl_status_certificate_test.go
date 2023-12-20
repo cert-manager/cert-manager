@@ -640,7 +640,7 @@ func createEventsOwnedByRef(kubernetesCl kubernetes.Interface, ctx context.Conte
 	eventList *corev1.EventList, objRef *corev1.ObjectReference, ns string) error {
 	for _, event := range eventList.Items {
 		event.InvolvedObject = *objRef
-		_, err := kubernetesCl.CoreV1().Events(ns).Create(ctx, &event, metav1.CreateOptions{})
+		_, err := kubernetesCl.CoreV1().Events(ns).Create(ctx, &event, metav1.CreateOptions{}) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 		if err != nil {
 			return fmt.Errorf(err.Error())
 		}

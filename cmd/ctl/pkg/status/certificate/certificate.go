@@ -307,6 +307,7 @@ func findMatchingCR(cmClient cmclient.Interface, ctx context.Context, crt *cmapi
 		nextRevision = *crt.Status.Revision + 1
 	}
 	for _, req := range reqs.Items {
+		// #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 		if predicate.CertificateRequestRevision(nextRevision)(&req) &&
 			predicate.ResourceOwnedBy(crt)(&req) {
 			possibleMatches = append(possibleMatches, req.DeepCopy())
@@ -334,6 +335,7 @@ func findMatchingOrder(cmClient cmclient.Interface, ctx context.Context, req *cm
 
 	possibleMatches := []*cmacme.Order{}
 	for _, order := range orders.Items {
+		// #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 		if predicate.ResourceOwnedBy(req)(&order) {
 			possibleMatches = append(possibleMatches, order.DeepCopy())
 		}
@@ -384,6 +386,7 @@ func findMatchingChallenges(cmClient cmclient.Interface, ctx context.Context, or
 
 	possibleMatches := []*cmacme.Challenge{}
 	for _, challenge := range challenges.Items {
+		// #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 		if predicate.ResourceOwnedBy(order)(&challenge) {
 			possibleMatches = append(possibleMatches, challenge.DeepCopy())
 		}

@@ -216,6 +216,7 @@ func TestConvertTestType(t *testing.T) {
 	}
 
 	for n, test := range tests {
+		test := test // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(n, func(t *testing.T) {
 			resp := c.Convert(&test.inputRequest)
 			if !reflect.DeepEqual(&test.expectedResponse, resp) {
