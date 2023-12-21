@@ -324,7 +324,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		// just an empty SEQUENCE.
 		var emptyASN1Subject = []byte{0x30, 0}
 
-		sanExtension, err := MarshalSANs(sans, bytes.Equal(asn1Subject, emptyASN1Subject))
+		sanExtension, err := MarshalSANs(sans, !bytes.Equal(asn1Subject, emptyASN1Subject))
 		if err != nil {
 			return nil, err
 		}

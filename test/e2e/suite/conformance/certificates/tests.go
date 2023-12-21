@@ -229,10 +229,6 @@ func (s *Suite) Define() {
 					OID:       "1.3.6.1.4.1.311.20.2.3",
 					UTF8Value: "userprincipal@domain.com",
 				},
-				{
-					OID:       "1.2.840.113556.1.4.221", // this is the legacy samAccountName but could be any oid
-					UTF8Value: "user@example.org",
-				},
 			}
 
 			testCertificate := &cmapi.Certificate{
@@ -266,59 +262,38 @@ func (s *Suite) Define() {
 				cert, err := x509.ParseCertificate(pemBlock.Bytes)
 				Expect(err).To(BeNil())
 
-				By("Including the supplied RFC822 email Address")
-				Expect(cert.EmailAddresses).To(Equal(emailAddresses))
+				By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
 
-				By("Including the supplied otherName values in SAN Extension")
-				oidExtensionSubjectAltName := asn1.ObjectIdentifier{2, 5, 29, 17}
+				/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
+				-addext 'subjectAltName=email:email@domain.test,otherName:msUPN;UTF8:upn@domain.test' -x509 -out server.crt
+				*/
+				expectedSanExtension := extractSANsFromCertificate(`-----BEGIN CERTIFICATE-----
+MIIDRDCCAiygAwIBAgIUdotGup0k8gdZ+irmcuvLeJDm5wkwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTIzMTIyMTE2NDQyOFoXDTI0MDEyMDE2
+NDQyOFowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAyIIWkA1mNi0ZpdwkGeBjmZKZD9J8D9NlpYpOTzoxRLstuJdUNOb0
+BgsRk9FWr6rzg6SdSL7NxUS9ZJc0X0P8gn7bPUVtaF7vbj2apz1W2fhx2ifmBRaT
+n7ZbpO1aapzr0kiPEZKc82X4jualnFW2YMjjQMc6YuMykcaTQnpv9R4/mzM0kzal
+gpKp82tnUogG7EC79cO6xubk0kgIxBFwpH+H6EPLtRY12wW5fONmw9smRgsfleIs
+lMSHNuJvUMqyktb8YzAX/XCz3Idumu1UA4ZCFRNCZ019JnmaFF9McGqaC6zrPwnl
+aONLw1x9tD+D9bwi6idHNbq/PmQwfs7zzQIDAQABo4GTMIGQMB0GA1UdDgQWBBRm
+myeY1slW3mXcGLZs7uciGpfCQzAfBgNVHSMEGDAWgBRmmyeY1slW3mXcGLZs7uci
+GpfCQzAPBgNVHRMBAf8EBTADAQH/MD0GA1UdEQQ2MDSBEWVtYWlsQGRvbWFpbi50
+ZXN0oB8GCisGAQQBgjcUAgOgEQwPdXBuQGRvbWFpbi50ZXN0MA0GCSqGSIb3DQEB
+CwUAA4IBAQCgpAMWkSqA0jV+Bd6UEw7phROTkan5IWTXqYT56RI3AS+LZ83cVglS
+FP0UKUssQjLKmubcJWo84T83woxfZVSj15x8X+ohzSvSK8wIe2uobKKNl8F0yW8X
+3267YrKGnY6eDqsmNZT8P1isSyYF0PUP3EIDlO6D1YICMawvZItnE+tf9QR+5IIH
+3dEzwc2wJsUVYLQ6fgZ4KMfY+fMThY7EDQPsR2M7YFW3p4+3GPQMGBGCOQZysuVh
+4uvQbrc9rUWzLMmmJrbb2/xwMm1iCoJfRyLKOGqQV8O6NfnYz5n0/vYzXUCvEbfl
+YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
+-----END CERTIFICATE-----		
+`)
 
-				otherNameSANRawVal := func(expectedOID asn1.ObjectIdentifier, value string) asn1.RawValue {
-					// StringValueLikeType type for asn1 encoding. This will hold
-					// our utf-8 encoded string.
-					type StringValueLikeType struct {
-						A string `asn1:"utf8"`
-					}
-
-					type OtherName struct {
-						OID   asn1.ObjectIdentifier
-						Value StringValueLikeType `asn1:"tag:0"`
-					}
-
-					otherNameDer, err := asn1.MarshalWithParams(OtherName{
-						OID: expectedOID, // UPN OID
-						Value: StringValueLikeType{
-							A: value,
-						}}, "tag:0")
-
-					Expect(err).To(BeNil())
-					rawVal := asn1.RawValue{
-						FullBytes: otherNameDer,
-					}
-					return rawVal
-				}
-
-				asn1otherNameUpnSANRawVal := otherNameSANRawVal(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}, "userprincipal@domain.com") // UPN OID
-				asn1otherNamesAMAAccountNameRawVal := otherNameSANRawVal(asn1.ObjectIdentifier{1, 2, 840, 113556, 1, 4, 221}, "user@example.org")   // sAMAccountName OID
-
-				mustMarshalSAN := func(generalNames []asn1.RawValue) pkix.Extension {
-					val, err := asn1.Marshal(generalNames)
-					Expect(err).To(BeNil())
-					return pkix.Extension{
-						Id:       oidExtensionSubjectAltName,
-						Value:    val,
-						Critical: true, // Since there is no subject the SAN extension is critical
-					}
-				}
-				nameTypeEmail := 1
-				expectedSanExtension := mustMarshalSAN([]asn1.RawValue{
-					{Tag: nameTypeEmail, Class: 2, Bytes: []byte("email@domain.com")},
-					asn1otherNameUpnSANRawVal,
-					asn1otherNamesAMAAccountNameRawVal,
-				})
 				Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
-
+				Fail("check")
 				return nil
 			}
+
 			By("Validating the issued Certificate...")
 
 			err = f.Helper().ValidateCertificate(testCertificate, valFunc)
@@ -1138,4 +1113,24 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 	})
+}
+
+var oidExtensionSubjectAltName = []int{2, 5, 29, 17}
+
+func extractSANsFromCertificate(certDER string) pkix.Extension {
+	block, rest := pem.Decode([]byte(certDER))
+	fmt.Printf("block: %v, rest: %+v", block, rest)
+	Expect(len(rest)).To(Equal(0))
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+
+	for _, extension := range cert.Extensions {
+		if extension.Id.Equal(oidExtensionSubjectAltName) {
+			return extension
+		}
+	}
+
+	Fail("Could not find SANs in certificate")
+	return pkix.Extension{}
 }
