@@ -96,8 +96,10 @@ func TestMarshalAndUnmarshalSANs(t *testing.T) {
 		sanExtension pkix.Extension
 	}
 
-	testcases := []testCase{
-		{
+	type testCases map[string]testCase
+
+	testcases := testCases{
+		"OtherName simple test": {
 			hasSubject: true,
 			gns: GeneralNames{
 				OtherNames: []OtherName{
@@ -124,7 +126,7 @@ Vr7q+PwwKejeH83BzE0jKW3l95no6H0M3Ng5trzS7aooD/24xe6lzRc1NnHJ3/mXVk9BvPu1H6yP
 KkR5sV2iISL9klJn+YmoLOcr92mg/WfSE3bvaDYnjEGiunSNh+nZlBcRZVUA
 -----END CERTIFICATE REQUEST-----`),
 		},
-		{
+		"OtherName + RFC822 email SAN set": {
 			hasSubject: true,
 			gns: GeneralNames{
 				OtherNames: []OtherName{
@@ -159,7 +161,7 @@ Im17c/85tkZPEA==
 -----END CERTIFICATE REQUEST-----
 `),
 		},
-		{
+		"OtherName byte literal": {
 			hasSubject: true,
 			gns: GeneralNames{
 				OtherNames: []OtherName{
@@ -204,26 +206,26 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 		},
 	}
 
-	for _, tc := range testcases {
+	for testName, tc := range testcases {
 		{
 			extension, err := MarshalSANs(tc.gns, tc.hasSubject)
 			if err != nil {
-				t.Errorf("MarshalSANs returned an error: %v", err)
+				t.Errorf("test: %s MarshalSANs returned an error: %v", testName, err)
 			}
 
 			if !reflect.DeepEqual(extension, tc.sanExtension) {
-				t.Errorf("Expected extension: %v, got: %v", tc.sanExtension, extension)
+				t.Errorf("test: %s Expected extension: %v, got: %v", testName, tc.sanExtension, extension)
 			}
 		}
 
 		{
 			gns, err := UnmarshalSANs(tc.sanExtension.Value)
 			if err != nil {
-				t.Errorf("UnmarshalSANs returned an error: %v", err)
+				t.Errorf("test: %s UnmarshalSANs returned an error: %v", testName, err)
 			}
 
 			if !reflect.DeepEqual(gns, tc.gns) {
-				t.Errorf("Expected GeneralNames: %v, got: %v", tc.gns, gns)
+				t.Errorf("test: %s Expected GeneralNames: %v, got: %v", testName, tc.gns, gns)
 			}
 		}
 	}

@@ -173,6 +173,32 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 	}
 }
 
+// Since we make use of the standard utf.ValidString
+// we just do a sanity check to ensure it is used on Marshall/UnMarshal
+func TestMarshalUTF8Validation(t *testing.T) {
+
+	uv := UniversalValue{
+		// Invalid utf8 byte sequence, string() just casts byte[] verbatim whereas "" causes compile error
+		Utf8String: string([]byte{0xc3, 0x28}),
+	}
+
+	_, err := MarshalUniversalValue(uv)
+	if err == nil {
+		t.Error("Expected invalid UTF8 string to raise error")
+	}
+
+	inValidASN1UTF8 := asn1.RawValue{
+		Tag:   asn1.TagUTF8String,
+		Class: asn1.ClassUniversal,
+		Bytes: []byte{0xe2, 0x82, 0x28}, // Another out of range utf8 byte sequence
+	}
+
+	_, err = UnmarshalUniversalValue(inValidASN1UTF8)
+	if err == nil {
+		t.Error("Expected invalid UTF8 asn1 value to raise error")
+	}
+}
+
 func TestIsIA5String(t *testing.T) {
 	ia5Strings := []string{
 		"test",
@@ -198,7 +224,7 @@ func TestIsIA5String(t *testing.T) {
 		err := isIA5String(nonIA5String)
 
 		if err == nil {
-			t.Errorf("Expected non-IA5 string error for %s, got: nil")
+			t.Errorf("Expected non-IA5 string error for %s, got: nil", nonIA5String)
 		}
 	}
 }
