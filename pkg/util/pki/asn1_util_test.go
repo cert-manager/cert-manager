@@ -197,8 +197,8 @@ func TestIsIA5String(t *testing.T) {
 	for _, nonIA5String := range nonIA5Strings {
 		err := isIA5String(nonIA5String)
 
-		if err != nil {
-			t.Errorf("Expected non-IA5 string %q, got: %s", nonIA5String, err.Error())
+		if err == nil {
+			t.Errorf("Expected non-IA5 string error for %s, got: nil")
 		}
 	}
 }
