@@ -145,8 +145,9 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 			val, err := asn1.Marshal(generalNames)
 			Expect(err).To(BeNil())
 			return pkix.Extension{
-				Id:    oidExtensionSubjectAltName,
-				Value: val,
+				Id:       oidExtensionSubjectAltName,
+				Value:    val,
+				Critical: true,
 			}
 		}
 		expectedSanExtension := mustMarshalSAN([]asn1.RawValue{

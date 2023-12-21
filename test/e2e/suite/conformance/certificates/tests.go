@@ -304,8 +304,9 @@ func (s *Suite) Define() {
 					val, err := asn1.Marshal(generalNames)
 					Expect(err).To(BeNil())
 					return pkix.Extension{
-						Id:    oidExtensionSubjectAltName,
-						Value: val,
+						Id:       oidExtensionSubjectAltName,
+						Value:    val,
+						Critical: true, // Since there is no subject the SAN extension is critical
 					}
 				}
 				nameTypeEmail := 1
