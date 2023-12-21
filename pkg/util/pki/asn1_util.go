@@ -49,8 +49,8 @@ func ParseObjectIdentifier(oidString string) (oid asn1.ObjectIdentifier, err err
 
 type UniversalValue struct {
 	Bytes           []byte
-	Ia5String       string
-	Utf8String      string
+	IA5String       string
+	UTF8String      string
 	PrintableString string
 }
 
@@ -61,10 +61,10 @@ func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
 		if uv.Bytes != nil {
 			count++
 		}
-		if uv.Ia5String != "" {
+		if uv.IA5String != "" {
 			count++
 		}
-		if uv.Utf8String != "" {
+		if uv.UTF8String != "" {
 			count++
 		}
 		if uv.PrintableString != "" {
@@ -85,18 +85,18 @@ func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
 			IsCompound: false,
 		}
 		switch {
-		case uv.Ia5String != "":
-			if err := isIA5String(uv.Ia5String); err != nil {
+		case uv.IA5String != "":
+			if err := isIA5String(uv.IA5String); err != nil {
 				return nil, errors.New("asn1: invalid IA5 string")
 			}
 			rawValue.Tag = asn1.TagIA5String
-			rawValue.Bytes = []byte(uv.Ia5String)
-		case uv.Utf8String != "":
-			if !utf8.ValidString(uv.Utf8String) {
+			rawValue.Bytes = []byte(uv.IA5String)
+		case uv.UTF8String != "":
+			if !utf8.ValidString(uv.UTF8String) {
 				return nil, errors.New("asn1: invalid UTF-8 string")
 			}
 			rawValue.Tag = asn1.TagUTF8String
-			rawValue.Bytes = []byte(uv.Utf8String)
+			rawValue.Bytes = []byte(uv.UTF8String)
 		case uv.PrintableString != "":
 			if !isPrintable(uv.PrintableString) {
 				return nil, errors.New("asn1: invalid PrintableString string")
@@ -171,9 +171,9 @@ func UnmarshalUniversalValue(rawValue asn1.RawValue) (UniversalValue, error) {
 	var rest []byte
 	var err error
 	if rawValue.Tag == asn1.TagIA5String {
-		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.Ia5String, "ia5")
+		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.IA5String, "ia5")
 	} else if rawValue.Tag == asn1.TagUTF8String {
-		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.Utf8String, "utf8")
+		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.UTF8String, "utf8")
 	} else if rawValue.Tag == asn1.TagPrintableString {
 		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.PrintableString, "printable")
 	} else {

@@ -285,7 +285,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 			}
 
 			value, err := MarshalUniversalValue(UniversalValue{
-				Utf8String: otherName.UTF8Value,
+				UTF8String: otherName.UTF8Value,
 			})
 			if err != nil {
 				return nil, err

@@ -106,7 +106,7 @@ func TestMarshalAndUnmarshalSANs(t *testing.T) {
 					{
 						TypeID: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3},
 						Value: generateOtherName(t, UniversalValue{
-							Utf8String: "3goats@acme.com",
+							UTF8String: "3goats@acme.com",
 						}),
 					},
 				},
@@ -133,7 +133,7 @@ KkR5sV2iISL9klJn+YmoLOcr92mg/WfSE3bvaDYnjEGiunSNh+nZlBcRZVUA
 					{
 						TypeID: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3},
 						Value: generateOtherName(t, UniversalValue{
-							Utf8String: "upn@domain.test",
+							UTF8String: "upn@domain.test",
 						}),
 					},
 				},

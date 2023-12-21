@@ -90,7 +90,7 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 		{
 			name: "Test with IA5String",
 			uv: UniversalValue{
-				Ia5String: "test",
+				IA5String: "test",
 			},
 			raw: asn1.RawValue{
 				Bytes: []byte("test"),
@@ -101,7 +101,7 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 		{
 			name: "Test with Utf8String",
 			uv: UniversalValue{
-				Utf8String: "test",
+				UTF8String: "test",
 			},
 			raw: asn1.RawValue{
 				Bytes: []byte("test"),
@@ -126,7 +126,7 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 				Bytes: []byte{0x16, 0x04, 0x74, 0x65, 0x73, 0x74},
 			},
 			overrideRoundtripUv: &UniversalValue{
-				Ia5String: "test",
+				IA5String: "test",
 			},
 			raw: asn1.RawValue{
 				Bytes: []byte("test"),
@@ -179,7 +179,7 @@ func TestMarshalUTF8Validation(t *testing.T) {
 
 	uv := UniversalValue{
 		// Invalid utf8 byte sequence, string() just casts byte[] verbatim whereas "" causes compile error
-		Utf8String: string([]byte{0xc3, 0x28}),
+		UTF8String: string([]byte{0xc3, 0x28}),
 	}
 
 	_, err := MarshalUniversalValue(uv)

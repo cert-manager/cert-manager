@@ -290,7 +290,7 @@ func OtherNameSANRawVal(expectedOID asn1.ObjectIdentifier) (asn1.RawValue, error
 	var otherNameParam = fmt.Sprintf("tag:%d", nameTypeOtherName)
 
 	value, err := MarshalUniversalValue(UniversalValue{
-		Utf8String: "user@example.org",
+		UTF8String: "user@example.org",
 	})
 	if err != nil {
 		return asn1.NullRawValue, err
