@@ -223,11 +223,11 @@ func (s *Suite) Define() {
 
 		s.it(f, "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress", func(issuerRef cmmeta.ObjectReference) {
 			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.OtherNames)
-			emailAddresses := []string{"email@domain.com"}
+			emailAddresses := []string{"email@domain.test"}
 			otherNames := []cmapi.OtherName{
 				{
 					OID:       "1.3.6.1.4.1.311.20.2.3",
-					UTF8Value: "userprincipal@domain.com",
+					UTF8Value: "upn@domain.test",
 				},
 			}
 
@@ -241,6 +241,7 @@ func (s *Suite) Define() {
 					IssuerRef:      issuerRef,
 					OtherNames:     otherNames,
 					EmailAddresses: emailAddresses,
+					CommonName:     "someCN",
 				}}
 
 			By("Creating a Certificate")
@@ -290,7 +291,6 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 `)
 
 				Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
-				Fail("check")
 				return nil
 			}
 

@@ -424,7 +424,7 @@ func TestGenerateCSR(t *testing.T) {
 						[]asn1.RawValue{
 							{Tag: nameTypeDNSName, Class: 2, Bytes: []byte("example.org")},
 						},
-						false,
+						true, // SAN is critical as the Subject is empty
 					),
 					{
 						Id:       OIDExtensionKeyUsage,
@@ -552,7 +552,7 @@ func TestGenerateCSR(t *testing.T) {
 					sansGenerator(
 						t,
 						[]asn1.RawValue{asn1otherNameUpnSANRawVal},
-						false,
+						true,
 					),
 					{
 						Id:       OIDExtensionKeyUsage,
@@ -591,7 +591,7 @@ func TestGenerateCSR(t *testing.T) {
 							asn1otherNameUpnSANRawVal,
 							asn1otherNamesAMAAccountNameRawVal,
 						},
-						false,
+						true,
 					),
 					{
 						Id:       OIDExtensionKeyUsage,
@@ -690,7 +690,7 @@ func TestGenerateCSR(t *testing.T) {
 						[]asn1.RawValue{
 							{Tag: nameTypeDNSName, Class: 2, Bytes: []byte("example.org")},
 						},
-						false,
+						true,
 					),
 					{
 						Id:       OIDExtensionKeyUsage,
@@ -720,7 +720,7 @@ func TestGenerateCSR(t *testing.T) {
 						[]asn1.RawValue{
 							{Tag: nameTypeDNSName, Class: 2, Bytes: []byte("example.org")},
 						},
-						false,
+						true,
 					),
 					{
 						Id:       OIDExtensionKeyUsage,
@@ -754,7 +754,7 @@ func TestGenerateCSR(t *testing.T) {
 						[]asn1.RawValue{
 							{Tag: nameTypeDNSName, Class: 2, Bytes: []byte("example.org")},
 						},
-						false,
+						true,
 					),
 					{
 						Id:       OIDExtensionKeyUsage,
