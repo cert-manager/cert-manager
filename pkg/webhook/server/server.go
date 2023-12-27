@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -36,12 +35,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
-	ciphers "k8s.io/component-base/cli/flag"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/server"
+	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
-	servertls "github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
 )
 
 const (
@@ -202,13 +201,7 @@ func (s *Server) Run(ctx context.Context) error {
 		})
 	}
 
-	// create a listener for actual webhook requests
-	listener, err := net.Listen("tcp", s.ListenAddr)
-	if err != nil {
-		return err
-	}
-
-	// wrap the listener with TLS if a CertificateSource is provided
+	// start the CertificateSource if provided
 	if s.CertificateSource != nil {
 		s.log.V(logf.InfoLevel).Info("listening for secure connections", "address", s.ListenAddr)
 		g.Go(func() error {
@@ -217,22 +210,19 @@ func (s *Server) Run(ctx context.Context) error {
 			}
 			return nil
 		})
-		cipherSuites, err := ciphers.TLSCipherSuites(s.CipherSuites)
-		if err != nil {
-			return err
-		}
-		minVersion, err := ciphers.TLSVersion(s.MinTLSVersion)
-		if err != nil {
-			return err
-		}
-		listener = tls.NewListener(listener, &tls.Config{
-			GetCertificate:           s.CertificateSource.GetCertificate,
-			CipherSuites:             cipherSuites,
-			MinVersion:               minVersion,
-			PreferServerCipherSuites: true,
-		})
 	} else {
 		s.log.V(logf.InfoLevel).Info("listening for insecure connections", "address", s.ListenAddr)
+	}
+
+	// create a listener for actual webhook requests
+	listener, err := server.Listen("tcp", s.ListenAddr,
+		server.WithCertificateSource(s.CertificateSource),
+		server.WithTLSCipherSuites(s.CipherSuites),
+		server.WithTLSMinVersion(s.MinTLSVersion),
+	)
+
+	if err != nil {
+		return err
 	}
 
 	s.listener = listener

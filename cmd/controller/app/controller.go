@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
@@ -45,8 +46,12 @@ import (
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/server"
+	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
+	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/go-logr/logr"
 )
 
 const (
@@ -82,8 +87,27 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	enabledControllers := options.EnabledControllers(opts)
 	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
 
+	// start the CertificateSource if provided
+	certificateSource := buildCertificateSource(log, opts.MetricsTLSConfig, ctx.RESTConfig)
+	if certificateSource != nil {
+		log.V(logf.InfoLevel).Info("listening for secure connections", "address", opts.MetricsListenAddress)
+		g.Go(func() error {
+			if err := certificateSource.Run(rootCtx); (err != nil) && !errors.Is(err, context.Canceled) {
+				return err
+			}
+			return nil
+		})
+	} else {
+		log.V(logf.InfoLevel).Info("listening for insecure connections", "address", opts.MetricsListenAddress)
+	}
+
 	// Start metrics server
-	metricsLn, err := net.Listen("tcp", opts.MetricsListenAddress)
+	metricsLn, err := server.Listen("tcp", opts.MetricsListenAddress,
+		server.WithCertificateSource(certificateSource),
+		server.WithTLSCipherSuites(opts.MetricsTLSConfig.CipherSuites),
+		server.WithTLSMinVersion(opts.MetricsTLSConfig.MinTLSVersion),
+	)
+
 	if err != nil {
 		return fmt.Errorf("failed to listen on prometheus address %s: %v", opts.MetricsListenAddress, err)
 	}
@@ -384,5 +408,30 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 
 	le.Run(ctx)
 
+	return nil
+}
+
+func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
+	switch {
+	case tlsConfig.FilesystemConfigProvided():
+		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", tlsConfig.Filesystem.KeyFile, "certificate", tlsConfig.Filesystem.CertFile)
+		return &tls.FileCertificateSource{
+			CertPath: tlsConfig.Filesystem.CertFile,
+			KeyPath:  tlsConfig.Filesystem.KeyFile,
+		}
+	case tlsConfig.DynamicConfigProvided():
+		log.V(logf.InfoLevel).Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", tlsConfig.Dynamic.SecretNamespace, "secret_name", tlsConfig.Dynamic.SecretName)
+		return &tls.DynamicSource{
+			DNSNames: tlsConfig.Dynamic.DNSNames,
+			Authority: &authority.DynamicAuthority{
+				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
+				SecretName:      tlsConfig.Dynamic.SecretName,
+				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
+				RESTConfig:      restCfg,
+			},
+		}
+	default:
+		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
+	}
 	return nil
 }

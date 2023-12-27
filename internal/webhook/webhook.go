@@ -33,12 +33,12 @@ import (
 	metainstall "github.com/cert-manager/cert-manager/internal/apis/meta/install"
 	"github.com/cert-manager/cert-manager/internal/plugin"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
 	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
-	"github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
 )
 
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, Scheme)
