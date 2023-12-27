@@ -91,6 +91,7 @@ func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
 			pf := pflag.PFlagFromGoFlag(f)
 			pf.Deprecated = "this flag may be removed in the future"
+			pf.Hidden = true
 			fs.AddFlag(pf)
 		}
 	})
