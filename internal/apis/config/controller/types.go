@@ -173,7 +173,7 @@ type IngressShimConfig struct {
 	DefaultAutoCertificateAnnotations []string
 
 	// These labels are not copied to any certificates created from the ingress
-	SkipIngressLabels []string
+	CopiedLabelPrefixes []string
 }
 
 type ACMEHTTP01Config struct {

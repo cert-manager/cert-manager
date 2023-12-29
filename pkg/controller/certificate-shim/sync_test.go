@@ -3134,7 +3134,7 @@ func TestSync(t *testing.T) {
 				DefaultIssuerKind:                 test.DefaultIssuerKind,
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,
 				DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
-				SkipIngressLabels:                 []string{"my-other-label"},
+				CopiedLabelPrefixes:               []string{"*", "-my-other-label"},
 			}, "cert-manager-test")
 			b.Start()
 

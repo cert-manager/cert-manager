@@ -321,7 +321,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 	}
 
 	// Filter the annotations copied from CertificateSigningRequest to the Order.
-	annotations := controllerpkg.BuildAnnotationsToCopy(csr.Annotations, a.copiedAnnotationPrefixes)
+	annotations := controllerpkg.CopyMatchingPrefixes(csr.Annotations, a.copiedAnnotationPrefixes)
 
 	// Truncate certificate name so final name will be <= 63 characters. Hash
 	// (uint32) will be at most 10 digits long, and we account for the hyphen.

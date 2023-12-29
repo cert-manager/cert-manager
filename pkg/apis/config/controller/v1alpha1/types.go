@@ -191,6 +191,13 @@ type IngressShimConfig struct {
 	// The annotation consumed by the ingress-shim controller to indicate a ingress
 	// is requesting a certificate
 	DefaultAutoCertificateAnnotations []string `json:"defaultAutoCertificateAnnotations,omitempty"`
+
+	// Specify which labels should/shouldn't be copied from Ingress to
+	// Certificate, by passing a list of label key prefixes. A prefix starting
+	// with a dash(-) specifies a label that shouldn't be copied. Example:
+	// '*,-kubectl.kuberenetes.io/' - all labels will be copied apart from the
+	// ones where the key is prefixed with 'kubectl.kubernetes.io/'.
+	CopiedLabelPrefixes []string `json:"copiedLabelPrefixes,omitempty"`
 }
 
 type ACMEHTTP01Config struct {

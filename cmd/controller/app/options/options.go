@@ -150,8 +150,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerGroup, "default-issuer-group", c.IngressShimConfig.DefaultIssuerGroup, ""+
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
-	fs.StringSliceVar(&c.IngressShimConfig.SkipIngressLabels, "skip-ingress-labels", c.IngressShimConfig.SkipIngressLabels, ""+
-		"The labels on the ingress that shouldn't be copied to certificates.")
+	fs.StringSliceVar(&c.IngressShimConfig.CopiedLabelPrefixes, "copied-label-prefixes", c.IngressShimConfig.CopiedLabelPrefixes, ""+
+		"Specifies which should/shouldn't be copied from Ingresses to Certificates by passing a list of key prefixes. "+
+		"A prefix starting with a dash(-) specifies a label that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/' - all labels "+
+		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 
 	fs.StringSliceVar(&c.ACMEDNS01Config.RecursiveNameservers, "dns01-recursive-nameservers",
 		c.ACMEDNS01Config.RecursiveNameservers, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+
@@ -172,9 +174,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", c.EnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
-	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
-		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
-		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied "+
+		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes. "+
+		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/' - all annotations "+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))

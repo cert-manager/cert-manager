@@ -170,33 +170,39 @@ func (b *BlockingEventHandler) OnDelete(obj interface{}) {
 	b.WorkFunc(obj)
 }
 
-// BuildAnnotationsToCopy takes a map of annotations and a list of prefix
+// CopyMatchingPrefixes takes a map of annotations and a list of prefix
 // filters and builds a filtered map of annotations. It is used to filter
 // annotations to be copied from Certificate to CertificateRequest and from
 // CertificateSigningRequest to Order.
-func BuildAnnotationsToCopy(allAnnotations map[string]string, prefixes []string) map[string]string {
-	filteredAnnotations := make(map[string]string)
+func CopyMatchingPrefixes(allItems map[string]string, prefixes []string) map[string]string {
+	if allItems == nil {
+		// Preserve nil-ness of input. This makes no functional difference, but
+		// helps with unit tests relying on reflect.DeepEqual.
+		return nil
+	}
+
+	filteredItems := make(map[string]string)
 	includeAll := false
 	for _, v := range prefixes {
 		if v == "*" {
 			includeAll = true
 		}
 	}
-	for _, annotation := range prefixes {
-		prefix := strings.TrimPrefix(annotation, "-")
-		for k, v := range allAnnotations {
-			if strings.HasPrefix(annotation, "-") {
+	for _, opPrefix := range prefixes {
+		prefix := strings.TrimPrefix(opPrefix, "-")
+		for k, v := range allItems {
+			if strings.HasPrefix(opPrefix, "-") {
 				if strings.HasPrefix(k, prefix) {
 					// If this is an annotation to not be copied.
-					delete(filteredAnnotations, k)
+					delete(filteredItems, k)
 				}
-			} else if includeAll || strings.HasPrefix(k, annotation) {
+			} else if includeAll || strings.HasPrefix(k, opPrefix) {
 				// If this is an annotation to be copied or if 'all' should be copied.
-				filteredAnnotations[k] = v
+				filteredItems[k] = v
 			}
 		}
 	}
-	return filteredAnnotations
+	return filteredItems
 }
 
 func ToSecret(obj interface{}) (*corev1.Secret, bool) {

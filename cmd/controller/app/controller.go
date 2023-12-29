@@ -328,7 +328,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
 			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
-			SkipIngressLabels:                 opts.IngressShimConfig.SkipIngressLabels,
+			CopiedLabelPrefixes:               opts.IngressShimConfig.CopiedLabelPrefixes,
 		},
 
 		CertificateOptions: controller.CertificateOptions{
