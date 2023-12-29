@@ -321,7 +321,7 @@ func (in *ACMEChallengeSolverHTTP01IngressPodSecurityContext) DeepCopyInto(out *
 	*out = *in
 	if in.SELinuxOptions != nil {
 		in, out := &in.SELinuxOptions, &out.SELinuxOptions
-		*out = new(v1.SELinuxOptions)
+		*out = new(corev1.SELinuxOptions)
 		**out = **in
 	}
 	if in.RunAsUser != nil {
@@ -351,17 +351,17 @@ func (in *ACMEChallengeSolverHTTP01IngressPodSecurityContext) DeepCopyInto(out *
 	}
 	if in.Sysctls != nil {
 		in, out := &in.Sysctls, &out.Sysctls
-		*out = make([]v1.Sysctl, len(*in))
+		*out = make([]corev1.Sysctl, len(*in))
 		copy(*out, *in)
 	}
 	if in.FSGroupChangePolicy != nil {
 		in, out := &in.FSGroupChangePolicy, &out.FSGroupChangePolicy
-		*out = new(v1.PodFSGroupChangePolicy)
+		*out = new(corev1.PodFSGroupChangePolicy)
 		**out = **in
 	}
 	if in.SeccompProfile != nil {
 		in, out := &in.SeccompProfile, &out.SeccompProfile
-		*out = new(v1.SeccompProfile)
+		*out = new(corev1.SeccompProfile)
 		(*in).DeepCopyInto(*out)
 	}
 	return
