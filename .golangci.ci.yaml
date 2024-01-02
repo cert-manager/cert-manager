@@ -27,4 +27,4 @@ issues:
   exclude-rules:
     - linters:
         - gosec
-      text: "G(101|107|204|306|402|404)"
+      text: "G(101|107|204|306|402)"

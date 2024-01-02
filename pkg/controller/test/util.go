@@ -33,7 +33,7 @@ const letterBytes = "abcdefghijklmnopqrstuvwxyz0123456789"
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = letterBytes[rand.Intn(len(letterBytes))] // #nosec G404 -- used only in tests
 	}
 	return string(b)
 }
