@@ -507,6 +507,8 @@ func (v *VaultInitializer) configureIntermediateRoles() error {
 		"max_ttl":            "2160h",
 		"key_type":           "any",
 		"require_cn":         "false",
+		"allowed_other_sans": "*",
+		"use_csr_sans":       "true",
 		"allowed_uri_sans":   "spiffe://cluster.local/*",
 		"enforce_hostnames":  "false",
 		"allow_bare_domains": "true",
