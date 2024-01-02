@@ -16,24 +16,13 @@ limitations under the License.
 
 package test
 
-import (
-	"math/rand"
-	"time"
-)
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+import "k8s.io/apimachinery/pkg/util/rand"
 
 type StringGenerator func(n int) string
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyz0123456789"
-
 // RandStringBytes generates a pseudo-random string of length `n`.
+//
+// Deprecated: Use k8s.io/apimachinery/pkg/util/rand#String instead
 func RandStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))] // #nosec G404 -- used only in tests
-	}
-	return string(b)
+	return rand.String(n)
 }

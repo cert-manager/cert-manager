@@ -26,22 +26,22 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const maxConcurrentChallenges = 60
 
-func randomChallenge(rand int) *cmacme.Challenge {
-	if rand == 0 {
-		rand = 10
+func randomChallenge(dnsNamelength int) *cmacme.Challenge {
+	if dnsNamelength == 0 {
+		dnsNamelength = 10
 	}
-	return gen.Challenge("test-"+util.RandStringRunes(10),
-		gen.SetChallengeDNSName(util.RandStringRunes(rand)),
+	return gen.Challenge("test-"+rand.String(10),
+		gen.SetChallengeDNSName(rand.String(dnsNamelength)),
 		gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01))
 }
 

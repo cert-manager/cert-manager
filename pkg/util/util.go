@@ -20,15 +20,15 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/url"
 	"sort"
 	"strings"
-	"time"
+
+	"golang.org/x/exp/slices"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"golang.org/x/exp/slices"
 )
 
 func OnlyOneNotNil(items ...interface{}) (any bool, one bool) {
@@ -159,18 +159,11 @@ func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 	return true
 }
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
-
+// RandStringRunes generates a pseudo-random string of length `n`.
+//
+// Deprecated: Use k8s.io/apimachinery/pkg/util/rand#String instead
 func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))] // #nosec G404 -- used only in tests
-	}
-	return string(b)
+	return rand.String(n)
 }
 
 // Contains returns true if a string is contained in a string slice
