@@ -61,13 +61,13 @@ github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.7.0/LICENSE.txt,Ap
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.26.0/LICENSE.txt,MIT
-golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.14.0:LICENSE,BSD-3-Clause
+golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.17.0:LICENSE,BSD-3-Clause
 golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/7918f672:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.17.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.13.0:LICENSE,BSD-3-Clause
-golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.14.0:LICENSE,BSD-3-Clause
-golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.13.0:LICENSE,BSD-3-Clause
-golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.13.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.15.0:LICENSE,BSD-3-Clause
+golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.15.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.14.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.31.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
