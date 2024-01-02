@@ -40,6 +40,142 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			false,
 		},
 		{
+			"with both filesystem and dynamic tls configured",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Filesystem: config.FilesystemServingConfig{
+						CertFile: "/test.crt",
+						KeyFile:  "/test.key",
+					},
+					Dynamic: config.DynamicServingConfig{
+						SecretNamespace: "cert-manager",
+						SecretName:      "test",
+						DNSNames:        []string{"example.com"},
+					},
+				},
+			},
+			true,
+		},
+		{
+			"with valid filesystem tls config",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Filesystem: config.FilesystemServingConfig{
+						CertFile: "/test.crt",
+						KeyFile:  "/test.key",
+					},
+				},
+			},
+			false,
+		},
+		{
+			"with valid tls config missing keyfile",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Filesystem: config.FilesystemServingConfig{
+						CertFile: "/test.crt",
+					},
+				},
+			},
+			true,
+		},
+		{
+			"with valid tls config missing certfile",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Filesystem: config.FilesystemServingConfig{
+						KeyFile: "/test.key",
+					},
+				},
+			},
+			true,
+		},
+		{
+			"with valid dynamic tls config",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Dynamic: config.DynamicServingConfig{
+						SecretNamespace: "cert-manager",
+						SecretName:      "test",
+						DNSNames:        []string{"example.com"},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"with dynamic tls missing secret namespace",
+			&config.ControllerConfiguration{
+				MetricsTLSConfig: config.TLSConfig{
+					Dynamic: config.DynamicServingConfig{
+						SecretName: "test",
+						DNSNames:   []string{"example.com"},
+					},
+				},
+			},
+			true,
+		},
+		{
+			"with dynamic tls missing secret name",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Dynamic: config.DynamicServingConfig{
+						SecretNamespace: "cert-manager",
+						DNSNames:        []string{"example.com"},
+					},
+				},
+			},
+			true,
+		},
+		{
+			"with dynamic tls missing dns names",
+			&config.ControllerConfiguration{
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: config.TLSConfig{
+					Dynamic: config.DynamicServingConfig{
+						SecretName:      "test",
+						SecretNamespace: "cert-manager",
+						DNSNames:        nil,
+					},
+				},
+			},
+			true,
+		},
+		{
 			"with missing issuer kind",
 			&config.ControllerConfiguration{
 				KubernetesAPIBurst: 1,
