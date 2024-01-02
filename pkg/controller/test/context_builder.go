@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	metadatafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -112,7 +113,7 @@ func (b *Builder) Init() {
 		}
 	}
 	if b.StringGenerator == nil {
-		b.StringGenerator = RandStringBytes
+		b.StringGenerator = rand.String
 	}
 	scheme := metadatafake.NewTestScheme()
 	metav1.AddMetaToScheme(scheme)

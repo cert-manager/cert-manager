@@ -34,6 +34,7 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 
@@ -45,7 +46,6 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -194,7 +194,7 @@ func (s *Suite) Define() {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
-			cn := "test-common-name-" + util.RandStringRunes(10)
+			cn := "test-common-name-" + rand.String(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -224,7 +224,7 @@ func (s *Suite) Define() {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
-			host := fmt.Sprintf("*.%s.foo-long.bar.com", util.RandStringRunes(10))
+			host := fmt.Sprintf("*.%s.foo-long.bar.com", rand.String(10))
 			literalSubject := fmt.Sprintf("CN=%s,OU=FooLong,OU=Bar,OU=Baz,OU=Dept.,O=Corp.", host)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
@@ -289,7 +289,7 @@ func (s *Suite) Define() {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
-			cn := "test-common-name-" + util.RandStringRunes(10)
+			cn := "test-common-name-" + rand.String(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -321,7 +321,7 @@ func (s *Suite) Define() {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
-			cn := "test-common-name-" + util.RandStringRunes(10)
+			cn := "test-common-name-" + rand.String(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -404,7 +404,7 @@ func (s *Suite) Define() {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
-			cn := "test-common-name-" + util.RandStringRunes(10)
+			cn := "test-common-name-" + rand.String(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -459,7 +459,7 @@ func (s *Suite) Define() {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
-			cn := "test-common-name-" + util.RandStringRunes(10)
+			cn := "test-common-name-" + rand.String(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",

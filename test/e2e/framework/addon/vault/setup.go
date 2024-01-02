@@ -26,11 +26,11 @@ import (
 	"path"
 	"time"
 
-	"github.com/cert-manager/cert-manager/pkg/util"
 	vault "github.com/hashicorp/vault/api"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
@@ -62,7 +62,7 @@ func NewVaultInitializerAppRole(
 	details Details,
 	configureWithRoot bool,
 ) *VaultInitializer {
-	testId := util.RandStringRunes(10)
+	testId := rand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -87,7 +87,7 @@ func NewVaultInitializerKubernetes(
 	configureWithRoot bool,
 	apiServerURL string,
 ) *VaultInitializer {
-	testId := util.RandStringRunes(10)
+	testId := rand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -113,7 +113,7 @@ func NewVaultInitializerAllAuth(
 	configureWithRoot bool,
 	apiServerURL string,
 ) *VaultInitializer {
-	testId := util.RandStringRunes(10)
+	testId := rand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)

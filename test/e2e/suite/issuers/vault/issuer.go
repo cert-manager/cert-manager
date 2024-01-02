@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
@@ -30,7 +31,6 @@ import (
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -146,7 +146,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	})
 
 	It("should be ready with a valid Kubernetes Role and ServiceAccount Secret", func() {
-		saTokenSecretName := "vault-sa-secret-" + util.RandStringRunes(5)
+		saTokenSecretName := "vault-sa-secret-" + rand.String(5)
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(saTokenSecretName, vaultSecretServiceAccount), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -170,7 +170,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	})
 
 	It("should fail to init with missing Kubernetes Role", func() {
-		saTokenSecretName := "vault-sa-secret-" + util.RandStringRunes(5)
+		saTokenSecretName := "vault-sa-secret-" + rand.String(5)
 		// we test without creating the secret
 
 		By("Creating an Issuer")
@@ -209,7 +209,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	})
 
 	It("should be ready with a caBundle from a Kubernetes Secret", func() {
-		saTokenSecretName := "vault-sa-secret-" + util.RandStringRunes(5)
+		saTokenSecretName := "vault-sa-secret-" + rand.String(5)
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(saTokenSecretName, vaultSecretServiceAccount), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -244,7 +244,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	})
 
 	It("should be eventually ready when the CA bundle secret gets created after the Issuer", func() {
-		saTokenSecretName := "vault-sa-secret-" + util.RandStringRunes(5)
+		saTokenSecretName := "vault-sa-secret-" + rand.String(5)
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(saTokenSecretName, vaultSecretServiceAccount), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -288,7 +288,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	})
 
 	It("it should become not ready when the CA certificate in the secret changes and doesn't match Vault's CA anymore", func() {
-		saTokenSecretName := "vault-sa-secret-" + util.RandStringRunes(5)
+		saTokenSecretName := "vault-sa-secret-" + rand.String(5)
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vaultaddon.NewVaultKubernetesSecret(saTokenSecretName, vaultSecretServiceAccount), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 

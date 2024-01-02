@@ -25,8 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 // Based on https://github.com/kubernetes/kubernetes/blob/ca643a4d1f7bfe34773c74f79527be4afd95bf39/pkg/controller/controller_utils.go#L542
@@ -48,7 +47,7 @@ func getPodFromTemplate(template *v1.PodTemplateSpec, parentObject runtime.Objec
 			Labels:       desiredLabels,
 			Annotations:  desiredAnnotations,
 			GenerateName: prefix,
-			Name:         prefix + cmutil.RandStringRunes(5),
+			Name:         prefix + rand.String(5),
 			Finalizers:   desiredFinalizers,
 		},
 		Status: v1.PodStatus{
