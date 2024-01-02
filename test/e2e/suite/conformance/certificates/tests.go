@@ -29,8 +29,10 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -229,6 +231,10 @@ func (s *Suite) Define() {
 					OID:       "1.3.6.1.4.1.311.20.2.3",
 					UTF8Value: "upn@domain.test",
 				},
+				{
+					OID:       "1.3.6.1.4.1.311.20.2.3",
+					UTF8Value: "upn@domain2.test",
+				},
 			}
 
 			testCertificate := &cmapi.Certificate{
@@ -264,33 +270,31 @@ func (s *Suite) Define() {
 				Expect(err).To(BeNil())
 
 				By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
-
 				/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
-				-addext 'subjectAltName=email:email@domain.test,otherName:msUPN;UTF8:upn@domain.test' -x509 -out server.crt
+				-addext 'subjectAltName=email:email@domain.test,otherName:msUPN;utf8:upn@domain2.test,otherName:msUPN;UTF8:upn@domain.test' -x509 -out server.crt
 				*/
-				expectedSanExtension := extractSANsFromCertificate(`-----BEGIN CERTIFICATE-----
-MIIDRDCCAiygAwIBAgIUdotGup0k8gdZ+irmcuvLeJDm5wkwDQYJKoZIhvcNAQEL
-BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTIzMTIyMTE2NDQyOFoXDTI0MDEyMDE2
-NDQyOFowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
-MIIBCgKCAQEAyIIWkA1mNi0ZpdwkGeBjmZKZD9J8D9NlpYpOTzoxRLstuJdUNOb0
-BgsRk9FWr6rzg6SdSL7NxUS9ZJc0X0P8gn7bPUVtaF7vbj2apz1W2fhx2ifmBRaT
-n7ZbpO1aapzr0kiPEZKc82X4jualnFW2YMjjQMc6YuMykcaTQnpv9R4/mzM0kzal
-gpKp82tnUogG7EC79cO6xubk0kgIxBFwpH+H6EPLtRY12wW5fONmw9smRgsfleIs
-lMSHNuJvUMqyktb8YzAX/XCz3Idumu1UA4ZCFRNCZ019JnmaFF9McGqaC6zrPwnl
-aONLw1x9tD+D9bwi6idHNbq/PmQwfs7zzQIDAQABo4GTMIGQMB0GA1UdDgQWBBRm
-myeY1slW3mXcGLZs7uciGpfCQzAfBgNVHSMEGDAWgBRmmyeY1slW3mXcGLZs7uci
-GpfCQzAPBgNVHRMBAf8EBTADAQH/MD0GA1UdEQQ2MDSBEWVtYWlsQGRvbWFpbi50
-ZXN0oB8GCisGAQQBgjcUAgOgEQwPdXBuQGRvbWFpbi50ZXN0MA0GCSqGSIb3DQEB
-CwUAA4IBAQCgpAMWkSqA0jV+Bd6UEw7phROTkan5IWTXqYT56RI3AS+LZ83cVglS
-FP0UKUssQjLKmubcJWo84T83woxfZVSj15x8X+ohzSvSK8wIe2uobKKNl8F0yW8X
-3267YrKGnY6eDqsmNZT8P1isSyYF0PUP3EIDlO6D1YICMawvZItnE+tf9QR+5IIH
-3dEzwc2wJsUVYLQ6fgZ4KMfY+fMThY7EDQPsR2M7YFW3p4+3GPQMGBGCOQZysuVh
-4uvQbrc9rUWzLMmmJrbb2/xwMm1iCoJfRyLKOGqQV8O6NfnYz5n0/vYzXUCvEbfl
-YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
------END CERTIFICATE-----		
-`)
-
-				Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
+				Expect(cert.Extensions).Should(HaveSameSANsAs(`-----BEGIN CERTIFICATE-----
+MIIDZjCCAk6gAwIBAgIUWmJ+z4OCWZg4V3XjSfEN+hItXjUwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTI0MDEwMzA4NTU1NloXDTI0MDIwMjA4
+NTU1NlowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAr5xmoX7/vp+wid+gOvbigYXLP/OvILyRpyj/e6IqJqj83+ImMtHt
+QtOHN/E1bYQ8juVXqhhwy5BDXV6qHCfEjAKJF/oHpdVGk4GoMV/noAjbyAdqxFb+
+Cr/62sZWFHcuBuh/msJj6MWWAYZkb6HPiyDaV4HdRrrefifQnBGmsO0DE2guy7Yr
+CMnE25H0yZ6z1e2tecsXSEkHyPNpil39oJ+1dT3UG8coU32rMOMKs7Za/xF0yMtU
+TrCzZ/ylFL4vJi/s0i9zgjBQloJud+s3J+MnbYFgv0MIaosZXuk7/FR0HNIM19Zw
+VLH6dgVCcF02bnnVpOAd6KPEzdqjYdDv/QIDAQABo4G1MIGyMB0GA1UdDgQWBBRF
+KVGbYoD2H1NE47wJL6xFQ83Q+DAfBgNVHSMEGDAWgBRFKVGbYoD2H1NE47wJL6xF
+Q83Q+DAPBgNVHRMBAf8EBTADAQH/MF8GA1UdEQRYMFaBEWVtYWlsQGRvbWFpbi50
+ZXN0oCAGCisGAQQBgjcUAgOgEgwQdXBuQGRvbWFpbjIudGVzdKAfBgorBgEEAYI3
+FAIDoBEMD3VwbkBkb21haW4udGVzdDANBgkqhkiG9w0BAQsFAAOCAQEAmrouGUth
+yyL3jJTe2XZCqbjNgwXrT5N8SwF8JrPNzTyuh4Qiug3N/3djmq4N4V60UAJU8Xpr
+Uf8TZBQwF6VD/TSvvJKB3qjSW0T46cF++10ueEgT7mT/icyPeiMw1syWpQlciIvv
+WZ/PIvHm2sTB+v8v9rhiFDyQxlnvbtG0D0TV/dEZmyrqfrBpWOP8TFgexRMQU2/4
+Gb9fYHRK+LBKRTFudEXNWcDYxK3umfht/ZUsMeWUP70XaNsTd9tQWRsctxGpU10s
+cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
+/XMa5c3nWcbXcA==
+-----END CERTIFICATE-----
+`))
 				return nil
 			}
 
@@ -1113,24 +1117,4 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 	})
-}
-
-var oidExtensionSubjectAltName = []int{2, 5, 29, 17}
-
-func extractSANsFromCertificate(certDER string) pkix.Extension {
-	block, rest := pem.Decode([]byte(certDER))
-	fmt.Printf("block: %v, rest: %+v", block, rest)
-	Expect(len(rest)).To(Equal(0))
-
-	cert, err := x509.ParseCertificate(block.Bytes)
-	Expect(err).NotTo(HaveOccurred())
-
-	for _, extension := range cert.Extensions {
-		if extension.Id.Equal(oidExtensionSubjectAltName) {
-			return extension
-		}
-	}
-
-	Fail("Could not find SANs in certificate")
-	return pkix.Extension{}
 }

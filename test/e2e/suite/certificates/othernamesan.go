@@ -19,18 +19,18 @@ package certificates
 import (
 	"context"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"time"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,27 +43,8 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	)
 
 	var (
-		oidExtensionSubjectAltName = []int{2, 5, 29, 17}
-		emailAddresses             = []string{"email@domain.test"}
+		emailAddresses = []string{"email@domain.test"}
 	)
-
-	extractSANsFromCertificate := func(certDER string) pkix.Extension {
-		block, rest := pem.Decode([]byte(certDER))
-		fmt.Printf("block: %v, rest: %+v", block, rest)
-		Expect(len(rest)).To(Equal(0))
-
-		cert, err := x509.ParseCertificate(block.Bytes)
-		Expect(err).NotTo(HaveOccurred())
-
-		for _, extension := range cert.Extensions {
-			if extension.Id.Equal(oidExtensionSubjectAltName) {
-				return extension
-			}
-		}
-
-		Fail("Could not find SANs in certificate")
-		return pkix.Extension{}
-	}
 
 	f := framework.NewDefaultFramework("certificate-othername-san-processing")
 	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
@@ -128,7 +109,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 		/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
 		-addext 'subjectAltName=email:email@domain.test,otherName:msUPN;UTF8:upn@domain.test' -x509 -out server.crt
 		*/
-		expectedSanExtension := extractSANsFromCertificate(`-----BEGIN CERTIFICATE-----
+		expectedSanExtension := `-----BEGIN CERTIFICATE-----
 MIIDRDCCAiygAwIBAgIUdotGup0k8gdZ+irmcuvLeJDm5wkwDQYJKoZIhvcNAQEL
 BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTIzMTIyMTE2NDQyOFoXDTI0MDEyMDE2
 NDQyOFowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
@@ -148,9 +129,9 @@ FP0UKUssQjLKmubcJWo84T83woxfZVSj15x8X+ohzSvSK8wIe2uobKKNl8F0yW8X
 4uvQbrc9rUWzLMmmJrbb2/xwMm1iCoJfRyLKOGqQV8O6NfnYz5n0/vYzXUCvEbfl
 YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 -----END CERTIFICATE-----		
-`)
+`
 
-		Expect(cert.Extensions).To(ContainElement(expectedSanExtension))
+		Expect(cert.Extensions).To(HaveSameSANsAs(expectedSanExtension))
 	})
 
 	It("Should error if a certificate is supplied with an othername containing an invalid oid value", func() {
