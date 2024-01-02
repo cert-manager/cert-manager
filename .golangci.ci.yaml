@@ -11,6 +11,7 @@ linters:
   disable-all: true
   enable:
     - gosec
+    - staticcheck
 issues:
   # When we enable a new linter or a new issue check, we want to show **all**
   # instances of each issue in the GitHub UI or in the CLI report. This allows
@@ -28,3 +29,9 @@ issues:
     - linters:
         - gosec
       text: "G(101|107|204|306|402)"
+    - linters:
+        - staticcheck
+      text: "SA(1002|1006|4000|4006)"
+    - linters:
+        - staticcheck
+      text: "(ioutil|KubeCtl|NewCertManagerBasicCertificate|DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition|eab.KeyAlgorithm|testCA.Subjects|RootCAs.Subjects|pki.GenerateTemplate|adal.NewServicePrincipalTokenFromFederatedToken|azure-sdk-for-go|c.SingleInflight|x509.ParseCRL|v.client.RawRequest)"

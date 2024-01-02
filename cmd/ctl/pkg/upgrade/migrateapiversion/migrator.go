@@ -216,7 +216,7 @@ func (m *Migrator) patchCRDStoredVersions(ctx context.Context, crds []*apiext.Cu
 			return newUnexpectedChangeError(crd)
 		}
 		newlyAddedVersions := storedVersionsAdded(crd, freshCRD)
-		if newlyAddedVersions.Len() != 0 && !newlyAddedVersions.Equal(sets.NewString(expectedStorageVersion)) {
+		if newlyAddedVersions.Len() != 0 && !newlyAddedVersions.Equal(sets.New[string](expectedStorageVersion)) {
 			return newUnexpectedChangeError(crd)
 		}
 
@@ -245,9 +245,9 @@ func storageVersionForCRD(crd *apiext.CustomResourceDefinition) string {
 
 // storedVersionsAdded returns a list of any versions added to the `status.storedVersions` field on
 // a CRD resource.
-func storedVersionsAdded(old, new *apiext.CustomResourceDefinition) sets.String {
-	oldStoredVersions := sets.NewString(old.Status.StoredVersions...)
-	newStoredVersions := sets.NewString(new.Status.StoredVersions...)
+func storedVersionsAdded(old, new *apiext.CustomResourceDefinition) sets.Set[string] {
+	oldStoredVersions := sets.New[string](old.Status.StoredVersions...)
+	newStoredVersions := sets.New[string](new.Status.StoredVersions...)
 	return newStoredVersions.Difference(oldStoredVersions)
 }
 

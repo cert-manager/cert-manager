@@ -22,7 +22,7 @@ import (
 )
 
 type Handler struct {
-	operations sets.String
+	operations sets.Set[string]
 }
 
 func (h Handler) Handles(operation admissionv1.Operation) bool {
@@ -32,7 +32,7 @@ func (h Handler) Handles(operation admissionv1.Operation) bool {
 var _ Interface = &Handler{}
 
 func NewHandler(ops ...admissionv1.Operation) *Handler {
-	operations := sets.NewString()
+	operations := sets.New[string]()
 	for _, op := range ops {
 		operations.Insert(string(op))
 	}
