@@ -145,6 +145,14 @@ config:
 #     StableCertificateRequestName: true
 #     UseCertificateRequestBasicConstraints: true
 #     ValidateCAA: true
+#   metricsTLSConfig:
+#     dynamic:
+#       secretNamespace: "cert-manager"
+#       secretName: "cert-manager-metrics-ca"
+#       dnsNames:
+#       - cert-manager-metrics
+#       - cert-manager-metrics.cert-manager
+#       - cert-manager-metrics.cert-manager.svc
 
 # Setting Nameservers for DNS01 Self Check
 # See: https://cert-manager.io/docs/configuration/acme/dns01/#setting-nameservers-for-dns01-self-check
