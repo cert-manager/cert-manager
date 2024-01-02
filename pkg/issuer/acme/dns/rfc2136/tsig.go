@@ -21,7 +21,7 @@ package rfc2136
 
 import (
 	"crypto/hmac"
-	"crypto/md5"
+	"crypto/md5"  // #nosec G501 -- MD5 is a supported TSIG Algorithm
 	"crypto/sha1" // #nosec G505 -- SHA1 is a supported TSIG Algorithm
 	"crypto/sha256"
 	"crypto/sha512"
