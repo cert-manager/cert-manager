@@ -210,9 +210,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	logf.AddFlags(&c.Logging, fs)
 }
 
-func EnabledControllers(o *config.ControllerConfiguration) sets.String {
+func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	var disabled []string
-	enabled := sets.NewString()
+	enabled := sets.New[string]()
 
 	for _, controller := range o.Controllers {
 		switch {

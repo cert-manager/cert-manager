@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/client-go/kubernetes"
@@ -109,7 +110,7 @@ func buildAdmissionChain(client kubernetes.Interface) (*admission.RequestHandler
 		return nil, fmt.Errorf("error creating authorization handler: %v", err)
 	}
 	pluginInitializer := initializer.New(client, nil, authorizer, nil)
-	pluginChain, err := pluginHandler.NewFromPlugins(plugin.DefaultOnAdmissionPlugins().List(), pluginInitializer)
+	pluginChain, err := pluginHandler.NewFromPlugins(sets.List(plugin.DefaultOnAdmissionPlugins()), pluginInitializer)
 	if err != nil {
 		return nil, fmt.Errorf("error building admission chain: %v", err)
 	}

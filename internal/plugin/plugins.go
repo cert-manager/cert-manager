@@ -39,8 +39,8 @@ func RegisterAllPlugins(plugins *admission.Plugins) {
 	resourcevalidation.Register(plugins)
 }
 
-func DefaultOnAdmissionPlugins() sets.String {
-	return sets.NewString(
+func DefaultOnAdmissionPlugins() sets.Set[string] {
+	return sets.New[string](
 		apideprecation.PluginName,
 		resourcevalidation.PluginName,
 		certificaterequestidentity.PluginName,
@@ -49,6 +49,6 @@ func DefaultOnAdmissionPlugins() sets.String {
 }
 
 // DefaultOffAdmissionPlugins gets admission plugins off by default for the webhook.
-func DefaultOffAdmissionPlugins() sets.String {
-	return sets.NewString(AllOrderedPlugins...).Difference(DefaultOnAdmissionPlugins())
+func DefaultOffAdmissionPlugins() sets.Set[string] {
+	return sets.New[string](AllOrderedPlugins...).Difference(DefaultOnAdmissionPlugins())
 }

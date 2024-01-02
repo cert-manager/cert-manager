@@ -234,11 +234,11 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	// This check allows names to move between the DNSNames and CommonName
 	// field freely in order to account for CAs behaviour of promoting DNSNames
 	// to be CommonNames or vice-versa.
-	expectedDNSNames := sets.NewString(spec.DNSNames...)
+	expectedDNSNames := sets.New[string](spec.DNSNames...)
 	if spec.CommonName != "" {
 		expectedDNSNames.Insert(spec.CommonName)
 	}
-	allDNSNames := sets.NewString(x509cert.DNSNames...)
+	allDNSNames := sets.New[string](x509cert.DNSNames...)
 	if x509cert.Subject.CommonName != "" {
 		allDNSNames.Insert(x509cert.Subject.CommonName)
 	}

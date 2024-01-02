@@ -28,6 +28,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -80,7 +81,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	}
 
 	enabledControllers := options.EnabledControllers(opts)
-	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
+	log.Info(fmt.Sprintf("enabled controllers: %s", sets.List(enabledControllers)))
 
 	// Start metrics server
 	metricsLn, err := net.Listen("tcp", opts.MetricsListenAddress)
