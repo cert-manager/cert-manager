@@ -409,7 +409,7 @@ func TestGenerateCSR(t *testing.T) {
 		literalCertificateSubjectFeatureEnabled bool
 		basicConstraintsFeatureEnabled          bool
 		nameConstraintsFeatureEnabled           bool
-		encodeOtherNamesFeatureEnabled          bool
+		otherNamesFeatureEnabled                bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
@@ -562,7 +562,7 @@ func TestGenerateCSR(t *testing.T) {
 				},
 				RawSubject: subjectGenerator(t, pkix.Name{}),
 			},
-			encodeOtherNamesFeatureEnabled: true,
+			otherNamesFeatureEnabled: true,
 		},
 		{
 			name: "Generate CSR from certificate with multiple valid otherName oids and emailSANs set",
@@ -601,7 +601,7 @@ func TestGenerateCSR(t *testing.T) {
 				},
 				RawSubject: subjectGenerator(t, pkix.Name{}),
 			},
-			encodeOtherNamesFeatureEnabled: true,
+			otherNamesFeatureEnabled: true,
 		},
 		{
 			name: "Generate CSR from certificate with malformed otherName oid type",
@@ -771,7 +771,7 @@ func TestGenerateCSR(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Generate CSR from certificate with UseCertificateRequestNameConstraints flag enabled",
+			name: "Generate CSR from certificate with NameConstraints flag enabled",
 			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "example.org",
 				IsCA:       true,
@@ -814,8 +814,8 @@ func TestGenerateCSR(t *testing.T) {
 			got, err := GenerateCSR(
 				tt.crt,
 				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
-				WithEncodeNameConstraintsInRequest(tt.nameConstraintsFeatureEnabled),
-				WithEncodeOtherNames(tt.encodeOtherNamesFeatureEnabled),
+				WithNameConstraints(tt.nameConstraintsFeatureEnabled),
+				WithOtherNames(tt.otherNamesFeatureEnabled),
 				WithUseLiteralSubject(tt.literalCertificateSubjectFeatureEnabled),
 			)
 			if (err != nil) != tt.wantErr {

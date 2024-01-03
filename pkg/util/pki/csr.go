@@ -187,7 +187,7 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 
 type generateCSROptions struct {
 	EncodeBasicConstraintsInRequest bool
-	EncodeNameConstraintsInRequest  bool
+	EncodeNameConstraints           bool
 	EncodeOtherNames                bool
 	UseLiteralSubject               bool
 }
@@ -203,15 +203,15 @@ func WithEncodeBasicConstraintsInRequest(encode bool) GenerateCSROption {
 	}
 }
 
-func WithEncodeNameConstraintsInRequest(encode bool) GenerateCSROption {
+func WithNameConstraints(enabled bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
-		o.EncodeNameConstraintsInRequest = encode
+		o.EncodeNameConstraints = enabled
 	}
 }
 
-func WithEncodeOtherNames(encodeOtherNames bool) GenerateCSROption {
+func WithOtherNames(enabled bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
-		o.EncodeOtherNames = encodeOtherNames
+		o.EncodeOtherNames = enabled
 	}
 }
 
@@ -228,7 +228,7 @@ func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
 func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.CertificateRequest, error) {
 	opts := &generateCSROptions{
 		EncodeBasicConstraintsInRequest: false,
-		EncodeNameConstraintsInRequest:  false,
+		EncodeNameConstraints:           false,
 		EncodeOtherNames:                false,
 		UseLiteralSubject:               false,
 	}
@@ -363,7 +363,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		extraExtensions = append(extraExtensions, basicExtension)
 	}
 
-	if opts.EncodeNameConstraintsInRequest && crt.Spec.NameConstraints != nil {
+	if opts.EncodeNameConstraints && crt.Spec.NameConstraints != nil {
 		nameConstraints := &NameConstraints{}
 
 		if crt.Spec.NameConstraints.Permitted != nil {
