@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// This file contains some code copied from the Go standard library under the following license: https://github.com/golang/go/blob/c95fe91d0715dc0a8d55ac80a80f383c3635548b/LICENSE
 package pki
 
 import (
