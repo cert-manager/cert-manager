@@ -123,6 +123,8 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 		{
 			name: "Test with Bytes",
 			uv: UniversalValue{
+				// Ia5String byte array with value "test"
+				// https://lapo.it/asn1js/#FgR0ZXN0
 				Bytes: []byte{0x16, 0x04, 0x74, 0x65, 0x73, 0x74},
 			},
 			overrideRoundtripUv: &UniversalValue{
