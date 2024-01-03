@@ -28,7 +28,7 @@ global:
     enabled: false
     useAppArmor: true
 
-  # Set the verbosity of cert-manager. Range of 0 - 5 with 5 being the most verbose.
+  # Set the verbosity of cert-manager. Range of 0 - 6 with 6 being the most verbose.
   logLevel: 2
 
   leaderElection:
