@@ -76,7 +76,7 @@ spec:
           image: "{{ template "image" (tuple .Values.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-          {{- if eq (.Values.global.logLevel | toString) "0" "1" "2" "3" "4" "5" }}
+          {{- if ne (quote .Values.global.logLevel) (quote "") }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           {{- if .Values.config }}
