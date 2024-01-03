@@ -275,7 +275,7 @@ type CertificateSpec struct {
 	// More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
 	//
 	// This is an Alpha Feature and is only enabled with the
-	// `--feature-gates=useCertificateRequestNameConstraints=true` option set on both
+	// `--feature-gates=NameConstraints=true` option set on both
 	// the controller and webhook components.
 	// +optional
 	NameConstraints *NameConstraints `json:"nameConstraints,omitempty"`

@@ -61,11 +61,11 @@ func int32Ptr(i int32) *int32 {
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
-		cfg                                  *internalcmapi.Certificate
-		a                                    *admissionv1.AdmissionRequest
-		errs                                 []*field.Error
-		warnings                             []string
-		useCertificateRequestNameConstraints bool
+		cfg                           *internalcmapi.Certificate
+		a                             *admissionv1.AdmissionRequest
+		errs                          []*field.Error
+		warnings                      []string
+		nameConstraintsFeatureEnabled bool
 	}{
 		"valid basic certificate": {
 			cfg: &internalcmapi.Certificate{
@@ -710,8 +710,8 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
-			a:                                    someAdmissionRequest,
-			useCertificateRequestNameConstraints: true,
+			a:                             someAdmissionRequest,
+			nameConstraintsFeatureEnabled: true,
 		},
 		"invalid with name constraints": {
 			cfg: &internalcmapi.Certificate{
@@ -730,7 +730,7 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(
 					fldPath.Child("nameConstraints"), &internalcmapi.NameConstraints{}, "either permitted or excluded must be set"),
 			},
-			useCertificateRequestNameConstraints: true,
+			nameConstraintsFeatureEnabled: true,
 		},
 		"valid name constraints with feature gate disabled": {
 			cfg: &internalcmapi.Certificate{
@@ -751,13 +751,13 @@ func TestValidateCertificate(t *testing.T) {
 			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Forbidden(
-					fldPath.Child("nameConstraints"), "feature gate UseCertificateRequestNameConstraints must be enabled"),
+					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
 			},
 		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.UseCertificateRequestNameConstraints, s.useCertificateRequestNameConstraints)()
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)()
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
 			assert.ElementsMatch(t, warnings, s.warnings)
