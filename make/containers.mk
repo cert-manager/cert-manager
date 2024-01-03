@@ -16,7 +16,7 @@
 BASE_IMAGE_TYPE:=STATIC
 
 ARCHS = amd64 arm64 s390x ppc64le arm
-BINS = controller acmesolver cainjector webhook ctl
+BINS = controller acmesolver cainjector webhook ctl startupapicheck
 
 BASE_IMAGE_controller-linux-amd64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_amd64)
 BASE_IMAGE_controller-linux-arm64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm64)
@@ -48,8 +48,14 @@ BASE_IMAGE_cmctl-linux-s390x:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_s390x)
 BASE_IMAGE_cmctl-linux-ppc64le:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_ppc64le)
 BASE_IMAGE_cmctl-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
 
+BASE_IMAGE_startupapicheck-linux-amd64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_amd64)
+BASE_IMAGE_startupapicheck-linux-arm64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm64)
+BASE_IMAGE_startupapicheck-linux-s390x:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_s390x)
+BASE_IMAGE_startupapicheck-linux-ppc64le:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_ppc64le)
+BASE_IMAGE_startupapicheck-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
+
 .PHONY: all-containers
-all-containers: cert-manager-controller-linux cert-manager-webhook-linux cert-manager-acmesolver-linux cert-manager-cainjector-linux cert-manager-ctl-linux
+all-containers: cert-manager-controller-linux cert-manager-webhook-linux cert-manager-acmesolver-linux cert-manager-cainjector-linux cert-manager-ctl-linux cert-manager-startupapicheck-linux
 
 .PHONY: cert-manager-controller-linux
 cert-manager-controller-linux: $(BINDIR)/containers/cert-manager-controller-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-arm.tar.gz
@@ -116,6 +122,19 @@ $(foreach arch,$(ARCHS),$(BINDIR)/containers/cert-manager-ctl-linux-$(arch).tar)
 		$(dir $<) >/dev/null
 	$(CTR) save $(TAG) -o $@ >/dev/null
 
+.PHONY: cert-manager-startupapicheck-linux
+cert-manager-startupapicheck-linux: $(BINDIR)/containers/cert-manager-startupapicheck-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-arm.tar.gz
+
+$(BINDIR)/containers/cert-manager-startupapicheck-linux-amd64.tar $(BINDIR)/containers/cert-manager-startupapicheck-linux-arm64.tar $(BINDIR)/containers/cert-manager-startupapicheck-linux-s390x.tar $(BINDIR)/containers/cert-manager-startupapicheck-linux-ppc64le.tar $(BINDIR)/containers/cert-manager-startupapicheck-linux-arm.tar: $(BINDIR)/containers/cert-manager-startupapicheck-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-startupapicheck-linux-%/startupapicheck hack/containers/Containerfile.startupapicheck $(BINDIR)/scratch/build-context/cert-manager-startupapicheck-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-startupapicheck-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
+	@$(eval TAG := cert-manager-startupapicheck-$*:$(RELEASE_VERSION))
+	@$(eval BASE := BASE_IMAGE_startupapicheck-linux-$*)
+	$(CTR) build --quiet \
+		-f hack/containers/Containerfile.startupapicheck \
+		--build-arg BASE_IMAGE=$($(BASE)) \
+		-t $(TAG) \
+		$(dir $<) >/dev/null
+	$(CTR) save $(TAG) -o $@ >/dev/null
+
 # At first, we used .INTERMEDIATE to remove the intermediate .tar files.
 # But it meant "make install" would always have to rebuild
 # the tar files.
@@ -145,7 +164,7 @@ $(BINDIR)/scratch/build-context/cert-manager-%/cert-manager.license: $(BINDIR)/s
 $(BINDIR)/scratch/build-context/cert-manager-%/cert-manager.licenses_notice: $(BINDIR)/scratch/cert-manager.licenses_notice | $(BINDIR)/scratch/build-context/cert-manager-%
 	@ln -f $< $@
 
-$(BINDIR)/scratch/build-context/cert-manager-%/controller $(BINDIR)/scratch/build-context/cert-manager-%/acmesolver $(BINDIR)/scratch/build-context/cert-manager-%/cainjector $(BINDIR)/scratch/build-context/cert-manager-%/webhook: $(BINDIR)/server/% | $(BINDIR)/scratch/build-context/cert-manager-%
+$(BINDIR)/scratch/build-context/cert-manager-%/controller $(BINDIR)/scratch/build-context/cert-manager-%/acmesolver $(BINDIR)/scratch/build-context/cert-manager-%/cainjector $(BINDIR)/scratch/build-context/cert-manager-%/webhook $(BINDIR)/scratch/build-context/cert-manager-%/startupapicheck: $(BINDIR)/server/% | $(BINDIR)/scratch/build-context/cert-manager-%
 	@ln -f $< $@
 
 $(BINDIR)/scratch/build-context/cert-manager-ctl-%/ctl: $(BINDIR)/cmctl/cmctl-% | $(BINDIR)/scratch/build-context/cert-manager-ctl-%

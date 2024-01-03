@@ -730,7 +730,7 @@ startupapicheck:
   podLabels: {}
 
   image:
-    repository: quay.io/jetstack/cert-manager-ctl
+    repository: quay.io/jetstack/cert-manager-startupapicheck
     # You can manage a registry with
     # registry: quay.io
     # repository: jetstack/cert-manager-ctl
