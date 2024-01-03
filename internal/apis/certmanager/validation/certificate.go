@@ -101,8 +101,13 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 	}
 
-	if len(commonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URIs) == 0 && len(crt.EmailAddresses) == 0 && len(crt.IPAddresses) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"))
+	if len(commonName) == 0 &&
+		len(crt.DNSNames) == 0 &&
+		len(crt.URIs) == 0 &&
+		len(crt.EmailAddresses) == 0 &&
+		len(crt.IPAddresses) == 0 &&
+		len(crt.OtherNames) == 0 {
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
@@ -116,6 +121,26 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	if len(crt.EmailAddresses) > 0 {
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
+	}
+
+	if len(crt.OtherNames) > 0 {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.OtherNames) {
+			el = append(el, field.Forbidden(fldPath.Child("OtherNames"), "Feature gate OtherNames must be enabled on both webhook and controller to use the alpha `otherNames` field"))
+		}
+
+		for i, otherName := range crt.OtherNames {
+			if otherName.OID == "" {
+				el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("oid"), "must be specified"))
+			}
+
+			if _, err := pki.ParseObjectIdentifier(otherName.OID); err != nil {
+				el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "oid syntax invalid"))
+			}
+
+			if otherName.UTF8Value == "" {
+				el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("utf8Value"), "must be specified"))
+			}
+		}
 	}
 
 	if crt.PrivateKey != nil {

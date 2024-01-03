@@ -18,17 +18,21 @@ package certificates
 
 import (
 	"context"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -218,6 +222,87 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
+
+		s.it(f, "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress", func(issuerRef cmmeta.ObjectReference) {
+			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.OtherNames)
+			emailAddresses := []string{"email@domain.test"}
+			otherNames := []cmapi.OtherName{
+				{
+					OID:       "1.3.6.1.4.1.311.20.2.3",
+					UTF8Value: "upn@domain.test",
+				},
+				{
+					OID:       "1.3.6.1.4.1.311.20.2.3",
+					UTF8Value: "upn@domain2.test",
+				},
+			}
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "testcert-tls",
+					IssuerRef:      issuerRef,
+					OtherNames:     otherNames,
+					EmailAddresses: emailAddresses,
+					CommonName:     "someCN",
+				}}
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			valFunc := func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+				certBytes, ok := secret.Data[corev1.TLSCertKey]
+				if !ok {
+					return fmt.Errorf("no certificate data found for Certificate %q (secret %q)", certificate.Name, certificate.Spec.SecretName)
+				}
+
+				pemBlock, _ := pem.Decode(certBytes)
+				cert, err := x509.ParseCertificate(pemBlock.Bytes)
+				Expect(err).To(BeNil())
+
+				By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
+				/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
+				-addext 'subjectAltName=email:email@domain.test,otherName:msUPN;utf8:upn@domain2.test,otherName:msUPN;UTF8:upn@domain.test' -x509 -out server.crt
+				*/
+				Expect(cert.Extensions).Should(HaveSameSANsAs(`-----BEGIN CERTIFICATE-----
+MIIDZjCCAk6gAwIBAgIUWmJ+z4OCWZg4V3XjSfEN+hItXjUwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTI0MDEwMzA4NTU1NloXDTI0MDIwMjA4
+NTU1NlowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAr5xmoX7/vp+wid+gOvbigYXLP/OvILyRpyj/e6IqJqj83+ImMtHt
+QtOHN/E1bYQ8juVXqhhwy5BDXV6qHCfEjAKJF/oHpdVGk4GoMV/noAjbyAdqxFb+
+Cr/62sZWFHcuBuh/msJj6MWWAYZkb6HPiyDaV4HdRrrefifQnBGmsO0DE2guy7Yr
+CMnE25H0yZ6z1e2tecsXSEkHyPNpil39oJ+1dT3UG8coU32rMOMKs7Za/xF0yMtU
+TrCzZ/ylFL4vJi/s0i9zgjBQloJud+s3J+MnbYFgv0MIaosZXuk7/FR0HNIM19Zw
+VLH6dgVCcF02bnnVpOAd6KPEzdqjYdDv/QIDAQABo4G1MIGyMB0GA1UdDgQWBBRF
+KVGbYoD2H1NE47wJL6xFQ83Q+DAfBgNVHSMEGDAWgBRFKVGbYoD2H1NE47wJL6xF
+Q83Q+DAPBgNVHRMBAf8EBTADAQH/MF8GA1UdEQRYMFaBEWVtYWlsQGRvbWFpbi50
+ZXN0oCAGCisGAQQBgjcUAgOgEgwQdXBuQGRvbWFpbjIudGVzdKAfBgorBgEEAYI3
+FAIDoBEMD3VwbkBkb21haW4udGVzdDANBgkqhkiG9w0BAQsFAAOCAQEAmrouGUth
+yyL3jJTe2XZCqbjNgwXrT5N8SwF8JrPNzTyuh4Qiug3N/3djmq4N4V60UAJU8Xpr
+Uf8TZBQwF6VD/TSvvJKB3qjSW0T46cF++10ueEgT7mT/icyPeiMw1syWpQlciIvv
+WZ/PIvHm2sTB+v8v9rhiFDyQxlnvbtG0D0TV/dEZmyrqfrBpWOP8TFgexRMQU2/4
+Gb9fYHRK+LBKRTFudEXNWcDYxK3umfht/ZUsMeWUP70XaNsTd9tQWRsctxGpU10s
+cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
+/XMa5c3nWcbXcA==
+-----END CERTIFICATE-----
+`))
+				return nil
+			}
+
+			By("Validating the issued Certificate...")
+
+			err = f.Helper().ValidateCertificate(testCertificate, valFunc)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OtherNamesFeature)
 
 		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name with a literal subject", func(issuerRef cmmeta.ObjectReference) {
 			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)

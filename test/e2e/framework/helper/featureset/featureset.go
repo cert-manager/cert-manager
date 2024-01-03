@@ -162,4 +162,9 @@ const (
 	// a certificate containing an arbitrary Subject in the CSR, without
 	// imposing requirements on form or structure.
 	LiteralSubjectFeature Feature = "LiteralCertificateSubject"
+
+	// OtherNameFeature denotes whether the target issuer is able to sign
+	// a certificate containing otherName SAN values in the CSR, without
+	// imposing requirements on form or structure.
+	OtherNamesFeature Feature = "OtherNames"
 )

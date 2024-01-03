@@ -166,10 +166,11 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 		PublicKey:          csr.PublicKey,
 		Subject:            csr.Subject,
 		RawSubject:         csr.RawSubject,
-		DNSNames:           csr.DNSNames,
-		IPAddresses:        csr.IPAddresses,
-		EmailAddresses:     csr.EmailAddresses,
-		URIs:               csr.URIs,
+
+		DNSNames:       csr.DNSNames,
+		IPAddresses:    csr.IPAddresses,
+		EmailAddresses: csr.EmailAddresses,
+		URIs:           csr.URIs,
 	}
 
 	// Start by copying all extensions from the CSR
@@ -229,6 +230,14 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			template.UnknownExtKeyUsage = unknownUsages
 		}
 
+		// The SANs fields in the Certificate resource are not enough to
+		// represent the full set of SANs that can be encoded in a CSR.
+		// Therefore, we need to copy the SANs from the CSR into the
+		// ExtraExtensions field of the certificate template.
+		if val.Id.Equal(oidExtensionSubjectAltName) {
+			template.ExtraExtensions = append(template.ExtraExtensions, val)
+		}
+
 		return nil
 	}
 
@@ -243,6 +252,8 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			return nil, err
 		}
 	}
+
+	cert.Extensions = csr.Extensions
 
 	for _, validatorMutator := range validatorMutators {
 		if err := validatorMutator(csr, cert); err != nil {

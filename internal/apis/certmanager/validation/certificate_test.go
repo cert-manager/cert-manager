@@ -165,7 +165,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
@@ -1061,7 +1061,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
 			},
 		},
 		"invalid with a `literalSubject` and any `Subject` other than serialNumber": {

@@ -167,6 +167,14 @@ type CertificateSpec struct {
 	// Requested email subject alternative names.
 	EmailAddresses []string
 
+	// `otherNames` is an escape hatch for subject alternative names (SANs) which allows any string-like
+	// otherName as specified in RFC 5280 (https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.6).
+	// All `otherName`s must include an OID and a UTF-8 string value. For example, the OID for the UPN
+	// `otherName` is "1.3.6.1.4.1.311.20.2.3".
+	// No validation is performed on the given UTF-8 string, so users must ensure that the value is correct before use
+	// +optional
+	OtherNames []OtherName `json:"otherNames,omitempty"`
+
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
 	// private key and certificate, signed by the denoted issuer. The Secret
@@ -245,6 +253,17 @@ type CertificateSpec struct {
 	// the controller and webhook components.
 	// +optional
 	NameConstraints *NameConstraints
+}
+
+type OtherName struct {
+	// OID is the object identifier for the otherName SAN.
+	// The object identifier must be expressed as a dotted string, for
+	// example, "1.2.840.113556.1.4.221".
+	OID string `json:"oid,omitempty"`
+
+	// utf8Value is the string value of the otherName SAN. Any UTF-8 string can be used, but no
+	// validation is performed.
+	UTF8Value string `json:"utf8Value,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
