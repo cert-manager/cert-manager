@@ -462,7 +462,7 @@ type PKCS12Keystore struct {
 	// containing the password used to encrypt the PKCS12 keystore.
 	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 
-	// Algorithms are specifying the key and certificate encryption algorithms and the HMAC algorithm
+	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	//
 	// If provided, allowed values are:
@@ -472,21 +472,21 @@ type PKCS12Keystore struct {
 	// (eg. because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	// +optional
-	Algorithms PKCS12Algorithms `json:"algorithms,omitempty"`
+	Profile PKCS12Profile `json:"profile,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023
-type PKCS12Algorithms string
+type PKCS12Profile string
 
 const (
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#LegacyRC2
-	LegacyRC2PKCS12Algorithms PKCS12Algorithms = "LegacyRC2"
+	LegacyRC2PKCS12Profile PKCS12Profile = "LegacyRC2"
 
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#LegacyDES
-	LegacyDESPKCS12Algorithms PKCS12Algorithms = "LegacyDES"
+	LegacyDESPKCS12Profile PKCS12Profile = "LegacyDES"
 
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
-	Modern2023PKCS12Algorithms PKCS12Algorithms = "Modern2023"
+	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
 )
 
 // CertificateStatus defines the observed state of Certificate

@@ -39,7 +39,7 @@ import (
 // If the certificate data contains multiple certificates, the first will be used
 // as the keystores 'certificate' and the remaining certificates will be prepended
 // to the list of CAs in the resulting keystore.
-func encodePKCS12Keystore(algorithms cmapi.PKCS12Algorithms, password string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
+func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
 	key, err := pki.DecodePrivateKeyBytes(rawKey)
 	if err != nil {
 		return nil, err
@@ -61,19 +61,19 @@ func encodePKCS12Keystore(algorithms cmapi.PKCS12Algorithms, password string, ra
 		cas = append(certs[1:], cas...)
 	}
 
-	switch algorithms {
-	case cmapi.Modern2023PKCS12Algorithms:
+	switch profile {
+	case cmapi.Modern2023PKCS12Profile:
 		return pkcs12.Modern2023.Encode(key, certs[0], cas, password)
-	case cmapi.LegacyDESPKCS12Algorithms:
+	case cmapi.LegacyDESPKCS12Profile:
 		return pkcs12.LegacyDES.Encode(key, certs[0], cas, password)
-	case cmapi.LegacyRC2PKCS12Algorithms:
+	case cmapi.LegacyRC2PKCS12Profile:
 		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
 	default:
 		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
 	}
 }
 
-func encodePKCS12Truststore(algorithms cmapi.PKCS12Algorithms, password string, caPem []byte) ([]byte, error) {
+func encodePKCS12Truststore(profile cmapi.PKCS12Profile, password string, caPem []byte) ([]byte, error) {
 	ca, err := pki.DecodeX509CertificateBytes(caPem)
 	if err != nil {
 		return nil, err
@@ -81,12 +81,12 @@ func encodePKCS12Truststore(algorithms cmapi.PKCS12Algorithms, password string, 
 
 	var cas = []*x509.Certificate{ca}
 
-	switch algorithms {
-	case cmapi.Modern2023PKCS12Algorithms:
+	switch profile {
+	case cmapi.Modern2023PKCS12Profile:
 		return pkcs12.Modern2023.EncodeTrustStore(cas, password)
-	case cmapi.LegacyDESPKCS12Algorithms:
+	case cmapi.LegacyDESPKCS12Profile:
 		return pkcs12.LegacyDES.EncodeTrustStore(cas, password)
-	case cmapi.LegacyRC2PKCS12Algorithms:
+	case cmapi.LegacyRC2PKCS12Profile:
 		return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
 	default:
 		return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
