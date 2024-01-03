@@ -61,11 +61,12 @@ func int32Ptr(i int32) *int32 {
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
-		cfg                           *internalcmapi.Certificate
-		a                             *admissionv1.AdmissionRequest
-		errs                          []*field.Error
-		warnings                      []string
-		nameConstraintsFeatureEnabled bool
+		cfg                                              *internalcmapi.Certificate
+		a                                                *admissionv1.AdmissionRequest
+		errs                                             []*field.Error
+		warnings                                         []string
+		additionalCertificateOutputFormatsFeatureEnabled bool
+		nameConstraintsFeatureEnabled                    bool
 	}{
 		"valid basic certificate": {
 			cfg: &internalcmapi.Certificate{
@@ -754,9 +755,44 @@ func TestValidateCertificate(t *testing.T) {
 					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
 			},
 		},
+		"invalid with name constraints and invalid OutputFormats": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					IsCA:       false,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							DNSDomains: []string{"example.com"},
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+					AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
+						{Type: internalcmapi.CertificateOutputFormatType("foo")},
+						{Type: internalcmapi.CertificateOutputFormatType("bar")},
+						{Type: internalcmapi.CertificateOutputFormatType("random")},
+						{Type: internalcmapi.CertificateOutputFormatType("foo")},
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Required(fldPath.Child("secretName"), "must be specified"),
+				field.Invalid(fldPath.Child("nameConstraints"), &internalcmapi.NameConstraints{
+					Permitted: &internalcmapi.NameConstraintItem{
+						DNSDomains: []string{"example.com"},
+					},
+				}, "isCA should be true when nameConstraints is set"),
+				field.Duplicate(fldPath.Child("additionalOutputFormats").Key("type"), "foo"),
+			},
+			additionalCertificateOutputFormatsFeatureEnabled: true,
+			nameConstraintsFeatureEnabled:                    true,
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, s.additionalCertificateOutputFormatsFeatureEnabled)()
 			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)()
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
