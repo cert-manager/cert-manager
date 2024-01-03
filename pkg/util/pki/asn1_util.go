@@ -116,48 +116,6 @@ func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
 	return bytes, nil
 }
 
-func isIA5String(s string) error {
-	for _, r := range s {
-		// Per RFC5280 "IA5String is limited to the set of ASCII characters"
-		if r > unicode.MaxASCII {
-			return fmt.Errorf("x509: %q cannot be encoded as an IA5String", s)
-		}
-	}
-
-	return nil
-}
-
-// isPrintable reports whether the given b is in the ASN.1 PrintableString set.
-// '*' and '&' are also allowed, reflecting existing practice.
-func isPrintable(s string) bool {
-	for _, b := range s {
-		if 'a' <= b && b <= 'z' ||
-			'A' <= b && b <= 'Z' ||
-			'0' <= b && b <= '9' ||
-			'\'' <= b && b <= ')' ||
-			'+' <= b && b <= '/' ||
-			b == ' ' ||
-			b == ':' ||
-			b == '=' ||
-			b == '?' ||
-			// This is technically not allowed in a PrintableString.
-			// However, x509 certificates with wildcard strings don't
-			// always use the correct string type so we permit it.
-			b == '*' ||
-			// This is not technically allowed either. However, not
-			// only is it relatively common, but there are also a
-			// handful of CA certificates that contain it. At least
-			// one of which will not expire until 2027.
-			b == '&' {
-			continue
-		}
-
-		return false
-	}
-
-	return true
-}
-
 func UnmarshalUniversalValue(rawValue asn1.RawValue) (UniversalValue, error) {
 	var uv UniversalValue
 
@@ -188,4 +146,48 @@ func UnmarshalUniversalValue(rawValue asn1.RawValue) (UniversalValue, error) {
 	}
 
 	return uv, nil
+}
+
+// Copied from: https://github.com/golang/go/blob/c95fe91d0715dc0a8d55ac80a80f383c3635548b/src/crypto/x509/x509.go#L1093
+func isIA5String(s string) error {
+	for _, r := range s {
+		// Per RFC5280 "IA5String is limited to the set of ASCII characters"
+		if r > unicode.MaxASCII {
+			return fmt.Errorf("x509: %q cannot be encoded as an IA5String", s)
+		}
+	}
+
+	return nil
+}
+
+// isPrintable reports whether the given b is in the ASN.1 PrintableString set.
+// '*' and '&' are also allowed, reflecting existing practice.
+// Copied from: https://github.com/golang/go/blob/c95fe91d0715dc0a8d55ac80a80f383c3635548b/src/crypto/x509/parser.go#L34
+func isPrintable(s string) bool {
+	for _, b := range s {
+		if 'a' <= b && b <= 'z' ||
+			'A' <= b && b <= 'Z' ||
+			'0' <= b && b <= '9' ||
+			'\'' <= b && b <= ')' ||
+			'+' <= b && b <= '/' ||
+			b == ' ' ||
+			b == ':' ||
+			b == '=' ||
+			b == '?' ||
+			// This is technically not allowed in a PrintableString.
+			// However, x509 certificates with wildcard strings don't
+			// always use the correct string type so we permit it.
+			b == '*' ||
+			// This is not technically allowed either. However, not
+			// only is it relatively common, but there are also a
+			// handful of CA certificates that contain it. At least
+			// one of which will not expire until 2027.
+			b == '&' {
+			continue
+		}
+
+		return false
+	}
+
+	return true
 }
