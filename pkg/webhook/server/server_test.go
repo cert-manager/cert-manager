@@ -33,7 +33,7 @@ import (
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
-	"k8s.io/klog/v2/klogr"
+	"k8s.io/klog/v2/ktesting"
 )
 
 func TestConvert(t *testing.T) {
@@ -75,7 +75,7 @@ func TestConvert(t *testing.T) {
 			var bufWriter = bytes.NewBuffer(nil)
 			klog.SetOutput(bufWriter)
 			klog.LogToStderr(false)
-			log := klogr.New()
+			log := ktesting.NewLogger(t, ktesting.NewConfig())
 
 			s := &Server{
 				ConversionWebhook: handlers.NewSchemeBackedConverter(log, defaultScheme),
@@ -197,7 +197,7 @@ func TestValidate(t *testing.T) {
 			var bufWriter = bytes.NewBuffer(nil)
 			klog.SetOutput(bufWriter)
 			klog.LogToStderr(false)
-			log := klogr.New()
+			log := ktesting.NewLogger(t, ktesting.NewConfig())
 
 			tc.s.log = log
 

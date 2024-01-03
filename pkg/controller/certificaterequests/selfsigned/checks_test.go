@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog/v2/klogr"
+	"k8s.io/klog/v2/ktesting"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -135,7 +135,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 			builder.Start()
 
 			queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-			handleSecretReferenceWorkFunc(klogr.New(), lister, helper, queue)(test.secret)
+			handleSecretReferenceWorkFunc(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, queue)(test.secret)
 			require.Equal(t, len(test.expectedQueue), queue.Len())
 			var actualQueue []string
 			for range test.expectedQueue {
@@ -335,7 +335,7 @@ func Test_certificatesRequestsForSecret(t *testing.T) {
 
 			builder.Start()
 
-			affected, err := certificateRequestsForSecret(klogr.New(), lister, helper, secret.DeepCopy())
+			affected, err := certificateRequestsForSecret(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, secret.DeepCopy())
 			assert.NoError(t, err)
 			assert.ElementsMatch(t, test.expectedAffected, affected)
 		})
