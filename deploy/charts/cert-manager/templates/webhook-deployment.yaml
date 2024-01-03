@@ -63,7 +63,7 @@ spec:
           image: "{{ template "image" (tuple .Values.webhook.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
-          {{- if .Values.global.logLevel }}
+          {{- if ne (quote .Values.global.logLevel) (quote "") }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           {{- if .Values.webhook.config }}

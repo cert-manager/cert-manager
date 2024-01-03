@@ -58,7 +58,7 @@ spec:
           image: "{{ template "image" (tuple .Values.cainjector.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.cainjector.image.pullPolicy }}
           args:
-          {{- if .Values.global.logLevel }}
+          {{- if ne (quote .Values.global.logLevel) (quote "") }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           {{- with .Values.global.leaderElection }}
