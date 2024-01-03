@@ -260,7 +260,15 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Reason field on Order's status. Change this test once we are setting
 	// Reasons on intermittent Order states.
 	var pendingOrder *cmacme.Order
-	err = wait.PollUntilContextTimeout(ctx, time.Millisecond*200, acmeorders.RequeuePeriod, true, func(ctx context.Context) (bool, error) {
+	startTime := time.Now()
+	successful := false
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*200, true, func(ctx context.Context) (bool, error) {
+		// Check if order has been pending for 2s (requeue period)
+		if time.Since(startTime) > acmeorders.RequeuePeriod {
+			successful = true
+			return true, nil
+		}
+
 		pendingOrder, err = cmCl.AcmeV1().Orders(testName).Get(ctx, testName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -271,9 +279,9 @@ func TestAcmeOrdersController(t *testing.T) {
 		return false, nil
 	})
 	switch {
-	case err == nil:
+	case err == nil && !successful:
 		t.Fatalf("Expected Order to have pending status instead got: %v", pendingOrder.Status.State)
-	case err == context.DeadlineExceeded:
+	case err == nil && successful:
 		// this is the expected 'happy case'
 	default:
 		t.Fatal(err)
