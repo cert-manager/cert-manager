@@ -184,7 +184,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 			el = append(el, field.Forbidden(fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"))
 		} else {
 			if !crt.IsCA {
-				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "isCa should be true when nameConstraints is set"))
+				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "isCA should be true when nameConstraints is set"))
 			}
 
 			if crt.NameConstraints.Permitted == nil && crt.NameConstraints.Excluded == nil {
