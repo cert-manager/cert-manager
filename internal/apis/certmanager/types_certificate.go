@@ -167,10 +167,11 @@ type CertificateSpec struct {
 	// Requested email subject alternative names.
 	EmailAddresses []string
 
-	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
-	// Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`.
-	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
-	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
+	// `otherNames` is an escape hatch for subject alternative names (SANs) which allows any string-like
+	// otherName as specified in RFC 5280 (https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.6).
+	// All `otherName`s must include an OID and a UTF-8 string value. For example, the OID for the UPN
+	// `otherName` is "1.3.6.1.4.1.311.20.2.3".
+	// No validation is performed on the given UTF-8 string, so users must ensure that the value is correct before use
 	// +optional
 	OtherNames []OtherName `json:"otherNames,omitempty"`
 
