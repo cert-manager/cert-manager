@@ -261,8 +261,8 @@ type OtherName struct {
 	// example, "1.2.840.113556.1.4.221".
 	OID string `json:"oid,omitempty"`
 
-	// utf8Value is the string value of the otherName SAN.
-	// The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
+	// utf8Value is the string value of the otherName SAN. Any UTF-8 string can be used, but no
+	// validation is performed.
 	UTF8Value string `json:"utf8Value,omitempty"`
 }
 
