@@ -102,6 +102,11 @@ func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, 
 	return false, obj.(runtime.Object), nil
 }
 
+// informerResyncPeriod is the resync period used by the test informers. We
+// want this period to be as short as possible to make the tests faster.
+// However, client-go imposes a minimum resync period of 1 second, so that
+// is the lowest we can go.
+// https://github.com/kubernetes/client-go/blob/5a019202120ab4dd7dfb3788e5cb87269f343ebe/tools/cache/shared_informer.go#L575
 const informerResyncPeriod = time.Second
 
 // Init will construct a new context for this builder and set default values
@@ -149,6 +154,7 @@ func (b *Builder) Init() {
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeGWClient().PrependReactor("create", "*", b.generateNameReactor)
+	b.FakeMetadataClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(b.Client, informerResyncPeriod, "")
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.GWShared = gwinformers.NewSharedInformerFactory(b.GWClient, informerResyncPeriod)
@@ -192,6 +198,14 @@ func (b *Builder) FakeGWClient() *gwfake.Clientset {
 
 func (b *Builder) FakeCMInformerFactory() informers.SharedInformerFactory {
 	return b.Context.SharedInformerFactory
+}
+
+func (b *Builder) FakeMetadataClient() *metadatafake.FakeMetadataClient {
+	return b.Context.MetadataClient.(*metadatafake.FakeMetadataClient)
+}
+
+func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
+	return b.Context.DiscoveryClient.(*discoveryfake.Discovery)
 }
 
 func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFunc) coretesting.ReactionFunc {
@@ -329,6 +343,14 @@ func (b *Builder) Start() {
 	b.Sync()
 }
 
+// Sync is a function used by tests to wait for all informers to be synced. This function
+// is called initially by the Start method, to wait for the caches to be populated. It is
+// also called directly by tests to wait for any updates made by the fake clients to be
+// reflected in the informer caches.
+// Sync calls the WaitForCacheSync method on all informers to make sure they have populated
+// their caches. The WaitForCacheSync method is only useful at startup. In order to wait
+// for updates made by the fake clients to be reflected in the informer caches, we need
+// to sleep for the informerResyncPeriod.
 func (b *Builder) Sync() {
 	if err := mustAllSyncString(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
@@ -345,6 +367,9 @@ func (b *Builder) Sync() {
 	if b.additionalSyncFuncs != nil {
 		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
 	}
+
+	// Wait for the informerResyncPeriod to make sure any update made by any of the fake clients
+	// is reflected in the informer caches.
 	time.Sleep(informerResyncPeriod)
 }
 
