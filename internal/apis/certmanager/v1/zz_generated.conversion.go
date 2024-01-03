@@ -756,6 +756,13 @@ func autoConvert_v1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int)
+		**out = int(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -776,6 +783,13 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1_CertificateRequestSpec
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int32)
+		**out = int32(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]v1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -862,9 +876,17 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 		return err
 	}
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int)
+		**out = int(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
+	out.EncodeBasicConstraintsInRequest = (*bool)(unsafe.Pointer(in.EncodeBasicConstraintsInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]certmanager.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
 	out.NameConstraints = (*certmanager.NameConstraints)(unsafe.Pointer(in.NameConstraints))
@@ -901,9 +923,17 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 		return err
 	}
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int32)
+		**out = int32(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]v1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*v1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
+	out.EncodeBasicConstraintsInRequest = (*bool)(unsafe.Pointer(in.EncodeBasicConstraintsInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]v1.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
 	out.NameConstraints = (*v1.NameConstraints)(unsafe.Pointer(in.NameConstraints))

@@ -126,6 +126,17 @@ type CertificateRequestSpec struct {
 	// of requested `usages`.
 	IsCA bool
 
+	// Requested basic constraints maxPathLen value. Note that the issuer may choose
+	// to ignore the requested maxPathLen value, just like any other requested attribute.
+	//
+	// NOTE: If the CSR in the `Request` field has a BasicConstraints extension,
+	// it must have the same maxPathLen value as specified here.
+	//
+	// If set, maxPathLen must be a value of `0` or greater.
+	// If unset (`nil`), there is no maximum.
+	// Default value is `nil`.
+	MaxPathLen *int
+
 	// Requested key usages and extended key usages.
 	//
 	// NOTE: If the CSR in the `Request` field has uses the KeyUsage or

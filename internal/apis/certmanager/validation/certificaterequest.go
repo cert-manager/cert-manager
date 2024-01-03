@@ -93,6 +93,10 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	if crSpec.MaxPathLen != nil && !crSpec.IsCA {
+		el = append(el, field.Forbidden(fldPath.Child("maxPathLen"), "must not be set unless the certificate is a CA"))
+	}
+
 	if len(crSpec.Request) == 0 {
 		el = append(el, field.Required(fldPath.Child("request"), "must be specified"))
 		return el
@@ -117,7 +121,7 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) && len(crSpec.Usages) == 0 {
 		_, err = pki.CertificateTemplateFromCSRPEM(
 			crSpec.Request,
-			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
+			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, crSpec.MaxPathLen),
 		)
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
@@ -126,7 +130,7 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 	} else {
 		_, err = pki.CertificateTemplateFromCSRPEM(
 			crSpec.Request,
-			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
+			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, crSpec.MaxPathLen),
 			pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 		)
 		if err != nil {

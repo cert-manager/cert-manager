@@ -29,6 +29,10 @@ const (
 	// request whether the certificate should be marked as CA.
 	CertificateSigningRequestIsCAAnnotationKey = "experimental.cert-manager.io/request-is-ca"
 
+	// CertificateSigningRequestMaxPathLenAnnotationKey is the annotation key used to
+	// request a specific MaxPathLen for your CA certificate.
+	CertificateSigningRequestMaxPathLenAnnotationKey = "experimental.cert-manager.io/request-max-path-len"
+
 	// CertificateSigningRequestMinimumDuration is the minimum allowed
 	// duration that can be requested for a CertificateSigningRequest via
 	// the experimental.cert-manager.io/request-duration annotation. This

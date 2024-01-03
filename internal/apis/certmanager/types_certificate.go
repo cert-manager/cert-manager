@@ -195,10 +195,26 @@ type CertificateSpec struct {
 	// The isCA value is used to set the `isCA` field on the created CertificateRequest
 	// resources. Note that the issuer may choose to ignore the requested isCA value, just
 	// like any other requested attribute.
+	// If the `UseCertificateRequestBasicConstraints` feature gate is set and the
+	// `encodeBasicConstraintsInRequest` field is not set to `false`, the encoded CSR will
+	// have a BasicConstraints extension with the provided isCA value.
 	//
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
 	IsCA bool
+
+	// Requested basic constraints maxPathLen value.
+	// The maxPathLen value is used to set the `maxPathLen` field on the created CertificateRequest
+	// resources. Note that the issuer may choose to ignore the requested maxPathLen value, just
+	// like any other requested attribute.
+	// If the `UseCertificateRequestBasicConstraints` feature gate is set and the
+	// `encodeBasicConstraintsInRequest` field is not set to `false`, the encoded CSR will
+	// have a BasicConstraints extension with the provided maxPathLen value.
+	//
+	// If set, maxPathLen must be a value of `0` or greater.
+	// If unset (`nil`), there is no maximum.
+	// Default value is `nil`.
+	MaxPathLen *int
 
 	// Requested key usages and extended key usages.
 	// These usages are used to set the `usages` field on the created CertificateRequest
@@ -217,6 +233,14 @@ type CertificateSpec struct {
 	// This option defaults to true, and should only be disabled if the target
 	// issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.
 	EncodeUsagesInRequest *bool
+
+	// Whether the BasicConstraints extension should be set in the encoded CSR.
+	//
+	// IMPORTANT: This option is only available if `UseCertificateRequestBasicConstraints` feature
+	// gate is set. Otherwise, the CSR will not have the BasicConstraints extension.
+	// This option defaults to true, and should only be disabled if the target
+	// issuer does not support CSRs with a X509 BasicConstraints extension.
+	EncodeBasicConstraintsInRequest *bool
 
 	// The maximum number of CertificateRequest revisions that are maintained in
 	// the Certificate's history. Each revision represents a single `CertificateRequest`

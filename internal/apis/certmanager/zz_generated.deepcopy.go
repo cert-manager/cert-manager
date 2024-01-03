@@ -293,6 +293,11 @@ func (in *CertificateRequestSpec) DeepCopyInto(out *CertificateRequestSpec) {
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int)
+		**out = **in
+	}
 	if in.Usages != nil {
 		in, out := &in.Usages, &out.Usages
 		*out = make([]KeyUsage, len(*in))
@@ -447,6 +452,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		(*in).DeepCopyInto(*out)
 	}
 	out.IssuerRef = in.IssuerRef
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int)
+		**out = **in
+	}
 	if in.Usages != nil {
 		in, out := &in.Usages, &out.Usages
 		*out = make([]KeyUsage, len(*in))
@@ -459,6 +469,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 	}
 	if in.EncodeUsagesInRequest != nil {
 		in, out := &in.EncodeUsagesInRequest, &out.EncodeUsagesInRequest
+		*out = new(bool)
+		**out = **in
+	}
+	if in.EncodeBasicConstraintsInRequest != nil {
+		in, out := &in.EncodeBasicConstraintsInRequest, &out.EncodeBasicConstraintsInRequest
 		*out = new(bool)
 		**out = **in
 	}

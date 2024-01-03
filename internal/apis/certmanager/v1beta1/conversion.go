@@ -43,3 +43,7 @@ func Convert_certmanager_CertificateSpec_To_v1beta1_CertificateSpec(in *certmana
 
 	return nil
 }
+
+func Convert_certmanager_CertificateRequestSpec_To_v1beta1_CertificateRequestSpec(in *certmanager.CertificateRequestSpec, out *CertificateRequestSpec, s conversion.Scope) error {
+	return autoConvert_certmanager_CertificateRequestSpec_To_v1beta1_CertificateRequestSpec(in, out, s)
+}
