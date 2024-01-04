@@ -15,8 +15,8 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.webhook.replicaCount }}
-  {{- if .Values.revisionHistoryLimit }}
-  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- if ne (quote .Values.global.revisionHistoryLimit) (quote "") }}
+  revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
   {{- end }}
   selector:
     matchLabels:
