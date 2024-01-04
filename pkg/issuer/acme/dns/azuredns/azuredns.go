@@ -13,17 +13,18 @@ package azuredns
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -33,8 +34,8 @@ import (
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers  []string
-	recordClient      dns.RecordSetsClient
-	zoneClient        dns.ZonesClient
+	recordClient      *dns.RecordSetsClient
+	zoneClient        *dns.ZonesClient
 	resourceGroupName string
 	zoneName          string
 	log               logr.Logger
@@ -43,25 +44,24 @@ type DNSProvider struct {
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
 func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*DNSProvider, error) {
-	env := azure.PublicCloud
-	if environment != "" {
-		var err error
-		env, err = azure.EnvironmentFromName(environment)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient, managedIdentity)
+	cloudCfg, err := getCloudConfiguration(environment)
 	if err != nil {
 		return nil, err
 	}
 
-	rc := dns.NewRecordSetsClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
-	rc.Authorizer = autorest.NewBearerAuthorizer(spt)
-
-	zc := dns.NewZonesClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
-	zc.Authorizer = autorest.NewBearerAuthorizer(spt)
+	clientOpt := policy.ClientOptions{Cloud: cloudCfg}
+	cred, err := getAuthorization(clientOpt, clientID, clientSecret, tenantID, ambient, managedIdentity)
+	if err != nil {
+		return nil, err
+	}
+	rc, err := dns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+	if err != nil {
+		return nil, err
+	}
+	zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+	if err != nil {
+		return nil, err
+	}
 
 	return &DNSProvider{
 		dns01Nameservers:  dns01Nameservers,
@@ -73,140 +73,65 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
-// Implements adal.TokenRefreshError
-type tokenRefreshError struct {
-	Message string
-	Resp    *http.Response
+func getCloudConfiguration(name string) (cloud.Configuration, error) {
+	switch strings.ToUpper(name) {
+	case "AZURECLOUD", "AZUREPUBLICCLOUD", "":
+		return cloud.AzurePublic, nil
+	case "AZUREUSGOVERNMENT", "AZUREUSGOVERNMENTCLOUD":
+		return cloud.AzureGovernment, nil
+	case "AZURECHINACLOUD":
+		return cloud.AzureChina, nil
+	}
+	return cloud.Configuration{}, fmt.Errorf("unknown cloud configuration name: %s", name)
 }
 
-func (tre tokenRefreshError) Error() string {
-	return tre.Message
-}
-
-func (tre tokenRefreshError) Response() *http.Response {
-	return tre.Resp
-}
-
-// suppressMessageInTokenRefreshError can be used to suppress error message contents in adal.TokenRefreshError to prevent early
-// reconciliations in controller due to CR status updates with unique data (such as timestamp, Trace ID) present in response body
-func suppressMessageInTokenRefreshError(originalError error) error {
-	if originalError == nil {
-		return nil
-	}
-
-	// No need to overwrite errors of another type
-	tre, ok := originalError.(adal.TokenRefreshError)
-	if !ok {
-		return originalError
-	}
-
-	err := tokenRefreshError{
-		Message: "failed to refresh token",
-		Resp:    tre.Response(),
-	}
-
-	return err
-}
-
-// getFederatedSPT prepares an SPT for a Workload Identity-enabled setup
-func getFederatedSPT(env azure.Environment, options adal.ManagedIdentityOptions) (*adal.ServicePrincipalToken, error) {
-	// NOTE: all related environment variables are described here: https://azure.github.io/azure-workload-identity/docs/installation/mutating-admission-webhook.html
-	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, os.Getenv("AZURE_TENANT_ID"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
-	}
-
-	jwt, err := os.ReadFile(os.Getenv("AZURE_FEDERATED_TOKEN_FILE"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read a file with a federated token: %v", err)
-	}
-
-	// AZURE_CLIENT_ID will be empty in case azure.workload.identity/client-id annotation is not set
-	// Also, some users might want to use a different MSI for a particular DNS zone
-	// Thus, it's important to offer optional ClientID overrides
-	clientID := os.Getenv("AZURE_CLIENT_ID")
-	if options.ClientID != "" {
-		clientID = options.ClientID
-	}
-
-	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, clientID, string(jwt), env.ResourceManagerEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a workload identity token: %v", err)
-	}
-
-	return token, nil
-}
-
-func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*adal.ServicePrincipalToken, error) {
+func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, tenantID string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (azcore.TokenCredential, error) {
 	if clientID != "" {
 		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
-		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
+		cred, err := azidentity.NewClientSecretCredential(tenantID, clientID, clientSecret, &azidentity.ClientSecretCredentialOptions{ClientOptions: clientOpt})
 		if err != nil {
 			return nil, err
 		}
-		spt, err := adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
-		if err != nil {
-			return nil, err
-		}
-		return spt, nil
+		return cred, nil
 	}
+
 	logf.Log.V(logf.InfoLevel).Info("No ClientID found: attempting to authenticate with ambient credentials (Azure Workload Identity or Azure Managed Service Identity, in that order)")
 	if !ambient {
 		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
 	}
 
-	opt := adal.ManagedIdentityOptions{}
-
-	if managedIdentity != nil {
-		opt.ClientID = managedIdentity.ClientID
-		opt.IdentityResourceID = managedIdentity.ResourceID
-	}
-
 	// Use Workload Identity if present
 	if os.Getenv("AZURE_FEDERATED_TOKEN_FILE") != "" {
-		spt, err := getFederatedSPT(env, opt)
-		if err != nil {
-			return nil, err
+		wcOpt := &azidentity.WorkloadIdentityCredentialOptions{
+			DisableInstanceDiscovery: true,
+			ClientOptions:            clientOpt,
+		}
+		if managedIdentity != nil {
+			if managedIdentity.ClientID != "" {
+				wcOpt.ClientID = managedIdentity.ClientID
+			}
 		}
 
-		// adal does not offer methods to dynamically replace a federated token, thus we need to have a wrapper to make sure
-		// we're using up-to-date secret while requesting an access token.
-		// NOTE: There's no RefreshToken in the whole process (in fact, it's absent in AAD responses). An AccessToken can be
-		// received only in exchange for a federated token.
-		var refreshFunc adal.TokenRefresh = func(context context.Context, resource string) (*adal.Token, error) {
-			newSPT, err := getFederatedSPT(env, opt)
-			if err != nil {
-				return nil, err
-			}
-
-			// An AccessToken gets populated into an spt only when .Refresh() is called. Normally, it's something that happens implicitly when
-			// a first request to manipulate Azure resources is made. Since our goal here is only to receive a fresh AccessToken, we need to make
-			// an explicit call.
-			// .Refresh() itself results in a call to Oauth endpoint. During the process, a federated token is exchanged for an AccessToken.
-			// RefreshToken is absent from responses.
-			err = newSPT.Refresh()
-			if err != nil {
-				logf.Log.V(logf.ErrorLevel).Error(err, "failed to refresh token")
-				return nil, suppressMessageInTokenRefreshError(err)
-			}
-
-			accessToken := newSPT.Token()
-
-			return &accessToken, nil
-		}
-
-		spt.SetCustomRefreshFunc(refreshFunc)
-
-		return spt, nil
+		return azidentity.NewWorkloadIdentityCredential(wcOpt)
 	}
 
 	logf.Log.V(logf.InfoLevel).Info("No Azure Workload Identity found: attempting to authenticate with an Azure Managed Service Identity (MSI)")
 
-	spt, err := adal.NewServicePrincipalTokenFromManagedIdentity(env.ServiceManagementEndpoint, &opt)
+	msiOpt := &azidentity.ManagedIdentityCredentialOptions{ClientOptions: clientOpt}
+	if managedIdentity != nil {
+		if managedIdentity.ClientID != "" {
+			msiOpt.ID = azidentity.ClientID(managedIdentity.ClientID)
+		}
+		if managedIdentity.ResourceID != "" {
+			msiOpt.ID = azidentity.ResourceID(managedIdentity.ResourceID)
+		}
+	}
+
+	cred, err := azidentity.NewManagedIdentityCredential(msiOpt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 	}
-	return spt, nil
+	return cred, nil
 }
 
 // Present creates a TXT record using the specified parameters
@@ -227,8 +152,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		c.resourceGroupName,
 		z,
 		c.trimFqdn(fqdn, z),
-		dns.TXT, "")
-
+		dns.RecordTypeTXT, nil)
 	if err != nil {
 		return err
 	}
@@ -237,10 +161,10 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	rparams := &dns.RecordSet{
-		RecordSetProperties: &dns.RecordSetProperties{
-			TTL: to.Int64Ptr(int64(ttl)),
-			TxtRecords: &[]dns.TxtRecord{
-				{Value: &[]string{value}},
+		Properties: &dns.RecordSetProperties{
+			TTL: to.Ptr(int64(ttl)),
+			TxtRecords: []*dns.TxtRecord{
+				{Value: []*string{&value}},
 			},
 		},
 	}
@@ -256,9 +180,8 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		c.resourceGroupName,
 		z,
 		c.trimFqdn(fqdn, z),
-		dns.TXT,
-		*rparams, "", "")
-
+		dns.RecordTypeTXT,
+		*rparams, nil)
 	if err != nil {
 		c.log.Error(err, "Error creating TXT:", z)
 		return err
@@ -279,7 +202,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	_, err = c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z))
+	_, err = c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil)
 
 	if err != nil {
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, err)
