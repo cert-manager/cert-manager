@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -119,14 +120,10 @@ func Contains(ss []string, s string) bool {
 }
 
 // Subset returns true if one slice is an unsorted subset of the first.
+//
+// Deprecated: Use k8s.io/apimachinery/pkg/util/sets#IsSuperset instead
 func Subset(set, subset []string) bool {
-	for _, s := range subset {
-		if !slices.Contains(set, s) {
-			return false
-		}
-	}
-
-	return true
+	return sets.New(set...).IsSuperset(sets.New(subset...))
 }
 
 // JoinWithEscapeCSV returns the given list as a single line of CSV that
