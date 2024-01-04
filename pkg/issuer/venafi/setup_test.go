@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -33,7 +34,6 @@ import (
 	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	internalvenafifake "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/fake"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -184,7 +184,7 @@ func (s *testSetupT) runTest(t *testing.T) {
 		t.Errorf("expected to get an error but did not get one")
 	}
 
-	if !util.EqualSorted(s.expectedEvents, rec.Events) {
+	if !slices.Equal(s.expectedEvents, rec.Events) {
 		t.Errorf("got unexpected events, exp='%s' got='%s'",
 			s.expectedEvents, rec.Events)
 	}

@@ -19,6 +19,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -270,7 +270,7 @@ func (tt *reporterT) runTest(t *testing.T) {
 			expConditions, gotConditions)
 	}
 
-	if !util.EqualSorted(tt.expectedEvents, recorder.Events) {
+	if !slices.Equal(tt.expectedEvents, recorder.Events) {
 		t.Errorf("got unexpected events, exp=%+v got=%+v",
 			tt.expectedEvents, recorder.Events)
 	}

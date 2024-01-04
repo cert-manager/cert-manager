@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/kr/pretty"
@@ -186,7 +187,7 @@ func ExpectValidCommonName(certificate *cmapi.Certificate, secret *corev1.Secret
 
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
 		// no CN is specified but our CA set one, checking if it is one of our DNS names or IP Addresses
-		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) && !util.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
+		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) && !slices.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
 			return fmt.Errorf("Expected a common name for one of our DNSNames %v or IP Addresses %v, but got a CN of %v", cert.DNSNames, pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName)
 		}
 	} else if expectedCN != cert.Subject.CommonName {
