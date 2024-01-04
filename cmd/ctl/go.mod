@@ -16,7 +16,7 @@ go 1.21
 // or a branch name (master).
 
 require (
-	github.com/cert-manager/cert-manager v1.13.0-beta.0.0.20230912132115-a91834eec9b3
+	github.com/cert-manager/cert-manager v1.14.0-alpha.0
 	github.com/go-logr/logr v1.4.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
@@ -109,7 +109,6 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
-	github.com/miekg/dns v1.1.57 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -166,7 +165,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.29.0 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
-	k8s.io/kube-aggregator v0.29.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20240103051144-eec4567ac022 // indirect
 	oras.land/oras-go v1.2.4 // indirect
 	sigs.k8s.io/gateway-api v1.0.0 // indirect
