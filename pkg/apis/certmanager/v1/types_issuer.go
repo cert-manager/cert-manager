@@ -218,6 +218,16 @@ type VaultIssuer struct {
 	// If no key for the Secret is specified, cert-manager will default to 'ca.crt'.
 	// +optional
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
+
+	// Reference to a Secret containing a PEM-encoded Client Certificate to use when the
+	// Vault server requires mTLS.
+	// +optional
+	ClientCertSecretRef *cmmeta.SecretKeySelector `json:"clientCertSecretRef,omitempty"`
+
+	// Reference to a Secret containing a PEM-encoded Client Private Key to use when the
+	// Vault server requires mTLS.
+	// +optional
+	ClientKeySecretRef *cmmeta.SecretKeySelector `json:"clientKeySecretRef,omitempty"`
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The

@@ -1544,6 +1544,24 @@ func autoConvert_v1_VaultIssuer_To_certmanager_VaultIssuer(in *v1.VaultIssuer, o
 	} else {
 		out.CABundleSecretRef = nil
 	}
+	if in.ClientCertSecretRef != nil {
+		in, out := &in.ClientCertSecretRef, &out.ClientCertSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientCertSecretRef = nil
+	}
+	if in.ClientKeySecretRef != nil {
+		in, out := &in.ClientKeySecretRef, &out.ClientKeySecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientKeySecretRef = nil
+	}
 	return nil
 }
 
@@ -1568,6 +1586,24 @@ func autoConvert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.Vault
 		}
 	} else {
 		out.CABundleSecretRef = nil
+	}
+	if in.ClientCertSecretRef != nil {
+		in, out := &in.ClientCertSecretRef, &out.ClientCertSecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientCertSecretRef = nil
+	}
+	if in.ClientKeySecretRef != nil {
+		in, out := &in.ClientKeySecretRef, &out.ClientKeySecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientKeySecretRef = nil
 	}
 	return nil
 }

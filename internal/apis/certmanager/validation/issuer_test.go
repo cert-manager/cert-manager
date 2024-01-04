@@ -119,6 +119,54 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("caBundle"), "<snip>", "cert bundle didn't contain any valid certificates"),
 			},
 		},
+		"vault issuer define clientCertSecretRef but not clientKeySecretRef": {
+			spec: &cmapi.VaultIssuer{
+				Server: "https://vault.example.com",
+				Path:   "secret/path",
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key: "ca.crt",
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "test-secret",
+					},
+				},
+				ClientCertSecretRef: &cmmeta.SecretKeySelector{
+					Key: "tls.crt",
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "test-secret",
+					},
+				},
+				Auth: cmapi.VaultAuth{
+					TokenSecretRef: &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("clientKeySecretRef"), "<snip>", "clientKeySecretRef must be provided when defining the clientCertSecretRef"),
+			},
+		},
+		"vault issuer define clientKeySecretRef but not clientCertSecretRef": {
+			spec: &cmapi.VaultIssuer{
+				Server: "https://vault.example.com",
+				Path:   "secret/path",
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key: "ca.crt",
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "test-secret",
+					},
+				},
+				ClientKeySecretRef: &cmmeta.SecretKeySelector{
+					Key: "tls.key",
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "test-secret",
+					},
+				},
+				Auth: cmapi.VaultAuth{
+					TokenSecretRef: &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("clientCertSecretRef"), "<snip>", "clientCertSecretRef must be provided when defining the clientKeySecretRef"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
