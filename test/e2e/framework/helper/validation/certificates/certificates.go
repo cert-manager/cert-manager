@@ -29,6 +29,7 @@ import (
 
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -148,9 +149,10 @@ func ExpectCertificateDNSNamesToMatch(certificate *cmapi.Certificate, secret *co
 		return err
 	}
 
-	expectedDNSNames := certificate.Spec.DNSNames
-	if !util.Subset(cert.DNSNames, expectedDNSNames) {
-		return fmt.Errorf("Expected certificate valid for DNSNames %v, but got a certificate valid for DNSNames %v", expectedDNSNames, cert.DNSNames)
+	x509DNSNames := sets.New(cert.DNSNames...)
+	expectedDNSNames := sets.New(certificate.Spec.DNSNames...)
+	if !x509DNSNames.IsSuperset(expectedDNSNames) {
+		return fmt.Errorf("Expected certificate valid for DNSNames %v, but got a certificate valid for DNSNames %v", sets.List(expectedDNSNames), sets.List(x509DNSNames))
 	}
 
 	return nil
