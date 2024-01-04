@@ -49,7 +49,13 @@ func EqualSorted(s1, s2 []string) bool {
 	return slices.Equal(s1, s2)
 }
 
-func genericEqualSorted[S ~[]E, E any](
+// genericEqualUnsorted reports whether two slices are identical up to reordering
+// using a comparison function.
+// If the lengths are different, genericEqualUnsorted returns false. Otherwise, the
+// elements are sorted using the comparison function, and the sorted slices are
+// compared element by element using the same comparison function. If all elements
+// are equal, genericEqualUnsorted returns true. Otherwise it returns false.
+func genericEqualUnsorted[S ~[]E, E any](
 	s1 S, s2 S,
 	cmp func(a, b E) int,
 ) bool {
@@ -68,12 +74,12 @@ func genericEqualSorted[S ~[]E, E any](
 }
 
 func EqualUnsorted(s1 []string, s2 []string) bool {
-	return genericEqualSorted(s1, s2, strings.Compare)
+	return genericEqualUnsorted(s1, s2, strings.Compare)
 }
 
 // Test for equal URL slices even if unsorted. Panics if any element is nil
 func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
-	return genericEqualSorted(s1, s2, func(a, b *url.URL) int {
+	return genericEqualUnsorted(s1, s2, func(a, b *url.URL) int {
 		return strings.Compare(a.String(), b.String())
 	})
 }
@@ -86,14 +92,14 @@ func EqualIPsUnsorted(s1, s2 []net.IP) bool {
 	// the other is stored as a 16-byte representation
 
 	// To avoid ambiguity, we ensure that only the 16-byte form is used for all addresses we work with.
-	return genericEqualSorted(s1, s2, func(a, b net.IP) int {
+	return genericEqualUnsorted(s1, s2, func(a, b net.IP) int {
 		return bytes.Compare(a.To16(), b.To16())
 	})
 }
 
 // Test for equal KeyUsage slices even if unsorted
 func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
-	return genericEqualSorted(s1, s2, func(a, b cmapi.KeyUsage) int {
+	return genericEqualUnsorted(s1, s2, func(a, b cmapi.KeyUsage) int {
 		return strings.Compare(string(a), string(b))
 	})
 }
