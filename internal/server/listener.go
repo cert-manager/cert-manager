@@ -20,8 +20,9 @@ import (
 	"crypto/tls"
 	"net"
 
-	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
 	ciphers "k8s.io/component-base/cli/flag"
+
+	servertls "github.com/cert-manager/cert-manager/internal/server/tls"
 )
 
 // ListenerConfig defines the config of the listener, this mainly deals with
@@ -61,7 +62,7 @@ func Listen(network, addr string, options ...ListenerOption) (net.Listener, erro
 	return listener, nil
 }
 
-// WithCertificateSource specifies the certificater source for TLS, this also implicitly
+// WithCertificateSource specifies the certificate source for TLS, this also implicitly
 // enables TLS for the listener when not nil
 func WithCertificateSource(certificateSource servertls.CertificateSource) ListenerOption {
 	return func(config *ListenerConfig) error {
@@ -90,7 +91,7 @@ func WithTLSCipherSuites(suites []string) ListenerOption {
 	}
 }
 
-// WithTLSMinVersion specifies the minimum TLS version, when an emptu string is passed the
+// WithTLSMinVersion specifies the minimum TLS version, when an empty string is passed the
 // go defaults are used
 func WithTLSMinVersion(version string) ListenerOption {
 	return func(config *ListenerConfig) error {

@@ -29,7 +29,7 @@ type ControllerConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// kubeConfig is the kubeconfig file used to connect to the Kubernetes apiserver.
-	// If not specified, the webhook will attempt to load the in-cluster-config.
+	// If not specified, the controller will attempt to load the in-cluster-config.
 	KubeConfig string `json:"kubeConfig,omitempty"`
 
 	// apiServerHost is used to override the API server connection address.
@@ -271,17 +271,15 @@ type TLSConfig struct {
 	// These files will be periodically polled in case they have changed, and dynamically reloaded.
 	Filesystem FilesystemServingConfig `json:"filesystem"`
 
-	// When Dynamic serving is enabled, the webhook will generate a CA used to sign webhook
+	// When Dynamic serving is enabled, the controller will generate a CA used to sign
 	// certificates and persist it into a Kubernetes Secret resource (for other replicas of the
-	// webhook to consume).
+	// controller to consume).
 	// It will then generate a certificate in-memory for itself using this CA to serve with.
-	// The CAs certificate can then be copied into the appropriate Validating, Mutating and Conversion
-	// webhook configuration objects (typically by cainjector).
 	Dynamic DynamicServingConfig `json:"dynamic"`
 }
 
-// DynamicServingConfig makes the webhook generate a CA and persist it into Secret resources.
-// This CA will be used by all instances of the webhook for signing serving certificates.
+// DynamicServingConfig makes the controller generate a CA and persist it into Secret resources.
+// This CA will be used by all instances of the controller for signing serving certificates.
 type DynamicServingConfig struct {
 	// Namespace of the Kubernetes Secret resource containing the TLS certificate
 	// used as a CA to sign dynamic serving certificates.
@@ -304,6 +302,6 @@ type FilesystemServingConfig struct {
 	// Path to a file containing TLS certificate & chain to serve with
 	CertFile string `json:"certFile,omitempty"`
 
-	// Path to a file containing a TLS private key to server with
+	// Path to a file containing a TLS private key to serve with
 	KeyFile string `json:"keyFile,omitempty"`
 }

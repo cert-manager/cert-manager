@@ -32,11 +32,11 @@ import (
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	metainstall "github.com/cert-manager/cert-manager/internal/apis/meta/install"
 	"github.com/cert-manager/cert-manager/internal/plugin"
+	"github.com/cert-manager/cert-manager/internal/server/tls"
+	"github.com/cert-manager/cert-manager/internal/server/tls/authority"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
-	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
 )

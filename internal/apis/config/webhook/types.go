@@ -128,6 +128,6 @@ type FilesystemServingConfig struct {
 	// Path to a file containing TLS certificate & chain to serve with
 	CertFile string
 
-	// Path to a file containing a TLS private key to server with
+	// Path to a file containing a TLS private key to serve with
 	KeyFile string
 }

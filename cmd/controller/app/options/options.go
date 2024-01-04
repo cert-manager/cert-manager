@@ -199,11 +199,11 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	tlsCipherPossibleValues := cliflag.TLSCipherPossibleValues()
 	fs.StringSliceVar(&c.MetricsTLSConfig.CipherSuites, "metrics-tls-cipher-suites", c.MetricsTLSConfig.CipherSuites,
 		"Comma-separated list of cipher suites for the server. "+
-			"If omitted, the default Go cipher suites will be use.  "+
+			"If omitted, the default Go cipher suites will be used.  "+
 			"Possible values: "+strings.Join(tlsCipherPossibleValues, ","))
 	tlsPossibleVersions := cliflag.TLSPossibleVersions()
 	fs.StringVar(&c.MetricsTLSConfig.MinTLSVersion, "metrics-tls-min-version", c.MetricsTLSConfig.MinTLSVersion,
-		"Minimum TLS version supported. "+
+		"Minimum TLS version supported. If omitted, the default Go minimum version will be used. "+
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
 
 	// The healthz related flags are given the prefix "internal-" and are hidden,

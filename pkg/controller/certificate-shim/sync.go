@@ -590,7 +590,7 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 // (1)
 // The edit-in-place Ingress annotation allows the use of Ingress
 // controllers that map a single IP address to a single Ingress
-// resource, such as the GCE ingress controller. The the following
+// resource, such as the GCE ingress controller. The following
 // annotation on an Ingress named "my-ingress":
 //
 //	acme.cert-manager.io/http01-edit-in-place: "true"

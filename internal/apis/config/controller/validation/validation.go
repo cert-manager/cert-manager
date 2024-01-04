@@ -38,20 +38,20 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration) error 
 	} else {
 		if cfg.MetricsTLSConfig.FilesystemConfigProvided() {
 			if cfg.MetricsTLSConfig.Filesystem.KeyFile == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: tlsConfig.filesystem.keyFile (--metrics-tls-private-key-file) must be specified when using filesystem based TLS config"))
+				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.filesystem.keyFile (--metrics-tls-private-key-file) must be specified when using filesystem based TLS config"))
 			}
 			if cfg.MetricsTLSConfig.Filesystem.CertFile == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: tlsConfig.filesystem.certFile (--metrics-tls-cert-file) must be specified when using filesystem based TLS config"))
+				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.filesystem.certFile (--metrics-tls-cert-file) must be specified when using filesystem based TLS config"))
 			}
 		} else if cfg.MetricsTLSConfig.DynamicConfigProvided() {
 			if cfg.MetricsTLSConfig.Dynamic.SecretNamespace == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: tlsConfig.dynamic.secretNamespace (--metrics-dynamic-serving-ca-secret-namespace) must be specified when using dynamic TLS config"))
+				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.dynamic.secretNamespace (--metrics-dynamic-serving-ca-secret-namespace) must be specified when using dynamic TLS config"))
 			}
 			if cfg.MetricsTLSConfig.Dynamic.SecretName == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: tlsConfig.dynamic.secretName (--metrics-dynamic-serving-ca-secret-name) must be specified when using dynamic TLS config"))
+				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.dynamic.secretName (--metrics-dynamic-serving-ca-secret-name) must be specified when using dynamic TLS config"))
 			}
 			if len(cfg.MetricsTLSConfig.Dynamic.DNSNames) == 0 {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: tlsConfig.dynamic.dnsNames (--metrics-dynamic-serving-dns-names) must be specified when using dynamic TLS config"))
+				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.dynamic.dnsNames (--metrics-dynamic-serving-dns-names) must be specified when using dynamic TLS config"))
 			}
 		}
 	}

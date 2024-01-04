@@ -33,8 +33,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/pkg/server/tls"
-	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/cert-manager/cert-manager/internal/server/tls"
+	"github.com/cert-manager/cert-manager/internal/server/tls/authority"
 )
 
 // Ensure that when the source is running against an apiserver, it bootstraps

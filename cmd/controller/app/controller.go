@@ -39,6 +39,9 @@ import (
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/server"
+	"github.com/cert-manager/cert-manager/internal/server/tls"
+	"github.com/cert-manager/cert-manager/internal/server/tls/authority"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
@@ -46,11 +49,8 @@ import (
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/pkg/server"
-	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
-	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
 	"github.com/go-logr/logr"
 )
 

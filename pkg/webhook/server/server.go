@@ -36,9 +36,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/cert-manager/cert-manager/internal/server"
+	servertls "github.com/cert-manager/cert-manager/internal/server/tls"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/server"
-	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 )
