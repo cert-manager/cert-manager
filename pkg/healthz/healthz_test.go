@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"sync"
@@ -281,7 +281,7 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 				defer func() {
 					require.NoError(t, resp.Body.Close())
 				}()
-				bodyBytes, err := ioutil.ReadAll(resp.Body)
+				bodyBytes, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
 
 				lastResponseCode = resp.StatusCode
