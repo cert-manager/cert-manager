@@ -34,4 +34,4 @@ issues:
       text: "SA(1002|1006|4000|4006)"
     - linters:
         - staticcheck
-      text: "(NewCertManagerBasicCertificate|DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition|eab.KeyAlgorithm|testCA.Subjects|RootCAs.Subjects|pki.GenerateTemplate|adal.NewServicePrincipalTokenFromFederatedToken|azure-sdk-for-go|c.SingleInflight|x509.ParseCRL|v.client.RawRequest)"
+      text: "(NewCertManagerBasicCertificate|DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition|testCA.Subjects|RootCAs.Subjects|pki.GenerateTemplate|adal.NewServicePrincipalTokenFromFederatedToken|azure-sdk-for-go|c.SingleInflight|x509.ParseCRL|v.client.RawRequest)"
