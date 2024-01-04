@@ -136,6 +136,7 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 
 		el = append(el, ValidateSecretKeySelector(&eab.Key, eabFldPath.Child("keySecretRef"))...)
 
+		// nolint:staticcheck // SA1019 accessing the deprecated eab.KeyAlgorithm field is intentional here.
 		if len(eab.KeyAlgorithm) != 0 {
 			warnings = append(warnings, deprecatedACMEEABKeyAlgorithmField)
 		}
