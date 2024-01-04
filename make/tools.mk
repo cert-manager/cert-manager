@@ -207,25 +207,26 @@ which-go: |  $(NEEDS_GO)
 	@$(GO) version
 	@echo "go binary used for above version information: $(GO)"
 
-# The "_" in "_go "prevents "go mod tidy" from trying to tidy the vendored
-# goroot.
-$(BINDIR)/tools/go: $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot/bin/go $(BINDIR)/tools/goroot $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/tools
-	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) .
-	@touch $@
+$(BINDIR)/tools/go: $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/tools/goroot $(BINDIR)/tools
+	cd $(dir $@) && $(LN) ./goroot/bin/go $(notdir $@)
+	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
-$(BINDIR)/tools/goroot: $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$(HOST_OS)-$(HOST_ARCH)/goroot $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/tools
+# The "_" in "_bin" prevents "go mod tidy" from trying to tidy the vendored goroot.
+$(BINDIR)/tools/goroot: $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/go_vendor/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH)/goroot $(BINDIR)/tools
 	@rm -rf $(BINDIR)/tools/goroot
-	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$<) .
-	@touch $@
+	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$(word 1,$|)) $(notdir $@)
+	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
-$(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-%/goroot/bin/go: $(BINDIR)/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz
-	@mkdir -p $(dir $@)
-	rm -rf $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
-	tar xzf $< -C $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*
-	mv $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/go $(BINDIR)/downloaded/tools/_go-$(VENDORED_GO_VERSION)-$*/goroot
+# Extract the tar to the _bin/go directory, this directory is not cached across CI runs.
+$(BINDIR)/go_vendor/go@$(VENDORED_GO_VERSION)_%/goroot: | $(BINDIR)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz
+	@rm -rf $@ && mkdir -p $(dir $@)
+	tar xzf $| -C $(dir $@)
+	mv $(dir $@)/go $(dir $@)/goroot
 
-$(BINDIR)/downloaded/tools/go-$(VENDORED_GO_VERSION)-%.tar.gz: | $(BINDIR)/downloaded/tools
-	$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$*.tar.gz -o $@
+# Keep the downloaded tar so it is cached across CI runs.
+.PRECIOUS: $(BINDIR)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz
+$(BINDIR)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz: | $(BINDIR)/downloaded/tools
+	$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(subst _,-,$*).tar.gz -o $@
 
 ###################
 # go dependencies #
