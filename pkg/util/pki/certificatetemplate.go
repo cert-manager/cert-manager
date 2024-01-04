@@ -22,13 +22,13 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
-	"golang.org/x/exp/slices"
 	certificatesv1 "k8s.io/api/certificates/v1"
 )
 

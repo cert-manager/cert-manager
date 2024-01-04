@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -44,7 +45,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests"
 	ctrlutil "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -133,7 +133,7 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 
 	// If the CommonName is also not present in the DNS names or IP Addresses of
 	// the Request then hard fail.
-	if len(req.Subject.CommonName) > 0 && !util.Contains(req.DNSNames, req.Subject.CommonName) && !util.Contains(pki.IPAddressesToString(req.IPAddresses), req.Subject.CommonName) {
+	if len(req.Subject.CommonName) > 0 && !slices.Contains(req.DNSNames, req.Subject.CommonName) && !slices.Contains(pki.IPAddressesToString(req.IPAddresses), req.Subject.CommonName) {
 		err = fmt.Errorf("%q does not exist in %s or %s", req.Subject.CommonName, req.DNSNames, pki.IPAddressesToString(req.IPAddresses))
 		message := fmt.Sprintf("The CSR PEM requests a commonName that is not present in the list of dnsNames or ipAddresses. If a commonName is set, ACME requires that the value is also present in the list of dnsNames or ipAddresses: %s", err)
 

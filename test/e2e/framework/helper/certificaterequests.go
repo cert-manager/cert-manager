@@ -24,6 +24,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"slices"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,7 +116,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 	commonNameCorrect := true
 	expectedCN := csr.Subject.CommonName
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
-		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) {
+		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) {
 			commonNameCorrect = false
 		}
 	} else if expectedCN != cert.Subject.CommonName {
