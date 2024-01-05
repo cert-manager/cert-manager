@@ -70,8 +70,11 @@ func CertificateOwnsSecret(
 	}
 
 	sort.Slice(duplicateCrts, func(i, j int) bool {
-		return crts[i].CreationTimestamp.Before(&crts[j].CreationTimestamp) ||
-			crts[i].Name < crts[j].Name
+		if duplicateCrts[i].CreationTimestamp.Equal(&duplicateCrts[j].CreationTimestamp) {
+			return duplicateCrts[i].Name < duplicateCrts[j].Name
+		}
+
+		return duplicateCrts[i].CreationTimestamp.Before(&duplicateCrts[j].CreationTimestamp)
 	})
 
 	duplicateNames := make([]string, len(duplicateCrts))
