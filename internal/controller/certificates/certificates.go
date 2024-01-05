@@ -19,7 +19,7 @@ package certificates
 import (
 	"context"
 	"slices"
-	"sort"
+	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -69,19 +69,28 @@ func CertificateOwnsSecret(
 		return true, nil, nil
 	}
 
-	sort.Slice(duplicateCrts, func(i, j int) bool {
-		if duplicateCrts[i].CreationTimestamp.Equal(&duplicateCrts[j].CreationTimestamp) {
-			return duplicateCrts[i].Name < duplicateCrts[j].Name
+	slices.SortFunc(duplicateCrts, func(a, b *cmapi.Certificate) int {
+		switch {
+		case a.CreationTimestamp.Equal(&b.CreationTimestamp):
+			// If both Certificates were created at the same time, compare
+			// the names of the Certificates instead.
+			return strings.Compare(a.Name, b.Name)
+		case a.CreationTimestamp.Before(&b.CreationTimestamp):
+			// a was created before b
+			return -1
+		default:
+			// b was created before a
+			return 1
 		}
-
-		return duplicateCrts[i].CreationTimestamp.Before(&duplicateCrts[j].CreationTimestamp)
 	})
 
 	duplicateNames := make([]string, len(duplicateCrts))
-	for i, crt := range duplicateCrts {
-		duplicateNames[i] = crt.Name
+	for i, duplicateCrt := range duplicateCrts {
+		duplicateNames[i] = duplicateCrt.Name
 	}
 
+	// If the Secret does not exist, only the first Certificate in the list
+	// is the owner of the Secret.
 	ownerCertificate := duplicateNames[0]
 
 	// Fetch the Secret and determine if it is owned by any of the Certificates.
@@ -94,17 +103,11 @@ func CertificateOwnsSecret(
 		}
 	}
 
-	// If the Secret does not exist, only the first Certificate in the list
-	// is the owner of the Secret.
-	return crt.Name == ownerCertificate, sliceWithoutValue(duplicateNames, crt.Name), nil
-}
-
-func sliceWithoutValue(slice []string, value string) []string {
-	result := make([]string, 0, len(slice)-1)
-	for _, v := range slice {
-		if v != value {
-			result = append(result, v)
-		}
-	}
-	return result
+	// Return true in case the passed crt is the owner.
+	// Additionally, return the names of all other certificates that have the same SecretName value set.
+	isOwner := crt.Name == ownerCertificate
+	otherCertificatesWithSameSecretName := slices.DeleteFunc(duplicateNames, func(s string) bool {
+		return s == crt.Name
+	})
+	return isOwner, otherCertificatesWithSameSecretName, nil
 }
