@@ -69,6 +69,7 @@ func DNSNamesForCertificate(crt *v1.Certificate) ([]string, error) {
 	return crt.Spec.DNSNames, nil
 }
 
+// DEPRECATED: this function will be removed in a future release.
 func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
 	var urls []*url.URL
 	var errs []string
