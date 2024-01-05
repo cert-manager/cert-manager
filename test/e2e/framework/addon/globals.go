@@ -38,8 +38,9 @@ type AddonTransferableData = internal.AddonTransferableData
 
 var (
 	// Base is a base addon containing Kubernetes clients
-	Base  = &base.Base{}
-	Vault = &vault.Vault{}
+	Base             = &base.Base{}
+	Vault            = &vault.Vault{}
+	VaultEnforceMtls = &vault.Vault{}
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
@@ -65,9 +66,16 @@ func InitGlobals(cfg *config.Config) {
 		Namespace: "e2e-vault",
 		Name:      "vault",
 	}
+	*VaultEnforceMtls = vault.Vault{
+		Base:        Base,
+		Namespace:   "e2e-vault-mtls",
+		Name:        "vault-mtls",
+		EnforceMtls: true,
+	}
 	allAddons = []Addon{
 		Base,
 		Vault,
+		VaultEnforceMtls,
 	}
 }
 
