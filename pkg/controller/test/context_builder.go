@@ -20,14 +20,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -352,7 +350,7 @@ func (b *Builder) Start() {
 // for updates made by the fake clients to be reflected in the informer caches, we need
 // to sleep for the informerResyncPeriod.
 func (b *Builder) Sync() {
-	if err := mustAllSyncString(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
+	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
@@ -361,7 +359,7 @@ func (b *Builder) Sync() {
 	if err := mustAllSync(b.GWShared.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for GWShared to sync: " + err.Error())
 	}
-	if err := mustAllSyncGVR(b.HTTP01ResourceMetadataInformersFactory.WaitForCacheSync(b.stopCh)); err != nil {
+	if err := mustAllSync(b.HTTP01ResourceMetadataInformersFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for MetadataInformerFactory to sync:" + err.Error())
 	}
 	if b.additionalSyncFuncs != nil {
@@ -390,33 +388,7 @@ func (b *Builder) Events() []string {
 	return nil
 }
 
-func mustAllSync(in map[reflect.Type]bool) error {
-	var errs []error
-	for t, started := range in {
-		if !started {
-			errs = append(errs, fmt.Errorf("informer for %v not synced", t))
-		}
-	}
-	return utilerrors.NewAggregate(errs)
-}
-
-// We need three functions to parse map[schema.GroupVersionResource bool, map[reflect.Type]bool, map[string]bool
-// arguments- we cannot use generics here as reflect.Type is not a valid map key
-// for a generic parameter because it does not implement comparable.
-func mustAllSyncString(in map[string]bool) error {
-	var errs []error
-	for t, started := range in {
-		if !started {
-			errs = append(errs, fmt.Errorf("informer for %v not synced", t))
-		}
-	}
-	return utilerrors.NewAggregate(errs)
-}
-
-// We need three functions to parse map[reflect.Type]bool, map[string]bool
-// arguments- we cannot use generics here as reflect.Type is not a valid map key
-// for a generic parameter because it does not implement comparable.
-func mustAllSyncGVR(in map[schema.GroupVersionResource]bool) error {
+func mustAllSync[E comparable](in map[E]bool) error {
 	var errs []error
 	for t, started := range in {
 		if !started {
