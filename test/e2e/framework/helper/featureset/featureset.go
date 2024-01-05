@@ -16,72 +16,19 @@ limitations under the License.
 
 package featureset
 
-import "strings"
+import (
+	"k8s.io/apimachinery/pkg/util/sets"
+)
 
 // NewFeatureSet constructs a new feature set with the given features.
 func NewFeatureSet(feats ...Feature) FeatureSet {
-	fs := make(FeatureSet)
-	for _, f := range feats {
-		fs.Add(f)
-	}
-	return fs
+	return FeatureSet(sets.New(feats...))
 }
 
 // FeatureSet represents a set of features.
 // This type does not indicate whether or not features are enabled, rather it
 // just defines a grouping of features (i.e. a 'set').
-type FeatureSet map[Feature]struct{}
-
-// Add adds features to the set
-func (fs FeatureSet) Add(f ...Feature) FeatureSet {
-	for _, feat := range f {
-		fs[feat] = struct{}{}
-	}
-	return fs
-}
-
-// Delete removes a feature from the set
-func (fs FeatureSet) Delete(f Feature) {
-	delete(fs, f)
-}
-
-// Contains returns true if the FeatureSet contains the given feature
-func (fs FeatureSet) Contains(f Feature) bool {
-	_, ok := fs[f]
-	return ok
-}
-
-// Copy returns a new copy of an existing Feature Set.
-// It is not safe to be called by multiple goroutines.
-func (fs FeatureSet) Copy() FeatureSet {
-	new := make(FeatureSet)
-	for k, v := range fs {
-		new[k] = v
-	}
-	return new
-}
-
-// List returns a slice of all features in the set.
-func (fs FeatureSet) List() []Feature {
-	var ret []Feature
-	for k := range fs {
-		ret = append(ret, k)
-	}
-	return ret
-}
-
-// String returns this FeatureSet as a comma separated string
-func (fs FeatureSet) String() string {
-	featsSlice := make([]string, len(fs))
-
-	i := 0
-	for f := range fs {
-		featsSlice[i] = string(f)
-		i++
-	}
-
-	return strings.Join(featsSlice, ", ")
-}
+type FeatureSet = sets.Set[Feature]
 
 type Feature string
 

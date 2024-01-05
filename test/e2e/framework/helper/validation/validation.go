@@ -75,18 +75,18 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectValidBasicConstraints,
 	}
 
-	if !fs.Contains(featureset.URISANsFeature) {
+	if !fs.Has(featureset.URISANsFeature) {
 		out = append(out, certificates.ExpectCertificateURIsToMatch)
 	}
 
-	if !fs.Contains(featureset.EmailSANsFeature) {
+	if !fs.Has(featureset.EmailSANsFeature) {
 		out = append(out, certificates.ExpectEmailsToMatch)
 	}
 
-	if !fs.Contains(featureset.SaveCAToSecret) {
+	if !fs.Has(featureset.SaveCAToSecret) {
 		out = append(out, certificates.ExpectCorrectTrustChain)
 
-		if !fs.Contains(featureset.SaveRootCAToSecret) {
+		if !fs.Has(featureset.SaveRootCAToSecret) {
 			out = append(out, certificates.ExpectCARootCertificate)
 		}
 	}
@@ -97,7 +97,7 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 func CertificateSigningRequestSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certificatesigningrequests.ValidationFunc {
 	validations := DefaultCertificateSigningRequestSet()
 
-	if !fs.Contains(featureset.DurationFeature) {
+	if !fs.Has(featureset.DurationFeature) {
 		validations = append(validations, certificatesigningrequests.ExpectValidDuration)
 	}
 

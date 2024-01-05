@@ -62,7 +62,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.OtherNamesFeature,
 	)
 
-	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Copy().Add(
+	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Clone().Insert(
 		// Gateway API does not allow raw IP addresses to be specified
 		// in HTTPRoutes, so challenges for an IP address will never work.
 		featureset.IPAddressFeature,
@@ -85,7 +85,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
 	// public ACME servers
-	var unsupportedPublicACMEServerFeatures = unsupportedHTTP01Features.Copy().Add(
+	var unsupportedPublicACMEServerFeatures = unsupportedHTTP01Features.Clone().Insert(
 		// Let's Encrypt doesn't yet support IP Address certificates.
 		featureset.IPAddressFeature,
 		// Ed25519 is not yet approved by the CA Browser forum.
