@@ -216,15 +216,6 @@ func ExpectValidNotAfterDate(certificate *cmapi.Certificate, secret *corev1.Secr
 	return nil
 }
 
-func containsExtKeyUsage(s []x509.ExtKeyUsage, e x509.ExtKeyUsage) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 // ExpectKeyUsageExtKeyUsageServerAuth checks if the issued certificate has the extended key usage of server auth
 func ExpectKeyUsageExtKeyUsageServerAuth(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
@@ -232,7 +223,7 @@ func ExpectKeyUsageExtKeyUsageServerAuth(certificate *cmapi.Certificate, secret 
 		return err
 	}
 
-	if !containsExtKeyUsage(cert.ExtKeyUsage, x509.ExtKeyUsageServerAuth) {
+	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageServerAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageServerAuth, but got %v", cert.ExtKeyUsage)
 	}
 	return nil
@@ -245,7 +236,7 @@ func ExpectKeyUsageExtKeyUsageClientAuth(certificate *cmapi.Certificate, secret 
 		return err
 	}
 
-	if !containsExtKeyUsage(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
+	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageClientAuth, but got %v", cert.ExtKeyUsage)
 	}
 	return nil
