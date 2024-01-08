@@ -49,6 +49,11 @@ const (
 	acmeSolverListenPort = 8089
 
 	loggerName = "http01"
+
+	// maxAcmeChallengeBodySize is the max size of a received response body for an
+	// acme http challenge. The value is arbitrary and is chosen to be large enough
+	// that any reasonable response would fit.
+	maxAcmeChallengeBodySize = 1024 * 1024 // 1mb
 )
 
 var (
@@ -301,7 +306,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		return fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)
 	}
 
-	presentedKey, err := io.ReadAll(response.Body)
+	presentedKey, err := io.ReadAll(io.LimitReader(response.Body, maxAcmeChallengeBodySize))
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to decode response body", "error", err)
 		return fmt.Errorf("failed to read response body: %v", err)
