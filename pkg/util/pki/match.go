@@ -21,6 +21,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"net"
 
 	"fmt"
@@ -148,6 +150,30 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		violations = append(violations, "spec.dnsNames")
 	}
 
+	if spec.OtherNames != nil {
+		sanExtension, err := extractSANExtension(x509req.Extensions)
+		if err != nil {
+			violations = append(violations, "spec.otherNames")
+		}
+
+		generalNames, err := UnmarshalSANs(sanExtension.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		CertificateRequestOtherNameSpec, err := ToOtherNameSpec(generalNames.OtherNames)
+		if err != nil {
+			// This means the CertificateRequest's otherName was not a utf8 valued
+			violations = append(violations, "spec.otherName")
+		}
+		if !util.EqualOtherNamesUnsorted(CertificateRequestOtherNameSpec, spec.OtherNames) {
+
+			// This means the oid or utf8Value did not match
+			violations = append(violations, "spec.otherNames")
+		}
+
+	}
+
 	if spec.LiteralSubject == "" {
 		// Comparing Subject fields
 		if x509req.Subject.CommonName != spec.CommonName {
@@ -216,6 +242,27 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	return violations, nil
 }
 
+func ToOtherNameSpec(parsedOtherName []OtherName) ([]cmapi.OtherName, error) {
+	ret := make([]cmapi.OtherName, len(parsedOtherName))
+	for index, otherName := range parsedOtherName {
+		var utf8OtherNameValue string
+		rest, err := asn1.Unmarshal(otherName.Value.Bytes, &utf8OtherNameValue)
+		if err != nil {
+			return ret, err
+		}
+		if len(rest) != 0 {
+			return ret, fmt.Errorf("Should not have trailing data")
+		}
+
+		ret[index] = cmapi.OtherName{
+			OID:       otherName.TypeID.String(),
+			UTF8Value: utf8OtherNameValue,
+		}
+	}
+
+	return ret, nil
+}
+
 // SecretDataAltNamesMatchSpec will compare a Secret resource containing certificate
 // data to a CertificateSpec and return a list of 'violations' for any fields that
 // do not match their counterparts.
@@ -266,4 +313,16 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	}
 
 	return violations, nil
+}
+
+func extractSANExtension(extensions []pkix.Extension) (pkix.Extension, error) {
+	oidExtensionSubjectAltName := []int{2, 5, 29, 17}
+
+	for _, extension := range extensions {
+		if extension.Id.Equal(oidExtensionSubjectAltName) {
+			return extension, nil
+		}
+	}
+
+	return pkix.Extension{}, fmt.Errorf("SAN extension not present!")
 }
