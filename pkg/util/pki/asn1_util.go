@@ -48,6 +48,15 @@ func ParseObjectIdentifier(oidString string) (oid asn1.ObjectIdentifier, err err
 	return oid, nil
 }
 
+type UniversalValueType int
+
+const (
+	UniversalValueTypeBytes UniversalValueType = iota
+	UniversalValueTypeIA5String
+	UniversalValueTypeUTF8String
+	UniversalValueTypePrintableString
+)
+
 type UniversalValue struct {
 	Bytes           []byte
 	IA5String       string
@@ -55,50 +64,56 @@ type UniversalValue struct {
 	PrintableString string
 }
 
-func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
-	// Make sure we have only one field set
-	{
-		var count int
-		if uv.Bytes != nil {
-			count++
-		}
-		if uv.IA5String != "" {
-			count++
-		}
-		if uv.UTF8String != "" {
-			count++
-		}
-		if uv.PrintableString != "" {
-			count++
-		}
-		if count != 1 {
-			return nil, fmt.Errorf("exactly one field must be set")
-		}
+func (uv UniversalValue) Type() UniversalValueType {
+	isBytes := uv.Bytes != nil
+	isIA5String := uv.IA5String != ""
+	isUTF8String := uv.UTF8String != ""
+	isPrintableString := uv.PrintableString != ""
+
+	switch {
+	case isBytes && !isIA5String && !isUTF8String && !isPrintableString:
+		return UniversalValueTypeBytes
+	case !isBytes && isIA5String && !isUTF8String && !isPrintableString:
+		return UniversalValueTypeIA5String
+	case !isBytes && !isIA5String && isUTF8String && !isPrintableString:
+		return UniversalValueTypeUTF8String
+	case !isBytes && !isIA5String && !isUTF8String && isPrintableString:
+		return UniversalValueTypePrintableString
 	}
 
+	return -1 // Either no field is set or two fields are set.
+}
+
+func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
+	// Make sure we have only one field set
+	uvType := uv.Type()
 	var bytes []byte
 
-	if uv.Bytes != nil {
+	switch uvType {
+	case -1:
+		return nil, errors.New("UniversalValue should have exactly one field set")
+	case UniversalValueTypeBytes:
 		bytes = uv.Bytes
-	} else {
+	default:
 		rawValue := asn1.RawValue{
 			Class:      asn1.ClassUniversal,
 			IsCompound: false,
 		}
-		switch {
-		case uv.IA5String != "":
+
+		switch uvType {
+		case UniversalValueTypeIA5String:
 			if err := isIA5String(uv.IA5String); err != nil {
 				return nil, errors.New("asn1: invalid IA5 string")
 			}
 			rawValue.Tag = asn1.TagIA5String
 			rawValue.Bytes = []byte(uv.IA5String)
-		case uv.UTF8String != "":
+		case UniversalValueTypeUTF8String:
 			if !utf8.ValidString(uv.UTF8String) {
 				return nil, errors.New("asn1: invalid UTF-8 string")
 			}
 			rawValue.Tag = asn1.TagUTF8String
 			rawValue.Bytes = []byte(uv.UTF8String)
-		case uv.PrintableString != "":
+		case UniversalValueTypePrintableString:
 			if !isPrintable(uv.PrintableString) {
 				return nil, errors.New("asn1: invalid PrintableString string")
 			}

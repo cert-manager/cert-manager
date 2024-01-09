@@ -22,7 +22,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509/pkix"
-	"encoding/asn1"
 	"net"
 
 	"fmt"
@@ -228,49 +227,40 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	return violations, nil
 }
 
-func matchOtherNames(extension []pkix.Extension, otherNames []cmapi.OtherName) (bool, error) {
-	sanExtension, err := extractSANExtension(extension)
+func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherName) (bool, error) {
+	x509SANExtension, err := extractSANExtension(extension)
 	if err != nil {
 		return false, nil
 	}
 
-	generalNames, err := UnmarshalSANs(sanExtension.Value)
+	x509GeneralNames, err := UnmarshalSANs(x509SANExtension.Value)
 	if err != nil {
 		return false, err
 	}
 
-	CertificateRequestOtherNameSpec, err := ToOtherNameSpec(generalNames.OtherNames)
-	if err != nil {
-		// This means the CertificateRequest's otherName was not a utf8 valued
-		return false, nil
+	x509OtherNames := make([]cmapi.OtherName, 0, len(x509GeneralNames.OtherNames))
+	for _, otherName := range x509GeneralNames.OtherNames {
+		uv, err := UnmarshalUniversalValue(otherName.Value)
+		if err != nil {
+			return false, err
+		}
+
+		if uv.Type() != UniversalValueTypeUTF8String {
+			// This means the CertificateRequest's otherName was not an utf8 value
+			return false, fmt.Errorf("otherName is not an utf8 value")
+		}
+
+		x509OtherNames = append(x509OtherNames, cmapi.OtherName{
+			OID:       otherName.TypeID.String(),
+			UTF8Value: uv.UTF8String,
+		})
 	}
 
-	if !util.EqualOtherNamesUnsorted(CertificateRequestOtherNameSpec, otherNames) {
+	if !util.EqualOtherNamesUnsorted(x509OtherNames, specOtherNames) {
 		return false, nil
 	}
 
 	return true, nil
-}
-
-func ToOtherNameSpec(parsedOtherName []OtherName) ([]cmapi.OtherName, error) {
-	ret := make([]cmapi.OtherName, len(parsedOtherName))
-	for index, otherName := range parsedOtherName {
-		var utf8OtherNameValue string
-		rest, err := asn1.Unmarshal(otherName.Value.Bytes, &utf8OtherNameValue)
-		if err != nil {
-			return ret, err
-		}
-		if len(rest) != 0 {
-			return ret, fmt.Errorf("Should not have trailing data")
-		}
-
-		ret[index] = cmapi.OtherName{
-			OID:       otherName.TypeID.String(),
-			UTF8Value: utf8OtherNameValue,
-		}
-	}
-
-	return ret, nil
 }
 
 // SecretDataAltNamesMatchSpec will compare a Secret resource containing certificate
