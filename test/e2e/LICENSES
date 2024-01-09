@@ -1,7 +1,6 @@
 github.com/Azure/go-ntlmssp,https://github.com/Azure/go-ntlmssp/blob/754e69321358/LICENSE,MIT
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
 github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
-github.com/cenkalti/backoff/v3,https://github.com/cenkalti/backoff/blob/v3.2.2/LICENSE,MIT
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/e2e-tests,https://github.com/cert-manager/cert-manager/blob/HEAD/e2e-tests/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
@@ -10,8 +9,6 @@ github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.11.0/LICENSE,MIT
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.7.0/v5/LICENSE,BSD-3-Clause
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.5/LICENSE,MIT
-github.com/go-jose/go-jose/v3,https://github.com/go-jose/go-jose/blob/v3.0.1/LICENSE,Apache-2.0
-github.com/go-jose/go-jose/v3/json,https://github.com/go-jose/go-jose/blob/v3.0.1/json/LICENSE,BSD-3-Clause
 github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.6/v3/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.1/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.3.0/LICENSE,Apache-2.0
@@ -25,16 +22,11 @@ github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.6.0/LICENS
 github.com/google/go-querystring/query,https://github.com/google/go-querystring/blob/v1.1.0/LICENSE,BSD-3-Clause
 github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/google/uuid,https://github.com/google/uuid/blob/v1.5.0/LICENSE,BSD-3-Clause
-github.com/hashicorp/errwrap,https://github.com/hashicorp/errwrap/blob/v1.1.0/LICENSE,MPL-2.0
 github.com/hashicorp/go-cleanhttp,https://github.com/hashicorp/go-cleanhttp/blob/v0.5.2/LICENSE,MPL-2.0
-github.com/hashicorp/go-multierror,https://github.com/hashicorp/go-multierror/blob/v1.1.1/LICENSE,MPL-2.0
 github.com/hashicorp/go-retryablehttp,https://github.com/hashicorp/go-retryablehttp/blob/v0.7.5/LICENSE,MPL-2.0
 github.com/hashicorp/go-rootcerts,https://github.com/hashicorp/go-rootcerts/blob/v1.0.2/LICENSE,MPL-2.0
-github.com/hashicorp/go-secure-stdlib/parseutil,https://github.com/hashicorp/go-secure-stdlib/blob/parseutil/v0.1.8/parseutil/LICENSE,MPL-2.0
 github.com/hashicorp/go-secure-stdlib/strutil,https://github.com/hashicorp/go-secure-stdlib/blob/strutil/v0.1.2/strutil/LICENSE,MPL-2.0
-github.com/hashicorp/go-sockaddr,https://github.com/hashicorp/go-sockaddr/blob/v1.0.6/LICENSE,MPL-2.0
-github.com/hashicorp/hcl,https://github.com/hashicorp/hcl/blob/v1.0.1-vault-5/LICENSE,MPL-2.0
-github.com/hashicorp/vault/api,https://github.com/hashicorp/vault/blob/api/v1.10.0/api/LICENSE,MPL-2.0
+github.com/hashicorp/vault-client-go,https://github.com/hashicorp/vault-client-go/blob/v0.4.3/LICENSE,MPL-2.0
 github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.16/LICENSE,BSD-3-Clause
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
@@ -42,7 +34,6 @@ github.com/kr/pretty,https://github.com/kr/pretty/blob/v0.3.1/License,MIT
 github.com/kr/text,https://github.com/kr/text/blob/v0.2.0/License,MIT
 github.com/mailru/easyjson,https://github.com/mailru/easyjson/blob/v0.7.7/LICENSE,MIT
 github.com/matttproud/golang_protobuf_extensions/v2/pbutil,https://github.com/matttproud/golang_protobuf_extensions/blob/v2.0.0/LICENSE,Apache-2.0
-github.com/mitchellh/mapstructure,https://github.com/mitchellh/mapstructure/blob/v1.5.0/LICENSE,MIT
 github.com/moby/spdystream,https://github.com/moby/spdystream/blob/v0.2.0/LICENSE,Apache-2.0
 github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
@@ -65,7 +56,7 @@ go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.26.0/LICENSE.txt,MIT
 golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.17.0:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.19.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.15.0:LICENSE,BSD-3-Clause
-golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.15.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.16.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.15.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.14.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.5.0:LICENSE,BSD-3-Clause
