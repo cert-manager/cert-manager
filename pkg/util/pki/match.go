@@ -151,27 +151,13 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	}
 
 	if spec.OtherNames != nil {
-		sanExtension, err := extractSANExtension(x509req.Extensions)
-		if err != nil {
-			violations = append(violations, "spec.otherNames")
-		}
-
-		generalNames, err := UnmarshalSANs(sanExtension.Value)
+		matched, err := matchOtherNames(x509req.Extensions, spec.OtherNames)
 		if err != nil {
 			return nil, err
 		}
-
-		CertificateRequestOtherNameSpec, err := ToOtherNameSpec(generalNames.OtherNames)
-		if err != nil {
-			// This means the CertificateRequest's otherName was not a utf8 valued
-			violations = append(violations, "spec.otherName")
-		}
-		if !util.EqualOtherNamesUnsorted(CertificateRequestOtherNameSpec, spec.OtherNames) {
-
-			// This means the oid or utf8Value did not match
+		if !matched {
 			violations = append(violations, "spec.otherNames")
 		}
-
 	}
 
 	if spec.LiteralSubject == "" {
@@ -242,6 +228,30 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	return violations, nil
 }
 
+func matchOtherNames(extension []pkix.Extension, otherNames []cmapi.OtherName) (bool, error) {
+	sanExtension, err := extractSANExtension(extension)
+	if err != nil {
+		return false, nil
+	}
+
+	generalNames, err := UnmarshalSANs(sanExtension.Value)
+	if err != nil {
+		return false, err
+	}
+
+	CertificateRequestOtherNameSpec, err := ToOtherNameSpec(generalNames.OtherNames)
+	if err != nil {
+		// This means the CertificateRequest's otherName was not a utf8 valued
+		return false, nil
+	}
+
+	if !util.EqualOtherNamesUnsorted(CertificateRequestOtherNameSpec, otherNames) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func ToOtherNameSpec(parsedOtherName []OtherName) ([]cmapi.OtherName, error) {
 	ret := make([]cmapi.OtherName, len(parsedOtherName))
 	for index, otherName := range parsedOtherName {
@@ -310,6 +320,16 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 
 	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailAddresses) {
 		violations = append(violations, "spec.emailAddresses")
+	}
+
+	if spec.OtherNames != nil {
+		matched, err := matchOtherNames(x509cert.Extensions, spec.OtherNames)
+		if err != nil {
+			return nil, err
+		}
+		if !matched {
+			violations = append(violations, "spec.otherNames")
+		}
 	}
 
 	return violations, nil
