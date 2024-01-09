@@ -519,22 +519,23 @@ func (v *VaultInitializer) configureCert(mount string) error {
 
 func (v *VaultInitializer) configureIntermediateRoles() error {
 	ctx := context.Background()
-	_, err := v.client.Secrets.PkiWriteRole(
-		ctx,
-		v.role,
-		schema.PkiWriteRoleRequest{
-			AllowAnyName:     true,
-			MaxTtl:           "2160h",
-			KeyType:          "any",
-			RequireCn:        false,
-			AllowedOtherSans: []string{"*"},
-			UseCsrSans:       true,
-			AllowedUriSans:   []string{"spiffe://cluster.local/*"},
-			EnforceHostnames: false,
-			AllowBareDomains: true,
-		},
-		vault.WithMountPath(v.intermediateMount),
-	)
+	// TODO: Should use Secrets.PkiWriteRole here,
+	// but it is broken. See:
+	// https://github.com/hashicorp/vault-client-go/issues/195
+	params := map[string]interface{}{
+		"allow_any_name":     "true",
+		"max_ttl":            "2160h",
+		"key_type":           "any",
+		"require_cn":         "false",
+		"allowed_other_sans": "*",
+		"use_csr_sans":       "true",
+		"allowed_uri_sans":   "spiffe://cluster.local/*",
+		"enforce_hostnames":  "false",
+		"allow_bare_domains": "true",
+	}
+	url := path.Join("/v1", v.intermediateMount, "roles", v.role)
+
+	_, err := v.client.Write(ctx, url, params)
 	if err != nil {
 		return fmt.Errorf("error creating role %s: %s", v.role, err.Error())
 	}
