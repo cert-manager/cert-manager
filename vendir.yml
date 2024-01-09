@@ -1,0 +1,20 @@
+apiVersion: vendir.k14s.io/v1alpha1
+kind: Config
+directories:
+- path: deploy/charts/cert-manager
+  contents:
+  - path: .
+    helmChart:
+      name: cert-manager
+      repository:
+        url: "https://charts.jetstack.io"
+    includePaths:
+    - templates/**/crds.yaml
+    ignorePaths:
+    - "**/*.yaml"
+    - "**/*.tpl"
+    - "**/*.md"
+    - "**/*.txt"
+    - "*.txt"
+    - .helmignore
+    - .gitignore
