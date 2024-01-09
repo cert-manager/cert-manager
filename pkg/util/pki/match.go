@@ -312,16 +312,6 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 		violations = append(violations, "spec.emailAddresses")
 	}
 
-	if spec.OtherNames != nil {
-		matched, err := matchOtherNames(x509cert.Extensions, spec.OtherNames)
-		if err != nil {
-			return nil, err
-		}
-		if !matched {
-			violations = append(violations, "spec.otherNames")
-		}
-	}
-
 	return violations, nil
 }
 
