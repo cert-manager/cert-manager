@@ -88,23 +88,10 @@ func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
 // Test for equal cmapi.OtherName slices even if unsorted. Panics if any element is nil
 func EqualOtherNamesUnsorted(s1, s2 []cmapi.OtherName) bool {
 	return genericEqualUnsorted(s1, s2, func(a cmapi.OtherName, b cmapi.OtherName) int {
-		if a.OID < b.OID {
-			return -1
-		}
-
 		if a.OID == b.OID {
-			if a.UTF8Value < b.UTF8Value {
-				return -1
-			}
-
-			if a.UTF8Value == b.UTF8Value {
-				return 0
-			}
-
-			return 1
+			return strings.Compare(a.UTF8Value, b.UTF8Value)
 		}
-
-		return 1
+		return strings.Compare(a.OID, b.OID)
 	})
 
 }

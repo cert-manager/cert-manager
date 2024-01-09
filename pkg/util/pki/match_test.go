@@ -175,6 +175,35 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 				"spec.otherNames",
 			},
 		},
+		"should not report violation if Certificate otherName(s) match the CertificateRequest's (with different order)": {
+			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "anotherupn@testdomain.local",
+					},
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+				},
+			}}, t),
+			certSpec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "anotherupn@testdomain.local",
+					},
+				},
+			},
+			err: "",
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
