@@ -161,7 +161,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 			},
 		})
 		Expect(err).NotTo(BeNil())
-		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].utf8Value: Required value: must be specified"))
+		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].utf8Value: Required value: must be set to a valid non-empty UTF8 string"))
 
 	})
 })

@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/mail"
 	"strings"
+	"unicode/utf8"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -126,19 +127,19 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if len(crt.OtherNames) > 0 {
 		if !utilfeature.DefaultFeatureGate.Enabled(feature.OtherNames) {
 			el = append(el, field.Forbidden(fldPath.Child("OtherNames"), "Feature gate OtherNames must be enabled on both webhook and controller to use the alpha `otherNames` field"))
-		}
+		} else {
+			for i, otherName := range crt.OtherNames {
+				if otherName.OID == "" {
+					el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("oid"), "must be specified"))
+				}
 
-		for i, otherName := range crt.OtherNames {
-			if otherName.OID == "" {
-				el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("oid"), "must be specified"))
-			}
+				if _, err := pki.ParseObjectIdentifier(otherName.OID); err != nil {
+					el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "oid syntax invalid"))
+				}
 
-			if _, err := pki.ParseObjectIdentifier(otherName.OID); err != nil {
-				el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "oid syntax invalid"))
-			}
-
-			if otherName.UTF8Value == "" {
-				el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("utf8Value"), "must be specified"))
+				if otherName.UTF8Value == "" || !utf8.ValidString(otherName.UTF8Value) {
+					el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("utf8Value"), "must be set to a valid non-empty UTF8 string"))
+				}
 			}
 		}
 	}
