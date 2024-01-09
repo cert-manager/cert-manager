@@ -117,7 +117,7 @@ golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.17.0:LICENSE,B
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.19.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.15.0:LICENSE,BSD-3-Clause
 golang.org/x/sync/errgroup,https://cs.opensource.google/go/x/sync/+/v0.5.0:LICENSE,BSD-3-Clause
-golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.15.0:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.16.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.15.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.14.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.5.0:LICENSE,BSD-3-Clause
