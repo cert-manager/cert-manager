@@ -252,7 +252,7 @@ func (f *DynamicSource) updateCertificate(pk crypto.Signer, cert *x509.Certifica
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
 	// renew the certificate 1/3 of the time before its expiry
 	nextRenew <- cert.NotAfter.Add(certDuration / -3)
-	f.log.V(logf.InfoLevel).Info("Updated cert-manager webhook TLS certificate", "DNSNames", f.DNSNames)
+	f.log.V(logf.InfoLevel).Info("Updated cert-manager TLS certificate", "DNSNames", f.DNSNames)
 
 	return nil
 }
