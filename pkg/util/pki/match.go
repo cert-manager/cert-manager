@@ -21,6 +21,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"net"
 
 	"fmt"
@@ -148,6 +150,16 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		violations = append(violations, "spec.dnsNames")
 	}
 
+	if spec.OtherNames != nil {
+		matched, err := matchOtherNames(x509req.Extensions, spec.OtherNames)
+		if err != nil {
+			return nil, err
+		}
+		if !matched {
+			violations = append(violations, "spec.otherNames")
+		}
+	}
+
 	if spec.LiteralSubject == "" {
 		// Comparing Subject fields
 		if x509req.Subject.CommonName != spec.CommonName {
@@ -216,6 +228,51 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	return violations, nil
 }
 
+func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherName) (bool, error) {
+	x509SANExtension, err := extractSANExtension(extension)
+	if err != nil {
+		return false, nil
+	}
+
+	x509GeneralNames, err := UnmarshalSANs(x509SANExtension.Value)
+	if err != nil {
+		return false, err
+	}
+
+	x509OtherNames := make([]cmapi.OtherName, 0, len(x509GeneralNames.OtherNames))
+	for _, otherName := range x509GeneralNames.OtherNames {
+
+		var otherNameInnerValue asn1.RawValue
+		// We have to perform one more level of unwrapping because value is still context specific class
+		// tagged 0
+		_, err := asn1.Unmarshal(otherName.Value.Bytes, &otherNameInnerValue)
+		if err != nil {
+			return false, err
+		}
+
+		uv, err := UnmarshalUniversalValue(otherNameInnerValue)
+		if err != nil {
+			return false, err
+		}
+
+		if uv.Type() != UniversalValueTypeUTF8String {
+			// This means the CertificateRequest's otherName was not an utf8 value
+			return false, fmt.Errorf("otherName is not an utf8 value, got: %v", uv.Type())
+		}
+
+		x509OtherNames = append(x509OtherNames, cmapi.OtherName{
+			OID:       otherName.TypeID.String(),
+			UTF8Value: uv.UTF8String,
+		})
+	}
+
+	if !util.EqualOtherNamesUnsorted(x509OtherNames, specOtherNames) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // SecretDataAltNamesMatchSpec will compare a Secret resource containing certificate
 // data to a CertificateSpec and return a list of 'violations' for any fields that
 // do not match their counterparts.
@@ -266,4 +323,16 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	}
 
 	return violations, nil
+}
+
+func extractSANExtension(extensions []pkix.Extension) (pkix.Extension, error) {
+	oidExtensionSubjectAltName := []int{2, 5, 29, 17}
+
+	for _, extension := range extensions {
+		if extension.Id.Equal(oidExtensionSubjectAltName) {
+			return extension, nil
+		}
+	}
+
+	return pkix.Extension{}, fmt.Errorf("SAN extension not present!")
 }
