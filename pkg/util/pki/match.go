@@ -22,6 +22,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"net"
 
 	"fmt"
@@ -240,14 +241,23 @@ func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherNam
 
 	x509OtherNames := make([]cmapi.OtherName, 0, len(x509GeneralNames.OtherNames))
 	for _, otherName := range x509GeneralNames.OtherNames {
-		uv, err := UnmarshalUniversalValue(otherName.Value)
+
+		var otherNameInnerValue asn1.RawValue
+		// We have to perform one more level of unwrapping because value is still context specific class
+		// tagged 0
+		_, err := asn1.Unmarshal(otherName.Value.Bytes, &otherNameInnerValue)
+		if err != nil {
+			return false, err
+		}
+
+		uv, err := UnmarshalUniversalValue(otherNameInnerValue)
 		if err != nil {
 			return false, err
 		}
 
 		if uv.Type() != UniversalValueTypeUTF8String {
 			// This means the CertificateRequest's otherName was not an utf8 value
-			return false, fmt.Errorf("otherName is not an utf8 value")
+			return false, fmt.Errorf("otherName is not an utf8 value, got: %v", uv.Type())
 		}
 
 		x509OtherNames = append(x509OtherNames, cmapi.OtherName{
