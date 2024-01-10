@@ -518,18 +518,24 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
-	// if both this and ClientSecret are left unset MSI will be used
+	// Auth: Azure Service Principal:
+	// The ClientID of the Azure Service Principal used to authenticate with Azure DNS.
+	// If set, ClientSecret and TenantID must also be set.
 	// +optional
 	ClientID string `json:"clientID,omitempty"`
 
-	// if both this and ClientID are left unset MSI will be used
+	// Auth: Azure Service Principal:
+	// A reference to a Secret containing the password associated with the Service Principal.
+	// If set, ClientID and TenantID must also be set.
 	// +optional
 	ClientSecret *cmmeta.SecretKeySelector `json:"clientSecretSecretRef,omitempty"`
 
 	// ID of the Azure subscription
 	SubscriptionID string `json:"subscriptionID"`
 
-	// when specifying ClientID and ClientSecret then this field is also needed
+	// Auth: Azure Service Principal:
+	// The TenantID of the Azure Service Principal used to authenticate with Azure DNS.
+	// If set, ClientID and ClientSecret must also be set.
 	// +optional
 	TenantID string `json:"tenantID,omitempty"`
 
@@ -544,17 +550,23 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 
-	// managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+	// Auth: Azure Workload Identity or Azure Managed Service Identity:
+	// Settings to enable Azure Workload Identity or Azure Managed Service Identity
+	// If set, ClientID, ClientSecret and TenantID must not be set.
 	// +optional
 	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
 }
 
+// AzureManagedIdentity contains the configuration for Azure Workload Identity or Azure Managed Service Identity
+// If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used.
+// Otherwise, we fall-back to using Azure Managed Service Identity.
 type AzureManagedIdentity struct {
 	// client ID of the managed identity, can not be used at the same time as resourceID
 	// +optional
 	ClientID string `json:"clientID,omitempty"`
 
 	// resource ID of the managed identity, can not be used at the same time as clientID
+	// Cannot be used for Azure Managed Service Identity
 	// +optional
 	ResourceID string `json:"resourceID,omitempty"`
 }
