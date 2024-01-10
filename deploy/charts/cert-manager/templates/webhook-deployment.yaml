@@ -15,6 +15,9 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.webhook.replicaCount }}
+  {{- if ne (quote .Values.global.revisionHistoryLimit) (quote "") }}
+  revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
+  {{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "webhook.name" . }}
