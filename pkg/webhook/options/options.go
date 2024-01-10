@@ -80,11 +80,11 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 	tlsCipherPossibleValues := cliflag.TLSCipherPossibleValues()
 	fs.StringSliceVar(&c.TLSConfig.CipherSuites, "tls-cipher-suites", c.TLSConfig.CipherSuites,
 		"Comma-separated list of cipher suites for the server. "+
-			"If omitted, the default Go cipher suites will be use.  "+
+			"If omitted, the default Go cipher suites will be used.  "+
 			"Possible values: "+strings.Join(tlsCipherPossibleValues, ","))
 	tlsPossibleVersions := cliflag.TLSPossibleVersions()
 	fs.StringVar(&c.TLSConfig.MinTLSVersion, "tls-min-version", c.TLSConfig.MinTLSVersion,
-		"Minimum TLS version supported. "+
+		"Minimum TLS version supported. If omitted, the default Go minimum version will be used. "+
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))

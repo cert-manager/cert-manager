@@ -68,7 +68,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 func versionLong() string {
 	return build.WithTemplate(`Print the cert-manager CLI version and the deployed cert-manager version.
 The CLI version is embedded in the binary and directly displayed. Determining
-the the deployed cert-manager version is done by querying the cert-manger
+the deployed cert-manager version is done by querying the cert-manger
 resources.  First, the tool looks at the labels of the cert-manager CRD
 resources. Then, it searches for the labels of the resources related the the
 cert-manager webhook linked in the CRDs.  It also tries to derive the version
