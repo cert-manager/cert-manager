@@ -71,7 +71,10 @@ type fixture struct {
 
 	setupLock   sync.Mutex
 	environment *envtest.Environment
-	clientset   kubernetes.Interface
+	// An admin user for running kubectl commands against this envtest
+	// environment.
+	adminUser *envtest.AuthenticatedUser
+	clientset kubernetes.Interface
 
 	pollInterval     time.Duration
 	propagationLimit time.Duration
@@ -113,6 +116,19 @@ func (f *fixture) setup(t *testing.T) func() {
 
 	env, stopFunc := apiserver.RunBareControlPlane(t)
 	f.environment = env
+
+	// An admin user instance for running kubectl against this envtest
+	// environment.
+	// Derived from the envtest global config which is configured with very high
+	// QPS and Burst settings for rapid interactions with the API server.
+	adminUser, err := env.AddUser(envtest.User{
+		Name:   "envtest-admin",
+		Groups: []string{"system:masters"},
+	}, env.Config)
+	if err != nil {
+		t.Fatalf("unable to provision admin user: %s", err)
+	}
+	f.adminUser = adminUser
 
 	cl, err := kubernetes.NewForConfig(env.Config)
 	if err != nil {
