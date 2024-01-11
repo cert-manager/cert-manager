@@ -108,14 +108,14 @@ func checkCRLValidCert(cert *x509.Certificate, url string) (bool, error) {
 	}
 	resp.Body.Close()
 
-	crl, err := x509.ParseCRL(body)
+	crl, err := x509.ParseRevocationList(body)
 	if err != nil {
 		return false, fmt.Errorf("error parsing HTTP body: %w", err)
 	}
 
 	// TODO: check CRL signature
 
-	for _, revoked := range crl.TBSCertList.RevokedCertificates {
+	for _, revoked := range crl.RevokedCertificateEntries {
 		if cert.SerialNumber.Cmp(revoked.SerialNumber) == 0 {
 			return false, nil
 		}
