@@ -10,6 +10,7 @@ replace github.com/cert-manager/cert-manager => ../../
 
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
+	github.com/go-logr/logr v1.4.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sync v0.5.0
@@ -46,7 +47,6 @@ require (
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.6 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.2 // indirect
