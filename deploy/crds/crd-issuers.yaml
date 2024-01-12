@@ -210,10 +210,10 @@ spec:
                                   - subscriptionID
                                 properties:
                                   clientID:
-                                    description: if both this and ClientSecret are left unset MSI will be used
+                                    description: 'Auth: Azure Service Principal: The ClientID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientSecret and TenantID must also be set.'
                                     type: string
                                   clientSecretSecretRef:
-                                    description: if both this and ClientID are left unset MSI will be used
+                                    description: 'Auth: Azure Service Principal: A reference to a Secret containing the password associated with the Service Principal. If set, ClientID and TenantID must also be set.'
                                     type: object
                                     required:
                                       - name
@@ -236,14 +236,14 @@ spec:
                                     description: name of the DNS zone that should be used
                                     type: string
                                   managedIdentity:
-                                    description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                                    description: 'Auth: Azure Workload Identity or Azure Managed Service Identity: Settings to enable Azure Workload Identity or Azure Managed Service Identity If set, ClientID, ClientSecret and TenantID must not be set.'
                                     type: object
                                     properties:
                                       clientID:
                                         description: client ID of the managed identity, can not be used at the same time as resourceID
                                         type: string
                                       resourceID:
-                                        description: resource ID of the managed identity, can not be used at the same time as clientID
+                                        description: resource ID of the managed identity, can not be used at the same time as clientID Cannot be used for Azure Managed Service Identity
                                         type: string
                                   resourceGroupName:
                                     description: resource group the DNS zone is located in
@@ -252,7 +252,7 @@ spec:
                                     description: ID of the Azure subscription
                                     type: string
                                   tenantID:
-                                    description: when specifying ClientID and ClientSecret then this field is also needed
+                                    description: 'Auth: Azure Service Principal: The TenantID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientID and ClientSecret must also be set.'
                                     type: string
                               cloudDNS:
                                 description: Use the Google Cloud DNS API to manage DNS01 challenge records.
