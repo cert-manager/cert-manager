@@ -16,7 +16,7 @@ go 1.21
 // or a branch name (master).
 
 require (
-	github.com/cert-manager/cert-manager v1.14.0-alpha.0
+	github.com/cert-manager/cert-manager v1.14.0-alpha.1
 	github.com/go-logr/logr v1.4.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
@@ -148,7 +148,6 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
