@@ -1,3 +1,4 @@
+{{- if .Values.webhook.enabled }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -49,3 +50,4 @@ webhooks:
         namespace: {{ include "cert-manager.namespace" . }}
         path: /validate
       {{- end }}
+{{- end }}
