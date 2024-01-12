@@ -25,8 +25,10 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,6 +49,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	)
 
 	f := framework.NewDefaultFramework("certificate-othername-san-processing")
+
 	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
@@ -69,6 +72,8 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	}
 
 	BeforeEach(func() {
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.OtherNames)
+
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
