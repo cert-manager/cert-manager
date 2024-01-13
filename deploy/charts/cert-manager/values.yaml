@@ -401,15 +401,25 @@ webhook:
   # Optional additional annotations to add to the webhook ValidatingWebhookConfiguration
   # validatingWebhookConfigurationAnnotations: {}
 
-  # Configure spec.namespaceSelector for mutating and validating webhooks.
-  webhookConfigurationNamespaceSelector: {}
-  #  matchLabels:
-  #    key: value
-  #  matchExpressions:
-  #    - key: kubernetes.io/metadata.name
-  #      operator: NotIn
-  #      values:
-  #        - kube-system
+  validatingWebhookConfiguration:
+    # Configure spec.namespaceSelector for validating webhooks.
+    namespaceSelector:
+      matchExpressions:
+        - key: "cert-manager.io/disable-validation"
+          operator: "NotIn"
+          values:
+            - "true"
+
+  mutatingWebhookConfiguration:
+    # Configure spec.namespaceSelector for mutating webhooks.
+    namespaceSelector: {}
+    #  matchLabels:
+    #    key: value
+    #  matchExpressions:
+    #    - key: kubernetes.io/metadata.name
+    #      operator: NotIn
+    #      values:
+    #        - kube-system
 
 
   # Additional command line flags to pass to cert-manager webhook binary.
