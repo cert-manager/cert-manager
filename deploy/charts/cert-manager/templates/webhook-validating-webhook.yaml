@@ -16,11 +16,17 @@ metadata:
 webhooks:
   - name: webhook.cert-manager.io
     namespaceSelector:
+      {{- with (omit .Values.webhook.webhookConfigurationNamespaceSelector "matchExpressions") }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
       matchExpressions:
       - key: "cert-manager.io/disable-validation"
         operator: "NotIn"
         values:
         - "true"
+      {{- with .Values.webhook.webhookConfigurationNamespaceSelector.matchExpressions }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
     rules:
       - apiGroups:
           - "cert-manager.io"

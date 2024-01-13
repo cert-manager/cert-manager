@@ -42,3 +42,7 @@ webhooks:
         namespace: {{ include "cert-manager.namespace" . }}
         path: /mutate
       {{- end }}
+    namespaceSelector:
+    {{- with .Values.webhook.webhookConfigurationNamespaceSelector }}
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
