@@ -15,6 +15,10 @@ metadata:
     {{- end }}
 webhooks:
   - name: webhook.cert-manager.io
+    {{- with .Values.webhook.mutatingWebhookConfiguration.namespaceSelector }}
+    namespaceSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     rules:
       - apiGroups:
           - "cert-manager.io"
