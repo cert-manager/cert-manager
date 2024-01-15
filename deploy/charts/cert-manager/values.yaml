@@ -84,7 +84,7 @@ installCRDs: false
 # only be a single instance active at a time.
 replicaCount: 1
 
-# Deployment update strategy for the cert-manager controller deployment. 
+# Deployment update strategy for the cert-manager controller deployment.
 # See https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
 #
 # For example:
@@ -250,7 +250,7 @@ extraEnv: []
 #  requests:
 #    cpu: 10m
 #    memory: 32Mi
-# 
+#
 # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 resources: {}
 
@@ -308,7 +308,7 @@ podLabels: {}
 # +docs:property
 # podDnsPolicy: "None"
 
-# Pod DNS config, podDnsConfig field is optional and it can work with any podDnsPolicy 
+# Pod DNS config, podDnsConfig field is optional and it can work with any podDnsPolicy
 # settings. However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified.
 # ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
 # +docs:property
@@ -337,7 +337,7 @@ ingressShim: {}
   # Optional default issuer kind to use for ingress resources
   # +docs:property=ingressShim.defaultIssuerKind
   # defaultIssuerKind: ""
-  
+
   # Optional default issuer group to use for ingress resources
   # +docs:property=ingressShim.defaultIssuerGroup
   # defaultIssuerGroup: ""
@@ -443,7 +443,7 @@ prometheus:
     # The interval to scrape metrics
     interval: 60s
 
-    # The timeout before a metrics scrape fails 
+    # The timeout before a metrics scrape fails
     scrapeTimeout: 30s
 
     # Additional labels to add to the ServiceMonitor
@@ -456,8 +456,8 @@ prometheus:
     honorLabels: false
 
     # EndpointAdditionalProperties allows setting additional properties on the
-    # endpoint such as relabelings, metricRelabelings etc. 
-    # 
+    # endpoint such as relabelings, metricRelabelings etc.
+    #
     # For example:
     #  endpointAdditionalProperties:
     #   relabelings:
@@ -478,28 +478,28 @@ prometheus:
     # used when different Prometheus instances have label selectors matching
     # different PodMonitor.
     prometheusInstance: default
-    
+
     # The path to scrape for metrics
     path: /metrics
-    
+
     # The interval to scrape metrics
     interval: 60s
-    
-    # The timeout before a metrics scrape fails 
+
+    # The timeout before a metrics scrape fails
     scrapeTimeout: 30s
-    
+
     # Additional labels to add to the PodMonitor
     labels: {}
-    
+
     # Additional annotations to add to the PodMonitor
     annotations: {}
-    
+
     # Keep labels from scraped data, overriding server-side labels.
     honorLabels: false
-    
+
     # EndpointAdditionalProperties allows setting additional properties on the
-    # endpoint such as relabelings, metricRelabelings etc. 
-    # 
+    # endpoint such as relabelings, metricRelabelings etc.
+    #
     # For example:
     #  endpointAdditionalProperties:
     #   relabelings:
@@ -556,7 +556,7 @@ webhook:
   #  securePort: 10250
   config: {}
 
-  # Deployment update strategy for the cert-manager webhook deployment. 
+  # Deployment update strategy for the cert-manager webhook deployment.
   # See https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
   #
   # For example:
@@ -665,7 +665,7 @@ webhook:
   #  requests:
   #    cpu: 10m
   #    memory: 32Mi
-  # 
+  #
   # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   resources: {}
 
@@ -898,7 +898,7 @@ cainjector:
   #   namespace: kube-system
   config: {}
 
-  # Deployment update strategy for the cert-manager cainjector deployment. 
+  # Deployment update strategy for the cert-manager cainjector deployment.
   # See https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
   #
   # For example:
@@ -916,7 +916,7 @@ cainjector:
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
-  
+
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   # +docs:property
@@ -972,7 +972,7 @@ cainjector:
   #  requests:
   #    cpu: 10m
   #    memory: 32Mi
-  # 
+  #
   # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   resources: {}
 
@@ -1051,7 +1051,7 @@ cainjector:
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
-    
+
     # The name of the service account to use.
     # If not set and create is true, a name is generated using the fullname template
     # +docs:property
@@ -1117,7 +1117,7 @@ acmesolver:
 # See https://github.com/cert-manager/cert-manager/pull/4414 for context.
 
 startupapicheck:
-  # Enables the startup api check 
+  # Enables the startup api check
   enabled: true
 
   # Pod Security Context to be set on the startupapicheck component Pod
@@ -1171,7 +1171,7 @@ startupapicheck:
   #  requests:
   #    cpu: 10m
   #    memory: 32Mi
-  # 
+  #
   # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   resources: {}
 
@@ -1275,7 +1275,7 @@ startupapicheck:
 
   # Additional volume mounts to add to the cert-manager controller container.
   volumeMounts: []
-  
+
   # enableServiceLinks indicates whether information about services should be
   # injected into pod's environment variables, matching the syntax of Docker
   # links.
