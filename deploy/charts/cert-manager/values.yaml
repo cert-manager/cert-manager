@@ -416,7 +416,7 @@ livenessProbe:
 # links.
 enableServiceLinks: false
 
-# docs:section=Prometheus
+# +docs:section=Prometheus
 
 prometheus:
   # Enable prometheus monitoring for the cert-manager controller, to use with

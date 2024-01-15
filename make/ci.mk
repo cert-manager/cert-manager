@@ -109,10 +109,14 @@ update-codegen: | k8s-codegen-tools $(NEEDS_GO)
 		./$(BINDIR)/tools/conversion-gen \
 		./$(BINDIR)/tools/openapi-gen
 
+.PHONY: update-helm-docs
+update-helm-docs: | $(NEEDS_HELM-TOOL)
+	$(HELM-TOOL) inject --header-search '^<!-- AUTO-GENERATED -->' --footer-search '^<!-- /AUTO-GENERATED -->' -i deploy/charts/cert-manager/values.yaml -o deploy/charts/cert-manager/README.template.md
+
 .PHONY: update-all
 ## Update CRDs, code generation and licenses to the latest versions.
 ## This is provided as a convenience to run locally before creating a PR, to ensure
 ## that everything is up-to-date.
 ##
 ## @category Development
-update-all: update-crds update-codegen update-licenses
+update-all: update-crds update-codegen update-licenses update-helm-docs
