@@ -86,12 +86,9 @@ $ kubectl delete -f https://github.com/cert-manager/cert-manager/releases/downlo
 <td>global.imagePullSecrets</td>
 <td>
 
-Reference to one or more secrets to be used when pulling images
-
-```yaml
-ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-```
-
+Reference to one or more secrets to be used when pulling images  
+ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/  
+  
 For example:
 
 ```yaml
@@ -115,17 +112,10 @@ imagePullSecrets:
 <td>
 
 Labels to apply to all resources  
-Please note that this does not add labels to the resources created dynamically by the controllers. For these resources, you have to add the labels in the template in the cert-manager custom resource: eg. podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress
-
-```yaml
-ref: https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress
-```
-
-eg. secretTemplate in CertificateSpec
-
-```yaml
-ref: https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec
-```
+Please note that this does not add labels to the resources created dynamically by the controllers. For these resources, you have to add the labels in the template in the cert-manager custom resource: eg. podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress  
+   ref: https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress  
+eg. secretTemplate in CertificateSpec  
+   ref: https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec
 
 </td>
 <td>object</td>
@@ -894,11 +884,7 @@ requests:
   memory: 32Mi
 ```
 
-
-
-```yaml
 ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-```
 
 </td>
 <td>object</td>
@@ -915,11 +901,8 @@ ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containe
 <td>securityContext</td>
 <td>
 
-Pod Security Context
-
-```yaml
+Pod Security Context  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -939,11 +922,8 @@ seccompProfile:
 <td>containerSecurityContext</td>
 <td>
 
-Container Security Context to be set on the controller component container
-
-```yaml
+Container Security Context to be set on the controller component container  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -1088,11 +1068,8 @@ Optional additional labels to add to the controller Service
 <td>podDnsPolicy</td>
 <td>
 
-Pod DNS policy
-
-```yaml
+Pod DNS policy  
 ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-```
 
 
 </td>
@@ -1110,11 +1087,8 @@ ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#po
 <td>podDnsConfig</td>
 <td>
 
-Pod DNS config, podDnsConfig field is optional and it can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified.
-
-```yaml
+Pod DNS config, podDnsConfig field is optional and it can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified.  
 ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-```
 
 
 </td>
@@ -1887,11 +1861,8 @@ strategy:
 <td>webhook.securityContext</td>
 <td>
 
-Pod Security Context to be set on the webhook component Pod
-
-```yaml
+Pod Security Context to be set on the webhook component Pod  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -1911,11 +1882,8 @@ seccompProfile:
 <td>webhook.containerSecurityContext</td>
 <td>
 
-Container Security Context to be set on the webhook component container
-
-```yaml
+Container Security Context to be set on the webhook component container  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -2169,11 +2137,7 @@ requests:
   memory: 32Mi
 ```
 
-
-
-```yaml
 ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-```
 
 </td>
 <td>object</td>
@@ -2190,13 +2154,8 @@ ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containe
 <td>webhook.livenessProbe</td>
 <td>
 
-Liveness probe values
-
-```yaml
+Liveness probe values  
 ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-```
-
-
 
 
 </td>
@@ -2218,13 +2177,8 @@ timeoutSeconds: 1
 <td>webhook.readinessProbe</td>
 <td>
 
-Readiness probe values
-
-```yaml
+Readiness probe values  
 ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-```
-
-
 
 
 </td>
@@ -2903,11 +2857,8 @@ strategy:
 <td>cainjector.securityContext</td>
 <td>
 
-Pod Security Context to be set on the cainjector component Pod
-
-```yaml
+Pod Security Context to be set on the cainjector component Pod  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -2927,11 +2878,8 @@ seccompProfile:
 <td>cainjector.containerSecurityContext</td>
 <td>
 
-Container Security Context to be set on the cainjector component container
-
-```yaml
+Container Security Context to be set on the cainjector component container  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -3091,11 +3039,7 @@ requests:
   memory: 32Mi
 ```
 
-
-
-```yaml
 ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-```
 
 </td>
 <td>object</td>
@@ -3616,11 +3560,8 @@ true
 <td>startupapicheck.securityContext</td>
 <td>
 
-Pod Security Context to be set on the startupapicheck component Pod
-
-```yaml
+Pod Security Context to be set on the startupapicheck component Pod  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -3640,11 +3581,8 @@ seccompProfile:
 <td>startupapicheck.containerSecurityContext</td>
 <td>
 
-Container Security Context to be set on the controller component container
-
-```yaml
+Container Security Context to be set on the controller component container  
 ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-```
 
 
 </td>
@@ -3768,11 +3706,7 @@ requests:
   memory: 32Mi
 ```
 
-
-
-```yaml
 ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-```
 
 </td>
 <td>object</td>
