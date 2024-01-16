@@ -6,9 +6,9 @@
      as well as in Helm charts, etc.
      if you change its location or name, you'll need to update several other repos too! -->
 
-<p align="center"><a href="https://prow.build-infra.jetstack.net/?job=ci-cert-manager-bazel">
+<p align="center"><a href="https://prow.build-infra.jetstack.net/?job=ci-cert-manager-master-make-test">
 <!-- prow build badge, godoc, and go report card-->
-<img alt="Build Status" src="https://prow.build-infra.jetstack.net/badge.svg?jobs=ci-cert-manager-bazel">
+<img alt="Build Status" src="https://prow.build-infra.jetstack.net/badge.svg?jobs=ci-cert-manager-master-make-test">
 </a>
 <a href="https://godoc.org/github.com/cert-manager/cert-manager"><img src="https://godoc.org/github.com/cert-manager/cert-manager?status.svg"></a>
 <a href="https://goreportcard.com/report/github.com/cert-manager/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cert-manager/cert-manager" /></a>
