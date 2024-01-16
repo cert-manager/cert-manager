@@ -4,8 +4,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global:
-  # Reference to one or more secrets to be used when pulling images:
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  # Reference to one or more secrets to be used when pulling images.
+  # For more information, see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
   #
   # For example:
   #  imagePullSecrets:
@@ -16,9 +16,9 @@ global:
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
   # For example, podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress
-  #    ref: https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress
+  # For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress).
   # For example, secretTemplate in CertificateSpec
-  #    ref: https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec
+  # For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec).
   commonLabels: {}
 
   # The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).
@@ -251,11 +251,11 @@ extraEnv: []
 #    cpu: 10m
 #    memory: 32Mi
 #
-# ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+# For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
 resources: {}
 
 # Pod Security Context.
-# ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+# For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
 # +docs:property
 securityContext:
   runAsNonRoot: true
@@ -263,7 +263,7 @@ securityContext:
     type: RuntimeDefault
 
 # Container Security Context to be set on the controller component container.
-# ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+# For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
 # +docs:property
 containerSecurityContext:
   allowPrivilegeEscalation: false
@@ -303,14 +303,14 @@ podLabels: {}
 # Note that this requires Kubernetes 1.10 or `CustomPodDNS` feature gate enabled for
 # the cluster to work.
 
-# Pod DNS policy
-# ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+# Pod DNS policy.
+# For more information, see [Pod's DNS Policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
 # +docs:property
 # podDnsPolicy: "None"
 
-# Pod DNS config, podDnsConfig field is optional and it can work with any podDnsPolicy
+# Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy
 # settings. However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified.
-# ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+# For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).
 # +docs:property
 # podDnsConfig:
 #   nameservers:
@@ -319,7 +319,7 @@ podLabels: {}
 
 # The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with
 # matching labels.
-# See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+# For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
 #
 # This default ensures that Pods are only scheduled to Linux nodes.
 # It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.
@@ -568,7 +568,7 @@ webhook:
   strategy: {}
 
   # Pod Security Context to be set on the webhook component Pod.
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
   securityContext:
     runAsNonRoot: true
@@ -576,7 +576,7 @@ webhook:
       type: RuntimeDefault
 
   # Container Security Context to be set on the webhook component container.
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
   containerSecurityContext:
     allowPrivilegeEscalation: false
@@ -666,11 +666,11 @@ webhook:
   #    cpu: 10m
   #    memory: 32Mi
   #
-  # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  # For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
   resources: {}
 
   # Liveness probe values.
-  # ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  # For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
   #
   # +docs:property
   livenessProbe:
@@ -681,7 +681,7 @@ webhook:
     timeoutSeconds: 1
 
   # Readiness probe values.
-  # ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  # For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
   #
   # +docs:property
   readinessProbe:
@@ -910,7 +910,7 @@ cainjector:
   strategy: {}
 
   # Pod Security Context to be set on the cainjector component Pod
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
   securityContext:
     runAsNonRoot: true
@@ -918,7 +918,7 @@ cainjector:
       type: RuntimeDefault
 
   # Container Security Context to be set on the cainjector component container
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
   containerSecurityContext:
     allowPrivilegeEscalation: false
@@ -973,7 +973,7 @@ cainjector:
   #    cpu: 10m
   #    memory: 32Mi
   #
-  # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  # For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
   resources: {}
 
 
@@ -1121,7 +1121,7 @@ startupapicheck:
   enabled: true
 
   # Pod Security Context to be set on the startupapicheck component Pod.
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
   securityContext:
     runAsNonRoot: true
@@ -1129,7 +1129,7 @@ startupapicheck:
       type: RuntimeDefault
 
   # Container Security Context to be set on the controller component container.
-  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
   containerSecurityContext:
     allowPrivilegeEscalation: false
@@ -1172,13 +1172,13 @@ startupapicheck:
   #    cpu: 10m
   #    memory: 32Mi
   #
-  # ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  # For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
   resources: {}
 
 
   # The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with
   # matching labels.
-  # See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  # For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
   #
   # This default ensures that Pods are only scheduled to Linux nodes.
   # It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.
@@ -1186,8 +1186,7 @@ startupapicheck:
   nodeSelector:
     kubernetes.io/os: linux
 
-  # A Kubernetes Affinity, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core
-  #
+  # A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
   # For example:
   #   affinity:
   #     nodeAffinity:
@@ -1200,7 +1199,7 @@ startupapicheck:
   #            - master
   affinity: {}
 
-  # A list of Kubernetes Tolerations, if required; see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core
+  # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
   #
   # For example:
   #   tolerations:
