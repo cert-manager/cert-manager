@@ -104,18 +104,15 @@ if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
   k8s_version="$K8S_VERSION"
 fi
 
-# TODO(SgtCoDFish): Using "KIND_IMAGE_FULL_*" here breaks podman, which doesn't support using both tags and digests
-# when referring to an image. We should avoid using FULL where possible.
-
 case "$k8s_version" in
-1.22*) image=$KIND_IMAGE_FULL_K8S_122 ;;
-1.23*) image=$KIND_IMAGE_FULL_K8S_123 ;;
-1.24*) image=$KIND_IMAGE_FULL_K8S_124 ;;
-1.25*) image=$KIND_IMAGE_FULL_K8S_125 ;;
-1.26*) image=$KIND_IMAGE_FULL_K8S_126 ;;
-1.27*) image=$KIND_IMAGE_FULL_K8S_127 ;;
-1.28*) image=$KIND_IMAGE_FULL_K8S_128 ;;
-1.29*) image=$KIND_IMAGE_FULL_K8S_129 ;;
+1.22*) image=$KIND_IMAGE_K8S_122 ;;
+1.23*) image=$KIND_IMAGE_K8S_123 ;;
+1.24*) image=$KIND_IMAGE_K8S_124 ;;
+1.25*) image=$KIND_IMAGE_K8S_125 ;;
+1.26*) image=$KIND_IMAGE_K8S_126 ;;
+1.27*) image=$KIND_IMAGE_K8S_127 ;;
+1.28*) image=$KIND_IMAGE_K8S_128 ;;
+1.29*) image=$KIND_IMAGE_K8S_129 ;;
 v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
