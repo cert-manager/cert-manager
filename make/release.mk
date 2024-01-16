@@ -35,7 +35,7 @@ RELEASE_TARGET_BUCKET ?=
 ## built without errors. Not useful for an actual release - instead, use `make release` for that.
 ##
 ## @category Release
-release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart release-containers release-manifests
+release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart release-containers release-manifests release-shasums
 
 .PHONY: release-artifacts-signed
 # Same as `release-artifacts`, except also signs the Helm chart. Requires CMREL_KEY
@@ -74,6 +74,14 @@ $(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDI
 		--arg buildSource "make" \
 		--arg gitCommitRef "$(GITCOMMIT)" \
 		'.releaseVersion = $$releaseVersion | .gitCommitRef = $$gitCommitRef | .buildSource = $$buildSource | .artifacts += [inputs]' $^ > $@
+
+# Generate a shasums file for all binaries
+
+.PHONY: release-shasums
+release-shasums: $(BINDIR)/release/cert-manager-shasums.txt
+
+$(BINDIR)/release/cert-manager-shasums.txt: cmctl kubectl-cert_manager
+	sha256sum $(wildcard $(BINDIR)/release/cert-manager-cmctl-*.tar.gz) $(wildcard $(BINDIR)/release/cert-manager-kubectl-cert_manager-*.tar.gz) | sed 's|$(BINDIR)/release/cert-manager-||' > $@
 
 .PHONY: release-containers
 release-containers: release-container-bundles release-container-metadata
