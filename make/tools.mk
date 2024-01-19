@@ -180,11 +180,11 @@ export PATH := $(PWD)/$(BINDIR)/tools/goroot/bin:$(PATH)
 GO := $(PWD)/$(BINDIR)/tools/go
 endif
 
-GOBUILD := CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
-GOTEST := CGO_ENABLED=$(CGO_ENABLED) $(GO) test
+GOBUILD := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
+GOTEST := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) $(GO) test
 
-# overwrite $(GOTESTSUM) and add CGO_ENABLED variable
-GOTESTSUM := CGO_ENABLED=$(CGO_ENABLED) $(GOTESTSUM)
+# overwrite $(GOTESTSUM) and add relevant environment variables
+GOTESTSUM := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) $(GOTESTSUM)
 
 .PHONY: vendor-go
 ## By default, this Makefile uses the system's Go. You can use a "vendored"
