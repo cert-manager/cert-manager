@@ -47,6 +47,10 @@ include make/git.mk
 ## @category Build
 CGO_ENABLED ?= 0
 
+## This flag is passed to `go build` to enable Go experiments. It's empty by default
+## @category Build
+GOEXPERIMENT ?=  # empty by default
+
 ## Extra flags passed to 'go' when building. For example, use GOFLAGS=-v to turn on the
 ## verbose output.
 ## @category Build
