@@ -459,7 +459,10 @@ type JKSKeystore struct {
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the JKS keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+	PasswordSecretRef *cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+
+	// Password literal used to encrypt the PKCS12 keystore.
+	Password *string `json:"password"`
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the
@@ -478,7 +481,10 @@ type PKCS12Keystore struct {
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the PKCS12 keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+	PasswordSecretRef *cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+
+	// Password litteral used to encrypt the PKCS12 keystore.
+	Password *string `json:"password"`
 
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.

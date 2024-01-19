@@ -93,6 +93,13 @@ func Test_SecretsManager(t *testing.T) {
 			cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 		),
 	)
+	keystorePassword := "changeit"
+	baseCertWithJKSKeystore := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{JKS: &cmapi.JKSKeystore{Create: true, Password: &keystorePassword}}),
+	)
+	baseCertWithPKCS12Keystore := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{PKCS12: &cmapi.PKCS12Keystore{Create: true, Password: &keystorePassword}}),
+	)
 	block, _ := pem.Decode(baseCertBundle.PrivateKeyBytes)
 	tlsDerContent := block.Bytes
 
@@ -762,9 +769,43 @@ func Test_SecretsManager(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-	}
 
-	// TODO: add to these tests once the JKS/PKCS12 support is updated
+		"if secret does not exist, create new Secret with JKS keystore": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithJKSKeystore,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					assert.Equal(t, []byte(keystorePassword), gotCnf.Data[cmapi.KeystorePassword])
+					assert.NotNil(t, gotCnf.Data[cmapi.JKSSecretKey])
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with PKCS12 keystore": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithPKCS12Keystore,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					assert.Equal(t, []byte(keystorePassword), gotCnf.Data[cmapi.KeystorePassword])
+					assert.NotNil(t, gotCnf.Data[cmapi.PKCS12SecretKey])
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
