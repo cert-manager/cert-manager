@@ -235,7 +235,7 @@ true
 <td>global.logLevel</td>
 <td>
 
-Set the verbosity of cert-manager. A range of 0 - 6. with 6 being the most verbose.
+Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.
 
 </td>
 <td>number</td>
@@ -1827,7 +1827,7 @@ securePort: 10250
 <td>webhook.strategy</td>
 <td>
 
-The eployment update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)  
+The update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)  
   
 For example:
 
@@ -2909,7 +2909,8 @@ false
 <td>cainjector.podDisruptionBudget.minAvailable</td>
 <td>
 
-It configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+`minAvailable` configures the minimum available pods for disruptions. It can either be set to  
+an integer (e.g. 1) or a percentage value (e.g. 25%).  
 Cannot be used if `maxUnavailable` is set.
 
 
@@ -2928,7 +2929,8 @@ Cannot be used if `maxUnavailable` is set.
 <td>cainjector.podDisruptionBudget.maxUnavailable</td>
 <td>
 
-it configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+`maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
+an integer (e.g. 1) or a percentage value (e.g. 25%).  
 Cannot be used if `minAvailable` is set.
 
 
@@ -3664,7 +3666,7 @@ Optional additional annotations to add to the startupapicheck Pods.
 
 Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-ctl:<version> --help`.  
   
-Verbose loggingv is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.
+Verbose logging is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.
 
 
 </td>
