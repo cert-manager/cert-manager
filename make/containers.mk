@@ -42,12 +42,6 @@ BASE_IMAGE_cainjector-linux-s390x:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_s390x)
 BASE_IMAGE_cainjector-linux-ppc64le:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_ppc64le)
 BASE_IMAGE_cainjector-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
 
-BASE_IMAGE_cmctl-linux-amd64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_amd64)
-BASE_IMAGE_cmctl-linux-arm64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm64)
-BASE_IMAGE_cmctl-linux-s390x:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_s390x)
-BASE_IMAGE_cmctl-linux-ppc64le:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_ppc64le)
-BASE_IMAGE_cmctl-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
-
 BASE_IMAGE_startupapicheck-linux-amd64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_amd64)
 BASE_IMAGE_startupapicheck-linux-arm64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm64)
 BASE_IMAGE_startupapicheck-linux-s390x:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_s390x)
@@ -109,19 +103,6 @@ $(BINDIR)/containers/cert-manager-acmesolver-linux-amd64.tar $(BINDIR)/container
 		$(dir $<) >/dev/null
 	$(CTR) save $(TAG) -o $@ >/dev/null
 
-.PHONY: cert-manager-ctl-linux
-cert-manager-ctl-linux: $(BINDIR)/containers/cert-manager-ctl-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-ctl-linux-arm.tar.gz
-
-$(foreach arch,$(ARCHS),$(BINDIR)/containers/cert-manager-ctl-linux-$(arch).tar): $(BINDIR)/containers/cert-manager-ctl-linux-%.tar: $(BINDIR)/scratch/build-context/cert-manager-ctl-linux-%/ctl hack/containers/Containerfile.ctl $(BINDIR)/scratch/build-context/cert-manager-ctl-linux-%/cert-manager.license $(BINDIR)/scratch/build-context/cert-manager-ctl-linux-%/cert-manager.licenses_notice $(BINDIR)/release-version | $(BINDIR)/containers
-	@$(eval TAG := cert-manager-ctl-$*:$(RELEASE_VERSION))
-	@$(eval BASE := BASE_IMAGE_cmctl-linux-$*)
-	$(CTR) build --quiet \
-		-f hack/containers/Containerfile.ctl \
-		--build-arg BASE_IMAGE=$($(BASE)) \
-		-t $(TAG) \
-		$(dir $<) >/dev/null
-	$(CTR) save $(TAG) -o $@ >/dev/null
-
 .PHONY: cert-manager-startupapicheck-linux
 cert-manager-startupapicheck-linux: $(BINDIR)/containers/cert-manager-startupapicheck-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-arm.tar.gz
 
@@ -165,7 +146,4 @@ $(BINDIR)/scratch/build-context/cert-manager-%/cert-manager.licenses_notice: $(B
 	@ln -f $< $@
 
 $(BINDIR)/scratch/build-context/cert-manager-%/controller $(BINDIR)/scratch/build-context/cert-manager-%/acmesolver $(BINDIR)/scratch/build-context/cert-manager-%/cainjector $(BINDIR)/scratch/build-context/cert-manager-%/webhook $(BINDIR)/scratch/build-context/cert-manager-%/startupapicheck: $(BINDIR)/server/% | $(BINDIR)/scratch/build-context/cert-manager-%
-	@ln -f $< $@
-
-$(BINDIR)/scratch/build-context/cert-manager-ctl-%/ctl: $(BINDIR)/cmctl/cmctl-% | $(BINDIR)/scratch/build-context/cert-manager-ctl-%
 	@ln -f $< $@

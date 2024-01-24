@@ -35,7 +35,7 @@ RELEASE_TARGET_BUCKET ?=
 ## built without errors. Not useful for an actual release - instead, use `make release` for that.
 ##
 ## @category Release
-release-artifacts: server-binaries cmctl kubectl-cert_manager helm-chart release-containers release-manifests
+release-artifacts: server-binaries helm-chart release-containers release-manifests
 
 .PHONY: release-artifacts-signed
 # Same as `release-artifacts`, except also signs the Helm chart. Requires CMREL_KEY
@@ -92,14 +92,12 @@ $(BINDIR)/release/cert-manager-server-linux-amd64.tar.gz $(BINDIR)/release/cert-
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/controller.docker_tag
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/webhook.docker_tag
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/startupapicheck.docker_tag
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/ctl.docker_tag
 	cp $(BINDIR)/scratch/cert-manager.license $(CTR_SCRATCHDIR)/LICENSES
 	gunzip -c $(BINDIR)/containers/cert-manager-acmesolver-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/acmesolver.tar
 	gunzip -c $(BINDIR)/containers/cert-manager-cainjector-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/cainjector.tar
 	gunzip -c $(BINDIR)/containers/cert-manager-controller-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/controller.tar
 	gunzip -c $(BINDIR)/containers/cert-manager-webhook-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/webhook.tar
 	gunzip -c $(BINDIR)/containers/cert-manager-startupapicheck-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/startupapicheck.tar
-	gunzip -c $(BINDIR)/containers/cert-manager-ctl-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/ctl.tar
 	chmod -R 755 $(CTR_SCRATCHDIR)/server/images/*
 	tar czf $@ -C $(BINDIR)/scratch/release-container-bundle $(CTR_BASENAME)
 	rm -rf $(CTR_SCRATCHDIR)
