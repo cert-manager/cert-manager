@@ -93,12 +93,18 @@ func Test_SecretsManager(t *testing.T) {
 			cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 		),
 	)
-	keystorePassword := "changeit"
+	keystorePassword := "non-default"
 	baseCertWithJKSKeystore := gen.CertificateFrom(baseCertBundle.Certificate,
 		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{JKS: &cmapi.JKSKeystore{Create: true, Password: &keystorePassword}}),
 	)
+	baseCertWithJKSKeystoreNoPassword := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{JKS: &cmapi.JKSKeystore{Create: true}}),
+	)
 	baseCertWithPKCS12Keystore := gen.CertificateFrom(baseCertBundle.Certificate,
 		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{PKCS12: &cmapi.PKCS12Keystore{Create: true, Password: &keystorePassword}}),
+	)
+	baseCertWithPKCS12KeystoreNoPassword := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{PKCS12: &cmapi.PKCS12Keystore{Create: true}}),
 	)
 	block, _ := pem.Decode(baseCertBundle.PrivateKeyBytes)
 	tlsDerContent := block.Bytes
@@ -799,6 +805,42 @@ func Test_SecretsManager(t *testing.T) {
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					assert.Equal(t, []byte(keystorePassword), gotCnf.Data[cmapi.KeystorePassword])
+					assert.NotNil(t, gotCnf.Data[cmapi.PKCS12SecretKey])
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with JKS keystore using default password": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithJKSKeystoreNoPassword,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					assert.Equal(t, []byte(DefaultKeystorePassword), gotCnf.Data[cmapi.KeystorePassword])
+					assert.NotNil(t, gotCnf.Data[cmapi.JKSSecretKey])
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with PKCS12 keystore using default password": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithPKCS12KeystoreNoPassword,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					assert.Equal(t, []byte(DefaultKeystorePassword), gotCnf.Data[cmapi.KeystorePassword])
 					assert.NotNil(t, gotCnf.Data[cmapi.PKCS12SecretKey])
 					return nil, nil
 				}

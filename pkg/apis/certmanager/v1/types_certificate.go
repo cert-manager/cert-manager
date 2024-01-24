@@ -462,7 +462,7 @@ type JKSKeystore struct {
 	PasswordSecretRef *cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 
 	// Password literal used to encrypt the PKCS12 keystore.
-	Password *string `json:"password"`
+	Password *string `json:"password,omitempty"`
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the
@@ -484,7 +484,7 @@ type PKCS12Keystore struct {
 	PasswordSecretRef *cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 
 	// Password litteral used to encrypt the PKCS12 keystore.
-	Password *string `json:"password"`
+	Password *string `json:"password,omitempty"`
 
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.

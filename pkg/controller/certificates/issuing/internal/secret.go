@@ -38,6 +38,9 @@ import (
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
+// DefaultPassword is the string "changeit", a commonly-used password for keystore files.
+const DefaultKeystorePassword = "changeit"
+
 var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
@@ -260,13 +263,15 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 				return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
 			}
 			pw = pwSecret.Data[ref.Key]
-		} else if crt.Spec.Keystores.PKCS12.Password != nil {
-			pw = []byte(*crt.Spec.Keystores.PKCS12.Password)
 		} else {
-			return fmt.Errorf("either PasswordSecretRef or Password is mandatory")
+			if crt.Spec.Keystores.PKCS12.Password != nil {
+				pw = []byte(*crt.Spec.Keystores.PKCS12.Password)
+			} else {
+				pw = []byte(DefaultKeystorePassword)
+			}
+			// Store the keystore password in the secret to avoid hardcoding in more than one place
+			secret.Data[cmapi.KeystorePassword] = pw
 		}
-		// Store the keystore password in the secret to help transition from PasswordSecretRef to Password
-		secret.Data[cmapi.KeystorePassword] = pw
 
 		profile := crt.Spec.Keystores.PKCS12.Profile
 		keystoreData, err := encodePKCS12Keystore(profile, string(pw), data.PrivateKey, data.Certificate, data.CA)
@@ -299,13 +304,15 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 				return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
 			}
 			pw = pwSecret.Data[ref.Key]
-		} else if crt.Spec.Keystores.JKS.Password != nil {
-			pw = []byte(*crt.Spec.Keystores.JKS.Password)
 		} else {
-			return fmt.Errorf("either PasswordSecretRef or Password is mandatory")
+			if crt.Spec.Keystores.JKS.Password != nil {
+				pw = []byte(*crt.Spec.Keystores.JKS.Password)
+			} else {
+				pw = []byte(DefaultKeystorePassword)
+			}
+			// Store the keystore password in the secret to avoid hardcoding in more than one place
+			secret.Data[cmapi.KeystorePassword] = pw
 		}
-		// Store the keystore password in the secret to help transition from PasswordSecretRef to Password
-		secret.Data[cmapi.KeystorePassword] = pw
 
 		keystoreData, err := encodeJKSKeystore(pw, data.PrivateKey, data.Certificate, data.CA)
 		if err != nil {
