@@ -67,6 +67,8 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 TOOLS += golangci-lint=v1.55.2
 # https://github.com/cert-manager/helm-tool
 TOOLS += helm-tool=v0.2.1
+# https://github.com/cert-manager/cmctl
+TOOLS += cmctl=2f75014a7c360c319f8c7c8afe8e9ce33fe26dca
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v1.0.0
@@ -246,6 +248,7 @@ GO_DEPENDENCIES += crane=github.com/google/go-containerregistry/cmd/crane
 GO_DEPENDENCIES += boilersuite=github.com/cert-manager/boilersuite
 GO_DEPENDENCIES += golangci-lint=github.com/golangci/golangci-lint/cmd/golangci-lint
 GO_DEPENDENCIES += helm-tool=github.com/cert-manager/helm-tool
+GO_DEPENDENCIES += cmctl=github.com/cert-manager/cmctl/v2
 
 define go_dependency
 $$(BINDIR)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(NEEDS_GO) $$(BINDIR)/downloaded/tools
@@ -511,7 +514,6 @@ tidy:
 	cd cmd/acmesolver && go mod tidy
 	cd cmd/cainjector && go mod tidy
 	cd cmd/controller && go mod tidy
-	cd cmd/ctl && go mod tidy
 	cd cmd/startupapicheck && go mod tidy
 	cd cmd/webhook && go mod tidy
 	cd test/integration && go mod tidy
@@ -525,7 +527,7 @@ go-workspace: export GOWORK?=$(abspath go.work)
 go-workspace:
 	@rm -f $(GOWORK)
 	go work init
-	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/ctl ./cmd/startupapicheck ./cmd/webhook ./test/integration ./test/e2e
+	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/startupapicheck ./cmd/webhook ./test/integration ./test/e2e
 
 .PHONY: learn-sha-tools
 ## Re-download all tools and update the tools.mk file with the

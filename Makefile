@@ -66,7 +66,6 @@ include make/tools.mk
 include make/ci.mk
 include make/test.mk
 include make/base_images.mk
-include make/cmctl.mk
 include make/server.mk
 include make/containers.mk
 include make/release.mk

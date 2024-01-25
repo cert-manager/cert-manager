@@ -34,7 +34,7 @@ github.com/mailru/easyjson,https://github.com/mailru/easyjson/blob/v0.7.7/LICENS
 github.com/matttproud/golang_protobuf_extensions/v2/pbutil,https://github.com/matttproud/golang_protobuf_extensions/blob/v2.0.0/LICENSE,Apache-2.0
 github.com/mitchellh/go-wordwrap,https://github.com/mitchellh/go-wordwrap/blob/v1.0.1/LICENSE.md,MIT
 github.com/moby/spdystream,https://github.com/moby/spdystream/blob/v0.2.0/LICENSE,Apache-2.0
-github.com/moby/term,https://github.com/moby/term/blob/v0.5.0/LICENSE,Apache-2.0
+github.com/moby/term,https://github.com/moby/term/blob/1aeaba878587/LICENSE,Apache-2.0
 github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
 github.com/monochromegane/go-gitignore,https://github.com/monochromegane/go-gitignore/blob/205db1a8cc00/LICENSE,MIT
