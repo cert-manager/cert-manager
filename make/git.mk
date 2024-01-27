@@ -31,30 +31,6 @@ gitver:
 release-version:
 	@echo "$(RELEASE_VERSION)"
 
-# Lists all remote tags on the upstream, which gives tags in format:
-# "<commit> ref/tags/<tag>". Strips commit + tag prefix, filters out tags for v1+,
-# and manually removes v1.2.0-alpha.1, since that version's manifest contains
-# duplicate CRD resources (2 CRDs with the same name) which causes problems
-# with the versionchecker test.
-#
-# This file has a version suffix so we can force all checkouts to pick up the new
-# version in response to a change in how we generate it. Users will get warning messages
-# printing explaining the latest version available in their checkout when they run tests,
-# but sometimes we'll want to force a new version.
-$(BINDIR)/scratch/git/upstream-tags.1.txt: | $(BINDIR)/scratch/git
-	git ls-remote --tags --sort "version:refname" --refs https://github.com/cert-manager/cert-manager.git | \
-		awk '{print $$2;}' | \
-		sed 's/refs\/tags\///' | \
-		sed -n '/v1.0.0/,$$p' | \
-		grep -v "v1.2.0-alpha.1" > $@
-
-
-# This target is preserved entirely to make it clear that the file has been renamed, so
-# that anyone who has scripts which reference the file will know to update
-$(BINDIR)/scratch/git/upstream-tags.txt: $(BINDIR)/scratch/git/upstream-tags.1.txt
-	$(warning '$@' has been replaced by '$<'. Update your scripts to use the '$<' name instead.)
-	cp $< $@
-
 # The file "release-version" gets updated whenever git describe --tags changes.
 # This is used by the $(BINDIR)/containers/*.tar.gz targets to make sure that the
 # containers, which use the output of "git describe --tags" as their tag, get

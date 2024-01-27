@@ -88,9 +88,7 @@ unit-test-webhook: | $(NEEDS_GOTESTSUM)
 	cd cmd/webhook && $(GOTESTSUM) ./...
 
 .PHONY: setup-integration-tests
-setup-integration-tests: test/integration/versionchecker/testdata/test_manifests.tar templated-crds
-	@$(eval GIT_TAGS_FILE := $(BINDIR)/scratch/git/upstream-tags.1.txt)
-	@echo -e "\033[0;33mLatest known tag for integration tests is $(shell tail -1 $(GIT_TAGS_FILE)); if that seems out-of-date,\npull latest tags, run 'rm $(GIT_TAGS_FILE)' and retest\033[0m"
+setup-integration-tests: templated-crds
 
 .PHONY: integration-test
 ## Same as `test` but only run the integration tests. By "integration tests",
@@ -160,27 +158,6 @@ e2e-build: $(BINDIR)/test/e2e.test
 .PHONY: test-upgrade
 test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(NEEDS_CMCTL)
 	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(CMCTL)
-
-test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
-	@# Remove the temp files if they exist
-	rm -f $(BINDIR)/scratch/versionchecker-test-manifests.tar $(BINDIR)/scratch/$(RELEASE_VERSION).yaml
-	@# Copy the old CRDs tar and append the currentl release version to it
-	cp $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/scratch/versionchecker-test-manifests.tar
-	cp $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/$(RELEASE_VERSION).yaml
-	tar --append -f $(BINDIR)/scratch/versionchecker-test-manifests.tar -C $(BINDIR)/scratch ./$(RELEASE_VERSION).yaml
-	cp $(BINDIR)/scratch/versionchecker-test-manifests.tar $@
-
-$(BINDIR)/scratch/oldcrds.tar: $(BINDIR)/scratch/git/upstream-tags.1.txt | $(BINDIR)/scratch/oldcrds
-	@# First, download the CRDs for all releases listed in upstream-tags
-	<$(BINDIR)/scratch/git/upstream-tags.1.txt xargs -I% -P5 \
-		./hack/fetch-old-crd.sh \
-		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml" \
-		$(BINDIR)/scratch/oldcrds/%.yaml
-	@# Next, tar up the old CRDs together
-	tar cf $@ -C $(BINDIR)/scratch/oldcrds .
-
-$(BINDIR)/scratch/oldcrds:
-	@mkdir -p $@
 
 $(BINDIR)/test:
 	@mkdir -p $@

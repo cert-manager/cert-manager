@@ -22,9 +22,6 @@ jobs:
       # A workspace file is needed for golangci-lint to check the sub-modules.
       # https://github.com/golangci/golangci-lint-action/issues/544
       - run: make go-workspace
-      # Work around missing go:embed file which causes a typecheck error.
-      # https://github.com/golangci/golangci-lint/issues/2912
-      - run: touch test/integration/versionchecker/testdata/test_manifests.tar
       # To check sub-modules, you need to supply their paths as positional arguments.
       # This step finds the paths and adds them to a variable which is used
       # later in the args value.
