@@ -20,27 +20,19 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubectl/pkg/cmd/util"
 
 	// Load all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-)
-
-var (
-	kubeConfigFlags = genericclioptions.NewConfigFlags(true)
-	factory         = util.NewFactory(kubeConfigFlags)
 )
 
 // Factory provides a set of clients and configurations to authenticate and
 // access a target Kubernetes cluster. Factory will ensure that its fields are
 // populated and valid during command execution.
 type Factory struct {
+	restClientGetter genericclioptions.RESTClientGetter
+
 	// Namespace is the namespace that the user has requested with the
 	// "--namespace" / "-n" flag. Defaults to "default" if the flag was not
 	// provided.
@@ -52,13 +44,6 @@ type Factory struct {
 	// RESTConfig is a Kubernetes REST config that contains the user's
 	// authentication and access configuration.
 	RESTConfig *rest.Config
-
-	// CMClient is a Kubernetes clientset for interacting with cert-manager APIs.
-	CMClient cmclient.Interface
-
-	// KubeClient is a Kubernetes clientset for interacting with the base
-	// Kubernetes APIs.
-	KubeClient kubernetes.Interface
 }
 
 // New returns a new Factory. The supplied command will have flags registered
@@ -69,17 +54,23 @@ type Factory struct {
 func New(ctx context.Context, cmd *cobra.Command) *Factory {
 	f := new(Factory)
 
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
+	f.restClientGetter = kubeConfigFlags
+
 	kubeConfigFlags.AddFlags(cmd.Flags())
-	cmd.RegisterFlagCompletionFunc("namespace", validArgsListNamespaces(ctx, f))
 
 	// Setup a PreRun to populate the Factory. Catch the existing PreRun command
 	// if one was defined, and execute it second.
-	existingPreRun := cmd.PreRun
-	cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		util.CheckErr(f.complete())
-		if existingPreRun != nil {
-			existingPreRun(cmd, args)
+	existingPreRun := cmd.PreRunE
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := f.complete(); err != nil {
+			return err
 		}
+
+		if existingPreRun != nil {
+			return existingPreRun(cmd, args)
+		}
+		return nil
 	}
 
 	return f
@@ -90,51 +81,15 @@ func New(ctx context.Context, cmd *cobra.Command) *Factory {
 func (f *Factory) complete() error {
 	var err error
 
-	f.Namespace, f.EnforceNamespace, err = factory.ToRawKubeConfigLoader().Namespace()
+	f.Namespace, f.EnforceNamespace, err = f.restClientGetter.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
 	}
 
-	f.RESTConfig, err = factory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	f.KubeClient, err = kubernetes.NewForConfig(f.RESTConfig)
-	if err != nil {
-		return err
-	}
-
-	f.CMClient, err = cmclient.NewForConfig(f.RESTConfig)
+	f.RESTConfig, err = f.restClientGetter.ToRESTConfig()
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// validArgsListNamespaces returns a cobra ValidArgsFunction for listing
-// namespaces.
-func validArgsListNamespaces(ctx context.Context, factory *Factory) func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
-	return func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
-		if len(args) > 0 {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		if err := factory.complete(); err != nil {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		namespaceList, err := factory.KubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		var names []string
-		for _, namespace := range namespaceList.Items {
-			names = append(names, namespace.Name)
-		}
-
-		return names, cobra.ShellCompDirectiveNoFileComp
-	}
 }
