@@ -26,9 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/kubectl/pkg/util/i18n"
-	"k8s.io/kubectl/pkg/util/templates"
 
 	cmcmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -51,13 +48,6 @@ type Options struct {
 	genericclioptions.IOStreams
 	*factory.Factory
 }
-
-var checkApiDesc = templates.LongDesc(i18n.T(`
-This check attempts to perform a dry-run create of a cert-manager *v1alpha2*
-Certificate resource in order to verify that CRDs are installed and all the
-required webhooks are reachable by the K8S API server.
-We use v1alpha2 API to ensure that the API server has also connected to the
-cert-manager conversion webhook.`))
 
 // NewOptions returns initialized Options
 func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
@@ -89,10 +79,19 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 	cmd := &cobra.Command{
 		Use:   "api",
 		Short: "Check if the cert-manager API is ready",
-		Long:  checkApiDesc,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(o.Complete())
-			cmdutil.CheckErr(o.Run(ctx))
+		Long: `
+This check attempts to perform a dry-run create of a cert-manager *v1alpha2*
+Certificate resource in order to verify that CRDs are installed and all the
+required webhooks are reachable by the K8S API server.
+We use v1alpha2 API to ensure that the API server has also connected to the
+cert-manager conversion webhook.`,
+
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := o.Complete(); err != nil {
+				return err
+			}
+
+			return o.Run(ctx)
 		},
 	}
 	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s = poll once)")

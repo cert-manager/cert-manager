@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/component-base/logs"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -79,6 +78,7 @@ func main() {
 	cmd.AddCommand(check.NewCmdCheck(ctx, ioStreams))
 
 	if err := cmd.Execute(); err != nil {
-		cmdutil.CheckErr(err)
+		logf.Log.Error(err, "error executing command")
+		util.SetExitCode(err)
 	}
 }
