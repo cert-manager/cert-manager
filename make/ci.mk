@@ -20,7 +20,7 @@
 ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-modules
 
 .PHONY: verify-golangci-lint
-verify-golangci-lint: test/integration/versionchecker/testdata/test_manifests.tar | $(NEEDS_GOLANGCI-LINT)
+verify-golangci-lint: | $(NEEDS_GOLANGCI-LINT)
 	find . -name go.mod -not \( -path "./$(BINDIR)/*" -prune \)  -execdir $(GOLANGCI-LINT) run --timeout=30m --config=$(CURDIR)/.golangci.ci.yaml \;
 
 .PHONY: verify-modules
