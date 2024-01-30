@@ -203,8 +203,7 @@ func (r *DNSProvider) changeRecord(action route53types.ChangeAction, fqdn, value
 
 	resp, err := r.client.ChangeResourceRecordSets(context.TODO(), reqParams)
 	if err != nil {
-		invalidChangeBatchErr := &route53types.InvalidChangeBatch{}
-		if errors.As(err, &invalidChangeBatchErr) && action == route53types.ChangeActionDelete {
+		if errors.Is(err, &route53types.InvalidChangeBatch{}) && action == route53types.ChangeActionDelete {
 			r.log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
 			// If we try to delete something and get a 'InvalidChangeBatch' that
 			// means it's already deleted, no need to consider it an error.
