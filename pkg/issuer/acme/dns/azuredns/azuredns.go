@@ -12,6 +12,7 @@ package azuredns
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -154,7 +155,8 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		c.trimFqdn(fqdn, z),
 		dns.RecordTypeTXT, nil)
 	if err != nil {
-		return err
+		c.log.Error(err, "Error deleting TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
+		return stabilizeError(err)
 	}
 	return nil
 }
@@ -171,7 +173,6 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
 		return err
 	}
 
@@ -183,8 +184,8 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		dns.RecordTypeTXT,
 		*rparams, nil)
 	if err != nil {
-		c.log.Error(err, "Error creating TXT:", z)
-		return err
+		c.log.Error(err, "Error creating TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
+		return stabilizeError(err)
 	}
 	return nil
 }
@@ -197,15 +198,13 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	if len(z) == 0 {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	_, err = c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil)
-
-	if err != nil {
-		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, err)
+	if _, err := c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
+		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
 	}
 
 	return util.UnFqdn(z), nil
@@ -218,4 +217,48 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 		z = c.zoneName
 	}
 	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+z)
+}
+
+// The azure-sdk library returns the contents of the HTTP requests in its
+// error messages. We want our error messages to be the same when the cause
+// is the same to avoid spurious challenge updates.
+//
+// The given error must not be nil. This function must be called everywhere
+// we have a non-nil error coming from a azure-sdk func that makes API calls.
+func stabilizeError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) {
+		method := "<UNKNOWN-METHOD>"
+		url := "<UNKNOWN-URL>"
+		response := "<UNKNOWN-RESPONSE>"
+		if respErr.RawResponse.Request != nil {
+			method = respErr.RawResponse.Request.Method
+			url = fmt.Sprintf(
+				"%s://%s%s",
+				respErr.RawResponse.Request.URL.Scheme,
+				respErr.RawResponse.Request.URL.Host,
+				respErr.RawResponse.Request.URL.Path,
+			)
+			response = fmt.Sprintf("%d: %s", respErr.RawResponse.StatusCode, respErr.RawResponse.Status)
+		}
+
+		errorCode := "<UNKNOWN-ERROR-CODE>"
+		if respErr.ErrorCode != "" {
+			errorCode = respErr.ErrorCode
+		}
+
+		return fmt.Errorf(
+			"Error making AzureDNS API request:\n%s %s\nRESPONSE %s\nERROR CODE: %s",
+			method,
+			url,
+			response,
+			errorCode,
+		)
+	}
+
+	return err
 }
