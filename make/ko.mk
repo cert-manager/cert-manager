@@ -43,7 +43,7 @@ KO_PLATFORM ?= linux/amd64
 
 ## (optional) Which cert-manager images to build.
 ## @category Experimental/ko
-KO_BINS ?= controller acmesolver cainjector webhook ctl startupapicheck
+KO_BINS ?= controller acmesolver cainjector webhook startupapicheck
 
 ## (optional) Paths of Helm values files which will be supplied to `helm install
 ## --values` flag by make ko-deploy-certmanager.

@@ -16,7 +16,7 @@
 BASE_IMAGE_TYPE:=STATIC
 
 ARCHS = amd64 arm64 s390x ppc64le arm
-BINS = controller acmesolver cainjector webhook ctl startupapicheck
+BINS = controller acmesolver cainjector webhook startupapicheck
 
 BASE_IMAGE_controller-linux-amd64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_amd64)
 BASE_IMAGE_controller-linux-arm64:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm64)
@@ -49,7 +49,7 @@ BASE_IMAGE_startupapicheck-linux-ppc64le:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_ppc64l
 BASE_IMAGE_startupapicheck-linux-arm:=$($(BASE_IMAGE_TYPE)_BASE_IMAGE_arm)
 
 .PHONY: all-containers
-all-containers: cert-manager-controller-linux cert-manager-webhook-linux cert-manager-acmesolver-linux cert-manager-cainjector-linux cert-manager-ctl-linux cert-manager-startupapicheck-linux
+all-containers: cert-manager-controller-linux cert-manager-webhook-linux cert-manager-acmesolver-linux cert-manager-cainjector-linux cert-manager-startupapicheck-linux
 
 .PHONY: cert-manager-controller-linux
 cert-manager-controller-linux: $(BINDIR)/containers/cert-manager-controller-linux-amd64.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-arm64.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-s390x.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-ppc64le.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-arm.tar.gz

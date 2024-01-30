@@ -19,7 +19,7 @@
 ## container, use "trivy-scan-<name>", e.g. "make trivy-scan-controller"
 ##
 ## @category Development
-trivy-scan-all: trivy-scan-controller trivy-scan-acmesolver trivy-scan-webhook trivy-scan-cainjector trivy-scan-ctl
+trivy-scan-all: trivy-scan-controller trivy-scan-acmesolver trivy-scan-webhook trivy-scan-cainjector
 
 .PHONY: trivy-scan-controller
 trivy-scan-controller: $(BINDIR)/containers/cert-manager-controller-linux-amd64.tar | $(NEEDS_TRIVY)
@@ -35,8 +35,4 @@ trivy-scan-webhook: $(BINDIR)/containers/cert-manager-webhook-linux-amd64.tar | 
 
 .PHONY: trivy-scan-cainjector
 trivy-scan-cainjector: $(BINDIR)/containers/cert-manager-cainjector-linux-amd64.tar | $(NEEDS_TRIVY)
-	$(TRIVY) image --input $< --format json --exit-code 1
-
-.PHONY: trivy-scan-ctl
-trivy-scan-ctl: $(BINDIR)/containers/cert-manager-ctl-linux-amd64.tar | $(NEEDS_TRIVY)
 	$(TRIVY) image --input $< --format json --exit-code 1
