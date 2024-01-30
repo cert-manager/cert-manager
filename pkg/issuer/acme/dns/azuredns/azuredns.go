@@ -104,8 +104,7 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 	// Use Workload Identity if present
 	if os.Getenv("AZURE_FEDERATED_TOKEN_FILE") != "" {
 		wcOpt := &azidentity.WorkloadIdentityCredentialOptions{
-			DisableInstanceDiscovery: true,
-			ClientOptions:            clientOpt,
+			ClientOptions: clientOpt,
 		}
 		if managedIdentity != nil {
 			if managedIdentity.ClientID != "" {
