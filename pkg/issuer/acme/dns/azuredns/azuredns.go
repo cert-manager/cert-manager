@@ -155,6 +155,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		c.trimFqdn(fqdn, z),
 		dns.RecordTypeTXT, nil)
 	if err != nil {
+		c.log.Error(err, "Error deleting TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return stabilizeError(err)
 	}
 	return nil
@@ -172,7 +173,6 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		dns.RecordTypeTXT,
 		*rparams, nil)
 	if err != nil {
-		c.log.Error(err, "Error creating TXT:", z)
+		c.log.Error(err, "Error creating TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return stabilizeError(err)
 	}
 	return nil
@@ -198,14 +198,12 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	if len(z) == 0 {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	_, err = c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil)
-
-	if err != nil {
+	if _, err := c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
 	}
 
