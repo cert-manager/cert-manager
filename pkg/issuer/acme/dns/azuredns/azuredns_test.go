@@ -11,6 +11,7 @@ package azuredns
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,12 +21,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 var (
@@ -263,4 +268,49 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token.Token, "Access token should have been set to a value returned by the webserver")
 	})
+}
+
+// TestStabilizeError tests that the errors returned by the AzureDNS API are
+// changed to be stable. We want our error messages to be the same when the cause
+// is the same to avoid spurious challenge updates.
+func TestStabilizeError(t *testing.T) {
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		randomMessage := "test error message: " + rand.String(10)
+		payload := fmt.Sprintf(`{"error":{"code":"TEST_ERROR_CODE","message":"%s"}}`, randomMessage)
+		if _, err := w.Write([]byte(payload)); err != nil {
+			assert.FailNow(t, err.Error())
+		}
+	}))
+
+	defer ts.Close()
+
+	clientOpt := policy.ClientOptions{
+		Cloud: cloud.Configuration{
+			ActiveDirectoryAuthorityHost: ts.URL,
+			Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+				cloud.ResourceManager: {
+					Audience: ts.URL,
+					Endpoint: ts.URL,
+				},
+			},
+		},
+		Transport: ts.Client(),
+	}
+
+	zc, err := dns.NewZonesClient("subscriptionID", nil, &arm.ClientOptions{ClientOptions: clientOpt})
+	require.NoError(t, err)
+
+	dnsProvider := DNSProvider{
+		dns01Nameservers:  util.RecursiveNameservers,
+		resourceGroupName: "resourceGroupName",
+		zoneClient:        zc,
+	}
+
+	err = dnsProvider.Present("test.com", "fqdn.test.com.", "test123")
+	require.Error(t, err)
+	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: Error making AzureDNS API request:
+GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
+RESPONSE 502: 502 Bad Gateway
+ERROR CODE: TEST_ERROR_CODE`, ts.URL))
 }
