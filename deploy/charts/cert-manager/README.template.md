@@ -3664,7 +3664,7 @@ Optional additional annotations to add to the startupapicheck Pods.
 <td>startupapicheck.extraArgs</td>
 <td>
 
-Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-ctl:<version> --help`.  
+Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-startupapicheck:<version> --help`.  
   
 Verbose logging is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.
 
