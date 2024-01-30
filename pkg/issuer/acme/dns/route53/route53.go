@@ -294,7 +294,7 @@ func newTXTRecordSet(fqdn, value string, ttl int) *route53types.ResourceRecordSe
 // The given error must not be nil. This function must be called everywhere
 // we have a non-nil error coming from an aws-sdk-go func.
 func removeReqID(err error) error {
-	responseError := &awshttp.ResponseError{}
+	var responseError *awshttp.ResponseError
 	if errors.As(err, &responseError) {
 		// remove the request id from the error message
 		responseError.RequestID = "<REDACTED>"
