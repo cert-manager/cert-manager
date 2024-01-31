@@ -279,6 +279,10 @@ type VaultKubernetesAuth struct {
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.
 	Role string `json:"role"`
+
+	// List of audiences to include as an audience claim in the token created
+	// +optional
+	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
 // ServiceAccountRef is a service account used by cert-manager to request a
