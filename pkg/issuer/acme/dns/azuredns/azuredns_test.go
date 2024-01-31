@@ -135,7 +135,15 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 	// Prepare environment variables adal will rely on. Skip changes for some envs if they are already defined (=live environment)
 	// Envs themselves are described here: https://azure.github.io/azure-workload-identity/docs/installation/mutating-admission-webhook.html
 	if os.Getenv("AZURE_TENANT_ID") == "" {
-		t.Setenv("AZURE_TENANT_ID", "fakeTenantID")
+		// TODO(wallrj): This is a hack. It is a quick way to `DisableInstanceDiscovery` during tests,
+		// to avoid the client attempting to connect to https://login.microsoftonline.com/common/discovery/instance.
+		// It works because there is a special case in azure-sdk-for-go which
+		// disables the instance discovery when the tenant ID is `adfs`. See:
+		// https://github.com/Azure/azure-sdk-for-go/blob/7288bda422654bde520a09034dd755b8f2dd4168/sdk/azidentity/public_client.go#L237-L239
+		// https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/ad-fs-overview
+		//
+		// Find a better way to test this code.
+		t.Setenv("AZURE_TENANT_ID", "adfs")
 	}
 
 	if os.Getenv("AZURE_CLIENT_ID") == "" {
