@@ -11,9 +11,12 @@ this directory.
 package azuredns
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -229,34 +232,24 @@ func stabilizeError(err error) error {
 		return nil
 	}
 
+	redactResponse := func(resp *http.Response) *http.Response {
+		if resp == nil {
+			return nil
+		}
+
+		reponse := *resp
+		reponse.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
+		return &reponse
+	}
+
+	var authErr *azidentity.AuthenticationFailedError
+	if errors.As(err, &authErr) {
+		authErr.RawResponse = redactResponse(authErr.RawResponse)
+	}
+
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) {
-		method := "<UNKNOWN-METHOD>"
-		url := "<UNKNOWN-URL>"
-		response := "<UNKNOWN-RESPONSE>"
-		if respErr.RawResponse.Request != nil {
-			method = respErr.RawResponse.Request.Method
-			url = fmt.Sprintf(
-				"%s://%s%s",
-				respErr.RawResponse.Request.URL.Scheme,
-				respErr.RawResponse.Request.URL.Host,
-				respErr.RawResponse.Request.URL.Path,
-			)
-			response = fmt.Sprintf("%d: %s", respErr.RawResponse.StatusCode, respErr.RawResponse.Status)
-		}
-
-		errorCode := "<UNKNOWN-ERROR-CODE>"
-		if respErr.ErrorCode != "" {
-			errorCode = respErr.ErrorCode
-		}
-
-		return fmt.Errorf(
-			"Error making AzureDNS API request:\n%s %s\nRESPONSE %s\nERROR CODE: %s",
-			method,
-			url,
-			response,
-			errorCode,
-		)
+		respErr.RawResponse = redactResponse(respErr.RawResponse)
 	}
 
 	return err
