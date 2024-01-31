@@ -276,12 +276,71 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token.Token, "Access token should have been set to a value returned by the webserver")
 	})
+
+	// This test tests the stabilizeError function, it makes sure that authentication errors
+	// are also made stable. We want our error messages to be the same when the cause
+	// is the same to avoid spurious challenge updates.
+	// Specifically, this test makes sure that the errors of type AuthenticationFailedError
+	// are made stable. These errors are returned by the recordClient and zoneClient when
+	// they fail to authenticate. We simulate this by calling the GetToken function and
+	// returning a 502 Bad Gateway error.
+	t.Run("errors should be made stable", func(t *testing.T) {
+		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
+
+		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+
+				w.Header().Set("Content-Type", "application/json")
+				openidConfiguration := map[string]string{
+					"token_endpoint":         tenantURL + "/oauth2/token",
+					"authorization_endpoint": tenantURL + "/oauth2/authorize",
+					"issuer":                 "https://fakeIssuer.com",
+				}
+
+				if err := json.NewEncoder(w).Encode(openidConfiguration); err != nil {
+					assert.FailNow(t, err.Error())
+				}
+
+				return
+			}
+
+			w.WriteHeader(http.StatusBadGateway)
+			randomMessage := "test error message: " + rand.String(10)
+			payload := fmt.Sprintf(`{"error":{"code":"TEST_ERROR_CODE","message":"%s"}}`, randomMessage)
+			if _, err := w.Write([]byte(payload)); err != nil {
+				assert.FailNow(t, err.Error())
+			}
+		}))
+		defer ts.Close()
+
+		ambient := true
+		clientOpt := policy.ClientOptions{
+			Cloud:     cloud.Configuration{ActiveDirectoryAuthorityHost: ts.URL},
+			Transport: ts.Client(),
+		}
+
+		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
+		assert.NoError(t, err)
+
+		_, err = spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+		err = stabilizeError(err)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, fmt.Sprintf(`WorkloadIdentityCredential authentication failed
+POST %s/adfs/oauth2/token
+--------------------------------------------------------------------------------
+RESPONSE 502 Bad Gateway
+--------------------------------------------------------------------------------
+<REDACTED>
+--------------------------------------------------------------------------------
+To troubleshoot, visit https://aka.ms/azsdk/go/identity/troubleshoot#workload`, ts.URL))
+	})
 }
 
-// TestStabilizeError tests that the errors returned by the AzureDNS API are
+// TestStabilizeResponseError tests that the ResponseError errors returned by the AzureDNS API are
 // changed to be stable. We want our error messages to be the same when the cause
 // is the same to avoid spurious challenge updates.
-func TestStabilizeError(t *testing.T) {
+func TestStabilizeResponseError(t *testing.T) {
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
 		randomMessage := "test error message: " + rand.String(10)
@@ -317,8 +376,12 @@ func TestStabilizeError(t *testing.T) {
 
 	err = dnsProvider.Present("test.com", "fqdn.test.com.", "test123")
 	require.Error(t, err)
-	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: Error making AzureDNS API request:
-GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
+	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
+--------------------------------------------------------------------------------
 RESPONSE 502: 502 Bad Gateway
-ERROR CODE: TEST_ERROR_CODE`, ts.URL))
+ERROR CODE: TEST_ERROR_CODE
+--------------------------------------------------------------------------------
+<REDACTED>
+--------------------------------------------------------------------------------
+`, ts.URL))
 }
