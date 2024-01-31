@@ -12,7 +12,8 @@ github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manage
 github.com/cert-manager/cert-manager/cmd/ctl,https://github.com/cert-manager/cert-manager/blob/HEAD/cmd/ctl/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
 github.com/chai2010/gettext-go,https://github.com/chai2010/gettext-go/blob/v1.0.2/LICENSE,BSD-3-Clause
-github.com/containerd/containerd,https://github.com/containerd/containerd/blob/v1.7.6/LICENSE,Apache-2.0
+github.com/containerd/containerd,https://github.com/containerd/containerd/blob/v1.7.12/LICENSE,Apache-2.0
+github.com/containerd/log,https://github.com/containerd/log/blob/v0.1.0/LICENSE,Apache-2.0
 github.com/cyphar/filepath-securejoin,https://github.com/cyphar/filepath-securejoin/blob/v0.2.4/LICENSE,BSD-3-Clause
 github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af33cc/LICENSE,ISC
 github.com/docker/cli/cli/config,https://github.com/docker/cli/blob/v24.0.7/LICENSE,Apache-2.0
@@ -28,6 +29,7 @@ github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6
 github.com/exponent-io/jsonpath,https://github.com/exponent-io/jsonpath/blob/d6023ce2651d/LICENSE,MIT
 github.com/fatih/camelcase,https://github.com/fatih/camelcase/blob/v1.0.0/LICENSE.md,MIT
 github.com/fatih/color,https://github.com/fatih/color/blob/v1.15.0/LICENSE.md,MIT
+github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.4/LICENSE.txt,MIT
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
 github.com/go-errors/errors,https://github.com/go-errors/errors/blob/v1.4.2/LICENSE.MIT,MIT
 github.com/go-gorp/gorp/v3,https://github.com/go-gorp/gorp/blob/v3.1.0/LICENSE,MIT
@@ -105,6 +107,7 @@ github.com/xeipuuv/gojsonpointer,https://github.com/xeipuuv/gojsonpointer/blob/0
 github.com/xeipuuv/gojsonreference,https://github.com/xeipuuv/gojsonreference/blob/bd5ef7bd5415/LICENSE-APACHE-2.0.txt,Apache-2.0
 github.com/xeipuuv/gojsonschema,https://github.com/xeipuuv/gojsonschema/blob/v1.2.0/LICENSE-APACHE-2.0.txt,Apache-2.0
 github.com/xlab/treeprint,https://github.com/xlab/treeprint/blob/v1.2.0/LICENSE,MIT
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.46.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0
 go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob/v1.20.0/LICENSE,Apache-2.0
 go.opentelemetry.io/otel/metric,https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.20.0/metric/LICENSE,Apache-2.0
 go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.20.0/trace/LICENSE,Apache-2.0
