@@ -42,7 +42,7 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if and .Values.prometheus.enabled (not .Values.prometheus.servicemonitor.enabled) }}
+      {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
       {{- if not .Values.podAnnotations }}
       annotations:
       {{- end }}
