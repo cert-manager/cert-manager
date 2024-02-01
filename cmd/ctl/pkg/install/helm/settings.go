@@ -62,15 +62,13 @@ func (n *NormalisedEnvSettings) Setup(ctx context.Context, cmd *cobra.Command) {
 		// Add a PreRunE hook to initialise the action configuration.
 		existingPreRunE := cmd.PreRunE
 		cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-			if err := n.InitActionConfiguration(); err != nil {
-				return err
-			}
-
 			if existingPreRunE != nil {
-				return existingPreRunE(cmd, args)
+				if err := existingPreRunE(cmd, args); err != nil {
+					return err
+				}
 			}
 
-			return nil
+			return n.InitActionConfiguration()
 		}
 	}
 
@@ -95,17 +93,18 @@ func (n *NormalisedEnvSettings) setupEnvSettings(ctx context.Context, cmd *cobra
 	}
 
 	{
-		// Add a PreRun hook to set the debug value to true if the log level is
+		// Add a PreRunE hook to set the debug value to true if the log level is
 		// >= 3.
-		existingPreRun := cmd.PreRun
-		cmd.PreRun = func(cmd *cobra.Command, args []string) {
+		existingPreRunE := cmd.PreRunE
+		cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 			if n.logger.V(debugLogLevel).Enabled() {
 				n.EnvSettings.Debug = true
 			}
 
-			if existingPreRun != nil {
-				existingPreRun(cmd, args)
+			if existingPreRunE != nil {
+				return existingPreRunE(cmd, args)
 			}
+			return nil
 		}
 	}
 }
@@ -113,7 +112,7 @@ func (n *NormalisedEnvSettings) setupEnvSettings(ctx context.Context, cmd *cobra
 func (n *NormalisedEnvSettings) InitActionConfiguration() error {
 	return n.ActionConfiguration.Init(
 		n.Factory.RESTClientGetter,
-		n.EnvSettings.Namespace(),
+		n.Factory.Namespace,
 		os.Getenv("HELM_DRIVER"),
 		func(format string, v ...interface{}) {
 			n.logger.Info(fmt.Sprintf(format, v...))
