@@ -3207,7 +3207,7 @@ The container image for the cert-manager cainjector
 <td>
 
 ```yaml
-quay.io/jetstack/cert-manager-controller
+quay.io/jetstack/cert-manager-cainjector
 ```
 
 </td>
