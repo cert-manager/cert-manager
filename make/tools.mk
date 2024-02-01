@@ -66,7 +66,7 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 # https://github.com/golangci/golangci-lint/releases
 TOOLS += golangci-lint=v1.55.2
 # https://github.com/cert-manager/helm-tool
-TOOLS += helm-tool=v0.2.1
+TOOLS += helm-tool=v0.3.0
 # https://github.com/cert-manager/cmctl
 TOOLS += cmctl=2f75014a7c360c319f8c7c8afe8e9ce33fe26dca
 
