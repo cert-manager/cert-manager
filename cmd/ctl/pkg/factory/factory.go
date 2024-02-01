@@ -75,14 +75,18 @@ func New(ctx context.Context, cmd *cobra.Command) *Factory {
 	kubeConfigFlags.AddFlags(cmd.Flags())
 	cmd.RegisterFlagCompletionFunc("namespace", validArgsListNamespaces(ctx, f))
 
-	// Setup a PreRun to populate the Factory. Catch the existing PreRun command
+	// Setup a PreRunE to populate the Factory. Catch the existing PreRunE command
 	// if one was defined, and execute it second.
-	existingPreRun := cmd.PreRun
-	cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		util.CheckErr(f.complete())
-		if existingPreRun != nil {
-			existingPreRun(cmd, args)
+	existingPreRunE := cmd.PreRunE
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := f.complete(); err != nil {
+			return err
 		}
+
+		if existingPreRunE != nil {
+			return existingPreRunE(cmd, args)
+		}
+		return nil
 	}
 
 	return f
