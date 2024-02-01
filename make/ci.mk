@@ -17,7 +17,7 @@
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-modules
+ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen verify-crds verify-modules verify-helm-docs
 
 .PHONY: verify-golangci-lint
 verify-golangci-lint: test/integration/versionchecker/testdata/test_manifests.tar | $(NEEDS_GOLANGCI-LINT)
@@ -109,9 +109,23 @@ update-codegen: | k8s-codegen-tools $(NEEDS_GO)
 		./$(BINDIR)/tools/conversion-gen \
 		./$(BINDIR)/tools/openapi-gen
 
+# inject_helm_docs performs `helm-tool inject` using $1 as the output file and $2 as the values input
+define inject_helm_docs
+$(HELM-TOOL) inject --header-search '^<!-- AUTO-GENERATED -->' --footer-search '^<!-- /AUTO-GENERATED -->' -i $2 -o $1
+endef
+
 .PHONY: update-helm-docs
-update-helm-docs: | $(NEEDS_HELM-TOOL)
-	$(HELM-TOOL) inject --header-search '^<!-- AUTO-GENERATED -->' --footer-search '^<!-- /AUTO-GENERATED -->' -i deploy/charts/cert-manager/values.yaml -o deploy/charts/cert-manager/README.template.md
+update-helm-docs: deploy/charts/cert-manager/README.template.md deploy/charts/cert-manager/values.yaml | $(NEEDS_HELM-TOOL)
+	$(call inject_helm_docs,deploy/charts/cert-manager/README.template.md,deploy/charts/cert-manager/values.yaml)
+
+.PHONY: verify-helm-docs
+verify-helm-docs: | $(NEEDS_HELM-TOOL)
+	@if ! git diff --exit-code -- deploy/charts/cert-manager/README.template.md > /dev/null ; then \
+		echo "\033[0;33mdeploy/charts/cert-manager/README.template.md has been modified and could be out of date; update with 'make update-helm-docs'\033[0m" ; \
+		exit 1 ; \
+	fi
+	@cp deploy/charts/cert-manager/README.template.md $(BINDIR)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION) && $(call inject_helm_docs,$(BINDIR)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION),deploy/charts/cert-manager/values.yaml)
+	@diff $(BINDIR)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION) deploy/charts/cert-manager/README.template.md || (echo -e "\033[0;33mdeploy/charts/cert-manager/README.template.md seems to be out of date; update with 'make update-helm-docs'\033[0m" && exit 1)
 
 .PHONY: update-all
 ## Update CRDs, code generation and licenses to the latest versions.
