@@ -420,10 +420,11 @@ enableServiceLinks: false
 
 prometheus:
   # Enable Prometheus monitoring for the cert-manager controller to use with the
-  # Prometheus Operator. Either `prometheus.servicemonitor.enabled` or
-  # `prometheus.podmonitor.enabled` can be used to create a ServiceMonitor/PodMonitor
-  # resource.
+  # Prometheus Operator. If this option is enabled without enabling `prometheus.servicemonitor.enabled` or
+  # `prometheus.podmonitor.enabled`, 'prometheus.io' annotations are added to the cert-manager Deployment resources.
+  # Otherwise, a ServiceMonitor/ PodMonitor is created.
   enabled: true
+
   servicemonitor:
     # Create a ServiceMonitor to add cert-manager to Prometheus.
     enabled: false
