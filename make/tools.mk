@@ -66,7 +66,7 @@ TOOLS += ginkgo=$(shell awk '/ginkgo\/v2/ {print $$2}' go.mod)
 # https://github.com/golangci/golangci-lint/releases
 TOOLS += golangci-lint=v1.55.2
 # https://github.com/cert-manager/helm-tool
-TOOLS += helm-tool=v0.2.1
+TOOLS += helm-tool=v0.3.0
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
 GATEWAY_API_VERSION=v1.0.0
