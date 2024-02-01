@@ -1371,9 +1371,9 @@ false
 <td>prometheus.enabled</td>
 <td>
 
-Enable Prometheus monitoring for the cert-manager controller to use with the. Prometheus Operator. Either `prometheus.servicemonitor.enabled` or  
-`prometheus.podmonitor.enabled` can be used to create a ServiceMonitor/PodMonitor  
-resource.
+Enable Prometheus monitoring for the cert-manager controller to use with the. Prometheus Operator. If this option is enabled without enabling `prometheus.servicemonitor.enabled` or  
+`prometheus.podmonitor.enabled`, 'prometheus.io' annotations are added to the cert-manager Deployment resources.  
+Otherwise, a ServiceMonitor/ PodMonitor is created.
 
 </td>
 <td>bool</td>
@@ -3197,7 +3197,7 @@ The container image for the cert-manager cainjector
 <td>
 
 ```yaml
-quay.io/jetstack/cert-manager-controller
+quay.io/jetstack/cert-manager-cainjector
 ```
 
 </td>
