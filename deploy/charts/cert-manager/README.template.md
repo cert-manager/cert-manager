@@ -1376,9 +1376,9 @@ false
 <td>prometheus.enabled</td>
 <td>
 
-Enable prometheus monitoring for the cert-manager controller, to use with. Prometheus Operator either `prometheus.servicemonitor.enabled` or  
-`prometheus.podmonitor.enabled` can be used to create a ServiceMonitor/PodMonitor  
-resource
+Enable Prometheus monitoring for the cert-manager controller to use with the. Prometheus Operator. If this option is enabled without enabling `prometheus.servicemonitor.enabled` or  
+`prometheus.podmonitor.enabled`, 'prometheus.io' annotations are added to the cert-manager Deployment  
+resources. Additionally, a service is created which can be used together with your own ServiceMonitor (managed outside of this Helm chart). Otherwise, a ServiceMonitor/ PodMonitor is created.
 
 </td>
 <td>bool</td>
