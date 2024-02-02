@@ -29,7 +29,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -112,7 +111,6 @@ type Server struct {
 
 	ValidationWebhook handlers.ValidatingAdmissionHook
 	MutationWebhook   handlers.MutatingAdmissionHook
-	ConversionWebhook handlers.ConversionHook
 
 	log logr.Logger
 
@@ -229,7 +227,6 @@ func (s *Server) Run(ctx context.Context) error {
 	serverMux := http.NewServeMux()
 	serverMux.HandleFunc("/validate", s.handle(s.validate))
 	serverMux.HandleFunc("/mutate", s.handle(s.mutate))
-	serverMux.HandleFunc("/convert", s.handle(s.convert))
 	server := &http.Server{
 		Handler:           serverMux,
 		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
@@ -304,20 +301,6 @@ func (s *Server) logAdmissionReview(review *admissionv1.AdmissionReview, prefix 
 		s.log.V(logLevel).Info(prefix, "kind", review.Request.Kind.Kind, "name", review.Request.Name, "namespace", review.Request.Namespace, "unexpected empty response")
 	} else {
 		s.log.V(logLevel).Info(prefix, "kind", review.Request.Kind.Kind, "name", review.Request.Name, "namespace", review.Request.Namespace, "response uuid", review.Response.UID, "allowed", review.Response.Allowed)
-	}
-}
-
-func (s *Server) convert(_ context.Context, obj runtime.Object) (runtime.Object, error) {
-	switch review := obj.(type) {
-	case *apiextensionsv1.ConversionReview:
-		if review.Request == nil {
-			return nil, errors.New("review.request was nil")
-		}
-		review.Response = s.ConversionWebhook.Convert(review.Request)
-		s.log.V(logf.DebugLevel).Info("request received by converting webhook", "kind", review.Kind, "request uid", review.Request.UID, "response uid", review.Response.UID)
-		return review, nil
-	default:
-		return nil, fmt.Errorf("unsupported conversion review type: %T", review)
 	}
 }
 

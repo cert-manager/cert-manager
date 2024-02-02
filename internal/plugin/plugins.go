@@ -17,7 +17,6 @@ limitations under the License.
 package plugin
 
 import (
-	"github.com/cert-manager/cert-manager/internal/plugin/admission/apideprecation"
 	certificaterequestapproval "github.com/cert-manager/cert-manager/internal/plugin/admission/certificaterequest/approval"
 	certificaterequestidentity "github.com/cert-manager/cert-manager/internal/plugin/admission/certificaterequest/identity"
 	"github.com/cert-manager/cert-manager/internal/plugin/admission/resourcevalidation"
@@ -26,14 +25,12 @@ import (
 )
 
 var AllOrderedPlugins = []string{
-	apideprecation.PluginName,
 	resourcevalidation.PluginName,
 	certificaterequestidentity.PluginName,
 	certificaterequestapproval.PluginName,
 }
 
 func RegisterAllPlugins(plugins *admission.Plugins) {
-	apideprecation.Register(plugins)
 	certificaterequestidentity.Register(plugins)
 	certificaterequestapproval.Register(plugins)
 	resourcevalidation.Register(plugins)
@@ -41,7 +38,6 @@ func RegisterAllPlugins(plugins *admission.Plugins) {
 
 func DefaultOnAdmissionPlugins() sets.Set[string] {
 	return sets.New[string](
-		apideprecation.PluginName,
 		resourcevalidation.PluginName,
 		certificaterequestidentity.PluginName,
 		certificaterequestapproval.PluginName,

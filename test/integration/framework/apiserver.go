@@ -40,8 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/cert-manager/cert-manager/internal/test/paths"
-	"github.com/cert-manager/cert-manager/internal/webhook"
-	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/test/apiserver"
 	webhooktesting "github.com/cert-manager/cert-manager/test/webhook"
 )
@@ -51,8 +49,7 @@ type StopFunc func()
 // controlPlaneOptions has parameters for the control plane of the integration
 // test framework which can be overridden in tests.
 type controlPlaneOptions struct {
-	crdsDir                  *string
-	webhookConversionHandler handlers.ConversionHook
+	crdsDir *string
 }
 
 type RunControlPlaneOption func(*controlPlaneOptions)
@@ -62,14 +59,6 @@ type RunControlPlaneOption func(*controlPlaneOptions)
 func WithCRDDirectory(directory string) RunControlPlaneOption {
 	return func(o *controlPlaneOptions) {
 		o.crdsDir = ptr.To(directory)
-	}
-}
-
-// WithWebhookConversionHandler allows the webhook handler for the `/convert`
-// endpoint to be overridden in tests.
-func WithWebhookConversionHandler(handler handlers.ConversionHook) RunControlPlaneOption {
-	return func(o *controlPlaneOptions) {
-		o.webhookConversionHandler = handler
 	}
 }
 
@@ -112,14 +101,12 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(
 		t, ctx, []string{"--kubeconfig", f.Name()},
-		webhook.WithConversionHandler(options.webhookConversionHandler),
 	)
 
 	crds := readCustomResourcesAtPath(t, *options.crdsDir)
 	for _, crd := range crds {
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
-	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
 
 	if _, err := envtest.InstallCRDs(env.Config, envtest.CRDInstallOptions{
 		CRDs: crds,
@@ -157,25 +144,6 @@ var (
 func init() {
 	utilruntime.Must(metav1.AddMetaToScheme(internalScheme))
 	apiextensionsinstall.Install(internalScheme)
-}
-
-// patchCRDConversion overrides the conversion configuration of the CRDs that
-// are loaded in to the integration test API server,
-// configuring the conversion to be handled by the local webhook server.
-func patchCRDConversion(crds []*apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) {
-	for i := range crds {
-		url := fmt.Sprintf("%s%s", url, "/convert")
-		crds[i].Spec.Conversion = &apiextensionsv1.CustomResourceConversion{
-			Strategy: apiextensionsv1.WebhookConverter,
-			Webhook: &apiextensionsv1.WebhookConversion{
-				ClientConfig: &apiextensionsv1.WebhookClientConfig{
-					URL:      &url,
-					CABundle: caPEM,
-				},
-				ConversionReviewVersions: []string{"v1"},
-			},
-		}
-	}
 }
 
 func readCustomResourcesAtPath(t *testing.T, path string) []*apiextensionsv1.CustomResourceDefinition {

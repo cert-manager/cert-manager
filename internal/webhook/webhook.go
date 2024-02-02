@@ -38,19 +38,8 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
-	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
 )
-
-var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, Scheme)
-
-// WithConversionHandler allows you to override the handler for the `/convert`
-// endpoint in tests.
-func WithConversionHandler(handler handlers.ConversionHook) func(*server.Server) {
-	return func(s *server.Server) {
-		s.ConversionWebhook = handler
-	}
-}
 
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
@@ -81,7 +70,6 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		MinTLSVersion:     opts.TLSConfig.MinTLSVersion,
 		ValidationWebhook: admissionHandler,
 		MutationWebhook:   admissionHandler,
-		ConversionWebhook: conversionHook,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
