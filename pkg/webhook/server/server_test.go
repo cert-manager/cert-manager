@@ -26,75 +26,13 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 	"k8s.io/klog/v2/ktesting"
 )
-
-func TestConvert(t *testing.T) {
-	type testCase struct {
-		name string
-		in   runtime.Object
-		err  string
-		log  string
-	}
-	tests := []testCase{
-		{
-			name: "unsupported conversion review type",
-			in:   &apiextensionsv1.CustomResourceDefinition{},
-			err:  "unsupported conversion review type: *v1.CustomResourceDefinition",
-		},
-		{
-			name: "unsupported conversion review version",
-			in: &apiextensionsv1beta1.ConversionReview{
-				Request: &apiextensionsv1beta1.ConversionRequest{},
-			},
-			err: "unsupported conversion review type: *v1beta1.ConversionReview",
-		},
-		{
-			name: "v1 conversion review",
-			in: &apiextensionsv1.ConversionReview{
-				Request: &apiextensionsv1.ConversionRequest{},
-			},
-			log: "request received by converting webhook",
-		},
-		{
-			name: "v1 conversion review with nil Request",
-			in:   &apiextensionsv1.ConversionReview{},
-			err:  "review.request was nil",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var bufWriter = bytes.NewBuffer(nil)
-			klog.SetOutput(bufWriter)
-			klog.LogToStderr(false)
-			log := ktesting.NewLogger(t, ktesting.NewConfig())
-
-			s := &Server{
-				ConversionWebhook: handlers.NewSchemeBackedConverter(log, defaultScheme),
-				log:               log,
-			}
-			out, err := s.convert(context.TODO(), tc.in)
-			if tc.err != "" {
-				assert.EqualError(t, err, tc.err)
-				assert.Nil(t, out)
-				return
-			}
-			require.NoError(t, err)
-			assert.NotNil(t, out)
-			if klog.V(logf.DebugLevel).Enabled() {
-				assert.Contains(t, bufWriter.String(), tc.log)
-			}
-		})
-	}
-}
 
 type validation struct {
 	responseUID     types.UID
