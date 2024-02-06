@@ -1584,6 +1584,7 @@ func autoConvert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *v
 	}
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1599,6 +1600,7 @@ func autoConvert_certmanager_VaultKubernetesAuth_To_v1_VaultKubernetesAuth(in *c
 	}
 	out.ServiceAccountRef = (*v1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
