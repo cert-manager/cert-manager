@@ -714,6 +714,90 @@ func TestSetToken(t *testing.T) {
 			expectedToken: "vault-token",
 			expectedErr:   nil,
 		},
+
+		"if kubernetes.serviceAccountRef set and audiences are provided, request token and exchange it for a vault token (Issuer)": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						Kubernetes: &cmapi.VaultKubernetesAuth{
+							Role: "kube-vault-role",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-service-account",
+							},
+							Path: "my-path",
+							TokenAudiences: []string{
+								"https://custom-audience",
+							},
+						},
+					},
+				}),
+			),
+			mockCreateToken: func(t *testing.T) CreateToken {
+				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
+					assert.Equal(t, "my-service-account", saName)
+					assert.Len(t, req.Spec.Audiences, 2)
+					assert.Contains(t, req.Spec.Audiences, "https://custom-audience")
+					assert.Contains(t, req.Spec.Audiences, "vault://default-unit-test-ns/vault-issuer")
+					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
+					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+						Token: "kube-sa-token",
+					}}, nil
+				}
+			},
+			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
+				// Vault exhanges the Kubernetes token with a Vault token.
+				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
+				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
+				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
+					`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"vault-token"}}`,
+				))}}, nil
+			}),
+			expectedToken: "vault-token",
+			expectedErr:   nil,
+		},
+
+		"if kubernetes.serviceAccountRef set and audiences are provided, request token and exchange it for a vault token (ClusterIssuer)": {
+			issuer: gen.ClusterIssuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						Kubernetes: &cmapi.VaultKubernetesAuth{
+							Role: "kube-vault-role",
+							ServiceAccountRef: &v1.ServiceAccountRef{
+								Name: "my-service-account",
+							},
+							Path: "my-path",
+							TokenAudiences: []string{
+								"https://custom-audience",
+							},
+						},
+					},
+				}),
+			),
+			mockCreateToken: func(t *testing.T) CreateToken {
+				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
+					assert.Equal(t, "my-service-account", saName)
+					assert.Len(t, req.Spec.Audiences, 2)
+					assert.Contains(t, req.Spec.Audiences, "https://custom-audience")
+					assert.Contains(t, req.Spec.Audiences, "vault://vault-issuer")
+					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
+					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
+						Token: "kube-sa-token",
+					}}, nil
+				}
+			},
+			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
+				// Vault exhanges the Kubernetes token with a Vault token.
+				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
+				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
+				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
+					`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"vault-token"}}`,
+				))}}, nil
+			}),
+			expectedToken: "vault-token",
+			expectedErr:   nil,
+		},
 	}
 
 	for name, test := range tests {

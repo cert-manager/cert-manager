@@ -1010,6 +1010,11 @@ func (in *VaultKubernetesAuth) DeepCopyInto(out *VaultKubernetesAuth) {
 		*out = new(ServiceAccountRef)
 		**out = **in
 	}
+	if in.TokenAudiences != nil {
+		in, out := &in.TokenAudiences, &out.TokenAudiences
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
