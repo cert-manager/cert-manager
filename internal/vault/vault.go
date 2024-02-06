@@ -397,13 +397,13 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		jwt = string(keyBytes)
 
 	case kubernetesAuth.ServiceAccountRef != nil:
-		aud := "vault://"
+		defaultAudience := "vault://"
 		if v.issuer.GetNamespace() != "" {
-			aud += v.issuer.GetNamespace() + "/"
+			defaultAudience += v.issuer.GetNamespace() + "/"
 		}
-		aud += v.issuer.GetName()
+		defaultAudience += v.issuer.GetName()
 
-		audiences := append(kubernetesAuth.TokenAudiences, aud)
+		audiences := append(kubernetesAuth.TokenAudiences, defaultAudience)
 
 		tokenrequest, err := v.createToken(context.Background(), kubernetesAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
 			Spec: authv1.TokenRequestSpec{
