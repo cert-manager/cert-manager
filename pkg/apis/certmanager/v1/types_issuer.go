@@ -285,7 +285,8 @@ type VaultKubernetesAuth struct {
 	// Kubernetes ServiceAccount with a set of Vault policies.
 	Role string `json:"role"`
 
-	// List of audiences to include as an audience claim in the token created
+	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
+	// consisting of the issuer's namespace and name is always included.
 	// +optional
 	TokenAudiences []string `json:"audiences,omitempty"`
 }

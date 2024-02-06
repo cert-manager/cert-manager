@@ -260,7 +260,7 @@ type VaultKubernetesAuth struct {
 	// Kubernetes ServiceAccount with a set of Vault policies.
 	Role string
 
-	// TokenAudiences is an option list of extra audiences to include in the token passed to Vault. The default token
+	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
 	// consisting of the issuer's namespace and name is always included.
 	// +optional
 	TokenAudiences []string

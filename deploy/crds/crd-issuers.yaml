@@ -1196,7 +1196,7 @@ spec:
                             - role
                           properties:
                             audiences:
-                              description: List of audiences to include as an audience claim in the token created
+                              description: TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token consisting of the issuer's namespace and name is always included.
                               type: array
                               items:
                                 type: string
