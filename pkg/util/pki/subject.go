@@ -17,6 +17,7 @@ limitations under the License.
 package pki
 
 import (
+	"bytes"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
@@ -86,6 +87,14 @@ func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, erro
 		rdns = append(rdns, atvs)
 	}
 	return rdns, nil
+}
+
+func IsASN1SubjectEmpty(asn1Subject []byte) bool {
+	// emptyASN1Subject is the ASN.1 DER encoding of an empty Subject, which is
+	// just an empty SEQUENCE.
+	var emptyASN1Subject = []byte{0x30, 0}
+
+	return bytes.Equal(asn1Subject, emptyASN1Subject)
 }
 
 func MarshalRDNSequenceToRawDERBytes(rdnSequence pkix.RDNSequence) ([]byte, error) {

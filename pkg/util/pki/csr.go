@@ -321,11 +321,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	var extraExtensions []pkix.Extension
 
 	if !sans.Empty() {
-		// emptyASN1Subject is the ASN.1 DER encoding of an empty Subject, which is
-		// just an empty SEQUENCE.
-		var emptyASN1Subject = []byte{0x30, 0}
-
-		sanExtension, err := MarshalSANs(sans, !bytes.Equal(asn1Subject, emptyASN1Subject))
+		sanExtension, err := MarshalSANs(sans, !IsASN1SubjectEmpty(asn1Subject))
 		if err != nil {
 			return nil, err
 		}
