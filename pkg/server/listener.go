@@ -22,7 +22,7 @@ import (
 
 	ciphers "k8s.io/component-base/cli/flag"
 
-	servertls "github.com/cert-manager/cert-manager/internal/server/tls"
+	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
 )
 
 // ListenerConfig defines the config of the listener, this mainly deals with
