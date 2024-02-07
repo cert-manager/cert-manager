@@ -30,7 +30,7 @@ TOOLS += helm=v3.12.3
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 TOOLS += kubectl=v1.28.1
 # https://github.com/kubernetes-sigs/kind/releases
-TOOLS += kind=v0.20.0
+TOOLS += kind=v0.21.0
 # https://github.com/sigstore/cosign/releases
 TOOLS += cosign=v2.2.0
 # https://github.com/rclone/rclone/releases
