@@ -16,6 +16,7 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.cainjector.replicaCount }}
+  {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
   {{- if not (has (quote .Values.global.revisionHistoryLimit) (list "" (quote ""))) }}
   revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
   {{- end }}
@@ -61,6 +62,7 @@ spec:
           image: "{{ template "image" (tuple .Values.cainjector.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.cainjector.image.pullPolicy }}
           args:
+          {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
           {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
