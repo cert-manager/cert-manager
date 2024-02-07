@@ -15,7 +15,8 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  {{- if ne (quote .Values.global.revisionHistoryLimit) (quote "") }}
+  {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
+  {{- if not (has (quote .Values.global.revisionHistoryLimit) (list "" (quote ""))) }}
   revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
   {{- end }}
   selector:
@@ -79,7 +80,8 @@ spec:
           image: "{{ template "image" (tuple .Values.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-          {{- if ne (quote .Values.global.logLevel) (quote "") }}
+          {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
+          {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           {{- if .Values.config }}
