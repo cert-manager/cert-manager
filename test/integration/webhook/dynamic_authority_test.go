@@ -35,8 +35,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/internal/server/tls/authority"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 )
 
 // Tests for the dynamic authority functionality to ensure it properly handles
