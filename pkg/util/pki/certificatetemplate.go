@@ -261,6 +261,26 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 		}
 	}
 
+	// Finally, we fix up the certificate template to ensure that it is valid
+	{
+		// If the certificate has an empty Subject, we set any SAN extensions to be critical
+		var asn1Subject []byte
+		if cert.RawSubject != nil {
+			asn1Subject = cert.RawSubject
+		} else {
+			asn1Subject, err = asn1.Marshal(cert.Subject.ToRDNSequence())
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal subject to ASN.1 DER: %s", err.Error())
+			}
+		}
+
+		for i := range cert.ExtraExtensions {
+			if cert.ExtraExtensions[i].Id.Equal(oidExtensionSubjectAltName) {
+				cert.ExtraExtensions[i].Critical = IsASN1SubjectEmpty(asn1Subject)
+			}
+		}
+	}
+
 	return cert, nil
 }
 
