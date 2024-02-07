@@ -296,10 +296,10 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=513a7213d6d3332dd9ef27c24dab35e5ef10a04fa27274fe1c14d8a246493ded
-KIND_darwin_amd64_SHA256SUM=bffd8fb2006dc89fa0d1dde5ba6bf48caacb707e4df8551528f49145ebfeb7ad
-KIND_darwin_arm64_SHA256SUM=8df041a5cae55471f3b039c3c9942226eb909821af63b5677fc80904caffaabf
-KIND_linux_arm64_SHA256SUM=639f7808443559aa30c3642d9913b1615d611a071e34f122340afeda97b8f422
+KIND_linux_amd64_SHA256SUM=7bf22d258142eaa0e53899ded3ad06bae1b3e8ae5425a5e4dc5c8f9f263094a7
+KIND_darwin_amd64_SHA256SUM=09bc4cc9db750f874d12d333032e6e087f3ad06bff48131230865c5caee627af
+KIND_darwin_arm64_SHA256SUM=d9c7c5d0cf6b9953be73207a0ad798ec6f015305b1aa6ee9f61468b222acbf99
+KIND_linux_arm64_SHA256SUM=d56d98fe8a22b5a9a12e35d5ff7be254ae419b0cfe93b6241d0d14ece8f5adc8
 
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
@@ -312,8 +312,8 @@ $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools 
 
 COSIGN_linux_amd64_SHA256SUM=5e4791fb7a5efaaa98da651534789ec985ce8ac9c31910a810fc249f86ba2ef9
 COSIGN_darwin_amd64_SHA256SUM=a2eea673456929a3f3809b492691183d9af0ea4216ac07410290bff76494cba4
-COSIGN_darwin_arm64_SHA256SUM=5adbb7b1d38ac19a15c6bd9a61725baa16f61e23611534eb5e6d377dc024e102
-COSIGN_linux_arm64_SHA256SUM=5adbb7b1d38ac19a15c6bd9a61725baa16f61e23611534eb5e6d377dc024e102
+COSIGN_darwin_arm64_SHA256SUM=b4d323090efb98eded011ef17fe8228194eed8912f8e205361aaec8e6e6d044a
+COSIGN_linux_arm64_SHA256SUM=b4d323090efb98eded011ef17fe8228194eed8912f8e205361aaec8e6e6d044a
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
