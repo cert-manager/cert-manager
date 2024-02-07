@@ -47,7 +47,7 @@ EOF
 
 curl -fsSL "https://api.github.com/repos/kubernetes-sigs/kind/releases/tags/${kind_version}" \
     |  jq -r '
-[ .body  | capture("- 1\\.(?<minor>[0-9]+): `kindest/node:v(?<version>[^@]+)@sha256:(?<sha256>[^`]+)`\r"; "g") ]
+[ .body  | capture("- v?1\\.(?<minor>[0-9]+)(.(?<patch>[0-9]+))?: `kindest/node:v(?<version>[^@]+)@sha256:(?<sha256>[^`]+)`\r"; "g") ]
   | sort_by(.minor)
   | .[]
   | "KIND_IMAGE_K8S_1\(.minor)=docker.io/kindest/node@sha256:\(.sha256)"
