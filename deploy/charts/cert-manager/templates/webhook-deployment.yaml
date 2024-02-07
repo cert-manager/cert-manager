@@ -15,7 +15,7 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.webhook.replicaCount }}
-  {{- if ne (quote .Values.global.revisionHistoryLimit) (quote "") }}
+  {{- if not (has (quote .Values.global.revisionHistoryLimit) (list "" (quote ""))) }}
   revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
   {{- end }}
   selector:
@@ -66,7 +66,7 @@ spec:
           image: "{{ template "image" (tuple .Values.webhook.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
-          {{- if ne (quote .Values.global.logLevel) (quote "") }}
+          {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           {{- if .Values.webhook.config }}

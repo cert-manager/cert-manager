@@ -16,7 +16,7 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.cainjector.replicaCount }}
-  {{- if ne (quote .Values.global.revisionHistoryLimit) (quote "") }}
+  {{- if not (has (quote .Values.global.revisionHistoryLimit) (list "" (quote ""))) }}
   revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
   {{- end }}
   selector:
@@ -61,7 +61,7 @@ spec:
           image: "{{ template "image" (tuple .Values.cainjector.image $.Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.cainjector.image.pullPolicy }}
           args:
-          {{- if ne (quote .Values.global.logLevel) (quote "") }}
+          {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           {{- with .Values.global.leaderElection }}
