@@ -25,30 +25,8 @@ import (
 	"slices"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
-
-// Deprecated: this function is no longer supported and will be removed in the future
-func OnlyOneNotNil(items ...interface{}) (any bool, one bool) {
-	oneNotNil := false
-	for _, i := range items {
-		if i != nil {
-			if oneNotNil {
-				return true, false
-			}
-			oneNotNil = true
-		}
-	}
-	return oneNotNil, oneNotNil
-}
-
-// Deprecated: use slices#Equal instead
-func EqualSorted(s1, s2 []string) bool {
-	return slices.Equal(s1, s2)
-}
 
 // genericEqualUnsorted reports whether two slices are identical up to reordering
 // using a comparison function.
@@ -114,27 +92,6 @@ func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 	return genericEqualUnsorted(s1, s2, func(a, b cmapi.KeyUsage) int {
 		return strings.Compare(string(a), string(b))
 	})
-}
-
-// RandStringRunes generates a pseudo-random string of length `n`.
-//
-// Deprecated: Use k8s.io/apimachinery/pkg/util/rand#String instead
-func RandStringRunes(n int) string {
-	return rand.String(n)
-}
-
-// Contains returns true if a string is contained in a string slice
-//
-// Deprecated: Use slices#Contains instead
-func Contains(ss []string, s string) bool {
-	return slices.Contains(ss, s)
-}
-
-// Subset returns true if one slice is an unsorted subset of the first.
-//
-// Deprecated: Use k8s.io/apimachinery/pkg/util/sets#IsSuperset instead
-func Subset(set, subset []string) bool {
-	return sets.New(set...).IsSuperset(sets.New(subset...))
 }
 
 // JoinWithEscapeCSV returns the given list as a single line of CSV that

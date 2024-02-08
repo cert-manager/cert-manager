@@ -46,7 +46,7 @@ trap 'rm -r $tmpdir' EXIT
 make PATCH_CRD_OUTPUT_DIR=$tmpdir patch-crds
 
 # Avoid diff -N so we handle empty files correctly
-diff=$(diff -upr -x README.md -x BUILD.bazel "./deploy/crds" "$tmpdir" 2>/dev/null || true)
+diff=$(diff -upr -x README.md "./deploy/crds" "$tmpdir" 2>/dev/null || true)
 
 if [[ -n "${diff}" ]]; then
   echo "${diff}" >&2

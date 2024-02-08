@@ -56,6 +56,8 @@ func init() {
 	_ = flag.Set("v", "4")
 }
 
+type StringGenerator func(n int) string
+
 // Builder is a structure used to construct new Contexts for use during tests.
 // Currently, only KubeObjects, CertManagerObjects and GWObjects can be
 // specified. These will be auto loaded into the constructed fake Clientsets.
