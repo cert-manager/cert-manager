@@ -50,7 +50,7 @@ KO_BINS ?= controller acmesolver cainjector webhook startupapicheck
 ## @category Experimental/ko
 KO_HELM_VALUES_FILES ?=
 
-export KOCACHE = $(BINDIR)/scratch/ko/cache
+export KOCACHE = $(bin_dir)/scratch/ko/cache
 
 KO_IMAGE_REFS = $(foreach bin,$(KO_BINS),_bin/scratch/ko/$(bin).yaml)
 $(KO_IMAGE_REFS): _bin/scratch/ko/%.yaml: FORCE | $(NEEDS_KO) $(NEEDS_YQ)
@@ -71,21 +71,21 @@ ko-images-push: $(KO_IMAGE_REFS)
 .PHONY: ko-deploy-certmanager
 ## Deploy cert-manager after pushing docker images to an OCI registry using ko.
 ## @category Experimental/ko
-ko-deploy-certmanager: $(BINDIR)/cert-manager.tgz $(KO_IMAGE_REFS)
-	@$(eval ACME_HTTP01_SOLVER_IMAGE = $(shell $(YQ) '.repository + "@" + .digest' $(BINDIR)/scratch/ko/acmesolver.yaml))
+ko-deploy-certmanager: $(bin_dir)/cert-manager.tgz $(KO_IMAGE_REFS)
+	@$(eval ACME_HTTP01_SOLVER_IMAGE = $(shell $(YQ) '.repository + "@" + .digest' $(bin_dir)/scratch/ko/acmesolver.yaml))
 	$(HELM) upgrade cert-manager $< \
 		--install \
 		--create-namespace \
 		--wait \
 		--namespace cert-manager \
 		$(and $(KO_HELM_VALUES_FILES),--values $(KO_HELM_VALUES_FILES)) \
-		--set image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/controller.yaml)" \
-		--set image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/controller.yaml)" \
-		--set cainjector.image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/cainjector.yaml)" \
-		--set cainjector.image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/cainjector.yaml)" \
-		--set webhook.image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/webhook.yaml)" \
-		--set webhook.image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/webhook.yaml)" \
-		--set startupapicheck.image.repository="$(shell $(YQ) .repository $(BINDIR)/scratch/ko/startupapicheck.yaml)" \
-		--set startupapicheck.image.digest="$(shell $(YQ) .digest $(BINDIR)/scratch/ko/startupapicheck.yaml)" \
+		--set image.repository="$(shell $(YQ) .repository $(bin_dir)/scratch/ko/controller.yaml)" \
+		--set image.digest="$(shell $(YQ) .digest $(bin_dir)/scratch/ko/controller.yaml)" \
+		--set cainjector.image.repository="$(shell $(YQ) .repository $(bin_dir)/scratch/ko/cainjector.yaml)" \
+		--set cainjector.image.digest="$(shell $(YQ) .digest $(bin_dir)/scratch/ko/cainjector.yaml)" \
+		--set webhook.image.repository="$(shell $(YQ) .repository $(bin_dir)/scratch/ko/webhook.yaml)" \
+		--set webhook.image.digest="$(shell $(YQ) .digest $(bin_dir)/scratch/ko/webhook.yaml)" \
+		--set startupapicheck.image.repository="$(shell $(YQ) .repository $(bin_dir)/scratch/ko/startupapicheck.yaml)" \
+		--set startupapicheck.image.digest="$(shell $(YQ) .digest $(bin_dir)/scratch/ko/startupapicheck.yaml)" \
 		--set installCRDs=true \
 		--set "extraArgs={--acme-http01-solver-image=$(ACME_HTTP01_SOLVER_IMAGE)}"

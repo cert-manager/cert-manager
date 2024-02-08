@@ -32,18 +32,18 @@ release-version:
 	@echo "$(RELEASE_VERSION)"
 
 # The file "release-version" gets updated whenever git describe --tags changes.
-# This is used by the $(BINDIR)/containers/*.tar.gz targets to make sure that the
+# This is used by the $(bin_dir)/containers/*.tar.gz targets to make sure that the
 # containers, which use the output of "git describe --tags" as their tag, get
 # rebuilt whenever you check out a different commit. If we didn't do this, the
-# Helm chart $(BINDIR)/cert-manager-*.tgz would refer to an image tag that doesn't
-# exist in $(BINDIR)/containers/*.tar.gz.
+# Helm chart $(bin_dir)/cert-manager-*.tgz would refer to an image tag that doesn't
+# exist in $(bin_dir)/containers/*.tar.gz.
 #
 # We use FORCE instead of .PHONY because this is a real file that can be used as
 # a prerequisite. If we were to use .PHONY, then the file's timestamp would not
 # be used to check whether targets should be rebuilt, and they would get
 # constantly rebuilt.
-$(BINDIR)/release-version: FORCE | $(BINDIR)
+$(bin_dir)/release-version: FORCE | $(bin_dir)
 	@test "$(RELEASE_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $(RELEASE_VERSION) > $@
 
-$(BINDIR)/scratch/git:
+$(bin_dir)/scratch/git:
 	@mkdir -p $@

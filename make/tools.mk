@@ -13,14 +13,14 @@
 # limitations under the License.
 
 # To make sure we use the right version of each tool, we put symlink in
-# $(BINDIR)/tools, and the actual binaries are in $(BINDIR)/downloaded. When bumping
+# $(bin_dir)/tools, and the actual binaries are in $(bin_dir)/downloaded. When bumping
 # the version of the tools, this symlink gets updated.
 
-# Let's have $(BINDIR)/tools in front of the PATH so that we don't inavertedly
+# Let's have $(bin_dir)/tools in front of the PATH so that we don't inavertedly
 # pick up the wrong binary somewhere. Watch out, $(shell echo $$PATH) will
 # still print the original PATH, since GNU make does not honor exported
 # variables: https://stackoverflow.com/questions/54726457
-export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
+export PATH := $(PWD)/$(bin_dir)/tools:$(PATH)
 
 CTR=docker
 
@@ -82,8 +82,8 @@ TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 VENDORED_GO_VERSION := 1.21.7
 
 # When switching branches which use different versions of the tools, we
-# need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
-$(BINDIR)/scratch/%_VERSION: FORCE | $(BINDIR)/scratch
+# need a way to re-trigger the symlinking from $(bin_dir)/downloaded to $(bin_dir)/tools.
+$(bin_dir)/scratch/%_VERSION: FORCE | $(bin_dir)/scratch
 	@test "$($*_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $($*_VERSION) > $@
 
 # The reason we don't use "go env GOOS" or "go env GOARCH" is that the "go"
@@ -107,13 +107,13 @@ endif
 # --retry-connrefused = retry even if the initial connection was refused
 CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
 
-# In Prow, the pod has the folder "$(BINDIR)/downloaded" mounted into the
+# In Prow, the pod has the folder "$(bin_dir)/downloaded" mounted into the
 # container. For some reason, even though the permissions are correct,
 # binaries that are mounted with hostPath can't be executed. When in CI, we
 # copy the binaries to work around that. Using $(LN) is only required when
 # dealing with binaries. Other files and folders can be symlinked.
 #
-# Details on how "$(BINDIR)/downloaded" gets cached are available in the
+# Details on how "$(bin_dir)/downloaded" gets cached are available in the
 # description of the PR https://github.com/jetstack/testing/pull/651.
 #
 # We use "printenv CI" instead of just "ifeq ($(CI),)" because otherwise we
@@ -143,23 +143,23 @@ TOOL_NAMES :=
 #        the absolute path should be used when executing the binary
 #        in targets or in scripts, because it is agnostic to the
 #        working directory
-# - an unversioned target $(BINDIR)/tools/xxx is generated that
+# - an unversioned target $(bin_dir)/tools/xxx is generated that
 #   creates a copy/ link to the corresponding versioned target:
-#   $(BINDIR)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
+#   $(bin_dir)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 define tool_defs
 TOOL_NAMES += $1
 
 $(call UC,$1)_VERSION ?= $2
-NEEDS_$(call UC,$1) := $$(BINDIR)/tools/$1
-$(call UC,$1) := $$(PWD)/$$(BINDIR)/tools/$1
+NEEDS_$(call UC,$1) := $$(bin_dir)/tools/$1
+$(call UC,$1) := $$(PWD)/$$(bin_dir)/tools/$1
 
-$$(BINDIR)/tools/$1: $$(BINDIR)/scratch/$(call UC,$1)_VERSION | $$(BINDIR)/downloaded/tools/$1@$$($(call UC,$1)_VERSION)_$$(HOST_OS)_$$(HOST_ARCH) $$(BINDIR)/tools
-	cd $$(dir $$@) && $$(LN) $$(patsubst $$(BINDIR)/%,../%,$$(word 1,$$|)) $$(notdir $$@)
+$$(bin_dir)/tools/$1: $$(bin_dir)/scratch/$(call UC,$1)_VERSION | $$(bin_dir)/downloaded/tools/$1@$$($(call UC,$1)_VERSION)_$$(HOST_OS)_$$(HOST_ARCH) $$(bin_dir)/tools
+	cd $$(dir $$@) && $$(LN) $$(patsubst $$(bin_dir)/%,../%,$$(word 1,$$|)) $$(notdir $$@)
 endef
 
 $(foreach TOOL,$(TOOLS),$(eval $(call tool_defs,$(word 1,$(subst =, ,$(TOOL))),$(word 2,$(subst =, ,$(TOOL))))))
 
-TOOLS_PATHS := $(TOOL_NAMES:%=$(BINDIR)/tools/%)
+TOOLS_PATHS := $(TOOL_NAMES:%=$(bin_dir)/tools/%)
 
 ######
 # Go #
@@ -168,20 +168,20 @@ TOOLS_PATHS := $(TOOL_NAMES:%=$(BINDIR)/tools/%)
 # $(NEEDS_GO) is a target that is set as an order-only prerequisite in
 # any target that calls $(GO), e.g.:
 #
-#     $(BINDIR)/tools/crane: $(NEEDS_GO)
-#         $(GO) build -o $(BINDIR)/tools/crane
+#     $(bin_dir)/tools/crane: $(NEEDS_GO)
+#         $(GO) build -o $(bin_dir)/tools/crane
 #
 # $(NEEDS_GO) is empty most of the time, except when running "make vendor-go"
 # or when "make vendor-go" was previously run, in which case $(NEEDS_GO) is set
-# to $(BINDIR)/tools/go, since $(BINDIR)/tools/go is a prerequisite of
+# to $(bin_dir)/tools/go, since $(bin_dir)/tools/go is a prerequisite of
 # any target depending on Go when "make vendor-go" was run.
-NEEDS_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(BINDIR)/tools/go ] && echo yes), $(BINDIR)/tools/go,)
+NEEDS_GO := $(if $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(bin_dir)/tools/go ] && echo yes), $(bin_dir)/tools/go,)
 ifeq ($(NEEDS_GO),)
 GO := go
 else
-export GOROOT := $(PWD)/$(BINDIR)/tools/goroot
-export PATH := $(PWD)/$(BINDIR)/tools/goroot/bin:$(PATH)
-GO := $(PWD)/$(BINDIR)/tools/go
+export GOROOT := $(PWD)/$(bin_dir)/tools/goroot
+export PATH := $(PWD)/$(bin_dir)/tools/goroot/bin:$(PATH)
+GO := $(PWD)/$(bin_dir)/tools/go
 endif
 
 GOBUILD := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) GOMAXPROCS=$(GOBUILDPROCS) $(GO) build
@@ -196,13 +196,13 @@ GOTESTSUM := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) $(GOTESTSUM
 ## disable vendoring, run "make unvendor-go". When vendoring is enabled,
 ## you will want to set the following:
 ##
-##     export PATH="$PWD/$(BINDIR)/tools:$PATH"
-##     export GOROOT="$PWD/$(BINDIR)/tools/goroot"
-vendor-go: $(BINDIR)/tools/go
+##     export PATH="$PWD/$(bin_dir)/tools:$PATH"
+##     export GOROOT="$PWD/$(bin_dir)/tools/goroot"
+vendor-go: $(bin_dir)/tools/go
 
 .PHONY: unvendor-go
-unvendor-go: $(BINDIR)/tools/go
-	rm -rf $(BINDIR)/tools/go $(BINDIR)/tools/goroot
+unvendor-go: $(bin_dir)/tools/go
+	rm -rf $(bin_dir)/tools/go $(bin_dir)/tools/goroot
 
 .PHONY: which-go
 ## Print the version and path of go which will be used for building and
@@ -211,25 +211,25 @@ which-go: |  $(NEEDS_GO)
 	@$(GO) version
 	@echo "go binary used for above version information: $(GO)"
 
-$(BINDIR)/tools/go: $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/tools/goroot $(BINDIR)/tools
+$(bin_dir)/tools/go: $(bin_dir)/scratch/VENDORED_GO_VERSION | $(bin_dir)/tools/goroot $(bin_dir)/tools
 	cd $(dir $@) && $(LN) ./goroot/bin/go $(notdir $@)
 	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
 # The "_" in "_bin" prevents "go mod tidy" from trying to tidy the vendored goroot.
-$(BINDIR)/tools/goroot: $(BINDIR)/scratch/VENDORED_GO_VERSION | $(BINDIR)/go_vendor/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH)/goroot $(BINDIR)/tools
-	@rm -rf $(BINDIR)/tools/goroot
-	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$(word 1,$|)) $(notdir $@)
+$(bin_dir)/tools/goroot: $(bin_dir)/scratch/VENDORED_GO_VERSION | $(bin_dir)/go_vendor/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH)/goroot $(bin_dir)/tools
+	@rm -rf $(bin_dir)/tools/goroot
+	cd $(dir $@) && $(LN) $(patsubst $(bin_dir)/%,../%,$(word 1,$|)) $(notdir $@)
 	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
 # Extract the tar to the _bin/go directory, this directory is not cached across CI runs.
-$(BINDIR)/go_vendor/go@$(VENDORED_GO_VERSION)_%/goroot: | $(BINDIR)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz
+$(bin_dir)/go_vendor/go@$(VENDORED_GO_VERSION)_%/goroot: | $(bin_dir)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz
 	@rm -rf $@ && mkdir -p $(dir $@)
 	tar xzf $| -C $(dir $@)
 	mv $(dir $@)/go $(dir $@)/goroot
 
 # Keep the downloaded tar so it is cached across CI runs.
-.PRECIOUS: $(BINDIR)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz
-$(BINDIR)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz: | $(BINDIR)/downloaded/tools
+.PRECIOUS: $(bin_dir)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz
+$(bin_dir)/downloaded/tools/go@$(VENDORED_GO_VERSION)_%.tar.gz: | $(bin_dir)/downloaded/tools
 	$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(subst _,-,$*).tar.gz -o $@
 
 ###################
@@ -251,7 +251,7 @@ GO_DEPENDENCIES += helm-tool=github.com/cert-manager/helm-tool
 GO_DEPENDENCIES += cmctl=github.com/cert-manager/cmctl/v2
 
 define go_dependency
-$$(BINDIR)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(NEEDS_GO) $$(BINDIR)/downloaded/tools
+$$(bin_dir)/downloaded/tools/$1@$($(call UC,$1)_VERSION)_%: | $$(NEEDS_GO) $$(bin_dir)/downloaded/tools
 	GOBIN=$$(PWD)/$$(dir $$@) $$(GO) install $2@$($(call UC,$1)_VERSION)
 	@mv $$(PWD)/$$(dir $$@)/$1 $$@
 endef
@@ -267,7 +267,7 @@ HELM_darwin_amd64_SHA256SUM=1bdbbeec5a12dd0c1cd4efd8948a156d33e1e2f51140e2a51e1e
 HELM_darwin_arm64_SHA256SUM=240b0a7da9cae208000eff3d3fb95e0fa1f4903d95be62c3f276f7630b12dae1
 HELM_linux_arm64_SHA256SUM=79ef06935fb47e432c0c91bdefd140e5b543ec46376007ca14a52e5ed3023088
 
-$(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$*_SHA256SUM)
 	@# O writes the specified file to stdout
@@ -287,7 +287,7 @@ KUBECTL_darwin_amd64_SHA256SUM=d6b8f2bac5f828478eade0acf15fb7dde02d7613fc9e644dc
 KUBECTL_darwin_arm64_SHA256SUM=8fe9f753383574863959335d8b830908e67a40c3f51960af63892d969bfc1b10
 KUBECTL_linux_arm64_SHA256SUM=46954a604b784a8b0dc16754cfc3fa26aabca9fd4ffd109cd028bfba99d492f6
 
-$(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(subst _,/,$*)/kubectl -o $@
 	./hack/util/checkhash.sh $@ $(KUBECTL_$*_SHA256SUM)
 	chmod +x $@
@@ -301,7 +301,7 @@ KIND_darwin_amd64_SHA256SUM=09bc4cc9db750f874d12d333032e6e087f3ad06bff4813123086
 KIND_darwin_arm64_SHA256SUM=d9c7c5d0cf6b9953be73207a0ad798ec6f015305b1aa6ee9f61468b222acbf99
 KIND_linux_arm64_SHA256SUM=d56d98fe8a22b5a9a12e35d5ff7be254ae419b0cfe93b6241d0d14ece8f5adc8
 
-$(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
+$(bin_dir)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(bin_dir)/downloaded/tools $(bin_dir)/tools
 	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
 	chmod +x $@
@@ -317,7 +317,7 @@ COSIGN_linux_arm64_SHA256SUM=b4d323090efb98eded011ef17fe8228194eed8912f8e205361a
 
 # TODO: cosign also provides signatures on all of its binaries, but they can't be validated without already having cosign
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
-$(BINDIR)/downloaded/tools/cosign@$(COSIGN_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/cosign@$(COSIGN_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(CURL) https://github.com/sigstore/cosign/releases/download/$(COSIGN_VERSION)/cosign-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(COSIGN_$*_SHA256SUM)
 	chmod +x $@
@@ -331,7 +331,7 @@ RCLONE_darwin_amd64_SHA256SUM=9ef83833296876f3182b87030b4f2e851b56621bad4ca4d7a1
 RCLONE_darwin_arm64_SHA256SUM=9183f495b28acb12c872175c6af1f6ba8ca677650cb9d2774caefea273294c8a
 RCLONE_linux_arm64_SHA256SUM=b5a6cb3aef4fd1a2165fb8c21b1b1705f3cb754a202adc81931b47cd39c64749
 
-$(BINDIR)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/rclone@$(RCLONE_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,osx,$*))
 	$(CURL) https://github.com/rclone/rclone/releases/download/$(RCLONE_VERSION)/rclone-$(RCLONE_VERSION)-$(subst _,-,$(OS_AND_ARCH)).zip -o $@.zip
 	./hack/util/checkhash.sh $@.zip $(RCLONE_$*_SHA256SUM)
@@ -350,7 +350,7 @@ TRIVY_darwin_amd64_SHA256SUM=997622dee1d07de0764f903b72d16ec4314daaf202d91c95713
 TRIVY_darwin_arm64_SHA256SUM=68aa451f395fa5418f5af59ce4081ef71075c857b95a297dc61da49c6a229a45
 TRIVY_linux_arm64_SHA256SUM=a192edfcef8766fa7e3e96a6a5faf50cd861371785891857471548e4af7cb60b
 
-$(BINDIR)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/trivy@$(TRIVY_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,macOS,$*))
 	$(eval OS_AND_ARCH := $(subst linux,Linux,$(OS_AND_ARCH)))
 	$(eval OS_AND_ARCH := $(subst arm64,ARM64,$(OS_AND_ARCH)))
@@ -371,7 +371,7 @@ YTT_darwin_amd64_SHA256SUM=2b6d173dec1b6087e22690386474786fd9a2232c4479d8975cc98
 YTT_darwin_arm64_SHA256SUM=3e6f092bfe7a121d15126a0de6503797818c6b6745fbc97213f519d35fab08f9
 YTT_linux_arm64_SHA256SUM=cbfc85f11ffd8e61d63accf799b8997caaebe46ee046290cc1c4d05ed1ab145b
 
-$(BINDIR)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/ytt@$(YTT_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(CURL) -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/$(YTT_VERSION)/ytt-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(YTT_$*_SHA256SUM)
 	chmod +x $@
@@ -385,7 +385,7 @@ YQ_darwin_amd64_SHA256SUM=b2ff70e295d02695b284755b2a41bd889cfb37454e1fa71abc3a6e
 YQ_darwin_arm64_SHA256SUM=e9fc15db977875de982e0174ba5dc2cf5ae4a644e18432a4262c96d4439b1686
 YQ_linux_arm64_SHA256SUM=1d830254fe5cc2fb046479e6c781032976f5cf88f9d01a6385898c29182f9bed
 
-$(BINDIR)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/yq@$(YQ_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(CURL) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$* -o $@
 	./hack/util/checkhash.sh $@ $(YQ_$*_SHA256SUM)
 	chmod +x $@
@@ -399,7 +399,7 @@ KO_darwin_amd64_SHA256SUM=b879ea58255c9f2be2d4d6c4f6bd18209c78e9e0b890dbce621954
 KO_darwin_arm64_SHA256SUM=8d41c228da3e04e3de293f0f5bfe1775a4c74582ba21c86ad32244967095189f
 KO_linux_arm64_SHA256SUM=9a355b8a9fe88e9d65d3aa1116d943746e3cea86944f4566e47886fd260dd3e9
 
-$(BINDIR)/downloaded/tools/ko@$(KO_VERSION)_%: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/ko@$(KO_VERSION)_%: | $(bin_dir)/downloaded/tools
 	$(eval OS_AND_ARCH := $(subst darwin,Darwin,$*))
 	$(eval OS_AND_ARCH := $(subst linux,Linux,$(OS_AND_ARCH)))
 	$(eval OS_AND_ARCH := $(subst amd64,x86_64,$(OS_AND_ARCH)))
@@ -415,16 +415,16 @@ $(BINDIR)/downloaded/tools/ko@$(KO_VERSION)_%: | $(BINDIR)/downloaded/tools
 #####################
 
 K8S_CODEGEN_TOOLS := client-gen conversion-gen deepcopy-gen defaulter-gen informer-gen lister-gen openapi-gen
-K8S_CODEGEN_TOOLS_PATHS := $(K8S_CODEGEN_TOOLS:%=$(BINDIR)/tools/%)
-K8S_CODEGEN_TOOLS_DOWNLOADS := $(K8S_CODEGEN_TOOLS:%=$(BINDIR)/downloaded/tools/%@$(K8S_CODEGEN_VERSION))
+K8S_CODEGEN_TOOLS_PATHS := $(K8S_CODEGEN_TOOLS:%=$(bin_dir)/tools/%)
+K8S_CODEGEN_TOOLS_DOWNLOADS := $(K8S_CODEGEN_TOOLS:%=$(bin_dir)/downloaded/tools/%@$(K8S_CODEGEN_VERSION))
 
 .PHONY: k8s-codegen-tools
 k8s-codegen-tools: $(K8S_CODEGEN_TOOLS_PATHS)
 
-$(K8S_CODEGEN_TOOLS_PATHS): $(BINDIR)/tools/%-gen: $(BINDIR)/scratch/K8S_CODEGEN_VERSION | $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) $(BINDIR)/tools
-	cd $(dir $@) && $(LN) $(patsubst $(BINDIR)/%,../%,$(word 1,$|)) $(notdir $@)
+$(K8S_CODEGEN_TOOLS_PATHS): $(bin_dir)/tools/%-gen: $(bin_dir)/scratch/K8S_CODEGEN_VERSION | $(bin_dir)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION) $(bin_dir)/tools
+	cd $(dir $@) && $(LN) $(patsubst $(bin_dir)/%,../%,$(word 1,$|)) $(notdir $@)
 
-$(K8S_CODEGEN_TOOLS_DOWNLOADS): $(BINDIR)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(NEEDS_GO) | $(BINDIR)/downloaded/tools
+$(K8S_CODEGEN_TOOLS_DOWNLOADS): $(bin_dir)/downloaded/tools/%-gen@$(K8S_CODEGEN_VERSION): $(NEEDS_GO) | $(bin_dir)/downloaded/tools
 	GOBIN=$(PWD)/$(dir $@) $(GO) install k8s.io/code-generator/cmd/$(notdir $@)
 	@mv $(subst @$(K8S_CODEGEN_VERSION),,$@) $@
 
@@ -444,17 +444,17 @@ KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=a02e33a3981712c8d2702520f95357bd6c7d03d
 KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=c87c6b3c0aec4233e68a12dc9690bcbe2f8d6cd72c23e670602b17b2d7118325
 KUBEBUILDER_TOOLS_linux_arm64_SHA256SUM=69bfcdfa468a066d005b0207a07347078f4546f89060f7d9a6131d305d229aad
 
-$(BINDIR)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_%: $(bin_dir)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(bin_dir)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/etcd > $@ && chmod 775 $@
 
-$(BINDIR)/downloaded/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_%: $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_%: $(bin_dir)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_%.tar.gz | $(bin_dir)/downloaded/tools
 	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$*_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
 
-$(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(BINDIR)/downloaded/tools
+$(bin_dir)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(bin_dir)/downloaded/tools
 	$(CURL) https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz -o $@
 
 ##############
@@ -463,18 +463,18 @@ $(BINDIR)/downloaded/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOS
 
 GATEWAY_API_SHA256SUM=6c601dced7872a940d76fa667ae126ba718cb4c6db970d0bab49128ecc1192a3
 
-$(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(BINDIR)/downloaded
+$(bin_dir)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(bin_dir)/downloaded
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
-	./hack/util/checkhash.sh $(BINDIR)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(GATEWAY_API_SHA256SUM)
+	./hack/util/checkhash.sh $(bin_dir)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(GATEWAY_API_SHA256SUM)
 
 #################
 # Other Targets #
 #################
 
-$(BINDIR) $(BINDIR)/tools $(BINDIR)/downloaded $(BINDIR)/downloaded/tools:
+$(bin_dir) $(bin_dir)/tools $(bin_dir)/downloaded $(bin_dir)/downloaded/tools:
 	@mkdir -p $@
 
-# Although we "vendor" most tools in $(BINDIR)/tools, we still require some binaries
+# Although we "vendor" most tools in $(bin_dir)/tools, we still require some binaries
 # to be available on the system. The vendor-go MAKECMDGOALS trick prevents the
 # check for the presence of Go when 'make vendor-go' is run.
 
@@ -502,8 +502,8 @@ update-kind-images:
 	 ./hack/latest-kind-images.sh $(KIND_VERSION)
 
 .PHONY: update-base-images
-update-base-images: $(BINDIR)/tools/crane
-	CRANE=./$(BINDIR)/tools/crane ./hack/latest-base-images.sh
+update-base-images: $(bin_dir)/tools/crane
+	CRANE=./$(bin_dir)/tools/crane ./hack/latest-base-images.sh
 
 .PHONY: tidy
 ## Run "go mod tidy" on each module in this repo
@@ -537,9 +537,9 @@ go-workspace:
 ##
 ## @category Development
 learn-sha-tools:
-	rm -rf ./$(BINDIR)
-	mkdir ./$(BINDIR)
-	$(eval export LEARN_FILE=$(PWD)/$(BINDIR)/learn_file)
+	rm -rf ./$(bin_dir)
+	mkdir ./$(bin_dir)
+	$(eval export LEARN_FILE=$(PWD)/$(bin_dir)/learn_file)
 	echo -n "" > "$(LEARN_FILE)"
 
 	HOST_OS=linux HOST_ARCH=amd64 $(MAKE) tools

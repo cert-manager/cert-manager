@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export KUBEBUILDER_ASSETS=$(PWD)/$(BINDIR)/tools
+export KUBEBUILDER_ASSETS=$(PWD)/$(bin_dir)/tools
 
 # GOTESTSUM_CI_FLAGS contains flags which are common to invocations of gotestsum in CI environments
 GOTESTSUM_CI_FLAGS := --junitfile-testsuite-name short --junitfile-testcase-classname relative
@@ -118,8 +118,9 @@ E2E_OPENSHIFT ?= false
 ## For more information about GINKGO_FOCUS, see "make/e2e.sh --help".
 ##
 ## @category Development
-e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
-	make/e2e.sh
+e2e: $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
+	BINDIR=$(bin_dir) \
+		make/e2e.sh
 
 .PHONY: e2e-ci
 e2e-ci: | $(NEEDS_GO)
@@ -127,9 +128,9 @@ e2e-ci: | $(NEEDS_GO)
 	$(MAKE) e2e-setup-kind e2e-setup
 	make/e2e-ci.sh
 
-$(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
+$(bin_dir)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(bin_dir)/test
 	CGO_ENABLED=0 $(GINKGO) build --ldflags="-w -s" --trimpath --tags e2e_test test/e2e
-	mv test/e2e/e2e.test $(BINDIR)/test/e2e.test
+	mv test/e2e/e2e.test $(bin_dir)/test/e2e.test
 
 .PHONY: e2e-build
 ## Build an end-to-end test binary
@@ -153,14 +154,14 @@ $(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
 ##  ./_bin/test/e2e.test --repo-root=/dev/null --ginkgo.focus="CA\ Issuer" --ginkgo.skip="Gateway"
 ##
 ## @category Development
-e2e-build: $(BINDIR)/test/e2e.test
+e2e-build: $(bin_dir)/test/e2e.test
 
 .PHONY: test-upgrade
 test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(NEEDS_CMCTL)
 	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(CMCTL)
 
-$(BINDIR)/test:
+$(bin_dir)/test:
 	@mkdir -p $@
 
-$(BINDIR)/testlogs:
+$(bin_dir)/testlogs:
 	@mkdir -p $@

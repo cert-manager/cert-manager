@@ -21,7 +21,7 @@ ci-presubmit: verify-imports verify-errexit verify-boilerplate verify-codegen ve
 
 .PHONY: verify-golangci-lint
 verify-golangci-lint: | $(NEEDS_GOLANGCI-LINT)
-	find . -name go.mod -not \( -path "./$(BINDIR)/*" -prune \)  -execdir $(GOLANGCI-LINT) run --timeout=30m --config=$(CURDIR)/.golangci.ci.yaml \;
+	find . -name go.mod -not \( -path "./$(bin_dir)/*" -prune \)  -execdir $(GOLANGCI-LINT) run --timeout=30m --config=$(CURDIR)/.golangci.ci.yaml \;
 
 .PHONY: verify-modules
 verify-modules: | $(NEEDS_CMREL)
@@ -32,7 +32,7 @@ verify-imports: | $(NEEDS_GOIMPORTS)
 	./hack/verify-goimports.sh $(GOIMPORTS)
 
 .PHONY: verify-chart
-verify-chart: $(BINDIR)/cert-manager-$(RELEASE_VERSION).tgz
+verify-chart: $(bin_dir)/cert-manager-$(RELEASE_VERSION).tgz
 	DOCKER=$(CTR) ./hack/verify-chart-version.sh $<
 
 .PHONY: verify-errexit
@@ -47,15 +47,15 @@ verify-boilerplate: | $(NEEDS_BOILERSUITE)
 ## Check that the LICENSES file is up to date; must pass before a change to go.mod can be merged
 ##
 ## @category CI
-verify-licenses: $(BINDIR)/scratch/LATEST-LICENSES $(BINDIR)/scratch/LATEST-LICENSES-acmesolver $(BINDIR)/scratch/LATEST-LICENSES-cainjector $(BINDIR)/scratch/LATEST-LICENSES-controller $(BINDIR)/scratch/LATEST-LICENSES-startupapicheck $(BINDIR)/scratch/LATEST-LICENSES-webhook $(BINDIR)/scratch/LATEST-LICENSES-integration-tests $(BINDIR)/scratch/LATEST-LICENSES-e2e-tests
-	@diff $(BINDIR)/scratch/LATEST-LICENSES LICENSES >/dev/null || (echo -e "\033[0;33mLICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-acmesolver cmd/acmesolver/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/acmesolver/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-cainjector cmd/cainjector/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/cainjector/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-startupapicheck        cmd/startupapicheck/LICENSES        >/dev/null || (echo -e "\033[0;33mcmd/startupapicheck/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-controller cmd/controller/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/controller/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-webhook    cmd/webhook/LICENSES    >/dev/null || (echo -e "\033[0;33mcmd/webhook/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-integration-tests test/integration/LICENSES >/dev/null || (echo -e "\033[0;33mtest/integration/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
-	@diff $(BINDIR)/scratch/LATEST-LICENSES-e2e-tests         test/e2e/LICENSES         >/dev/null || (echo -e "\033[0;33mtest/e2e/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+verify-licenses: $(bin_dir)/scratch/LATEST-LICENSES $(bin_dir)/scratch/LATEST-LICENSES-acmesolver $(bin_dir)/scratch/LATEST-LICENSES-cainjector $(bin_dir)/scratch/LATEST-LICENSES-controller $(bin_dir)/scratch/LATEST-LICENSES-startupapicheck $(bin_dir)/scratch/LATEST-LICENSES-webhook $(bin_dir)/scratch/LATEST-LICENSES-integration-tests $(bin_dir)/scratch/LATEST-LICENSES-e2e-tests
+	@diff $(bin_dir)/scratch/LATEST-LICENSES LICENSES >/dev/null || (echo -e "\033[0;33mLICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-acmesolver cmd/acmesolver/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/acmesolver/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-cainjector cmd/cainjector/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/cainjector/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-startupapicheck        cmd/startupapicheck/LICENSES        >/dev/null || (echo -e "\033[0;33mcmd/startupapicheck/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-controller cmd/controller/LICENSES >/dev/null || (echo -e "\033[0;33mcmd/controller/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-webhook    cmd/webhook/LICENSES    >/dev/null || (echo -e "\033[0;33mcmd/webhook/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-integration-tests test/integration/LICENSES >/dev/null || (echo -e "\033[0;33mtest/integration/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
+	@diff $(bin_dir)/scratch/LATEST-LICENSES-e2e-tests         test/e2e/LICENSES         >/dev/null || (echo -e "\033[0;33mtest/e2e/LICENSES seems to be out of date; update with 'make update-licenses'\033[0m" && exit 1)
 
 .PHONY: verify-crds
 verify-crds: | $(NEEDS_GO) $(NEEDS_CONTROLLER-GEN) $(NEEDS_YQ)
@@ -88,25 +88,25 @@ patch-crds: | $(NEEDS_CONTROLLER-GEN)
 verify-codegen: | k8s-codegen-tools $(NEEDS_GO)
 	VERIFY_ONLY="true" ./hack/k8s-codegen.sh \
 		$(GO) \
-		./$(BINDIR)/tools/client-gen \
-		./$(BINDIR)/tools/deepcopy-gen \
-		./$(BINDIR)/tools/informer-gen \
-		./$(BINDIR)/tools/lister-gen \
-		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen \
-		./$(BINDIR)/tools/openapi-gen
+		./$(bin_dir)/tools/client-gen \
+		./$(bin_dir)/tools/deepcopy-gen \
+		./$(bin_dir)/tools/informer-gen \
+		./$(bin_dir)/tools/lister-gen \
+		./$(bin_dir)/tools/defaulter-gen \
+		./$(bin_dir)/tools/conversion-gen \
+		./$(bin_dir)/tools/openapi-gen
 
 .PHONY: update-codegen
 update-codegen: | k8s-codegen-tools $(NEEDS_GO)
 	./hack/k8s-codegen.sh \
 		$(GO) \
-		./$(BINDIR)/tools/client-gen \
-		./$(BINDIR)/tools/deepcopy-gen \
-		./$(BINDIR)/tools/informer-gen \
-		./$(BINDIR)/tools/lister-gen \
-		./$(BINDIR)/tools/defaulter-gen \
-		./$(BINDIR)/tools/conversion-gen \
-		./$(BINDIR)/tools/openapi-gen
+		./$(bin_dir)/tools/client-gen \
+		./$(bin_dir)/tools/deepcopy-gen \
+		./$(bin_dir)/tools/informer-gen \
+		./$(bin_dir)/tools/lister-gen \
+		./$(bin_dir)/tools/defaulter-gen \
+		./$(bin_dir)/tools/conversion-gen \
+		./$(bin_dir)/tools/openapi-gen
 
 # inject_helm_docs performs `helm-tool inject` using $1 as the output file and $2 as the values input
 define inject_helm_docs
@@ -123,8 +123,8 @@ verify-helm-docs: | $(NEEDS_HELM-TOOL)
 		echo "\033[0;33mdeploy/charts/cert-manager/README.template.md has been modified and could be out of date; update with 'make update-helm-docs'\033[0m" ; \
 		exit 1 ; \
 	fi
-	@cp deploy/charts/cert-manager/README.template.md $(BINDIR)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION) && $(call inject_helm_docs,$(BINDIR)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION),deploy/charts/cert-manager/values.yaml)
-	@diff $(BINDIR)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION) deploy/charts/cert-manager/README.template.md || (echo -e "\033[0;33mdeploy/charts/cert-manager/README.template.md seems to be out of date; update with 'make update-helm-docs'\033[0m" && exit 1)
+	@cp deploy/charts/cert-manager/README.template.md $(bin_dir)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION) && $(call inject_helm_docs,$(bin_dir)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION),deploy/charts/cert-manager/values.yaml)
+	@diff $(bin_dir)/scratch/LATEST_HELM_README-$(HELM-TOOL_VERSION) deploy/charts/cert-manager/README.template.md || (echo -e "\033[0;33mdeploy/charts/cert-manager/README.template.md seems to be out of date; update with 'make update-helm-docs'\033[0m" && exit 1)
 
 .PHONY: update-all
 ## Update CRDs, code generation and licenses to the latest versions.
