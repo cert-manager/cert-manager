@@ -8,7 +8,6 @@
 /hack/build/dockerfiles/cert-manager-*_*_*
 .vscode
 .venv
-bazel-*
 /.settings/
 /.project
 _artifacts/
@@ -16,7 +15,6 @@ _artifacts/
 bin/
 _bin/
 .bin/
-user.bazelrc
 *.bak
 /go.work.sum
 **/go.work

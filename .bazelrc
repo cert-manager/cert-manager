@@ -1,7 +1,0 @@
-# Include git version info
-build --workspace_status_command hack/build/print-workspace-status.sh
-# Show timestamps with each bazel message
-build --show_timestamps
-
-# import per-user options
-try-import %workspace%/user.bazelrc

@@ -377,38 +377,3 @@ func CertificateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certif
 		CertificateTemplateValidateAndOverrideKeyUsages(ku, eku),          // Override the key usages, but make sure they match the usages in the CSR if present
 	)
 }
-
-// Deprecated: use CertificateTemplateFromCertificate instead.
-func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
-	return CertificateTemplateFromCertificate(crt)
-}
-
-// Deprecated: use CertificateTemplateFromCertificateRequest instead.
-func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-	return CertificateTemplateFromCertificateRequest(cr)
-}
-
-// Deprecated: use CertificateTemplateFromCertificateSigningRequest instead.
-func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
-	return CertificateTemplateFromCertificateSigningRequest(csr)
-}
-
-// Deprecated: use CertificateTemplateFromCSRPEM instead.
-func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
-	return CertificateTemplateFromCSRPEM(
-		csrPEM,
-		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
-		certificateTemplateOverrideKeyUsages(0, nil),                      // Override the key usages to be empty
-	)
-}
-
-// Deprecated: use CertificateTemplateFromCSRPEM instead.
-func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration, isCA bool, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
-	return CertificateTemplateFromCSRPEM(
-		csrPEM,
-		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil),      // Override the basic constraints, but make sure they match the constraints in the CSR if present
-		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage), // Override the key usages, but make sure they match the usages in the CSR if present
-	)
-}
