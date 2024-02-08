@@ -53,7 +53,7 @@ release-artifacts-signed: release-artifacts release-manifests-signed
 ##
 ## @category Release
 release: release-artifacts-signed
-	$(MAKE) --no-print-directory $(BINDIR)/release/metadata.json
+	$(MAKE) --no-print-directory $(bin_dir)/release/metadata.json
 
 .PHONY: upload-release
 ## Create a complete release and then upload it to a target GCS bucket specified by
@@ -64,11 +64,11 @@ upload-release: release | $(NEEDS_RCLONE)
 ifeq ($(strip $(RELEASE_TARGET_BUCKET)),)
 	$(error Trying to upload-release but RELEASE_TARGET_BUCKET is empty)
 endif
-	$(RCLONE) copyto ./$(BINDIR)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
+	$(RCLONE) copyto ./$(bin_dir)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
 
-# Takes all metadata files in $(BINDIR)/metadata and combines them into one.
+# Takes all metadata files in $(bin_dir)/metadata and combines them into one.
 
-$(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDIR)/release
+$(bin_dir)/release/metadata.json: $(wildcard $(bin_dir)/metadata/*.json) | $(bin_dir)/release
 	jq -n \
 		--arg releaseVersion "$(RELEASE_VERSION)" \
 		--arg buildSource "make" \
@@ -79,12 +79,12 @@ $(BINDIR)/release/metadata.json: $(wildcard $(BINDIR)/metadata/*.json) | $(BINDI
 release-containers: release-container-bundles release-container-metadata
 
 .PHONY: release-container-bundles
-release-container-bundles: $(BINDIR)/release/cert-manager-server-linux-amd64.tar.gz $(BINDIR)/release/cert-manager-server-linux-arm64.tar.gz $(BINDIR)/release/cert-manager-server-linux-s390x.tar.gz $(BINDIR)/release/cert-manager-server-linux-ppc64le.tar.gz $(BINDIR)/release/cert-manager-server-linux-arm.tar.gz
+release-container-bundles: $(bin_dir)/release/cert-manager-server-linux-amd64.tar.gz $(bin_dir)/release/cert-manager-server-linux-arm64.tar.gz $(bin_dir)/release/cert-manager-server-linux-s390x.tar.gz $(bin_dir)/release/cert-manager-server-linux-ppc64le.tar.gz $(bin_dir)/release/cert-manager-server-linux-arm.tar.gz
 
-$(BINDIR)/release/cert-manager-server-linux-amd64.tar.gz $(BINDIR)/release/cert-manager-server-linux-arm64.tar.gz $(BINDIR)/release/cert-manager-server-linux-s390x.tar.gz $(BINDIR)/release/cert-manager-server-linux-ppc64le.tar.gz $(BINDIR)/release/cert-manager-server-linux-arm.tar.gz: $(BINDIR)/release/cert-manager-server-linux-%.tar.gz: $(BINDIR)/containers/cert-manager-acmesolver-linux-%.tar.gz $(BINDIR)/containers/cert-manager-cainjector-linux-%.tar.gz $(BINDIR)/containers/cert-manager-controller-linux-%.tar.gz $(BINDIR)/containers/cert-manager-webhook-linux-%.tar.gz $(BINDIR)/containers/cert-manager-startupapicheck-linux-%.tar.gz $(BINDIR)/scratch/cert-manager.license | $(BINDIR)/release $(BINDIR)/scratch
+$(bin_dir)/release/cert-manager-server-linux-amd64.tar.gz $(bin_dir)/release/cert-manager-server-linux-arm64.tar.gz $(bin_dir)/release/cert-manager-server-linux-s390x.tar.gz $(bin_dir)/release/cert-manager-server-linux-ppc64le.tar.gz $(bin_dir)/release/cert-manager-server-linux-arm.tar.gz: $(bin_dir)/release/cert-manager-server-linux-%.tar.gz: $(bin_dir)/containers/cert-manager-acmesolver-linux-%.tar.gz $(bin_dir)/containers/cert-manager-cainjector-linux-%.tar.gz $(bin_dir)/containers/cert-manager-controller-linux-%.tar.gz $(bin_dir)/containers/cert-manager-webhook-linux-%.tar.gz $(bin_dir)/containers/cert-manager-startupapicheck-linux-%.tar.gz $(bin_dir)/scratch/cert-manager.license | $(bin_dir)/release $(bin_dir)/scratch
 	@# use basename twice to strip both "tar" and "gz"
 	@$(eval CTR_BASENAME := $(basename $(basename $(notdir $@))))
-	@$(eval CTR_SCRATCHDIR := $(BINDIR)/scratch/release-container-bundle/$(CTR_BASENAME))
+	@$(eval CTR_SCRATCHDIR := $(bin_dir)/scratch/release-container-bundle/$(CTR_BASENAME))
 	mkdir -p $(CTR_SCRATCHDIR)/server/images
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/version
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/acmesolver.docker_tag
@@ -92,20 +92,20 @@ $(BINDIR)/release/cert-manager-server-linux-amd64.tar.gz $(BINDIR)/release/cert-
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/controller.docker_tag
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/webhook.docker_tag
 	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/startupapicheck.docker_tag
-	cp $(BINDIR)/scratch/cert-manager.license $(CTR_SCRATCHDIR)/LICENSES
-	gunzip -c $(BINDIR)/containers/cert-manager-acmesolver-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/acmesolver.tar
-	gunzip -c $(BINDIR)/containers/cert-manager-cainjector-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/cainjector.tar
-	gunzip -c $(BINDIR)/containers/cert-manager-controller-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/controller.tar
-	gunzip -c $(BINDIR)/containers/cert-manager-webhook-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/webhook.tar
-	gunzip -c $(BINDIR)/containers/cert-manager-startupapicheck-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/startupapicheck.tar
+	cp $(bin_dir)/scratch/cert-manager.license $(CTR_SCRATCHDIR)/LICENSES
+	gunzip -c $(bin_dir)/containers/cert-manager-acmesolver-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/acmesolver.tar
+	gunzip -c $(bin_dir)/containers/cert-manager-cainjector-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/cainjector.tar
+	gunzip -c $(bin_dir)/containers/cert-manager-controller-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/controller.tar
+	gunzip -c $(bin_dir)/containers/cert-manager-webhook-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/webhook.tar
+	gunzip -c $(bin_dir)/containers/cert-manager-startupapicheck-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/startupapicheck.tar
 	chmod -R 755 $(CTR_SCRATCHDIR)/server/images/*
-	tar czf $@ -C $(BINDIR)/scratch/release-container-bundle $(CTR_BASENAME)
+	tar czf $@ -C $(bin_dir)/scratch/release-container-bundle $(CTR_BASENAME)
 	rm -rf $(CTR_SCRATCHDIR)
 
 .PHONY: release-container-metadata
-release-container-metadata: $(BINDIR)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json
+release-container-metadata: $(bin_dir)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json
 
-$(BINDIR)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(BINDIR)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json: $(BINDIR)/metadata/cert-manager-server-linux-%.tar.gz.metadata.json: $(BINDIR)/release/cert-manager-server-linux-%.tar.gz hack/artifact-metadata.template.json | $(BINDIR)/metadata
+$(bin_dir)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-arm64.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-s390x.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-ppc64le.tar.gz.metadata.json $(bin_dir)/metadata/cert-manager-server-linux-arm.tar.gz.metadata.json: $(bin_dir)/metadata/cert-manager-server-linux-%.tar.gz.metadata.json: $(bin_dir)/release/cert-manager-server-linux-%.tar.gz hack/artifact-metadata.template.json | $(bin_dir)/metadata
 	jq --arg name "$(notdir $<)" \
 		--arg sha256 "$(shell ./hack/util/hash.sh $<)" \
 		--arg os "linux" \
@@ -116,17 +116,17 @@ $(BINDIR)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json $(BINDIR
 # This target allows us to set all the modified times for all files in bin to the same time, which
 # is similar to what bazel does. We might not want this, and it's not currently used.
 .PHONY: forcetime
-forcetime: | $(BINDIR)
-	find $(BINDIR) | xargs touch -d "2000-01-01 00:00:00" -
+forcetime: | $(bin_dir)
+	find $(bin_dir) | xargs touch -d "2000-01-01 00:00:00" -
 
-$(BINDIR)/release $(BINDIR)/metadata:
+$(bin_dir)/release $(bin_dir)/metadata:
 	@mkdir -p $@
 
 # Example of how we can generate a SHA256SUMS file and sign it using cosign
-#$(BINDIR)/SHA256SUMS: $(wildcard ...)
-#	@# The patsubst means "all dependencies, but with "$(BINDIR)/" trimmed off the beginning
+#$(bin_dir)/SHA256SUMS: $(wildcard ...)
+#	@# The patsubst means "all dependencies, but with "$(bin_dir)/" trimmed off the beginning
 #	@# We cd into bin so that SHA256SUMS file doesn't have a prefix of `bin` on everything
-#	cd $(dir $@) && sha256sum $(patsubst $(BINDIR)/%,%,$^) > $(notdir $@)
+#	cd $(dir $@) && sha256sum $(patsubst $(bin_dir)/%,%,$^) > $(notdir $@)
 
-#$(BINDIR)/SHA256SUMS.sig: $(BINDIR)/SHA256SUMS | $(NEEDS_COSIGN)
+#$(bin_dir)/SHA256SUMS.sig: $(bin_dir)/SHA256SUMS | $(NEEDS_COSIGN)
 #	$(COSIGN) sign-blob --key $(COSIGN_KEY) $< > $@

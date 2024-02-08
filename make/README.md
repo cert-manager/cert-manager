@@ -84,14 +84,14 @@ Otherwise, your dependency should be normal.
 For example:
 
 ```make
-$(BINDIR)/awesome-stuff/my-file: README.md | $(BINDIR)/awesome-stuff $(NEEDS_KIND)
-	# write the kind version to $(BINDIR)/awesome-stuff/my-file
+$(bin_dir)/awesome-stuff/my-file: README.md | $(bin_dir)/awesome-stuff $(NEEDS_KIND)
+	# write the kind version to $(bin_dir)/awesome-stuff/my-file
 	$(KIND) --version > $@
 	# append README.md
 	cat README.md >> $@
 ```
 
-This target will be rebuilt if `README.md` changes, but not if the installed version of kind changes or the `$(BINDIR)/awesome-stuff` folder changes.
+This target will be rebuilt if `README.md` changes, but not if the installed version of kind changes or the `$(bin_dir)/awesome-stuff` folder changes.
 
 The dependencies you'll need will inevitably depend on the target you're writing. If in doubt, feel free to ask!
 

@@ -18,12 +18,12 @@
 # understand. It causes find to prune entire search branches and not search inside the path.
 # If we used "-not -path X" instead, find would _still look inside X_.
 define get-sources
-$(shell find . -not \( -path "./$(BINDIR)/*" -prune \) -not \( -path "./bin/*" -prune \) -not \( -path "./make/*" -prune \) -name "*.go" | $(1))
+$(shell find . -not \( -path "./$(bin_dir)/*" -prune \) -not \( -path "./bin/*" -prune \) -not \( -path "./make/*" -prune \) -name "*.go" | $(1))
 endef
 
 .PHONY: print-bindir
 print-bindir:
-	@echo $(BINDIR)
+	@echo $(bin_dir)
 
 .PHONY: print-sources
 print-sources:
