@@ -259,11 +259,6 @@ type VaultKubernetesAuth struct {
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.
 	Role string
-
-	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
-	// consisting of the issuer's namespace and name is always included.
-	// +optional
-	TokenAudiences []string
 }
 
 // ServiceAccountRef is a service account used by cert-manager to request a
@@ -274,6 +269,11 @@ type VaultKubernetesAuth struct {
 type ServiceAccountRef struct {
 	// Name of the ServiceAccount used to request a token.
 	Name string
+
+	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
+	// consisting of the issuer's namespace and name is always included.
+	// +optional
+	TokenAudiences []string
 }
 
 // CAIssuer configures an issuer that can issue certificates from its provided

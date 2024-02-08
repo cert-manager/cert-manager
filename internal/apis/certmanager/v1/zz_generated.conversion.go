@@ -1409,6 +1409,7 @@ func Convert_certmanager_SelfSignedIssuer_To_v1_SelfSignedIssuer(in *certmanager
 
 func autoConvert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *v1.ServiceAccountRef, out *certmanager.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1419,6 +1420,7 @@ func Convert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *v1.Servic
 
 func autoConvert_certmanager_ServiceAccountRef_To_v1_ServiceAccountRef(in *certmanager.ServiceAccountRef, out *v1.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1584,7 +1586,6 @@ func autoConvert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *v
 	}
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
-	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1600,7 +1601,6 @@ func autoConvert_certmanager_VaultKubernetesAuth_To_v1_VaultKubernetesAuth(in *c
 	}
 	out.ServiceAccountRef = (*v1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
 	out.Role = in.Role
-	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
