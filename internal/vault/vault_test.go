@@ -724,11 +724,11 @@ func TestSetToken(t *testing.T) {
 							Role: "kube-vault-role",
 							ServiceAccountRef: &v1.ServiceAccountRef{
 								Name: "my-service-account",
+								TokenAudiences: []string{
+									"https://custom-audience",
+								},
 							},
 							Path: "my-path",
-							TokenAudiences: []string{
-								"https://custom-audience",
-							},
 						},
 					},
 				}),
@@ -766,11 +766,11 @@ func TestSetToken(t *testing.T) {
 							Role: "kube-vault-role",
 							ServiceAccountRef: &v1.ServiceAccountRef{
 								Name: "my-service-account",
+								TokenAudiences: []string{
+									"https://custom-audience",
+								},
 							},
 							Path: "my-path",
-							TokenAudiences: []string{
-								"https://custom-audience",
-							},
 						},
 					},
 				}),
