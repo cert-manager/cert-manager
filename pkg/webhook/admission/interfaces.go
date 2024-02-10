@@ -20,6 +20,7 @@ import (
 	"context"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -41,5 +42,5 @@ type ValidationInterface interface {
 type MutationInterface interface {
 	Interface
 
-	Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj runtime.Object) (err error)
+	Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) (err error)
 }

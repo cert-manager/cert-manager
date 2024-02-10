@@ -23,6 +23,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -44,7 +45,7 @@ func NewPlugin() admission.Interface {
 	}
 }
 
-func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj runtime.Object) error {
+func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error {
 	// Only run this admission plugin for the certificaterequests/status sub-resource
 	if request.RequestResource.Group != "cert-manager.io" ||
 		request.RequestResource.Resource != "certificaterequests" ||
@@ -52,13 +53,27 @@ func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissi
 		return nil
 	}
 
-	cr := obj.(*certmanager.CertificateRequest)
-	cr.Spec.UID = request.UserInfo.UID
-	cr.Spec.Username = request.UserInfo.Username
-	cr.Spec.Groups = request.UserInfo.Groups
-	cr.Spec.Extra = make(map[string][]string)
-	for k, v := range request.UserInfo.Extra {
-		cr.Spec.Extra[k] = v
+	extraValuesToGenericMap := func(m map[string]authenticationv1.ExtraValue) map[string]interface{} {
+		genericMap := make(map[string]interface{}, len(m))
+		for k, v := range m {
+			arr := make([]interface{}, len(v))
+			for i, val := range v {
+				arr[i] = val
+			}
+			genericMap[k] = []interface{}(arr)
+		}
+		return genericMap
+	}
+
+	for _, err := range []error{
+		unstructured.SetNestedField(obj.Object, request.UserInfo.UID, "spec", "uid"),
+		unstructured.SetNestedField(obj.Object, request.UserInfo.Username, "spec", "username"),
+		unstructured.SetNestedStringSlice(obj.Object, request.UserInfo.Groups, "spec", "groups"),
+		unstructured.SetNestedMap(obj.Object, extraValuesToGenericMap(request.UserInfo.Extra), "spec", "extra"),
+	} {
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

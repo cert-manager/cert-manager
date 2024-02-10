@@ -20,6 +20,7 @@ import (
 	"context"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
@@ -48,14 +49,14 @@ var _ admission.ValidationInterface = &validatingImplementation{}
 
 type mutatingImplementation struct {
 	handles func(admissionv1.Operation) bool
-	mutate  func(ctx context.Context, request admissionv1.AdmissionRequest, obj runtime.Object) error
+	mutate  func(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error
 }
 
 func (v mutatingImplementation) Handles(operation admissionv1.Operation) bool {
 	return v.handles(operation)
 }
 
-func (v mutatingImplementation) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj runtime.Object) error {
+func (v mutatingImplementation) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error {
 	return v.mutate(ctx, request, obj)
 }
 

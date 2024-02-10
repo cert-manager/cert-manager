@@ -19,9 +19,11 @@ package admission
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/utils/ptr"
 )
 
 // decoder knows how to decode the contents of an admission
@@ -33,21 +35,36 @@ type internalDecoder struct {
 
 // DecodeRaw decodes a RawExtension object.
 // It errors out if rawObj is empty i.e. containing 0 raw bytes.
-func (d *internalDecoder) DecodeRaw(rawObj runtime.RawExtension) (runtime.Object, error) {
+func (d *internalDecoder) DecodeRaw(rawObj runtime.RawExtension, rawKind schema.GroupVersionKind) (runtime.Object, error) {
 	// we error out if rawObj is an empty object.
 	if len(rawObj.Raw) == 0 {
 		return nil, fmt.Errorf("there is no content to decode")
 	}
 
-	obj, gvk, err := d.codecs.UniversalDeserializer().Decode(rawObj.Raw, nil, nil)
+	obj, gvk, err := d.codecs.UniversalDeserializer().Decode(rawObj.Raw, ptr.To(rawKind), nil)
 	if err != nil {
 		return nil, err
 	}
-	obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   gvk.Group,
-		Version: gvk.Version,
-		Kind:    gvk.Kind,
-	})
+	if obj.GetObjectKind().GroupVersionKind().Empty() && gvk != nil {
+		obj.GetObjectKind().SetGroupVersionKind(*gvk)
+	}
 
 	return d.scheme.UnsafeConvertToVersion(obj, runtime.InternalGroupVersioner)
+}
+
+// DecodeRawUnstructured decodes a RawExtension object into an unstructured object.
+func DecodeRawUnstructured(rawObj runtime.RawExtension, rawKind schema.GroupVersionKind) (*unstructured.Unstructured, error) {
+	if len(rawObj.Raw) == 0 {
+		return nil, fmt.Errorf("there is no content to decode")
+	}
+
+	obj := &unstructured.Unstructured{}
+	if err := obj.UnmarshalJSON(rawObj.Raw); err != nil {
+		return nil, err
+	}
+	if obj.GetObjectKind().GroupVersionKind().Empty() {
+		obj.GetObjectKind().SetGroupVersionKind(rawKind)
+	}
+
+	return obj, nil
 }
