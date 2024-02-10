@@ -66,9 +66,6 @@ deepcopy_inputs=(
   internal/apis/config/controller \
   pkg/apis/meta/v1 \
   internal/apis/meta \
-  pkg/webhook/handlers/testdata/apis/testgroup/v2 \
-  pkg/webhook/handlers/testdata/apis/testgroup/v1 \
-  pkg/webhook/handlers/testdata/apis/testgroup \
   pkg/acme/webhook/apis/acme/v1alpha1 \
 )
 
@@ -94,8 +91,6 @@ defaulter_inputs=(
   internal/apis/config/webhook/v1alpha1 \
   internal/apis/config/controller/v1alpha1 \
   internal/apis/meta/v1 \
-  pkg/webhook/handlers/testdata/apis/testgroup/v2 \
-  pkg/webhook/handlers/testdata/apis/testgroup/v1 \
 )
 
 # Generate conversion functions to be used by the conversion webhook
@@ -112,8 +107,6 @@ conversion_inputs=(
   internal/apis/config/webhook/v1alpha1 \
   internal/apis/config/controller/v1alpha1 \
   internal/apis/meta/v1 \
-  pkg/webhook/handlers/testdata/apis/testgroup/v2 \
-  pkg/webhook/handlers/testdata/apis/testgroup/v1 \
 )
 
 # clean will delete files matching name in path.
