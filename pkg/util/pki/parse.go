@@ -18,7 +18,6 @@ package pki
 
 import (
 	"crypto"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 
@@ -67,25 +66,6 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
-}
-
-// DecodePKCS1PrivateKeyBytes will decode a PEM encoded RSA private key.
-func DecodePKCS1PrivateKeyBytes(keyBytes []byte) (*rsa.PrivateKey, error) {
-	// decode the private key pem
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
-		return nil, errors.NewInvalidData("error decoding private key PEM block")
-	}
-	// parse the private key
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, errors.NewInvalidData("error parsing private key: %s", err.Error())
-	}
-	// validate the private key
-	if err = key.Validate(); err != nil {
-		return nil, errors.NewInvalidData("private key failed validation: %s", err.Error())
-	}
-	return key, nil
 }
 
 // DecodeX509CertificateChainBytes will decode a PEM encoded x509 Certificate chain.

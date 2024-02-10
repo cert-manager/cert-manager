@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
@@ -85,9 +84,7 @@ type Builder struct {
 	// test).
 	CheckFn func(*Builder, ...interface{})
 
-	stopCh              chan struct{}
-	requiredReactors    map[string]bool
-	additionalSyncFuncs []cache.InformerSynced
+	stopCh chan struct{}
 
 	*controller.Context
 }
@@ -122,7 +119,6 @@ func (b *Builder) Init() {
 	}
 	scheme := metadatafake.NewTestScheme()
 	metav1.AddMetaToScheme(scheme)
-	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
@@ -208,26 +204,11 @@ func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
 	return b.Context.DiscoveryClient.(*discoveryfake.Discovery)
 }
 
-func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFunc) coretesting.ReactionFunc {
-	b.requiredReactors[testName] = false
-	return func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-		handled, ret, err = fn(action)
-		if !handled {
-			return
-		}
-		b.requiredReactors[testName] = true
-		return
-	}
-}
-
 // CheckAndFinish will run ensure: all reactors are called, all actions are
 // expected, and all events are as expected.
 // It will then call the Builder's CheckFn, if defined.
 func (b *Builder) CheckAndFinish(args ...interface{}) {
 	defer b.Stop()
-	if err := b.AllReactorsCalled(); err != nil {
-		b.T.Errorf("Not all expected reactors were called: %v", err)
-	}
 	if err := b.AllActionsExecuted(); err != nil {
 		b.T.Errorf(err.Error())
 	}
@@ -241,16 +222,6 @@ func (b *Builder) CheckAndFinish(args ...interface{}) {
 	if b.CheckFn != nil {
 		b.CheckFn(b, args...)
 	}
-}
-
-func (b *Builder) AllReactorsCalled() error {
-	var errs []error
-	for n, reactorCalled := range b.requiredReactors {
-		if !reactorCalled {
-			errs = append(errs, fmt.Errorf("reactor not called: %s", n))
-		}
-	}
-	return utilerrors.NewAggregate(errs)
 }
 
 func (b *Builder) AllEventsCalled() error {
@@ -364,22 +335,10 @@ func (b *Builder) Sync() {
 	if err := mustAllSync(b.HTTP01ResourceMetadataInformersFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for MetadataInformerFactory to sync:" + err.Error())
 	}
-	if b.additionalSyncFuncs != nil {
-		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
-	}
 
 	// Wait for the informerResyncPeriod to make sure any update made by any of the fake clients
 	// is reflected in the informer caches.
 	time.Sleep(informerResyncPeriod)
-}
-
-// RegisterAdditionalSyncFuncs registers an additional InformerSynced function
-// with the builder.
-// When the Sync method is called, the builder will also wait for the given
-// listers to be synced as well as the listers that were registered with the
-// informer factories that the builder provides.
-func (b *Builder) RegisterAdditionalSyncFuncs(fns ...cache.InformerSynced) {
-	b.additionalSyncFuncs = append(b.additionalSyncFuncs, fns...)
 }
 
 func (b *Builder) Events() []string {

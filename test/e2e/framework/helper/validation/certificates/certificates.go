@@ -134,7 +134,11 @@ func ExpectCertificateOrganizationToMatch(certificate *cmapi.Certificate, secret
 		return err
 	}
 
-	expectedOrganization := pki.OrganizationForCertificate(certificate)
+	var expectedOrganization []string
+	if certificate.Spec.Subject != nil {
+		expectedOrganization = certificate.Spec.Subject.Organizations
+	}
+
 	if !util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) {
 		return fmt.Errorf("Expected certificate valid for O %v, but got a certificate valid for O %v", expectedOrganization, cert.Subject.Organization)
 	}
@@ -165,12 +169,8 @@ func ExpectCertificateURIsToMatch(certificate *cmapi.Certificate, secret *corev1
 		return err
 	}
 
-	uris, err := pki.URIsForCertificate(certificate)
-	if err != nil {
-		return fmt.Errorf("failed to parse URIs: %s", err)
-	}
 	actualURIs := pki.URLsToString(cert.URIs)
-	expectedURIs := pki.URLsToString(uris)
+	expectedURIs := certificate.Spec.URIs
 	if !util.EqualUnsorted(actualURIs, expectedURIs) {
 		return fmt.Errorf("Expected certificate valid for URIs %v, but got a certificate valid for URIs %v", expectedURIs, pki.URLsToString(cert.URIs))
 	}

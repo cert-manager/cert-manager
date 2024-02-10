@@ -178,8 +178,3 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 		},
 	}
 }
-
-func (s *Solver) cleanupGatewayHTTPRoutes(_ context.Context, _ *cmacme.Challenge) error {
-	// Unlike Ingress, we don't modify existing HTTPRoutes so there is nothing to do here.
-	return nil
-}
