@@ -21,29 +21,33 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	acmeinstall "github.com/cert-manager/cert-manager/internal/apis/acme/install"
 	cminstall "github.com/cert-manager/cert-manager/internal/apis/certmanager/install"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	metainstall "github.com/cert-manager/cert-manager/internal/apis/meta/install"
-	"github.com/cert-manager/cert-manager/internal/plugin"
+	crapproval "github.com/cert-manager/cert-manager/internal/webhook/admission/certificaterequest/approval"
+	cridentity "github.com/cert-manager/cert-manager/internal/webhook/admission/certificaterequest/identity"
+	"github.com/cert-manager/cert-manager/internal/webhook/admission/resourcevalidation"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
-	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
 )
 
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
 func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
+	crlog.SetLogger(log)
+
 	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err
@@ -60,16 +64,22 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		return nil, err
 	}
 
+	scheme := runtime.NewScheme()
+	cminstall.Install(scheme)
+	acmeinstall.Install(scheme)
+	metainstall.Install(scheme)
+
 	s := &server.Server{
-		ListenAddr:        fmt.Sprintf(":%d", opts.SecurePort),
-		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
+		ResourceScheme:    scheme,
+		ListenAddr:        opts.SecurePort,
+		HealthzAddr:       &opts.HealthzPort,
 		EnablePprof:       opts.EnablePprof,
-		PprofAddr:         opts.PprofAddress,
+		PprofAddress:      opts.PprofAddress,
 		CertificateSource: buildCertificateSource(log, opts.TLSConfig, restcfg),
 		CipherSuites:      opts.TLSConfig.CipherSuites,
 		MinTLSVersion:     opts.TLSConfig.MinTLSVersion,
-		ValidationWebhook: admissionHandler,
-		MutationWebhook:   admissionHandler,
+		ValidationWebhook: admissionHandler.(admission.ValidationInterface),
+		MutationWebhook:   admissionHandler.(admission.MutationInterface),
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
@@ -77,10 +87,7 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 	return s, nil
 }
 
-func buildAdmissionChain(client kubernetes.Interface) (*admission.RequestHandler, error) {
-	// Set up the admission chain
-	pluginHandler := admission.NewPlugins(Scheme)
-	plugin.RegisterAllPlugins(pluginHandler)
+func buildAdmissionChain(client kubernetes.Interface) (admission.Interface, error) {
 	authorizer, err := authorizerfactory.DelegatingAuthorizerConfig{
 		SubjectAccessReviewClient: client.AuthorizationV1(),
 		// cache responses for 1 second
@@ -97,12 +104,14 @@ func buildAdmissionChain(client kubernetes.Interface) (*admission.RequestHandler
 	if err != nil {
 		return nil, fmt.Errorf("error creating authorization handler: %v", err)
 	}
-	pluginInitializer := initializer.New(client, nil, authorizer, nil)
-	pluginChain, err := pluginHandler.NewFromPlugins(sets.List(plugin.DefaultOnAdmissionPlugins()), pluginInitializer)
-	if err != nil {
-		return nil, fmt.Errorf("error building admission chain: %v", err)
-	}
-	return admission.NewRequestHandler(Scheme, pluginChain.(admission.ValidationInterface), pluginChain.(admission.MutationInterface)), nil
+
+	pluginChain := admission.PluginChain([]admission.Interface{
+		cridentity.NewPlugin(),
+		crapproval.NewPlugin(authorizer, client.Discovery()),
+		resourcevalidation.NewPlugin(),
+	})
+
+	return pluginChain, nil
 }
 
 func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
@@ -113,6 +122,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg
 			CertPath: tlsConfig.Filesystem.CertFile,
 			KeyPath:  tlsConfig.Filesystem.KeyFile,
 		}
+
 	case tlsConfig.DynamicConfigProvided():
 		log.V(logf.InfoLevel).Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", tlsConfig.Dynamic.SecretNamespace, "secret_name", tlsConfig.Dynamic.SecretName)
 		return &tls.DynamicSource{
@@ -128,10 +138,4 @@ func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
 	}
 	return nil
-}
-
-func init() {
-	cminstall.Install(Scheme)
-	acmeinstall.Install(Scheme)
-	metainstall.Install(Scheme)
 }

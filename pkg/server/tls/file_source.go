@@ -66,7 +66,7 @@ const defaultMaxFailures = 12
 
 var _ CertificateSource = &FileCertificateSource{}
 
-func (f *FileCertificateSource) Run(ctx context.Context) error {
+func (f *FileCertificateSource) Start(ctx context.Context) error {
 	f.log = logf.FromContext(ctx)
 
 	updateInterval := f.UpdateInterval

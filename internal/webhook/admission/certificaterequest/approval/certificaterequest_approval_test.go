@@ -297,12 +297,10 @@ func TestValidate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			a := NewPlugin().(*certificateRequestApproval)
-			a.discovery = test.discoverclient
+			a := NewPlugin(test.authorizer, test.discoverclient).(*certificateRequestApproval)
 			if test.authorizer != nil {
 				test.authorizer.t = t
 			}
-			a.authorizer = test.authorizer
 
 			warnings, err := a.Validate(context.TODO(), *test.req, test.oldCR, test.newCR)
 			if len(warnings) > 0 {

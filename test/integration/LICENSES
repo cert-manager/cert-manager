@@ -12,6 +12,7 @@ github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.11.2/LICENSE,MIT
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.9.0/v5/LICENSE,BSD-3-Clause
 github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.4/LICENSE.txt,MIT
+github.com/fsnotify/fsnotify,https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE,BSD-3-Clause
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.5/LICENSE,MIT
 github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.6/v3/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.1/LICENSE,Apache-2.0
@@ -94,7 +95,7 @@ k8s.io/kubectl/pkg/util/openapi,https://github.com/kubernetes/kubectl/blob/v0.29
 k8s.io/utils,https://github.com/kubernetes/utils/blob/e7106e64919e/LICENSE,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang,https://github.com/kubernetes/utils/blob/e7106e64919e/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,https://github.com/kubernetes-sigs/apiserver-network-proxy/blob/konnectivity-client/v0.29.0/konnectivity-client/LICENSE,Apache-2.0
-sigs.k8s.io/controller-runtime/pkg,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.17.0/LICENSE,Apache-2.0
+sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-runtime/blob/v0.17.0/LICENSE,Apache-2.0
 sigs.k8s.io/gateway-api,https://github.com/kubernetes-sigs/gateway-api/blob/v1.0.0/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,Apache-2.0
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/bc3834ca7abd/LICENSE,BSD-3-Clause
