@@ -61,7 +61,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
-		return source.Run(ctx)
+		return source.Start(ctx)
 	})
 
 	time.Sleep(interval * 2)
@@ -110,7 +110,7 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
-		return source.Run(ctx)
+		return source.Start(ctx)
 	})
 
 	time.Sleep(interval * 2)

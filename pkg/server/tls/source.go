@@ -36,12 +36,12 @@ type CertificateSource interface {
 	// first element of Certificates will be used.
 	GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
 
-	// Run will start the certificate source.
+	// Start will start the certificate source.
 	// This may include setting up watches on certificate stores, or any other
 	// kind of background operation.
-	// The Run function should return when stopCh is closed, and may return an
+	// The Start function should return when stopCh is closed, and may return an
 	// error if an irrecoverable error occurs whilst running.
-	Run(context.Context) error
+	Start(context.Context) error
 
 	// Healthy can be used to check the status of the CertificateSource.
 	// It will return true if the source has a certificate available.

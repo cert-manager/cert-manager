@@ -93,7 +93,7 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	if certificateSource != nil {
 		log.V(logf.InfoLevel).Info("listening for secure connections", "address", opts.MetricsListenAddress)
 		g.Go(func() error {
-			if err := certificateSource.Run(rootCtx); (err != nil) && !errors.Is(err, context.Canceled) {
+			if err := certificateSource.Start(rootCtx); (err != nil) && !errors.Is(err, context.Canceled) {
 				return err
 			}
 			return nil

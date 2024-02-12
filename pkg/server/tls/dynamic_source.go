@@ -51,7 +51,7 @@ type DynamicSource struct {
 
 var _ CertificateSource = &DynamicSource{}
 
-func (f *DynamicSource) Run(ctx context.Context) error {
+func (f *DynamicSource) Start(ctx context.Context) error {
 	f.log = logf.FromContext(ctx)
 
 	// Run the authority in a separate goroutine
@@ -65,7 +65,7 @@ func (f *DynamicSource) Run(ctx context.Context) error {
 
 	// initially fetch a certificate from the signing CA
 	interval := time.Second
-	if err := wait.PollUntilContextCancel(ctx, interval, false, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextCancel(ctx, interval, true, func(ctx context.Context) (done bool, err error) {
 		// check for errors from the authority here too, to prevent retrying
 		// if the authority has failed to start
 		select {

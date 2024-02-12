@@ -23,23 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// Factory constructs an admission plugin.
-// This may be used in future to provide an `io.Reader` to the
-// plugin to be used for loading plugin specific configuration.
-type Factory func() (Interface, error)
-
-// PluginInitializer is used for initialization of shareable resources between admission plugins.
-// After initialization the resources have to be set separately
-type PluginInitializer interface {
-	Initialize(plugin Interface)
-}
-
-// InitializationValidator holds ValidateInitialization functions, which are responsible for validation of initialized
-// shared resources and should be implemented on admission plugins
-type InitializationValidator interface {
-	ValidateInitialization() error
-}
-
 // Interface is the base admission interface
 type Interface interface {
 	Handles(admissionv1.Operation) bool

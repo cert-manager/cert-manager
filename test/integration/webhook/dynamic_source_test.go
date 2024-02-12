@@ -75,7 +75,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := source.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
@@ -140,7 +140,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := source.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()

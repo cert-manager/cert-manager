@@ -36,15 +36,11 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
-	"github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer"
 )
-
-const PluginName = "CertificateRequestApproval"
 
 type certificateRequestApproval struct {
 	*admission.Handler
@@ -64,19 +60,14 @@ type resourceInfo struct {
 }
 
 var _ admission.ValidationInterface = &certificateRequestApproval{}
-var _ initializer.WantsAuthorizer = &certificateRequestApproval{}
-var _ initializer.WantsExternalKubeClientSet = &certificateRequestApproval{}
 
-func Register(plugins *admission.Plugins) {
-	plugins.Register(PluginName, func() (admission.Interface, error) {
-		return NewPlugin(), nil
-	})
-}
-
-func NewPlugin() admission.Interface {
+func NewPlugin(authz authorizer.Authorizer, discoveryClient discovery.DiscoveryInterface) admission.Interface {
 	return &certificateRequestApproval{
 		Handler:      admission.NewHandler(admissionv1.Update),
 		resourceInfo: map[schema.GroupKind]resourceInfo{},
+
+		authorizer: authz,
+		discovery:  discoveryClient,
 	}
 }
 
@@ -267,14 +258,6 @@ func buildAttributes(info user.Info, verb, signerName string) authorizer.Attribu
 		Resource:        "signers",
 		ResourceRequest: true,
 	}
-}
-
-func (c *certificateRequestApproval) SetAuthorizer(a authorizer.Authorizer) {
-	c.authorizer = a
-}
-
-func (c *certificateRequestApproval) SetExternalKubeClientSet(client kubernetes.Interface) {
-	c.discovery = client.Discovery()
 }
 
 func (c *certificateRequestApproval) ValidateInitialization() error {

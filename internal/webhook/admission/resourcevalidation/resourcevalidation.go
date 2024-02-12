@@ -31,19 +31,10 @@ import (
 	admission "github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
-const PluginName = "ResourceValidation"
-
 type resourceValidation struct {
 	*admission.Handler
 
 	validationMappings map[schema.GroupVersionResource]validationPair
-}
-
-// Register registers a plugin
-func Register(plugins *admission.Plugins) {
-	plugins.Register(PluginName, func() (admission.Interface, error) {
-		return NewPlugin(), nil
-	})
 }
 
 var _ admission.ValidationInterface = &resourceValidation{}
