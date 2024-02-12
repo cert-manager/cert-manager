@@ -30,66 +30,10 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
-	"strings"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
-
-// DEPRECATED: this function will be removed in a future release.
-func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
-	var ipAddresses []net.IP
-	var ip net.IP
-	for _, ipName := range crt.Spec.IPAddresses {
-		ip = net.ParseIP(ipName)
-		if ip != nil {
-			ipAddresses = append(ipAddresses, ip)
-		}
-	}
-	return ipAddresses
-}
-
-// DEPRECATED: this function will be removed in a future release.
-func URIsForCertificate(crt *v1.Certificate) ([]*url.URL, error) {
-	uris, err := URLsFromStrings(crt.Spec.URIs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse URIs: %s", err)
-	}
-
-	return uris, nil
-}
-
-// DEPRECATED: this function will be removed in a future release.
-func DNSNamesForCertificate(crt *v1.Certificate) ([]string, error) {
-	_, err := URLsFromStrings(crt.Spec.DNSNames)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse DNSNames: %s", err)
-	}
-
-	return crt.Spec.DNSNames, nil
-}
-
-// DEPRECATED: this function will be removed in a future release.
-func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
-	var urls []*url.URL
-	var errs []string
-
-	for _, urlStr := range urlStrs {
-		url, err := url.Parse(urlStr)
-		if err != nil {
-			errs = append(errs, err.Error())
-			continue
-		}
-
-		urls = append(urls, url)
-	}
-
-	if len(errs) > 0 {
-		return nil, errors.New(strings.Join(errs, ", "))
-	}
-
-	return urls, nil
-}
 
 // IPAddressesToString converts a slice of IP addresses to strings, which can be useful for
 // printing a list of addresses but MUST NOT be used for comparing two slices of IP addresses.
@@ -130,17 +74,6 @@ func URLsToString(uris []*url.URL) []string {
 	return uriStrs
 }
 
-// OrganizationForCertificate will return the Organization to set for the
-// Certificate resource.
-// If an Organization is not specifically set, a default will be used.
-// DEPRECATED: this function will be removed in a future release.
-func OrganizationForCertificate(crt *v1.Certificate) []string {
-	if crt.Spec.Subject == nil {
-		return nil
-	}
-	return crt.Spec.Subject.Organizations
-}
-
 // SubjectForCertificate will return the Subject from the Certificate resource or an empty one if it is not set
 func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 	if crt.Spec.Subject == nil {
@@ -177,13 +110,6 @@ func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool
 		err = fmt.Errorf("unknown key usages: %v", unk)
 	}
 	return
-}
-
-func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.KeyUsage {
-	usages := apiutil.KeyUsageStrings(ku)
-	usages = append(usages, apiutil.ExtKeyUsageStrings(eku)...)
-
-	return usages
 }
 
 type generateCSROptions struct {

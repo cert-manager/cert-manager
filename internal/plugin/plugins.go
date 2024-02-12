@@ -43,8 +43,3 @@ func DefaultOnAdmissionPlugins() sets.Set[string] {
 		certificaterequestapproval.PluginName,
 	)
 }
-
-// DefaultOffAdmissionPlugins gets admission plugins off by default for the webhook.
-func DefaultOffAdmissionPlugins() sets.Set[string] {
-	return sets.New[string](AllOrderedPlugins...).Difference(DefaultOnAdmissionPlugins())
-}

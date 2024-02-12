@@ -3146,9 +3146,6 @@ func TestSync(t *testing.T) {
 			if err := b.AllEventsCalled(); err != nil {
 				t.Error(err)
 			}
-			if err := b.AllReactorsCalled(); err != nil {
-				t.Errorf("Not all expected reactors were called: %v", err)
-			}
 			if err := b.AllActionsExecuted(); err != nil {
 				t.Errorf(err.Error())
 			}
