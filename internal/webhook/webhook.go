@@ -78,8 +78,8 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		CertificateSource: buildCertificateSource(log, opts.TLSConfig, restcfg),
 		CipherSuites:      opts.TLSConfig.CipherSuites,
 		MinTLSVersion:     opts.TLSConfig.MinTLSVersion,
-		ValidationWebhook: admissionHandler.(admission.ValidationInterface),
-		MutationWebhook:   admissionHandler.(admission.MutationInterface),
+		ValidationWebhook: admissionHandler,
+		MutationWebhook:   admissionHandler,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
@@ -87,7 +87,7 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 	return s, nil
 }
 
-func buildAdmissionChain(client kubernetes.Interface) (admission.Interface, error) {
+func buildAdmissionChain(client kubernetes.Interface) (admission.PluginChain, error) {
 	authorizer, err := authorizerfactory.DelegatingAuthorizerConfig{
 		SubjectAccessReviewClient: client.AuthorizationV1(),
 		// cache responses for 1 second
