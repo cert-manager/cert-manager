@@ -706,13 +706,13 @@ func getAltCertChain(ctx context.Context, cl acmecl.Interface, certURL string, p
 	if err != nil {
 		return false, nil, fmt.Errorf("error listing alternate certificate URLs: %w", err)
 	}
-	// Loop over all alternative chains
-	for _, altURL := range altURLs {
+	// Loop over every chains
+	for _, altURL := range append([]string{certURL}, altURLs...) {
 		altChain, err := cl.FetchCert(ctx, altURL, true)
 		if err != nil {
 			return false, nil, fmt.Errorf("error fetching alternate certificate chain from %s: %w", altURL, err)
 		}
-		// Loop over each cert in this alternative chain
+		// Loop over each cert in this chain
 		for _, altCert := range altChain {
 			cert, err := x509.ParseCertificate(altCert)
 			if err != nil {
