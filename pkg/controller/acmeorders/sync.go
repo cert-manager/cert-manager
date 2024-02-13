@@ -585,17 +585,17 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	if issuer.GetSpec().ACME != nil && issuer.GetSpec().ACME.PreferredChain != "" {
-		preferredChain := issuer.GetSpec().ACME.PreferredChain
-		found, altChain, err := getAltCertChain(ctx, cl, certURL, preferredChain)
+		preferredChainName := issuer.GetSpec().ACME.PreferredChain
+		found, preferredCertChain, err := getPreferredCertChain(ctx, cl, certURL, preferredChainName)
 		if err != nil {
 			return fmt.Errorf("error retrieving alternate chain: %w", err)
 		}
 		if found {
-			return c.storeCertificateOnStatus(ctx, o, altChain)
+			return c.storeCertificateOnStatus(ctx, o, preferredCertChain)
 		}
 		// if no match is found we return to the actual cert
 		// it is a *preferred* chain after all
-		log.V(logf.DebugLevel).Info(fmt.Sprintf("Preferred chain %s not found, fall back to the default cert", preferredChain))
+		log.V(logf.DebugLevel).Info(fmt.Sprintf("Preferred chain %s not found, fall back to the default cert", preferredChainName))
 	}
 
 	return c.storeCertificateOnStatus(ctx, o, certSlice)
@@ -653,12 +653,12 @@ func (c *controller) syncCertificateDataWithOrder(ctx context.Context, cl acmecl
 	}
 
 	if issuer.GetSpec().ACME != nil && issuer.GetSpec().ACME.PreferredChain != "" {
-		found, altCerts, err := getAltCertChain(ctx, cl, acmeOrder.CertURL, issuer.GetSpec().ACME.PreferredChain)
+		found, preferredCertChain, err := getPreferredCertChain(ctx, cl, acmeOrder.CertURL, issuer.GetSpec().ACME.PreferredChain)
 		if err != nil {
 			return err
 		}
 		if found {
-			return c.storeCertificateOnStatus(ctx, o, altCerts)
+			return c.storeCertificateOnStatus(ctx, o, preferredCertChain)
 		}
 
 	}
@@ -700,29 +700,29 @@ func getACMEOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) (*a
 	return acmeOrder, nil
 }
 
-func getAltCertChain(ctx context.Context, cl acmecl.Interface, certURL string, preferredChain string) (bool, [][]byte, error) {
+func getPreferredCertChain(ctx context.Context, cl acmecl.Interface, certURL string, preferredChain string) (bool, [][]byte, error) {
 	log := logf.FromContext(ctx)
 	altURLs, err := cl.ListCertAlternates(ctx, certURL)
 	if err != nil {
 		return false, nil, fmt.Errorf("error listing alternate certificate URLs: %w", err)
 	}
 	// Loop over every chains
-	for _, altURL := range append([]string{certURL}, altURLs...) {
-		altChain, err := cl.FetchCert(ctx, altURL, true)
+	for _, chainURL := range append([]string{certURL}, altURLs...) {
+		certChain, err := cl.FetchCert(ctx, chainURL, true)
 		if err != nil {
-			return false, nil, fmt.Errorf("error fetching alternate certificate chain from %s: %w", altURL, err)
+			return false, nil, fmt.Errorf("error fetching alternate certificate chain from %s: %w", chainURL, err)
 		}
 		// Check topmost certificate
-		cert, err := x509.ParseCertificate(altChain[len(altChain)-1])
+		cert, err := x509.ParseCertificate(certChain[len(certChain)-1])
 		if err != nil {
 			return false, nil, fmt.Errorf("error parsing alternate certificate chain: %w", err)
 		}
-		log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found alternative ACME bundle")
+		log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found ACME bundle")
 		if cert.Issuer.CommonName == preferredChain {
 			// if the issuer's CN matched the preferred chain it means this bundle is
 			// signed by the requested chain
-			log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting alternative ACME bundle with a matching Common Name from %s", altURL)
-			return true, altChain, nil
+			log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting preferred ACME bundle with a matching Common Name from %s", chainURL)
+			return true, certChain, nil
 		}
 
 	}
