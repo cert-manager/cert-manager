@@ -22,20 +22,20 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
 
-	issuerName := "test-ca-clusterissuer" + cmutil.RandStringRunes(5)
-	secretName := "ca-clusterissuer-signing-keypair-" + cmutil.RandStringRunes(5)
+	issuerName := "test-ca-clusterissuer" + rand.String(5)
+	secretName := "ca-clusterissuer-signing-keypair-" + rand.String(5)
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")

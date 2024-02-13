@@ -110,7 +110,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	}
 
 	if ctx.GatewaySolverEnabled {
-		gwAPIHTTPRouteInformer := ctx.GWShared.Gateway().V1beta1().HTTPRoutes()
+		gwAPIHTTPRouteInformer := ctx.GWShared.Gateway().V1().HTTPRoutes()
 		mustSync = append(mustSync, gwAPIHTTPRouteInformer.Informer().HasSynced)
 	}
 

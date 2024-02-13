@@ -27,6 +27,9 @@ func Convert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *Certifi
 		return err
 	}
 
+	out.EmailAddresses = in.EmailSANs
+	out.URIs = in.URISANs
+
 	if in.KeyAlgorithm != "" || in.KeyEncoding != "" || in.KeySize != 0 {
 		if out.PrivateKey == nil {
 			out.PrivateKey = &certmanager.CertificatePrivateKey{}
@@ -60,6 +63,9 @@ func Convert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *certman
 	if err := autoConvert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in, out, s); err != nil {
 		return err
 	}
+
+	out.EmailSANs = in.EmailAddresses
+	out.URISANs = in.URIs
 
 	if in.PrivateKey != nil {
 		switch in.PrivateKey.Algorithm {

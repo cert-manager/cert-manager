@@ -36,7 +36,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 )
 
 // Tests for the dynamic authority functionality to ensure it properly handles
@@ -51,7 +51,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -99,7 +99,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 

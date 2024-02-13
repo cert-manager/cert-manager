@@ -38,7 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
-	gwapiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwapiv1beta1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"

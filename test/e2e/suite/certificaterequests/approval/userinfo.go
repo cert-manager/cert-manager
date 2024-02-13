@@ -34,6 +34,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -45,8 +46,15 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 	It("should appropriately create set UserInfo of CertificateRequests, and reject changes", func() {
 		var (
 			adminUsername = "kubernetes-admin"
-			adminGroups   = []string{"system:masters", "system:authenticated"}
 		)
+		// Kubeadm >= 1.29 changed the groups of the admin user from
+		// system:masters to kubeadm:cluster-admins, so instead of hard coding
+		// the group names we try and read them from the client certificate.
+		// https://github.com/kubernetes/kubeadm/issues/2414
+		cert, err := pki.DecodeX509CertificateBytes(f.KubeClientConfig.CertData)
+		Expect(err).NotTo(HaveOccurred())
+		adminGroups := append([]string{"system:authenticated"}, cert.Subject.Organization...)
+
 		csr, _, err := gen.CSR(x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 

@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/clock"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
@@ -735,6 +735,30 @@ func TestValidateIssuerSpec(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ca", "ocspServer").Index(0), "", `must be a valid URL, e.g., http://ocsp.int-x3.letsencrypt.org`),
+			},
+		},
+		"valid IssuingCertificateURLs": {
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
+						SecretName:             "valid",
+						IssuingCertificateURLs: []string{"http://ca.example.com/ca.crt"},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"invalid IssuingCertificateURLs": {
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
+						SecretName:             "valid",
+						IssuingCertificateURLs: []string{""},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ca", "issuingCertificateURLs").Index(0), "", `must be a valid URL`),
 			},
 		},
 	}

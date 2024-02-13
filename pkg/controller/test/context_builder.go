@@ -20,21 +20,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	metadatafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
@@ -56,6 +54,8 @@ func init() {
 	_ = flag.Set("alsologtostderr", "true")
 	_ = flag.Set("v", "4")
 }
+
+type StringGenerator func(n int) string
 
 // Builder is a structure used to construct new Contexts for use during tests.
 // Currently, only KubeObjects, CertManagerObjects and GWObjects can be
@@ -84,9 +84,7 @@ type Builder struct {
 	// test).
 	CheckFn func(*Builder, ...interface{})
 
-	stopCh              chan struct{}
-	requiredReactors    map[string]bool
-	additionalSyncFuncs []cache.InformerSynced
+	stopCh chan struct{}
 
 	*controller.Context
 }
@@ -101,6 +99,11 @@ func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, 
 	return false, obj.(runtime.Object), nil
 }
 
+// informerResyncPeriod is the resync period used by the test informers. We
+// want this period to be as short as possible to make the tests faster.
+// However, client-go imposes a minimum resync period of 1 second, so that
+// is the lowest we can go.
+// https://github.com/kubernetes/client-go/blob/5a019202120ab4dd7dfb3788e5cb87269f343ebe/tools/cache/shared_informer.go#L575
 const informerResyncPeriod = time.Second
 
 // Init will construct a new context for this builder and set default values
@@ -112,11 +115,10 @@ func (b *Builder) Init() {
 		}
 	}
 	if b.StringGenerator == nil {
-		b.StringGenerator = RandStringBytes
+		b.StringGenerator = rand.String
 	}
 	scheme := metadatafake.NewTestScheme()
 	metav1.AddMetaToScheme(scheme)
-	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
@@ -148,6 +150,7 @@ func (b *Builder) Init() {
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeGWClient().PrependReactor("create", "*", b.generateNameReactor)
+	b.FakeMetadataClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(b.Client, informerResyncPeriod, "")
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.GWShared = gwinformers.NewSharedInformerFactory(b.GWClient, informerResyncPeriod)
@@ -193,16 +196,12 @@ func (b *Builder) FakeCMInformerFactory() informers.SharedInformerFactory {
 	return b.Context.SharedInformerFactory
 }
 
-func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFunc) coretesting.ReactionFunc {
-	b.requiredReactors[testName] = false
-	return func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-		handled, ret, err = fn(action)
-		if !handled {
-			return
-		}
-		b.requiredReactors[testName] = true
-		return
-	}
+func (b *Builder) FakeMetadataClient() *metadatafake.FakeMetadataClient {
+	return b.Context.MetadataClient.(*metadatafake.FakeMetadataClient)
+}
+
+func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
+	return b.Context.DiscoveryClient.(*discoveryfake.Discovery)
 }
 
 // CheckAndFinish will run ensure: all reactors are called, all actions are
@@ -210,9 +209,6 @@ func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFu
 // It will then call the Builder's CheckFn, if defined.
 func (b *Builder) CheckAndFinish(args ...interface{}) {
 	defer b.Stop()
-	if err := b.AllReactorsCalled(); err != nil {
-		b.T.Errorf("Not all expected reactors were called: %v", err)
-	}
 	if err := b.AllActionsExecuted(); err != nil {
 		b.T.Errorf(err.Error())
 	}
@@ -226,16 +222,6 @@ func (b *Builder) CheckAndFinish(args ...interface{}) {
 	if b.CheckFn != nil {
 		b.CheckFn(b, args...)
 	}
-}
-
-func (b *Builder) AllReactorsCalled() error {
-	var errs []error
-	for n, reactorCalled := range b.requiredReactors {
-		if !reactorCalled {
-			errs = append(errs, fmt.Errorf("reactor not called: %s", n))
-		}
-	}
-	return utilerrors.NewAggregate(errs)
 }
 
 func (b *Builder) AllEventsCalled() error {
@@ -328,8 +314,16 @@ func (b *Builder) Start() {
 	b.Sync()
 }
 
+// Sync is a function used by tests to wait for all informers to be synced. This function
+// is called initially by the Start method, to wait for the caches to be populated. It is
+// also called directly by tests to wait for any updates made by the fake clients to be
+// reflected in the informer caches.
+// Sync calls the WaitForCacheSync method on all informers to make sure they have populated
+// their caches. The WaitForCacheSync method is only useful at startup. In order to wait
+// for updates made by the fake clients to be reflected in the informer caches, we need
+// to sleep for the informerResyncPeriod.
 func (b *Builder) Sync() {
-	if err := mustAllSyncString(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
+	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
@@ -338,22 +332,13 @@ func (b *Builder) Sync() {
 	if err := mustAllSync(b.GWShared.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for GWShared to sync: " + err.Error())
 	}
-	if err := mustAllSyncGVR(b.HTTP01ResourceMetadataInformersFactory.WaitForCacheSync(b.stopCh)); err != nil {
+	if err := mustAllSync(b.HTTP01ResourceMetadataInformersFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for MetadataInformerFactory to sync:" + err.Error())
 	}
-	if b.additionalSyncFuncs != nil {
-		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
-	}
-	time.Sleep(informerResyncPeriod)
-}
 
-// RegisterAdditionalSyncFuncs registers an additional InformerSynced function
-// with the builder.
-// When the Sync method is called, the builder will also wait for the given
-// listers to be synced as well as the listers that were registered with the
-// informer factories that the builder provides.
-func (b *Builder) RegisterAdditionalSyncFuncs(fns ...cache.InformerSynced) {
-	b.additionalSyncFuncs = append(b.additionalSyncFuncs, fns...)
+	// Wait for the informerResyncPeriod to make sure any update made by any of the fake clients
+	// is reflected in the informer caches.
+	time.Sleep(informerResyncPeriod)
 }
 
 func (b *Builder) Events() []string {
@@ -364,33 +349,7 @@ func (b *Builder) Events() []string {
 	return nil
 }
 
-func mustAllSync(in map[reflect.Type]bool) error {
-	var errs []error
-	for t, started := range in {
-		if !started {
-			errs = append(errs, fmt.Errorf("informer for %v not synced", t))
-		}
-	}
-	return utilerrors.NewAggregate(errs)
-}
-
-// We need three functions to parse map[schema.GroupVersionResource bool, map[reflect.Type]bool, map[string]bool
-// arguments- we cannot use generics here as reflect.Type is not a valid map key
-// for a generic parameter because it does not implement comparable.
-func mustAllSyncString(in map[string]bool) error {
-	var errs []error
-	for t, started := range in {
-		if !started {
-			errs = append(errs, fmt.Errorf("informer for %v not synced", t))
-		}
-	}
-	return utilerrors.NewAggregate(errs)
-}
-
-// We need three functions to parse map[reflect.Type]bool, map[string]bool
-// arguments- we cannot use generics here as reflect.Type is not a valid map key
-// for a generic parameter because it does not implement comparable.
-func mustAllSyncGVR(in map[schema.GroupVersionResource]bool) error {
+func mustAllSync[E comparable](in map[E]bool) error {
 	var errs []error
 	for t, started := range in {
 		if !started {

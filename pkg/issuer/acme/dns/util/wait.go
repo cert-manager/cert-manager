@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -255,7 +255,7 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 		return nil, 0, fmt.Errorf("dns: unexpected Content-Type %q; expected %q", ct, dohMimeType)
 	}
 
-	p, err = ioutil.ReadAll(resp.Body)
+	p, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, 0, err
 	}

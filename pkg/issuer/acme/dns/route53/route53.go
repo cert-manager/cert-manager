@@ -11,6 +11,8 @@ this directory.
 package route53
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,14 +21,15 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/aws/aws-sdk-go/service/sts/stsiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
+	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -37,7 +40,7 @@ const (
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers []string
-	client           *route53.Route53
+	client           *route53.Client
 	hostedZoneID     string
 	log              logr.Logger
 
@@ -50,27 +53,28 @@ type sessionProvider struct {
 	Ambient         bool
 	Region          string
 	Role            string
-	StsProvider     func(*session.Session) stsiface.STSAPI
+	StsProvider     func(aws.Config) StsClient
 	log             logr.Logger
 	userAgent       string
 }
 
-func (d *sessionProvider) GetSession() (*session.Session, error) {
+type StsClient interface {
+	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
+func (d *sessionProvider) GetSession() (aws.Config, error) {
 	if d.AccessKeyID == "" && d.SecretAccessKey == "" {
 		if !d.Ambient {
-			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
+			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
 		}
 	} else if d.AccessKeyID == "" || d.SecretAccessKey == "" {
 		// It's always an error to set one of those but not the other
-		return nil, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
+		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
 	}
 
 	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "")
 
-	config := aws.NewConfig()
-	sessionOpts := session.Options{
-		Config: *config,
-	}
+	var optFns []func(*config.LoadOptions) error
 
 	if useAmbientCredentials {
 		d.log.V(logf.DebugLevel).Info("using ambient credentials")
@@ -79,49 +83,44 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	} else {
 		d.log.V(logf.DebugLevel).Info("not using ambient credentials")
-		sessionOpts.Config.Credentials = credentials.NewStaticCredentials(d.AccessKeyID, d.SecretAccessKey, "")
-		// also disable 'ambient' region sources
-		sessionOpts.SharedConfigState = session.SharedConfigDisable
+		optFns = append(optFns, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(d.AccessKeyID, d.SecretAccessKey, "")))
 	}
 
-	sess, err := session.NewSessionWithOptions(sessionOpts)
+	cfg, err := config.LoadDefaultConfig(context.TODO(), optFns...)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create aws session: %s", err)
+		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
 	if d.Role != "" {
 		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
-		stsSvc := d.StsProvider(sess)
-		result, err := stsSvc.AssumeRole(&sts.AssumeRoleInput{
+		stsSvc := d.StsProvider(cfg)
+		result, err := stsSvc.AssumeRole(context.TODO(), &sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
 			RoleSessionName: aws.String("cert-manager"),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("unable to assume role: %s", err)
+			return aws.Config{}, fmt.Errorf("unable to assume role: %s", err)
 		}
 
-		creds := credentials.Value{
-			AccessKeyID:     *result.Credentials.AccessKeyId,
-			SecretAccessKey: *result.Credentials.SecretAccessKey,
-			SessionToken:    *result.Credentials.SessionToken,
-		}
-		sessionOpts.Config.Credentials = credentials.NewStaticCredentialsFromCreds(creds)
-
-		sess, err = session.NewSessionWithOptions(sessionOpts)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create aws session: %s", err)
-		}
+		cfg.Credentials = credentials.NewStaticCredentialsProvider(
+			*result.Credentials.AccessKeyId,
+			*result.Credentials.SecretAccessKey,
+			*result.Credentials.SessionToken,
+		)
 	}
 
 	// If ambient credentials aren't permitted, always set the region, even if to
 	// empty string, to avoid it falling back on the environment.
 	// this has to be set after session is constructed
 	if d.Region != "" || !useAmbientCredentials {
-		sess.Config.WithRegion(d.Region)
+		cfg.Region = d.Region
 	}
 
-	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(d.userAgent))
-	return sess, nil
+	cfg.APIOptions = append(cfg.APIOptions, func(stack *middleware.Stack) error {
+		return awsmiddleware.AddUserAgentKeyValue("cert-manager", d.userAgent)(stack)
+	})
+
+	return cfg, nil
 }
 
 func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool, userAgent string) (*sessionProvider, error) {
@@ -137,8 +136,8 @@ func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambie
 	}, nil
 }
 
-func defaultSTSProvider(sess *session.Session) stsiface.STSAPI {
-	return sts.New(sess)
+func defaultSTSProvider(cfg aws.Config) StsClient {
+	return sts.NewFromConfig(cfg)
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
@@ -154,12 +153,12 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 		return nil, err
 	}
 
-	sess, err := provider.GetSession()
+	cfg, err := provider.GetSession()
 	if err != nil {
 		return nil, err
 	}
 
-	client := route53.New(sess)
+	client := route53.NewFromConfig(cfg)
 
 	return &DNSProvider{
 		client:           client,
@@ -173,16 +172,16 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
+	return r.changeRecord(route53types.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
+	return r.changeRecord(route53types.ChangeActionDelete, fqdn, value, route53TTL)
 }
 
-func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
+func (r *DNSProvider) changeRecord(action route53types.ChangeAction, fqdn, value string, ttl int) error {
 	hostedZoneID, err := r.getHostedZoneID(fqdn)
 	if err != nil {
 		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %v", err)
@@ -191,26 +190,24 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	recordSet := newTXTRecordSet(fqdn, value, ttl)
 	reqParams := &route53.ChangeResourceRecordSetsInput{
 		HostedZoneId: aws.String(hostedZoneID),
-		ChangeBatch: &route53.ChangeBatch{
+		ChangeBatch: &route53types.ChangeBatch{
 			Comment: aws.String("Managed by cert-manager"),
-			Changes: []*route53.Change{
+			Changes: []route53types.Change{
 				{
-					Action:            &action,
+					Action:            action,
 					ResourceRecordSet: recordSet,
 				},
 			},
 		},
 	}
 
-	resp, err := r.client.ChangeResourceRecordSets(reqParams)
+	resp, err := r.client.ChangeResourceRecordSets(context.TODO(), reqParams)
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok {
-			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
-				r.log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
-				// If we try to delete something and get a 'InvalidChangeBatch' that
-				// means it's already deleted, no need to consider it an error.
-				return nil
-			}
+		if errors.Is(err, &route53types.InvalidChangeBatch{}) && action == route53types.ChangeActionDelete {
+			r.log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
+			// If we try to delete something and get a 'InvalidChangeBatch' that
+			// means it's already deleted, no need to consider it an error.
+			return nil
 		}
 		return fmt.Errorf("failed to change Route 53 record set: %v", removeReqID(err))
 
@@ -222,11 +219,11 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 		reqParams := &route53.GetChangeInput{
 			Id: statusID,
 		}
-		resp, err := r.client.GetChange(reqParams)
+		resp, err := r.client.GetChange(context.TODO(), reqParams)
 		if err != nil {
 			return false, fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))
 		}
-		if *resp.ChangeInfo.Status == route53.ChangeStatusInsync {
+		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {
 			return true, nil
 		}
 		return false, nil
@@ -247,7 +244,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	reqParams := &route53.ListHostedZonesByNameInput{
 		DNSName: aws.String(util.UnFqdn(authZone)),
 	}
-	resp, err := r.client.ListHostedZonesByName(reqParams)
+	resp, err := r.client.ListHostedZonesByName(context.TODO(), reqParams)
 	if err != nil {
 		return "", removeReqID(err)
 	}
@@ -256,7 +253,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	var hostedZones []string
 	for _, hostedZone := range resp.HostedZones {
 		// .Name has a trailing dot
-		if !*hostedZone.Config.PrivateZone {
+		if !hostedZone.Config.PrivateZone {
 			zoneToID[*hostedZone.Name] = *hostedZone.Id
 			hostedZones = append(hostedZones, *hostedZone.Name)
 		}
@@ -272,21 +269,19 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return "", fmt.Errorf("zone %s not found in Route 53 for domain %s", authZone, fqdn)
 	}
 
-	if strings.HasPrefix(hostedZoneID, "/hostedzone/") {
-		hostedZoneID = strings.TrimPrefix(hostedZoneID, "/hostedzone/")
-	}
+	hostedZoneID = strings.TrimPrefix(hostedZoneID, "/hostedzone/")
 
 	return hostedZoneID, nil
 }
 
-func newTXTRecordSet(fqdn, value string, ttl int) *route53.ResourceRecordSet {
-	return &route53.ResourceRecordSet{
+func newTXTRecordSet(fqdn, value string, ttl int) *route53types.ResourceRecordSet {
+	return &route53types.ResourceRecordSet{
 		Name:             aws.String(fqdn),
-		Type:             aws.String(route53.RRTypeTxt),
+		Type:             route53types.RRTypeTxt,
 		TTL:              aws.Int64(int64(ttl)),
 		MultiValueAnswer: aws.Bool(true),
 		SetIdentifier:    aws.String(value),
-		ResourceRecords: []*route53.ResourceRecord{
+		ResourceRecords: []route53types.ResourceRecord{
 			{Value: aws.String(value)},
 		},
 	}
@@ -297,18 +292,15 @@ func newTXTRecordSet(fqdn, value string, ttl int) *route53.ResourceRecordSet {
 // avoid spurious challenge updates.
 //
 // The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from an aws-sdk-go func.
+// we have a non-nil error coming from an aws-sdk-go func. The passed error
+// is modified in place. This function does not work in case the full error
+// message is pre-generated at construction time (instead of when Error() is
+// called), which is the case for eg. fmt.Errorf("error message: %w", err).
 func removeReqID(err error) error {
-	// NOTE(mael): I first tried to unwrap the RequestFailure to get rid of
-	// this request id. But the concrete type requestFailure is private, so
-	// I can't unwrap it. Instead, I recreate a new awserr.baseError. It's
-	// also a awserr.Error except it doesn't have the request id.
-	//
-	// Also note that we do not give the origErr to awserr.New. If we did,
-	// err.Error() would show the origErr, which we don't want since it
-	// contains a request id.
-	if e, ok := err.(awserr.RequestFailure); ok {
-		return awserr.New(e.Code(), e.Message(), nil)
+	var responseError *awshttp.ResponseError
+	if errors.As(err, &responseError) {
+		// remove the request id from the error message
+		responseError.RequestID = "<REDACTED>"
 	}
 	return err
 }

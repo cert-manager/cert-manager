@@ -267,17 +267,17 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 	log.V(logf.DebugLevel).Info("order URL not set, submitting Order to ACME server")
 
-	dnsIdentifierSet := sets.NewString(o.Spec.DNSNames...)
+	dnsIdentifierSet := sets.New[string](o.Spec.DNSNames...)
 	if o.Spec.CommonName != "" {
 		dnsIdentifierSet.Insert(o.Spec.CommonName)
 	}
-	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", dnsIdentifierSet.List())
+	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
 
-	ipIdentifierSet := sets.NewString(o.Spec.IPAddresses...)
-	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", dnsIdentifierSet.List())
+	ipIdentifierSet := sets.New[string](o.Spec.IPAddresses...)
+	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", sets.List(dnsIdentifierSet))
 
-	authzIDs := acmeapi.DomainIDs(dnsIdentifierSet.List()...)
-	authzIDs = append(authzIDs, acmeapi.IPIDs(ipIdentifierSet.List()...)...)
+	authzIDs := acmeapi.DomainIDs(sets.List(dnsIdentifierSet)...)
+	authzIDs = append(authzIDs, acmeapi.IPIDs(sets.List(ipIdentifierSet)...)...)
 	// create a new order with the acme server
 
 	var options []acmeapi.OrderOption

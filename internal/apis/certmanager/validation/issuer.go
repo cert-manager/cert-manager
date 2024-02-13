@@ -136,13 +136,14 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 
 		el = append(el, ValidateSecretKeySelector(&eab.Key, eabFldPath.Child("keySecretRef"))...)
 
+		// nolint:staticcheck // SA1019 accessing the deprecated eab.KeyAlgorithm field is intentional here.
 		if len(eab.KeyAlgorithm) != 0 {
 			warnings = append(warnings, deprecatedACMEEABKeyAlgorithmField)
 		}
 	}
 
 	for i, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
+		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
 	}
 
 	return el, warnings
@@ -242,6 +243,11 @@ func ValidateCAIssuerConfig(iss *certmanager.CAIssuer, fldPath *field.Path) fiel
 	for i, ocspURL := range iss.OCSPServers {
 		if ocspURL == "" {
 			el = append(el, field.Invalid(fldPath.Child("ocspServer").Index(i), ocspURL, "must be a valid URL, e.g., http://ocsp.int-x3.letsencrypt.org"))
+		}
+	}
+	for i, issuerURL := range iss.IssuingCertificateURLs {
+		if issuerURL == "" {
+			el = append(el, field.Invalid(fldPath.Child("issuingCertificateURLs").Index(i), issuerURL, "must be a valid URL"))
 		}
 	}
 	return el

@@ -32,13 +32,13 @@ import (
 	logsapi "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/klogr"
+	"k8s.io/klog/v2/textlogger"
 
 	"github.com/cert-manager/cert-manager/pkg/api"
 )
 
 var (
-	Log = klogr.NewWithOptions().WithName("cert-manager")
+	Log = textlogger.NewLogger(textlogger.NewConfig()).WithName("cert-manager")
 )
 
 const (
@@ -91,6 +91,7 @@ func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 			"logtostderr", "one_output", "skip_headers", "skip_log_headers", "stderrthreshold":
 			pf := pflag.PFlagFromGoFlag(f)
 			pf.Deprecated = "this flag may be removed in the future"
+			pf.Hidden = true
 			fs.AddFlag(pf)
 		}
 	})

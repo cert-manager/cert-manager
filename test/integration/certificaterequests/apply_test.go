@@ -47,7 +47,7 @@ func Test_Apply(t *testing.T) {
 	restConfig, stopFn := framework.RunControlPlane(t, ctx)
 	defer stopFn()
 
-	kubeClient, _, cmClient, _ := framework.NewClients(t, restConfig)
+	kubeClient, _, cmClient, _, _ := framework.NewClients(t, restConfig)
 
 	t.Log("creating test Namespace")
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}

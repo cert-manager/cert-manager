@@ -46,6 +46,11 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 		t.Fatalf("error creating test namespace %q: %v", name, err)
 	}
 
+	kubectl, err := f.adminUser.Kubectl()
+	if err != nil {
+		t.Fatalf("enable to create kubectl instance: %s", err)
+	}
+
 	if f.kubectlManifestsPath != "" {
 		if err := filepath.Walk(f.kubectlManifestsPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -61,8 +66,7 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 				t.Logf("skipping file %q with unrecognised extension", path)
 				return nil
 			}
-
-			_, _, err = f.environment.ControlPlane.KubeCtl().Run("apply", "--namespace", name, "-f", path)
+			_, _, err = kubectl.Run("apply", "--namespace", name, "-f", path)
 			if err != nil {
 				return err
 			}

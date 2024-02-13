@@ -28,6 +28,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -36,7 +37,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -131,7 +131,7 @@ func (s *Suite) Define() {
 				name:    "should issue an RSA certificate for a single Common Name",
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
-					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
+					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + rand.String(10))}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -143,7 +143,7 @@ func (s *Suite) Define() {
 				name:    "should issue an ECDSA certificate for a single Common Name",
 				keyAlgo: x509.ECDSA,
 				csrModifiers: func() []gen.CSRModifier {
-					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
+					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + rand.String(10))}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -155,7 +155,7 @@ func (s *Suite) Define() {
 				name:    "should issue an Ed25519 certificate for a single Common Name",
 				keyAlgo: x509.Ed25519,
 				csrModifiers: func() []gen.CSRModifier {
-					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
+					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + rand.String(10))}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -168,7 +168,7 @@ func (s *Suite) Define() {
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
-						gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
+						gen.SetCSRCommonName("test-common-name-" + rand.String(10)),
 						gen.SetCSRIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv4(8, 8, 8, 8)),
 					}
 				},
@@ -197,7 +197,7 @@ func (s *Suite) Define() {
 				keyAlgo: x509.RSA,
 				csrModifiers: func() []gen.CSRModifier {
 					return []gen.CSRModifier{
-						gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
+						gen.SetCSRCommonName("test-common-name-" + rand.String(10)),
 						gen.SetCSRURIs(sharedURI),
 					}
 				},

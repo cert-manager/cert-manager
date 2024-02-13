@@ -1,0 +1,50 @@
+{{- if and .Values.prometheus.enabled (and .Values.prometheus.podmonitor.enabled .Values.prometheus.servicemonitor.enabled) }}
+{{- fail "Either .Values.prometheus.podmonitor.enabled or .Values.prometheus.servicemonitor.enabled can be enabled at a time, but not both." }}
+{{- else if and .Values.prometheus.enabled .Values.prometheus.podmonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ template "cert-manager.fullname" . }}
+{{- if .Values.prometheus.podmonitor.namespace }}
+  namespace: {{ .Values.prometheus.podmonitor.namespace }}
+{{- else }}
+  namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+    prometheus: {{ .Values.prometheus.podmonitor.prometheusInstance }}
+    {{- with .Values.prometheus.podmonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- if .Values.prometheus.podmonitor.annotations }}
+  annotations:
+    {{- with .Values.prometheus.podmonitor.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
+spec:
+  jobLabel: {{ template "cert-manager.fullname" . }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "controller"
+{{- if .Values.prometheus.podmonitor.namespace }}
+  namespaceSelector:
+    matchNames:
+      - {{ include "cert-manager.namespace" . }}
+{{- end }}
+  podMetricsEndpoints:
+    - port: http-metrics
+      path: {{ .Values.prometheus.podmonitor.path }}
+      interval: {{ .Values.prometheus.podmonitor.interval }}
+      scrapeTimeout: {{ .Values.prometheus.podmonitor.scrapeTimeout }}
+      honorLabels: {{ .Values.prometheus.podmonitor.honorLabels }}
+      {{- with .Values.prometheus.servicemonitor.endpointAdditionalProperties }}
+      {{- toYaml . | nindent 4 }}
+      {{- end }}
+{{- end }}

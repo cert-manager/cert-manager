@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -41,7 +42,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/coreclients"
@@ -611,7 +611,7 @@ func TestAcme_Setup(t *testing.T) {
 			}
 
 			// Verify that the expected events were recorded.
-			if !util.EqualSorted(test.expectedEvents, recorder.Events) {
+			if !slices.Equal(test.expectedEvents, recorder.Events) {
 				t.Errorf("Expected events:\n%+#v\ngot:%+#v",
 					test.expectedEvents,
 					recorder.Events)

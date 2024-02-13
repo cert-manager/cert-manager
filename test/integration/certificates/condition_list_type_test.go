@@ -53,11 +53,11 @@ func Test_ConditionsListType(t *testing.T) {
 	// Build clients with different field managers.
 	aliceRestConfig := util.RestConfigWithUserAgent(restConfig, "alice")
 	aliceFieldManager := util.PrefixFromUserAgent(aliceRestConfig.UserAgent)
-	aliceKubeClient, _, aliceCMClient, _ := framework.NewClients(t, aliceRestConfig)
+	aliceKubeClient, _, aliceCMClient, _, _ := framework.NewClients(t, aliceRestConfig)
 
 	bobRestConfig := util.RestConfigWithUserAgent(restConfig, "bob")
 	bobFieldManager := util.PrefixFromUserAgent(bobRestConfig.UserAgent)
-	_, _, bobCMClient, _ := framework.NewClients(t, bobRestConfig)
+	_, _, bobCMClient, _, _ := framework.NewClients(t, bobRestConfig)
 
 	t.Log("creating test Namespace")
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}

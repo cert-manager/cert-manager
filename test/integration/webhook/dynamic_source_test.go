@@ -33,8 +33,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
-	"github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 )
 
 // Ensure that when the source is running against an apiserver, it bootstraps
@@ -46,7 +46,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -75,7 +75,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := source.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
@@ -111,7 +111,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	config, stop := framework.RunControlPlane(t, ctx)
 	defer stop()
 
-	kubeClient, _, _, _ := framework.NewClients(t, config)
+	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -140,7 +140,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := source.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()

@@ -19,7 +19,7 @@ package util
 import (
 	"fmt"
 
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 // RandomSubdomain returns a new subdomain domain of the domain suffix.
@@ -32,5 +32,5 @@ func RandomSubdomain(domain string) string {
 // subdomain has `length` number of characters.
 // e.g. abcdefghij.example.com.
 func RandomSubdomainLength(domain string, length int) string {
-	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(length), domain)
+	return fmt.Sprintf("%s.%s", rand.String(length), domain)
 }

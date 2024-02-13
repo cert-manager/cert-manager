@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
+	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -53,14 +53,14 @@ type controller struct {
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	c.gatewayLister = ctx.GWShared.Gateway().V1beta1().Gateways().Lister()
+	c.gatewayLister = ctx.GWShared.Gateway().V1().Gateways().Lister()
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
 
 	// We don't need to requeue Gateways on "Deleted" events, since our Sync
 	// function does nothing when the Gateway lister returns "not found". But we
 	// still do it for consistency with the rest of the controllers.
-	ctx.GWShared.Gateway().V1beta1().Gateways().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+	ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: c.queue,
 	})
 
@@ -79,7 +79,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	})
 
 	mustSync := []cache.InformerSynced{
-		ctx.GWShared.Gateway().V1beta1().Gateways().Informer().HasSynced,
+		ctx.GWShared.Gateway().V1().Gateways().Informer().HasSynced,
 		ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().HasSynced,
 	}
 

@@ -28,7 +28,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
@@ -45,8 +47,23 @@ import (
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/server"
+	"github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
+	"github.com/go-logr/logr"
+)
+
+const (
+	// This is intended to mitigate "slowloris" attacks by limiting the time a
+	// deliberately slow client can spend sending HTTP headers.
+	// This default value is copied from:
+	// * kubernetes api-server:
+	//   https://github.com/kubernetes/kubernetes/blob/9e028b40b9e970142191259effe796b3dab39828/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L165-L173
+	// * controller-runtime:
+	//   https://github.com/kubernetes-sigs/controller-runtime/blob/1ea2be573f7887a9fbd766e9a921c5af344da6eb/pkg/internal/httpserver/server.go#L14
+	defaultReadHeaderTimeout = 32 * time.Second
 )
 
 func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
@@ -69,10 +86,29 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 	}
 
 	enabledControllers := options.EnabledControllers(opts)
-	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
+	log.Info(fmt.Sprintf("enabled controllers: %s", sets.List(enabledControllers)))
+
+	// start the CertificateSource if provided
+	certificateSource := buildCertificateSource(log, opts.MetricsTLSConfig, ctx.RESTConfig)
+	if certificateSource != nil {
+		log.V(logf.InfoLevel).Info("listening for secure connections", "address", opts.MetricsListenAddress)
+		g.Go(func() error {
+			if err := certificateSource.Start(rootCtx); (err != nil) && !errors.Is(err, context.Canceled) {
+				return err
+			}
+			return nil
+		})
+	} else {
+		log.V(logf.InfoLevel).Info("listening for insecure connections", "address", opts.MetricsListenAddress)
+	}
 
 	// Start metrics server
-	metricsLn, err := net.Listen("tcp", opts.MetricsListenAddress)
+	metricsLn, err := server.Listen("tcp", opts.MetricsListenAddress,
+		server.WithCertificateSource(certificateSource),
+		server.WithTLSCipherSuites(opts.MetricsTLSConfig.CipherSuites),
+		server.WithTLSMinVersion(opts.MetricsTLSConfig.MinTLSVersion),
+	)
+
 	if err != nil {
 		return fmt.Errorf("failed to listen on prometheus address %s: %v", opts.MetricsListenAddress, err)
 	}
@@ -107,7 +143,8 @@ func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
 		// Add pprof endpoints to this mux
 		profiling.Install(profilerMux)
 		profilerServer := &http.Server{
-			Handler: profilerMux,
+			Handler:           profilerMux,
+			ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 		}
 
 		g.Go(func() error {
@@ -372,5 +409,30 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 
 	le.Run(ctx)
 
+	return nil
+}
+
+func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
+	switch {
+	case tlsConfig.FilesystemConfigProvided():
+		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", tlsConfig.Filesystem.KeyFile, "certificate", tlsConfig.Filesystem.CertFile)
+		return &tls.FileCertificateSource{
+			CertPath: tlsConfig.Filesystem.CertFile,
+			KeyPath:  tlsConfig.Filesystem.KeyFile,
+		}
+	case tlsConfig.DynamicConfigProvided():
+		log.V(logf.InfoLevel).Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", tlsConfig.Dynamic.SecretNamespace, "secret_name", tlsConfig.Dynamic.SecretName)
+		return &tls.DynamicSource{
+			DNSNames: tlsConfig.Dynamic.DNSNames,
+			Authority: &authority.DynamicAuthority{
+				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
+				SecretName:      tlsConfig.Dynamic.SecretName,
+				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
+				RESTConfig:      restCfg,
+			},
+		}
+	default:
+		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
+	}
 	return nil
 }

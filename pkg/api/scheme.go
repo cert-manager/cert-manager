@@ -17,14 +17,11 @@ limitations under the License.
 package api
 
 import (
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
 	cmacmev1alpha2 "github.com/cert-manager/cert-manager/internal/apis/acme/v1alpha2"
 	cmacmev1alpha3 "github.com/cert-manager/cert-manager/internal/apis/acme/v1alpha3"
@@ -61,9 +58,6 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	cmacmev1.AddToScheme,
 	cmmeta.AddToScheme,
 	whapi.AddToScheme,
-	kscheme.AddToScheme,
-	apireg.AddToScheme,
-	apiext.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

@@ -23,13 +23,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	vaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/venafi"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
@@ -78,7 +78,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)
-		cert.Spec.CommonName = cmutil.RandStringRunes(10) + ".venafi-e2e.example"
+		cert.Spec.CommonName = rand.String(10) + ".venafi-e2e.example"
 
 		By("Creating a Certificate")
 		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})

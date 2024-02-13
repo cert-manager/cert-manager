@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
@@ -33,7 +34,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	csrutil "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
-	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
@@ -140,11 +140,11 @@ func (k *kubernetes) initVault(f *framework.Framework, boundNS string) {
 	By("Creating a ServiceAccount for Vault authentication")
 
 	// boundNS is name of the service account for which a Secret containing the service account token will be created
-	boundSA := "vault-issuer-" + util.RandStringRunes(5)
+	boundSA := "vault-issuer-" + rand.String(5)
 	err := k.setup.CreateKubernetesRole(f.KubeClientSet, boundNS, boundSA)
 	Expect(err).NotTo(HaveOccurred())
 
-	k.saTokenSecretName = "vault-sa-secret-" + util.RandStringRunes(5)
+	k.saTokenSecretName = "vault-sa-secret-" + rand.String(5)
 	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(context.TODO(), vault.NewVaultKubernetesSecret(k.saTokenSecretName, boundSA), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }

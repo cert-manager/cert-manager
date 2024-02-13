@@ -27,6 +27,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
 	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
@@ -97,6 +98,10 @@ to renew certificates at an appropriate time before expiry.`,
 				},
 			); err != nil {
 				return err
+			}
+
+			if err := validation.ValidateControllerConfiguration(controllerConfig); err != nil {
+				return fmt.Errorf("error validating flags: %w", err)
 			}
 
 			if err := logf.ValidateAndApplyAsField(&controllerConfig.Logging, field.NewPath("logging")); err != nil {

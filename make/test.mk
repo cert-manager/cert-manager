@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export KUBEBUILDER_ASSETS=$(PWD)/$(BINDIR)/tools
+export KUBEBUILDER_ASSETS=$(PWD)/$(bin_dir)/tools
 
 # GOTESTSUM_CI_FLAGS contains flags which are common to invocations of gotestsum in CI environments
 GOTESTSUM_CI_FLAGS := --junitfile-testsuite-name short --junitfile-testcase-classname relative
@@ -56,7 +56,6 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 	cd cmd/acmesolver && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-acmesolver.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd cmd/cainjector && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-cainjector.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd cmd/controller && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-controller.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
-	cd cmd/ctl        && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-ctl.xml        $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd cmd/webhook    && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-webhook.xml    $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd test/integration && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-integration.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 
@@ -66,7 +65,7 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-cmctl unit-test-controller unit-test-webhook | $(NEEDS_GOTESTSUM)
+unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook | $(NEEDS_GOTESTSUM)
 
 .PHONY: unit-test-core-module
 unit-test-core-module: | $(NEEDS_GOTESTSUM)
@@ -80,10 +79,6 @@ unit-test-acmesolver: | $(NEEDS_GOTESTSUM)
 unit-test-cainjector: | $(NEEDS_GOTESTSUM)
 	cd cmd/cainjector && $(GOTESTSUM) ./...
 
-.PHONY: unit-test-cmctl
-unit-test-cmctl: | $(NEEDS_GOTESTSUM)
-	cd cmd/ctl && $(GOTESTSUM) ./...
-
 .PHONY: unit-test-controller
 unit-test-controller: | $(NEEDS_GOTESTSUM)
 	cd cmd/controller && $(GOTESTSUM) ./...
@@ -93,9 +88,7 @@ unit-test-webhook: | $(NEEDS_GOTESTSUM)
 	cd cmd/webhook && $(GOTESTSUM) ./...
 
 .PHONY: setup-integration-tests
-setup-integration-tests: test/integration/versionchecker/testdata/test_manifests.tar templated-crds
-	@$(eval GIT_TAGS_FILE := $(BINDIR)/scratch/git/upstream-tags.1.txt)
-	@echo -e "\033[0;33mLatest known tag for integration tests is $(shell tail -1 $(GIT_TAGS_FILE)); if that seems out-of-date,\npull latest tags, run 'rm $(GIT_TAGS_FILE)' and retest\033[0m"
+setup-integration-tests: templated-crds
 
 .PHONY: integration-test
 ## Same as `test` but only run the integration tests. By "integration tests",
@@ -125,8 +118,9 @@ E2E_OPENSHIFT ?= false
 ## For more information about GINKGO_FOCUS, see "make/e2e.sh --help".
 ##
 ## @category Development
-e2e: $(BINDIR)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
-	make/e2e.sh
+e2e: $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
+	BINDIR=$(bin_dir) \
+		make/e2e.sh
 
 .PHONY: e2e-ci
 e2e-ci: | $(NEEDS_GO)
@@ -134,9 +128,9 @@ e2e-ci: | $(NEEDS_GO)
 	$(MAKE) e2e-setup-kind e2e-setup
 	make/e2e-ci.sh
 
-$(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
+$(bin_dir)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(bin_dir)/test
 	CGO_ENABLED=0 $(GINKGO) build --ldflags="-w -s" --trimpath --tags e2e_test test/e2e
-	mv test/e2e/e2e.test $(BINDIR)/test/e2e.test
+	mv test/e2e/e2e.test $(bin_dir)/test/e2e.test
 
 .PHONY: e2e-build
 ## Build an end-to-end test binary
@@ -160,35 +154,14 @@ $(BINDIR)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(BINDIR)/test
 ##  ./_bin/test/e2e.test --repo-root=/dev/null --ginkgo.focus="CA\ Issuer" --ginkgo.skip="Gateway"
 ##
 ## @category Development
-e2e-build: $(BINDIR)/test/e2e.test
+e2e-build: $(bin_dir)/test/e2e.test
 
 .PHONY: test-upgrade
-test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
-	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(BINDIR)/cmctl/cmctl-$(HOST_OS)-$(HOST_ARCH)
+test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(NEEDS_CMCTL)
+	./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(CMCTL)
 
-test/integration/versionchecker/testdata/test_manifests.tar: $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/yaml/cert-manager.yaml
-	@# Remove the temp files if they exist
-	rm -f $(BINDIR)/scratch/versionchecker-test-manifests.tar $(BINDIR)/scratch/$(RELEASE_VERSION).yaml
-	@# Copy the old CRDs tar and append the currentl release version to it
-	cp $(BINDIR)/scratch/oldcrds.tar $(BINDIR)/scratch/versionchecker-test-manifests.tar
-	cp $(BINDIR)/yaml/cert-manager.yaml $(BINDIR)/scratch/$(RELEASE_VERSION).yaml
-	tar --append -f $(BINDIR)/scratch/versionchecker-test-manifests.tar -C $(BINDIR)/scratch ./$(RELEASE_VERSION).yaml
-	cp $(BINDIR)/scratch/versionchecker-test-manifests.tar $@
-
-$(BINDIR)/scratch/oldcrds.tar: $(BINDIR)/scratch/git/upstream-tags.1.txt | $(BINDIR)/scratch/oldcrds
-	@# First, download the CRDs for all releases listed in upstream-tags
-	<$(BINDIR)/scratch/git/upstream-tags.1.txt xargs -I% -P5 \
-		./hack/fetch-old-crd.sh \
-		"https://github.com/cert-manager/cert-manager/releases/download/%/cert-manager.yaml" \
-		$(BINDIR)/scratch/oldcrds/%.yaml
-	@# Next, tar up the old CRDs together
-	tar cf $@ -C $(BINDIR)/scratch/oldcrds .
-
-$(BINDIR)/scratch/oldcrds:
+$(bin_dir)/test:
 	@mkdir -p $@
 
-$(BINDIR)/test:
-	@mkdir -p $@
-
-$(BINDIR)/testlogs:
+$(bin_dir)/testlogs:
 	@mkdir -p $@

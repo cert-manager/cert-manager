@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/venafi"
@@ -30,7 +31,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
@@ -61,7 +61,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		CreateIssuerFunc:    venafiIssuer.createIssuer,
 		DeleteIssuerFunc:    venafiIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
-		DomainSuffix:        fmt.Sprintf("%s-venafi-e2e", cmutil.RandStringRunes(5)),
+		DomainSuffix:        fmt.Sprintf("%s-venafi-e2e", rand.String(5)),
 	}).Define()
 
 	venafiClusterIssuer := new(tpp)
@@ -70,7 +70,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		CreateIssuerFunc:    venafiClusterIssuer.createClusterIssuer,
 		DeleteIssuerFunc:    venafiClusterIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
-		DomainSuffix:        fmt.Sprintf("%s-venafi-e2e", cmutil.RandStringRunes(5)),
+		DomainSuffix:        fmt.Sprintf("%s-venafi-e2e", rand.String(5)),
 	}).Define()
 })
 

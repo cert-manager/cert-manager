@@ -55,7 +55,7 @@ type CertificateList struct {
 	metav1.ListMeta
 
 	// List of Certificates
-	Items []Certificate `json:"items"`
+	Items []Certificate
 }
 
 type PrivateKeyAlgorithm string
@@ -162,10 +162,18 @@ type CertificateSpec struct {
 	IPAddresses []string
 
 	// Requested URI subject alternative names.
-	URISANs []string
+	URIs []string
 
 	// Requested email subject alternative names.
-	EmailSANs []string
+	EmailAddresses []string
+
+	// `otherNames` is an escape hatch for subject alternative names (SANs) which allows any string-like
+	// otherName as specified in RFC 5280 (https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.6).
+	// All `otherName`s must include an OID and a UTF-8 string value. For example, the OID for the UPN
+	// `otherName` is "1.3.6.1.4.1.311.20.2.3".
+	// No validation is performed on the given UTF-8 string, so users must ensure that the value is correct before use
+	// +optional
+	OtherNames []OtherName `json:"otherNames,omitempty"`
 
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
@@ -236,6 +244,26 @@ type CertificateSpec struct {
 	// `--feature-gates=AdditionalCertificateOutputFormats=true` option set on both
 	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
+
+	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
+	// More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+	//
+	// This is an Alpha Feature and is only enabled with the
+	// `--feature-gates=NameConstraints=true` option set on both
+	// the controller and webhook components.
+	// +optional
+	NameConstraints *NameConstraints
+}
+
+type OtherName struct {
+	// OID is the object identifier for the otherName SAN.
+	// The object identifier must be expressed as a dotted string, for
+	// example, "1.2.840.113556.1.4.221".
+	OID string `json:"oid,omitempty"`
+
+	// utf8Value is the string value of the otherName SAN. Any UTF-8 string can be used, but no
+	// validation is performed.
+	UTF8Value string `json:"utf8Value,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -401,7 +429,31 @@ type PKCS12Keystore struct {
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the PKCS12 keystore.
 	PasswordSecretRef cmmeta.SecretKeySelector
+
+	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
+	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
+	//
+	// If provided, allowed values are:
+	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
+	// `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility.
+	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
+	// (eg. because of company policy). Please note that the security of the algorithm is not that important
+	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	Profile PKCS12Profile
 }
+
+type PKCS12Profile string
+
+const (
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#LegacyRC2
+	LegacyRC2PKCS12Profile PKCS12Profile = "LegacyRC2"
+
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#LegacyDES
+	LegacyDESPKCS12Profile PKCS12Profile = "LegacyDES"
+
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
+	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
+)
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
@@ -530,4 +582,42 @@ type CertificateSecretTemplate struct {
 	// Labels is a key value map to be copied to the target Kubernetes Secret.
 	// +optional
 	Labels map[string]string
+}
+
+// NameConstraints is a type to represent x509 NameConstraints
+type NameConstraints struct {
+	// if true then the name constraints are marked critical.
+	//
+	// +optional
+	Critical bool
+	// Permitted contains the constraints in which the names must be located.
+	//
+	// +optional
+	Permitted *NameConstraintItem
+	// Excluded contains the constraints which must be disallowed. Any name matching a
+	// restriction in the excluded field is invalid regardless
+	// of information appearing in the permitted
+	//
+	// +optional
+	Excluded *NameConstraintItem
+}
+
+type NameConstraintItem struct {
+	// DNSDomains is a list of DNS domains that are permitted or excluded.
+	//
+	// +optional
+	DNSDomains []string
+	// IPRanges is a list of IP Ranges that are permitted or excluded.
+	// This should be a valid CIDR notation.
+	//
+	// +optional
+	IPRanges []string
+	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
+	//
+	// +optional
+	EmailAddresses []string
+	// URIDomains is a list of URI domains that are permitted or excluded.
+	//
+	// +optional
+	URIDomains []string
 }

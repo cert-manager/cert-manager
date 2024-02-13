@@ -24,7 +24,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog/v2/klogr"
+	"k8s.io/klog/v2/ktesting"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -129,7 +129,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 			builder.Start()
 
 			queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-			handleSecretReferenceWorkFunc(klogr.New(), lister, helper, queue,
+			handleSecretReferenceWorkFunc(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, queue,
 				controllerpkg.IssuerOptions{ClusterResourceNamespace: "test-namespace"},
 			)(test.secret)
 			require.Equal(t, len(test.expectedQueue), queue.Len())
@@ -338,7 +338,7 @@ func Test_certificatesRequestsForSecret(t *testing.T) {
 
 			builder.Start()
 
-			affected, err := certificateSigningRequestsForSecret(klogr.New(), lister, helper, secret.DeepCopy(), controllerpkg.IssuerOptions{
+			affected, err := certificateSigningRequestsForSecret(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, secret.DeepCopy(), controllerpkg.IssuerOptions{
 				ClusterResourceNamespace: test.clusterResourceNamespace,
 			})
 

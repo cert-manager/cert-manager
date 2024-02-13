@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -194,7 +194,7 @@ func TestComputeSecureUniqueDeterministicNameFromData(t *testing.T) {
 	}
 
 	aString64 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	randomString64 := cmutil.RandStringRunes(64)
+	randomString64 := rand.String(64)
 
 	tests := []testcase{
 		{
@@ -282,7 +282,7 @@ func TestComputeSecureUniqueDeterministicNameFromData(t *testing.T) {
 	}
 
 	aString70 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	randomString70 := cmutil.RandStringRunes(70)
+	randomString70 := rand.String(70)
 
 	// Test that the output is unique for different inputs
 	inputs := []string{

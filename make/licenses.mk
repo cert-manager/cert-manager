@@ -19,20 +19,20 @@
 LICENSE_YEAR=2022
 
 # Creates the boilerplate header for YAML files from the template in hack/
-$(BINDIR)/scratch/license.yaml: hack/boilerplate-yaml.txt | $(BINDIR)/scratch
+$(bin_dir)/scratch/license.yaml: hack/boilerplate-yaml.txt | $(bin_dir)/scratch
 	sed -e "s/YEAR/$(LICENSE_YEAR)/g" < $< > $@
 
 # The references LICENSES file is 1.4MB at the time of writing. Bundling it into every container image
 # seems wasteful in terms of bytes stored and bytes transferred on the wire just to add a file
 # which presumably nobody will ever read or care about. Instead, just add a little footnote pointing
 # to the cert-manager repo in case anybody actually decides that they care.
-$(BINDIR)/scratch/license-footnote.yaml: | $(BINDIR)/scratch
+$(bin_dir)/scratch/license-footnote.yaml: | $(bin_dir)/scratch
 	@echo -e "# To view licenses for cert-manager dependencies, see the LICENSES file in the\n# cert-manager repo: https://github.com/cert-manager/cert-manager/blob/$(GITCOMMIT)/LICENSES" > $@
 
-$(BINDIR)/scratch/cert-manager.license: $(BINDIR)/scratch/license.yaml $(BINDIR)/scratch/license-footnote.yaml | $(BINDIR)/scratch
+$(bin_dir)/scratch/cert-manager.license: $(bin_dir)/scratch/license.yaml $(bin_dir)/scratch/license-footnote.yaml | $(bin_dir)/scratch
 	cat $^ > $@
 
-$(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footnote.yaml | $(BINDIR)/scratch
+$(bin_dir)/scratch/cert-manager.licenses_notice: $(bin_dir)/scratch/license-footnote.yaml | $(bin_dir)/scratch
 	cp $< $@
 
 # Create a go.work file so that go-licenses can discover the LICENCE file of the
@@ -45,18 +45,18 @@ $(BINDIR)/scratch/cert-manager.licenses_notice: $(BINDIR)/scratch/license-footno
 # The go.work file is in a non-standard location, because we made a decision not
 # to commit a go.work file to the repository root for reasons given in:
 # https://github.com/cert-manager/cert-manager/pull/5935
-LICENSES_GO_WORK := $(BINDIR)/scratch/LICENSES.go.work
-$(LICENSES_GO_WORK): $(BINDIR)/scratch
+LICENSES_GO_WORK := $(bin_dir)/scratch/LICENSES.go.work
+$(LICENSES_GO_WORK): $(bin_dir)/scratch
 	$(MAKE) go-workspace GOWORK=$(abspath $@)
 
-LICENSES $(BINDIR)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
-LICENSES $(BINDIR)/scratch/LATEST-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
+LICENSES $(bin_dir)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
+LICENSES $(bin_dir)/scratch/LATEST-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
 	GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > $@
 
-cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: export GOWORK=$(abspath $(LICENSES_GO_WORK))
-cmd/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
+cmd/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%: export GOWORK=$(abspath $(LICENSES_GO_WORK))
+cmd/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
 	cd cmd/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@
 
-test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: export GOWORK=$(abspath $(LICENSES_GO_WORK))
-test/%/LICENSES $(BINDIR)/scratch/LATEST-LICENSES-%-tests: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
+test/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%-tests: export GOWORK=$(abspath $(LICENSES_GO_WORK))
+test/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%-tests: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
 	cd test/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@

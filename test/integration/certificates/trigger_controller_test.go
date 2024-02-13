@@ -58,7 +58,7 @@ func TestTriggerController(t *testing.T) {
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	namespace := "testns"
 
@@ -70,6 +70,7 @@ func TestTriggerController(t *testing.T) {
 	}
 	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	controllerContext := &controllerpkg.Context{
+		Scheme:                    scheme,
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
@@ -77,7 +78,7 @@ func TestTriggerController(t *testing.T) {
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
@@ -122,7 +123,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// triggering depending on whether a renewal is required.
 	shoudReissue := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock)}.Evaluate
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	namespace := "testns"
 	secretName := "example"
@@ -175,6 +176,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	}
 
 	controllerContext := &controllerpkg.Context{
+		Scheme:                    scheme,
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
@@ -182,7 +184,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 	// Start the trigger controller
@@ -243,7 +245,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// this test.
 	shoudReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	// Build, instantiate and run the trigger controller.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	namespace := "testns"
 	secretName := "example"
@@ -270,6 +272,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	controllerContext := &controllerpkg.Context{
+		Scheme:                    scheme,
 		Client:                    kubeClient,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
@@ -277,7 +280,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		ContextOptions: controllerpkg.ContextOptions{
 			Clock: fakeClock,
 		},
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 
@@ -342,7 +345,15 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {
 	t.Helper()
 
-	err := wait.PollUntilContextTimeout(ctx, time.Millisecond*200, time.Second*2, true, func(ctx context.Context) (bool, error) {
+	startTime := time.Now()
+	successful := false
+	err := wait.PollUntilContextCancel(ctx, time.Millisecond*200, true, func(ctx context.Context) (bool, error) {
+		// Check if certificate has not had condition for 2s
+		if time.Since(startTime) > time.Second*2 {
+			successful = true
+			return true, nil
+		}
+
 		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -357,9 +368,9 @@ func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Cont
 		return false, nil
 	})
 	switch {
-	case err == nil:
+	case err == nil && !successful:
 		t.Fatal("expected Certificate to not have the Issuing condition")
-	case err == context.DeadlineExceeded:
+	case err == nil && successful:
 		// this is the expected 'happy case'
 	default:
 		t.Fatal(err)

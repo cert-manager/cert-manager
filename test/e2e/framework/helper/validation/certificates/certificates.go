@@ -24,10 +24,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -132,7 +134,11 @@ func ExpectCertificateOrganizationToMatch(certificate *cmapi.Certificate, secret
 		return err
 	}
 
-	expectedOrganization := pki.OrganizationForCertificate(certificate)
+	var expectedOrganization []string
+	if certificate.Spec.Subject != nil {
+		expectedOrganization = certificate.Spec.Subject.Organizations
+	}
+
 	if !util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) {
 		return fmt.Errorf("Expected certificate valid for O %v, but got a certificate valid for O %v", expectedOrganization, cert.Subject.Organization)
 	}
@@ -147,9 +153,10 @@ func ExpectCertificateDNSNamesToMatch(certificate *cmapi.Certificate, secret *co
 		return err
 	}
 
-	expectedDNSNames := certificate.Spec.DNSNames
-	if !util.Subset(cert.DNSNames, expectedDNSNames) {
-		return fmt.Errorf("Expected certificate valid for DNSNames %v, but got a certificate valid for DNSNames %v", expectedDNSNames, cert.DNSNames)
+	x509DNSNames := sets.New(cert.DNSNames...)
+	expectedDNSNames := sets.New(certificate.Spec.DNSNames...)
+	if !x509DNSNames.IsSuperset(expectedDNSNames) {
+		return fmt.Errorf("Expected certificate valid for DNSNames %v, but got a certificate valid for DNSNames %v", sets.List(expectedDNSNames), sets.List(x509DNSNames))
 	}
 
 	return nil
@@ -162,12 +169,8 @@ func ExpectCertificateURIsToMatch(certificate *cmapi.Certificate, secret *corev1
 		return err
 	}
 
-	uris, err := pki.URIsForCertificate(certificate)
-	if err != nil {
-		return fmt.Errorf("failed to parse URIs: %s", err)
-	}
 	actualURIs := pki.URLsToString(cert.URIs)
-	expectedURIs := pki.URLsToString(uris)
+	expectedURIs := certificate.Spec.URIs
 	if !util.EqualUnsorted(actualURIs, expectedURIs) {
 		return fmt.Errorf("Expected certificate valid for URIs %v, but got a certificate valid for URIs %v", expectedURIs, pki.URLsToString(cert.URIs))
 	}
@@ -186,7 +189,7 @@ func ExpectValidCommonName(certificate *cmapi.Certificate, secret *corev1.Secret
 
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
 		// no CN is specified but our CA set one, checking if it is one of our DNS names or IP Addresses
-		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) && !util.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
+		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) && !slices.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
 			return fmt.Errorf("Expected a common name for one of our DNSNames %v or IP Addresses %v, but got a CN of %v", cert.DNSNames, pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName)
 		}
 	} else if expectedCN != cert.Subject.CommonName {
@@ -213,15 +216,6 @@ func ExpectValidNotAfterDate(certificate *cmapi.Certificate, secret *corev1.Secr
 	return nil
 }
 
-func containsExtKeyUsage(s []x509.ExtKeyUsage, e x509.ExtKeyUsage) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 // ExpectKeyUsageExtKeyUsageServerAuth checks if the issued certificate has the extended key usage of server auth
 func ExpectKeyUsageExtKeyUsageServerAuth(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
@@ -229,7 +223,7 @@ func ExpectKeyUsageExtKeyUsageServerAuth(certificate *cmapi.Certificate, secret 
 		return err
 	}
 
-	if !containsExtKeyUsage(cert.ExtKeyUsage, x509.ExtKeyUsageServerAuth) {
+	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageServerAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageServerAuth, but got %v", cert.ExtKeyUsage)
 	}
 	return nil
@@ -242,7 +236,7 @@ func ExpectKeyUsageExtKeyUsageClientAuth(certificate *cmapi.Certificate, secret 
 		return err
 	}
 
-	if !containsExtKeyUsage(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
+	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageClientAuth, but got %v", cert.ExtKeyUsage)
 	}
 	return nil

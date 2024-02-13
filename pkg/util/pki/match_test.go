@@ -17,11 +17,15 @@ limitations under the License.
 package pki
 
 import (
+	"bytes"
 	"crypto"
+	"crypto/x509"
+	"encoding/pem"
 	"reflect"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -112,6 +116,108 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 					t.Errorf("got no error but expected: %s", test.err)
 				}
 			}
+			if !reflect.DeepEqual(violations, test.violations) {
+				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
+			}
+		})
+	}
+}
+
+func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
+	tests := map[string]struct {
+		crSpec     *cmapi.CertificateRequest
+		certSpec   cmapi.CertificateSpec
+		err        string
+		violations []string
+	}{
+		"should not report any violation if Certificate otherName(s) match the CertificateRequest's": {
+			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+				},
+			}}, t),
+			certSpec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+				},
+			},
+			err: "",
+		},
+		"should report violation if Certificate otherName(s) mismatch the CertificateRequest's": {
+			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+				},
+			}}, t),
+			certSpec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn2@testdomain.local",
+					},
+				},
+			},
+			err: "",
+			violations: []string{
+				"spec.otherNames",
+			},
+		},
+		"should not report violation if Certificate otherName(s) match the CertificateRequest's (with different order)": {
+			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "anotherupn@testdomain.local",
+					},
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+				},
+			}}, t),
+			certSpec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				OtherNames: []cmapi.OtherName{
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "upn@testdomain.local",
+					},
+					{
+						OID:       "1.3.6.1.4.1.311.20.2.3",
+						UTF8Value: "anotherupn@testdomain.local",
+					},
+				},
+			},
+			err: "",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			violations, err := RequestMatchesSpec(test.crSpec, test.certSpec)
+			if err != nil {
+				if test.err == "" {
+					t.Errorf("Unexpected error: %s", err.Error())
+				} else {
+					if test.err != err.Error() {
+						t.Errorf("Expected error: %s but got: %s instead", err.Error(), test.err)
+					}
+				}
+			}
+
 			if !reflect.DeepEqual(violations, test.violations) {
 				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
 			}
@@ -288,4 +394,39 @@ func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
 	}
 
 	return pemData
+}
+
+func MustBuildCertificateRequest(crt *cmapi.Certificate, t *testing.T) *cmapi.CertificateRequest {
+	pk, err := GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrTemplate, err := GenerateCSR(crt, WithOtherNames(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buffer bytes.Buffer
+	csr, err := x509.CreateCertificateRequest(&buffer, csrTemplate, pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pemData := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csr})
+	cr := &cmapi.CertificateRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        t.Name(),
+			Annotations: crt.Annotations,
+			Labels:      crt.Labels,
+		},
+		Spec: cmapi.CertificateRequestSpec{
+			Request:   pemData,
+			Duration:  crt.Spec.Duration,
+			IssuerRef: crt.Spec.IssuerRef,
+			IsCA:      crt.Spec.IsCA,
+			Usages:    crt.Spec.Usages,
+		},
+	}
+
+	return cr
 }

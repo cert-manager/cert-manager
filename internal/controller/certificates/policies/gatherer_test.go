@@ -27,12 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmscheme "github.com/cert-manager/cert-manager/pkg/api"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -145,15 +143,6 @@ func TestDataForCertificate(t *testing.T) {
 
 			test.builder.T = t
 			test.builder.Clock = fakeclock.NewFakeClock(fakeClockStart)
-
-			// In this test, we do not use Register(controller.Context).
-			// The Register(controller.Context) usually takes care of
-			// triggering the init() func in ./pkg/api/scheme.go. If we
-			// forget to have the init() func called, the apiVersion and
-			// kind fields on cert-manager objects are not automatically
-			// filled, which breaks the lister cache (i.e., the "indexer").
-			_ = cmscheme.Scheme
-			_ = kscheme.Scheme
 
 			test.builder.Init()
 

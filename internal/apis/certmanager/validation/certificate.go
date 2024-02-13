@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/mail"
 	"strings"
+	"unicode/utf8"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -54,9 +55,23 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	var commonName = crt.CommonName
 	if crt.LiteralSubject != "" {
-
 		if !utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject) {
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
+		}
+
+		if len(crt.CommonName) != 0 {
+			el = append(el, field.Invalid(fldPath.Child("commonName"), crt.CommonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
+		}
+
+		if crt.Subject != nil && (len(crt.Subject.Organizations) > 0 ||
+			len(crt.Subject.Countries) > 0 ||
+			len(crt.Subject.OrganizationalUnits) > 0 ||
+			len(crt.Subject.Localities) > 0 ||
+			len(crt.Subject.Provinces) > 0 ||
+			len(crt.Subject.StreetAddresses) > 0 ||
+			len(crt.Subject.PostalCodes) > 0 ||
+			len(crt.Subject.SerialNumber) > 0) {
+			el = append(el, field.Invalid(fldPath.Child("subject"), crt.Subject, "When providing a `LiteralSubject` no `Subject` properties may be provided."))
 		}
 
 		sequence, err := pki.UnmarshalSubjectStringToRDNSequence(crt.LiteralSubject)
@@ -85,19 +100,15 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 				}
 			}
 		}
-
-		if len(crt.CommonName) != 0 {
-			el = append(el, field.Invalid(fldPath.Child("commonName"), crt.CommonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
-		}
-
-		if crt.Subject != nil && len(crt.Subject.Organizations)+len(crt.Subject.Countries)+len(crt.Subject.OrganizationalUnits)+len(crt.Subject.Localities)+len(crt.Subject.Provinces)+len(crt.Subject.StreetAddresses)+len(crt.Subject.PostalCodes) != 0 {
-			el = append(el, field.Invalid(fldPath.Child("subject"), crt.Subject, "When providing a `LiteralSubject` no `Subject` properties may be provided with the exception of `Subject.serialNumber`"))
-		}
-
 	}
 
-	if len(commonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 && len(crt.IPAddresses) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"))
+	if len(commonName) == 0 &&
+		len(crt.DNSNames) == 0 &&
+		len(crt.URIs) == 0 &&
+		len(crt.EmailAddresses) == 0 &&
+		len(crt.IPAddresses) == 0 &&
+		len(crt.OtherNames) == 0 {
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
@@ -109,8 +120,28 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
 
-	if len(crt.EmailSANs) > 0 {
+	if len(crt.EmailAddresses) > 0 {
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
+	}
+
+	if len(crt.OtherNames) > 0 {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.OtherNames) {
+			el = append(el, field.Forbidden(fldPath.Child("OtherNames"), "Feature gate OtherNames must be enabled on both webhook and controller to use the alpha `otherNames` field"))
+		} else {
+			for i, otherName := range crt.OtherNames {
+				if otherName.OID == "" {
+					el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("oid"), "must be specified"))
+				}
+
+				if _, err := pki.ParseObjectIdentifier(otherName.OID); err != nil {
+					el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "oid syntax invalid"))
+				}
+
+				if otherName.UTF8Value == "" || !utf8.ValidString(otherName.UTF8Value) {
+					el = append(el, field.Required(fldPath.Child("otherNames").Index(i).Child("utf8Value"), "must be set to a valid non-empty UTF8 string"))
+				}
+			}
+		}
 	}
 
 	if crt.PrivateKey != nil {
@@ -126,7 +157,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		case internalcmapi.Ed25519KeyAlgorithm:
 			break
 		default:
-			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa or ecdsa"))
+			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa, ecdsa or ed25519"))
 		}
 	}
 
@@ -146,6 +177,20 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 		if len(crt.SecretTemplate.Annotations) > 0 {
 			el = append(el, validateSecretTemplateAnnotations(crt, fldPath)...)
+		}
+	}
+
+	if crt.NameConstraints != nil {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints) {
+			el = append(el, field.Forbidden(fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"))
+		} else {
+			if !crt.IsCA {
+				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "isCa should be true when nameConstraints is set"))
+			}
+
+			if crt.NameConstraints.Permitted == nil && crt.NameConstraints.Excluded == nil {
+				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "either permitted or excluded must be set"))
+			}
 		}
 	}
 
@@ -199,11 +244,11 @@ func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) 
 }
 
 func validateEmailAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.EmailSANs) <= 0 {
+	if len(a.EmailAddresses) <= 0 {
 		return nil
 	}
 	el := field.ErrorList{}
-	for i, d := range a.EmailSANs {
+	for i, d := range a.EmailAddresses {
 		e, err := mail.ParseAddress(d)
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("emailAddresses").Index(i), d, fmt.Sprintf("invalid email address: %s", err)))

@@ -23,23 +23,37 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/sync/errgroup"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
-	"github.com/cert-manager/cert-manager/pkg/api"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
+)
+
+const (
+	// This is intended to mitigate "slowloris" attacks by limiting the time a
+	// deliberately slow client can spend sending HTTP headers.
+	// This default value is copied from:
+	// * kubernetes api-server:
+	//   https://github.com/kubernetes/kubernetes/blob/9e028b40b9e970142191259effe796b3dab39828/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L165-L173
+	// * controller-runtime:
+	//   https://github.com/kubernetes-sigs/controller-runtime/blob/1ea2be573f7887a9fbd766e9a921c5af344da6eb/pkg/internal/httpserver/server.go#L14
+	defaultReadHeaderTimeout = 32 * time.Second
 )
 
 func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
@@ -54,10 +68,16 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		}
 	}
 
+	scheme := runtime.NewScheme()
+	kscheme.AddToScheme(scheme)
+	cmscheme.AddToScheme(scheme)
+	apiext.AddToScheme(scheme)
+	apireg.AddToScheme(scheme)
+
 	mgr, err := ctrl.NewManager(
 		util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "cainjector"),
 		ctrl.Options{
-			Scheme: api.Scheme,
+			Scheme: scheme,
 			Cache: cache.Options{
 				ReaderFailOnMissingInformer: true,
 				DefaultNamespaces:           defaultNamespaces,
@@ -76,8 +96,6 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		return fmt.Errorf("error creating manager: %v", err)
 	}
 
-	g, gctx := errgroup.WithContext(ctx)
-
 	// if a PprofAddr is provided, start the pprof listener
 	if opts.EnablePprof {
 		pprofListener, err := net.Listen("tcp", opts.PprofAddress)
@@ -90,25 +108,26 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		profiling.Install(profilerMux)
 		log.V(logf.InfoLevel).Info("running go profiler on", "address", opts.PprofAddress)
 		server := &http.Server{
-			Handler: profilerMux,
+			Handler:           profilerMux,
+			ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 		}
-		g.Go(func() error {
-			<-gctx.Done()
+
+		mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
+			<-ctx.Done()
+
 			// allow a timeout for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			if err := server.Shutdown(ctx); err != nil {
-				return err
-			}
-			return nil
-		})
-		g.Go(func() error {
+			return server.Shutdown(shutdownCtx)
+		}))
+
+		mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
 			if err := server.Serve(pprofListener); err != http.ErrServerClosed {
 				return err
 			}
 			return nil
-		})
+		}))
 	}
 
 	// If cainjector has been configured to watch Certificate CRDs (true by default)
@@ -152,13 +171,32 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			cainjector.CustomResourceDefinitionName:       opts.EnableInjectableConfig.CustomResourceDefinitions,
 		},
 	}
-	err = cainjector.RegisterAllInjectors(gctx, mgr, setupOptions)
+
+	err = cainjector.RegisterAllInjectors(ctx, mgr, setupOptions)
 	if err != nil {
 		log.Error(err, "failed to register controllers", err)
 		return err
 	}
-	if err = mgr.Start(gctx); err != nil {
+
+	if err = mgr.Start(ctx); err != nil {
 		return fmt.Errorf("error running manager: %v", err)
 	}
+
 	return nil
 }
+
+type runnableNoLeaderElectionFunc func(context.Context) error
+
+func (r runnableNoLeaderElectionFunc) Start(ctx context.Context) error {
+	return r(ctx)
+}
+
+func (runnableNoLeaderElectionFunc) NeedLeaderElection() bool {
+	// By default, a runnable in c/r is leader election aware.
+	// Since we need to run this runnable for all replicas, this runnable must NOT be leader election aware.
+	return false
+}
+
+var _ manager.Runnable = runnableNoLeaderElectionFunc(nil)
+
+var _ manager.LeaderElectionRunnable = runnableNoLeaderElectionFunc(nil)

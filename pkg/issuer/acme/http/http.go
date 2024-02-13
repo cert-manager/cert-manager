@@ -32,7 +32,7 @@ import (
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	k8snet "k8s.io/utils/net"
-	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
+	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -49,6 +49,11 @@ const (
 	acmeSolverListenPort = 8089
 
 	loggerName = "http01"
+
+	// maxAcmeChallengeBodySize is the max size of a received response body for an
+	// acme http challenge. The value is arbitrary and is chosen to be large enough
+	// that any reasonable response would fit.
+	maxAcmeChallengeBodySize = 1024 * 1024 // 1mb
 )
 
 var (
@@ -77,7 +82,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		podLister:        ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 		serviceLister:    ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
 		ingressLister:    ctx.KubeSharedInformerFactory.Ingresses().Lister(),
-		httpRouteLister:  ctx.GWShared.Gateway().V1beta1().HTTPRoutes().Lister(),
+		httpRouteLister:  ctx.GWShared.Gateway().V1().HTTPRoutes().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,
 	}, nil
@@ -301,7 +306,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		return fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)
 	}
 
-	presentedKey, err := io.ReadAll(response.Body)
+	presentedKey, err := io.ReadAll(io.LimitReader(response.Body, maxAcmeChallengeBodySize))
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to decode response body", "error", err)
 		return fmt.Errorf("failed to read response body: %v", err)

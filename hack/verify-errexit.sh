@@ -33,7 +33,7 @@ echo "+++ validating all scripts set '-o errexit'" >&2
 if [ "$*" != "" ]; then
   args="$*"
 else
-  args=$(ls "$(pwd)" | grep -v 'bazel-' | grep -v 'external/' | grep -v 'bin' | grep -v '_bin' )
+  args=$(ls "$(pwd)" | grep -v 'external/' | grep -v 'bin' | grep -v '_bin' )
 fi
 
 # Gather the list of files that appear to be shell scripts.

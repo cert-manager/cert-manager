@@ -520,9 +520,6 @@ func TestProcessItem(t *testing.T) {
 			if err := builder.AllActionsExecuted(); err != nil {
 				builder.T.Error(err)
 			}
-			if err := builder.AllReactorsCalled(); err != nil {
-				builder.T.Error(err)
-			}
 		})
 	}
 }

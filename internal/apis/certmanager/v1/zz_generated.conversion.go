@@ -174,6 +174,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*v1.CertificateSpec)(nil), (*certmanager.CertificateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_CertificateSpec_To_certmanager_CertificateSpec(a.(*v1.CertificateSpec), b.(*certmanager.CertificateSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*certmanager.CertificateSpec)(nil), (*v1.CertificateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_certmanager_CertificateSpec_To_v1_CertificateSpec(a.(*certmanager.CertificateSpec), b.(*v1.CertificateSpec), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*v1.CertificateStatus)(nil), (*certmanager.CertificateStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_CertificateStatus_To_certmanager_CertificateStatus(a.(*v1.CertificateStatus), b.(*certmanager.CertificateStatus), scope)
 	}); err != nil {
@@ -271,6 +281,36 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*certmanager.JKSKeystore)(nil), (*v1.JKSKeystore)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_certmanager_JKSKeystore_To_v1_JKSKeystore(a.(*certmanager.JKSKeystore), b.(*v1.JKSKeystore), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.NameConstraintItem)(nil), (*certmanager.NameConstraintItem)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_NameConstraintItem_To_certmanager_NameConstraintItem(a.(*v1.NameConstraintItem), b.(*certmanager.NameConstraintItem), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*certmanager.NameConstraintItem)(nil), (*v1.NameConstraintItem)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_certmanager_NameConstraintItem_To_v1_NameConstraintItem(a.(*certmanager.NameConstraintItem), b.(*v1.NameConstraintItem), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.NameConstraints)(nil), (*certmanager.NameConstraints)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_NameConstraints_To_certmanager_NameConstraints(a.(*v1.NameConstraints), b.(*certmanager.NameConstraints), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*certmanager.NameConstraints)(nil), (*v1.NameConstraints)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_certmanager_NameConstraints_To_v1_NameConstraints(a.(*certmanager.NameConstraints), b.(*v1.NameConstraints), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.OtherName)(nil), (*certmanager.OtherName)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_OtherName_To_certmanager_OtherName(a.(*v1.OtherName), b.(*certmanager.OtherName), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*certmanager.OtherName)(nil), (*v1.OtherName)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_certmanager_OtherName_To_v1_OtherName(a.(*certmanager.OtherName), b.(*v1.OtherName), scope)
 	}); err != nil {
 		return err
 	}
@@ -384,16 +424,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*certmanager.CertificateSpec)(nil), (*v1.CertificateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_CertificateSpec_To_v1_CertificateSpec(a.(*certmanager.CertificateSpec), b.(*v1.CertificateSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*v1.CertificateSpec)(nil), (*certmanager.CertificateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_CertificateSpec_To_certmanager_CertificateSpec(a.(*v1.CertificateSpec), b.(*certmanager.CertificateSpec), scope)
-	}); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -401,6 +431,7 @@ func autoConvert_v1_CAIssuer_To_certmanager_CAIssuer(in *v1.CAIssuer, out *certm
 	out.SecretName = in.SecretName
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
+	out.IssuingCertificateURLs = *(*[]string)(unsafe.Pointer(&in.IssuingCertificateURLs))
 	return nil
 }
 
@@ -413,6 +444,7 @@ func autoConvert_certmanager_CAIssuer_To_v1_CAIssuer(in *certmanager.CAIssuer, o
 	out.SecretName = in.SecretName
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
+	out.IssuingCertificateURLs = *(*[]string)(unsafe.Pointer(&in.IssuingCertificateURLs))
 	return nil
 }
 
@@ -823,8 +855,9 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	// WARNING: in.URIs requires manual conversion: does not exist in peer-type
-	// WARNING: in.EmailAddresses requires manual conversion: does not exist in peer-type
+	out.URIs = *(*[]string)(unsafe.Pointer(&in.URIs))
+	out.OtherNames = *(*[]certmanager.OtherName)(unsafe.Pointer(&in.OtherNames))
+	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
 	out.SecretName = in.SecretName
 	out.SecretTemplate = (*certmanager.CertificateSecretTemplate)(unsafe.Pointer(in.SecretTemplate))
 	if in.Keystores != nil {
@@ -845,7 +878,13 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]certmanager.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
+	out.NameConstraints = (*certmanager.NameConstraints)(unsafe.Pointer(in.NameConstraints))
 	return nil
+}
+
+// Convert_v1_CertificateSpec_To_certmanager_CertificateSpec is an autogenerated conversion function.
+func Convert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.CertificateSpec, out *certmanager.CertificateSpec, s conversion.Scope) error {
+	return autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in, out, s)
 }
 
 func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanager.CertificateSpec, out *v1.CertificateSpec, s conversion.Scope) error {
@@ -856,8 +895,9 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	// WARNING: in.URISANs requires manual conversion: does not exist in peer-type
-	// WARNING: in.EmailSANs requires manual conversion: does not exist in peer-type
+	out.URIs = *(*[]string)(unsafe.Pointer(&in.URIs))
+	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
+	out.OtherNames = *(*[]v1.OtherName)(unsafe.Pointer(&in.OtherNames))
 	out.SecretName = in.SecretName
 	out.SecretTemplate = (*v1.CertificateSecretTemplate)(unsafe.Pointer(in.SecretTemplate))
 	if in.Keystores != nil {
@@ -878,7 +918,13 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]v1.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
+	out.NameConstraints = (*v1.NameConstraints)(unsafe.Pointer(in.NameConstraints))
 	return nil
+}
+
+// Convert_certmanager_CertificateSpec_To_v1_CertificateSpec is an autogenerated conversion function.
+func Convert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanager.CertificateSpec, out *v1.CertificateSpec, s conversion.Scope) error {
+	return autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in, out, s)
 }
 
 func autoConvert_v1_CertificateStatus_To_certmanager_CertificateStatus(in *v1.CertificateStatus, out *certmanager.CertificateStatus, s conversion.Scope) error {
@@ -1241,11 +1287,84 @@ func Convert_certmanager_JKSKeystore_To_v1_JKSKeystore(in *certmanager.JKSKeysto
 	return autoConvert_certmanager_JKSKeystore_To_v1_JKSKeystore(in, out, s)
 }
 
+func autoConvert_v1_NameConstraintItem_To_certmanager_NameConstraintItem(in *v1.NameConstraintItem, out *certmanager.NameConstraintItem, s conversion.Scope) error {
+	out.DNSDomains = *(*[]string)(unsafe.Pointer(&in.DNSDomains))
+	out.IPRanges = *(*[]string)(unsafe.Pointer(&in.IPRanges))
+	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
+	out.URIDomains = *(*[]string)(unsafe.Pointer(&in.URIDomains))
+	return nil
+}
+
+// Convert_v1_NameConstraintItem_To_certmanager_NameConstraintItem is an autogenerated conversion function.
+func Convert_v1_NameConstraintItem_To_certmanager_NameConstraintItem(in *v1.NameConstraintItem, out *certmanager.NameConstraintItem, s conversion.Scope) error {
+	return autoConvert_v1_NameConstraintItem_To_certmanager_NameConstraintItem(in, out, s)
+}
+
+func autoConvert_certmanager_NameConstraintItem_To_v1_NameConstraintItem(in *certmanager.NameConstraintItem, out *v1.NameConstraintItem, s conversion.Scope) error {
+	out.DNSDomains = *(*[]string)(unsafe.Pointer(&in.DNSDomains))
+	out.IPRanges = *(*[]string)(unsafe.Pointer(&in.IPRanges))
+	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
+	out.URIDomains = *(*[]string)(unsafe.Pointer(&in.URIDomains))
+	return nil
+}
+
+// Convert_certmanager_NameConstraintItem_To_v1_NameConstraintItem is an autogenerated conversion function.
+func Convert_certmanager_NameConstraintItem_To_v1_NameConstraintItem(in *certmanager.NameConstraintItem, out *v1.NameConstraintItem, s conversion.Scope) error {
+	return autoConvert_certmanager_NameConstraintItem_To_v1_NameConstraintItem(in, out, s)
+}
+
+func autoConvert_v1_NameConstraints_To_certmanager_NameConstraints(in *v1.NameConstraints, out *certmanager.NameConstraints, s conversion.Scope) error {
+	out.Critical = in.Critical
+	out.Permitted = (*certmanager.NameConstraintItem)(unsafe.Pointer(in.Permitted))
+	out.Excluded = (*certmanager.NameConstraintItem)(unsafe.Pointer(in.Excluded))
+	return nil
+}
+
+// Convert_v1_NameConstraints_To_certmanager_NameConstraints is an autogenerated conversion function.
+func Convert_v1_NameConstraints_To_certmanager_NameConstraints(in *v1.NameConstraints, out *certmanager.NameConstraints, s conversion.Scope) error {
+	return autoConvert_v1_NameConstraints_To_certmanager_NameConstraints(in, out, s)
+}
+
+func autoConvert_certmanager_NameConstraints_To_v1_NameConstraints(in *certmanager.NameConstraints, out *v1.NameConstraints, s conversion.Scope) error {
+	out.Critical = in.Critical
+	out.Permitted = (*v1.NameConstraintItem)(unsafe.Pointer(in.Permitted))
+	out.Excluded = (*v1.NameConstraintItem)(unsafe.Pointer(in.Excluded))
+	return nil
+}
+
+// Convert_certmanager_NameConstraints_To_v1_NameConstraints is an autogenerated conversion function.
+func Convert_certmanager_NameConstraints_To_v1_NameConstraints(in *certmanager.NameConstraints, out *v1.NameConstraints, s conversion.Scope) error {
+	return autoConvert_certmanager_NameConstraints_To_v1_NameConstraints(in, out, s)
+}
+
+func autoConvert_v1_OtherName_To_certmanager_OtherName(in *v1.OtherName, out *certmanager.OtherName, s conversion.Scope) error {
+	out.OID = in.OID
+	out.UTF8Value = in.UTF8Value
+	return nil
+}
+
+// Convert_v1_OtherName_To_certmanager_OtherName is an autogenerated conversion function.
+func Convert_v1_OtherName_To_certmanager_OtherName(in *v1.OtherName, out *certmanager.OtherName, s conversion.Scope) error {
+	return autoConvert_v1_OtherName_To_certmanager_OtherName(in, out, s)
+}
+
+func autoConvert_certmanager_OtherName_To_v1_OtherName(in *certmanager.OtherName, out *v1.OtherName, s conversion.Scope) error {
+	out.OID = in.OID
+	out.UTF8Value = in.UTF8Value
+	return nil
+}
+
+// Convert_certmanager_OtherName_To_v1_OtherName is an autogenerated conversion function.
+func Convert_certmanager_OtherName_To_v1_OtherName(in *certmanager.OtherName, out *v1.OtherName, s conversion.Scope) error {
+	return autoConvert_certmanager_OtherName_To_v1_OtherName(in, out, s)
+}
+
 func autoConvert_v1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1.PKCS12Keystore, out *certmanager.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
+	out.Profile = certmanager.PKCS12Profile(in.Profile)
 	return nil
 }
 
@@ -1259,6 +1378,7 @@ func autoConvert_certmanager_PKCS12Keystore_To_v1_PKCS12Keystore(in *certmanager
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
+	out.Profile = v1.PKCS12Profile(in.Profile)
 	return nil
 }
 
@@ -1289,6 +1409,7 @@ func Convert_certmanager_SelfSignedIssuer_To_v1_SelfSignedIssuer(in *certmanager
 
 func autoConvert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *v1.ServiceAccountRef, out *certmanager.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1299,6 +1420,7 @@ func Convert_v1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *v1.Servic
 
 func autoConvert_certmanager_ServiceAccountRef_To_v1_ServiceAccountRef(in *certmanager.ServiceAccountRef, out *v1.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 

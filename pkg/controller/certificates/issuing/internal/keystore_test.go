@@ -312,8 +312,10 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := encodePKCS12Keystore(test.password, test.rawKey, test.certPEM, test.caPEM)
-			test.verify(t, out, err)
+			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+				out, err := encodePKCS12Keystore(profile, test.password, test.rawKey, test.certPEM, test.caPEM)
+				test.verify(t, out, err)
+			}
 		})
 	}
 	t.Run("encodePKCS12Keystore encodes non-leaf certificates to the CA certificate chain, even when the supplied CA chain is empty", func(t *testing.T) {
@@ -321,16 +323,18 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		var emptyCAChain []byte = nil
 
 		chain := mustLeafWithChain(t)
-		out, err := encodePKCS12Keystore(password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
-		require.NoError(t, err)
+		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+			out, err := encodePKCS12Keystore(profile, password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
+			require.NoError(t, err)
 
-		pkOut, certOut, caChain, err := pkcs12.DecodeChain(out, password)
-		require.NoError(t, err)
-		assert.NotNil(t, pkOut)
-		assert.Equal(t, chain.leaf.cert.Signature, certOut.Signature, "leaf certificate signature does not match")
-		if assert.Len(t, caChain, 2, "caChain should contain 2 items: intermediate certificate and top-level certificate") {
-			assert.Equal(t, chain.cas[0].cert.Signature, caChain[0].Signature, "intermediate certificate signature does not match")
-			assert.Equal(t, chain.cas[1].cert.Signature, caChain[1].Signature, "top-level certificate signature does not match")
+			pkOut, certOut, caChain, err := pkcs12.DecodeChain(out, password)
+			require.NoError(t, err)
+			assert.NotNil(t, pkOut)
+			assert.Equal(t, chain.leaf.cert.Signature, certOut.Signature, "leaf certificate signature does not match")
+			if assert.Len(t, caChain, 2, "caChain should contain 2 items: intermediate certificate and top-level certificate") {
+				assert.Equal(t, chain.cas[0].cert.Signature, caChain[0].Signature, "intermediate certificate signature does not match")
+				assert.Equal(t, chain.cas[1].cert.Signature, caChain[1].Signature, "top-level certificate signature does not match")
+			}
 		}
 	})
 	t.Run("encodePKCS12Keystore *prepends* non-leaf certificates to the supplied CA certificate chain", func(t *testing.T) {
@@ -340,17 +344,19 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		require.NoError(t, err)
 
 		chain := mustLeafWithChain(t)
-		out, err := encodePKCS12Keystore(password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
-		require.NoError(t, err)
+		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+			out, err := encodePKCS12Keystore(profile, password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
+			require.NoError(t, err)
 
-		pkOut, certOut, caChainOut, err := pkcs12.DecodeChain(out, password)
-		require.NoError(t, err)
-		assert.NotNil(t, pkOut)
-		assert.Equal(t, chain.leaf.cert.Signature, certOut.Signature, "leaf certificate signature does not match")
-		if assert.Len(t, caChainOut, 3, "caChain should contain 3 items: intermediate certificate and top-level certificate and supplied CA") {
-			assert.Equal(t, chain.cas[0].cert.Signature, caChainOut[0].Signature, "intermediate certificate signature does not match")
-			assert.Equal(t, chain.cas[1].cert.Signature, caChainOut[1].Signature, "top-level certificate signature does not match")
-			assert.Equal(t, caChainIn, caChainOut[2:], "supplied certificate chain is not at the end of the chain")
+			pkOut, certOut, caChainOut, err := pkcs12.DecodeChain(out, password)
+			require.NoError(t, err)
+			assert.NotNil(t, pkOut)
+			assert.Equal(t, chain.leaf.cert.Signature, certOut.Signature, "leaf certificate signature does not match")
+			if assert.Len(t, caChainOut, 3, "caChain should contain 3 items: intermediate certificate and top-level certificate and supplied CA") {
+				assert.Equal(t, chain.cas[0].cert.Signature, caChainOut[0].Signature, "intermediate certificate signature does not match")
+				assert.Equal(t, chain.cas[1].cert.Signature, caChainOut[1].Signature, "top-level certificate signature does not match")
+				assert.Equal(t, caChainIn, caChainOut[2:], "supplied certificate chain is not at the end of the chain")
+			}
 		}
 	})
 }
@@ -387,8 +393,10 @@ func TestEncodePKCS12Truststore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := encodePKCS12Truststore(test.password, test.caPEM)
-			test.verify(t, test.caPEM, out, err)
+			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+				out, err := encodePKCS12Truststore(profile, test.password, test.caPEM)
+				test.verify(t, test.caPEM, out, err)
+			}
 		})
 	}
 }

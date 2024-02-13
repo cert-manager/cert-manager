@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -174,7 +175,7 @@ func ExpectValidCommonName(csr *certificatesv1.CertificateSigningRequest, _ cryp
 
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
 		// no CN is specified but our CA set one, checking if it is one of our DNS names or IP Addresses
-		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) && !util.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
+		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) && !slices.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
 			return fmt.Errorf("Expected a common name for one of our DNSNames %v or IP Addresses %v, but got a CN of %v", cert.DNSNames, pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName)
 		}
 	} else if expectedCN != cert.Subject.CommonName {

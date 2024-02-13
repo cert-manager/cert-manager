@@ -49,7 +49,7 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	// Create clients and informer factories for Kubernetes API and
 	// cert-manager.
-	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
 	// some test values
 	var (
@@ -120,6 +120,7 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	controllerContext := controllerpkg.Context{
 		Client:                    kubeClient,
+		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
@@ -130,7 +131,7 @@ func TestAcmeOrdersController(t *testing.T) {
 			},
 		},
 
-		Recorder:     framework.NewEventRecorder(t),
+		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-orders-test",
 	}
 
@@ -259,7 +260,15 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Reason field on Order's status. Change this test once we are setting
 	// Reasons on intermittent Order states.
 	var pendingOrder *cmacme.Order
-	err = wait.PollUntilContextTimeout(ctx, time.Millisecond*200, acmeorders.RequeuePeriod, true, func(ctx context.Context) (bool, error) {
+	startTime := time.Now()
+	successful := false
+	err = wait.PollUntilContextCancel(ctx, time.Millisecond*200, true, func(ctx context.Context) (bool, error) {
+		// Check if order has been pending for 2s (requeue period)
+		if time.Since(startTime) > acmeorders.RequeuePeriod {
+			successful = true
+			return true, nil
+		}
+
 		pendingOrder, err = cmCl.AcmeV1().Orders(testName).Get(ctx, testName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -270,9 +279,9 @@ func TestAcmeOrdersController(t *testing.T) {
 		return false, nil
 	})
 	switch {
-	case err == nil:
+	case err == nil && !successful:
 		t.Fatalf("Expected Order to have pending status instead got: %v", pendingOrder.Status.State)
-	case err == context.DeadlineExceeded:
+	case err == nil && successful:
 		// this is the expected 'happy case'
 	default:
 		t.Fatal(err)

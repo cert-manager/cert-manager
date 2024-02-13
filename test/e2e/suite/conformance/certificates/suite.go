@@ -96,7 +96,7 @@ func (s *Suite) complete(f *framework.Framework) {
 
 // it is called by the tests to in Define() to setup and run the test
 func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
-	if !s.checkFeatures(requiredFeatures...) {
+	if s.UnsupportedFeatures.HasAny(requiredFeatures...) {
 		return
 	}
 	It(name, func() {
@@ -110,22 +110,4 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectRef
 		}()
 		fn(issuerRef)
 	})
-}
-
-// checkFeatures is a helper function that is used to ensure that the features
-// required for a given test case are supported by the suite.
-// It will return 'true' if all features are supported and the test should run,
-// or return 'false' if any required feature is not supported.
-func (s *Suite) checkFeatures(fs ...featureset.Feature) bool {
-	unsupported := make(featureset.FeatureSet)
-	for _, f := range fs {
-		if s.UnsupportedFeatures.Contains(f) {
-			unsupported.Add(f)
-		}
-	}
-	// all features supported, return early!
-	if len(unsupported) == 0 {
-		return true
-	}
-	return false
 }

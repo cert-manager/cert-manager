@@ -20,7 +20,6 @@
 .idea/
 *.tmproj
 
-BUILD.bazel
 Chart.template.yaml
 README.template.md
 OWNERS

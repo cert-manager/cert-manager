@@ -28,6 +28,10 @@ import (
 // TODO: Unexport?
 const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
+// cloudFlareMaxBodySize is the max size of a received response body. The value is arbitrary
+// and is chosen to be large enough that any reasonable response would fit.
+const cloudFlareMaxBodySize = 1024 * 1024 // 1mb
+
 // DNSProviderType is the Mockable Interface
 type DNSProviderType interface {
 	makeRequest(method, uri string, body io.Reader) (json.RawMessage, error)
@@ -275,7 +279,7 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 	defer resp.Body.Close()
 
 	var r APIResponse
-	err = json.NewDecoder(resp.Body).Decode(&r)
+	err = json.NewDecoder(io.LimitReader(resp.Body, cloudFlareMaxBodySize)).Decode(&r)
 	if err != nil {
 		return nil, err
 	}

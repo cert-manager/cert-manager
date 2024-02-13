@@ -61,10 +61,11 @@ func int32Ptr(i int32) *int32 {
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
-		cfg      *internalcmapi.Certificate
-		a        *admissionv1.AdmissionRequest
-		errs     []*field.Error
-		warnings []string
+		cfg                           *internalcmapi.Certificate
+		a                             *admissionv1.AdmissionRequest
+		errs                          []*field.Error
+		warnings                      []string
+		nameConstraintsFeatureEnabled bool
 	}{
 		"valid basic certificate": {
 			cfg: &internalcmapi.Certificate{
@@ -164,7 +165,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
@@ -299,6 +300,20 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
+		"valid certificate with ed25519 keyAlgorithm": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Size:      521,
+						Algorithm: internalcmapi.Ed25519KeyAlgorithm,
+					},
+				},
+			},
+			a: someAdmissionRequest,
+		},
 		"valid certificate with keyAlgorithm not specified and keySize specified": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
@@ -376,7 +391,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
+				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa, ecdsa or ed25519"),
 			},
 		},
 		"valid certificate with ipAddresses": {
@@ -496,7 +511,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					URISANs: []string{
+					URIs: []string{
 						"foo.bar",
 					},
 				},
@@ -506,9 +521,9 @@ func TestValidateCertificate(t *testing.T) {
 		"valid certificate with only email SAN": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"alice@example.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"alice@example.com"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -516,9 +531,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with incorrect email": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"aliceexample.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"aliceexample.com"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -529,9 +544,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with email formatted with name": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"Alice <alice@example.com>"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"Alice <alice@example.com>"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -542,9 +557,9 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with email formatted with mailto": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"mailto:alice@example.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
+					EmailAddresses: []string{"mailto:alice@example.com"},
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -679,9 +694,70 @@ func TestValidateCertificate(t *testing.T) {
 						"alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
 			},
 		},
+		"valid with name constraints": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							DNSDomains: []string{"example.com"},
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a:                             someAdmissionRequest,
+			nameConstraintsFeatureEnabled: true,
+		},
+		"invalid with name constraints": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:      "testcn",
+					SecretName:      "abc",
+					IsCA:            true,
+					NameConstraints: &internalcmapi.NameConstraints{},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("nameConstraints"), &internalcmapi.NameConstraints{}, "either permitted or excluded must be set"),
+			},
+			nameConstraintsFeatureEnabled: true,
+		},
+		"valid name constraints with feature gate disabled": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							DNSDomains: []string{"example.com"},
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Forbidden(
+					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)()
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
 			assert.ElementsMatch(t, warnings, s.warnings)
@@ -794,6 +870,7 @@ func TestValidateDuration(t *testing.T) {
 		},
 	}
 	for n, s := range scenarios {
+		s := s // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateDuration(&s.cfg.Spec, fldPath)
 			assert.ElementsMatch(t, errs, s.errs)
@@ -955,13 +1032,17 @@ func Test_validateLiteralSubject(t *testing.T) {
 					IssuerRef:      validIssuerRef,
 				},
 			},
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("subject"),
+					&internalcmapi.X509Subject{SerialNumber: "1"}, "When providing a `LiteralSubject` no `Subject` properties may be provided."),
+			},
 			a: someAdmissionRequest,
 		},
 		"valid with a `literalSubject` containing CN with special characters, multiple DC and well-known rfc4514 and rfc5280 RDN OIDs": {
 			featureEnabled: true,
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					Subject:        &internalcmapi.X509Subject{SerialNumber: "1"},
 					LiteralSubject: "CN=James \\\"Jim\\\" Smith\\, III,DC=dc,DC=net,UID=jamessmith,STREET=La Rambla,L=Barcelona,C=Spain,O=Acme,OU=IT,OU=Admins",
 					SecretName:     "abc",
 					IssuerRef:      validIssuerRef,
@@ -980,7 +1061,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
 			},
 		},
 		"invalid with a `literalSubject` and any `Subject` other than serialNumber": {
@@ -997,7 +1078,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			errs: []*field.Error{
 				field.Invalid(
 					fldPath.Child("subject"),
-					&internalcmapi.X509Subject{Organizations: []string{"US"}}, "When providing a `LiteralSubject` no `Subject` properties may be provided with the exception of `Subject.serialNumber`"),
+					&internalcmapi.X509Subject{Organizations: []string{"US"}}, "When providing a `LiteralSubject` no `Subject` properties may be provided."),
 			},
 		},
 		"invalid with a `literalSubject` and a `commonName`": {

@@ -22,11 +22,11 @@ SHELL := /usr/bin/env bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-BINDIR := _bin
+bin_dir := _bin
 
 include make/util.mk
 
-# SOURCES contains all go files except those in $(BINDIR), the old bindir `bin`, or in
+# SOURCES contains all go files except those in $(bin_dir), the old bindir `bin`, or in
 # the make dir.
 # NB: we skip `bin/` since users might have a `bin` directory left over in repos they were
 # using before the bin dir was renamed
@@ -47,6 +47,10 @@ include make/git.mk
 ## @category Build
 CGO_ENABLED ?= 0
 
+## This flag is passed to `go build` to enable Go experiments. It's empty by default
+## @category Build
+GOEXPERIMENT ?=  # empty by default
+
 ## Extra flags passed to 'go' when building. For example, use GOFLAGS=-v to turn on the
 ## verbose output.
 ## @category Build
@@ -62,7 +66,6 @@ include make/tools.mk
 include make/ci.mk
 include make/test.mk
 include make/base_images.mk
-include make/cmctl.mk
 include make/server.mk
 include make/containers.mk
 include make/release.mk
@@ -70,7 +73,6 @@ include make/manifests.mk
 include make/licenses.mk
 include make/e2e-setup.mk
 include make/scan.mk
-include make/legacy.mk
 include make/ko.mk
 include make/help.mk
 
@@ -82,13 +84,13 @@ include make/help.mk
 ## @category Development
 clean: | $(NEEDS_KIND)
 	@$(eval KIND_CLUSTER_NAME ?= kind)
-	$(KIND) delete cluster --name=$(shell cat $(BINDIR)/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
-	rm -rf $(filter-out $(BINDIR)/downloaded,$(wildcard $(BINDIR)/*))
+	$(KIND) delete cluster --name=$(shell cat $(bin_dir)/scratch/kind-exists 2>/dev/null || echo $(KIND_CLUSTER_NAME)) -q 2>/dev/null || true
+	rm -rf $(filter-out $(bin_dir)/downloaded,$(wildcard $(bin_dir)/*))
 	rm -rf bazel-bin bazel-cert-manager bazel-out bazel-testlogs
 
 .PHONY: clean-all
 clean-all: clean
-	rm -rf $(BINDIR)/
+	rm -rf $(bin_dir)/
 
 # FORCE is a helper target to force a file to be rebuilt whenever its
 # target is invoked.

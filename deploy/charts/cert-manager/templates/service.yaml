@@ -1,4 +1,4 @@
-{{- if .Values.prometheus.enabled }}
+{{- if and .Values.prometheus.enabled (not .Values.prometheus.podmonitor.enabled) }}
 apiVersion: v1
 kind: Service
 metadata:

@@ -21,57 +21,68 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const rootCert = `-----BEGIN CERTIFICATE-----
-MIID4DCCAsigAwIBAgIJAJzTROInmDkQMA0GCSqGSIb3DQEBCwUAMFMxCzAJBgNV
-BAYTAlVLMQswCQYDVQQIEwJOQTEVMBMGA1UEChMMY2VydC1tYW5hZ2VyMSAwHgYD
-VQQDExdjZXJ0LW1hbmFnZXIgdGVzdGluZyBDQTAeFw0xNzA5MTAxODMzNDNaFw0y
-NzA5MDgxODMzNDNaMFMxCzAJBgNVBAYTAlVLMQswCQYDVQQIEwJOQTEVMBMGA1UE
-ChMMY2VydC1tYW5hZ2VyMSAwHgYDVQQDExdjZXJ0LW1hbmFnZXIgdGVzdGluZyBD
-QTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAM+Q2AO4hARav0qwjk7I
-4mEh5R201HS8s7HpaLOXBNvvh7qJ9yJz6jLqYg6EvP0K/bK56Cp2oe2igd7GOxpV
-3YPOc3CG0CCqHMprEcvxj2xBKX00Rtcn4oVLhDPhAb0BV/R7NFLeWxzh+ggvPI1X
-m1qLaWYqYZEJ5bBsYXD3tPdS4GGINRz8Zvih46f0Z2wVkCGoTpsbX8HO74sa2Day
-UjzAsWGlO5bZGiMSHjDEnf9yek2TcjEyVoohoOLaQg/ng21T5RWzeZKTl1cznwuG
-Vr9tZfHFqxQ5qeaId+1ICtxNvkEjbTnZl6Wy9Cthn0dxwOeS5TqMJ7SFNXy1gp4j
-f/MCAwEAAaOBtjCBszAdBgNVHQ4EFgQUBtrjvWfbkLA0iX6sKVRhKUo864kwgYMG
-A1UdIwR8MHqAFAba471n25CwNIl+rClUYSlKPOuJoVekVTBTMQswCQYDVQQGEwJV
-SzELMAkGA1UECBMCTkExFTATBgNVBAoTDGNlcnQtbWFuYWdlcjEgMB4GA1UEAxMX
-Y2VydC1tYW5hZ2VyIHRlc3RpbmcgQ0GCCQCc00TiJ5g5EDAMBgNVHRMEBTADAQH/
-MA0GCSqGSIb3DQEBCwUAA4IBAQCR+jXhup5tCKwhAf8xgvp589BczQOjmotuZGEL
-Dcint2y263ChEdsoLhyJfvFCAZfTSm+UT95Hl+ZKVuoVEcAS7udaFUFpC/gIYVOi
-H4/uvJps4SpVCB7+T/orcTjZ2ewT23mQAQg+B+iwX9VCof+fadkYOg1XD9/eaj6E
-9McXID3iuCXg02RmEOwVMrTggHPwHrOGAilSaZc58cJZHmMYlT5rGrJcWS/AyXnH
-VOodKC004yjh7w9aSbCCbAL0tDEnhm4Jrb8cxt7pDWbdEVUeuk9LZRQtluYBnmJU
-kQ7ALfUfUh/RUpCV4uI6sEI3NDX2YqQbOtsBD/hNaL1F85FA
------END CERTIFICATE-----`
+// These hardcoded certificates are generated using cert-manager.
+// The YAML used to create these certificates is at the bottom of this file.
+// Each cert was created and then copied by hand, with intermediate 2 having its
+// chain in 'tls.crt' trimmed manually
 
-const rootKey = `-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAz5DYA7iEBFq/SrCOTsjiYSHlHbTUdLyzselos5cE2++Huon3
-InPqMupiDoS8/Qr9srnoKnah7aKB3sY7GlXdg85zcIbQIKocymsRy/GPbEEpfTRG
-1yfihUuEM+EBvQFX9Hs0Ut5bHOH6CC88jVebWotpZiphkQnlsGxhcPe091LgYYg1
-HPxm+KHjp/RnbBWQIahOmxtfwc7vixrYNrJSPMCxYaU7ltkaIxIeMMSd/3J6TZNy
-MTJWiiGg4tpCD+eDbVPlFbN5kpOXVzOfC4ZWv21l8cWrFDmp5oh37UgK3E2+QSNt
-OdmXpbL0K2GfR3HA55LlOowntIU1fLWCniN/8wIDAQABAoIBAQCYvGvIKSG0FpbG
-vi6pmLbEZO20s1jW4fiUxT2PUWR49sR4pocdahB/EOvA5TowNcNDnftSK+Ox+q/4
-HwRkt6R+Fg/qULmcH7F53dnFqeYw8a42/J3YOvg7v7rzdfISg4eWVobFJ+wBz+Nt
-3FyBYWLm+MlBLZSH5rGG5em59/zJNHWIhH+oQPfCxAkYEvd8tXOTUzjhqvEfjaJy
-FZghnT9xto4MwDdNCPbtzdNjTMhiv0AHkcZGGtRJfkehXX2qhXOQ2UzzO9XrMZnv
-5KgYf+bXKJsyS3SPl6TTl7vg2gKBciRvsdFhMy5I5GyIADrEDJnNNmXQRtiaFLfd
-k/aqfPT5AoGBAPquMouZUbVS/Qh+qbls7G4zAuznfCiqdctcKmUGPRP4sTTjWdUp
-fjI+UTt1e8hncmr4RY7Oa9kUV/kDwzS5spUZZ+u0PczS3XKxOwNOleoH00dfc9vt
-cxctHdPdDTndRi8Z4k3m931jIX7jB/Pyx8qeNYB3pj0k3ThktwMbAVLnAoGBANP4
-beI5zpbvtAdExJcuxx2mRDGF0lIdKC0bvQaeqM3Lwqnmc0Fz1dbP7KXDa+SdJWPd
-res+NHPZoEPeEJuDTSngXOLNECZe4Ja9frn1TeY858vMJBwIkyc8zu+sgXxjQUM+
-TWUlTUhtXyybkRnxAEny4OT2TTgmXITJaKOmV1UVAoGAHaXSlo4YitB42rNYUXTf
-dZ0U4H30Qj7+1YFeBjq5qI4GL1IgQsS4hyq1osmfTTFm593bJCunt7HfQbU/NhIs
-W9P4ZXkYwgvCYxkw+JAnzNkGFO/mHQG1Ve1hFLiVIt3XuiRejoYdiTfbM02YmDKD
-jKQvgbUk9SBSBaRrvLNJ8csCgYAYnrZEnGo+ZcEHRxl+ZdSCwRkSl3SCTRiphJtD
-9ZGttYj6quWgKJAhzyyxZC1X9FivbMQSmrsE6bYPq+9J4MpJnuGrBh5mFocHeyMI
-/lD5+QEDTsay6twMpqdydxrjE7Q01zuuD9MWIn33dGo6FR/vduJgNatqZipA0hPx
-ThS+sQKBgQDh0+cVo1mfYiCkp3IQPB8QYiJ/g2/UBk6pH8ZZDZ+A5td6NveiWO1y
-wTEUWkX2qyz9SLxWDGOhdKqxNrLCUSYSOV/5/JQEtBm6K50ArFtrY40JP/T/5KvM
-tSK2ayFX1wQ3PuEmewAogy/20tWo80cr556AXA62Utl2PzLK30Db8w==
------END RSA PRIVATE KEY-----`
+// rootCert is a hardcoded issuer certificate. Its dumped value is below:
+//
+//	Version: 3 (0x2)
+//	Serial Number:
+//	    f2:68:07:5e:fb:b1:5e:74:ab:27:cf:a5:7c:03:2f:b8
+//	Signature Algorithm: ecdsa-with-SHA256
+//	Issuer: C = UK, O = cert-manager, CN = cert-manager testing CA
+//	Validity
+//	    Not Before: Nov 14 13:13:15 2023 GMT
+//	    Not After : Oct 21 13:13:15 2123 GMT
+//	Subject: C = UK, O = cert-manager, CN = cert-manager testing CA
+//	Subject Public Key Info:
+//	    Public Key Algorithm: id-ecPublicKey
+//	        Public-Key: (256 bit)
+//	        pub:
+//	            04:d9:d7:61:40:b6:5a:e3:17:3e:8f:c4:27:49:cf:
+//	            6b:7d:35:24:d4:b7:c1:18:57:2c:6e:5d:aa:3c:ae:
+//	            a4:75:6d:f6:f6:d1:10:7a:0d:3e:0a:70:b9:3f:98:
+//	            5c:70:db:17:49:d2:9c:4e:9c:2b:3f:cc:45:2e:d4:
+//	            31:3c:3d:6a:90
+//	        ASN1 OID: prime256v1
+//	        NIST CURVE: P-256
+//	X509v3 extensions:
+//	    X509v3 Key Usage: critical
+//	        Digital Signature, Key Encipherment, Certificate Sign
+//	    X509v3 Basic Constraints: critical
+//	        CA:TRUE
+//	    X509v3 Subject Key Identifier:
+//	        DA:C7:45:E4:F1:67:F2:5F:F4:02:49:37:5A:F9:A9:C4:92:E7:65:F8
+//
+// Signature Algorithm: ecdsa-with-SHA256
+// Signature Value:
+//
+//	30:44:02:20:7f:5a:00:45:00:5f:e1:bc:b6:36:4f:30:be:24:
+//	7f:ce:01:e6:61:12:95:41:3a:69:1b:63:b7:63:13:d5:34:5d:
+//	02:20:1d:52:3e:11:e5:f6:54:31:aa:93:f0:9d:81:9b:01:40:
+//	8a:c2:0d:c4:ed:fc:23:cd:39:19:42:7e:a4:7d:c6:4a
+const rootCert = `-----BEGIN CERTIFICATE-----
+MIIBzjCCAXWgAwIBAgIRAPJoB177sV50qyfPpXwDL7gwCgYIKoZIzj0EAwIwRjEL
+MAkGA1UEBhMCVUsxFTATBgNVBAoTDGNlcnQtbWFuYWdlcjEgMB4GA1UEAxMXY2Vy
+dC1tYW5hZ2VyIHRlc3RpbmcgQ0EwIBcNMjMxMTE0MTMxMzE1WhgPMjEyMzEwMjEx
+MzEzMTVaMEYxCzAJBgNVBAYTAlVLMRUwEwYDVQQKEwxjZXJ0LW1hbmFnZXIxIDAe
+BgNVBAMTF2NlcnQtbWFuYWdlciB0ZXN0aW5nIENBMFkwEwYHKoZIzj0CAQYIKoZI
+zj0DAQcDQgAE2ddhQLZa4xc+j8QnSc9rfTUk1LfBGFcsbl2qPK6kdW329tEQeg0+
+CnC5P5hccNsXSdKcTpwrP8xFLtQxPD1qkKNCMEAwDgYDVR0PAQH/BAQDAgKkMA8G
+A1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFNrHReTxZ/Jf9AJJN1r5qcSS52X4MAoG
+CCqGSM49BAMCA0cAMEQCIH9aAEUAX+G8tjZPML4kf84B5mESlUE6aRtjt2MT1TRd
+AiAdUj4R5fZUMaqT8J2BmwFAisINxO38I805GUJ+pH3GSg==
+-----END CERTIFICATE-----
+`
+
+const rootKey = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIJpxHkhfBgd6I8P03Ny3nN14uJESxJgb+RZRMpNbZwxmoAoGCCqGSM49
+AwEHoUQDQgAE2ddhQLZa4xc+j8QnSc9rfTUk1LfBGFcsbl2qPK6kdW329tEQeg0+
+CnC5P5hccNsXSdKcTpwrP8xFLtQxPD1qkA==
+-----END EC PRIVATE KEY-----
+`
 
 func newSigningKeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
@@ -85,57 +96,66 @@ func newSigningKeypairSecret(name string) *corev1.Secret {
 	}
 }
 
+// issuer1Cert is a hardcoded issuer certificate. Its dumped value is below:
+//
+//	Version: 3 (0x2)
+//	Serial Number:
+//	    e9:8f:6f:02:16:60:5f:0a:9c:60:6e:e5:2c:c2:89:c4
+//	Signature Algorithm: ecdsa-with-SHA256
+//	Issuer: C = UK, O = cert-manager, CN = cert-manager testing CA
+//	Validity
+//	    Not Before: Nov 14 13:13:20 2023 GMT
+//	    Not After : Oct 21 13:13:20 2122 GMT
+//	Subject: C = UK, O = cert-manager, CN = cert-manager testing Issuer
+//	Subject Public Key Info:
+//	    Public Key Algorithm: id-ecPublicKey
+//	        Public-Key: (256 bit)
+//	        pub:
+//	            04:10:ce:5a:a1:67:6d:56:50:9a:4f:a5:d3:fc:6a:
+//	            06:dd:80:0f:df:57:93:fc:e1:a3:01:c2:32:05:61:
+//	            7d:82:a5:61:96:a0:42:61:af:6f:df:c4:02:bf:21:
+//	            a5:a7:75:ce:37:69:db:1d:6e:6a:cc:af:3a:e6:c2:
+//	            e6:92:52:e4:f1
+//	        ASN1 OID: prime256v1
+//	        NIST CURVE: P-256
+//	X509v3 extensions:
+//	    X509v3 Key Usage: critical
+//	        Digital Signature, Key Encipherment, Certificate Sign
+//	    X509v3 Basic Constraints: critical
+//	        CA:TRUE
+//	    X509v3 Subject Key Identifier:
+//	        C5:9C:69:C7:DB:59:72:5A:A7:53:44:66:FF:81:4E:89:BC:68:56:34
+//	    X509v3 Authority Key Identifier:
+//	        DA:C7:45:E4:F1:67:F2:5F:F4:02:49:37:5A:F9:A9:C4:92:E7:65:F8
+//
+// Signature Algorithm: ecdsa-with-SHA256
+// Signature Value:
+//
+// 30:45:02:20:16:53:d3:c3:0e:3e:35:23:08:e3:0b:c5:82:a3:
+// ab:59:5c:2d:f2:d4:06:7c:85:11:3f:5b:0e:c0:e7:37:7a:2b:
+// 02:21:00:ac:57:c5:a4:e4:42:93:31:03:4a:d2:20:de:da:f3:
+// 40:af:46:52:df:e3:2f:1c:fc:e9:8c:3f:82:47:aa:c5:27
 const issuer1Cert = `-----BEGIN CERTIFICATE-----
-MIIDnjCCAoagAwIBAgIUCAJmM4rqnkj65/0sFRSIjXNlmGYwDQYJKoZIhvcNAQEL
-BQAwUzELMAkGA1UEBhMCVUsxCzAJBgNVBAgTAk5BMRUwEwYDVQQKEwxjZXJ0LW1h
-bmFnZXIxIDAeBgNVBAMTF2NlcnQtbWFuYWdlciB0ZXN0aW5nIENBMB4XDTE4MTEx
-NTAwMDQwMFoXDTIzMTExNDAwMDQwMFowVzELMAkGA1UEBhMCVUsxCzAJBgNVBAgT
-Ak5BMRUwEwYDVQQKEwxjZXJ0LW1hbmFnZXIxJDAiBgNVBAMTG2NlcnQtbWFuYWdl
-ciB0ZXN0aW5nIElzc3VlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
-AKubAgcLJfXspsDNNR/TO+UUy0s9DE28w4OXs7pAppe7rtK1a531M9lGg+jZPryT
-PER4HeobhIk7h1iTmcVHp1mDB3IFDfKL8jKNEnsHGTcn5xY1RkFihFPphBiyGwvY
-S4nGi1NubxTA+kW0Pbcf3po2NWNdntAHaMcvMEkq+NdoSEK1HACHQ8QqtqfKUxMD
-XMFDmJD21/4PM6iqhDw2HPe87FY7KKdYAsMV8KnT5DIGJ6UbuarTuMzXZq0a8/aW
-sto/hrBJir+CQwmNIYg41G8m1CgUz0a3FYxtvLNZweeW9+SiVl0FCiajLws0HIW5
-4RTJ44Omr2/byIB+lmV63AMCAwEAAaNmMGQwDgYDVR0PAQH/BAQDAgGmMBIGA1Ud
-EwEB/wQIMAYBAf8CAQMwHQYDVR0OBBYEFESJnTHvnJn8qIOb/JD+nw4o0yxnMB8G
-A1UdIwQYMBaAFAba471n25CwNIl+rClUYSlKPOuJMA0GCSqGSIb3DQEBCwUAA4IB
-AQBre0a1hD4T0W9E/yGhk6O8k11i63vhgIcMeN1/RMtgJRwIWIf3iKXAwAeIjkXZ
-eGGSNWh8pC1wFvE9LIomhZLPSn+98FJ9dLfcaQXDOEyZM71OTsWQKS4NVNloHOxV
-zujEujIIZ4caVbOlQWxf7lPydnXP+S7GsMU8vlOsU2RC9jN+yeuho+ZVguSC76ni
-CG+k/Lzf46CMAZtRLdv9FPFttodBnodapOEgkhGwhyz/J6eLR1t9DWlxpQ1vk45H
-dT3HDz1CNlF/5HzYpVBus553Z7SFh2x1umKfmTUWqmbFsslr2y4w2nkhyG2+jH+k
-lh+Eve9i4q7YaO0EMlOOJMar
+MIIB9DCCAZqgAwIBAgIRAOmPbwIWYF8KnGBu5SzCicQwCgYIKoZIzj0EAwIwRjEL
+MAkGA1UEBhMCVUsxFTATBgNVBAoTDGNlcnQtbWFuYWdlcjEgMB4GA1UEAxMXY2Vy
+dC1tYW5hZ2VyIHRlc3RpbmcgQ0EwIBcNMjMxMTE0MTMxMzIwWhgPMjEyMjEwMjEx
+MzEzMjBaMEoxCzAJBgNVBAYTAlVLMRUwEwYDVQQKEwxjZXJ0LW1hbmFnZXIxJDAi
+BgNVBAMTG2NlcnQtbWFuYWdlciB0ZXN0aW5nIElzc3VlcjBZMBMGByqGSM49AgEG
+CCqGSM49AwEHA0IABBDOWqFnbVZQmk+l0/xqBt2AD99Xk/zhowHCMgVhfYKlYZag
+QmGvb9/EAr8hpad1zjdp2x1uasyvOubC5pJS5PGjYzBhMA4GA1UdDwEB/wQEAwIC
+pDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTFnGnH21lyWqdTRGb/gU6JvGhW
+NDAfBgNVHSMEGDAWgBTax0Xk8WfyX/QCSTda+anEkudl+DAKBggqhkjOPQQDAgNI
+ADBFAiAWU9PDDj41IwjjC8WCo6tZXC3y1AZ8hRE/Ww7A5zd6KwIhAKxXxaTkQpMx
+A0rSIN7a80CvRlLf4y8c/OmMP4JHqsUn
 -----END CERTIFICATE-----
 `
 
-const issuer1Key = `-----BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAq5sCBwsl9eymwM01H9M75RTLSz0MTbzDg5ezukCml7uu0rVr
-nfUz2UaD6Nk+vJM8RHgd6huEiTuHWJOZxUenWYMHcgUN8ovyMo0SewcZNyfnFjVG
-QWKEU+mEGLIbC9hLicaLU25vFMD6RbQ9tx/emjY1Y12e0Adoxy8wSSr412hIQrUc
-AIdDxCq2p8pTEwNcwUOYkPbX/g8zqKqEPDYc97zsVjsop1gCwxXwqdPkMgYnpRu5
-qtO4zNdmrRrz9pay2j+GsEmKv4JDCY0hiDjUbybUKBTPRrcVjG28s1nB55b35KJW
-XQUKJqMvCzQchbnhFMnjg6avb9vIgH6WZXrcAwIDAQABAoIBAHm3VFTSn3YzCIOw
-CYItPUpa2WbgQh3RSYvIyf3NZVwyDun9K/u5s7DkxyMdE9aFSDX4TJ+ELRl5U6KL
-7oFzNUvUGC/TTfU/NeaNERKaElSAxPOHjfFKgzlRZBRwH6bjH5D1dlUS+07pIZrX
-IP8GZ8lRscRs3vwGhVbiLYl4JVACydgyV/Th1yJYFEOXlmHV4Kk0ce3swsXL0NUb
-BFQ53RULSxLVaYy4XXF3azSUdMkalDf8DxxeFtPUSW49zp6/iOArZTNCoiGavOHo
-YvtnUXjt2QK64SdjFYMyCD8EcLlMTOUtAS10lw9NwUS3JMp3u79bO2uvRwJpT+IP
-Hb0Sg8ECgYEAyi41EwEE6cwNVOAZxkOgv+ejhBjKuUrhzp0vwg3Uziuy6TZPJEoA
-5e/8pFuvxbfU0lGUe6CkHdpSQPO7ifsTuxYxO/ZX8DqSaCwnRp+kJUyi7Jz3Ypfk
-LsVg3TMW9Hmvntz8kPTN8DJMo6W7TC0m05L5pyfvM2BpBXqYIPNLInkCgYEA2Uk8
-mnA43ME+oaqLxcqgIE1+AXeg+voH17kiuO7hVWlprxJv/b6AAjm0nxcuLcdofKJT
-JgaWrwyhI676q5T/lqQn/gdJ7rwz/83WnforW7WVza2XT+aDFcwNq07vHYoeCK6B
-5RJFIY4Yuk4CORXeElYipz/VyCO2mUgJfHNDs1sCgYEAkS3lBqRwtsHDwPK7D1d4
-ktTu4eg7ihpvU0IkDSCJcxKGAljxM4nAY1yU+iCsczmyJORXzv5nWthuwB1Eyav1
-Wx5wdDJMq0Aj6ZHrEheIcxA43ddI/Q881yj8iVoqXZsTtOvSoPRo/NXhmpFjkSvK
-+ZpMku9mIGpWf4ysuNx7U2ECgYEAlOk+IVFbht7g/4aT99+f0cOJ4ZOMvbPxAASf
-KUJ9Jz3w8cye97VAoUXO5WDLgxAwKYpNlbfaOOlc3cmjfUfFygWCavOv1W8h6+Oz
-e9zhLh7KJYUcN+PwXlXT4F1ePk5TuvtthgH5Yr+xbqzblSfJY6OoaBq1dk4TbAUU
-izerZBUCgYEAn28gG04dByfcyY/crwpRLNVlaA0J93v5H9E/wlEiV1PhEYTdj2S8
-PLm9ur3V+kkBSarBur9+rRil0BHvVgC9K6kwMr60JcVT+bmZi0AbPOlPZsp9OPQf
-YK5kMSMSbh4t9OUtadogDGI299P6Q9leaU65XRAar96wVsz8X/XdPPc=
------END RSA PRIVATE KEY-----`
+const issuer1Key = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIOgqbZ1Z5PVkxq4s89+CZaE5hwMNQiW9B1ldCwDFXaN9oAoGCCqGSM49
+AwEHoUQDQgAEEM5aoWdtVlCaT6XT/GoG3YAP31eT/OGjAcIyBWF9gqVhlqBCYa9v
+38QCvyGlp3XON2nbHW5qzK865sLmklLk8Q==
+-----END EC PRIVATE KEY-----
+`
 
 func newSigningIssuer1KeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
@@ -149,57 +169,66 @@ func newSigningIssuer1KeypairSecret(name string) *corev1.Secret {
 	}
 }
 
+// issuer2Cert is a hardcoded issuer certificate. Its dumped value is below:
+//
+//	Version: 3 (0x2)
+//	Serial Number:
+//	    ad:3c:69:dd:89:4a:a6:5c:e0:12:9e:1b:a2:3a:28:d8
+//	Signature Algorithm: ecdsa-with-SHA256
+//	Issuer: C = UK, O = cert-manager, CN = cert-manager testing Issuer
+//	Validity
+//	    Not Before: Nov 14 13:13:40 2023 GMT
+//	    Not After : Oct 21 13:13:40 2121 GMT
+//	Subject: C = UK, O = cert-manager, CN = cert-manager testing Issuer Level 2
+//	Subject Public Key Info:
+//	    Public Key Algorithm: id-ecPublicKey
+//	        Public-Key: (256 bit)
+//	        pub:
+//	            04:dc:8e:15:e3:e7:cc:bb:18:37:c9:bc:d3:73:a6:
+//	            a9:e6:6f:5d:b1:ea:32:45:af:7f:3d:7e:9a:ff:5a:
+//	            c6:6e:c2:79:fd:8d:57:c8:25:47:9d:16:e1:06:4e:
+//	            26:2c:01:e0:df:ac:f6:c8:ef:06:72:51:9e:55:88:
+//	            7d:f1:0f:d4:e7
+//	        ASN1 OID: prime256v1
+//	        NIST CURVE: P-256
+//	X509v3 extensions:
+//	    X509v3 Key Usage: critical
+//	        Digital Signature, Key Encipherment, Certificate Sign
+//	    X509v3 Basic Constraints: critical
+//	        CA:TRUE
+//	    X509v3 Subject Key Identifier:
+//	        4D:6E:AA:29:39:75:2E:A1:E0:6A:4E:F2:F4:E4:07:B4:99:D5:23:8B
+//	    X509v3 Authority Key Identifier:
+//	        C5:9C:69:C7:DB:59:72:5A:A7:53:44:66:FF:81:4E:89:BC:68:56:34
+//
+// Signature Algorithm: ecdsa-with-SHA256
+// Signature Value:
+//
+//	30:44:02:20:4a:78:8d:cb:56:b9:12:d1:0b:dd:bd:77:f1:28:
+//	14:71:b3:e1:6e:30:a6:27:73:ba:de:c9:a8:53:9e:c3:43:cb:
+//	02:20:68:92:6b:13:72:35:18:70:3e:66:cb:e1:ca:b5:47:0f:
+//	d9:16:5e:1a:00:2d:58:61:a4:05:29:08:a1:ea:c8:87
 const issuer2Cert = `-----BEGIN CERTIFICATE-----
-MIIDqjCCApKgAwIBAgIUHqm61uyYt2ICGRcZnBSjYaPonuowDQYJKoZIhvcNAQEL
-BQAwVzELMAkGA1UEBhMCVUsxCzAJBgNVBAgTAk5BMRUwEwYDVQQKEwxjZXJ0LW1h
-bmFnZXIxJDAiBgNVBAMTG2NlcnQtbWFuYWdlciB0ZXN0aW5nIElzc3VlcjAeFw0x
-ODExMTUwMDA0MDBaFw0yMzExMTQwMDA0MDBaMF8xCzAJBgNVBAYTAlVLMQswCQYD
-VQQIEwJOQTEVMBMGA1UEChMMY2VydC1tYW5hZ2VyMSwwKgYDVQQDEyNjZXJ0LW1h
-bmFnZXIgdGVzdGluZyBJc3N1ZXIgTGV2ZWwgMjCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBAMRm1cYCcHmA7UtF3vISLiob5eh234njNp33nkFWjDsE9Zgi
-CIxVb9FBd+rkKn0xkPMke79lmr1kVkmjpAZ0Y0w/IDSEX8JMJvtyuAoS79r0W+rn
-dEG5GzJGLswOK0gsvGyl4i8E9a5itUkRa01OETFIiay0iwNMUYnIflm8G/Uu2Jhr
-/HSyWND+KLzX5gMDsiv4HdtCsNHstdMwBr4dkiCzpi+N/b2KTggmY84KeVQVpmRc
-IVoVr06uc3YTa2mlqrw3qX16d5r9DLYrrq1UT3HXB0PJvvsIjJN8eqKk33Mcbinj
-VR1Ywg9QYaJHpBPPxLL0AzNG29SebRLtGvKexoUCAwEAAaNmMGQwDgYDVR0PAQH/
-BAQDAgGmMBIGA1UdEwEB/wQIMAYBAf8CAQMwHQYDVR0OBBYEFHp3C+Se1LZMcQ0B
-0iycJLvwqo9lMB8GA1UdIwQYMBaAFESJnTHvnJn8qIOb/JD+nw4o0yxnMA0GCSqG
-SIb3DQEBCwUAA4IBAQA/lnvr+GnMJDA+Z7MEMRAcqdIScO38LVQNO340jFMcMkmW
-YTnyNoEvI4fnCon9Oz2FsFcZp90Gniu01lDLyzR+1SsfFf6zwqGVUV29hidR6BvD
-VGLM6SMnbgXUd+RPvAIrHU3BuSF2sRPiw7YqzgNVZQ2dUF+Q+R+Onu5i47CwVFOd
-6Dd7xr5+ECaHGyuIH/RsXLvB+2reJ5dEl3oBxiyyzY1oOkt6y4HrB8n90JWPmXIf
-9oQ8T+p3PbsFkz667nbVnVCkdAKtU/ZX09S1jGVKsOKszA1qhxFcMy+wkkyHq4Jj
-v+q/VgVxL5HzEw4zyKS9Y2lcwhCicMrLKIGt91fQ
+MIIB/zCCAaagAwIBAgIRAK08ad2JSqZc4BKeG6I6KNgwCgYIKoZIzj0EAwIwSjEL
+MAkGA1UEBhMCVUsxFTATBgNVBAoTDGNlcnQtbWFuYWdlcjEkMCIGA1UEAxMbY2Vy
+dC1tYW5hZ2VyIHRlc3RpbmcgSXNzdWVyMCAXDTIzMTExNDEzMTM0MFoYDzIxMjEx
+MDIxMTMxMzQwWjBSMQswCQYDVQQGEwJVSzEVMBMGA1UEChMMY2VydC1tYW5hZ2Vy
+MSwwKgYDVQQDEyNjZXJ0LW1hbmFnZXIgdGVzdGluZyBJc3N1ZXIgTGV2ZWwgMjBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABNyOFePnzLsYN8m803OmqeZvXbHqMkWv
+fz1+mv9axm7Cef2NV8glR50W4QZOJiwB4N+s9sjvBnJRnlWIffEP1OejYzBhMA4G
+A1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRNbqopOXUu
+oeBqTvL05Ae0mdUjizAfBgNVHSMEGDAWgBTFnGnH21lyWqdTRGb/gU6JvGhWNDAK
+BggqhkjOPQQDAgNHADBEAiBKeI3LVrkS0QvdvXfxKBRxs+FuMKYnc7reyahTnsND
+ywIgaJJrE3I1GHA+ZsvhyrVHD9kWXhoALVhhpAUpCKHqyIc=
 -----END CERTIFICATE-----
 `
 
-const issuer2Key = `-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAxGbVxgJweYDtS0Xe8hIuKhvl6HbfieM2nfeeQVaMOwT1mCII
-jFVv0UF36uQqfTGQ8yR7v2WavWRWSaOkBnRjTD8gNIRfwkwm+3K4ChLv2vRb6ud0
-QbkbMkYuzA4rSCy8bKXiLwT1rmK1SRFrTU4RMUiJrLSLA0xRich+Wbwb9S7YmGv8
-dLJY0P4ovNfmAwOyK/gd20Kw0ey10zAGvh2SILOmL439vYpOCCZjzgp5VBWmZFwh
-WhWvTq5zdhNraaWqvDepfXp3mv0MtiuurVRPcdcHQ8m++wiMk3x6oqTfcxxuKeNV
-HVjCD1BhokekE8/EsvQDM0bb1J5tEu0a8p7GhQIDAQABAoIBAFwCzV3RoL3bn8/m
-8Pa5e7UwkrogjsM7lkfVTOfRUysHPMPEFfsgv5zqLfL2Z811HjI6wlq9kAvwaNhg
-+KQpfKeo3z6bUX1mTdD5Qq09h+8tEa7wNi/gN5SK+ruQW8iZZMEFyfw7N5o2FjYg
-GgQCcd2D3TPy9TlbVMvXCRKjJPns4PvWnjcR6YryPCluhnm6t0UEdusAj5baENU5
-95XG3e+7ZWzz4uejY778pyV/4yCfMXG9HZInkw9Uj3aNibiP/oKyF8Z0m1tAheLp
-SfLH/KxC8sWW/Cn3YFAvq+3fSH3ezeaFNdQFi8L0uGA9h9ucZmKaT5jI1bM9Mj55
-Vrsg/wECgYEA7rCQ/NFLtQ6PZNSApxRdWG+67mDrWMuaHho9KB+g0vIzGoxj2+DS
-iVlk4F1zVjZ5S8yjSmBm2pxF4ornUdQUs5+iKHJqeweSQenZ3Ylx10rhACfUWhZ+
-Zo/mrG30MJs2ceOaYJww1zrcjI3ktFwpZlX95J/e26gGqY8GKA8KaEECgYEA0qUp
-3eWvwiTn2ztKEHZ06jNoPB1E3tAA939+W1Cy5VTDH2ZJYDE6lELTgW/7PuS6Auty
-cJur3nyIJMQkb2GBqh8jgxb7huDpOkf8kAdPoD9PnmWTisF5XKO5Uv3O2t/xKQNl
-pKAC9P1au3uCz8HA2ZbyLqiuXE7SKsIqQmMtbUUCgYArkAwWKDiyBcND+si0NbJH
-prSuNwAdB6PMJKvOu98FQPD0wnSjN6gVKzyO+l9Hd8+xdtrCg0+iTG0wyHspYxSY
-J+VXjnJCnAIkh4KcvS4Kxf7EoYBPJNXS8CaAh9zOVjWcmZaeVUNQtMx11pvMExn3
-NHCPHmJ1Inh8z76m5v/WQQKBgEeQFyYs10ZU9XQ0s1fedp/ucRYjN3efIQT0ioAJ
-bY2d+2BahskoUGd4QJTz716RpGRDizCYoo5GrpYXEO3KKZwbUhxCHZfYJ0RGmpZv
-9WxStgDxL2vviQShFuAMHE+dzzeI0OpZ9kc3H7EcJ/ffMl55+rNBWWNA4APozSSa
-vx8lAoGBAODUjD1S1w/l+OTZWqo+bUvpC58CSioZ+gvNi4KE0h+1ZgLgE1RivQOM
-UxwyspRQp2exnQ3hvCpzjhx+ji/FlhK86lspGjyZqTd+ifa/tO51+tvU217/XDtx
-JypkAFhZ398YzhuqsRbFNMFnxA6QT+YFsqjT+R0vSFM8n2qptJHB
------END RSA PRIVATE KEY-----`
+const issuer2Key = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIKAcZcHAM0aunfX5bZcTGW6p5FR0PCH+mJT7R5SgKFaOoAoGCCqGSM49
+AwEHoUQDQgAE3I4V4+fMuxg3ybzTc6ap5m9dseoyRa9/PX6a/1rGbsJ5/Y1XyCVH
+nRbhBk4mLAHg36z2yO8GclGeVYh98Q/U5w==
+-----END EC PRIVATE KEY-----
+`
 
 func newSigningIssuer2KeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
@@ -212,3 +241,106 @@ func newSigningIssuer2KeypairSecret(name string) *corev1.Secret {
 		},
 	}
 }
+
+// YAML for creating the hardcoded certificates in this file:
+
+/*
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-cert
+spec:
+  isCA: true
+  commonName: cert-manager testing CA
+  secretName: root-secret
+  duration: 876000h # 365 days * 100 years
+  subject:
+    organizations:
+    - cert-manager
+    countries:
+    - UK
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: root-ca-issuer
+spec:
+  ca:
+    secretName: root-secret
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: intermediate-cert-1
+spec:
+  isCA: true
+  commonName: cert-manager testing Issuer
+  secretName: intermediate-cert-1-secret
+  duration: 867240h # 365 days * 99 years
+  subject:
+    organizations:
+    - cert-manager
+    countries:
+    - UK
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: root-ca-issuer
+    kind: Issuer
+    group: cert-manager.io
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: intermediate-cert-1-issuer
+spec:
+  ca:
+    secretName: intermediate-cert-1-secret
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: intermediate-cert-2
+spec:
+  isCA: true
+  commonName: cert-manager testing Issuer Level 2
+  secretName: intermediate-cert-2-secret
+  duration: 858480h # 365 days * 98 years
+  subject:
+    organizations:
+    - cert-manager
+    countries:
+    - UK
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: intermediate-cert-1-issuer
+    kind: Issuer
+    group: cert-manager.io
+*/

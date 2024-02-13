@@ -118,6 +118,22 @@ const (
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
 	// the usages field empty.
 	DisallowInsecureCSRUsageDefinition featuregate.Feature = "DisallowInsecureCSRUsageDefinition"
+
+	// Owner: @tanujd11
+	// Alpha: v1.14
+	//
+	// NameConstraints adds support for Name Constraints in Certificate resources
+	// with IsCA=true.
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/3655
+	NameConstraints featuregate.Feature = "NameConstraints"
+
+	// Owner: @SpectralHiss
+	// Alpha: v1.14
+	//
+	// OtherNames adds support for OtherName Subject Alternative Name values in
+	// Certificate resources.
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/6393
+	OtherNames featuregate.Feature = "OtherNames"
 )
 
 func init() {
@@ -139,4 +155,6 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
+	NameConstraints:                                  {Default: false, PreRelease: featuregate.Alpha},
+	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 }

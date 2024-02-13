@@ -19,6 +19,7 @@ package util
 import (
 	"net"
 	"net/url"
+	"slices"
 	"testing"
 )
 
@@ -219,7 +220,7 @@ func TestContains(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(test testT) func(*testing.T) {
 			return func(t *testing.T) {
-				if actual := Contains(test.slice, test.value); actual != test.equal {
+				if actual := slices.Contains(test.slice, test.value); actual != test.equal {
 					t.Errorf("Contains(%+v, %+v) = %t, but expected %t", test.slice, test.value, actual, test.equal)
 				}
 			}

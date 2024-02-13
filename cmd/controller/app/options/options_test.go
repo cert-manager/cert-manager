@@ -31,27 +31,27 @@ import (
 func TestEnabledControllers(t *testing.T) {
 	tests := map[string]struct {
 		controllers []string
-		expEnabled  sets.String
+		expEnabled  sets.Set[string]
 	}{
 		"if no controllers enabled, return empty": {
 			controllers: []string{},
-			expEnabled:  sets.NewString(),
+			expEnabled:  sets.New[string](),
 		},
 		"if some controllers enabled, return list": {
 			controllers: []string{"foo", "bar"},
-			expEnabled:  sets.NewString("foo", "bar"),
+			expEnabled:  sets.New[string]("foo", "bar"),
 		},
 		"if some controllers enabled, one then disabled, return list without disabled": {
 			controllers: []string{"foo", "bar", "-foo"},
-			expEnabled:  sets.NewString("bar"),
+			expEnabled:  sets.New[string]("bar"),
 		},
 		"if all default controllers enabled, return all default controllers": {
 			controllers: []string{"*"},
-			expEnabled:  sets.NewString(defaults.DefaultEnabledControllers...),
+			expEnabled:  sets.New[string](defaults.DefaultEnabledControllers...),
 		},
 		"if all controllers enabled, some diabled, return all controllers with disabled": {
 			controllers: []string{"*", "-clusterissuers", "-issuers"},
-			expEnabled:  sets.NewString(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
+			expEnabled:  sets.New[string](defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
 		},
 	}
 

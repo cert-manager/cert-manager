@@ -24,13 +24,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	vaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/venafi"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func() {
@@ -79,7 +79,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 	It("should obtain a signed certificate for a single domain", func() {
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
-		dnsNames := []string{cmutil.RandStringRunes(10) + ".venafi-e2e.example"}
+		dnsNames := []string{rand.String(10) + ".venafi-e2e.example"}
 
 		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())

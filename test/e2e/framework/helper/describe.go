@@ -21,17 +21,17 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimejson "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	kubescheme "k8s.io/client-go/kubernetes/scheme"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 )
 
 func (h *Helper) describeKubeObject(object runtime.Object) error {
-	serializer := runtimejson.NewSerializerWithOptions(runtimejson.DefaultMetaFactory, kubescheme.Scheme, kubescheme.Scheme, runtimejson.SerializerOptions{
+	serializer := runtimejson.NewSerializerWithOptions(runtimejson.DefaultMetaFactory, kscheme.Scheme, kscheme.Scheme, runtimejson.SerializerOptions{
 		Yaml:   true,
 		Pretty: true,
 	})
-	encoder := kubescheme.Codecs.WithoutConversion().EncoderForVersion(serializer, nil)
+	encoder := kscheme.Codecs.WithoutConversion().EncoderForVersion(serializer, nil)
 	return encoder.Encode(object, os.Stdout)
 }
 

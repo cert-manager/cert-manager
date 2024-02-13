@@ -368,8 +368,45 @@ func TestVault_Setup(t *testing.T) {
 			},
 			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
+		{
+			name: "server with invalid url should fail to setup",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: "https:/vault.example.com",
+					Auth: v1.VaultAuth{
+						TokenSecretRef: &cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
+								Name: "cert-manager",
+							},
+							Key: "",
+						},
+					},
+				},
+			},
+			expectErr: "Get \"https:///vault.example.com/v1/sys/health\": http: no Host in request URL",
+		},
+		{
+			name: "server with leading whitespace should fail to parse",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: " https://vault.example.com",
+					Auth: v1.VaultAuth{
+						TokenSecretRef: &cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
+								Name: "cert-manager",
+							},
+							Key: "",
+						},
+					},
+				},
+			},
+			expectErr: "error initializing Vault client: parse \" https://vault.example.com\": first path segment in URL cannot contain colon",
+		},
 	}
 	for _, tt := range tests {
+		tt := tt // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(tt.name, func(t *testing.T) {
 			givenIssuer := &v1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{

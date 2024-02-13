@@ -22,13 +22,13 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
-	"golang.org/x/exp/slices"
 	certificatesv1 "k8s.io/api/certificates/v1"
 )
 
@@ -166,10 +166,11 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 		PublicKey:          csr.PublicKey,
 		Subject:            csr.Subject,
 		RawSubject:         csr.RawSubject,
-		DNSNames:           csr.DNSNames,
-		IPAddresses:        csr.IPAddresses,
-		EmailAddresses:     csr.EmailAddresses,
-		URIs:               csr.URIs,
+
+		DNSNames:       csr.DNSNames,
+		IPAddresses:    csr.IPAddresses,
+		EmailAddresses: csr.EmailAddresses,
+		URIs:           csr.URIs,
 	}
 
 	// Start by copying all extensions from the CSR
@@ -193,6 +194,22 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			}
 		}
 
+		if val.Id.Equal(OIDExtensionNameConstraints) {
+			nameConstraints, err := UnmarshalNameConstraints(val.Value)
+			if err != nil {
+				return err
+			}
+			template.PermittedDNSDomainsCritical = val.Critical
+			template.PermittedDNSDomains = nameConstraints.PermittedDNSDomains
+			template.PermittedIPRanges = nameConstraints.PermittedIPRanges
+			template.PermittedEmailAddresses = nameConstraints.PermittedEmailAddresses
+			template.PermittedURIDomains = nameConstraints.PermittedURIDomains
+			template.ExcludedDNSDomains = nameConstraints.ExcludedDNSDomains
+			template.ExcludedIPRanges = nameConstraints.ExcludedIPRanges
+			template.ExcludedEmailAddresses = nameConstraints.ExcludedEmailAddresses
+			template.ExcludedURIDomains = nameConstraints.ExcludedURIDomains
+		}
+
 		// RFC 5280, 4.2.1.3
 		if val.Id.Equal(OIDExtensionKeyUsage) {
 			usage, err := UnmarshalKeyUsage(val.Value)
@@ -213,6 +230,14 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			template.UnknownExtKeyUsage = unknownUsages
 		}
 
+		// The SANs fields in the Certificate resource are not enough to
+		// represent the full set of SANs that can be encoded in a CSR.
+		// Therefore, we need to copy the SANs from the CSR into the
+		// ExtraExtensions field of the certificate template.
+		if val.Id.Equal(oidExtensionSubjectAltName) {
+			template.ExtraExtensions = append(template.ExtraExtensions, val)
+		}
+
 		return nil
 	}
 
@@ -228,9 +253,31 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 		}
 	}
 
+	cert.Extensions = csr.Extensions
+
 	for _, validatorMutator := range validatorMutators {
 		if err := validatorMutator(csr, cert); err != nil {
 			return nil, err
+		}
+	}
+
+	// Finally, we fix up the certificate template to ensure that it is valid
+	{
+		// If the certificate has an empty Subject, we set any SAN extensions to be critical
+		var asn1Subject []byte
+		if cert.RawSubject != nil {
+			asn1Subject = cert.RawSubject
+		} else {
+			asn1Subject, err = asn1.Marshal(cert.Subject.ToRDNSequence())
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal subject to ASN.1 DER: %s", err.Error())
+			}
+		}
+
+		for i := range cert.ExtraExtensions {
+			if cert.ExtraExtensions[i].Id.Equal(oidExtensionSubjectAltName) {
+				cert.ExtraExtensions[i].Critical = IsASN1SubjectEmpty(asn1Subject)
+			}
 		}
 	}
 
@@ -328,40 +375,5 @@ func CertificateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certif
 		CertificateTemplateOverrideDuration(duration),
 		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
 		CertificateTemplateValidateAndOverrideKeyUsages(ku, eku),          // Override the key usages, but make sure they match the usages in the CSR if present
-	)
-}
-
-// Deprecated: use CertificateTemplateFromCertificate instead.
-func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
-	return CertificateTemplateFromCertificate(crt)
-}
-
-// Deprecated: use CertificateTemplateFromCertificateRequest instead.
-func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-	return CertificateTemplateFromCertificateRequest(cr)
-}
-
-// Deprecated: use CertificateTemplateFromCertificateSigningRequest instead.
-func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
-	return CertificateTemplateFromCertificateSigningRequest(csr)
-}
-
-// Deprecated: use CertificateTemplateFromCSRPEM instead.
-func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
-	return CertificateTemplateFromCSRPEM(
-		csrPEM,
-		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
-		certificateTemplateOverrideKeyUsages(0, nil),                      // Override the key usages to be empty
-	)
-}
-
-// Deprecated: use CertificateTemplateFromCSRPEM instead.
-func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration, isCA bool, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
-	return CertificateTemplateFromCSRPEM(
-		csrPEM,
-		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil),      // Override the basic constraints, but make sure they match the constraints in the CSR if present
-		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage), // Override the key usages, but make sure they match the usages in the CSR if present
 	)
 }
