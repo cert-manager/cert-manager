@@ -712,20 +712,19 @@ func getAltCertChain(ctx context.Context, cl acmecl.Interface, certURL string, p
 		if err != nil {
 			return false, nil, fmt.Errorf("error fetching alternate certificate chain from %s: %w", altURL, err)
 		}
-		// Loop over each cert in this chain
-		for _, altCert := range altChain {
-			cert, err := x509.ParseCertificate(altCert)
-			if err != nil {
-				return false, nil, fmt.Errorf("error parsing alternate certificate chain: %w", err)
-			}
-			log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found alternative ACME bundle")
-			if cert.Issuer.CommonName == preferredChain {
-				// if the issuer's CN matched the preferred chain it means this bundle is
-				// signed by the requested chain
-				log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting alternative ACME bundle with a matching Common Name from %s", altURL)
-				return true, altChain, nil
-			}
+		// Check topmost certificate
+		cert, err := x509.ParseCertificate(altChain[len(altChain)-1])
+		if err != nil {
+			return false, nil, fmt.Errorf("error parsing alternate certificate chain: %w", err)
 		}
+		log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found alternative ACME bundle")
+		if cert.Issuer.CommonName == preferredChain {
+			// if the issuer's CN matched the preferred chain it means this bundle is
+			// signed by the requested chain
+			log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting alternative ACME bundle with a matching Common Name from %s", altURL)
+			return true, altChain, nil
+		}
+
 	}
 	return false, nil, nil
 
