@@ -23,6 +23,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -44,7 +45,7 @@ func NewPlugin() admission.Interface {
 	}
 }
 
-func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj runtime.Object) error {
+func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error {
 	// Only run this admission plugin for the certificaterequests/status sub-resource
 	if request.RequestResource.Group != "cert-manager.io" ||
 		request.RequestResource.Resource != "certificaterequests" ||
@@ -52,13 +53,28 @@ func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissi
 		return nil
 	}
 
-	cr := obj.(*certmanager.CertificateRequest)
-	cr.Spec.UID = request.UserInfo.UID
-	cr.Spec.Username = request.UserInfo.Username
-	cr.Spec.Groups = request.UserInfo.Groups
-	cr.Spec.Extra = make(map[string][]string)
-	for k, v := range request.UserInfo.Extra {
-		cr.Spec.Extra[k] = v
+	for _, err := range []error{
+		unstructured.SetNestedField(obj.Object, request.UserInfo.UID, "spec", "uid"),
+		unstructured.SetNestedField(obj.Object, request.UserInfo.Username, "spec", "username"),
+		unstructured.SetNestedStringSlice(obj.Object, request.UserInfo.Groups, "spec", "groups"),
+	} {
+		if err != nil {
+			return err
+		}
+	}
+
+	// Overwrite the 'spec.extra' field with the request.UserInfo.Extra field.
+	// If the request.UserInfo.Extra field is empty, remove the 'spec.extra' field.
+	unstructured.RemoveNestedField(obj.Object, "spec", "extra")
+	if len(request.UserInfo.Extra) > 0 {
+		unstructuredExtra, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&request.UserInfo.Extra)
+		if err != nil {
+			return err
+		}
+
+		if err := unstructured.SetNestedMap(obj.Object, unstructuredExtra, "spec", "extra"); err != nil {
+			return err
+		}
 	}
 
 	return nil

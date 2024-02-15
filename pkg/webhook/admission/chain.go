@@ -20,6 +20,7 @@ import (
 	"context"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
@@ -55,7 +56,7 @@ func (pc PluginChain) Validate(ctx context.Context, request admissionv1.Admissio
 	return allWarnings, utilerrors.NewAggregate(allErrors)
 }
 
-func (pc PluginChain) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj runtime.Object) error {
+func (pc PluginChain) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error {
 	for _, handler := range pc {
 		if !handler.Handles(request.Operation) {
 			continue

@@ -18,46 +18,31 @@ package admission
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func NewCustomMutationWebhook(
-	scheme *runtime.Scheme,
 	mutationWebhook MutationInterface,
 ) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &mutator{
-			decoder: &internalDecoder{
-				scheme: scheme,
-				codecs: serializer.NewCodecFactory(scheme),
-			},
-			scheme:          scheme,
 			mutationWebhook: mutationWebhook,
 		},
 	}
 }
 
 type mutator struct {
-	decoder         *internalDecoder
-	scheme          *runtime.Scheme
 	mutationWebhook MutationInterface
 }
 
 // Handle handles admission requests.
 func (h *mutator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	if h.decoder == nil {
-		panic("decoder should never be nil")
-	}
-
 	// short-path
 	if h.mutationWebhook == nil || !h.mutationWebhook.Handles(req.AdmissionRequest.Operation) {
 		return admission.Allowed("")
@@ -69,9 +54,14 @@ func (h *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 	}
 
 	ctx = admission.NewContextWithRequest(ctx, req)
+	gvk := schema.GroupVersionKind{
+		Group:   req.Kind.Group,
+		Version: req.Kind.Version,
+		Kind:    req.Kind.Kind,
+	}
 
 	// Get the object in the request
-	obj, err := h.decoder.DecodeRaw(req.Object)
+	obj, err := DecodeRawUnstructured(req.Object, gvk)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -91,16 +81,8 @@ func (h *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Denied(err.Error())
 	}
 
-	// Convert the object into the original version that was submitted to the webhook
-	// before generating the patch.
-	outputGroupVersioner := runtime.NewMultiGroupVersioner(schema.GroupVersion{Group: req.Kind.Group, Version: req.Kind.Version})
-	finalObject, err := h.scheme.ConvertToVersion(obj, outputGroupVersioner)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-
 	// Create the patch
-	marshalled, err := json.Marshal(finalObject)
+	marshalled, err := obj.MarshalJSON()
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}

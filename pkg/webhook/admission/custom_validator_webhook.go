@@ -25,6 +25,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -61,6 +62,11 @@ func (h *validator) Handle(ctx context.Context, req admission.Request) admission
 	}
 
 	ctx = admission.NewContextWithRequest(ctx, req)
+	gvk := schema.GroupVersionKind{
+		Group:   req.Kind.Group,
+		Version: req.Kind.Version,
+		Kind:    req.Kind.Kind,
+	}
 
 	var obj runtime.Object
 	var oldObj runtime.Object
@@ -72,16 +78,16 @@ func (h *validator) Handle(ctx context.Context, req admission.Request) admission
 		// No validation for connect requests.
 		// TODO(vincepri): Should we validate CONNECT requests? In what cases?
 	case admissionv1.Create:
-		if obj, err = h.decoder.DecodeRaw(req.Object); err != nil {
+		if obj, err = h.decoder.DecodeRaw(req.Object, gvk); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
 		warnings, err = h.validationWebhook.Validate(ctx, req.AdmissionRequest, nil, obj)
 	case admissionv1.Update:
-		if obj, err = h.decoder.DecodeRaw(req.Object); err != nil {
+		if obj, err = h.decoder.DecodeRaw(req.Object, gvk); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if oldObj, err = h.decoder.DecodeRaw(req.OldObject); err != nil {
+		if oldObj, err = h.decoder.DecodeRaw(req.OldObject, gvk); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
@@ -89,7 +95,7 @@ func (h *validator) Handle(ctx context.Context, req admission.Request) admission
 	case admissionv1.Delete:
 		// In reference to PR: https://github.com/kubernetes/kubernetes/pull/76346
 		// OldObject contains the object being deleted
-		if oldObj, err = h.decoder.DecodeRaw(req.OldObject); err != nil {
+		if oldObj, err = h.decoder.DecodeRaw(req.OldObject, gvk); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 

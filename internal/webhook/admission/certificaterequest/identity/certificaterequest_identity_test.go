@@ -24,9 +24,12 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 var correctRequestResource = &metav1.GroupVersionResource{
@@ -35,9 +38,35 @@ var correctRequestResource = &metav1.GroupVersionResource{
 	Resource: "certificaterequests",
 }
 
+func toUnstructured(t *testing.T, obj runtime.Object) *unstructured.Unstructured {
+	scheme := runtime.NewScheme()
+	if err := cmapi.AddToScheme(scheme); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	unstr := unstructured.Unstructured{}
+	if err := scheme.Convert(obj, &unstr, nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	return &unstr
+}
+
+func fromUnstructured(t *testing.T, obj *unstructured.Unstructured, into runtime.Object) {
+	scheme := runtime.NewScheme()
+	if err := cmapi.AddToScheme(scheme); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := scheme.Convert(obj, into, nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestMutate(t *testing.T) {
 	plugin := NewPlugin().(*certificateRequestIdentity)
-	cr := &certmanager.CertificateRequest{}
+	cr := &cmapi.CertificateRequest{}
+	crUnstr := toUnstructured(t, cr)
 	err := plugin.Mutate(context.Background(), admissionv1.AdmissionRequest{
 		Operation: admissionv1.Create,
 		RequestResource: &metav1.GroupVersionResource{
@@ -52,10 +81,11 @@ func TestMutate(t *testing.T) {
 			Extra: map[string]authenticationv1.ExtraValue{
 				"testkey": []string{"testvalue"},
 			},
-		}}, cr)
+		}}, crUnstr)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	fromUnstructured(t, crUnstr, cr)
 
 	if cr.Spec.Username != "testuser" {
 		t.Errorf("unexpected username. got: %q, expected %q", cr.Spec.UID, "testuser")
@@ -104,7 +134,8 @@ func TestMutate_Ignores(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			cr := &certmanager.CertificateRequest{}
+			cr := &cmapi.CertificateRequest{}
+			crUnstr := toUnstructured(t, cr)
 			err := plugin.Mutate(context.Background(), admissionv1.AdmissionRequest{
 				Operation:       test.op,
 				RequestResource: test.gvr,
@@ -115,7 +146,8 @@ func TestMutate_Ignores(t *testing.T) {
 					Extra: map[string]authenticationv1.ExtraValue{
 						"testkey": []string{"testvalue"},
 					},
-				}}, cr)
+				}}, crUnstr)
+			fromUnstructured(t, crUnstr, cr)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
@@ -326,7 +358,7 @@ func TestValidateUpdate(t *testing.T) {
 func TestMutateCreate(t *testing.T) {
 	tests := map[string]struct {
 		req                    *admissionv1.AdmissionRequest
-		existingCR, expectedCR *certmanager.CertificateRequest
+		existingCR, expectedCR *cmapi.CertificateRequest
 	}{
 		"should set the identity of CertificateRequest to that of the requester": {
 			req: &admissionv1.AdmissionRequest{
@@ -342,9 +374,9 @@ func TestMutateCreate(t *testing.T) {
 					},
 				},
 			},
-			existingCR: new(certmanager.CertificateRequest),
-			expectedCR: &certmanager.CertificateRequest{
-				Spec: certmanager.CertificateRequestSpec{
+			existingCR: new(cmapi.CertificateRequest),
+			expectedCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
 					UID:      "abc",
 					Username: "user-1",
 					Groups:   []string{"group-1", "group-2"},
@@ -369,8 +401,8 @@ func TestMutateCreate(t *testing.T) {
 					},
 				},
 			},
-			existingCR: &certmanager.CertificateRequest{
-				Spec: certmanager.CertificateRequestSpec{
+			existingCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
 					UID:      "1234",
 					Username: "user-2",
 					Groups:   []string{"group-3", "group-4"},
@@ -380,8 +412,8 @@ func TestMutateCreate(t *testing.T) {
 					},
 				},
 			},
-			expectedCR: &certmanager.CertificateRequest{
-				Spec: certmanager.CertificateRequestSpec{
+			expectedCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
 					UID:      "abc",
 					Username: "user-1",
 					Groups:   []string{"group-1", "group-2"},
@@ -392,15 +424,46 @@ func TestMutateCreate(t *testing.T) {
 				},
 			},
 		},
+		"should handle nil Extra values": {
+			req: &admissionv1.AdmissionRequest{
+				Operation:       admissionv1.Create,
+				RequestResource: correctRequestResource,
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+					Groups:   []string{"group-1", "group-2"},
+				},
+			},
+			existingCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					UID:      "1234",
+					Username: "user-2",
+					Groups:   []string{"group-3", "group-4"},
+					Extra: map[string][]string{
+						"3": {"abc", "efg"},
+						"4": {"efg", "abc"},
+					},
+				},
+			},
+			expectedCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					UID:      "abc",
+					Username: "user-1",
+					Groups:   []string{"group-1", "group-2"},
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			cr := test.existingCR.DeepCopy()
 			p := NewPlugin().(*certificateRequestIdentity)
-			if err := p.Mutate(context.Background(), *test.req, cr); err != nil {
+			crUnstr := toUnstructured(t, cr)
+			if err := p.Mutate(context.Background(), *test.req, crUnstr); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
+			fromUnstructured(t, crUnstr, cr)
 			if !reflect.DeepEqual(test.expectedCR, cr) {
 				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
 			}
@@ -411,7 +474,7 @@ func TestMutateCreate(t *testing.T) {
 func TestMutateUpdate(t *testing.T) {
 	tests := map[string]struct {
 		req                    *admissionv1.AdmissionRequest
-		existingCR, expectedCR *certmanager.CertificateRequest
+		existingCR, expectedCR *cmapi.CertificateRequest
 	}{
 		"should not overwrite user info fields during an Update operation": {
 			req: &admissionv1.AdmissionRequest{
@@ -427,8 +490,8 @@ func TestMutateUpdate(t *testing.T) {
 					},
 				},
 			},
-			existingCR: &certmanager.CertificateRequest{
-				Spec: certmanager.CertificateRequestSpec{
+			existingCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
 					UID:      "1234",
 					Username: "user-2",
 					Groups:   []string{"group-3", "group-4"},
@@ -438,8 +501,8 @@ func TestMutateUpdate(t *testing.T) {
 					},
 				},
 			},
-			expectedCR: &certmanager.CertificateRequest{
-				Spec: certmanager.CertificateRequestSpec{
+			expectedCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
 					UID:      "1234",
 					Username: "user-2",
 					Groups:   []string{"group-3", "group-4"},
@@ -456,9 +519,11 @@ func TestMutateUpdate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cr := test.existingCR.DeepCopy()
 			p := NewPlugin().(*certificateRequestIdentity)
-			if err := p.Mutate(context.Background(), *test.req, cr); err != nil {
+			crUnstr := toUnstructured(t, cr)
+			if err := p.Mutate(context.Background(), *test.req, crUnstr); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
+			fromUnstructured(t, crUnstr, cr)
 			if !reflect.DeepEqual(test.expectedCR, cr) {
 				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
 			}

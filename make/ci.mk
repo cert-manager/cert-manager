@@ -67,14 +67,7 @@ update-licenses:
 	$(MAKE) LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES cmd/startupapicheck/LICENSES test/integration/LICENSES test/e2e/LICENSES
 
 .PHONY: update-crds
-update-crds: generate-test-crds patch-crds
-
-.PHONY: generate-test-crds
-generate-test-crds: | $(NEEDS_CONTROLLER-GEN)
-	$(CONTROLLER-GEN) \
-		crd \
-		paths=./pkg/webhook/handlers/testdata/apis/testgroup/v{1,2}/... \
-		output:crd:dir=./pkg/webhook/handlers/testdata/apis/testgroup/crds
+update-crds: patch-crds
 
 PATCH_CRD_OUTPUT_DIR=./deploy/crds
 .PHONY: patch-crds

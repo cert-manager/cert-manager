@@ -68,7 +68,8 @@ type Server struct {
 	// EnablePprof determines whether pprof is enabled.
 	EnablePprof bool
 
-	// ResourceScheme is used to encode and decode resources when validating or mutating.
+	// ResourceScheme is used to decode resources and convert them to
+	// internal types when validating.
 	ResourceScheme *runtime.Scheme
 
 	// If specified, the server will listen with TLS using certificates
@@ -221,7 +222,7 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}
 
-	mgr.GetWebhookServer().Register("/mutate", cmadmission.NewCustomMutationWebhook(mgr.GetScheme(), s.MutationWebhook))
+	mgr.GetWebhookServer().Register("/mutate", cmadmission.NewCustomMutationWebhook(s.MutationWebhook))
 
 	mgr.GetWebhookServer().Register("/validate", cmadmission.NewCustomValidationWebhook(mgr.GetScheme(), s.ValidationWebhook))
 
