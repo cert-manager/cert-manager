@@ -424,6 +424,35 @@ func TestMutateCreate(t *testing.T) {
 				},
 			},
 		},
+		"should handle nil Extra values": {
+			req: &admissionv1.AdmissionRequest{
+				Operation:       admissionv1.Create,
+				RequestResource: correctRequestResource,
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+					Groups:   []string{"group-1", "group-2"},
+				},
+			},
+			existingCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					UID:      "1234",
+					Username: "user-2",
+					Groups:   []string{"group-3", "group-4"},
+					Extra: map[string][]string{
+						"3": {"abc", "efg"},
+						"4": {"efg", "abc"},
+					},
+				},
+			},
+			expectedCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					UID:      "abc",
+					Username: "user-1",
+					Groups:   []string{"group-1", "group-2"},
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {

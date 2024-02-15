@@ -53,25 +53,26 @@ func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissi
 		return nil
 	}
 
-	extraValuesToGenericMap := func(m map[string]authenticationv1.ExtraValue) map[string]interface{} {
-		genericMap := make(map[string]interface{}, len(m))
-		for k, v := range m {
-			arr := make([]interface{}, len(v))
-			for i, val := range v {
-				arr[i] = val
-			}
-			genericMap[k] = []interface{}(arr)
-		}
-		return genericMap
-	}
-
 	for _, err := range []error{
 		unstructured.SetNestedField(obj.Object, request.UserInfo.UID, "spec", "uid"),
 		unstructured.SetNestedField(obj.Object, request.UserInfo.Username, "spec", "username"),
 		unstructured.SetNestedStringSlice(obj.Object, request.UserInfo.Groups, "spec", "groups"),
-		unstructured.SetNestedMap(obj.Object, extraValuesToGenericMap(request.UserInfo.Extra), "spec", "extra"),
 	} {
 		if err != nil {
+			return err
+		}
+	}
+
+	// Overwrite the 'spec.extra' field with the request.UserInfo.Extra field.
+	// If the request.UserInfo.Extra field is empty, remove the 'spec.extra' field.
+	unstructured.RemoveNestedField(obj.Object, "spec", "extra")
+	if len(request.UserInfo.Extra) > 0 {
+		unstructuredExtra, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&request.UserInfo.Extra)
+		if err != nil {
+			return err
+		}
+
+		if err := unstructured.SetNestedMap(obj.Object, unstructuredExtra, "spec", "extra"); err != nil {
 			return err
 		}
 	}
