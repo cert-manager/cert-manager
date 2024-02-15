@@ -105,9 +105,7 @@ $(bin_dir)/helm/cert-manager/templates/NOTES.txt: deploy/charts/cert-manager/tem
 	cp $< $@
 
 $(bin_dir)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(bin_dir)/helm/cert-manager/templates
-	echo '{{- if .Values.installCRDs }}' > $@
-	./hack/concat-yaml.sh $^ >> $@
-	echo '{{- end }}' >> $@
+	./hack/concat-yaml.sh $^ > $@
 
 $(bin_dir)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | $(bin_dir)/helm/cert-manager
 	cp $< $@

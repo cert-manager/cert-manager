@@ -38,6 +38,7 @@ while (($#)); do
 
 	# if there's at least one more file left, output the YAML file separator
 	if [[ $# -gt 0 ]]; then
+		echo ""
 		echo "---"
 	fi
 done

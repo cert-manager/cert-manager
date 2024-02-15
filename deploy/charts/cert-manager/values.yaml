@@ -67,13 +67,21 @@ global:
     # +docs:property
     # retryPeriod: 15s
 
-# This method of CRDs installation will be deprecated in future releases
-# It is mutually exclusive with crds.install and crds.keep=true
+# This option is equivalent with setting crds.enabled=true and crds.keep=true.
+# Deprecated: use crds.enabled and crds.keep instead.
 installCRDs: false
 
 crds:
-  install: false
-  keep: false
+  # This option decides if the CRDs should be installed
+  # as part of the Helm installation.
+  enabled: false
+
+  # This option makes it so that the "helm.sh/resource-policy": keep
+  # annotation is added to the CRD. This will prevent Helm from uninstalling
+  # the CRD when the Helm release is uninstalled.
+  # WARNING: when the CRDs are removed, all cert-manager custom resources
+  # (Certificates, Issuers, ...) will be removed too by the garbage collector.
+  keep: true
 
 # +docs:section=Controller
 
