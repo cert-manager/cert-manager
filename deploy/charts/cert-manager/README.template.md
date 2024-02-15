@@ -22,14 +22,14 @@ This is performed in a separate step to allow you to easily uninstall and reinst
 $ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
 ```
 
-To install the chart with the release name `my-release`:
+To install the chart with the release name `cert-manager`:
 
 ```console
 ## Add the Jetstack Helm repository
-$ helm repo add jetstack https://charts.jetstack.io
+$ helm repo add jetstack https://charts.jetstack.io --force-update
 
 ## Install the cert-manager helm chart
-$ helm install my-release --namespace cert-manager --version {{RELEASE_VERSION}} jetstack/cert-manager
+$ helm install cert-manager --namespace cert-manager --version {{RELEASE_VERSION}} jetstack/cert-manager
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -53,10 +53,10 @@ are documented in our full [upgrading guide](https://cert-manager.io/docs/instal
 
 ## Uninstalling the Chart
 
-To uninstall/delete the `my-release` deployment:
+To uninstall/delete the `cert-manager` deployment:
 
 ```console
-$ helm delete my-release
+$ helm delete cert-manager --namespace cert-manager
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
