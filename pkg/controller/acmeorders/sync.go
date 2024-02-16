@@ -588,7 +588,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		preferredChainName := issuer.GetSpec().ACME.PreferredChain
 		found, preferredCertChain, err := getPreferredCertChain(ctx, cl, certURL, certSlice, preferredChainName)
 		if err != nil {
-			return fmt.Errorf("error retrieving alternate chain: %w", err)
+			return fmt.Errorf("error retrieving preferred chain: %w", err)
 		}
 		if found {
 			return c.storeCertificateOnStatus(ctx, o, preferredCertChain)
