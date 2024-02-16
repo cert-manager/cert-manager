@@ -95,6 +95,16 @@ func SetIssuerACME(a cmacme.ACMEIssuer) IssuerModifier {
 	}
 }
 
+func SetIssuerACMEPreferredChain(chain string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.PreferredChain = chain
+	}
+}
+
 func SetIssuerACMEURL(url string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
