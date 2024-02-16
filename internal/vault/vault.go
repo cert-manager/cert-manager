@@ -18,6 +18,7 @@ package vault
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -26,6 +27,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
@@ -230,20 +233,24 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 		return nil, fmt.Errorf("failed to load vault CA bundle: %w", err)
 	}
 
-	// If no CA bundle was loaded, return early and don't modify the vault config
-	// further. This will cause the vault client to use the system root CA
-	// bundle.
-	if len(caBundle) == 0 {
-		return cfg, nil
+	if len(caBundle) != 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(caBundle)
+		if !ok {
+			return nil, fmt.Errorf("no Vault CA bundles loaded, check bundle contents")
+		}
+
+		cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
 	}
 
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(caBundle)
-	if !ok {
-		return nil, fmt.Errorf("no Vault CA bundles loaded, check bundle contents")
+	clientCertificate, err := v.clientCertificate()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load vault client certificate: %w", err)
 	}
 
-	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
+	if clientCertificate != nil {
+		cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{*clientCertificate}
+	}
 
 	return cfg, nil
 }
@@ -282,6 +289,54 @@ func (v *Vault) caBundle() ([]byte, error) {
 	}
 
 	return certBytes, nil
+}
+
+// clientCertificate returns the Client Certificate for the Vault server.
+// Can be used in Vault client configs when the server requires mTLS.
+func (v *Vault) clientCertificate() (*tls.Certificate, error) {
+	refCert := v.issuer.GetSpec().Vault.ClientCertSecretRef
+	refPrivateKey := v.issuer.GetSpec().Vault.ClientKeySecretRef
+	if refCert == nil || refPrivateKey == nil {
+		return nil, nil
+	}
+
+	secretCert, err := v.secretsLister.Secrets(v.namespace).Get(refCert.Name)
+	if err != nil {
+		return nil, fmt.Errorf("could not access Secret '%s/%s': %s", v.namespace, refCert.Name, err)
+	}
+	secretPrivateKey, err := v.secretsLister.Secrets(v.namespace).Get(refPrivateKey.Name)
+	if err != nil {
+		return nil, fmt.Errorf("could not access Secret '%s/%s': %s", v.namespace, refPrivateKey.Name, err)
+	}
+
+	var keyCert string
+	if refCert.Key != "" {
+		keyCert = refCert.Key
+	} else {
+		keyCert = corev1.TLSCertKey
+	}
+
+	var keyPrivate string
+	if refPrivateKey.Key != "" {
+		keyPrivate = refPrivateKey.Key
+	} else {
+		keyPrivate = corev1.TLSPrivateKeyKey
+	}
+
+	certBytes, ok := secretCert.Data[keyCert]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in Secret '%s/%s'", keyCert, v.namespace, refCert.Name)
+	}
+	privateKeyBytes, ok := secretPrivateKey.Data[keyPrivate]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in Secret '%s/%s'", keyPrivate, v.namespace, refPrivateKey.Name)
+	}
+
+	cert, err := tls.X509KeyPair(certBytes, privateKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse the TLS certificate from Secrets '%s/%s'(cert) and '%s/%s'(key): %s", v.namespace, refCert.Name, v.namespace, refPrivateKey.Name, err)
+	}
+	return &cert, nil
 }
 
 func (v *Vault) tokenRef(name, namespace, key string) (string, error) {

@@ -148,6 +148,58 @@ oXeN5eS8iO5fx0EOvIcYQ4yRZLGafZxsLHlsZmt32N/ZZtcl4KDP5LRE7iZEOaE/
 UXY5wAUH2A==
 -----END CERTIFICATE-----
 `
+	testClientCertificate = `-----BEGIN CERTIFICATE-----
+MIIDuzCCAqOgAwIBAgIBATANBgkqhkiG9w0BAQsFADBZMQswCQYDVQQGEwJVUzEL
+MAkGA1UECAwCQ0ExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28xFDASBgNVBAoMC0NF
+UlRNQU5BR0VSMQ8wDQYDVQQDDAZiYXIuY2EwHhcNMjQwMTA0MTAxMzQ3WhcNNDMx
+MjMwMTAxMzQ3WjBgMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFjAUBgNVBAcM
+DVNhbiBGcmFuY2lzY28xFDASBgNVBAoMC0NFUlRNQU5BR0VSMRYwFAYDVQQDDA1j
+bGllbnQuYmFyLmNhMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvFLC
+dXqU33bG8TrVQ2mwTZF6UxNgrQCjLYJZWgK7AUvOzdsMUiZfQ51GVRLw7inRYgYn
+QuIjPwgXQDYCHfQJEsBghSMNze+QjmGYwT2dy2QZm47Q0lGi57n2rtgRrM2Q+19E
+SlEOZhi45ZVaU2NAEMAD8jIj3XznukrZLUZQSt7lN0xS2w1IvhO7Xb1n+wFcjwMt
+f4ciRQyKprHQGTcaTzGn4Fjhua3kyFydg7elE1U23UJT42TbZ0WfgNG9KLGLWYpD
+pMDnAgkgwMggguQz4izgFyeD2NnvDIviGbwnTC9WAlogwBZx2SOrBGIjoyWNmfIj
+9uu5CytBgCdmhzMx1QIDAQABo4GGMIGDMAkGA1UdEwQCMAAwEQYJYIZIAYb4QgEB
+BAQDAgeAMB0GA1UdDgQWBBRQlAnVwsjjnb3lu44c2Rt/zz4l3zAfBgNVHSMEGDAW
+gBR/PgLMjVGMUxKzqRqcocLfB500ETAOBgNVHQ8BAf8EBAMCBeAwEwYDVR0lBAww
+CgYIKwYBBQUHAwIwDQYJKoZIhvcNAQELBQADggEBACXv/vfiuC8VXnvFo+Cvpn1H
+eG1qsjOHOnPFhvHaMY55wsFchnZd7t0aqRNwkqLEvqpMIMDiXh7nw5pQZZu5IGBi
++cNDtfadmFi6NMFZNqlgPsYmb6pCI6OOG2r8VkmG+OdIg8QOdH60FQamT3MYKelE
+JHxBQYgtiJr+vNTzBdrq9/qDgDJdx0OVo2U8+igFKkrWqgbPeJDLJb1NpVJBIhSG
+ntdrtA87wmrLkV09SLUpvTYuTm3NMMrlD3hSBBBm3evb+65tsJg9/M5QjtAb8pQT
+gtrc5PnSjjZzCeL94DkWQ+A7oLQStJMVePFvizMTozlnjCpVaJJN25nf+yVm22E=
+-----END CERTIFICATE-----
+`
+	testClientCertificatePrivateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC8UsJ1epTfdsbx
+OtVDabBNkXpTE2CtAKMtgllaArsBS87N2wxSJl9DnUZVEvDuKdFiBidC4iM/CBdA
+NgId9AkSwGCFIw3N75COYZjBPZ3LZBmbjtDSUaLnufau2BGszZD7X0RKUQ5mGLjl
+lVpTY0AQwAPyMiPdfOe6StktRlBK3uU3TFLbDUi+E7tdvWf7AVyPAy1/hyJFDIqm
+sdAZNxpPMafgWOG5reTIXJ2Dt6UTVTbdQlPjZNtnRZ+A0b0osYtZikOkwOcCCSDA
+yCCC5DPiLOAXJ4PY2e8Mi+IZvCdML1YCWiDAFnHZI6sEYiOjJY2Z8iP267kLK0GA
+J2aHMzHVAgMBAAECggEACAEWfcrHgBX6z675+IMJ+MoJonVM4x2HUfxb0t0R2LTB
+pfM8+1LhMq0BG8WR0vWZDisHySp2aAvufQ6umVpRdmgR0ibSw+F+SebxCKmXRtlK
+01dHHeFVZLb9OqI5YhhcpKqAaw415/X+CdgGvkuWIgAfStCBwLy51quuvmNiL0Rm
+XEq0tUAhJ8Z0G4z1e7PCabjq1eGPfsA6K3V/Bguo9ePIXls7AKn8xtyvQHL67RPy
+wiupVB77RuViDYArx0ybMIvSKu8n2GAB0cBOICFe9MU8RiSGHl9MbgfDvW4BU/Fj
++YIrGjBV2MYdvjMCb2wlxyR11Yaaupd4u1e0eYxp4wKBgQDdaGHDgYQvTVOlgHrr
+pYJoML50OIi9rh5q5HVRb3iLziSCaDUSBg7HuwC1vGLvZjfX3GVHpvwGaV9ZTk1c
+C4jTtDAVibbCeL0/t9OzIE1EZbEwpMg0BXm0Jt97PhEKqxM2QHPGBAXKMxzJHYEO
+HUHQpMCeHm5fLxZgv9qcTWisGwKBgQDZvxpCJ2qkRVyEhFYDJKBZ7KTlgH1TDZq6
+XvbVL/Q6c+6/iM+7TvytfnN36yb/p22eaBRf19ZkPHjGUqnCQnudwsK/bdyf0smh
+6zZVirTL5/5qWIUPgIgWv5trqksMRm0NtRyo6ZwGWJnKTKPoxZJiW/d8v5bUw5IR
+boLBMiCYzwKBgH4FCZAzyb76rl+HD2/M1rri86RHAV2lG18QBc6COgSpIpKvKXXG
+yObaA39taIqGjcZphaQQ4WXs1/6G2PVJA2osJyo7JjDudBkuUmqkOhZyIzZitCkX
+7LujXJRTMXP3B4pbiQnuBDWgfgPirTARawKMo63b+EppDL2otY89aBR9AoGBAK8q
+VcRcEyTdC4UrNEpI/5n3jdt2FttmOU+uL2Dmt9ECDFEWjQ4Ah7JF5DvW9sN4++0P
+izxi1HxETWA1hYzZkLojwCjhBzenCT9xiX8dGz5hfcAtP7Vtz4yFTVE6aC8SxI3f
+YZPcggB07Bratoz9yznHA/vd4Ed+oJXXUeZ7Hc/vAoGBAKOpdDIzkKIkUIrbIKVI
+DjlJQMrnnVpHB+7q2z+EnmVHzfn5zduL77hEBA/tXnkIvOyLm8WXDo/9K4E1xa93
+nUclMMQnJneyw8RRXGvgiy7EsLnRY8EhR/AgjoHY37etpj+v6kcaA+B7Q2oSYr11
+beE8ft41eEFS8AnSJd5hE9Ym
+-----END PRIVATE KEY-----
+`
 )
 
 func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
@@ -1060,6 +1112,25 @@ func TestNewConfig(t *testing.T) {
 			}
 		})
 	}
+	clientCertificateSecretRefFakeSecretLister := func(namespace, secret, caKey, caCert, clientKey, clientCert, privateKey, privateKeyCert string) *listers.FakeSecretLister {
+		return listers.FakeSecretListerFrom(listers.NewFakeSecretLister(), func(f *listers.FakeSecretLister) {
+			f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+				return listers.FakeSecretNamespaceListerFrom(listers.NewFakeSecretNamespaceLister(), func(fn *listers.FakeSecretNamespaceLister) {
+					fn.GetFn = func(name string) (*corev1.Secret, error) {
+						if name == secret && namespace == namespace {
+							return &corev1.Secret{
+								Data: map[string][]byte{
+									caKey:      []byte(caCert),
+									clientKey:  []byte(clientCert),
+									privateKey: []byte(privateKeyCert),
+								}}, nil
+						}
+						return nil, errors.New("unexpected secret name or namespace passed to FakeSecretLister")
+					}
+				})
+			}
+		})
+	}
 	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
 			issuer: gen.Issuer("vault-issuer",
@@ -1216,6 +1287,72 @@ func TestNewConfig(t *testing.T) {
 					}}, nil
 				}
 			},
+		},
+		"a good client certificate with default key should be added to the config": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server: "https://vault.example.com",
+					CABundleSecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+					ClientCertSecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+					ClientKeySecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+				},
+				)),
+			checkFunc: func(cfg *vault.Config, error error) error {
+				if error != nil {
+					return error
+				}
+
+				certificates := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.Certificates
+				if len(certificates) != 1 {
+					return fmt.Errorf("got unexpected number of client certificates in config, exp=1 got=%d", len(certificates))
+				}
+				certificate, err := x509.ParseCertificate(certificates[0].Certificate[0])
+				if err != nil {
+					return err
+				}
+				if certificate.Subject.CommonName != "client.bar.ca" {
+					return fmt.Errorf("got unexpected common name from the client certificate in config, exp=client.bar.ca got=%s", certificate.Subject.CommonName)
+				}
+
+				return nil
+			},
+			fakeLister: clientCertificateSecretRefFakeSecretLister("test-namespace", "bundle", "ca.crt", testLeafCertificate, "tls.crt", testClientCertificate, "tls.key", testClientCertificatePrivateKey),
+		},
+		"a bad client certificate should error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server: "https://vault.example.com",
+					CABundleSecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+					ClientCertSecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+					ClientKeySecretRef: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "bundle",
+						},
+					},
+				},
+				)),
+			expectedErr: errors.New("failed to load vault client certificate: could not parse the TLS certificate from Secrets 'test-namespace/bundle'(cert) and 'test-namespace/bundle'(key): tls: failed to find any PEM data in certificate input"),
+			fakeLister:  clientCertificateSecretRefFakeSecretLister("test-namespace", "bundle", "ca.crt", testLeafCertificate, "tls.crt", "not a valid certificate", "tls.key", "not a valid certificate"),
 		},
 	}
 

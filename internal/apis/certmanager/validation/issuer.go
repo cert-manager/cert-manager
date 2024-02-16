@@ -281,6 +281,12 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), iss.CABundleSecretRef.Name, "specified caBundleSecretRef and caBundle cannot be used together"))
 	}
 
+	if iss.ClientCertSecretRef != nil && iss.ClientKeySecretRef == nil {
+		el = append(el, field.Invalid(fldPath.Child("clientKeySecretRef"), "<snip>", "clientKeySecretRef must be provided when defining the clientCertSecretRef"))
+	} else if iss.ClientCertSecretRef == nil && iss.ClientKeySecretRef != nil {
+		el = append(el, field.Invalid(fldPath.Child("clientCertSecretRef"), "<snip>", "clientCertSecretRef must be provided when defining the clientKeySecretRef"))
+	}
+
 	el = append(el, ValidateVaultIssuerAuth(&iss.Auth, fldPath.Child("auth"))...)
 
 	return el

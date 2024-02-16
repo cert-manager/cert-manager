@@ -30,6 +30,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -63,6 +64,10 @@ type Vault struct {
 	// Namespace is the namespace to deploy Vault into
 	Namespace string
 
+	// EnforceMtls defines if mTLS is enforced in the vault server
+	// and clients must provide client certificates
+	EnforceMtls bool
+
 	// Proxy is the proxy that can be used to connect to Vault
 	proxy *proxy
 
@@ -84,6 +89,16 @@ type Details struct {
 
 	// VaultCA is the CA used to sign the vault serving certificate
 	VaultCA []byte
+
+	// VaultClientCertificate is the certificate used by clients when connecting to vault
+	VaultClientCertificate []byte
+
+	// VaultClientPrivateKey is the private key used by clients when connecting to vault
+	VaultClientPrivateKey []byte
+
+	// EnforceMtls defines if mTLS is enforced in the vault server
+	// and clients must provide client certificates
+	EnforceMtls bool
 }
 
 func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
@@ -149,6 +164,15 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 				Key:   "server.extraEnvironmentVars.VAULT_DEV_ROOT_TOKEN_ID",
 				Value: "vault-root-token",
 			},
+			// configure client certificates used in the readiness/liveness probes exec commands
+			{
+				Key:   "server.extraEnvironmentVars.VAULT_CLIENT_CERT",
+				Value: "/vault/tls/client.crt",
+			},
+			{
+				Key:   "server.extraEnvironmentVars.VAULT_CLIENT_KEY",
+				Value: "/vault/tls/client.key",
+			},
 			// configure tls certificate
 			{
 				Key:   "global.tlsDisable",
@@ -156,15 +180,16 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			},
 			{
 				Key: "server.standalone.config",
-				Value: `
+				Value: fmt.Sprintf(`
 				listener "tcp" {
-					tls_disable = false
 					address = "[::]:8200"
 					cluster_address = "[::]:8201"
 					tls_disable = false
+					tls_client_ca_file = "/vault/tls/ca.crt"
 					tls_cert_file = "/vault/tls/server.crt"
 					tls_key_file = "/vault/tls/server.key"
-				}`,
+					tls_require_and_verify_client_cert = %s
+				}`, strconv.FormatBool(v.EnforceMtls)),
 			},
 			{
 				Key:   "server.volumes[0].name",
@@ -267,6 +292,14 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			return nil, err
 		}
 
+		vaultClientCertificate, vaultClientPrivateKey, err := generateVaultClientCert(vaultCA, vaultCAPrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		v.details.VaultClientCertificate = vaultClientCertificate
+		v.details.VaultClientPrivateKey = vaultClientPrivateKey
+		v.details.EnforceMtls = v.EnforceMtls
+
 		if cfg.Kubectl == "" {
 			return nil, fmt.Errorf("path to kubectl must be specified")
 		}
@@ -310,8 +343,11 @@ func (v *Vault) Provision() error {
 			Namespace: v.Namespace,
 		},
 		StringData: map[string]string{
+			"ca.crt":     string(v.details.VaultCA),
 			"server.crt": string(v.vaultCert),
 			"server.key": string(v.vaultCertPrivateKey),
+			"client.crt": string(v.details.VaultClientCertificate),
+			"client.key": string(v.details.VaultClientPrivateKey),
 		},
 	}
 	_, err = kubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), tlsSecret, metav1.CreateOptions{})
@@ -430,6 +466,30 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
 		DNSNames:     []string{dnsName},
+	}
+
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+
+	return encodePublicKey(certBytes), encodePrivateKey(privateKey), nil
+}
+
+func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, []byte, error) {
+	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
+	ca, _ := x509.ParseCertificate(catls.Certificate[0])
+
+	cert := &x509.Certificate{
+		Version:      3,
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			CommonName:   "cert-manager vault client",
+			Organization: []string{"cert-manager"},
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}
 
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)

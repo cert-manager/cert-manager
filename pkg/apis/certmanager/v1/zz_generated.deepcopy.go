@@ -993,6 +993,16 @@ func (in *VaultIssuer) DeepCopyInto(out *VaultIssuer) {
 		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
+	if in.ClientCertSecretRef != nil {
+		in, out := &in.ClientCertSecretRef, &out.ClientCertSecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		**out = **in
+	}
+	if in.ClientKeySecretRef != nil {
+		in, out := &in.ClientKeySecretRef, &out.ClientKeySecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		**out = **in
+	}
 	return
 }
 

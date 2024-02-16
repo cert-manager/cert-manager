@@ -302,6 +302,36 @@ func SetIssuerVaultCABundleSecretRef(name, namespace, key string) IssuerModifier
 	}
 }
 
+func SetIssuerVaultClientCertSecretRef(vaultClientCertificateSecretName, key string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.ClientCertSecretRef = &cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: vaultClientCertificateSecretName,
+			},
+			Key: key,
+		}
+	}
+}
+
+func SetIssuerVaultClientKeySecretRef(vaultClientCertificateSecretName, key string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.ClientKeySecretRef = &cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: vaultClientCertificateSecretName,
+			},
+			Key: key,
+		}
+	}
+}
+
 func SetIssuerVaultTokenAuth(keyName, tokenName string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
