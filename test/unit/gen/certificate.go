@@ -17,8 +17,6 @@ limitations under the License.
 package gen
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -126,15 +124,15 @@ func SetCertificateSecretTemplate(annotations, labels map[string]string) Certifi
 	}
 }
 
-func SetCertificateDuration(duration time.Duration) CertificateModifier {
+func SetCertificateDuration(duration *metav1.Duration) CertificateModifier {
 	return func(crt *v1.Certificate) {
-		crt.Spec.Duration = &metav1.Duration{Duration: duration}
+		crt.Spec.Duration = duration
 	}
 }
 
-func SetCertificateRenewBefore(renewBefore time.Duration) CertificateModifier {
+func SetCertificateRenewBefore(renewBefore *metav1.Duration) CertificateModifier {
 	return func(crt *v1.Certificate) {
-		crt.Spec.RenewBefore = &metav1.Duration{Duration: renewBefore}
+		crt.Spec.RenewBefore = renewBefore
 	}
 }
 

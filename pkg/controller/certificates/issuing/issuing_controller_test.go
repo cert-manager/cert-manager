@@ -67,7 +67,7 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateGeneration(3),
 		gen.SetCertificateSecretName("output"),
-		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateRenewBefore(&metav1.Duration{Duration: time.Hour * 36}),
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateRevision(1),
 		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),

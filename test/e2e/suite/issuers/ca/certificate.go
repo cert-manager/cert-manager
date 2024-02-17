@@ -213,8 +213,8 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 						Name: issuerName,
 						Kind: v1.IssuerKind,
 					}),
-					gen.SetCertificateDuration(v.inputDuration.Duration),
-					gen.SetCertificateRenewBefore(v.inputRenewBefore.Duration),
+					gen.SetCertificateDuration(v.inputDuration),
+					gen.SetCertificateRenewBefore(v.inputRenewBefore),
 					gen.SetCertificateCommonName("test.domain.com"),
 					gen.SetCertificateOrganization("test-org"),
 				)
