@@ -58,7 +58,16 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				Name: issuerName,
+				Kind: v1.IssuerKind,
+			}),
+			gen.SetCertificateCommonName("test.domain.com"),
+			gen.SetCertificateOrganization("test-org"),
+		)
+		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for the Certificate to be issued...")
 		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
@@ -110,7 +119,18 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating a Certificate")
-			cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1.IssuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name: issuerDurationName,
+					Kind: v1.IssuerKind,
+				}),
+				gen.SetCertificateDuration(v.inputDuration.Duration),
+				gen.SetCertificateRenewBefore(v.inputRenewBefore.Duration),
+				gen.SetCertificateCommonName("test.domain.com"),
+				gen.SetCertificateOrganization("test-org"),
+			)
+			cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
 			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
@@ -135,10 +155,17 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
-		cert.Spec.PrivateKey.Encoding = v1.PKCS8
-
 		By("Creating a Certificate")
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				Name: issuerName,
+				Kind: v1.IssuerKind,
+			}),
+			gen.SetCertificateCommonName("test.domain.com"),
+			gen.SetCertificateOrganization("test-org"),
+			gen.SetCertificateKeyEncoding(v1.PKCS8),
+		)
 		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 

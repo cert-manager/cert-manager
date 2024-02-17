@@ -162,34 +162,6 @@ func WaitForCRDToNotExist(client apiextensionsv1.CustomResourceDefinitionInterfa
 	})
 }
 
-// Deprecated: use test/unit/gen/Certificate in future
-func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, dnsNames ...string) *v1.Certificate {
-	cn := "test.domain.com"
-	if len(dnsNames) > 0 {
-		cn = dnsNames[0]
-	}
-	return &v1.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.CertificateSpec{
-			CommonName: cn,
-			DNSNames:   dnsNames,
-			Subject: &v1.X509Subject{
-				Organizations: []string{"test-org"},
-			},
-			SecretName:  secretName,
-			Duration:    duration,
-			RenewBefore: renewBefore,
-			PrivateKey:  &v1.CertificatePrivateKey{},
-			IssuerRef: cmmeta.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
-			},
-		},
-	}
-}
-
 // Deprecated: use test/unit/gen/CertificateRequest in future
 func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind string, duration *metav1.Duration,
 	dnsNames []string, ips []net.IP, uris []string, keyAlgorithm x509.PublicKeyAlgorithm) (*v1.CertificateRequest, crypto.Signer, error) {

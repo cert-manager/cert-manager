@@ -88,8 +88,16 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 				By("creating a certificate")
 				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
-				cert := util.NewCertManagerBasicCertificate("serving-certs", secretName.Name, issuerName, certmanager.IssuerKind, nil, nil)
-				cert.Namespace = f.Namespace.Name
+				cert := gen.Certificate("serving-certs",
+					gen.SetCertificateSecretName(secretName.Name),
+					gen.SetCertificateNamespace(f.Namespace.Name),
+					gen.SetCertificateIssuer(cmmeta.ObjectReference{
+						Name: issuerName,
+						Kind: certmanager.IssuerKind,
+					}),
+					gen.SetCertificateCommonName("test.domain.com"),
+					gen.SetCertificateOrganization("test-org"),
+				)
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
 				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
@@ -294,8 +302,16 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				toCleanup = injectable
 
 				By("creating a certificate")
-				cert := util.NewCertManagerBasicCertificate("serving-certs", secretName.Name, issuerName, certmanager.IssuerKind, nil, nil)
-				cert.Namespace = f.Namespace.Name
+				cert := gen.Certificate("serving-certs",
+					gen.SetCertificateNamespace(f.Namespace.Name),
+					gen.SetCertificateSecretName(secretName.Name),
+					gen.SetCertificateIssuer(cmmeta.ObjectReference{
+						Name: issuerName,
+						Kind: certmanager.IssuerKind,
+					}),
+					gen.SetCertificateCommonName("test.domain.com"),
+					gen.SetCertificateOrganization("test-org"),
+				)
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
 				By("grabbing the corresponding secret")

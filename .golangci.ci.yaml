@@ -34,4 +34,4 @@ issues:
       text: "SA(1002|1006|4000|4006)"
     - linters:
         - staticcheck
-      text: "(NewCertManagerBasicCertificate|DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition)"
+      text: "(NewCertManagerBasicCertificateRequest|DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition)"

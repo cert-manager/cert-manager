@@ -296,7 +296,16 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		const dummycert = "dummy-tls"
 		const secretname = "dummy-tls-secret"
 
-		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1.IssuerKind, nil, nil, acmeIngressDomain)
+		selfcert := gen.Certificate(dummycert,
+			gen.SetCertificateSecretName(secretname),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				Name: "selfsign",
+				Kind: v1.IssuerKind,
+			}),
+			gen.SetCertificateCommonName(acmeIngressDomain),
+			gen.SetCertificateOrganization("test-org"),
+			gen.SetCertificateDNSNames(acmeIngressDomain),
+		)
 		selfcert, err = certClient.Create(context.TODO(), selfcert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
