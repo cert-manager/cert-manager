@@ -140,12 +140,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// In "make/config/pebble/chart/templates/configmap.yaml"
 		// the "google.com" domain is configured in the pebble blocklist.
 		cert := gen.Certificate(certificateName,
+			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
-		cert.Namespace = f.Namespace.Name
-
 		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -220,12 +219,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// In "make/config/pebble/chart/templates/configmap.yaml"
 		// the "google.com" domain is configured in the pebble blocklist.
 		cert := gen.Certificate(certificateName,
+			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
-		cert.Namespace = f.Namespace.Name
-
 		cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -297,6 +295,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		const secretname = "dummy-tls-secret"
 
 		selfcert := gen.Certificate(dummycert,
+			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(secretname),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{
 				Name: "selfsign",
@@ -410,15 +409,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// class
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
+			gen.SetCertificateNamespace(f.Namespace.Name),
+			gen.AddCertificateLabels(map[string]string{
+				"testing.cert-manager.io/fixed-ingress": "true",
+			}),
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
-		cert.Namespace = f.Namespace.Name
-		cert.Labels = map[string]string{
-			"testing.cert-manager.io/fixed-ingress": "true",
-		}
-
 		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -436,12 +434,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
+			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
-		cert.Namespace = f.Namespace.Name
-		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("killing the solver pod")

@@ -76,6 +76,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			By("Creating a Certificate")
 			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{
 					Name: issuerName,
@@ -101,6 +102,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			By("Creating a Certificate")
 			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{
 					Name: issuerName,
@@ -128,6 +130,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			By("Creating a Certificate")
 			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{
 					Name: issuerName,
@@ -158,6 +161,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			By("Creating a Certificate")
 			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{
 					Name: issuerName,
@@ -208,6 +212,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 				By("Creating a Certificate")
 				cert := gen.Certificate(certificateName,
+					gen.SetCertificateNamespace(f.Namespace.Name),
 					gen.SetCertificateSecretName(certificateSecretName),
 					gen.SetCertificateIssuer(cmmeta.ObjectReference{
 						Name: issuerName,
@@ -245,6 +250,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			By("Creating a Certificate")
 			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{
 					Name: issuerName,

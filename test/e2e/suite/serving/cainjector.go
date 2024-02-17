@@ -89,8 +89,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				By("creating a certificate")
 				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
 				cert := gen.Certificate("serving-certs",
-					gen.SetCertificateSecretName(secretName.Name),
 					gen.SetCertificateNamespace(f.Namespace.Name),
+					gen.SetCertificateSecretName(secretName.Name),
 					gen.SetCertificateIssuer(cmmeta.ObjectReference{
 						Name: issuerName,
 						Kind: certmanager.IssuerKind,
