@@ -191,6 +191,9 @@ func SetCertificateRenewalTime(p metav1.Time) CertificateModifier {
 
 func SetCertificateOrganization(orgs ...string) CertificateModifier {
 	return func(ch *v1.Certificate) {
+		if ch.Spec.Subject == nil {
+			ch.Spec.Subject = &v1.X509Subject{}
+		}
 		ch.Spec.Subject.Organizations = orgs
 	}
 }
