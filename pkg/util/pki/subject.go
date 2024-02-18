@@ -79,8 +79,20 @@ func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, erro
 
 		atvs := make([]pkix.AttributeTypeAndValue, 0, len(ldapRelativeDN.Attributes))
 		for _, ldapATV := range ldapRelativeDN.Attributes {
+			oid, ok := attributeTypeNames[ldapATV.Type]
+			if !ok {
+				// If the attribute type is not known, we try to parse it as an OID.
+				// If it is not an OID, we throw an error.
+
+				var err error
+				oid, err = ParseObjectIdentifier(ldapATV.Type)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			atvs = append(atvs, pkix.AttributeTypeAndValue{
-				Type:  attributeTypeNames[ldapATV.Type],
+				Type:  oid,
 				Value: ldapATV.Value,
 			})
 		}
@@ -125,14 +137,4 @@ func ExtractCommonNameFromRDNSequence(rdns pkix.RDNSequence) string {
 	}
 
 	return ""
-}
-
-// DEPRECATED: this function will be removed in a future release.
-func ParseSubjectStringToRawDERBytes(subject string) ([]byte, error) {
-	rdnSequence, err := UnmarshalSubjectStringToRDNSequence(subject)
-	if err != nil {
-		return nil, err
-	}
-
-	return MarshalRDNSequenceToRawDERBytes(rdnSequence)
 }
