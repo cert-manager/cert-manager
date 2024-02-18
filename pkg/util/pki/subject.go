@@ -21,10 +21,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
-	"fmt"
-	"strings"
 
-	"github.com/go-ldap/ldap/v3"
+	"github.com/cert-manager/cert-manager/pkg/util/pki/internal"
 )
 
 var OIDConstants = struct {
@@ -68,20 +66,16 @@ var attributeTypeNames = map[string][]int{
 }
 
 func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, error) {
-	if strings.Contains(subject, "=#") {
-		return nil, fmt.Errorf("unsupported distinguished name (DN) %q: notation does not support x509.subject identities containing \"=#\"", subject)
-	}
-
-	dns, err := ldap.ParseDN(subject)
+	dns, err := internal.ParseDN(subject)
 	if err != nil {
 		return nil, err
 	}
 
 	// Traverse the parsed RDNSequence in REVERSE order as RDNs in String format are expected to be written in reverse order.
 	// Meaning, a string of "CN=Foo,OU=Bar,O=Baz" actually should have "O=Baz" as the first element in the RDNSequence.
-	rdns := make(pkix.RDNSequence, 0, len(dns.RDNs))
-	for i := range dns.RDNs {
-		ldapRelativeDN := dns.RDNs[len(dns.RDNs)-i-1]
+	rdns := make(pkix.RDNSequence, 0, len(dns))
+	for i := range dns {
+		ldapRelativeDN := dns[len(dns)-i-1]
 
 		atvs := make([]pkix.AttributeTypeAndValue, 0, len(ldapRelativeDN.Attributes))
 		for _, ldapATV := range ldapRelativeDN.Attributes {
