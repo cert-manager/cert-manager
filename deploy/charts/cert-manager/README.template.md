@@ -170,7 +170,7 @@ The duration the clients should wait between attempting acquisition and renewal 
 > false
 > ```
 
-This option is equivalent with setting crds.enabled=true and crds.keep=true. Deprecated: use crds.enabled and crds.keep instead.
+This option is equivalent to setting crds.enabled=true and crds.keep=true. Deprecated: use crds.enabled and crds.keep instead.
 #### **crds.enabled** ~ `bool`
 > Default value:
 > ```yaml
