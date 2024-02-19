@@ -59,8 +59,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
 		}
 
-		if len(crt.CommonName) != 0 {
-			el = append(el, field.Invalid(fldPath.Child("commonName"), crt.CommonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
+		if len(commonName) != 0 {
+			el = append(el, field.Invalid(fldPath.Child("commonName"), commonName, "When providing a `LiteralSubject` no `commonName` may be provided."))
 		}
 
 		if crt.Subject != nil && (len(crt.Subject.Organizations) > 0 ||
@@ -108,12 +108,12 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		len(crt.EmailAddresses) == 0 &&
 		len(crt.IPAddresses) == 0 &&
 		len(crt.OtherNames) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
 	if len(commonName) > 64 {
-		el = append(el, field.TooLong(fldPath.Child("commonName"), crt.CommonName, 64))
+		el = append(el, field.TooLong(fldPath.Child("commonName"), commonName, 64))
 	}
 
 	if len(crt.IPAddresses) > 0 {
