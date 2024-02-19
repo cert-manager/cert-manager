@@ -76,7 +76,7 @@ $helm upgrade \
     --install \
     --wait \
     --namespace "${NAMESPACE}" \
-    --set installCRDs=true \
+    --set crds.enabled=true \
     --create-namespace \
     --version "${LATEST_RELEASE}" \
     "$RELEASE_NAME" \

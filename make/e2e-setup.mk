@@ -294,7 +294,7 @@ e2e-setup-certmanager: $(bin_dir)/cert-manager.tgz $(foreach binaryname,controll
 		--set webhook.image.tag="$(TAG)" \
 		--set acmesolver.image.tag="$(TAG)" \
 		--set startupapicheck.image.tag="$(TAG)" \
-		--set installCRDs=true \
+		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
 		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
