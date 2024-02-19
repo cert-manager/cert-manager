@@ -55,7 +55,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ template "cainjector.fullname" . }}:leaderelection
-  namespace: {{ .Values.global.leaderElection.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
@@ -84,7 +84,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "cainjector.fullname" . }}:leaderelection
-  namespace: {{ .Values.global.leaderElection.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
