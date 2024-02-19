@@ -268,3 +268,12 @@ func TestMustKeepOrderInRawDerBytes(t *testing.T) {
 	assert.Equal(t, expectedRdnSeq, rdnSeq)
 	assert.Equal(t, subject, rdnSeq.String())
 }
+
+func TestShouldFailForHexDER(t *testing.T) {
+	_, err := ParseSubjectStringToRawDERBytes("DF=#6666666666665006838820013100000746939546349182108463491821809FBFFFFFFFFF")
+	if err == nil {
+		t.Fatal("expected error, but got none")
+	}
+
+	assert.Contains(t, err.Error(), "unsupported distinguished name (DN) \"DF=#6666666666665006838820013100000746939546349182108463491821809FBFFFFFFFFF\": notation does not support x509.subject identities containing \"=#\"")
+}
