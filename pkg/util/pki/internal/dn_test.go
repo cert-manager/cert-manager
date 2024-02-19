@@ -173,3 +173,12 @@ func TestErrorDNParsing(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkParseSubject(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		_, err := ParseDN("DF=#6666666666665006838820013100000746939546349182108463491821809FBFFFFFFFFF")
+		if err == nil {
+			b.Fatal("expected error, but got none")
+		}
+	}
+}
