@@ -20,6 +20,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/go-ldap/ldap/v3"
 )
@@ -65,6 +67,10 @@ var attributeTypeNames = map[string][]int{
 }
 
 func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, error) {
+	if strings.Contains(subject, "=#") {
+		return nil, fmt.Errorf("unsupported distinguished name (DN) %q: notation does not support x509.subject identities containing \"=#\"", subject)
+	}
+
 	dns, err := ldap.ParseDN(subject)
 	if err != nil {
 		return nil, err
