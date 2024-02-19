@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ template "cert-manager.fullname" . }}:leaderelection
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "cert-manager.namespace" . }}
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -27,7 +27,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "cert-manager.fullname" . }}:leaderelection
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "cert-manager.namespace" . }}
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
