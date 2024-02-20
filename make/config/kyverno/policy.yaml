@@ -20,6 +20,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -85,6 +86,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -161,6 +163,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -206,6 +209,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -249,6 +253,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -302,6 +307,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -357,6 +363,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -408,6 +415,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -460,6 +468,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -512,6 +521,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -606,6 +616,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -649,6 +660,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -704,6 +716,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -771,6 +784,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -817,6 +831,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -864,6 +879,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -925,6 +941,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -998,6 +1015,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
@@ -1047,6 +1065,7 @@ spec:
         namespaces:
         - bind
         - e2e-vault
+        - e2e-vault-mtls
         - gateway-system
         - ingress-nginx
         - pebble
