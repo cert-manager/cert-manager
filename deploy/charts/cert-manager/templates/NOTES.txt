@@ -1,3 +1,6 @@
+{{- if .Values.installCRDs }}
+⚠️  WARNING: `installCRDs` is deprecated, use `crds.enabled` instead.
+{{- end }}
 cert-manager {{ .Chart.AppVersion }} has been deployed successfully!
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer

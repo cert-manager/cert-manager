@@ -72,6 +72,7 @@ $helm repo update
 echo "+++ Installing cert-manager ${LATEST_RELEASE} Helm chart into the cluster..."
 
 # Upgrade or install latest published cert-manager Helm release
+# We use the deprecated installCRDs=true value, to make the install work for older versions of cert-manager
 $helm upgrade \
     --install \
     --wait \

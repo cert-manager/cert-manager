@@ -87,5 +87,5 @@ ko-deploy-certmanager: $(bin_dir)/cert-manager.tgz $(KO_IMAGE_REFS)
 		--set webhook.image.digest="$(shell $(YQ) .digest $(bin_dir)/scratch/ko/webhook.yaml)" \
 		--set startupapicheck.image.repository="$(shell $(YQ) .repository $(bin_dir)/scratch/ko/startupapicheck.yaml)" \
 		--set startupapicheck.image.digest="$(shell $(YQ) .digest $(bin_dir)/scratch/ko/startupapicheck.yaml)" \
-		--set installCRDs=true \
+		--set crds.enabled=true \
 		--set "extraArgs={--acme-http01-solver-image=$(ACME_HTTP01_SOLVER_IMAGE)}"
