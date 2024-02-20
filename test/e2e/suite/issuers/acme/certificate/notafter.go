@@ -131,8 +131,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
-			gen.SetCertificateDuration(time.Hour),
-			gen.SetCertificateRenewBefore(45*time.Minute),
+			gen.SetCertificateDuration(&metav1.Duration{Duration: time.Hour}),
+			gen.SetCertificateRenewBefore(&metav1.Duration{Duration: 45 * time.Minute}),
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),

@@ -1162,17 +1162,11 @@ func TestNewConfig(t *testing.T) {
 			checkFunc: func(cfg *vault.Config, error error) error {
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
-				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
+				clientCA := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs
 
-				err := fmt.Errorf("got unexpected root CAs in config, exp=%s got=%s",
-					testCA.Subjects(), subs)
-				if len(subs) != len(testCA.Subjects()) {
-					return err
-				}
-				for i := range subs {
-					if !bytes.Equal(subs[i], testCA.Subjects()[i]) {
-						return err
-					}
+				if !clientCA.Equal(testCA) {
+					return fmt.Errorf("got unexpected root CAs in config, exp=%v got=%v",
+						testCA, clientCA)
 				}
 
 				return nil
@@ -1198,17 +1192,11 @@ func TestNewConfig(t *testing.T) {
 
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
-				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
+				clientCA := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs
 
-				err := fmt.Errorf("got unexpected root CAs in config, exp=%s got=%s",
-					testCA.Subjects(), subs)
-				if len(subs) != len(testCA.Subjects()) {
-					return err
-				}
-				for i := range subs {
-					if !bytes.Equal(subs[i], testCA.Subjects()[i]) {
-						return err
-					}
+				if !clientCA.Equal(testCA) {
+					return fmt.Errorf("got unexpected root CAs in config, exp=%v got=%v",
+						testCA, clientCA)
 				}
 
 				return nil
@@ -1233,17 +1221,11 @@ func TestNewConfig(t *testing.T) {
 
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
-				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
+				clientCA := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs
 
-				err := fmt.Errorf("got unexpected root CAs in config, exp=%s got=%s",
-					testCA.Subjects(), subs)
-				if len(subs) != len(testCA.Subjects()) {
-					return err
-				}
-				for i := range subs {
-					if !bytes.Equal(subs[i], testCA.Subjects()[i]) {
-						return err
-					}
+				if !clientCA.Equal(testCA) {
+					return fmt.Errorf("got unexpected root CAs in config, exp=%v got=%v",
+						testCA, clientCA)
 				}
 
 				return nil

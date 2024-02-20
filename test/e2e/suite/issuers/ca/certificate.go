@@ -75,7 +75,17 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
-			cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name: issuerName,
+					Kind: v1.IssuerKind,
+				}),
+				gen.SetCertificateCommonName("test.domain.com"),
+				gen.SetCertificateOrganization("test-org"),
+			)
+			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
 			By("Waiting for the Certificate to be issued...")
@@ -90,11 +100,19 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		It("should be able to obtain an ECDSA key from a RSA backed issuer", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
-			cert.Spec.PrivateKey.Algorithm = v1.ECDSAKeyAlgorithm
-			cert.Spec.PrivateKey.Size = 521
-
 			By("Creating a Certificate")
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name: issuerName,
+					Kind: v1.IssuerKind,
+				}),
+				gen.SetCertificateCommonName("test.domain.com"),
+				gen.SetCertificateOrganization("test-org"),
+				gen.SetCertificateKeyAlgorithm(v1.ECDSAKeyAlgorithm),
+				gen.SetCertificateKeySize(521),
+			)
 			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -110,10 +128,18 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
-			cert.Spec.PrivateKey.Algorithm = v1.Ed25519KeyAlgorithm
-
 			By("Creating a Certificate")
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name: issuerName,
+					Kind: v1.IssuerKind,
+				}),
+				gen.SetCertificateCommonName("test.domain.com"),
+				gen.SetCertificateOrganization("test-org"),
+				gen.SetCertificateKeyAlgorithm(v1.Ed25519KeyAlgorithm),
+			)
 			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -133,13 +159,21 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
-			cert.Spec.AdditionalOutputFormats = []v1.CertificateAdditionalOutputFormat{
-				{Type: "DER"},
-				{Type: "CombinedPEM"},
-			}
-
 			By("Creating a Certificate")
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name: issuerName,
+					Kind: v1.IssuerKind,
+				}),
+				gen.SetCertificateCommonName("test.domain.com"),
+				gen.SetCertificateOrganization("test-org"),
+				gen.SetCertificateAdditionalOutputFormats(
+					v1.CertificateAdditionalOutputFormat{Type: "DER"},
+					v1.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
+				),
+			)
 			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -177,7 +211,19 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 				By("Creating a Certificate")
-				cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
+				cert := gen.Certificate(certificateName,
+					gen.SetCertificateNamespace(f.Namespace.Name),
+					gen.SetCertificateSecretName(certificateSecretName),
+					gen.SetCertificateIssuer(cmmeta.ObjectReference{
+						Name: issuerName,
+						Kind: v1.IssuerKind,
+					}),
+					gen.SetCertificateDuration(v.inputDuration),
+					gen.SetCertificateRenewBefore(v.inputRenewBefore),
+					gen.SetCertificateCommonName("test.domain.com"),
+					gen.SetCertificateOrganization("test-org"),
+				)
+				cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting for the Certificate to be issued...")
 				cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
@@ -203,7 +249,17 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
-			cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateNamespace(f.Namespace.Name),
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name: issuerName,
+					Kind: v1.IssuerKind,
+				}),
+				gen.SetCertificateCommonName("test.domain.com"),
+				gen.SetCertificateOrganization("test-org"),
+			)
+			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
 			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)

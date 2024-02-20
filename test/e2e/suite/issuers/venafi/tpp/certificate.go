@@ -30,6 +30,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
@@ -77,10 +78,17 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 	It("should obtain a signed certificate for a single domain", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-		cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)
-		cert.Spec.CommonName = rand.String(10) + ".venafi-e2e.example"
-
 		By("Creating a Certificate")
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateNamespace(f.Namespace.Name),
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				Name: issuer.Name,
+				Kind: cmapi.IssuerKind,
+			}),
+			gen.SetCertificateCommonName(rand.String(10)+".venafi-e2e.example"),
+			gen.SetCertificateOrganization("test-org"),
+		)
 		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 

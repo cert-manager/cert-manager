@@ -64,7 +64,7 @@ func Test_SecretsManager(t *testing.T) {
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateSecretName("output"),
-		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateRenewBefore(&metav1.Duration{Duration: time.Hour * 36}),
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateUID(apitypes.UID("test-uid")),
 	)
