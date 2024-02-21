@@ -113,9 +113,10 @@ func TestDynamicSource_CARotation(t *testing.T) {
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
-	namespace := "testns"
+	secretName := "testsecret"
+	secretNamespace := "testns"
 
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: secretNamespace}}
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -124,8 +125,8 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	source := tls.DynamicSource{
 		DNSNames: []string{"example.com"},
 		Authority: &authority.DynamicAuthority{
-			SecretNamespace: namespace,
-			SecretName:      "testsecret",
+			SecretName:      secretName,
+			SecretNamespace: secretNamespace,
 			RESTConfig:      config,
 		},
 	}
@@ -175,7 +176,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	}
 
 	cl := kubernetes.NewForConfigOrDie(config)
-	if err := cl.CoreV1().Secrets(source.Authority.SecretNamespace).Delete(ctx, source.Authority.SecretName, metav1.DeleteOptions{}); err != nil {
+	if err := cl.CoreV1().Secrets(secretNamespace).Delete(ctx, secretName, metav1.DeleteOptions{}); err != nil {
 		t.Fatalf("Failed to delete CA secret: %v", err)
 	}
 
