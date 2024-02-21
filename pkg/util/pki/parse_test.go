@@ -275,5 +275,5 @@ func TestShouldFailForHexDER(t *testing.T) {
 		t.Fatal("expected error, but got none")
 	}
 
-	assert.Contains(t, err.Error(), "unsupported distinguished name (DN) \"DF=#6666666666665006838820013100000746939546349182108463491821809FBFFFFFFFFF\": notation does not support x509.subject identities containing \"=#\"")
+	assert.Contains(t, err.Error(), "failed to decode BER packet: length 1665734689 greater than maximum 65536")
 }
