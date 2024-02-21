@@ -32,13 +32,12 @@ import (
 	logsapi "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/textlogger"
 
 	"github.com/cert-manager/cert-manager/pkg/api"
 )
 
 var (
-	Log = textlogger.NewLogger(textlogger.NewConfig()).WithName("cert-manager")
+	Log = klog.TODO().WithName("cert-manager")
 )
 
 const (
