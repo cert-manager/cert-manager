@@ -27,7 +27,6 @@ import (
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -62,7 +61,7 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 
 	// required Aka OpenEdgegrid creds + non empty dnsservers list
 	if serviceConsumerDomain == "" || clientToken == "" || clientSecret == "" || accessToken == "" || len(dns01Nameservers) < 1 {
-		return nil, fmt.Errorf("edgedns: Provider creation failed. Missing required arguments.")
+		return nil, fmt.Errorf("edgedns: Provider creation failed. Missing required arguments")
 	}
 
 	dnsp := &DNSProvider{
@@ -103,20 +102,20 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 
 	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
 	if err != nil {
-		return errors.Wrapf(err, "edgedns: failed to determine hosted domain for %q", fqdn)
+		return fmt.Errorf("edgedns: failed to determine hosted domain for %q: %w", fqdn, err)
 	}
 	hostedDomain = util.UnFqdn(hostedDomain)
 	logf.V(logf.DebugLevel).Infof("hostedDomain: %s", hostedDomain)
 
 	recordName, err := makeTxtRecordName(fqdn, hostedDomain)
 	if err != nil {
-		return errors.Wrapf(err, "edgedns: failed to create TXT record name")
+		return fmt.Errorf("edgedns: failed to create TXT record name: %w", err)
 	}
 	logf.V(logf.DebugLevel).Infof("recordName: %s", recordName)
 
 	record, err := a.dnsclient.GetRecord(hostedDomain, recordName, "TXT")
 	if err != nil && !a.isNotFound(err) {
-		return errors.Wrapf(err, "edgedns: failed to retrieve TXT record")
+		return fmt.Errorf("edgedns: failed to retrieve TXT record: %w", err)
 	}
 
 	if err == nil && record == nil {
@@ -136,7 +135,7 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 
 		err = a.dnsclient.RecordUpdate(record, hostedDomain)
 		if err != nil {
-			return errors.Wrapf(err, "edgedns: failed to update TXT record")
+			return fmt.Errorf("edgedns: failed to update TXT record: %w", err)
 		}
 
 		return nil
@@ -151,7 +150,7 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 
 	err = a.dnsclient.RecordSave(record, hostedDomain)
 	if err != nil {
-		return errors.Wrapf(err, "edgedns: failed to create TXT record")
+		return fmt.Errorf("edgedns: failed to create TXT record: %w", err)
 	}
 
 	return nil
@@ -164,14 +163,14 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
 	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
 	if err != nil {
-		return errors.Wrapf(err, "edgedns: failed to determine hosted domain for %q", fqdn)
+		return fmt.Errorf("edgedns: failed to determine hosted domain for %q: %w", fqdn, err)
 	}
 	hostedDomain = util.UnFqdn(hostedDomain)
 	logf.V(logf.DebugLevel).Infof("hostedDomain: %s", hostedDomain)
 
 	recordName, err := makeTxtRecordName(fqdn, hostedDomain)
 	if err != nil {
-		return errors.Wrapf(err, "edgedns: failed to create TXT record name")
+		return fmt.Errorf("edgedns: failed to create TXT record name: %w", err)
 	}
 	logf.V(logf.DebugLevel).Infof("recordName: %s", recordName)
 
@@ -180,7 +179,7 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		if a.isNotFound(err) {
 			return nil
 		}
-		return errors.Wrapf(err, "edgedns: failed to retrieve TXT record")
+		return fmt.Errorf("edgedns: failed to retrieve TXT record: %w", err)
 	}
 
 	if existingRec == nil {
@@ -209,7 +208,7 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		logf.V(logf.DebugLevel).Infof("updating Akamai TXT record: %s, data: %s", existingRec.Name, newRData)
 		err = a.dnsclient.RecordUpdate(existingRec, hostedDomain)
 		if err != nil {
-			return errors.Wrapf(err, "edgedns: TXT record update failed")
+			return fmt.Errorf("edgedns: TXT record update failed: %w", err)
 		}
 
 		return nil
@@ -218,7 +217,7 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	logf.V(logf.DebugLevel).Infof("deleting Akamai TXT record %s", existingRec.Name)
 	err = a.dnsclient.RecordDelete(existingRec, hostedDomain)
 	if err != nil {
-		return errors.Wrapf(err, "edgedns: TXT record delete failed")
+		return fmt.Errorf("edgedns: TXT record delete failed: %w", err)
 	}
 
 	return nil
@@ -252,7 +251,7 @@ func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {
 
 	recName := util.UnFqdn(fqdn)
 	if !strings.HasSuffix(recName, hostedDomain) {
-		return "", errors.Errorf("fqdn %q is not part of %q", fqdn, hostedDomain)
+		return "", fmt.Errorf("fqdn %q is not part of %q", fqdn, hostedDomain)
 	}
 
 	return recName, nil

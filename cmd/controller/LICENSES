@@ -94,7 +94,6 @@ github.com/patrickmn/go-cache,https://github.com/patrickmn/go-cache/blob/v2.1.0/
 github.com/pavlo-v-chernykh/keystore-go/v4,https://github.com/pavlo-v-chernykh/keystore-go/blob/v4.5.0/LICENSE,MIT
 github.com/pierrec/lz4,https://github.com/pierrec/lz4/blob/v2.6.1/LICENSE,BSD-3-Clause
 github.com/pkg/browser,https://github.com/pkg/browser/blob/5ac0b6a4141c/LICENSE,BSD-2-Clause
-github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
 github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.18.0/LICENSE,Apache-2.0
 github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.5.0/LICENSE,Apache-2.0
 github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.46.0/LICENSE,Apache-2.0
