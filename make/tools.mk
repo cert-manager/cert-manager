@@ -46,7 +46,7 @@ TOOLS += ko=v0.14.1
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
-TOOLS += controller-gen=v0.13.0
+TOOLS += controller-gen=v0.14.0
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
 # https://pkg.go.dev/k8s.io/release/cmd/release-notes?tab=versions
