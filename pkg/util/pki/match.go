@@ -17,6 +17,7 @@ limitations under the License.
 package pki
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -191,20 +192,20 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		}
 
 	} else {
-		// we have a LiteralSubject
-		// parse the subject of the csr in the same way as we parse LiteralSubject and see whether the RDN Sequences match
-
-		rdnSequenceFromCertificateRequest, err := UnmarshalRawDerBytesToRDNSequence(x509req.RawSubject)
-		if err != nil {
-			return nil, err
-		}
+		// we have a LiteralSubject, generate the RDNSequence and encode it to compare
+		// with the request's subject
 
 		rdnSequenceFromCertificate, err := UnmarshalSubjectStringToRDNSequence(spec.LiteralSubject)
 		if err != nil {
 			return nil, err
 		}
 
-		if !reflect.DeepEqual(rdnSequenceFromCertificate, rdnSequenceFromCertificateRequest) {
+		asn1Sequence, err := asn1.Marshal(rdnSequenceFromCertificate)
+		if err != nil {
+			return nil, err
+		}
+
+		if !bytes.Equal(x509req.RawSubject, asn1Sequence) {
 			violations = append(violations, "spec.literalSubject")
 		}
 	}

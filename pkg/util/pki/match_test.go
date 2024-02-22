@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/pem"
 	"reflect"
 	"testing"
@@ -208,6 +209,92 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			violations, err := RequestMatchesSpec(test.crSpec, test.certSpec)
+			if err != nil {
+				if test.err == "" {
+					t.Errorf("Unexpected error: %s", err.Error())
+				} else {
+					if test.err != err.Error() {
+						t.Errorf("Expected error: %s but got: %s instead", err.Error(), test.err)
+					}
+				}
+			}
+
+			if !reflect.DeepEqual(violations, test.violations) {
+				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
+			}
+		})
+	}
+}
+
+func TestRequestMatchesSpecSubject(t *testing.T) {
+	createCSRBlob := func(literalSubject string) []byte {
+		pk, err := GenerateRSAPrivateKey(2048)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		seq, err := UnmarshalSubjectStringToRDNSequence(literalSubject)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		asn1Seq, err := asn1.Marshal(seq)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		csr := &x509.CertificateRequest{
+			RawSubject: asn1Seq,
+		}
+
+		csrBytes, err := x509.CreateCertificateRequest(bytes.NewBuffer(nil), csr, pk)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+	}
+
+	tests := []struct {
+		name           string
+		subject        *cmapi.X509Subject
+		literalSubject string
+		x509CSR        []byte
+		err            string
+		violations     []string
+	}{
+		{
+			name:           "Matching LiteralSubjects",
+			literalSubject: "CN=example.com,OU=example,O=example,L=example,ST=example,C=US",
+			x509CSR:        createCSRBlob("CN=example.com,OU=example,O=example,L=example,ST=example,C=US"),
+		},
+		{
+			name:           "Matching LiteralSubjects",
+			literalSubject: "ST=example,C=US",
+			x509CSR:        createCSRBlob("ST=example"),
+			violations:     []string{"spec.literalSubject"},
+		},
+		{
+			name:           "Matching LiteralSubjects",
+			literalSubject: "ST=example,C=US,O=#04024869",
+			x509CSR:        createCSRBlob("ST=example,C=US,O=#04024869"),
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			violations, err := RequestMatchesSpec(
+				&cmapi.CertificateRequest{
+					Spec: cmapi.CertificateRequestSpec{
+						Request: test.x509CSR,
+					},
+				},
+				cmapi.CertificateSpec{
+					Subject:        test.subject,
+					LiteralSubject: test.literalSubject,
+				},
+			)
 			if err != nil {
 				if test.err == "" {
 					t.Errorf("Unexpected error: %s", err.Error())
