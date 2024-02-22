@@ -111,7 +111,7 @@ type DynamicServingConfig struct {
 	// used as a CA to sign dynamic serving certificates.
 	SecretNamespace string
 
-	// Namespace of the Kubernetes Secret resource containing the TLS certificate
+	// Kubernetes Secret resource containing the TLS certificate
 	// used as a CA to sign dynamic serving certificates.
 	SecretName string
 
