@@ -95,8 +95,8 @@ github.com/bugsnag/bugsnag-go v0.0.0-20141110184014-b1d153021fcd h1:rFt+Y/IK1aEZ
 github.com/bugsnag/osext v0.0.0-20130617224835-0dd3f918b21b h1:otBG+dV+YK+Soembjv71DPz3uX/V/6MMlSyD9JBQ6kQ=
 github.com/bugsnag/panicwrap v0.0.0-20151223152923-e2c28503fcd0 h1:nvj0OLI3YqYXer/kZD8Ri1aaunCxIEsOst1BVJswV0o=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
-github.com/cert-manager/cert-manager v1.13.3 h1:3R4G0RI7K0OkTZhWlVOC5SGZMYa2NwqmQJoyKydrz/M=
-github.com/cert-manager/cert-manager v1.13.3/go.mod h1:BM2+Pt/NmSv1Zr25/MHv6BgIEF9IUxA1xAjp80qkxgc=
+github.com/cert-manager/cert-manager v1.13.4 h1:4zJdlemXg84KFssuk4I781oBJo1CuAnD1m8ZF/zsRrY=
+github.com/cert-manager/cert-manager v1.13.4/go.mod h1:8F9nXyWuOP0Ziq77g0N5N/sTyfP1NBVs4C1GBjrDU1I=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
