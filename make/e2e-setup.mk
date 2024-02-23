@@ -266,6 +266,24 @@ feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
+# When testing an published chart the repo can be configured using
+# E2E_CERT_MANAGER_REPO 
+E2E_CERT_MANAGER_REPO ?= https://charts.jetstack.io
+# When testing an published chart the chart name can be configured using
+# E2E_CERT_MANAGER_CHART. This can also be set to a local path to test a 
+# downloaded chart
+E2E_CERT_MANAGER_CHART ?= cert-manager
+# When testing an published chart, default to the latest release
+E2E_CERT_MANAGER_VERSION ?= 
+
+# Example running E2E tests against a downloaded chart:
+# 	E2E_EXISTING_CHART=true E2E_CERT_MANAGER_CHART=./cert-manager-v1.14.2.tgz make e2e-setup
+# 	make e2e
+#
+# Example running E2E test against published version of a chart:
+# 	E2E_EXISTING_CHART=true E2E_CERT_MANAGER_VERSION=1.14.2 make e2e-setup
+# 	make e2e
+
 # Install cert-manager with E2E specific images and deployment settings.
 # The values.best-practice.yaml file is applied for compliance with the
 # Kyverno policy which has been installed in a pre-requisite target.
@@ -276,6 +294,26 @@ feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 # * GatewayAPI: so that cert-manager can watch those CRs.
 # * Kyverno: so that it can check the cert-manager manifests against the policy in `config/kyverno/`
 #		(only installed if E2E_SETUP_OPTION_BESTPRACTICE is set).
+ifdef E2E_EXISTING_CHART
+.PHONY: e2e-setup-certmanager
+e2e-setup-certmanager: e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_KIND) $(NEEDS_HELM)
+	$(HELM) upgrade \
+		--install \
+		--create-namespace \
+		--wait \
+		--namespace cert-manager \
+		--repo $(E2E_CERT_MANAGER_REPO) \
+		$(addprefix --version,$(E2E_CERT_MANAGER_VERSION)) \
+		--set crds.enabled=true \
+		--set featureGates="$(feature_gates_controller)" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200}" \
+		--set webhook.featureGates="$(feature_gates_webhook)" \
+		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
+		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
+		--set "dns01RecursiveNameserversOnly=true" \
+		$(if $(E2E_SETUP_OPTION_BESTPRACTICE),--values=$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE)) \
+		cert-manager $(E2E_CERT_MANAGER_CHART) >/dev/null
+else
 .PHONY: e2e-setup-certmanager
 e2e-setup-certmanager: $(bin_dir)/cert-manager.tgz $(foreach binaryname,controller acmesolver cainjector webhook startupapicheck,$(bin_dir)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) $(foreach binaryname,controller acmesolver cainjector webhook startupapicheck,load-$(bin_dir)/containers/cert-manager-$(binaryname)-linux-$(CRI_ARCH).tar) e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_KIND) $(NEEDS_HELM)
 	@$(eval TAG = $(shell tar xfO $(bin_dir)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
@@ -303,6 +341,7 @@ e2e-setup-certmanager: $(bin_dir)/cert-manager.tgz $(foreach binaryname,controll
 		--set "dns01RecursiveNameserversOnly=true" \
 		$(if $(E2E_SETUP_OPTION_BESTPRACTICE),--values=$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_FILE)) \
 		cert-manager $< >/dev/null
+endif
 
 .PHONY: e2e-setup-bind
 e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard make/config/bind/*.yaml) $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL)
