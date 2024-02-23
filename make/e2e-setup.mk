@@ -276,6 +276,14 @@ E2E_CERT_MANAGER_CHART ?= cert-manager
 # When testing an published chart, default to the latest release
 E2E_CERT_MANAGER_VERSION ?= 
 
+# Example running E2E tests against a downloaded chart:
+# 	E2E_EXISTING_CHART=true E2E_CERT_MANAGER_CHART=./cert-manager-v1.14.2.tgz make e2e-setup
+# 	make e2e
+#
+# Example running E2E test against published version of a chart:
+# 	E2E_EXISTING_CHART=true E2E_CERT_MANAGER_VERSION=1.14.2 make e2e-setup
+# 	make e2e
+
 # Install cert-manager with E2E specific images and deployment settings.
 # The values.best-practice.yaml file is applied for compliance with the
 # Kyverno policy which has been installed in a pre-requisite target.
