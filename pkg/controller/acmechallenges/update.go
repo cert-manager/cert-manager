@@ -18,10 +18,9 @@ package acmechallenges
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +34,7 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-var argumentError = stderrors.New("invalid arguments")
+var argumentError = errors.New("invalid arguments")
 
 type objectUpdateClient interface {
 	update(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
@@ -78,11 +77,9 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacm
 		gen.ChallengeFrom(old, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
 		gen.ChallengeFrom(new, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
 	) {
-		return errors.WithStack(
-			fmt.Errorf(
-				"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-				argumentError,
-			),
+		return fmt.Errorf(
+			"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
+			argumentError,
 		)
 	}
 
@@ -91,8 +88,11 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacm
 		updateFunctions = append(
 			updateFunctions,
 			func() (*cmacme.Challenge, error) {
-				obj, err := o.updateStatus(ctx, new)
-				return obj, errors.Wrap(err, "when updating the status")
+				if obj, err := o.updateStatus(ctx, new); err != nil {
+					return obj, fmt.Errorf("when updating the status: %w", err)
+				} else {
+					return obj, nil
+				}
 			},
 		)
 	}
@@ -100,8 +100,11 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacm
 		updateFunctions = append(
 			updateFunctions,
 			func() (*cmacme.Challenge, error) {
-				obj, err := o.update(ctx, new)
-				return obj, errors.Wrap(err, "when updating the finalizers")
+				if obj, err := o.update(ctx, new); err != nil {
+					return obj, fmt.Errorf("when updating the finalizers: %w", err)
+				} else {
+					return obj, nil
+				}
 			},
 		)
 	}

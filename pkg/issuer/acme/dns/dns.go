@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -193,17 +192,17 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		dbg.Info("preparing to create Akamai provider")
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "error getting akamai client token")
+			return nil, nil, fmt.Errorf("error getting akamai client token: %w", err)
 		}
 
 		clientSecret, err := s.loadSecretData(&providerConfig.Akamai.ClientSecret, resourceNamespace)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "error getting akamai client secret")
+			return nil, nil, fmt.Errorf("error getting akamai client secret: %w", err)
 		}
 
 		accessToken, err := s.loadSecretData(&providerConfig.Akamai.AccessToken, resourceNamespace)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "error getting akamai access token")
+			return nil, nil, fmt.Errorf("error getting akamai client token: %w", err)
 		}
 
 		impl, err = akamai.NewDNSProvider(
@@ -213,7 +212,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 			string(accessToken),
 			s.DNS01Nameservers)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "error instantiating akamai challenge solver")
+			return nil, nil, fmt.Errorf("error instantiating akamai challenge solver: %w", err)
 		}
 	case providerConfig.CloudDNS != nil:
 		dbg.Info("preparing to create CloudDNS provider")
@@ -527,12 +526,12 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 func (s *Solver) loadSecretData(selector *cmmeta.SecretKeySelector, ns string) ([]byte, error) {
 	secret, err := s.secretLister.Secrets(ns).Get(selector.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load secret %q", ns+"/"+selector.Name)
+		return nil, fmt.Errorf("failed to load secret %q: %w", ns+"/"+selector.Name, err)
 	}
 
 	if data, ok := secret.Data[selector.Key]; ok {
 		return data, nil
 	}
 
-	return nil, errors.Errorf("no key %q in secret %q", selector.Key, ns+"/"+selector.Name)
+	return nil, fmt.Errorf("no key %q in secret %q", selector.Key, ns+"/"+selector.Name)
 }
