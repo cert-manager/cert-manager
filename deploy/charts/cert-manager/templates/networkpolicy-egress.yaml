@@ -11,13 +11,9 @@ spec:
     {{- end }}
   podSelector:
     matchLabels:
-      app: {{ include "webhook.name" . }}
       app.kubernetes.io/name: {{ include "webhook.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "webhook"
-      {{- with .Values.webhook.podLabels }}
-      {{- toYaml . | nindent 6 }}
-      {{- end }}
   policyTypes:
   - Egress
 {{- end }}
