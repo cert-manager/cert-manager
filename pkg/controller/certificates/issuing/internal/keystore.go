@@ -92,7 +92,7 @@ func encodePKCS12Truststore(profile cmapi.PKCS12Profile, password string, caPem 
 	}
 }
 
-func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
+func encodeJKSKeystore(password []byte, keyAlias string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
 	// encode the private key to PKCS8
 	key, err := pki.DecodePrivateKeyBytes(rawKey)
 	if err != nil {
@@ -117,7 +117,7 @@ func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []b
 	}
 
 	ks := jks.New()
-	if err = ks.SetPrivateKeyEntry("certificate", jks.PrivateKeyEntry{
+	if err = ks.SetPrivateKeyEntry(keyAlias, jks.PrivateKeyEntry{
 		CreationTime:     time.Now(),
 		PrivateKey:       keyDER,
 		CertificateChain: certs,

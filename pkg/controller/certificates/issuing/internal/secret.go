@@ -287,7 +287,11 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 			return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
 		}
 		pw := pwSecret.Data[ref.Key]
-		keystoreData, err := encodeJKSKeystore(pw, data.PrivateKey, data.Certificate, data.CA)
+		alias := "certificate"
+		if crt.Spec.Keystores.JKS.Alias != nil {
+			alias = *crt.Spec.Keystores.JKS.Alias
+		}
+		keystoreData, err := encodeJKSKeystore(pw, alias, data.PrivateKey, data.Certificate, data.CA)
 		if err != nil {
 			return fmt.Errorf("error encoding JKS bundle: %w", err)
 		}

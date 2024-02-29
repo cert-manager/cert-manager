@@ -157,11 +157,13 @@ func mustLeafWithChain(t *testing.T) leafWithChain {
 func TestEncodeJKSKeystore(t *testing.T) {
 	tests := map[string]struct {
 		password               string
+		alias                  string
 		rawKey, certPEM, caPEM []byte
 		verify                 func(t *testing.T, out []byte, err error)
 	}{
 		"encode a JKS bundle for a PKCS1 key and certificate only": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS1),
 			certPEM:  mustSelfSignCertificate(t, nil),
 			verify: func(t *testing.T, out []byte, err error) {
@@ -177,7 +179,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					return
 				}
 
-				if !ks.IsPrivateKeyEntry("certificate") {
+				if !ks.IsPrivateKeyEntry("alias") {
 					t.Errorf("no certificate data found in keystore")
 				}
 
@@ -188,6 +190,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 		},
 		"encode a JKS bundle for a PKCS8 key and certificate only": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
 			certPEM:  mustSelfSignCertificate(t, nil),
 			verify: func(t *testing.T, out []byte, err error) {
@@ -201,7 +204,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					t.Errorf("error decoding keystore: %v", err)
 					return
 				}
-				if !ks.IsPrivateKeyEntry("certificate") {
+				if !ks.IsPrivateKeyEntry("alias") {
 					t.Errorf("no certificate data found in keystore")
 				}
 
@@ -212,6 +215,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 		},
 		"encode a JKS bundle for a key, certificate and ca": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
 			certPEM:  mustSelfSignCertificate(t, nil),
 			caPEM:    mustSelfSignCertificate(t, nil),
@@ -226,7 +230,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					t.Errorf("error decoding keystore: %v", err)
 					return
 				}
-				if !ks.IsPrivateKeyEntry("certificate") {
+				if !ks.IsPrivateKeyEntry("alias") {
 					t.Errorf("no certificate data found in keystore")
 				}
 				if !ks.IsTrustedCertificateEntry("ca") {
@@ -236,6 +240,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 		},
 		"encode a JKS bundle for a key, certificate and multiple cas": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
 			certPEM:  mustSelfSignCertificate(t, nil),
 			caPEM:    mustSelfSignCertificates(t, 3),
@@ -250,7 +255,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					t.Errorf("error decoding keystore: %v", err)
 					return
 				}
-				if !ks.IsPrivateKeyEntry("certificate") {
+				if !ks.IsPrivateKeyEntry("alias") {
 					t.Errorf("no certificate data found in keystore")
 				}
 				if !ks.IsTrustedCertificateEntry("ca") {
@@ -270,7 +275,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := encodeJKSKeystore([]byte(test.password), test.rawKey, test.certPEM, test.caPEM)
+			out, err := encodeJKSKeystore([]byte(test.password), test.alias, test.rawKey, test.certPEM, test.caPEM)
 			test.verify(t, out, err)
 		})
 	}
@@ -559,7 +564,7 @@ func TestManyPasswordLengths(t *testing.T) {
 		}
 		g.Go(func() error {
 			defer s.Release(1)
-			keystore, err := encodeJKSKeystore([]byte(passwords[testi]), rawKey, certPEM, caPEM)
+			keystore, err := encodeJKSKeystore([]byte(passwords[testi]), "alias", rawKey, certPEM, caPEM)
 			if err != nil {
 				t.Errorf("couldn't encode JKS Keystore with password %s (length %d): %s", passwords[testi], len(passwords[testi]), err.Error())
 				return err
@@ -572,7 +577,7 @@ func TestManyPasswordLengths(t *testing.T) {
 				t.Errorf("error decoding keystore with password %s (length %d): %v", passwords[testi], len(passwords[testi]), err)
 				return err
 			}
-			if !ks.IsPrivateKeyEntry("certificate") {
+			if !ks.IsPrivateKeyEntry("alias") {
 				t.Errorf("no certificate data found in keystore")
 			}
 			if !ks.IsTrustedCertificateEntry("ca") {
