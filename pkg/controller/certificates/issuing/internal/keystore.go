@@ -51,7 +51,7 @@ func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey [
 	}
 	var cas []*x509.Certificate
 	if len(caPem) > 0 {
-		cas, err = pki.DecodeX509CertificateChainBytes(caPem)
+		cas, err = pki.DecodeX509CertificateSetBytes(caPem)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +75,7 @@ func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey [
 }
 
 func encodePKCS12Truststore(profile cmapi.PKCS12Profile, password string, caPem []byte) ([]byte, error) {
-	cas, err := pki.DecodeX509CertificateChainBytes(caPem)
+	cas, err := pki.DecodeX509CertificateSetBytes(caPem)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func encodeJKSTruststore(password []byte, caPem []byte) ([]byte, error) {
 }
 
 func addCAsToJKSStore(ks *jks.KeyStore, caPem []byte) error {
-	cas, err := pki.DecodeX509CertificateChainBytes(caPem)
+	cas, err := pki.DecodeX509CertificateSetBytes(caPem)
 	if err != nil {
 		return err
 	}
