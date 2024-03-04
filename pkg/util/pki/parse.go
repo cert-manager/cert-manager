@@ -90,6 +90,11 @@ func DecodePKCS1PrivateKeyBytes(keyBytes []byte) (*rsa.PrivateKey, error) {
 
 // DecodeX509CertificateChainBytes will decode a PEM encoded x509 Certificate chain.
 func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, error) {
+	return DecodeX509CertificateSetBytes(certBytes)
+}
+
+// DecodeX509CertificateSetBytes will decode a concatenated set of PEM encoded x509 Certificates.
+func DecodeX509CertificateSetBytes(certBytes []byte) ([]*x509.Certificate, error) {
 	certs := []*x509.Certificate{}
 
 	var block *pem.Block
@@ -118,7 +123,7 @@ func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, err
 
 // DecodeX509CertificateBytes will decode a PEM encoded x509 Certificate.
 func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
-	certs, err := DecodeX509CertificateChainBytes(certBytes)
+	certs, err := DecodeX509CertificateSetBytes(certBytes)
 	if err != nil {
 		return nil, err
 	}
