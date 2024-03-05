@@ -385,6 +385,11 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
 
+	certificateHash, err := utilpki.CertificateVersionedHash(crt)
+	if err != nil {
+		return err
+	}
+
 	pkData, err := utilpki.EncodePrivateKey(pk, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
 		return err
@@ -393,6 +398,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 		PrivateKey:      pkData,
 		Certificate:     req.Status.Certificate,
 		CA:              req.Status.CA,
+		CertificateHash: certificateHash,
 		CertificateName: crt.Name,
 		IssuerName:      req.Spec.IssuerRef.Name,
 		IssuerKind:      req.Spec.IssuerRef.Kind,

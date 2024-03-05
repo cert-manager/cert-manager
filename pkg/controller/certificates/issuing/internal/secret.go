@@ -60,6 +60,7 @@ type SecretsManager struct {
 // SecretData is a structure wrapping private key, Certificate and CA data
 type SecretData struct {
 	PrivateKey, Certificate, CA         []byte
+	CertificateHash                     string
 	CertificateName                     string
 	IssuerName, IssuerKind, IssuerGroup string
 }
@@ -198,6 +199,10 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[cmapi.IssuerNameAnnotationKey] = data.IssuerName
 		secret.Annotations[cmapi.IssuerKindAnnotationKey] = data.IssuerKind
 		secret.Annotations[cmapi.IssuerGroupAnnotationKey] = data.IssuerGroup
+	}
+
+	if data.CertificateHash != "" {
+		secret.Annotations[cmapi.CertificateHashAnnotationKey] = data.CertificateHash
 	}
 
 	secret.Labels[cmapi.PartOfCertManagerControllerLabelKey] = "true"

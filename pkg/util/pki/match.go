@@ -23,6 +23,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/hex"
 	"net"
 
 	"fmt"
@@ -31,9 +32,109 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/cert-manager/cert-manager/internal/infohash"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
+
+func derefOrZero[T any](t *T) T {
+	if t == nil {
+		var result T
+		return result
+	}
+	return *t
+}
+
+func CertificateHasher(cert *cmapi.Certificate) infohash.Hasher {
+	subject := derefOrZero(cert.Spec.Subject)
+	nameConstraints := derefOrZero(cert.Spec.NameConstraints)
+	nameConstraintsPermitted := derefOrZero(nameConstraints.Permitted)
+	nameConstraintsExcluded := derefOrZero(nameConstraints.Excluded)
+
+	type stableOtherName struct {
+		OID       string
+		UTF8Value string
+	}
+	var otherNames []stableOtherName
+	if cert.Spec.OtherNames != nil {
+		otherNames = make([]stableOtherName, len(cert.Spec.OtherNames))
+		for i, otherName := range cert.Spec.OtherNames {
+			otherNames[i] = stableOtherName{
+				OID:       otherName.OID,
+				UTF8Value: otherName.UTF8Value,
+			}
+		}
+	}
+
+	// WARNING: if you add a new field, it must be added to the end of the list
+	// to avoid breaking existing hashes.
+	return infohash.New().
+		// Metadata
+		WriteField("metadata.name", cert.ObjectMeta.Name).
+		// Basic Constraints
+		WriteField("spec.isCA", cert.Spec.IsCA).
+		// Usages
+		WriteField("spec.usages", cert.Spec.Usages).
+		WriteField("spec.encodeUsagesInRequest", cert.Spec.EncodeUsagesInRequest).
+		// Subject
+		WriteField("spec.subject.organizations", subject.Organizations).
+		WriteField("spec.subject.countries", subject.Countries).
+		WriteField("spec.subject.organizationalUnits", subject.OrganizationalUnits).
+		WriteField("spec.subject.localities", subject.Localities).
+		WriteField("spec.subject.provinces", subject.Provinces).
+		WriteField("spec.subject.streetAddresses", subject.StreetAddresses).
+		WriteField("spec.subject.postalCodes", subject.PostalCodes).
+		WriteField("spec.subject.serialNumber", subject.SerialNumber).
+		WriteField("spec.literalSubject", cert.Spec.LiteralSubject).
+		// SANs
+		WriteField("spec.commonName", cert.Spec.CommonName).
+		WriteField("spec.dnsNames", cert.Spec.DNSNames).
+		WriteField("spec.ipAddresses", cert.Spec.IPAddresses).
+		WriteField("spec.uris", cert.Spec.URIs).
+		WriteField("spec.emailAddresses", cert.Spec.EmailAddresses).
+		WriteField("spec.otherNames", otherNames).
+		// Issuer Ref
+		WriteField("spec.issuerRef.name", cert.Spec.IssuerRef.Name).
+		WriteField("spec.issuerRef.group", cert.Spec.IssuerRef.Group).
+		WriteField("spec.issuerRef.kind", cert.Spec.IssuerRef.Kind).
+		// Name Constraints
+		WriteField("spec.nameConstraints.critical", nameConstraints.Critical).
+		WriteField("spec.nameConstraints.permitted.dnsDomains", nameConstraintsPermitted.DNSDomains).
+		WriteField("spec.nameConstraints.permitted.ipRanges", nameConstraintsPermitted.IPRanges).
+		WriteField("spec.nameConstraints.permitted.emailAddresses", nameConstraintsPermitted.EmailAddresses).
+		WriteField("spec.nameConstraints.permitted.uriDomains", nameConstraintsPermitted.URIDomains).
+		WriteField("spec.nameConstraints.excluded.dnsDomains", nameConstraintsExcluded.DNSDomains).
+		WriteField("spec.nameConstraints.excluded.ipRanges", nameConstraintsExcluded.IPRanges).
+		WriteField("spec.nameConstraints.excluded.emailAddresses", nameConstraintsExcluded.EmailAddresses).
+		WriteField("spec.nameConstraints.excluded.uriDomains", nameConstraintsExcluded.URIDomains)
+	// NOTE: ^^ above this line, the fields were added in the original PR that introduced the hash
+	// for that reason, their default value is not important.
+
+	// New fields must be added here to avoid breaking existing hashes. Their default value
+	// must be the value that would have been set if the field was not present in the resource.
+	// eg.
+	// .WriteFieldWithDefault("spec.newField", cert.Spec.NewField, "default")
+	// or if the default value is the zero value
+	// .WriteField("spec.newField", cert.Spec.NewField)
+}
+
+func CertificateVersionedHash(cert *cmapi.Certificate) (string, error) {
+	hashBytes, err := CertificateHasher(cert).Sum()
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hashBytes), nil
+}
+
+func IsCertificateUpToDateWithVersionedHash(cert *cmapi.Certificate, hashString string) error {
+	bytes, err := hex.DecodeString(hashString)
+	if err != nil {
+		return err
+	}
+
+	return CertificateHasher(cert).Compare(bytes)
+}
 
 // PrivateKeyMatchesSpec returns an error if the private key bit size
 // doesn't match the provided spec. RSA, Ed25519 and ECDSA are supported.
@@ -120,6 +221,7 @@ func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
 // and returns a list of field names on the Certificate that do not match their
 // counterpart fields on the CertificateRequest.
 // If decoding the x509 certificate request fails, an error will be returned.
+// Deprecated: use CertificateVersionedHash and IsCertificateUpToDateWithVersionedHash instead.
 func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec) ([]string, error) {
 	x509req, err := DecodeX509CertificateRequestBytes(req.Spec.Request)
 	if err != nil {
@@ -278,6 +380,7 @@ func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherNam
 // do not match their counterparts.
 // This is a purposely less comprehensive check than RequestMatchesSpec as some
 // issuers override/force certain fields.
+// Deprecated: use CertificateVersionedHash and IsCertificateUpToDateWithVersionedHash instead.
 func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSpec) ([]string, error) {
 	x509cert, err := DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
