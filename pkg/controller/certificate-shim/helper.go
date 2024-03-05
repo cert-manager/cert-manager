@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -265,6 +266,27 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{RotationPolicy: rotationPolicy}
 		} else {
 			crt.Spec.PrivateKey.RotationPolicy = rotationPolicy
+		}
+	}
+
+	if customAnnotationsRegexString, found := ingLikeAnnotations[cmapi.IngressSecretTemplateAnnotations]; found {
+		customAnnotationsRegex, err := regexp.Compile(customAnnotationsRegexString)
+		if err != nil {
+			return fmt.Errorf("%w %q: error parsing regexp: %q", errInvalidIngressAnnotation, cmapi.IngressSecretTemplateAnnotations, customAnnotationsRegexString)
+		}
+		for annotationKey, annotationValue := range ingLikeAnnotations {
+			match := customAnnotationsRegex.FindString(annotationKey)
+			if len(match) == len(annotationKey) {
+				if strings.HasPrefix(annotationKey, "cert-manager.io/") {
+					return fmt.Errorf("%w %q: regex must not match cert-manager.io/ annotations: %q", errInvalidIngressAnnotation, cmapi.IngressSecretTemplateAnnotations, customAnnotationsRegexString)
+				}
+				if crt.Spec.SecretTemplate == nil {
+					crt.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{
+						Annotations: map[string]string{},
+					}
+				}
+				crt.Spec.SecretTemplate.Annotations[annotationKey] = annotationValue
+			}
 		}
 	}
 
