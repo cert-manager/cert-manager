@@ -136,6 +136,30 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			message: "Issuing certificate as Secret contains a private key that does not match the certificate",
 			reissue: true,
 		},
+		"trigger issuance as Secret has old or incorrect 'certificate name' annotation": {
+			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				SecretName: "something",
+				IssuerRef: cmmeta.ObjectReference{
+					Name: "testissuer",
+				},
+			}},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something",
+					Annotations: map[string]string{
+						cmapi.CertificateNameKey: "oldname",
+					},
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+					),
+				},
+			},
+			reason:  IncorrectCertificate,
+			message: "Issuing certificate as Secret was previously issued for Certificate \"oldname\"",
+			reissue: true,
+		},
 		"trigger issuance as Secret has old or incorrect 'issuer name' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
@@ -243,7 +267,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			message: "Existing private key is not up to date for spec: [spec.privateKey.algorithm]",
 			reissue: true,
 		},
-		"trigger if the Secret contains a different private key than was used to sign the CSR": {
+		"trigger issuance as current CertificateRequest is not signed with private key": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
@@ -264,7 +288,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 					CommonName: "example.com",
 				}}),
 			}},
-			reason:  SecretMismatch,
+			reason:  InvalidCertificateRequest,
 			message: "Secret contains a private key that does not match the current CertificateRequest",
 			reissue: true,
 		},
@@ -308,7 +332,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				}}),
 			}},
 			reason:  RequestChanged,
-			message: "Fields on existing CertificateRequest resource not up to date: [spec.commonName]",
+			message: "Issuing certificate as Fields on existing CertificateRequest resource not up to date: [spec.commonName]",
 			reissue: true,
 		},
 		"do nothing if CertificateRequest matches spec": {
@@ -436,7 +460,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0001-01-01 00:00:00 +0000 UTC",
+			message: "Issuing certificate as renewal was scheduled at 0001-01-01 00:00:00 +0000 UTC",
 			reissue: true,
 		},
 		"trigger renewal if renewalTime is in the past": {
@@ -473,7 +497,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
+			message: "Issuing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
 			reissue: true,
 		},
 		"does not trigger renewal if the x509 cert has been re-issued, but Certificate's renewal time has not been updated yet": {
@@ -675,7 +699,11 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager)(Input{
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager),
+				},
+			}.Evaluate(Input{
 				Secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: test.secretData},
 			})
 
@@ -820,7 +848,11 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretSecretTemplateMismatch(Input{
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretSecretTemplateMismatch,
+				},
+			}.Evaluate(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
 				Secret:      test.secret,
 			})
@@ -1133,7 +1165,11 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretSecretTemplateManagedFieldsMismatch(fieldManager)(Input{
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretSecretTemplateManagedFieldsMismatch(fieldManager),
+				},
+			}.Evaluate(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
 				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: map[string][]byte{}},
 			})
@@ -1402,7 +1438,11 @@ func Test_SecretAdditionalOutputFormatsMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsMismatch(test.input)
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretAdditionalOutputFormatsMismatch,
+				},
+			}.Evaluate(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -1834,7 +1874,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager)(test.input)
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager),
+				},
+			}.Evaluate(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -2014,7 +2058,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceManagedFieldMismatch(test.ownerRefEnabled, fieldManager)(test.input)
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretOwnerReferenceManagedFieldMismatch(test.ownerRefEnabled, fieldManager),
+				},
+			}.Evaluate(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -2270,7 +2318,11 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.ownerRefEnabled)(test.input)
+			gotReason, gotMessage, gotViolation := Chain{
+				Elements: []StatefulFunc{
+					SecretOwnerReferenceMismatch(test.ownerRefEnabled),
+				},
+			}.Evaluate(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
