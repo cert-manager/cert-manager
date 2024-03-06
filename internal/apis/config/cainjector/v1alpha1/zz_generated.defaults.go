@@ -38,6 +38,7 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_CAInjectorConfiguration(in *v1alpha1.CAInjectorConfiguration) {
 	SetDefaults_CAInjectorConfiguration(in)
+	SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
 	SetDefaults_EnableDataSourceConfig(&in.EnableDataSourceConfig)
 	SetDefaults_EnableInjectableConfig(&in.EnableInjectableConfig)
 }

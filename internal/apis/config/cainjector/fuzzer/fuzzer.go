@@ -34,6 +34,19 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.PprofAddress = "something:1234"
 			}
 
+			if s.LeaderElectionConfig.Namespace == "" {
+				s.LeaderElectionConfig.Namespace = "something"
+			}
+			if s.LeaderElectionConfig.LeaseDuration == 0 {
+				s.LeaderElectionConfig.LeaseDuration = 1234
+			}
+			if s.LeaderElectionConfig.RenewDeadline == 0 {
+				s.LeaderElectionConfig.RenewDeadline = 1234
+			}
+			if s.LeaderElectionConfig.RetryPeriod == 0 {
+				s.LeaderElectionConfig.RetryPeriod = 1234
+			}
+
 			logsapi.SetRecommendedLoggingConfiguration(&s.Logging)
 		},
 	}
