@@ -129,7 +129,7 @@ func (in *CertificateKeystores) DeepCopyInto(out *CertificateKeystores) {
 	if in.JKS != nil {
 		in, out := &in.JKS, &out.JKS
 		*out = new(JKSKeystore)
-		**out = **in
+		(*in).DeepCopyInto(*out)
 	}
 	if in.PKCS12 != nil {
 		in, out := &in.PKCS12, &out.PKCS12
@@ -781,6 +781,11 @@ func (in *IssuerStatus) DeepCopy() *IssuerStatus {
 func (in *JKSKeystore) DeepCopyInto(out *JKSKeystore) {
 	*out = *in
 	out.PasswordSecretRef = in.PasswordSecretRef
+	if in.Alias != nil {
+		in, out := &in.Alias, &out.Alias
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

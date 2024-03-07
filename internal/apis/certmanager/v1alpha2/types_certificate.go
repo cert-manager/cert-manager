@@ -335,6 +335,11 @@ type JKSKeystore struct {
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the JKS keystore.
 	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+
+	// Alias specifies the alias of the key in the keystore, required by the JKS format.
+	// If not provided, the default alias `certificate` will be used.
+	// +optional
+	Alias *string `json:"alias,omitempty"`
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the

@@ -1254,6 +1254,7 @@ func autoConvert_v1beta1_JKSKeystore_To_certmanager_JKSKeystore(in *JKSKeystore,
 	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	return nil
 }
 
@@ -1267,6 +1268,7 @@ func autoConvert_certmanager_JKSKeystore_To_v1beta1_JKSKeystore(in *certmanager.
 	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	return nil
 }
 
