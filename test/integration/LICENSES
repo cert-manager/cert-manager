@@ -143,7 +143,7 @@ gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.4.0/v2
 google.golang.org/genproto/googleapis/api,https://github.com/googleapis/go-genproto/blob/b8732ec3820d/googleapis/api/LICENSE,Apache-2.0
 google.golang.org/genproto/googleapis/rpc,https://github.com/googleapis/go-genproto/blob/2d3300fd4832/googleapis/rpc/LICENSE,Apache-2.0
 google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.59.0/LICENSE,Apache-2.0
-google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.31.0/LICENSE,BSD-3-Clause
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.33.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
