@@ -60,7 +60,7 @@ $(KO_IMAGE_REFS): _bin/scratch/ko/%.yaml: FORCE | $(NEEDS_KO) $(NEEDS_YQ)
 		--bare \
 		--sbom=$(KO_SBOM) \
 		--platform=$(KO_PLATFORM) \
-		--tags=$(RELEASE_VERSION) \
+		--tags=$(VERSION) \
 		| $(YQ) 'capture("(?P<ref>(?P<repository>[^:]+):(?P<tag>[^@]+)@(?P<digest>.*))")' > $@
 
 .PHONY: ko-images-push

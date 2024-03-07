@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-# Copyright 2021 The cert-manager Authors.
+# Copyright 2023 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eu -o pipefail
 
-# This script is a wrapper for outputting purely the sha256 hash of the input file,
-# ideally in a portable way.
+help_sh := $(dir $(lastword $(MAKEFILE_LIST)))/help.sh
 
-sha256sum $1 | cut -d" " -f1
+.PHONY: help
+help:
+	@MAKEFILE_LIST="$(MAKEFILE_LIST)" \
+		MAKE="$(MAKE)" \
+		$(help_sh)

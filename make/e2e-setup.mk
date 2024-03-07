@@ -350,8 +350,8 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(KUBECTL) apply -n bind -f - >/dev/null
 
 .PHONY: e2e-setup-gatewayapi
-e2e-setup-gatewayapi: $(bin_dir)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(bin_dir)/scratch/kind-exists $(NEEDS_KUBECTL)
-	$(KUBECTL) apply --server-side -f $(bin_dir)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
+e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml $(bin_dir)/scratch/kind-exists $(NEEDS_KUBECTL)
+	$(KUBECTL) apply --server-side -f $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
@@ -496,6 +496,3 @@ kind-logs: $(bin_dir)/scratch/kind-exists | $(NEEDS_KIND)
 	rm -rf $(ARTIFACTS)/cert-manager-e2e-logs
 	mkdir -p $(ARTIFACTS)/cert-manager-e2e-logs
 	$(KIND) export logs $(ARTIFACTS)/cert-manager-e2e-logs --name=$(shell cat $(bin_dir)/scratch/kind-exists)
-
-$(bin_dir)/scratch:
-	@mkdir -p $@

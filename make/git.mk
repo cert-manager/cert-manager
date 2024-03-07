@@ -12,24 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RELEASE_VERSION := $(shell git describe --tags --match='v*' --abbrev=14)
-
-GITCOMMIT := $(shell git rev-parse HEAD)
-
 IS_TAGGED_RELEASE := $(shell git describe --exact-match HEAD >/dev/null 2>&1 && echo "true" || echo "false")
-
-IS_PRERELEASE := $(shell echo $(RELEASE_VERSION) | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$$' - && echo "false" || echo "true")
 
 .PHONY: gitver
 gitver:
-	@echo "Release version:   \"$(RELEASE_VERSION)\""
+	@echo "Release version:   \"$(VERSION)\""
 	@echo "Is tagged release: \"$(IS_TAGGED_RELEASE)\""
 	@echo "Is prerelease:     \"$(IS_PRERELEASE)\""
 	@echo "Git commit hash:   \"$(GITCOMMIT)\""
 
 .PHONY: release-version
 release-version:
-	@echo "$(RELEASE_VERSION)"
+	@echo "$(VERSION)"
 
 # The file "release-version" gets updated whenever git describe --tags changes.
 # This is used by the $(bin_dir)/containers/*.tar.gz targets to make sure that the
@@ -43,7 +37,7 @@ release-version:
 # be used to check whether targets should be rebuilt, and they would get
 # constantly rebuilt.
 $(bin_dir)/release-version: FORCE | $(bin_dir)
-	@test "$(RELEASE_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $(RELEASE_VERSION) > $@
+	@test "$(VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $(VERSION) > $@
 
 $(bin_dir)/scratch/git:
 	@mkdir -p $@
