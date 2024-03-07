@@ -60,7 +60,7 @@ golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.16.0:LICENSE,BS
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.15.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.14.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.5.0:LICENSE,BSD-3-Clause
-google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.32.0/LICENSE,BSD-3-Clause
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.33.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
