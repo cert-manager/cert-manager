@@ -17,21 +17,27 @@ limitations under the License.
 package main
 
 import (
+	"context"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/webhook-binary/app"
 )
 
 func main() {
-	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
 	logf.InitLogs()
 	defer logf.FlushLogs()
+	ctrl.SetLogger(logf.Log)
+	ctx = logf.NewContext(ctx, logf.Log, "webhook")
 
-	cmd := app.NewServerCommand(stopCh)
+	cmd := app.NewServerCommand(ctx)
 
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}

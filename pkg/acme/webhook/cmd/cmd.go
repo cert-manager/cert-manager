@@ -17,10 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"os"
 	"runtime"
 
 	"k8s.io/component-base/logs"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
@@ -34,19 +36,21 @@ import (
 // implementations, see
 // https://github.com/cert-manager/webhook-example/blob/899c408751425f8d0842b61c0e62fd8035d00316/main.go#L23-L31
 func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
-	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
+	ctrl.SetLogger(logf.Log)
+	ctx = logf.NewContext(ctx, logf.Log, "acme-dns-webhook")
 
 	if len(os.Getenv("GOMAXPROCS")) == 0 {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	cmd := server.NewCommandStartWebhookServer(os.Stdout, os.Stderr, stopCh, groupName, hooks...)
+	cmd := server.NewCommandStartWebhookServer(ctx, groupName, hooks...)
 
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}

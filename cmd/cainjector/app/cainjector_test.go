@@ -29,7 +29,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.CAInjectorConfiguration, error) {
@@ -52,9 +51,8 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	var finalConfig *config.CAInjectorConfiguration
 
 	logsapi.ResetForTest(nil)
-	ctx := logf.NewContext(context.TODO(), logf.Log)
 
-	cmd := newCAInjectorCommand(ctx, func(ctx context.Context, cc *config.CAInjectorConfiguration) error {
+	cmd := newCAInjectorCommand(context.TODO(), func(ctx context.Context, cc *config.CAInjectorConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -62,7 +60,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	cmd.SetErr(io.Discard)
 	cmd.SetOut(io.Discard)
 
-	err := cmd.Execute()
+	err := cmd.ExecuteContext(context.TODO())
 	return finalConfig, err
 }
 

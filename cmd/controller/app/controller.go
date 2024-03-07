@@ -38,7 +38,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
-	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -66,10 +65,10 @@ const (
 	defaultReadHeaderTimeout = 32 * time.Second
 )
 
-func Run(opts *config.ControllerConfiguration, stopCh <-chan struct{}) error {
-	rootCtx, cancelContext := context.WithCancel(cmdutil.ContextWithStopCh(context.Background(), stopCh))
+func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
+	rootCtx, cancelContext := context.WithCancel(rootCtx)
 	defer cancelContext()
-	rootCtx = logf.NewContext(rootCtx, logf.Log, "controller")
+
 	log := logf.FromContext(rootCtx)
 	g, rootCtx := errgroup.WithContext(rootCtx)
 

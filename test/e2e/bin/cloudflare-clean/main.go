@@ -37,12 +37,10 @@ var (
 )
 
 func main() {
-	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
 	flag.Parse()
-
-	ctx := util.ContextWithStopCh(context.Background(), stopCh)
 
 	cl, err := cf.New(*apiKey, *email)
 	if err != nil {

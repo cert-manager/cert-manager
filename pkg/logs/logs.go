@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
@@ -36,9 +35,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/api"
 )
 
-var (
-	Log = klog.TODO().WithName("cert-manager")
-)
+var Log = klog.TODO().WithName("cert-manager")
 
 const (
 	// Following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
@@ -51,21 +48,11 @@ const (
 	TraceLevel        = 5
 )
 
-// GlogWriter serves as a bridge between the standard log package and the glog package.
-type GlogWriter struct{}
-
-// Write implements the io.Writer interface.
-func (writer GlogWriter) Write(data []byte) (n int, err error) {
-	klog.Info(string(data))
-	return len(data), nil
-}
-
 // InitLogs initializes logs the way we want for kubernetes.
 func InitLogs() {
 	logs.InitLogs()
 
-	log.SetOutput(GlogWriter{})
-	log.SetFlags(0)
+	klog.EnableContextualLogging(true) // Enable contextual logging
 }
 
 func AddFlagsNonDeprecated(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {

@@ -28,7 +28,6 @@ import (
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
-	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
@@ -51,22 +50,22 @@ import (
 
 const componentController = "controller"
 
-func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
-	ctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
-	log := logf.Log
-	ctx = logf.NewContext(ctx, log)
-
-	return newServerCommand(ctx, func(ctx context.Context, cfg *config.ControllerConfiguration) error {
-		return Run(cfg, ctx.Done())
-	}, os.Args[1:])
+func NewServerCommand(ctx context.Context) *cobra.Command {
+	return newServerCommand(
+		ctx,
+		func(ctx context.Context, cfg *config.ControllerConfiguration) error {
+			return Run(ctx, cfg)
+		},
+		os.Args[1:],
+	)
 }
 
 func newServerCommand(
-	ctx context.Context,
+	setupCtx context.Context,
 	run func(context.Context, *config.ControllerConfiguration) error,
 	allArgs []string,
 ) *cobra.Command {
-	log := logf.FromContext(ctx, componentController)
+	log := logf.FromContext(setupCtx, componentController)
 
 	controllerFlags := options.NewControllerFlags()
 	controllerConfig, err := options.NewControllerConfiguration()
@@ -85,7 +84,10 @@ TLS certificates from various issuing sources.
 It will ensure certificates are valid and up to date periodically, and attempt
 to renew certificates at an appropriate time before expiry.`,
 
-		RunE: func(cmd *cobra.Command, args []string) error {
+		SilenceErrors: true, // We already log errors in main.go
+		SilenceUsage:  true, // Don't print usage on every error
+
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := loadConfigFromFile(
 				cmd, allArgs, controllerFlags.Config, controllerConfig,
 				func() error {
@@ -108,7 +110,10 @@ to renew certificates at an appropriate time before expiry.`,
 				return fmt.Errorf("failed to validate controller logging flags: %w", err)
 			}
 
-			return run(ctx, controllerConfig)
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(cmd.Context(), controllerConfig)
 		},
 	}
 

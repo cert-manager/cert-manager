@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"context"
+
 	"github.com/cert-manager/cert-manager/acmesolver-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -27,15 +29,16 @@ import (
 // cert-manager.
 
 func main() {
-	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
 	logf.InitLogs()
 	defer logf.FlushLogs()
+	ctx = logf.NewContext(ctx, logf.Log, "acmesolver")
 
-	cmd := app.NewACMESolverCommand(stopCh)
+	cmd := app.NewACMESolverCommand(ctx)
 
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}

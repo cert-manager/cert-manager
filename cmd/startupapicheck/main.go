@@ -18,12 +18,11 @@ package main
 
 import (
 	"context"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/component-base/logs"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -31,14 +30,13 @@ import (
 )
 
 func main() {
-	stopCh, exit := util.SetupExitHandler(util.AlwaysErrCode)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.AlwaysErrCode)
 	defer exit() // This function might call os.Exit, so defer last
 
 	logf.InitLogs()
 	defer logf.FlushLogs()
-
-	ctx := util.ContextWithStopCh(context.Background(), stopCh)
-	ctx = logf.NewContext(ctx, logf.Log)
+	ctrl.SetLogger(logf.Log)
+	ctx = logf.NewContext(ctx, logf.Log, "startupapicheck")
 
 	logOptions := logs.NewOptions()
 
@@ -46,13 +44,12 @@ func main() {
 		Use:   "startupapicheck",
 		Short: "Check that cert-manager started successfully",
 		Long:  "Check that cert-manager started successfully",
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd: true,
-		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return logf.ValidateAndApply(logOptions)
 		},
+
 		SilenceErrors: true, // Errors are already logged when calling cmd.Execute()
+		SilenceUsage:  true, // Don't print usage on every error
 	}
 
 	{
@@ -73,11 +70,9 @@ func main() {
 		})
 	}
 
-	ioStreams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
+	cmd.AddCommand(check.NewCmdCheck(ctx))
 
-	cmd.AddCommand(check.NewCmdCheck(ctx, ioStreams))
-
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}

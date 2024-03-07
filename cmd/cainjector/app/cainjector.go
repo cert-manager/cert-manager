@@ -28,7 +28,6 @@ import (
 	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
-	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -39,22 +38,22 @@ import (
 
 const componentController = "cainjector"
 
-func NewCAInjectorCommand(stopCh <-chan struct{}) *cobra.Command {
-	ctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
-	log := logf.Log
-	ctx = logf.NewContext(ctx, log)
-
-	return newCAInjectorCommand(ctx, func(ctx context.Context, cfg *config.CAInjectorConfiguration) error {
-		return Run(cfg, ctx)
-	}, os.Args[1:])
+func NewCAInjectorCommand(ctx context.Context) *cobra.Command {
+	return newCAInjectorCommand(
+		ctx,
+		func(ctx context.Context, cfg *config.CAInjectorConfiguration) error {
+			return Run(cfg, ctx)
+		},
+		os.Args[1:],
+	)
 }
 
 func newCAInjectorCommand(
-	ctx context.Context,
+	setupCtx context.Context,
 	run func(context.Context, *config.CAInjectorConfiguration) error,
 	allArgs []string,
 ) *cobra.Command {
-	log := logf.FromContext(ctx, componentController)
+	log := logf.FromContext(setupCtx, componentController)
 
 	cainjectorFlags := options.NewCAInjectorFlags()
 	cainjectorConfig, err := options.NewCAInjectorConfiguration()
@@ -74,7 +73,10 @@ It will ensure that annotated webhooks and API services always have the correct
 CA data from the referenced certificates, which can then be used to serve API
 servers and webhook servers.`,
 
-		RunE: func(cmd *cobra.Command, args []string) error {
+		SilenceErrors: true, // We already log errors in main.go
+		SilenceUsage:  true, // Don't print usage on every error
+
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := loadConfigFromFile(
 				cmd, allArgs, cainjectorFlags.Config, cainjectorConfig,
 				func() error {
@@ -97,7 +99,10 @@ servers and webhook servers.`,
 				return fmt.Errorf("failed to validate cainjector logging flags: %w", err)
 			}
 
-			return run(ctx, cainjectorConfig)
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(cmd.Context(), cainjectorConfig)
 		},
 	}
 

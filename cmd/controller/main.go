@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app"
@@ -26,16 +27,17 @@ import (
 )
 
 func main() {
-	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
 	logf.InitLogs()
 	defer logf.FlushLogs()
+	ctx = logf.NewContext(ctx, logf.Log, "controller")
 
-	cmd := app.NewServerCommand(stopCh)
+	cmd := app.NewServerCommand(ctx)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}

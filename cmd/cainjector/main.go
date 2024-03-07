@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"context"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/cert-manager/cert-manager/cainjector-binary/app"
@@ -27,16 +29,17 @@ import (
 func main() {
 	// Set up signal handlers and a cancellable context which gets cancelled on
 	// when either SIGINT or SIGTERM are received.
-	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	ctx, exit := util.SetupExitHandler(context.Background(), util.GracefulShutdown)
 	defer exit() // This function might call os.Exit, so defer last
 
 	logf.InitLogs()
 	defer logf.FlushLogs()
 	ctrl.SetLogger(logf.Log)
+	ctx = logf.NewContext(ctx, logf.Log)
 
-	cmd := app.NewCAInjectorCommand(stopCh)
+	cmd := app.NewCAInjectorCommand(ctx)
 
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		logf.Log.Error(err, "error executing command")
 		util.SetExitCode(err)
 	}
