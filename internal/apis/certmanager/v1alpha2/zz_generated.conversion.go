@@ -1269,7 +1269,7 @@ func Convert_certmanager_IssuerStatus_To_v1alpha2_IssuerStatus(in *certmanager.I
 
 func autoConvert_v1alpha2_JKSKeystore_To_certmanager_JKSKeystore(in *JKSKeystore, out *certmanager.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
-	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1282,7 +1282,7 @@ func Convert_v1alpha2_JKSKeystore_To_certmanager_JKSKeystore(in *JKSKeystore, ou
 
 func autoConvert_certmanager_JKSKeystore_To_v1alpha2_JKSKeystore(in *certmanager.JKSKeystore, out *JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
-	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1367,7 +1367,7 @@ func Convert_certmanager_OtherName_To_v1alpha2_OtherName(in *certmanager.OtherNa
 
 func autoConvert_v1alpha2_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *PKCS12Keystore, out *certmanager.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
-	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	out.Profile = certmanager.PKCS12Profile(in.Profile)
@@ -1381,7 +1381,7 @@ func Convert_v1alpha2_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *PKCS12Key
 
 func autoConvert_certmanager_PKCS12Keystore_To_v1alpha2_PKCS12Keystore(in *certmanager.PKCS12Keystore, out *PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
-	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	out.Profile = PKCS12Profile(in.Profile)

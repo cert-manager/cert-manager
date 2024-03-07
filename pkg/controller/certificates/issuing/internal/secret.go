@@ -38,6 +38,9 @@ import (
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
+// DefaultPassword is the string "changeit", a commonly-used password for keystore files.
+const DefaultKeystorePassword = "changeit"
+
 var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
@@ -249,15 +252,27 @@ func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Ce
 func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
 	// Handle the experimental PKCS12 support
 	if crt.Spec.Keystores != nil && crt.Spec.Keystores.PKCS12 != nil && crt.Spec.Keystores.PKCS12.Create {
+		pw := []byte{}
 		ref := crt.Spec.Keystores.PKCS12.PasswordSecretRef
-		pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
-		if err != nil {
-			return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
+		if ref != nil {
+			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+			if err != nil {
+				return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
+			}
+			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+				return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
+			}
+			pw = pwSecret.Data[ref.Key]
+		} else {
+			if crt.Spec.Keystores.PKCS12.Password != nil {
+				pw = []byte(*crt.Spec.Keystores.PKCS12.Password)
+			} else {
+				pw = []byte(DefaultKeystorePassword)
+			}
+			// Store the keystore password in the secret to avoid hardcoding in more than one place
+			secret.Data[cmapi.KeystorePassword] = pw
 		}
-		if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
-			return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
-		}
-		pw := pwSecret.Data[ref.Key]
+
 		profile := crt.Spec.Keystores.PKCS12.Profile
 		keystoreData, err := encodePKCS12Keystore(profile, string(pw), data.PrivateKey, data.Certificate, data.CA)
 		if err != nil {
@@ -278,15 +293,27 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 
 	// Handle the experimental JKS support
 	if crt.Spec.Keystores != nil && crt.Spec.Keystores.JKS != nil && crt.Spec.Keystores.JKS.Create {
+		pw := []byte{}
 		ref := crt.Spec.Keystores.JKS.PasswordSecretRef
-		pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
-		if err != nil {
-			return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
+		if ref != nil {
+			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+			if err != nil {
+				return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
+			}
+			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+				return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
+			}
+			pw = pwSecret.Data[ref.Key]
+		} else {
+			if crt.Spec.Keystores.JKS.Password != nil {
+				pw = []byte(*crt.Spec.Keystores.JKS.Password)
+			} else {
+				pw = []byte(DefaultKeystorePassword)
+			}
+			// Store the keystore password in the secret to avoid hardcoding in more than one place
+			secret.Data[cmapi.KeystorePassword] = pw
 		}
-		if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
-			return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
-		}
-		pw := pwSecret.Data[ref.Key]
+
 		keystoreData, err := encodeJKSKeystore(pw, data.PrivateKey, data.Certificate, data.CA)
 		if err != nil {
 			return fmt.Errorf("error encoding JKS bundle: %w", err)

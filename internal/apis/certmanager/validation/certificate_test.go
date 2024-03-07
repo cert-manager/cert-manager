@@ -1126,3 +1126,81 @@ func Test_validateLiteralSubject(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateKeystores(t *testing.T) {
+	keystorePassword := "changeit"
+	fldPath := field.NewPath("spec")
+	tests := map[string]struct {
+		cfg  *internalcmapi.Certificate
+		a    *admissionv1.AdmissionRequest
+		errs []*field.Error
+	}{
+		"JKS using default password": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{},
+					},
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS PasswordSecretRef and Password are exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("keystores", "jks", "password"), &keystorePassword, "When providing a `PasswordSecretRef` no `Password` properties may be provided."),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 PasswordSecretRef and Password are exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("keystores", "pkcs12", "password"), &keystorePassword, "When providing a `PasswordSecretRef` no `Password` properties may be provided."),
+			},
+			a: someAdmissionRequest,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			errs, warnings := ValidateCertificate(test.a, test.cfg)
+			assert.ElementsMatch(t, errs, test.errs)
+			assert.ElementsMatch(t, warnings, []string{})
+		})
+	}
+}
