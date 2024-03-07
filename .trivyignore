@@ -6,7 +6,8 @@ CVE-2020-8912
 GHSA-7f33-f4f5-xwgw
 GHSA-f5pg-7wfw-84q9
 
-# This Helm vulerability is does not create a security risk for the cmctl binary.
+# These Helm vulnerabilities do not create a security risk for the cmctl binary.
 # Since the cmctl x install command uses the trusted cert-manager Helm chart, and
-# this vulnerability requires a malicious chart to be used.
+# these vulnerabilities require a malicious chart to be used.
 CVE-2024-25620
+CVE-2024-26147
