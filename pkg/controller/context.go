@@ -28,10 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -328,15 +330,22 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	}
 
 	// Create event broadcaster.
-	// Add cert-manager types to the default Kubernetes Scheme so Events can be
-	// logged properly.
-	cmscheme.AddToScheme(scheme.Scheme)
-	gwscheme.AddToScheme(scheme.Scheme)
+	// Create a Scheme containing the default Kubernetes types and all the
+	// cert-manager types. This is required to ensure that Events are logged
+	// correctly.
+	scheme := runtime.NewScheme()
+	if err := kerrors.NewAggregate([]error{
+		kscheme.AddToScheme(scheme),
+		cmscheme.AddToScheme(scheme),
+		gwscheme.AddToScheme(scheme),
+	}); err != nil {
+		return nil, fmt.Errorf("error adding scheme to runtime: %w", err)
+	}
 	c.log.V(logf.DebugLevel).Info("creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(logf.WithInfof(c.log.V(logf.DebugLevel)).Infof)
 	eventBroadcaster.StartRecordingToSink(&clientv1.EventSinkImpl{Interface: clients.kubeClient.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: util.PrefixFromUserAgent(restConfig.UserAgent)})
+	recorder := eventBroadcaster.NewRecorder(scheme, corev1.EventSource{Component: util.PrefixFromUserAgent(restConfig.UserAgent)})
 
 	ctx := *c.ctx
 	ctx.FieldManager = util.PrefixFromUserAgent(restConfig.UserAgent)
