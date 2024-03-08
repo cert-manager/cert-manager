@@ -15,6 +15,7 @@ require (
 	github.com/aws/aws-sdk-go v1.49.13
 	github.com/cpu/goacmedns v0.1.1
 	github.com/digitalocean/godo v1.107.0
+	github.com/go-asn1-ber/asn1-ber v1.5.5
 	github.com/go-ldap/ldap/v3 v3.4.6
 	github.com/go-logr/logr v1.4.1
 	github.com/google/gnostic-models v0.6.8
@@ -77,7 +78,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/frankban/quicktest v1.14.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect

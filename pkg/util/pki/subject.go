@@ -21,11 +21,21 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
-	"fmt"
-	"strings"
 
+	ber "github.com/go-asn1-ber/asn1-ber"
 	"github.com/go-ldap/ldap/v3"
 )
+
+func init() {
+	// This prevents `ldap.ParseDN` from allocating up to 2GiB of memory when it
+	// parses `ber` encoded fields in a user supplied `LiteralSubject` string.
+	// See https://github.com/go-asn1-ber/asn1-ber/blob/04301b4b1c5ff66221f8f8a394f814a9917d678a/fuzz_test.go#L33-L37
+	//
+	// It would be preferable if this value was not a global variable. If
+	// `ldap.ParseDN` accepted a `berMaxPacketLength` argument. See:
+	// https://github.com/go-ldap/ldap/issues/487
+	ber.MaxPacketLengthBytes = 65536
+}
 
 var OIDConstants = struct {
 	Country            []int
@@ -68,10 +78,10 @@ var attributeTypeNames = map[string][]int{
 }
 
 func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, error) {
-	if strings.Contains(subject, "=#") {
-		return nil, fmt.Errorf("unsupported distinguished name (DN) %q: notation does not support x509.subject identities containing \"=#\"", subject)
-	}
-
+	// By default `ldap.ParseDN` may allocate up to 2GiB of memory when it
+	// parses `ber` encoded fields in the supplied subject string.
+	// We set a lower limit by the overriding the global variable
+	// `ber.MaxPacketLengthBytes` in `init()` (above).
 	dns, err := ldap.ParseDN(subject)
 	if err != nil {
 		return nil, err
