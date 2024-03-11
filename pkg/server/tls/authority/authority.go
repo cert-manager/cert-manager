@@ -24,6 +24,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -146,7 +147,7 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 		// this poll only ends when stopCh is closed.
 		return false, nil
 	}); err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			// context was cancelled, return nil
 			return nil
 		}

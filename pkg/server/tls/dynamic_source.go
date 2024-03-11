@@ -21,6 +21,7 @@ import (
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -108,7 +109,7 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 			return err
 		}
 
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return nil
 		}
 
@@ -191,7 +192,7 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 			return err
 		}
 
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return nil
 		}
 
