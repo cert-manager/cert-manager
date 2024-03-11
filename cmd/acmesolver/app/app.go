@@ -24,32 +24,36 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/component-base/logs"
 
-	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
+func NewACMESolverCommand(_ context.Context) *cobra.Command {
 	s := new(solver.HTTP01Solver)
 	logOptions := logs.NewOptions()
 
 	cmd := &cobra.Command{
 		Use:   "acmesolver",
 		Short: "HTTP server used to solve ACME challenges.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
 
+		SilenceErrors: true, // Errors are already logged when calling cmd.Execute()
+		SilenceUsage:  true, // Don't print usage on every error
+
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := logf.ValidateAndApply(logOptions); err != nil {
 				return fmt.Errorf("error validating options: %s", err)
 			}
 
-			rootCtx = logf.NewContext(rootCtx, logf.Log, "acmesolver")
-			log := logf.FromContext(rootCtx)
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			runCtx := cmd.Context()
+			log := logf.FromContext(runCtx)
 
 			completedCh := make(chan struct{})
 			go func() {
 				defer close(completedCh)
-				<-stopCh
+				<-runCtx.Done()
 				// allow a timeout for graceful shutdown
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()

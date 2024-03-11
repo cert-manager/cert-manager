@@ -27,7 +27,6 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
-	cmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -39,29 +38,29 @@ import (
 
 const componentWebhook = "webhook"
 
-func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
-	ctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
-	log := logf.Log
-	ctx = logf.NewContext(ctx, log)
+func NewServerCommand(ctx context.Context) *cobra.Command {
+	return newServerCommand(
+		ctx,
+		func(ctx context.Context, webhookConfig *config.WebhookConfiguration) error {
+			log := logf.FromContext(ctx, componentWebhook)
 
-	return newServerCommand(ctx, func(ctx context.Context, webhookConfig *config.WebhookConfiguration) error {
-		log := logf.FromContext(ctx, componentWebhook)
+			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookConfig)
+			if err != nil {
+				return err
+			}
 
-		srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookConfig)
-		if err != nil {
-			return err
-		}
-
-		return srv.Run(ctx)
-	}, os.Args[1:])
+			return srv.Run(ctx)
+		},
+		os.Args[1:],
+	)
 }
 
 func newServerCommand(
-	ctx context.Context,
+	setupCtx context.Context,
 	run func(context.Context, *config.WebhookConfiguration) error,
 	allArgs []string,
 ) *cobra.Command {
-	log := logf.FromContext(ctx, componentWebhook)
+	log := logf.FromContext(setupCtx, componentWebhook)
 
 	webhookFlags := options.NewWebhookFlags()
 	webhookConfig, err := options.NewWebhookConfiguration()
@@ -80,7 +79,10 @@ TLS certificates from various issuing sources.
 The webhook component provides API validation, mutation and conversion
 functionality for cert-manager.`,
 
-		RunE: func(cmd *cobra.Command, args []string) error {
+		SilenceErrors: true, // We already log errors in main.go
+		SilenceUsage:  true, // Don't print usage on every error
+
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := loadConfigFromFile(
 				cmd, allArgs, webhookFlags.Config, webhookConfig,
 				func() error {
@@ -103,7 +105,10 @@ functionality for cert-manager.`,
 				return fmt.Errorf("failed to validate webhook logging flags: %w", err)
 			}
 
-			return run(ctx, webhookConfig)
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(cmd.Context(), webhookConfig)
 		},
 	}
 

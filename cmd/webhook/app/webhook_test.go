@@ -28,7 +28,6 @@ import (
 	logsapi "k8s.io/component-base/logs/api/v1"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 )
 
@@ -52,9 +51,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	var finalConfig *config.WebhookConfiguration
 
 	logsapi.ResetForTest(nil)
-	ctx := logf.NewContext(context.TODO(), logf.Log)
-
-	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.WebhookConfiguration) error {
+	cmd := newServerCommand(context.TODO(), func(ctx context.Context, cc *config.WebhookConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -62,7 +59,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	cmd.SetErr(io.Discard)
 	cmd.SetOut(io.Discard)
 
-	err := cmd.Execute()
+	err := cmd.ExecuteContext(context.TODO())
 	return finalConfig, err
 }
 

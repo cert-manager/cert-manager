@@ -93,7 +93,6 @@ func (s *Server) Run(ctx context.Context) error {
 		return fmt.Errorf("no CertificateSource specified")
 	}
 
-	ctx = logf.NewContext(ctx, logf.Log, "webhook")
 	log := logf.FromContext(ctx)
 
 	cipherSuites, err := ciphers.TLSCipherSuites(s.CipherSuites)

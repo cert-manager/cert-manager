@@ -20,15 +20,14 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/cert-manager/cert-manager/startupapicheck-binary/pkg/check/api"
 )
 
 // NewCmdCheck returns a cobra command for checking cert-manager components.
-func NewCmdCheck(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdCheck(ctx context.Context) *cobra.Command {
 	cmds := NewCmdCreateBare()
-	cmds.AddCommand(api.NewCmdCheckApi(ctx, ioStreams))
+	cmds.AddCommand(api.NewCmdCheckApi(ctx))
 
 	return cmds
 }

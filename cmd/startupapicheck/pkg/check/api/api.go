@@ -20,12 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	cmcmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -45,15 +45,7 @@ type Options struct {
 	// Time between checks when waiting
 	Interval time.Duration
 
-	genericclioptions.IOStreams
 	*factory.Factory
-}
-
-// NewOptions returns initialized Options
-func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
-	return &Options{
-		IOStreams: ioStreams,
-	}
 }
 
 // Complete takes the command arguments and factory and infers any remaining options.
@@ -73,37 +65,34 @@ func (o *Options) Complete() error {
 }
 
 // NewCmdCheckApi returns a cobra command for checking creating cert-manager resources against the K8S API server
-func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	o := NewOptions(ioStreams)
+func NewCmdCheckApi(setupCtx context.Context) *cobra.Command {
+	o := &Options{}
 
 	cmd := &cobra.Command{
 		Use:   "api",
 		Short: "Check if the cert-manager API is ready",
 		Long: `
-This check attempts to perform a dry-run create of a cert-manager *v1alpha2*
+This check attempts to perform a dry-run create of a cert-manager *v1*
 Certificate resource in order to verify that CRDs are installed and all the
-required webhooks are reachable by the K8S API server.
-We use v1alpha2 API to ensure that the API server has also connected to the
-cert-manager conversion webhook.`,
+required webhooks are reachable by the K8S API server.`,
 
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return o.Complete()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := o.Complete(); err != nil {
-				return err
-			}
-
-			return o.Run(ctx)
+			return o.Run(cmd.Context(), cmd.OutOrStdout())
 		},
 	}
 	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s = poll once)")
 	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
 
-	o.Factory = factory.New(ctx, cmd)
+	o.Factory = factory.New(cmd)
 
 	return cmd
 }
 
 // Run executes check api command
-func (o *Options) Run(ctx context.Context) error {
+func (o *Options) Run(ctx context.Context, out io.Writer) error {
 	log := logf.FromContext(ctx, "checkAPI")
 
 	start := time.Now()
@@ -139,7 +128,7 @@ func (o *Options) Run(ctx context.Context) error {
 		return lastError
 	}
 
-	fmt.Fprintln(o.Out, "The cert-manager API is ready")
+	fmt.Fprintln(out, "The cert-manager API is ready")
 
 	return nil
 }

@@ -72,7 +72,7 @@ func (b *Builder) Complete() (Interface, error) {
 		return nil, err
 	}
 
-	ctx := logf.NewContext(controllerctx.RootContext, logf.Log, b.name)
+	ctx := logf.NewContext(controllerctx.RootContext, logf.FromContext(controllerctx.RootContext), b.name)
 
 	if b.impl == nil {
 		return nil, fmt.Errorf("controller implementation must be non-nil")

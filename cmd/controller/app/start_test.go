@@ -29,7 +29,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.ControllerConfiguration, error) {
@@ -52,9 +51,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	var finalConfig *config.ControllerConfiguration
 
 	logsapi.ResetForTest(nil)
-	ctx := logf.NewContext(context.TODO(), logf.Log)
-
-	cmd := newServerCommand(ctx, func(ctx context.Context, cc *config.ControllerConfiguration) error {
+	cmd := newServerCommand(context.TODO(), func(ctx context.Context, cc *config.ControllerConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -62,7 +59,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	cmd.SetErr(io.Discard)
 	cmd.SetOut(io.Discard)
 
-	err := cmd.Execute()
+	err := cmd.ExecuteContext(context.TODO())
 	return finalConfig, err
 }
 

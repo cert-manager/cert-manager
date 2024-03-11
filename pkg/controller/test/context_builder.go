@@ -35,6 +35,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
+	ctrl "sigs.k8s.io/controller-runtime"
 	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
@@ -44,6 +45,7 @@ import (
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
@@ -53,6 +55,7 @@ func init() {
 	logs.InitLogs()
 	_ = flag.Set("alsologtostderr", "true")
 	_ = flag.Set("v", "4")
+	ctrl.SetLogger(logf.Log)
 }
 
 type StringGenerator func(n int) string

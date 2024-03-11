@@ -26,20 +26,22 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/wait"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite"
-	"github.com/cert-manager/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func init() {
-	logs.InitLogs()
+	logf.InitLogs()
 	cfg.AddFlags(flag.CommandLine)
+	ctrl.SetLogger(logf.Log)
 
 	wait.ForeverTestTimeout = time.Second * 60
 }
 
 func TestE2E(t *testing.T) {
-	defer logs.FlushLogs()
+	defer logf.FlushLogs()
 
 	gomega.RegisterFailHandler(ginkgo.Fail)
 

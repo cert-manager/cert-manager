@@ -57,7 +57,6 @@ const (
 )
 
 func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
-	ctx = logf.NewContext(ctx, logf.Log, "cainjector")
 	log := logf.FromContext(ctx)
 
 	var defaultNamespaces map[string]cache.Config
