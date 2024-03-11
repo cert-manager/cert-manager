@@ -22,19 +22,24 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
 	logtesting "github.com/go-logr/logr/testing"
+	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/test/apiserver"
 )
 
 // Ensure that when the source is running against an apiserver, it bootstraps
@@ -211,4 +216,89 @@ func TestDynamicSource_CARotation(t *testing.T) {
 		t.Errorf("Failed waiting for source to return a certificate: %v", err)
 		return
 	}
+}
+
+// Make sure that controller-runtime leader election does not cause the authority
+// to not start on non-leader managers.
+func TestDynamicSource_leaderelection(t *testing.T) {
+	const nrManagers = 2 // number of managers to start for this test
+
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
+	defer cancel()
+
+	env, stop := apiserver.RunBareControlPlane(t)
+	defer stop()
+
+	var started int64
+
+	gctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	group, gctx := errgroup.WithContext(gctx)
+
+	for i := 0; i < nrManagers; i++ {
+		i := i
+		group.Go(func() error {
+			mgr, err := manager.New(env.Config, manager.Options{
+				Metrics:     server.Options{BindAddress: "0"},
+				BaseContext: func() context.Context { return gctx },
+
+				LeaderElection:          true,
+				LeaderElectionID:        "leader-test",
+				LeaderElectionNamespace: "default",
+			})
+			if err != nil {
+				return err
+			}
+
+			if err := mgr.Add(&tls.DynamicSource{
+				DNSNames: []string{"example.com"},
+				Authority: &testAuthority{
+					id:      fmt.Sprintf("manager-%d", i),
+					started: &started,
+				},
+			}); err != nil {
+				return err
+			}
+
+			return mgr.Start(gctx)
+		})
+	}
+
+	time.Sleep(4 * time.Second)
+
+	cancel()
+
+	if err := group.Wait(); err != nil {
+		t.Fatal(err)
+	}
+
+	startCount := atomic.LoadInt64(&started)
+
+	if startCount != nrManagers {
+		t.Error("all managers should have started the authority, but only", startCount, "did")
+	}
+}
+
+type testAuthority struct {
+	id      string
+	started *int64
+}
+
+func (m *testAuthority) Run(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return nil // context was cancelled, we are shutting down
+	}
+
+	fmt.Println("Starting authority with id", m.id)
+	atomic.AddInt64(m.started, 1)
+	<-ctx.Done()
+	return nil
+}
+
+func (m *testAuthority) WatchRotation(ch chan<- struct{}) {}
+
+func (m *testAuthority) StopWatchingRotation(ch chan<- struct{}) {}
+
+func (m *testAuthority) Sign(template *x509.Certificate) (*x509.Certificate, error) {
+	return nil, fmt.Errorf("not implemented")
 }

@@ -71,15 +71,7 @@ type DynamicSource struct {
 
 var _ CertificateSource = &DynamicSource{}
 
-// Copied from https://github.com/kubernetes-sigs/controller-runtime/blob/56159419231e985c091ef3e7a8a3dee40ddf1d73/pkg/manager/manager.go#L287
-var _ interface {
-	Start(context.Context) error
-} = &DynamicSource{}
-
-var _ interface {
-	NeedLeaderElection() bool
-} = &DynamicSource{}
-
+// Implements Runnable (https://github.com/kubernetes-sigs/controller-runtime/blob/56159419231e985c091ef3e7a8a3dee40ddf1d73/pkg/manager/manager.go#L287)
 func (f *DynamicSource) Start(ctx context.Context) error {
 	f.log = logf.FromContext(ctx)
 
@@ -209,6 +201,7 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 	return nil
 }
 
+// Implements LeaderElectionRunnable (https://github.com/kubernetes-sigs/controller-runtime/blob/56159419231e985c091ef3e7a8a3dee40ddf1d73/pkg/manager/manager.go#L305)
 func (f *DynamicSource) NeedLeaderElection() bool {
 	return false
 }
