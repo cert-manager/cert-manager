@@ -24,6 +24,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -84,7 +85,7 @@ type DynamicAuthority struct {
 	ensureMutex sync.Mutex
 	// watchMutex gates access to the slice of watch channels
 	watchMutex sync.Mutex
-	watches    []chan struct{}
+	watches    []chan<- struct{}
 }
 
 type SignFunc func(template *x509.Certificate) (*x509.Certificate, error)
@@ -146,8 +147,15 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 		// this poll only ends when stopCh is closed.
 		return false, nil
 	}); err != nil {
+		if errors.Is(err, context.Canceled) {
+			// context was cancelled, return nil
+			return nil
+		}
+
 		return err
 	}
+
+	factory.Shutdown()
 
 	return nil
 }
@@ -207,24 +215,25 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 // certificate is rotated/updated.
 // This can be used to automatically trigger rotation of leaf certificates
 // when the root CA changes.
-func (d *DynamicAuthority) WatchRotation(stopCh <-chan struct{}) <-chan struct{} {
+func (d *DynamicAuthority) WatchRotation(output chan<- struct{}) {
 	d.watchMutex.Lock()
 	defer d.watchMutex.Unlock()
-	ch := make(chan struct{}, 1)
-	d.watches = append(d.watches, ch)
-	go func() {
-		defer close(ch)
-		<-stopCh
-		d.watchMutex.Lock()
-		defer d.watchMutex.Unlock()
-		for i, c := range d.watches {
-			if c == ch {
-				d.watches = append(d.watches[:i], d.watches[i+1:]...)
-				return
-			}
+
+	// Add the output channel to the list of watches
+	d.watches = append(d.watches, output)
+}
+
+func (d *DynamicAuthority) StopWatchingRotation(output chan<- struct{}) {
+	d.watchMutex.Lock()
+	defer d.watchMutex.Unlock()
+
+	// Remove the output channel from the list of watches
+	for i, c := range d.watches {
+		if c == output {
+			d.watches = append(d.watches[:i], d.watches[i+1:]...)
+			return
 		}
-	}()
-	return ch
+	}
 }
 
 func (d *DynamicAuthority) ensureCA(ctx context.Context) error {
@@ -253,21 +262,25 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 
 	d.log.V(logf.DebugLevel).Info("Detected change in CA secret data, notifying watchers...")
 
-	d.watchMutex.Lock()
-	defer d.watchMutex.Unlock()
-	for _, ch := range d.watches {
-		// the watch channels have a buffer of 1 - drop events to slow
-		// consumers
-		select {
-		case ch <- struct{}{}:
-		default:
+	func() {
+		d.watchMutex.Lock()
+		defer d.watchMutex.Unlock()
+		for _, ch := range d.watches {
+			// the watch channels have a buffer of 1 - drop events to slow
+			// consumers
+			select {
+			case ch <- struct{}{}:
+			default:
+			}
 		}
-	}
+	}()
 
-	d.signMutex.Lock()
-	defer d.signMutex.Unlock()
-	d.currentCertData = newCertData
-	d.currentPrivateKeyData = newPrivateKeyData
+	func() {
+		d.signMutex.Lock()
+		defer d.signMutex.Unlock()
+		d.currentCertData = newCertData
+		d.currentPrivateKeyData = newPrivateKeyData
+	}()
 }
 
 // caRequiresRegeneration will check data in a Secret resource and return true
@@ -303,7 +316,7 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 		return true
 	}
 	// renew the root CA when the current one is 2/3 of the way through its life
-	if x509Cert.NotAfter.Sub(time.Now()) < (d.CADuration / 3) {
+	if time.Until(x509Cert.NotAfter) < (x509Cert.NotBefore.Sub(x509Cert.NotAfter) / 3) {
 		d.log.V(logf.InfoLevel).Info("Root CA certificate is nearing expiry. Regenerating...")
 		return true
 	}

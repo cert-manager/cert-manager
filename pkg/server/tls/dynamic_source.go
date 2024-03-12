@@ -21,18 +21,37 @@ import (
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
+
+type Authority interface {
+	// Run starts the authority and blocks until it is stopped or an error occurs.
+	Run(ctx context.Context) error
+
+	// WatchRotation adds a watcher to the authority that will notify the given
+	// channel when the root CA has been rotated. It is guaranteed to post a message
+	// to the channel when the root CA has been rotated and the channel is not full.
+	WatchRotation(ch chan<- struct{})
+
+	// StopWatchingRotation removes the watcher from the authority.
+	StopWatchingRotation(ch chan<- struct{})
+
+	// Sign signs the given certificate template and returns the signed certificate.
+	// WARNING: The WatchRotation method should be called before Sign to ensure that
+	// the rotation of the CA used to sign the certificate in this call is detected.
+	Sign(template *x509.Certificate) (*x509.Certificate, error)
+}
 
 // DynamicSource provides certificate data for a golang HTTP server by
 // automatically generating certificates using an authority.SignFunc.
@@ -41,7 +60,9 @@ type DynamicSource struct {
 	DNSNames []string
 
 	// The authority used to sign certificate templates.
-	Authority *authority.DynamicAuthority
+	Authority Authority
+
+	RetryInterval time.Duration
 
 	log logr.Logger
 
@@ -51,136 +72,139 @@ type DynamicSource struct {
 
 var _ CertificateSource = &DynamicSource{}
 
+// Implements Runnable (https://github.com/kubernetes-sigs/controller-runtime/blob/56159419231e985c091ef3e7a8a3dee40ddf1d73/pkg/manager/manager.go#L287)
 func (f *DynamicSource) Start(ctx context.Context) error {
 	f.log = logf.FromContext(ctx)
 
-	// Run the authority in a separate goroutine
-	authorityErrChan := make(chan error)
-	go func() {
-		defer close(authorityErrChan)
-		authorityErrChan <- f.Authority.Run(ctx)
-	}()
+	if f.RetryInterval == 0 {
+		f.RetryInterval = 1 * time.Second
+	}
+
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		if err := f.Authority.Run(ctx); err != nil {
+			return fmt.Errorf("failed to run certificate authority: %w", err)
+		}
+
+		if ctx.Err() == nil {
+			return fmt.Errorf("certificate authority stopped unexpectedly")
+		}
+
+		// Context was cancelled, return nil
+		return nil
+	})
+
+	// channel which will be notified when the authority has rotated its root CA
+	// We start watching the rotation of the root CA before we start generating
+	// certificates to ensure we don't miss any rotations.
+	rotationChan := make(chan struct{}, 1)
+	f.Authority.WatchRotation(rotationChan)
+	defer f.Authority.StopWatchingRotation(rotationChan)
 
 	nextRenewCh := make(chan time.Time, 1)
 
 	// initially fetch a certificate from the signing CA
-	interval := time.Second
-	if err := wait.PollUntilContextCancel(ctx, interval, true, func(ctx context.Context) (done bool, err error) {
-		// check for errors from the authority here too, to prevent retrying
-		// if the authority has failed to start
-		select {
-		case err, ok := <-authorityErrChan:
-			if err != nil {
-				return true, fmt.Errorf("failed to run certificate authority: %w", err)
-			}
-			if !ok {
-				return true, context.Canceled
-			}
-		default:
-			// this case avoids blocking if the authority is still running
+	if err := f.tryRegenerateCertificate(ctx, nextRenewCh); err != nil {
+		if err := group.Wait(); err != nil {
+			return err
 		}
 
-		if err := f.regenerateCertificate(nextRenewCh); err != nil {
-			f.log.Error(err, "Failed to generate initial serving certificate, retrying...", "interval", interval)
-			return false, nil
+		if errors.Is(err, context.Canceled) {
+			return nil
 		}
-		return true, nil
-	}); err != nil {
-		// In case of an error, the stopCh is closed; wait for authorityErrChan to be closed too
-		<-authorityErrChan
 
 		return err
 	}
 
-	// watch for changes to the root CA
-	rotationChan := f.Authority.WatchRotation(ctx.Done())
-	renewalChan := func() <-chan struct{} {
-		ch := make(chan struct{})
-		go func() {
-			defer close(ch)
+	// channel which will be notified when the leaf certificate reaches 2/3 of its lifetime
+	// and needs to be renewed
+	renewalChan := make(chan struct{})
+	group.Go(func() error {
+		// At this point, we expect to have one renewal moment
+		// in the channel, so we can start the timer with that value
+		var renewMoment time.Time
+		select {
+		case renewMoment = <-nextRenewCh:
+			// We recevieved a renew moment
+		default:
+			// This should never happen
+			panic("Unreacheable")
+		}
 
-			var renewMoment time.Time
-			select {
-			case renewMoment = <-nextRenewCh:
-				// We recevieved a renew moment
-			default:
-				// This should never happen
-				panic("Unreacheable")
-			}
-
-			for {
+		for {
+			if done := func() bool {
 				timer := time.NewTimer(time.Until(renewMoment))
 				defer timer.Stop()
 
+				// Wait for the timer to expire, or for a new renewal moment to be received
 				select {
 				case <-ctx.Done():
-					return
+					// context was cancelled, return nil
+					return true
 				case <-timer.C:
-					// Try to send a message on ch, but also allow for a stop signal or
-					// a new renewMoment to be received
-					select {
-					case <-ctx.Done():
-						return
-					case ch <- struct{}{}:
-						// Message was sent on channel
-					case renewMoment = <-nextRenewCh:
-						// We recevieved a renew moment, next loop iteration will update the timer
-					}
+					// Continue to the next select to try to send a message on renewalChan
 				case renewMoment = <-nextRenewCh:
 					// We recevieved a renew moment, next loop iteration will update the timer
+					return false
 				}
-			}
-		}()
-		return ch
-	}()
 
-	// check the current certificate every 10s in case it needs updating
-	if err := wait.PollUntilContextCancel(ctx, time.Second*10, true, func(ctx context.Context) (done bool, err error) {
-		// regenerate the serving certificate if the root CA has been rotated
-		select {
-		// if the authority has stopped for whatever reason, exit and return the error
-		case err, ok := <-authorityErrChan:
-			if err != nil {
-				return true, fmt.Errorf("failed to run certificate authority: %w", err)
+				// Try to send a message on renewalChan, but also allow for the context to be
+				// cancelled.
+				select {
+				case <-ctx.Done():
+					// context was cancelled, return nil
+					return true
+				case renewalChan <- struct{}{}:
+					// Message was sent on channel
+				}
+
+				return false
+			}(); done {
+				return nil
 			}
-			if !ok {
-				return true, context.Canceled
-			}
-		// trigger regeneration if the root CA has been rotated
-		case _, ok := <-rotationChan:
-			if !ok {
-				return true, context.Canceled
-			}
-			f.log.V(logf.InfoLevel).Info("Detected root CA rotation - regenerating serving certificates")
-			if err := f.regenerateCertificate(nextRenewCh); err != nil {
-				f.log.Error(err, "Failed to regenerate serving certificate")
-				// Return an error here and stop the source running - this case should never
-				// occur, and if it does, indicates some form of internal error.
-				return false, err
-			}
-		// trigger regeneration if a renewal is required
-		case <-renewalChan:
-			f.log.V(logf.InfoLevel).Info("cert-manager webhook certificate requires renewal, regenerating", "DNSNames", f.DNSNames)
-			if err := f.regenerateCertificate(nextRenewCh); err != nil {
-				f.log.Error(err, "Failed to regenerate serving certificate")
-				// Return an error here and stop the source running - this case should never
-				// occur, and if it does, indicates some form of internal error.
-				return false, err
-			}
-		case <-ctx.Done():
-			return true, context.Canceled
 		}
-		return false, nil
-	}); err != nil {
-		// In case of an error, the stopCh is closed; wait for all channels to close
-		<-authorityErrChan
-		<-rotationChan
-		<-renewalChan
+	})
+
+	// check the current certificate in case it needs updating
+	if err := func() error {
+		for {
+			// regenerate the serving certificate if the root CA has been rotated
+			select {
+			// check if the context has been cancelled
+			case <-ctx.Done():
+				return ctx.Err()
+
+			// trigger regeneration if the root CA has been rotated
+			case <-rotationChan:
+				f.log.V(logf.InfoLevel).Info("Detected root CA rotation - regenerating serving certificates")
+
+			// trigger regeneration if a renewal is required
+			case <-renewalChan:
+				f.log.V(logf.InfoLevel).Info("cert-manager webhook certificate requires renewal, regenerating", "DNSNames", f.DNSNames)
+			}
+
+			if err := f.tryRegenerateCertificate(ctx, nextRenewCh); err != nil {
+				return err
+			}
+		}
+	}(); err != nil {
+		if err := group.Wait(); err != nil {
+			return err
+		}
+
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
 
 		return err
 	}
 
 	return nil
+}
+
+// Implements LeaderElectionRunnable (https://github.com/kubernetes-sigs/controller-runtime/blob/56159419231e985c091ef3e7a8a3dee40ddf1d73/pkg/manager/manager.go#L305)
+func (f *DynamicSource) NeedLeaderElection() bool {
+	return false
 }
 
 func (f *DynamicSource) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -194,6 +218,17 @@ func (f *DynamicSource) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, 
 
 func (f *DynamicSource) Healthy() bool {
 	return f.cachedCertificate != nil
+}
+
+func (f *DynamicSource) tryRegenerateCertificate(ctx context.Context, nextRenewCh chan<- time.Time) error {
+	return wait.PollUntilContextCancel(ctx, f.RetryInterval, true, func(ctx context.Context) (done bool, err error) {
+		if err := f.regenerateCertificate(nextRenewCh); err != nil {
+			f.log.Error(err, "Failed to generate serving certificate, retrying...", "interval", f.RetryInterval)
+			return false, nil
+		}
+
+		return true, nil
+	})
 }
 
 // regenerateCertificate will trigger the cached certificate and private key to
@@ -223,13 +258,10 @@ func (f *DynamicSource) regenerateCertificate(nextRenew chan<- time.Time) error 
 
 	f.log.V(logf.DebugLevel).Info("Signed new serving certificate")
 
-	if err := f.updateCertificate(pk, cert, nextRenew); err != nil {
-		return err
-	}
-	return nil
+	return f.updateCertificate(pk, cert, nextRenew)
 }
 
-func (f *DynamicSource) updateCertificate(pk crypto.Signer, cert *x509.Certificate, nextRenew chan<- time.Time) error {
+func (f *DynamicSource) updateCertificate(pk crypto.Signer, cert *x509.Certificate, nextRenewCh chan<- time.Time) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -251,7 +283,7 @@ func (f *DynamicSource) updateCertificate(pk crypto.Signer, cert *x509.Certifica
 	f.cachedCertificate = &bundle
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
 	// renew the certificate 1/3 of the time before its expiry
-	nextRenew <- cert.NotAfter.Add(certDuration / -3)
+	nextRenewCh <- cert.NotAfter.Add(certDuration / -3)
 	f.log.V(logf.InfoLevel).Info("Updated cert-manager TLS certificate", "DNSNames", f.DNSNames)
 
 	return nil
