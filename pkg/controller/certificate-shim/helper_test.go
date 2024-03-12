@@ -30,6 +30,10 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
+const venafiCustomField = `[
+	{"name": "field-name", "value": "field value"},
+	{"name": "field-name-2", "value": "field value 2"}]`
+
 func Test_translateAnnotations(t *testing.T) {
 	type testCase struct {
 		crt           *cmapi.Certificate
@@ -272,6 +276,16 @@ func Test_translateAnnotations(t *testing.T) {
 				tc.annotations[cmapi.SubjectStreetAddressesAnnotationKey] = "invalid csv\","
 			},
 			expectedError: errInvalidIngressAnnotation,
+		},
+		"pass venafi annotation": {
+			crt: gen.Certificate("venafi-test"),
+			annotations: map[string]string{
+				cmapi.VenafiCustomFieldsAnnotationKey: venafiCustomField,
+			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				annotations := crt.ObjectMeta.GetAnnotations()
+				a.Equal(venafiCustomField, annotations[cmapi.VenafiCustomFieldsAnnotationKey])
+			},
 		},
 	}
 	for name, tc := range tests {
