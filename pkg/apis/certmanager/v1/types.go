@@ -146,10 +146,9 @@ const (
 	// set to either the configured value or the empty string.
 	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
 
-	// IngressSecretTemplateAnnotations specifies arbitrary annotations on the Ingress resource to be set in the
-	// generated Certificate resource's secretTemplate. Existing annotations with the same key are overridden.
-	// The value is a regex that must fully match the annotation key.
-	IngressSecretTemplateAnnotations = "cert-manager.io/secret-template-annotations"
+	// IngressSecretTemplate can be used to set the secretTemplate field in the generated Certificate.
+	// The value is a JSON representation of secretTemplate and must not have any unknown fields.
+	IngressSecretTemplate = "cert-manager.io/secret-template"
 )
 
 // Annotation names for CertificateRequests

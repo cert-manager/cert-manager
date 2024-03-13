@@ -544,12 +544,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						cmapi.IngressClusterIssuerNameAnnotationKey:          "issuer-name",
-						cmapi.IngressSecretTemplateAnnotations:               "secret-reflector.com.*",
-						"secret-replicator.com/ignored-annotation":           "ignored-value",
-						"www.secret-reflector.com/ignored-annotation":        "ignored-value",
-						"secret-reflector.com/reflection-enabled":            "true",
-						"secret-reflector.com/reflection-enabled-namespaces": "example-namespace",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressSecretTemplate:                 `{ "annotations": { "example-annotation" : "dummy-value" }, "labels": { "example-label" : "dummy-value" } }`,
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -576,8 +572,10 @@ func TestSync(t *testing.T) {
 						SecretName: "example-com-tls",
 						SecretTemplate: &cmapi.CertificateSecretTemplate{
 							Annotations: map[string]string{
-								"secret-reflector.com/reflection-enabled":            "true",
-								"secret-reflector.com/reflection-enabled-namespaces": "example-namespace",
+								"example-annotation": "dummy-value",
+							},
+							Labels: map[string]string{
+								"example-label": "dummy-value",
 							},
 						},
 						IssuerRef: cmmeta.ObjectReference{
@@ -590,7 +588,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "secret template annotation should not match cert-manager.io/ annotations",
+			Name:   "secret template annotation should not allow cert-manager.io/ annotations",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -598,7 +596,7 @@ func TestSync(t *testing.T) {
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
-						cmapi.IngressSecretTemplateAnnotations:      ".*cert-manager.io/.*",
+						cmapi.IngressSecretTemplate:                 `{ "annotations": { "cert-manager.io/disallowed-annotation" : "dummy-value" } }`,
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -614,7 +612,7 @@ func TestSync(t *testing.T) {
 			Err: true,
 		},
 		{
-			Name:   "secret template annotation should have valid regex",
+			Name:   "secret template annotation should not allow unknown fields",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -622,7 +620,7 @@ func TestSync(t *testing.T) {
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
-						cmapi.IngressSecretTemplateAnnotations:      ")invalid] [regex(",
+						cmapi.IngressSecretTemplate:                 `{ "unknown-field": "true" }`,
 					},
 					UID: types.UID("ingress-name"),
 				},

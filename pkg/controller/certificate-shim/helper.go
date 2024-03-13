@@ -17,10 +17,10 @@ limitations under the License.
 package shimhelper
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -269,24 +269,21 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		}
 	}
 
-	if customAnnotationsRegexString, found := ingLikeAnnotations[cmapi.IngressSecretTemplateAnnotations]; found {
-		customAnnotationsRegex, err := regexp.Compile(customAnnotationsRegexString)
-		if err != nil {
-			return fmt.Errorf("%w %q: error parsing regexp: %q", errInvalidIngressAnnotation, cmapi.IngressSecretTemplateAnnotations, customAnnotationsRegexString)
+	if secretTemplateJson, found := ingLikeAnnotations[cmapi.IngressSecretTemplate]; found {
+		decoder := json.NewDecoder(strings.NewReader(secretTemplateJson))
+		decoder.DisallowUnknownFields()
+
+		var secretTemplate = new(cmapi.CertificateSecretTemplate)
+		if err := decoder.Decode(secretTemplate); err != nil {
+			return fmt.Errorf("%w %q: error parsing secret template JSON: %v", errInvalidIngressAnnotation, cmapi.IngressSecretTemplate, err)
 		}
-		for annotationKey, annotationValue := range ingLikeAnnotations {
-			match := customAnnotationsRegex.FindString(annotationKey)
-			if len(match) == len(annotationKey) {
-				if strings.HasPrefix(annotationKey, "cert-manager.io/") {
-					return fmt.Errorf("%w %q: regex must not match cert-manager.io/ annotations: %q", errInvalidIngressAnnotation, cmapi.IngressSecretTemplateAnnotations, customAnnotationsRegexString)
-				}
-				if crt.Spec.SecretTemplate == nil {
-					crt.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{
-						Annotations: map[string]string{},
-					}
-				}
-				crt.Spec.SecretTemplate.Annotations[annotationKey] = annotationValue
+		for annotationKey := range secretTemplate.Annotations {
+			if strings.HasPrefix(annotationKey, "cert-manager.io/") {
+				return fmt.Errorf("%w %q: secretTemplate must not have cert-manager.io/ annotations: %q", errInvalidIngressAnnotation, cmapi.IngressSecretTemplate, annotationKey)
 			}
+		}
+		if len(secretTemplate.Annotations) > 0 || len(secretTemplate.Labels) > 0 {
+			crt.Spec.SecretTemplate = secretTemplate
 		}
 	}
 
