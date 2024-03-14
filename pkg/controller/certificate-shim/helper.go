@@ -17,6 +17,7 @@ limitations under the License.
 package shimhelper
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -265,6 +266,24 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{RotationPolicy: rotationPolicy}
 		} else {
 			crt.Spec.PrivateKey.RotationPolicy = rotationPolicy
+		}
+	}
+
+	if secretTemplateJson, found := ingLikeAnnotations[cmapi.IngressSecretTemplate]; found {
+		decoder := json.NewDecoder(strings.NewReader(secretTemplateJson))
+		decoder.DisallowUnknownFields()
+
+		var secretTemplate = new(cmapi.CertificateSecretTemplate)
+		if err := decoder.Decode(secretTemplate); err != nil {
+			return fmt.Errorf("%w %q: error parsing secret template JSON: %v", errInvalidIngressAnnotation, cmapi.IngressSecretTemplate, err)
+		}
+		for annotationKey := range secretTemplate.Annotations {
+			if strings.HasPrefix(annotationKey, "cert-manager.io/") {
+				return fmt.Errorf("%w %q: secretTemplate must not have cert-manager.io/ annotations: %q", errInvalidIngressAnnotation, cmapi.IngressSecretTemplate, annotationKey)
+			}
+		}
+		if len(secretTemplate.Annotations) > 0 || len(secretTemplate.Labels) > 0 {
+			crt.Spec.SecretTemplate = secretTemplate
 		}
 	}
 
