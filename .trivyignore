@@ -5,3 +5,7 @@ CVE-2020-8911
 CVE-2020-8912
 GHSA-7f33-f4f5-xwgw
 GHSA-f5pg-7wfw-84q9
+# This is a new CVE created for an old Helm bug which the Helm maintainers have dismissed.
+# It only affects cmctl x install and is unlikely to be fixed.
+# https://github.com/advisories/GHSA-jw44-4f3j-q396
+CVE-2019-25210
