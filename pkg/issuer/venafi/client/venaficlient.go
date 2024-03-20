@@ -30,6 +30,7 @@ import (
 	"github.com/Venafi/vcert/v5/pkg/venafi/cloud"
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
 	"github.com/go-logr/logr"
+	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -129,7 +130,6 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string, userAgent string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
-	var vcertConfig *vcert.Config
 
 	switch {
 	case venCfg.TPP != nil:
@@ -143,7 +143,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		password := string(tppSecret.Data[tppPasswordKey])
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
 
-		vcertConfig = &vcert.Config{
+		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
 			BaseUrl:       tpp.URL,
 			Zone:          venCfg.Zone,
@@ -162,8 +162,12 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				Password:    password,
 				AccessToken: accessToken,
 			},
-			Client: httpClientForVcertTPP(tpp.CABundle),
-		}
+			Client: httpClientForVcert(&httpClientForVcertOptions{
+				UserAgent:               ptr.To(userAgent),
+				CABundle:                tpp.CABundle,
+				TLSRenegotiationSupport: ptr.To(tls.RenegotiateOnceAsClient),
+			}),
+		}, nil
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
@@ -177,7 +181,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		}
 		apiKey := string(cloudSecret.Data[k])
 
-		vcertConfig = &vcert.Config{
+		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,
 			BaseUrl:       cloud.URL,
 			Zone:          venCfg.Zone,
@@ -186,24 +190,42 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			Credentials: &endpoint.Authentication{
 				APIKey: apiKey,
 			},
-		}
-	default:
-		// API validation in webhook and in the ClusterIssuer and Issuer controller
-		// Sync functions should make this unreachable in production.
-		return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
-
+			Client: httpClientForVcert(&httpClientForVcertOptions{
+				UserAgent: ptr.To(userAgent),
+			}),
+		}, nil
 	}
-
-	// Set the user-agent header
-	vcertConfig.Client.Transport = util.UserAgentRoundTripper(vcertConfig.Client.Transport, userAgent)
-
-	return vcertConfig, nil
-
+	// API validation in webhook and in the ClusterIssuer and Issuer controller
+	// Sync functions should make this unreachable in production.
+	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
 }
 
-// httpClientForVcertTPP creates an HTTP client and customises it to allow client TLS renegotiation.
+// httpClientForVcertOptions contains options for `httpClientForVcert`, to allow
+// you to customize the HTTP client.
+type httpClientForVcertOptions struct {
+	// UserAgent will add a User-Agent header to all HTTP requests.
+	UserAgent *string
+	// CABundle will override the CA certificates used to verify server
+	// certificates.
+	CABundle []byte
+	// TLSRenegotiationSupport will override the TLSRenegotiationSupport setting
+	// of the client.
+	TLSRenegotiationSupport *tls.RenegotiationSupport
+}
+
+// httpClientForVcert creates an HTTP client which matches the default HTTP client of vcert,
+// but allows you to customize client TLS renegotiation, and User-Agent.
 //
-// Here's why:
+// Why is it necessary to create our own HTTP client for vcert?
+//
+//  1. We need to customize the client TLS renegotiation setting when connecting
+//     to certain TPP servers.
+//  2. We need to customize the User-Agent header for all HTTP requests to Venafi
+//     REST API endpoints.
+//  3. The vcert package does not currently provide an easier way to change those
+//     settings.
+//
+// Why is it necessary to customize the client TLS renegotiation?
 //
 //  1. The TPP API server is served by Microsoft Windows Server and IIS.
 //  2. IIS uses TLS-1.2 by default[1] and it uses a
@@ -228,16 +250,19 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 //     because cert-manager establishes a new HTTPS connection for each API
 //     request and therefore should only ever need to renegotiate once in this
 //     scenario.
-//  5. But overriding the HTTP client causes vcert to ignore the
+//
+// Why do we supply CA bundle in the HTTP client **and** in the vcert.Config?
+//
+//  1. Overriding the HTTP client causes vcert to ignore the
 //     `vcert.Config.ConnectionTrust` field, so we also have to set up the root
 //     CA trust pool ourselves.
-//  6. And the value of RootCAs MUST be nil unless the user has supplied a
+//  2. And the value of RootCAs MUST be nil unless the user has supplied a
 //     custom CA, because a nil value causes the Go HTTP client to load the
 //     system default root CAs.
 //
 // [1] TLS protocol version support in Microsoft Windows: https://learn.microsoft.com/en-us/windows/win32/secauthn/protocols-in-tls-ssl--schannel-ssp-#tls-protocol-version-support
 // [2] Should I use SSL/TLS renegotiation?: https://security.stackexchange.com/a/24569
-func httpClientForVcertTPP(caBundle []byte) *http.Client {
+func httpClientForVcert(options *httpClientForVcertOptions) *http.Client {
 	// Copy vcert's default HTTP transport, which is mostly identical to the
 	// http.DefaultTransport settings in Go's stdlib.
 	// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/pkg/venafi/tpp/tpp.go#L481-L513
@@ -261,20 +286,26 @@ func httpClientForVcertTPP(caBundle []byte) *http.Client {
 	if tlsClientConfig == nil {
 		tlsClientConfig = &tls.Config{}
 	}
-	if len(caBundle) > 0 {
+	if len(options.CABundle) > 0 {
 		rootCAs := x509.NewCertPool()
-		rootCAs.AppendCertsFromPEM(caBundle)
+		rootCAs.AppendCertsFromPEM(options.CABundle)
 		tlsClientConfig.RootCAs = rootCAs
 	}
 	transport.TLSClientConfig = tlsClientConfig
 
-	// Enable TLS 1.2 renegotiation (see earlier comment for justification).
-	transport.TLSClientConfig.Renegotiation = tls.RenegotiateOnceAsClient
+	if options.TLSRenegotiationSupport != nil {
+		transport.TLSClientConfig.Renegotiation = *options.TLSRenegotiationSupport
+	}
+
+	var roundTripper http.RoundTripper = transport
+	if options.UserAgent != nil {
+		roundTripper = util.UserAgentRoundTripper(transport, *options.UserAgent)
+	}
 
 	// Copy vcert's initialization of the HTTP client, which overrides the default timeout.
 	// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/pkg/venafi/tpp/tpp.go#L481-L513
 	return &http.Client{
-		Transport: transport,
+		Transport: roundTripper,
 		Timeout:   time.Second * 30,
 	}
 }
