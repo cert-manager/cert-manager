@@ -35,6 +35,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 const (
@@ -128,6 +129,8 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
+	var vcertConfig *vcert.Config
+
 	switch {
 	case venCfg.TPP != nil:
 		tpp := venCfg.TPP
@@ -140,7 +143,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		password := string(tppSecret.Data[tppPasswordKey])
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
 
-		return &vcert.Config{
+		vcertConfig = &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
 			BaseUrl:       tpp.URL,
 			Zone:          venCfg.Zone,
@@ -160,7 +163,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				AccessToken: accessToken,
 			},
 			Client: httpClientForVcertTPP(tpp.CABundle),
-		}, nil
+		}
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
@@ -174,7 +177,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		}
 		apiKey := string(cloudSecret.Data[k])
 
-		return &vcert.Config{
+		vcertConfig = &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,
 			BaseUrl:       cloud.URL,
 			Zone:          venCfg.Zone,
@@ -183,11 +186,19 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			Credentials: &endpoint.Authentication{
 				APIKey: apiKey,
 			},
-		}, nil
+		}
+	default:
+		// API validation in webhook and in the ClusterIssuer and Issuer controller
+		// Sync functions should make this unreachable in production.
+		return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
+
 	}
-	// API validation in webhook and in the ClusterIssuer and Issuer controller
-	// Sync functions should make this unreachable in production.
-	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
+
+	// Set the user-agent header
+	vcertConfig.Client.Transport = util.UserAgentRoundTripper(vcertConfig.Client.Transport, "cert-manager/v0.0.0")
+
+	return vcertConfig, nil
+
 }
 
 // httpClientForVcertTPP creates an HTTP client and customises it to allow client TLS renegotiation.
