@@ -813,7 +813,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Init()
+	test.builder.InitWithRESTConfig()
 	defer test.builder.Stop()
 
 	v := NewVenafi(test.builder.Context).(*Venafi)
