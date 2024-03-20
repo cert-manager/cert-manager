@@ -223,7 +223,9 @@ type httpClientForVcertOptions struct {
 //  2. We need to customize the User-Agent header for all HTTP requests to Venafi
 //     REST API endpoints.
 //  3. The vcert package does not currently provide an easier way to change those
-//     settings.
+//     settings. See:
+//     * https://github.com/Venafi/vcert/issues/437
+//     * https://github.com/Venafi/vcert/issues/438
 //
 // Why is it necessary to customize the client TLS renegotiation?
 //
