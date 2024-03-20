@@ -47,7 +47,7 @@ const (
 )
 
 type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister,
-	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error)
+	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error)
 
 // Interface implements a Venafi client
 type Interface interface {
@@ -86,8 +86,8 @@ type connector interface {
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger) (Interface, error) {
-	cfg, err := configForIssuer(issuer, secretsLister, namespace)
+func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
+	cfg, err := configForIssuer(issuer, secretsLister, namespace, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
-func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string) (*vcert.Config, error) {
+func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string, userAgent string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
 	var vcertConfig *vcert.Config
 
@@ -195,7 +195,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 	}
 
 	// Set the user-agent header
-	vcertConfig.Client.Transport = util.UserAgentRoundTripper(vcertConfig.Client.Transport, "cert-manager/v0.0.0")
+	vcertConfig.Client.Transport = util.UserAgentRoundTripper(vcertConfig.Client.Transport, userAgent)
 
 	return vcertConfig, nil
 

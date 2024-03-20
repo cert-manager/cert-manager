@@ -38,7 +38,7 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 		}
 	}()
 
-	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer, v.Metrics, v.log)
+	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer, v.Metrics, v.log, v.userAgent)
 	if err != nil {
 		return fmt.Errorf("error building client: %v", err)
 	}

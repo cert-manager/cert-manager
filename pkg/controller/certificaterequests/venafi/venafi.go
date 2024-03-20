@@ -54,6 +54,9 @@ type Venafi struct {
 	clientBuilder venaficlient.VenafiClientBuilder
 
 	metrics *metrics.Metrics
+
+	// userAgent is the string used as the UserAgent when making HTTP calls.
+	userAgent string
 }
 
 func init() {
@@ -73,6 +76,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		clientBuilder: venaficlient.New,
 		metrics:       ctx.Metrics,
 		cmClient:      ctx.CMClient,
+		userAgent:     ctx.RESTConfig.UserAgent,
 	}
 }
 
@@ -80,7 +84,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
-	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj, v.metrics, log)
+	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj, v.metrics, log, v.userAgent)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 

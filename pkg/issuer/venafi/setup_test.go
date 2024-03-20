@@ -41,12 +41,12 @@ func TestSetup(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer")
 
 	failingClientBuilder := func(string, internalinformers.SecretLister,
-		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger, string) (client.Interface, error) {
 		return nil, errors.New("this is an error")
 	}
 
 	failingPingClient := func(string, internalinformers.SecretLister,
-		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger, string) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return errors.New("this is a ping error")
@@ -55,7 +55,7 @@ func TestSetup(t *testing.T) {
 	}
 
 	pingClient := func(string, internalinformers.SecretLister,
-		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+		cmapi.GenericIssuer, *metrics.Metrics, logr.Logger, string) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return nil
@@ -63,7 +63,7 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
-	verifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+	verifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger, string) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return nil
@@ -74,7 +74,7 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
-	failingVerifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger) (client.Interface, error) {
+	failingVerifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger, string) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
 			PingFn: func() error {
 				return nil

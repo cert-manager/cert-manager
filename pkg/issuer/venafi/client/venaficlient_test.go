@@ -223,7 +223,7 @@ type testConfigForIssuerT struct {
 }
 
 func (c *testConfigForIssuerT) runTest(t *testing.T) {
-	resp, err := configForIssuer(c.iss, c.secretsLister, "test-namespace")
+	resp, err := configForIssuer(c.iss, c.secretsLister, "test-namespace", "cert-manager/v0.0.0")
 	if err != nil && !c.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
