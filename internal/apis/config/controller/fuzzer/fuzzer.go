@@ -33,45 +33,87 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 		func(s *controller.ControllerConfiguration, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
 
-			defaultTime := 60 * time.Second
-			s.APIServerHost = "defaultHost"
-			s.KubeConfig = "defaultConfig"
-			s.KubernetesAPIQPS = 10
-			s.KubernetesAPIBurst = 10
-			s.ClusterResourceNamespace = "defaultClusterResourceNamespace"
-			s.Namespace = "defaultNamespace"
-			s.LeaderElectionConfig.Enabled = true
-			s.LeaderElectionConfig.Namespace = "defaultLeaderElectionNamespace"
-			s.LeaderElectionConfig.LeaseDuration = defaultTime
-			s.LeaderElectionConfig.RenewDeadline = defaultTime
-			s.LeaderElectionConfig.RetryPeriod = defaultTime
-			s.Controllers = []string{"*"}
-			s.ACMEHTTP01Config.SolverImage = "defaultACMEHTTP01SolverImage"
-			s.ACMEHTTP01Config.SolverResourceRequestCPU = "10m"
-			s.ACMEHTTP01Config.SolverResourceRequestMemory = "64Mi"
-			s.ACMEHTTP01Config.SolverResourceLimitsCPU = "100m"
-			s.ACMEHTTP01Config.SolverResourceLimitsMemory = "64Mi"
-			s.ACMEHTTP01Config.SolverRunAsNonRoot = true
-			s.ACMEHTTP01Config.SolverNameservers = []string{"8.8.8.8:53"}
-			s.ClusterIssuerAmbientCredentials = true
-			s.IssuerAmbientCredentials = true
-			s.IngressShimConfig.DefaultIssuerName = "defaultTLSACMEIssuerName"
-			s.IngressShimConfig.DefaultIssuerKind = "defaultIssuerKind"
-			s.IngressShimConfig.DefaultIssuerGroup = "defaultTLSACMEIssuerGroup"
-			s.IngressShimConfig.DefaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
-			s.ACMEDNS01Config.RecursiveNameservers = []string{"8.8.8.8:53"}
-			s.ACMEDNS01Config.RecursiveNameserversOnly = true
-			s.EnableCertificateOwnerRef = true
-			s.NumberOfConcurrentWorkers = 1
-			s.MaxConcurrentChallenges = 1
-			s.MetricsListenAddress = "0.0.0.0:9402"
-			s.HealthzListenAddress = "0.0.0.0:9402"
-			s.LeaderElectionConfig.HealthzTimeout = defaultTime
-			s.EnablePprof = true
-			s.PprofAddress = "something:1234"
-			s.CopiedAnnotationPrefixes = []string{"*", "-kubectl.kubernetes.io/", "-fluxcd.io/", "-argocd.argoproj.io/"}
+			if s.ClusterResourceNamespace == "" {
+				s.ClusterResourceNamespace = "test-roundtrip"
+			}
+
+			if len(s.Controllers) == 0 {
+				s.Controllers = []string{"test-roundtrip"}
+			}
+
+			if len(s.CopiedAnnotationPrefixes) == 0 {
+				s.CopiedAnnotationPrefixes = []string{"test-roundtrip"}
+			}
+
+			if s.MetricsListenAddress == "" {
+				s.MetricsListenAddress = "test-roundtrip"
+			}
+
+			if s.HealthzListenAddress == "" {
+				s.HealthzListenAddress = "test-roundtrip"
+			}
+
+			if s.PprofAddress == "" {
+				s.PprofAddress = "test-roundtrip"
+			}
 
 			logsapi.SetRecommendedLoggingConfiguration(&s.Logging)
+
+			if s.LeaderElectionConfig.Namespace == "" {
+				s.LeaderElectionConfig.Namespace = "test-roundtrip"
+			}
+
+			if s.LeaderElectionConfig.LeaseDuration == time.Duration(0) {
+				s.LeaderElectionConfig.LeaseDuration = time.Second * 8875
+			}
+
+			if s.LeaderElectionConfig.RenewDeadline == time.Duration(0) {
+				s.LeaderElectionConfig.RenewDeadline = time.Second * 8875
+			}
+
+			if s.LeaderElectionConfig.RetryPeriod == time.Duration(0) {
+				s.LeaderElectionConfig.RetryPeriod = time.Second * 8875
+			}
+
+			if s.LeaderElectionConfig.HealthzTimeout == time.Duration(0) {
+				s.LeaderElectionConfig.HealthzTimeout = time.Second * 8875
+			}
+
+			if s.IngressShimConfig.DefaultIssuerKind == "" {
+				s.IngressShimConfig.DefaultIssuerKind = "test-roundtrip"
+			}
+
+			if s.IngressShimConfig.DefaultIssuerGroup == "" {
+				s.IngressShimConfig.DefaultIssuerGroup = "test-roundtrip"
+			}
+
+			if len(s.IngressShimConfig.DefaultAutoCertificateAnnotations) == 0 {
+				s.IngressShimConfig.DefaultAutoCertificateAnnotations = []string{"test-roundtrip"}
+			}
+
+			if s.ACMEHTTP01Config.SolverImage == "" {
+				s.ACMEHTTP01Config.SolverImage = "test-roundtrip"
+			}
+
+			if s.ACMEHTTP01Config.SolverResourceRequestCPU == "" {
+				s.ACMEHTTP01Config.SolverResourceRequestCPU = "test-roundtrip"
+			}
+
+			if s.ACMEHTTP01Config.SolverResourceRequestMemory == "" {
+				s.ACMEHTTP01Config.SolverResourceRequestMemory = "test-roundtrip"
+			}
+
+			if s.ACMEHTTP01Config.SolverResourceLimitsCPU == "" {
+				s.ACMEHTTP01Config.SolverResourceLimitsCPU = "test-roundtrip"
+			}
+
+			if s.ACMEHTTP01Config.SolverResourceLimitsMemory == "" {
+				s.ACMEHTTP01Config.SolverResourceLimitsMemory = "test-roundtrip"
+			}
+
+			if s.ACMEDNS01Config.CheckRetryPeriod == time.Duration(0) {
+				s.ACMEDNS01Config.CheckRetryPeriod = time.Second * 8875
+			}
 		},
 	}
 }
