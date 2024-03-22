@@ -436,6 +436,33 @@ func TestGenerateCSR(t *testing.T) {
 			},
 		},
 		{
+			name: "Generate CSR from certificate with subject and DNS",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Subject:  &cmapi.X509Subject{Organizations: []string{"example inc."}},
+				DNSNames: []string{"example.org"},
+			}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				ExtraExtensions: []pkix.Extension{
+					sansGenerator(
+						t,
+						[]asn1.RawValue{
+							{Tag: nameTypeDNSName, Class: 2, Bytes: []byte("example.org")},
+						},
+						false, // SAN is NOT critical as the Subject is not empty
+					),
+					{
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1DefaultKeyUsage,
+						Critical: true,
+					},
+				},
+				RawSubject: subjectGenerator(t, pkix.Name{Organization: []string{"example inc."}}),
+			},
+		},
+		{
 			name: "Generate CSR from certificate with only CN",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org"}},
 			want: &x509.CertificateRequest{
