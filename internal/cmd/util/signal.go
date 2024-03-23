@@ -59,7 +59,7 @@ func SetupExitHandler(parentCtx context.Context, exitBehavior ExitBehavior) (con
 		// first signal. Cancel context and pass exit code to errorExitCodeChannel.
 		signalInt := int((<-c).(syscall.Signal))
 		if exitBehavior == AlwaysErrCode {
-			errorExitCodeChannel <- signalInt
+			errorExitCodeChannel <- (128 + signalInt)
 		}
 		cancel(fmt.Errorf("received signal %d", signalInt))
 		// second signal. Exit directly.
@@ -70,7 +70,7 @@ func SetupExitHandler(parentCtx context.Context, exitBehavior ExitBehavior) (con
 	return ctx, func() {
 		select {
 		case signalInt := <-errorExitCodeChannel:
-			os.Exit(128 + signalInt)
+			os.Exit(signalInt)
 		default:
 			// Do not exit, there are no exit codes in the channel,
 			// so just continue and let the main function go out of
