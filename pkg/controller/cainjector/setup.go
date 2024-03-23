@@ -50,7 +50,7 @@ const (
 // setup is setup for a reconciler for a particular injectable type
 type setup struct {
 	resourceName string
-	// newInjectableTarget knows how to create an an InjectableTarget for a particular injectable type
+	// newInjectableTarget knows how to create an InjectableTarget for a particular injectable type
 	newInjectableTarget NewInjectableTarget
 	listType            runtime.Object
 	objType             client.Object
