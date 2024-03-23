@@ -28,7 +28,7 @@ func TestValidNameserver(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:       "IPv4 with no port should should return port 53",
+			name:       "IPv4 with no port should return port 53",
 			nameserver: "8.8.8.8",
 			want:       "8.8.8.8:53",
 		},
@@ -43,7 +43,7 @@ func TestValidNameserver(t *testing.T) {
 			want:       "8.8.8.8:5353",
 		},
 		{
-			name:       "IPv6 with no port should should return port 53",
+			name:       "IPv6 with no port should return port 53",
 			nameserver: "[2001:db8::1]",
 			want:       "[2001:db8::1]:53",
 		},
@@ -58,7 +58,7 @@ func TestValidNameserver(t *testing.T) {
 			want:       "[2001:db8::1]:5353",
 		},
 		{
-			name:       "DNS name with no port should should return port 53",
+			name:       "DNS name with no port should return port 53",
 			nameserver: "nameserver.com",
 			want:       "nameserver.com:53",
 		},
