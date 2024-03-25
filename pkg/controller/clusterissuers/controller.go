@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -36,6 +37,7 @@ import (
 type controller struct {
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        internalinformers.SecretLister
+	configMapLister     corelisters.ConfigMapLister
 
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
@@ -75,20 +77,24 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// obtain references to all the informers used by this controller
 	clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
 	secretInformer := ctx.KubeSharedInformerFactory.Secrets()
+	configMapInformer := ctx.KubeSharedInformerFactory.ConfigMaps()
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
 		clusterIssuerInformer.Informer().HasSynced,
 		secretInformer.Informer().HasSynced,
+		configMapInformer.Informer().HasSynced,
 	}
 
 	// set all the references to the listers for used by the Sync function
 	c.clusterIssuerLister = clusterIssuerInformer.Lister()
 	c.secretLister = secretInformer.Lister()
+	c.configMapLister = configMapInformer.Lister()
 
 	// register handler functions
 	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretDeleted})
+	configMapInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.configMapDeleted})
 
 	// instantiate additional helpers used by this controller
 	c.issuerFactory = issuer.NewFactory(ctx)
@@ -114,6 +120,33 @@ func (c *controller) secretDeleted(obj interface{}) {
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {
 		log.Error(err, "error looking up issuers observing secret")
+		return
+	}
+	for _, iss := range issuers {
+		log := logf.WithRelatedResource(log, iss)
+		key, err := keyFunc(iss)
+		if err != nil {
+			log.Error(err, "error computing key for resource")
+			continue
+		}
+		c.queue.AddRateLimited(key)
+	}
+}
+
+// TODO: replace with generic handleObject function (like Navigator)
+func (c *controller) configMapDeleted(obj interface{}) {
+	log := c.log.WithName("configMapDeleted")
+
+	configMap, ok := controllerpkg.ToConfigMap(obj)
+	if !ok {
+		log.Error(nil, "object is not a configMap", "object", obj)
+		return
+	}
+	log = logf.WithResource(log, configMap)
+
+	issuers, err := c.issuersForConfigMap(configMap)
+	if err != nil {
+		log.Error(err, "error looking up issuers observing configMap")
 		return
 	}
 	for _, iss := range issuers {

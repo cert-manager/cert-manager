@@ -139,6 +139,10 @@ func (bf *filteredSecretsFactory) Secrets() SecretInformer {
 	}
 }
 
+func (bf *filteredSecretsFactory) ConfigMaps() corev1informers.ConfigMapInformer {
+	return bf.typedInformerFactory.Core().V1().ConfigMaps()
+}
+
 // filteredSecretInformer is an implementation of SecretInformer that uses two
 // caches (typed and metadata) to list and watch Secrets
 type filteredSecretInformer struct {

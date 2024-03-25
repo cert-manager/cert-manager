@@ -35,6 +35,11 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
+	if err := s.AddConversionFunc((*meta.ConfigMapKeySelector)(nil), (*v1.ConfigMapKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_meta_ConfigMapKeySelector_To_v1_ConfigMapKeySelector(a.(*meta.ConfigMapKeySelector), b.(*v1.ConfigMapKeySelector), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*meta.LocalObjectReference)(nil), (*v1.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(a.(*meta.LocalObjectReference), b.(*v1.LocalObjectReference), scope)
 	}); err != nil {
@@ -47,6 +52,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*meta.SecretKeySelector)(nil), (*v1.SecretKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(a.(*meta.SecretKeySelector), b.(*v1.SecretKeySelector), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1.ConfigMapKeySelector)(nil), (*meta.ConfigMapKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ConfigMapKeySelector_To_meta_ConfigMapKeySelector(a.(*v1.ConfigMapKeySelector), b.(*meta.ConfigMapKeySelector), scope)
 	}); err != nil {
 		return err
 	}
@@ -65,6 +75,22 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	return nil
+}
+
+func autoConvert_v1_ConfigMapKeySelector_To_meta_ConfigMapKeySelector(in *v1.ConfigMapKeySelector, out *meta.ConfigMapKeySelector, s conversion.Scope) error {
+	if err := Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(&in.LocalObjectReference, &out.LocalObjectReference, s); err != nil {
+		return err
+	}
+	out.Key = in.Key
+	return nil
+}
+
+func autoConvert_meta_ConfigMapKeySelector_To_v1_ConfigMapKeySelector(in *meta.ConfigMapKeySelector, out *v1.ConfigMapKeySelector, s conversion.Scope) error {
+	if err := Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(&in.LocalObjectReference, &out.LocalObjectReference, s); err != nil {
+		return err
+	}
+	out.Key = in.Key
 	return nil
 }
 

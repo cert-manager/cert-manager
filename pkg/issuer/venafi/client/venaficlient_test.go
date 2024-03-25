@@ -31,6 +31,51 @@ import (
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
 )
 
+const (
+	zone                  = "test-zone"
+	username              = "test-username"
+	password              = "test-password"
+	accessToken           = "KT2EEVTIjWM/37L78dqJAg=="
+	apiKey                = "test-api-key"
+	customKey             = "test-custom-key"
+	defaultCaKey          = "ca.crt"
+	customCaKey           = "custom-ca-key"
+	tppUrl                = "https://tpp.example.com/vedsdk"
+	customCaSecretName    = "custom-ca-secret"
+	customCaConfigMapName = "custom-ca-configmap"
+	testLeafCertificate   = `-----BEGIN CERTIFICATE-----
+MIIFFTCCAv2gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwRjELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgMAkNBMRQwEgYDVQQKDAtDRVJUTUFOQUdFUjEUMBIGA1UEAwwLZm9v
+LmJhci5pbnQwHhcNMjAxMDAyMTQ1NzMwWhcNMjExMDEyMTQ1NzMwWjBKMQswCQYD
+VQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAoMC0NFUlRNQU5BR0VSMRgwFgYD
+VQQDDA9leGFtcGxlLmZvby5iYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQC8yTGzYIX3OoRma11vewbNf8dgKHc9GgvJJ29SVjaNwRAJjKOXokGOwcyQ
+7Ieb1puYQ5KdSPC1IxyUx77URovIvd3Wql+J1gIxyrdN3om3uQdJ2ck6xatBZ8BI
+Y3Z+6WpUQ2067Wk4KpUGfMrbGg5zVcesh6zc8J9yEiItUENeR+6GyEf+B8IJ0xqe
+5lps2LaxZp6I6vaKeMELjj17Nb9r81Rjyk8BN7yX74tFE1mUGX9o75tsODU9IrYW
+nqSl5gr2PO9Zb/bd6zhoncLJr9kj2tk6cLRPht+JOPoA2LAP6D0aEdC3a2XWuj2E
+EsUYJR9e5C/X49VQaak0VdNnhO6RAgMBAAGjggEHMIIBAzAJBgNVHRMEAjAAMBEG
+CWCGSAGG+EIBAQQEAwIGQDAzBglghkgBhvhCAQ0EJhYkT3BlblNTTCBHZW5lcmF0
+ZWQgU2VydmVyIENlcnRpZmljYXRlMB0GA1UdDgQWBBQ41U/GiA2rQtuMz6tNL55C
+o4pnBDBqBgNVHSMEYzBhgBSfus9cb7UA/PCfHJAGtL6ot2EpLKFFpEMwQTEPMA0G
+A1UEAwwGYmFyLmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAoM
+C0NFUlRNQU5BR0VSggIQADAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYB
+BQUHAwEwDQYJKoZIhvcNAQELBQADggIBAFFTJNqKSkkJNWWt+R7WFNIEKoaPcFH5
+yupCQRYX9LK2cXdBQpF458/PFxREyt5jKFUcDyzQhOglFYq0hfcoAc2EB3Vw8Ww9
+c4QCiCU6ehJVMRt7MzZ9uUVGCRVOA+Fa1tIFfL3dKlI+4pTSbDhNHRqDtFhfWOZK
+bgtruQEUOW1lQR61AsidOF1iwDBU6ckpVY9Lc2SHEAfQFs0MoXmJ8B4MqFptF4+H
+al+IAeQ1bC/2EccFYg3tq9+YKHDCyghHf8qeKJR9tZslvkHrAzuX56e0MHxM3AD6
+D0L8nG3DsrHcjK0MlVUWmq0QFnY5t+78iocLoQZzpILZYuZn3p+XNlUdW4lcqSBn
+y5fUwQ3RIuvN66GBhTeDV4vzYPa7g3i9PoBFoG50Ayr6VtIVn08rnl03lgp57Edv
+A5oRrSHcd8Hd8/lk0Y9BpFTnZEg7RLhFhh9nazVp1/pjwaGx449uHIGEoxREQoPq
+9Q+KLGMJR2IqiNI6+U1z2j8BChTOPkuAvsnSuAXyotu4BXBL5zbDzfDoggEk1ps1
+bfHWnmdelE0WP7h7B0PSA0EXn0pdg2VQIQsknV6y3MCzFQCCSAog/OSguokXG1PG
+l6fctDJ3+AF07EjtgArOBkUn7Nt3/CgMN8I1rnBZ1Vmd8yrHEP0E3yRXBL7cDj5j
+Fqmd89NQLlGs
+-----END CERTIFICATE-----
+`
+)
+
 func checkNoConfigReturned(t *testing.T, cnf *vcert.Config) {
 	if cnf != nil {
 		t.Errorf("expected no config to be returned, got=%+v", cnf)
@@ -48,6 +93,28 @@ func checkZone(t *testing.T, zone string, cnf *vcert.Config) {
 	}
 }
 
+func checkTppUrl(t *testing.T, tppUrl string, cnf *vcert.Config) {
+	if cnf == nil {
+		t.Errorf("expected config but got: %+v", cnf)
+	}
+
+	if tppUrl != cnf.BaseUrl {
+		t.Errorf("got unexpected BaseUrl set, exp=%s got=%s",
+			tppUrl, cnf.BaseUrl)
+	}
+}
+
+func checkTppCa(t *testing.T, ca string, cnf *vcert.Config) {
+	if cnf == nil {
+		t.Errorf("expected config but got: %+v", cnf)
+	}
+
+	if ca != cnf.ConnectionTrust {
+		t.Errorf("got unexpected CA as trust, exp=%s got=%s",
+			ca, cnf.ConnectionTrust)
+	}
+}
+
 func generateSecretLister(s *corev1.Secret, err error) internalinformers.SecretLister {
 	return &testlisters.FakeSecretLister{
 		SecretsFn: func(string) corelisters.SecretNamespaceLister {
@@ -60,14 +127,19 @@ func generateSecretLister(s *corev1.Secret, err error) internalinformers.SecretL
 	}
 }
 
-func TestConfigForIssuerT(t *testing.T) {
-	zone := "test-zone"
-	username := "test-username"
-	password := "test-password"
-	accessToken := "KT2EEVTIjWM/37L78dqJAg=="
-	apiKey := "test-api-key"
-	customKey := "test-custom-key"
+func generateConfigMapLister(s *corev1.ConfigMap, err error) corelisters.ConfigMapLister {
+	return &testlisters.FakeConfigMapLister{
+		ConfigMapsFn: func(string) corelisters.ConfigMapNamespaceLister {
+			return &testlisters.FakeConfigMapNamespaceLister{
+				GetFn: func(string) (*corev1.ConfigMap, error) {
+					return s, err
+				},
+			}
+		},
+	}
+}
 
+func TestConfigForIssuerT(t *testing.T) {
 	baseIssuer := gen.Issuer("non-venafi-issue",
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
 	)
@@ -76,6 +148,49 @@ func TestConfigForIssuerT(t *testing.T) {
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			Zone: zone,
 			TPP:  &cmapi.VenafiTPP{},
+		}),
+	)
+
+	tppIssuerWithoutCA := gen.IssuerFrom(baseIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			Zone: zone,
+			TPP: &cmapi.VenafiTPP{
+				URL: tppUrl,
+			},
+		}),
+	)
+
+	tppIssuerWithCABundle := gen.IssuerFrom(tppIssuerWithoutCA,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundle: []byte(testLeafCertificate),
+			},
+		}),
+	)
+
+	tppIssuerWithCABundleSecretRef := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key: customCaKey,
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: customCaSecretName,
+					},
+				},
+			},
+		}),
+	)
+
+	tppIssuerWithCABundleConfigMapRef := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundleConfigMapRef: &cmmeta.ConfigMapKeySelector{
+					Key: customCaKey,
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: customCaConfigMapName,
+					},
+				},
+			},
 		}),
 	)
 
@@ -109,6 +224,22 @@ func TestConfigForIssuerT(t *testing.T) {
 			CheckFn:       checkNoConfigReturned,
 			expectedErr:   true,
 		},
+		"if TPP and none of caBundle/caBundleSecretRef/caBundleConfigMapRef specified, CA bundle is not set in vcert config": {
+			iss: tppIssuerWithoutCA,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					tppUsernameKey: []byte(username),
+					tppPasswordKey: []byte(password),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				if trust := cnf.ConnectionTrust; trust != "" {
+					t.Errorf("got unexpected CA bundle: %s", trust)
+				}
+				checkTppUrl(t, tppUrl, cnf)
+			},
+			expectedErr: false,
+		},
 		"if TPP and secret returns user/pass, should return config with those credentials": {
 			iss: tppIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
@@ -140,6 +271,49 @@ func TestConfigForIssuerT(t *testing.T) {
 					t.Errorf("got unexpected accessToken: %q", actualAccessToken)
 				}
 				checkZone(t, zone, cnf)
+			},
+			expectedErr: false,
+		},
+		// NOTE: Below scenarios assume valid TPP CAs, the scenarios with invalid TPP CAs are run part of TestCaBundleForVcertTPP test
+		"if TPP and a good caBundle specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
+			iss: tppIssuerWithCABundle,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					tppAccessTokenKey: []byte(accessToken),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				checkTppCa(t, testLeafCertificate, cnf)
+			},
+			expectedErr: false,
+		},
+		"if TPP and a good caBundleSecretRef specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
+			iss: tppIssuerWithCABundleSecretRef,
+			// tppAccessTokenKey secret lister is not passed as we only have single secretsLister in testConfigForIssuerT struck
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					customCaKey: []byte(testLeafCertificate),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				checkTppCa(t, testLeafCertificate, cnf)
+			},
+			expectedErr: false,
+		},
+		"if TPP and a good caBundleConfigMapRef specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
+			iss: tppIssuerWithCABundleConfigMapRef,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					tppAccessTokenKey: []byte(accessToken),
+				},
+			}, nil),
+			configMapsLister: generateConfigMapLister(&corev1.ConfigMap{
+				Data: map[string]string{
+					customCaKey: testLeafCertificate,
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				checkTppCa(t, testLeafCertificate, cnf)
 			},
 			expectedErr: false,
 		},
@@ -213,9 +387,155 @@ func TestConfigForIssuerT(t *testing.T) {
 	}
 }
 
+func TestCaBundleForVcertTPP(t *testing.T) {
+	baseIssuer := gen.Issuer("non-venafi-issue",
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
+	)
+
+	tppIssuer := gen.IssuerFrom(baseIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			Zone: zone,
+			TPP:  &cmapi.VenafiTPP{},
+		}),
+	)
+
+	tppIssuerWithCABundle := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundle: []byte(testLeafCertificate),
+			},
+		}),
+	)
+
+	tppIssuerWithCABundleSecretRefNoKey := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: customCaSecretName,
+					},
+				},
+			},
+		}),
+	)
+
+	tppIssuerWithCABundleSecretRef := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key: customCaKey,
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: customCaSecretName,
+					},
+				},
+			},
+		}),
+	)
+
+	tppIssuerWithCABundleConfigMapRefNoKey := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundleConfigMapRef: &cmmeta.ConfigMapKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: customCaConfigMapName,
+					},
+				},
+			},
+		}),
+	)
+
+	tppIssuerWithCABundleConfigMapRef := gen.IssuerFrom(tppIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			TPP: &cmapi.VenafiTPP{
+				CABundleConfigMapRef: &cmmeta.ConfigMapKeySelector{
+					Key: customCaKey,
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: customCaConfigMapName,
+					},
+				},
+			},
+		}),
+	)
+
+	tests := map[string]testConfigForIssuerT{
+		"if TPP and none of caBundle/caBundleSecretRef/caBundleConfigMapRef specified, CA bundle is not returned": {
+			iss:         tppIssuer,
+			caBundle:    "",
+			expectedErr: false,
+		},
+		"if TPP and caBundle is specified, correct CA bundle from CABundle should be returned": {
+			iss:         tppIssuerWithCABundle,
+			caBundle:    testLeafCertificate,
+			expectedErr: false,
+		},
+		"if TPP and caBundleSecretRef is specified, correct CA bundle from CABundleSecretRef should be returned": {
+			iss:      tppIssuerWithCABundleSecretRef,
+			caBundle: testLeafCertificate,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					customCaKey: []byte(testLeafCertificate),
+				},
+			}, nil),
+			expectedErr: false,
+		},
+		"if TPP and caBundleSecretRef is specified without `key`, correct CA bundle from CABundleSecretRef with default key should be returned": {
+			iss:      tppIssuerWithCABundleSecretRefNoKey,
+			caBundle: testLeafCertificate,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					defaultCaKey: []byte(testLeafCertificate),
+				},
+			}, nil),
+			expectedErr: false,
+		},
+		"if TPP and caBundleSecretRef is specified, but getting secret fails should error": {
+			iss:           tppIssuerWithCABundleSecretRef,
+			caBundle:      testLeafCertificate,
+			secretsLister: generateSecretLister(nil, errors.New("this is a network error")),
+			expectedErr:   true,
+		},
+		"if TPP and caBundleConfigMapRef is specified, correct CA bundle from CABundleConfigMapRef should be returned": {
+			iss:      tppIssuerWithCABundleConfigMapRef,
+			caBundle: testLeafCertificate,
+			configMapsLister: generateConfigMapLister(&corev1.ConfigMap{
+				Data: map[string]string{
+					customCaKey: testLeafCertificate,
+				},
+			}, nil),
+			expectedErr: false,
+		},
+		"if TPP and caBundleConfigMapRef is specified without `key`, correct CA bundle from CABundleConfigMapRef with default key should be returned": {
+			iss:      tppIssuerWithCABundleConfigMapRefNoKey,
+			caBundle: testLeafCertificate,
+			configMapsLister: generateConfigMapLister(&corev1.ConfigMap{
+				Data: map[string]string{
+					defaultCaKey: testLeafCertificate,
+				},
+			}, nil),
+			expectedErr: false,
+		},
+		// TODO: write test cases where bad CA is passed.
+		// above TODO can be ignored if the checks are added to issuer validations per below link
+		// https://github.com/cert-manager/cert-manager/blob/v1.12.3/internal/apis/certmanager/validation/issuer.go#L348
+		// eventhough we are not prevalidating, vcert http.Client would anyway fail when using invalid CA
+		// 3 scenarios with bad CAs:
+		// "if TPP and caBundle is specified, a bad bundle from CABundle should error"
+		// "if TPP and caBundleSecretRef is specified, a bad bundle from a CABundleSecretRef should error"
+		// "if TPP and caBundleConfigMapRef is specified, a bad bundle from a CABundleConfigMapRef should error"
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.runTppCaTest(t)
+		})
+	}
+}
+
 type testConfigForIssuerT struct {
-	iss           cmapi.GenericIssuer
-	secretsLister internalinformers.SecretLister
+	iss              cmapi.GenericIssuer
+	secretsLister    internalinformers.SecretLister
+	configMapsLister corelisters.ConfigMapLister
+	caBundle         string
 
 	expectedErr bool
 
@@ -223,7 +543,7 @@ type testConfigForIssuerT struct {
 }
 
 func (c *testConfigForIssuerT) runTest(t *testing.T) {
-	resp, err := configForIssuer(c.iss, c.secretsLister, "test-namespace")
+	resp, err := configForIssuer(c.iss, c.secretsLister, c.configMapsLister, "test-namespace")
 	if err != nil && !c.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
@@ -233,5 +553,23 @@ func (c *testConfigForIssuerT) runTest(t *testing.T) {
 
 	if c.CheckFn != nil {
 		c.CheckFn(t, resp)
+	}
+}
+
+func (c *testConfigForIssuerT) runTppCaTest(t *testing.T) {
+	caResp, err := caBundleForVcertTPP(c.iss.GetSpec().Venafi.TPP, c.secretsLister, c.configMapsLister, "test-namespace")
+
+	if err != nil && !c.expectedErr {
+		t.Errorf("expected to not get an error, but got: %v", err)
+	}
+	if err == nil && c.expectedErr {
+		t.Errorf("expected to get an error but did not get one")
+	}
+
+	if !c.expectedErr {
+		if c.caBundle != string(caResp) {
+			t.Errorf("got unexpected CA bundle, exp=%s got=%s",
+				c.caBundle, caResp)
+		}
 	}
 }
