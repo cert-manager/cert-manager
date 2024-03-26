@@ -1311,7 +1311,8 @@ startupapicheck:
 
 # Create a dynamic manifests via values:
 extraObjects: []
-  # - apiVersion: cert-manager.io/v1
+  # - |
+  #   apiVersion: cert-manager.io/v1
   #   kind: ClusterIssuer
   #   metadata:
   #     name: letsencrypt-prod
