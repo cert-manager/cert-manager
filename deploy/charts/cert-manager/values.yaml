@@ -1309,7 +1309,7 @@ startupapicheck:
   # links.
   enableServiceLinks: false
 
-# Create a dynamic manifests via values:
+# Create dynamic manifests via values:
 extraObjects: []
   # - |
   #   apiVersion: cert-manager.io/v1

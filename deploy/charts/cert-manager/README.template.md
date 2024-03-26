@@ -1811,7 +1811,7 @@ enableServiceLinks indicates whether information about services should be inject
 > []
 > ```
 
-Create a dynamic manifests via values:
+Create dynamic manifests via values:
 
 <!-- /AUTO-GENERATED -->
 ### Default Security Contexts
