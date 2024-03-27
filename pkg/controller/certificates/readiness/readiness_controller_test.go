@@ -340,28 +340,28 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 		"Certificate not Ready if Secret is missing": {
 			cert:           gen.Certificate("test", gen.SetCertificateSecretName("something")),
 			reason:         policies.DoesNotExist,
-			message:        "Issuing certificate as Secret does not exist",
+			message:        "Certificate is not Ready because Secret does not exist",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret does not contain any data": {
 			cert:           gen.Certificate("test", gen.SetCertificateSecretName("something")),
 			secret:         gen.Secret("something"),
 			reason:         policies.MissingData,
-			message:        "Issuing certificate as Secret does not contain any data",
+			message:        "Certificate is not Ready because Secret does not contain any data",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret is missing private key": {
 			cert:           gen.Certificate("test", gen.SetCertificateSecretName("something")),
 			secret:         gen.Secret("something", gen.SetSecretData(map[string][]byte{corev1.TLSCertKey: []byte("test")})),
 			reason:         policies.MissingData,
-			message:        "Issuing certificate as Secret does not contain a private key",
+			message:        "Certificate is not Ready because Secret does not contain a private key",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret is missing certificate": {
 			cert:           gen.Certificate("test", gen.SetCertificateSecretName("something")),
 			secret:         gen.Secret("something", gen.SetSecretData(map[string][]byte{corev1.TLSPrivateKeyKey: []byte("test")})),
 			reason:         policies.MissingData,
-			message:        "Issuing certificate as Secret does not contain a certificate",
+			message:        "Certificate is not Ready because Secret does not contain a certificate",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains corrupt private key and certificate data": {
@@ -372,7 +372,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				})),
 			reason:         policies.InvalidKeyPair,
-			message:        "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
+			message:        "Certificate is not Ready because Secret contains invalid private key data: error decoding private key PEM block",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains corrupt certificate data": {
@@ -383,7 +383,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				})),
 			reason:         policies.InvalidCertificate,
-			message:        "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block",
+			message:        "Certificate is not Ready because Secret contains an invalid certificate: error decoding certificate PEM block",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains a non-matching key-pair": {
@@ -396,7 +396,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 						gen.Certificate("something else", gen.SetCertificateCommonName("example.com"))),
 				})),
 			reason:         policies.InvalidKeyPair,
-			message:        "Issuing certificate as Secret contains a private key that does not match the certificate",
+			message:        "Certificate is not Ready because Secret contains a private key that does not match the certificate",
 			violationFound: true,
 		},
 		"Certificate not Ready when CertificateRequest does not match certificate spec": {
@@ -433,7 +433,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 						gen.Certificate("somethingelse",
 							gen.SetCertificateCommonName("old.example.com"))))),
 			reason:         policies.RequestChanged,
-			message:        "Fields on existing CertificateRequest resource not up to date: [spec.commonName]",
+			message:        "Certificate is not Ready because Fields on existing CertificateRequest resource not up to date: [spec.commonName]",
 			violationFound: true,
 		},
 		"Certificate is not Ready when it has expired": {
@@ -471,6 +471,33 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			),
 			reason:         policies.Expired,
 			message:        "Certificate expired on Sun, 31 Dec 0000 23:00:00 UTC",
+			violationFound: true,
+		},
+		"Certificate is not Ready when it has expired (no cr)": {
+			cert: gen.Certificate("something",
+				gen.SetCertificateCommonName("new.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					Name:  "testissuer",
+					Kind:  "IssuerKind",
+					Group: "group.example.com",
+				})),
+			secret: gen.Secret("something",
+				gen.SetSecretAnnotations(map[string]string{
+					cmapi.IssuerNameAnnotationKey:  "testissuer",
+					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+					cmapi.IssuerGroupAnnotationKey: "group.example.com",
+				}),
+				gen.SetSecretData(
+					map[string][]byte{
+						corev1.TLSPrivateKeyKey: privKey,
+						corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey,
+							gen.Certificate("something", gen.SetCertificateCommonName("new.example.com")),
+							clock.Now().Add(-3*time.Hour), clock.Now().Add(-1*time.Hour),
+						),
+					},
+				)),
+			reason:         policies.Expired,
+			message:        "Certificate is not Ready because Certificate expired on Sun, 31 Dec 0000 23:00:00 UTC",
 			violationFound: true,
 		},
 		"Certificate is Ready, no policy violations found": {
