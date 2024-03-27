@@ -55,6 +55,53 @@ func mustGenerateEd25519(t *testing.T) crypto.PrivateKey {
 	return pk
 }
 
+func TestCertificateVersionedHash(t *testing.T) {
+	tests := map[string]struct {
+		cert       *cmapi.Certificate
+		hash       string
+		err        string
+		violations []string
+	}{
+		"should match if certificate is unchanged": {
+			cert: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "cn",
+					DNSNames:   []string{"at", "least", "one"},
+				},
+			},
+			hash: "0021e56e13cbd7925810f2fca58dcca39f9d74cfc70302c701312f81a41a00000000",
+		},
+		"should not match if commonName is changed": {
+			cert: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "cn-changed",
+					DNSNames:   []string{"at", "least", "one"},
+				},
+			},
+			hash: "0021f3023857fe081191f2fca58d35ab14388dc74ca6fbcf8a942f81a41a00000000",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			hash, err := CertificateVersionedHash(test.cert)
+			switch {
+			case err != nil:
+				if test.err != err.Error() {
+					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
+				}
+			default:
+				if test.err != "" {
+					t.Errorf("got no error but expected: %s", test.err)
+				}
+			}
+			if hash != test.hash {
+				t.Errorf("hash did not match, got=%s, exp=%s", hash, test.hash)
+			}
+		})
+	}
+}
+
 func TestPrivateKeyMatchesSpec(t *testing.T) {
 	tests := map[string]struct {
 		key          crypto.PrivateKey

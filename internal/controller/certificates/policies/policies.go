@@ -67,17 +67,25 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 // should cause a Certificate to be marked for issuance.
 func NewTriggerPolicyChain(c clock.Clock) Chain {
 	return Chain{
-		SecretDoesNotExist,     // Make sure the Secret exists
-		SecretIsMissingData,    // Make sure the Secret has the required keys set
-		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretDoesNotExist,             // Make sure the Secret exists
+		SecretIsMissingData,            // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer,         // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretPrivateKeyMismatchesSpec, // Make sure the PrivateKey Type and Size match the Certificate spec
 
-		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
-		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
+		SecretCertificateHashAnnotationMismatch(
+			// BACKWARDS COMPATIBILITY: The following checks are only performed in case no
+			// CertificateRequest hash annotation is present on the Secret. This is to
+			// ensure that existing users of cert-manager do not have all their existing
+			// Certificates marked as not ready.
+			Chain{
+				SecretIssuerAnnotationsMismatch,                     // Make sure the Secret's IssuerRef annotations match the Certificate spec
+				SecretCertificateNameAnnotationsMismatch,            // Make sure the Secret's CertificateName annotation matches the Certificate's name
+				SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
+				CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
+			},
+		),
 
-		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
-		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
-		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
-		CurrentCertificateNearingExpiry(c),                  // Make sure the Certificate in the Secret is not nearing expiry
+		CurrentCertificateNearingExpiry(c), // Make sure the Certificate in the Secret is not nearing expiry
 	}
 }
 
@@ -85,17 +93,25 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 // true, would cause a Certificate to be marked as not ready.
 func NewReadinessPolicyChain(c clock.Clock) Chain {
 	return Chain{
-		SecretDoesNotExist,     // Make sure the Secret exists
-		SecretIsMissingData,    // Make sure the Secret has the required keys set
-		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretDoesNotExist,             // Make sure the Secret exists
+		SecretIsMissingData,            // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer,         // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretPrivateKeyMismatchesSpec, // Make sure the PrivateKey Type and Size match the Certificate spec
 
-		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
-		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
+		SecretCertificateHashAnnotationMismatch(
+			// BACKWARDS COMPATIBILITY: The following checks are only performed in case no
+			// CertificateRequest hash annotation is present on the Secret. This is to
+			// ensure that existing users of cert-manager do not have all their existing
+			// Certificates marked as not ready.
+			Chain{
+				SecretIssuerAnnotationsMismatch,                     // Make sure the Secret's IssuerRef annotations match the Certificate spec
+				SecretCertificateNameAnnotationsMismatch,            // Make sure the Secret's CertificateName annotation matches the Certificate's name
+				SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
+				CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
+			},
+		),
 
-		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
-		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
-		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
-		CurrentCertificateHasExpired(c),                     // Make sure the Certificate in the Secret has not expired
+		CurrentCertificateHasExpired(c), // Make sure the Certificate in the Secret has not expired
 	}
 }
 
@@ -104,6 +120,13 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 // correctness of metadata and output formats of Certificate's Secrets.
 func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string) Chain {
 	return Chain{
+		// Make sure the Secret has the Certificate hash annotation, if not, we will
+		// calculate a hash from the Certificate and add it to the Secret based on the
+		// Certificate's ready condition.
+		// We do this to ensure that all Secrets have the Certificate hash annotation and
+		// we can remove the fallback chain in a future release.
+		SecretCertificateHashAnnotationMissingAndStable,
+
 		SecretBaseLabelsMismatch,                                             // Make sure the managed labels have the correct values
 		SecretCertificateDetailsAnnotationsMismatch,                          // Make sure the managed certificate details annotations have the correct values
 		SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager), // Make sure the only the expected managed labels and annotations exist
