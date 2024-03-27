@@ -431,14 +431,12 @@ func buildCertificates(
 
 			updateCrt := existingCrt.DeepCopy()
 
-			updateCrt.Spec = crt.Spec
+			updateCrt.Annotations = crt.Annotations
 			updateCrt.Labels = crt.Labels
-
-			setIssuerSpecificConfig(crt, ingLike)
+			updateCrt.Spec = crt.Spec
 
 			updateCrts = append(updateCrts, updateCrt)
 		} else {
-
 			newCrts = append(newCrts, crt)
 		}
 	}
@@ -489,9 +487,13 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 	}
 
 	// TODO: we may need to allow users to edit the managed Certificate resources
-	// to add their own labels directly.
-	// Right now, we'll reset/remove the label values back automatically.
+	// to add their own annotations and labels directly.
+	// Right now, we'll reset/remove the annotation and label values back automatically.
 	// Let's hope no other controllers do this automatically, else we'll start fighting...
+	if !reflect.DeepEqual(a.Annotations, b.Annotations) {
+		return true
+	}
+
 	if !reflect.DeepEqual(a.Labels, b.Labels) {
 		return true
 	}
