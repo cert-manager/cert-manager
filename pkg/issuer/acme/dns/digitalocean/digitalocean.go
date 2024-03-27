@@ -138,9 +138,10 @@ func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
 		return nil, err
 	}
 
-	allRecords, _, err := c.client.Domains.Records(
+	allRecords, _, err := c.client.Domains.RecordsByType(
 		context.Background(),
 		util.UnFqdn(zoneName),
+		"TXT",
 		nil,
 	)
 
