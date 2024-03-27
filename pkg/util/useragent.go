@@ -19,6 +19,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -57,4 +58,26 @@ func PrefixFromUserAgent(u string) string {
 		buf.WriteRune(r)
 	}
 	return buf.String()
+}
+
+// UserAgentRoundTripper implements the http.RoundTripper interface and adds a User-Agent
+// header.
+type userAgentRoundTripper struct {
+	inner     http.RoundTripper
+	userAgent string
+}
+
+// UserAgentRoundTripper returns a RoundTripper that functions identically to
+// the provided 'inner' round tripper, other than also setting a user agent.
+func UserAgentRoundTripper(inner http.RoundTripper, userAgent string) http.RoundTripper {
+	return userAgentRoundTripper{
+		inner:     inner,
+		userAgent: userAgent,
+	}
+}
+
+// RoundTrip implements http.RoundTripper
+func (u userAgentRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", u.userAgent)
+	return u.inner.RoundTrip(req)
 }

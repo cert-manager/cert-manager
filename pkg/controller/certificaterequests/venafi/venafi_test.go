@@ -813,7 +813,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Init()
+	test.builder.InitWithRESTConfig()
 	defer test.builder.Stop()
 
 	v := NewVenafi(test.builder.Context).(*Venafi)
@@ -824,7 +824,7 @@ func runTest(t *testing.T, test testT) {
 
 	if test.fakeClient != nil {
 		v.clientBuilder = func(namespace string, secretsLister internalinformers.SecretLister,
-			issuer cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger) (client.Interface, error) {
+			issuer cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
 	}

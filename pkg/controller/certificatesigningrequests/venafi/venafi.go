@@ -63,6 +63,9 @@ type Venafi struct {
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
+
+	// userAgent is the string used as the UserAgent when making HTTP calls.
+	userAgent string
 }
 
 func init() {
@@ -82,6 +85,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		clientBuilder: venaficlient.New,
 		fieldManager:  ctx.FieldManager,
 		metrics:       ctx.Metrics,
+		userAgent:     ctx.RESTConfig.UserAgent,
 	}
 }
 
@@ -99,7 +103,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuerObj, v.metrics, log)
+	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuerObj, v.metrics, log, v.userAgent)
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		v.recorder.Event(csr, corev1.EventTypeWarning, "SecretNotFound", message)

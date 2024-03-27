@@ -43,6 +43,9 @@ type Venafi struct {
 	clientBuilder client.VenafiClientBuilder
 
 	log logr.Logger
+
+	// userAgent is the string used as the UserAgent when making HTTP calls.
+	userAgent string
 }
 
 func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Interface, error) {
@@ -53,6 +56,7 @@ func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Inte
 		clientBuilder:     client.New,
 		Context:           ctx,
 		log:               logf.Log.WithName("venafi"),
+		userAgent:         ctx.RESTConfig.UserAgent,
 	}, nil
 }
 
