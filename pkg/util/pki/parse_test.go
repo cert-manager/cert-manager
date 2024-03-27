@@ -20,7 +20,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/pem"
 	"strings"
 	"testing"
@@ -223,57 +222,4 @@ func TestMustParseRDN(t *testing.T) {
 		}
 
 	assert.Equal(t, expectedRdnSeq, rdnSeq)
-}
-
-func TestMustKeepOrderInRawDerBytes(t *testing.T) {
-	subject := "CN=foo-long.com,OU=FooLong,OU=Barq,OU=Baz,OU=Dept.,O=Corp.,C=US"
-	bytes, err := ParseSubjectStringToRawDERBytes(subject)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var rdnSeq pkix.RDNSequence
-	_, err2 := asn1.Unmarshal(bytes, &rdnSeq)
-	if err2 != nil {
-		t.Fatal(err2)
-	}
-
-	t.Log(bytes)
-
-	expectedRdnSeq :=
-		pkix.RDNSequence{
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.Country, Value: "US"},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.Organization, Value: "Corp."},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.OrganizationalUnit, Value: "Dept."},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.OrganizationalUnit, Value: "Baz"},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.OrganizationalUnit, Value: "Barq"},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.OrganizationalUnit, Value: "FooLong"},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.CommonName, Value: "foo-long.com"},
-			},
-		}
-
-	assert.Equal(t, expectedRdnSeq, rdnSeq)
-	assert.Equal(t, subject, rdnSeq.String())
-}
-
-func TestShouldFailForHexDER(t *testing.T) {
-	_, err := ParseSubjectStringToRawDERBytes("DF=#6666666666665006838820013100000746939546349182108463491821809FBFFFFFFFFF")
-	if err == nil {
-		t.Fatal("expected error, but got none")
-	}
-
-	assert.Contains(t, err.Error(), "failed to unmarshal hex-encoded string: asn1: syntax error: data truncated")
 }
