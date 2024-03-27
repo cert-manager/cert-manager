@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestBuildAnnotationsToCopy(t *testing.T) {
+func TestCopyMatchingPrefixes(t *testing.T) {
 	tests := map[string]struct {
 		allAnnotations map[string]string
 		prefixes       []string
@@ -57,8 +57,8 @@ func TestBuildAnnotationsToCopy(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := BuildAnnotationsToCopy(test.allAnnotations, test.prefixes); !reflect.DeepEqual(got, test.want) {
-				t.Errorf("BuildAnnotationsToCopy() = %+#v, want %+#v", got, test.want)
+			if got := CopyMatchingPrefixes(test.allAnnotations, test.prefixes); !reflect.DeepEqual(got, test.want) {
+				t.Errorf("CopyMatchingPrefixes() = %+#v, want %+#v", got, test.want)
 			}
 		})
 	}

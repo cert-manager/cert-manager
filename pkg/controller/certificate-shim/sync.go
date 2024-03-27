@@ -75,7 +75,7 @@ func SyncFnFor(
 	log logr.Logger,
 	cmClient clientset.Interface,
 	cmLister cmlisters.CertificateLister,
-	defaults controller.IngressShimOptions,
+	shimOptions controller.IngressShimOptions,
 	fieldManager string,
 ) SyncFn {
 	return func(ctx context.Context, ingLike metav1.Object) error {
@@ -94,7 +94,7 @@ func SyncFnFor(
 		var autoAnnotations []string
 		switch ingLike.(type) {
 		case *networkingv1.Ingress:
-			autoAnnotations = defaults.DefaultAutoCertificateAnnotations
+			autoAnnotations = shimOptions.DefaultAutoCertificateAnnotations
 		}
 
 		if !hasShimAnnotation(ingLike, autoAnnotations) {
@@ -108,7 +108,7 @@ func SyncFnFor(
 			return nil
 		}
 
-		issuerName, issuerKind, issuerGroup, err := issuerForIngressLike(defaults, ingLike)
+		issuerName, issuerKind, issuerGroup, err := issuerForIngressLike(shimOptions, ingLike)
 		if err != nil {
 			log.Error(err, "failed to determine issuer to be used for ingress resource")
 			rec.Eventf(ingLikeObj, corev1.EventTypeWarning, reasonBadConfig, "Could not determine issuer for ingress due to bad annotations: %s",
@@ -122,7 +122,7 @@ func SyncFnFor(
 			return nil
 		}
 
-		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup)
+		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, shimOptions.CopiedLabelPrefixes)
 		if err != nil {
 			return err
 		}
@@ -300,6 +300,7 @@ func buildCertificates(
 	cmLister cmlisters.CertificateLister,
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
+	copiedLabelPrefixes []string,
 ) (new, update []*cmapi.Certificate, _ error) {
 
 	var newCrts []*cmapi.Certificate
@@ -376,11 +377,13 @@ func buildCertificates(
 			}
 		}
 
+		labels := controller.CopyMatchingPrefixes(ingLike.GetLabels(), copiedLabelPrefixes)
+
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
-				Labels:          ingLike.GetLabels(),
+				Labels:          labels,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
