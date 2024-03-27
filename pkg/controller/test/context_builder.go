@@ -122,6 +122,7 @@ func (b *Builder) Init() {
 	}
 	scheme := metadatafake.NewTestScheme()
 	metav1.AddMetaToScheme(scheme)
+	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
