@@ -19,11 +19,19 @@ set -o nounset
 set -o pipefail
 
 if [[ -z "${1:-}" ]]; then
-	echo "usage: $0 <path-to-goimports>" >&2
+	echo "usage: $0 <path-to-goimports> [go dirs ...]" >&2
 	exit 1
 fi
 
 goimports=$(realpath "$1")
+
+shift 1
+
+godirs=("$@")
+if [ ${#godirs[@]} -eq 0 ]; then
+	echo "No go dirs specified" >&2
+	exit 1
+fi
 
 # passing "-local" would be ideal, but it'll conflict with auto generated files ATM
 # and cause churn when we want to update those files
@@ -31,9 +39,7 @@ goimports=$(realpath "$1")
 
 common_flags=""
 
-echo "+++ running goimports" >&2
-
-godirs=$(make --silent print-source-dirs)
+echo "+++ running goimports on [${godirs[@]}]" >&2
 
 output=$($goimports $common_flags -l $godirs)
 
