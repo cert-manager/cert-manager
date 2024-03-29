@@ -524,6 +524,11 @@ spec:
                                     Name of the resource being referred to.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
+                            webIdentityToken:
+                              description: |-
+                                WebIdentityToken is the path to the OAuth 2.0 access token or OpenID Connect ID token that is provided by an identity provider.
+                                Both Region and Role must be set.
+                              type: string
                         webhook:
                           description: |-
                             Configure an external webhook based DNS01 challenge solver to manage

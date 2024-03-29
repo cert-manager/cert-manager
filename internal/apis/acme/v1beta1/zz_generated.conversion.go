@@ -1225,6 +1225,7 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01P
 	out.Role = in.Role
 	out.HostedZoneID = in.HostedZoneID
 	out.Region = in.Region
+	out.WebIdentityToken = in.WebIdentityToken
 	return nil
 }
 
@@ -1250,6 +1251,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01P
 	out.Role = in.Role
 	out.HostedZoneID = in.HostedZoneID
 	out.Region = in.Region
+	out.WebIdentityToken = in.WebIdentityToken
 	return nil
 }
 

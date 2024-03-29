@@ -395,7 +395,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", false, util.RecursiveNameservers},
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -453,7 +453,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", false, util.RecursiveNameservers},
+			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -501,7 +501,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", true, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -534,7 +534,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", false, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -598,7 +598,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-role", true, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -632,7 +632,42 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-other-role", false, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
+				},
+			},
+		},
+		{
+			solverFixture{
+				Builder: &test.Builder{
+					Context: &controller.Context{
+						RESTConfig: new(rest.Config),
+						ContextOptions: controller.ContextOptions{
+							IssuerOptions: controller.IssuerOptions{
+								IssuerAmbientCredentials: false,
+							},
+						},
+					},
+				},
+				Issuer:       newIssuer(),
+				dnsProviders: newFakeDNSProviders(),
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+									Region:           "us-west-2",
+									Role:             "my-other-role",
+									WebIdentityToken: "path/to/token",
+								},
+							},
+						},
+					},
+				},
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", "my-other-role", "path/to/token", false, util.RecursiveNameservers},
 				},
 			},
 		},

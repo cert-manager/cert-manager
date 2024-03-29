@@ -514,6 +514,11 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
 	Region string `json:"region"`
+
+	// WebIdentityToken is the path to the OAuth 2.0 access token or OpenID Connect ID token that is provided by an identity provider.
+	// Both Region and Role must be set.
+	// +optional
+	WebIdentityToken string `json:"webIdentityToken,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
