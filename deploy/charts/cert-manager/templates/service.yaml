@@ -19,6 +19,12 @@ metadata:
     {{- end }}
 spec:
   type: ClusterIP
+  {{- if .Values.serviceIpFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.serviceIpFamilyPolicy }}
+  {{- end }}
+  {{- if .Values.serviceIpFamilies }}
+  ipFamilies: {{ .Values.serviceIpFamilies | toYaml | nindent 2 }}
+  {{- end }}
   ports:
   - protocol: TCP
     port: 9402
