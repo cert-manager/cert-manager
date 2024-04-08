@@ -87,6 +87,10 @@ unit-test-controller: | $(NEEDS_GOTESTSUM)
 unit-test-webhook: | $(NEEDS_GOTESTSUM)
 	cd cmd/webhook && $(GOTESTSUM) ./...
 
+.PHONY: update-apidefaults-cainjector
+update-apidefaults-cainjector:
+	cd internal/apis/config/cainjector/v1alpha1/test && bash -c "$(GO) run apidefaults.go"
+
 .PHONY: setup-integration-tests
 setup-integration-tests: templated-crds
 
