@@ -18,10 +18,11 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 )
 
 const TestFileLocation = "testdata/defaults.json"
