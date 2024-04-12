@@ -40,6 +40,7 @@ const (
 	// in the networking/v1 package, so it is duplicated here
 	// to avoid an extra import of networking/v1beta1.
 	annotationIngressClass = "kubernetes.io/ingress.class"
+	defaultIngressName     = "default"
 )
 
 // getIngressesForChallenge returns a list of Ingresses that were created to solve
@@ -166,6 +167,10 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	}
 	if http01IngressCfg.IngressClassName != nil {
 		ingressClassName = http01IngressCfg.IngressClassName
+	}
+	if ingressClassName == nil {
+		ingressClassNameTemp := defaultIngressName
+		ingressClassName = &ingressClassNameTemp
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
