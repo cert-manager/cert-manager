@@ -415,6 +415,82 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				}
 			},
 		},
+		"should use resources": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										Resources: &cmacme.ACMEChallengeSolverHTTP01IngressPodSpecResources{
+											Requests: corev1.ResourceList{
+												corev1.ResourceCPU: resource.MustParse("100m"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				s.testResources[createdPodKey] = resultingPod
+
+				resultingPod.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("100m"),
+					},
+				}
+
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
+
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				// Owner references need to be checked individually
+				if len(resultingPod.OwnerReferences) != len(resp.OwnerReferences) {
+					t.Errorf("mismatch owner references length, exp=%d got=%d",
+						len(resultingPod.OwnerReferences), len(resp.OwnerReferences))
+				} else {
+					for i := range resp.OwnerReferences {
+						if resp.OwnerReferences[i].String() !=
+							resultingPod.OwnerReferences[i].String() {
+							t.Errorf("unexpected pod owner references generated from merge\nexp=%s\ngot=%s",
+								resp.OwnerReferences[i].String(), resultingPod.OwnerReferences[i].String())
+						}
+					}
+				}
+
+				resp.OwnerReferences = resultingPod.OwnerReferences
+
+				for k, v := range resp.Spec.Containers[0].Resources.Requests {
+					q := resultingPod.Spec.Containers[0].Resources.Requests[k]
+					if v.String() != q.String() {
+						t.Errorf("unexpected pod resources generated from merge\nexp=%s\ngot=%s",
+							q.String(), v.String())
+					}
+				}
+
+				resp.Spec.Containers[0].Resources.Requests = resultingPod.Spec.Containers[0].Resources.Requests
+
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated from merge\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
 	}
 
 	for name, test := range tests {
