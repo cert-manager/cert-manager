@@ -14,8 +14,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if .Values.network }}
-  hostNetwork: {{ .Values.network }}
+  {{- if .Values.hostNetwork }}
+  hostNetwork: {{ .Values.hostNetwork }}
   {{- end }}
   replicas: {{ .Values.replicaCount }}
   {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
