@@ -168,6 +168,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	if http01IngressCfg.IngressClassName != nil {
 		ingressClassName = http01IngressCfg.IngressClassName
 	}
+	// if ingressClass is nil, we can add "default" as ingressClassName.
 	if ingressClassName == nil {
 		ingressClassNameTemp := defaultIngressName
 		ingressClassName = &ingressClassNameTemp
