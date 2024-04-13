@@ -19,6 +19,7 @@ package policies
 import (
 	"bytes"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -34,7 +35,9 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -157,8 +160,55 @@ func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
 	return "", "", false
 }
 
+func SecretCertificateHashAnnotationMissingAndStable(input Input) (string, string, bool) {
+	if input.Secret.Annotations[cmapi.CertificateHashAnnotationKey] == "" {
+		readyCondition := apiutil.GetCertificateCondition(input.Certificate, cmapi.CertificateConditionReady)
+		issuingCondition := apiutil.GetCertificateCondition(input.Certificate, cmapi.CertificateConditionIssuing)
+
+		// If the certificate's ready condition is not up-to-date, we do not change the
+		// certificate hash annotation. Also, if the certificate is already being issued,
+		// we do not need to update the certificate hash annotation (as it will be updated once
+		// the certificate is issued).
+
+		if readyCondition != nil && readyCondition.ObservedGeneration != input.Certificate.Generation {
+			return "", "", false
+		}
+
+		if issuingCondition != nil && issuingCondition.Status == cmmetav1.ConditionTrue {
+			return "", "", false
+		}
+
+		return CertificateHashMissing, "Updating Secret, because it is missing a certificate hash annotation", true
+	}
+
+	return "", "", false
+}
+
+func SecretCertificateHashAnnotationMismatch(
+	fallbackChain Chain,
+) Func {
+	return func(input Input) (reason, message string, failed bool) {
+		certificateHash := input.Secret.Annotations[cmapi.CertificateHashAnnotationKey]
+		if certificateHash == "" {
+			return fallbackChain.Evaluate(input)
+		}
+
+		if err := pki.IsCertificateUpToDateWithInfoHash(input.Certificate, certificateHash); err != nil {
+			if fieldChangedErr := (pki.FieldChangedError{}); errors.As(err, &fieldChangedErr) {
+				return CertificateHashMismatch, fmt.Sprintf("The Secret is not up-to-date for the Certificate: %v", err), true
+			}
+
+			return CertificateHashMismatch, fmt.Sprintf("Failed to check if certificate is up to date: %v", err), true
+		}
+
+		return "", "", false
+	}
+}
+
 // SecretIssuerAnnotationsMismatch - When the issuer annotations are defined,
 // it must match the issuer ref.
+// Deprecated: This policy is only used for backwards compatibility with existing
+// Secrets without hash annotation.
 func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 	name, ok1 := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
 	kind, ok2 := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
@@ -174,6 +224,8 @@ func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 
 // SecretCertificateNameAnnotationsMismatch - When the CertificateName annotation is defined,
 // it must match the name of the Certificate.
+// Deprecated: This policy is only used for backwards compatibility with existing
+// Secrets without hash annotation.
 func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool) {
 	name, ok := input.Secret.Annotations[cmapi.CertificateNameKey]
 	if (ok) && // only check if an annotation is present
@@ -187,6 +239,8 @@ func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool
 // contains a CSR that is signed by the key stored in the Secret. A failure is often caused by the
 // Secret being changed outside of the control of cert-manager, causing the current CertificateRequest
 // to no longer match what is stored in the Secret.
+// Deprecated: This policy is only used for backwards compatibility with existing
+// Secrets without hash annotation.
 func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) (string, string, bool) {
 	if input.CurrentRevisionRequest == nil {
 		return "", "", false
@@ -212,6 +266,8 @@ func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) (string, s
 	return "", "", false
 }
 
+// Deprecated: This policy is only used for backwards compatibility with existing
+// Secrets without hash annotation.
 func CurrentCertificateRequestMismatchesSpec(input Input) (string, string, bool) {
 	if input.CurrentRevisionRequest == nil {
 		// Fallback to comparing the Certificate spec with the issued certificate.
@@ -444,10 +500,11 @@ func SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string)
 
 		// Ignore the CertificateName and IssuerRef annotations as these cannot be set by the postIssuance controller.
 		managedAnnotations.Delete(
-			cmapi.CertificateNameKey,       // SecretCertificateNameAnnotationMismatch checks the value
-			cmapi.IssuerNameAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
-			cmapi.IssuerKindAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
-			cmapi.IssuerGroupAnnotationKey, // SecretIssuerAnnotationsMismatch checks the value
+			cmapi.CertificateNameKey,           // SecretCertificateNameAnnotationMismatch checks the value
+			cmapi.IssuerNameAnnotationKey,      // SecretIssuerAnnotationsMismatch checks the value
+			cmapi.IssuerKindAnnotationKey,      // SecretIssuerAnnotationsMismatch checks the value
+			cmapi.IssuerGroupAnnotationKey,     // SecretIssuerAnnotationsMismatch checks the value
+			cmapi.CertificateHashAnnotationKey, // SecretCertificateHashAnnotationMismatch checks the value
 		)
 
 		// Remove the non cert-manager labels from the managed labels so we can compare

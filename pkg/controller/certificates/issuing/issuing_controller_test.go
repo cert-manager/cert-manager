@@ -36,6 +36,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -85,6 +86,8 @@ func TestIssuingController(t *testing.T) {
 			LastTransitionTime: &metaFixedClockStart,
 		}),
 	)
+	issuingCertHash, err := utilpki.CertificateInfoHash(issuingCert)
+	require.NoError(t, err)
 
 	tests := map[string]testT{
 		"if certificate is not in Issuing state, then do nothing": {
@@ -514,6 +517,7 @@ func TestIssuingController(t *testing.T) {
 				IssuerName:      "ca-issuer",
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
+				CertificateHash: issuingCertHash,
 			},
 			expectedErr: false,
 		},
@@ -572,6 +576,7 @@ func TestIssuingController(t *testing.T) {
 				IssuerName:      "ca-issuer",
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
+				CertificateHash: issuingCertHash,
 			},
 			expectedErr: false,
 		},
@@ -629,6 +634,7 @@ func TestIssuingController(t *testing.T) {
 				IssuerName:      "ca-issuer",
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
+				CertificateHash: issuingCertHash,
 			},
 			expectedErr: false,
 		},
@@ -687,6 +693,7 @@ func TestIssuingController(t *testing.T) {
 				IssuerName:      "ca-issuer",
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
+				CertificateHash: issuingCertHash,
 			},
 			expectedErr: false,
 		},
@@ -971,6 +978,7 @@ func TestIssuingController(t *testing.T) {
 				IssuerName:      "ca-issuer",
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
+				CertificateHash: issuingCertHash,
 			},
 			expectedErr: false,
 		},
