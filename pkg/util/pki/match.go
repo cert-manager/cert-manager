@@ -25,6 +25,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+
 	"fmt"
 	"net"
 	"reflect"
@@ -125,6 +126,7 @@ func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
 // and returns a list of field names on the Certificate that do not match their
 // counterpart fields on the CertificateRequest.
 // If decoding the x509 certificate request fails, an error will be returned.
+// Deprecated: use CertificateInfoHash and IsCertificateUpToDateWithInfoHash instead.
 func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec) ([]string, error) {
 	x509req, err := DecodeX509CertificateRequestBytes(req.Spec.Request)
 	if err != nil {

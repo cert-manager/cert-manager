@@ -36,6 +36,12 @@ const (
 	// SecretMismatch is a policy violation reason for a scenario where Secret's
 	// private key does not match spec.
 	SecretMismatch string = "SecretMismatch"
+	// CertificateHashMissing is a policy violation reason for a scenario where
+	// Certificate's hash does not exist on the Secret.
+	CertificateHashMissing string = "CertificateHashMissing"
+	// CertificateHashMismatch is a policy violation reason for a scenario where
+	// Certificate's hash does not match the hash of the certificate on the Secret.
+	CertificateHashMismatch string = "CertificateHashMismatch"
 	// IncorrectIssuer is a policy violation reason for a scenario where
 	// Certificate has been issued by incorrect Issuer.
 	IncorrectIssuer string = "IncorrectIssuer"

@@ -92,6 +92,10 @@ const (
 	// Annotation key for the 'group' of the Issuer resource.
 	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
 
+	// Annotation key for the hash of the Certificate that created the certificate
+	// block encoded in this Secret resource.
+	CertificateHashAnnotationKey = "cert-manager.io/certificate-hash"
+
 	// Annotation key for the name of the certificate that a resource is related to.
 	CertificateNameKey = "cert-manager.io/certificate-name"
 
