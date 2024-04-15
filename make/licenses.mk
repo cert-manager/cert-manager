@@ -47,16 +47,22 @@ $(bin_dir)/scratch/cert-manager.licenses_notice: $(bin_dir)/scratch/license-foot
 # https://github.com/cert-manager/cert-manager/pull/5935
 LICENSES_GO_WORK := $(bin_dir)/scratch/LICENSES.go.work
 $(LICENSES_GO_WORK): $(bin_dir)/scratch
-	$(MAKE) go-workspace GOWORK=$(abspath $@)
+	GOWORK=$(abspath $@) \
+		$(MAKE) go-workspace
 
-LICENSES $(bin_dir)/scratch/LATEST-LICENSES: export GOWORK=$(abspath $(LICENSES_GO_WORK))
-LICENSES $(bin_dir)/scratch/LATEST-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
-	GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > $@
+LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
+	GOWORK=$(abspath $(LICENSES_GO_WORK)) \
+	GOOS=linux GOARCH=amd64 \
+		$(GO-LICENSES) csv ./...  > $@
 
-cmd/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%: export GOWORK=$(abspath $(LICENSES_GO_WORK))
-cmd/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd cmd/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@
+cmd/%/LICENSES: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
+	cd cmd/$* && \
+	GOWORK=$(abspath $(LICENSES_GO_WORK)) \
+	GOOS=linux GOARCH=amd64 \
+		$(GO-LICENSES) csv ./...  > ../../$@
 
-test/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%-tests: export GOWORK=$(abspath $(LICENSES_GO_WORK))
-test/%/LICENSES $(bin_dir)/scratch/LATEST-LICENSES-%-tests: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd test/$* && GOOS=linux GOARCH=amd64 $(GO-LICENSES) csv ./...  > ../../$@
+test/%/LICENSES: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
+	cd test/$* && \
+	GOWORK=$(abspath $(LICENSES_GO_WORK)) \
+	GOOS=linux GOARCH=amd64 \
+		$(GO-LICENSES) csv ./...  > ../../$@
