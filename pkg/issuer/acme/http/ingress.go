@@ -168,6 +168,11 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 		ingressClassName = http01IngressCfg.IngressClassName
 	}
 
+	// if ingressClassName is not specified mark class as ingressClassName.
+	if ingressClassName == nil {
+		ingressClassName = http01IngressCfg.Class
+	}
+
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
 
 	httpHost := ch.Spec.DNSName

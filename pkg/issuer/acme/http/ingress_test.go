@@ -483,7 +483,7 @@ func TestEnsureIngress(t *testing.T) {
 			},
 			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
 				assert.Equal(t, "nginx", ingress.Annotations["kubernetes.io/ingress.class"])
-				assert.Empty(t, ingress.Spec.IngressClassName)
+				assert.Equal(t, "nginx", *ingress.Spec.IngressClassName)
 			}),
 		},
 		"ingressClassName field is passed to the ingress": {
