@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/clock"
+	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
@@ -833,12 +834,12 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		},
 		"ingress class field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: strPtr("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: ptr.To("abc")},
 			},
 		},
 		"ingressClassName field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: strPtr("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: ptr.To("abc")},
 			},
 		},
 		"neither field specified": {
@@ -856,8 +857,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					Name:             "abc",
-					Class:            strPtr("abc"),
-					IngressClassName: strPtr("abc"),
+					Class:            ptr.To("abc"),
+					IngressClassName: ptr.To("abc"),
 				},
 			},
 			errs: []*field.Error{
@@ -867,7 +868,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"ingressClassName is invalid": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: strPtr("azure/application-gateway"),
+					IngressClassName: ptr.To("azure/application-gateway"),
 				},
 			},
 			errs: []*field.Error{

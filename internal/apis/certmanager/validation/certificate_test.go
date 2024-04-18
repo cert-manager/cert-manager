@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/ptr"
 
 	internalcmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -49,14 +50,6 @@ var (
 	}
 	maxSecretTemplateAnnotationsBytesLimit = 256 * (1 << 10) // 256 kB
 )
-
-func strPtr(s string) *string {
-	return &s
-}
-
-func int32Ptr(i int32) *int32 {
-	return &i
-}
 
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
@@ -587,7 +580,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: int32Ptr(1),
+					RevisionHistoryLimit: ptr.To(int32(1)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -598,7 +591,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: int32Ptr(0),
+					RevisionHistoryLimit: ptr.To(int32(0)),
 				},
 			},
 			a: someAdmissionRequest,
