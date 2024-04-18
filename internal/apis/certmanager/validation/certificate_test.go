@@ -122,21 +122,35 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"invalid issuerRef kind": {
+		"invalid with external issuerRef kind and empty group": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-						Kind: "invalid",
+						Name: "abc",
+						Kind: "AWSPCAClusterIssuer",
 					},
 				},
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("issuerRef", "kind"), "invalid", "must be one of Issuer or ClusterIssuer"),
+				field.Invalid(fldPath.Child("issuerRef", "kind"), "AWSPCAClusterIssuer", "must be one of Issuer or ClusterIssuer"),
 			},
+		},
+		"valid with external issuerRef kind and external group": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "abc",
+						Kind:  "AWSPCAClusterIssuer",
+						Group: "awspca.cert-manager.io",
+					},
+				},
+			},
+			a: someAdmissionRequest,
 		},
 		"certificate missing secretName": {
 			cfg: &internalcmapi.Certificate{
