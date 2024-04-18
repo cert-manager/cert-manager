@@ -77,7 +77,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"valid with blank issuerRef kind": {
+		"valid with blank issuerRef kind and no group": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
@@ -89,7 +89,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"valid with 'Issuer' issuerRef kind": {
+		"valid with 'Issuer' issuerRef kind and no group": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
@@ -111,6 +111,20 @@ func TestValidateCertificate(t *testing.T) {
 						Organizations: []string{"testorg"},
 					},
 					IssuerRef: validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"valid with 'Issuer' issuerRef kind and explicit internal group": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "valid",
+						Kind:  "Issuer",
+						Group: "cert-manager.io",
+					},
 				},
 			},
 			a: someAdmissionRequest,
@@ -168,7 +182,7 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
 			},
 		},
-		"certificate with no issuerRef": {
+		"invalid with no issuerRef": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
