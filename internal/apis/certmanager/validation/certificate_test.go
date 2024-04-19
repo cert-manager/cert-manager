@@ -135,7 +135,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("issuerRef", "kind"), "AWSPCAClusterIssuer", "must be one of Issuer or ClusterIssuer"),
+				field.Invalid(fldPath.Child("issuerRef", "kind"), "AWSPCAClusterIssuer", "must be one of Issuer or ClusterIssuer (did you forget to set spec.issuerRef.kind.group?)"),
 			},
 		},
 		"valid with external issuerRef kind and external group": {

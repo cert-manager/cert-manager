@@ -233,7 +233,20 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 			// do nothing
 
 		default:
-			el = append(el, field.Invalid(issuerRefPath.Child("kind"), issuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
+			kindPath := issuerRefPath.Child("kind")
+			errMsg := "must be one of Issuer or ClusterIssuer"
+
+			if issuerRef.Group == "" {
+				// Sometimes the user sets a kind for an external issuer (e.g. "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
+				// to set the group (an easy mistake to make - see https://github.com/cert-manager/csi-driver/issues/197).
+				// If the users forgets the group but otherwise has a correct Kind set for an external issuer, we can give a hint
+				// as to what they need to do to fix.
+
+				// If the user explicitly set the group to the cert-manager group though, we don't give the hint
+				errMsg += fmt.Sprintf(" (did you forget to set %s?)", kindPath.Child("group").String())
+			}
+
+			el = append(el, field.Invalid(kindPath, issuerRef.Kind, errMsg))
 		}
 	}
 
