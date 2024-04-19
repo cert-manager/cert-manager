@@ -99,8 +99,8 @@ shared_generate_targets += generate-helm-docs
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit:
-	$(MAKE) -j1 $(findstring vendor-go,$(MAKECMDGOALS)) verify
+ci-presubmit: $(NEEDS_GO)
+	$(MAKE) -j1 verify
 
 .PHONY: generate-all
 ## Update CRDs, code generation and licenses to the latest versions.
@@ -108,5 +108,4 @@ ci-presubmit:
 ## that everything is up-to-date.
 ##
 ## @category Development
-generate-all:
-	$(MAKE) -j1 $(findstring vendor-go,$(MAKECMDGOALS)) generate
+generate-all: generate
