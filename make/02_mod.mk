@@ -50,3 +50,10 @@ tidy:
 	cd cmd/webhook && go mod tidy
 	cd test/integration && go mod tidy
 	cd test/e2e && go mod tidy
+
+.PHONY: update-base-images
+update-base-images: | $(NEEDS_CRANE)
+	CRANE=$(CRANE) ./hack/latest-base-images.sh
+
+.PHONY: update-licenses
+update-licenses: generate-licenses
