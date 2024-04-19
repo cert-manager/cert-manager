@@ -309,11 +309,11 @@ podLabels: {}
 # +docs:property
 # serviceLabels: {}
 
-# Optional set the ip family policy to the controller Service to configure dual-stack see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
+# Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
 # +docs:property
 # serviceIpFamilyPolicy: ""
 
-# Optional sets the families to the controller Service that should be supported and the order in which they should be applied to ClusterIP as well. Can be IPv4 and/or IPv6.
+# Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 # +docs:property
 # serviceIpFamilies: []
 
@@ -767,11 +767,11 @@ webhook:
   # Optional additional labels to add to the Webhook Service.
   serviceLabels: {}
 
-  # Optional set the ip family policy to the Webhook Service to configure dual-stack see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
-  ipFamilyPolicy: ""
+  # Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
+  serviceIpFamilyPolicy: ""
 
-  # Optional sets the families to the Webhook Service that should be supported and the order in which they should be applied to ClusterIP as well. Can be IPv4 and/or IPv6.
-  ipFamilies: []
+  # Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
+  serviceIpFamilies: []
 
   image:
     # The container registry to pull the webhook image from.
