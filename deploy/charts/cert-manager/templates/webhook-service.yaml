@@ -18,11 +18,11 @@ metadata:
     {{- end }}
 spec:
   type: {{ .Values.webhook.serviceType }}
-  {{- if .Values.webhook.serviceIpFamilyPolicy }}
-  ipFamilyPolicy: {{ .Values.webhook.serviceIpFamilyPolicy }}
+  {{- if .Values.webhook.serviceIPFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.webhook.serviceIPFamilyPolicy }}
   {{- end }}
-  {{- if .Values.webhook.serviceIpFamilies }}
-  ipFamilies: {{ .Values.webhook.serviceIpFamilies | toYaml | nindent 2 }}
+  {{- if .Values.webhook.serviceIPFamilies }}
+  ipFamilies: {{ .Values.webhook.serviceIPFamilies | toYaml | nindent 2 }}
   {{- end }}
   {{- with .Values.webhook.loadBalancerIP }}
   loadBalancerIP: {{ . }}

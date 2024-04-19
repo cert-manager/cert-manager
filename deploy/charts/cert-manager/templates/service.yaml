@@ -19,11 +19,11 @@ metadata:
     {{- end }}
 spec:
   type: ClusterIP
-  {{- if .Values.serviceIpFamilyPolicy }}
-  ipFamilyPolicy: {{ .Values.serviceIpFamilyPolicy }}
+  {{- if .Values.serviceIPFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.serviceIPFamilyPolicy }}
   {{- end }}
-  {{- if .Values.serviceIpFamilies }}
-  ipFamilies: {{ .Values.serviceIpFamilies | toYaml | nindent 2 }}
+  {{- if .Values.serviceIPFamilies }}
+  ipFamilies: {{ .Values.serviceIPFamilies | toYaml | nindent 2 }}
   {{- end }}
   ports:
   - protocol: TCP
