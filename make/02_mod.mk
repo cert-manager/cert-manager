@@ -35,3 +35,18 @@ include make/licenses.mk
 include make/e2e-setup.mk
 include make/scan.mk
 include make/ko.mk
+
+
+.PHONY: tidy
+## Run "go mod tidy" on each module in this repo
+##
+## @category Development
+tidy:
+	go mod tidy
+	cd cmd/acmesolver && go mod tidy
+	cd cmd/cainjector && go mod tidy
+	cd cmd/controller && go mod tidy
+	cd cmd/startupapicheck && go mod tidy
+	cd cmd/webhook && go mod tidy
+	cd test/integration && go mod tidy
+	cd test/e2e && go mod tidy
