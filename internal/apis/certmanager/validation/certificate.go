@@ -216,16 +216,27 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 
 	issuerRefPath := fldPath.Child("issuerRef")
 	if issuerRef.Name == "" {
+		// all issuerRefs must specify a name
 		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
 	}
+
 	if issuerRef.Group == "" || issuerRef.Group == internalcmapi.SchemeGroupVersion.Group {
+		// if the user leaves the group blank, it's effectively defaulted to the built-in issuers (i.e. cert-manager.io)
+		// if the cert-manager.io group is used, we can do extra validation on the Kind
+		// if an external group is used, we don't have a mechanism currently to determine which Kinds are valid for those groups
+		// so we don't check
 		switch issuerRef.Kind {
 		case "":
+			// do nothing
+
 		case "Issuer", "ClusterIssuer":
+			// do nothing
+
 		default:
 			el = append(el, field.Invalid(issuerRefPath.Child("kind"), issuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
 		}
 	}
+
 	return el
 }
 
