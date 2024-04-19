@@ -257,14 +257,19 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 
 				for i := 0; i < 5; i++ {
 					// Sleep for a short time to allow the DynamicSource to generate a new certificate
-					time.Sleep(100 * time.Millisecond)
+					// The certificate should get renewed after 100ms, we wait for 200ms to allow for
+					// possible delays of max 100ms (based on experiments, we noticed that issuance of
+					// a cert takes about 30ms, so 100ms should be a large enough margin).
+					time.Sleep(200 * time.Millisecond)
 
 					// Call the GetCertificate method, should return a NEW certificate
-					cert2, err := source.GetCertificate(&tls.ClientHelloInfo{})
+					newCert, err := source.GetCertificate(&tls.ClientHelloInfo{})
 					assert.NoError(t, err)
-					assert.NotNil(t, cert2)
+					assert.NotNil(t, newCert)
 
-					assert.NotEqual(t, cert.Certificate[0], cert2.Certificate[0])
+					assert.NotEqual(t, cert.Certificate[0], newCert.Certificate[0])
+
+					cert = newCert
 				}
 			},
 			cancelAtEnd: true,
