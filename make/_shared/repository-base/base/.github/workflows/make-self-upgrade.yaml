@@ -15,12 +15,16 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    
+    env:
+      SOURCE_BRANCH: "${{ github.ref_name }}"
+      SELF_UPGRADE_BRANCH: "self-upgrade-${{ github.ref_name }}"
 
     steps:
-      - name: Fail if branch is not main
-        if: github.ref != 'refs/heads/main'
+      - name: Fail if branch is not head of branch.
+        if: ${{ !startsWith(github.ref, 'refs/heads/') && env.SOURCE_BRANCH != '' && env.SELF_UPGRADE_BRANCH != '' }}
         run: |
-          echo "This workflow should not be run on a branch other than main."
+          echo "This workflow should not be run on a non-branch-head."
           exit 1
 
       - uses: actions/checkout@v4
@@ -34,7 +38,7 @@ jobs:
           go-version: ${{ steps.go-version.outputs.result }}
 
       - run: |
-          git checkout -B "self-upgrade"
+          git checkout -B "$SELF_UPGRADE_BRANCH"
 
       - run: |
           make -j upgrade-klone
@@ -54,10 +58,10 @@ jobs:
 
       - if: ${{ steps.is-up-to-date.outputs.result != 'true' }}
         run: |
-          git config --global user.name "jetstack-bot"
-          git config --global user.email "jetstack-bot@users.noreply.github.com"
+          git config --global user.name "cert-manager-bot"
+          git config --global user.email "cert-manager-bot@users.noreply.github.com"
           git add -A && git commit -m "BOT: run 'make upgrade-klone' and 'make generate'" --signoff
-          git push -f origin self-upgrade
+          git push -f origin "$SELF_UPGRADE_BRANCH"
 
       - if: ${{ steps.is-up-to-date.outputs.result != 'true' }}
         uses: actions/github-script@v7
@@ -67,18 +71,18 @@ jobs:
             const pulls = await github.rest.pulls.list({
               owner: owner,
               repo: repo,
-              head: owner + ':self-upgrade',
-              base: 'main',
+              head: owner + ':' + process.env.SELF_UPGRADE_BRANCH,
+              base: process.env.SOURCE_BRANCH,
               state: 'open',
             });
             
             if (pulls.data.length < 1) {
               await github.rest.pulls.create({
-                title: '[CI] Merge self-upgrade into main',
+                title: '[CI] Merge ' + process.env.SELF_UPGRADE_BRANCH + ' into ' + process.env.SOURCE_BRANCH,
                 owner: owner,
                 repo: repo,
-                head: 'self-upgrade',
-                base: 'main',
+                head: process.env.SELF_UPGRADE_BRANCH,
+                base: process.env.SOURCE_BRANCH,
                 body: [
                   'This PR is auto-generated to bump the Makefile modules.',
                 ].join('\n'),
