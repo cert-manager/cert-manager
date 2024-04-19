@@ -57,3 +57,6 @@ update-base-images: | $(NEEDS_CRANE)
 
 .PHONY: update-licenses
 update-licenses: generate-licenses
+
+.PHONY: verify-licenses
+verify-licenses: verify-generate-licenses
