@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2021 The cert-manager Authors.
+# Copyright 2023 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 # limitations under the License.
 
 set -eu -o pipefail
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # This script takes the hash of its first argument and verifies it against the
 # hex hash given in its second argument
@@ -36,7 +38,7 @@ if [[ -z $EXPECTED_HASH ]]; then
 	usage_and_exit
 fi
 
-SHASUM=$(./hack/util/hash.sh "$1")
+SHASUM=$("${SCRIPT_DIR}/hash.sh" "$HASH_TARGET")
 
 if [[ "$SHASUM" == "$EXPECTED_HASH" ]]; then
 	exit 0

@@ -1,20 +1,7 @@
 approvers:
-- munnerz
-- joshvanl
-- wallrj
-- jakexks
-- maelvls
-- irbekrm
-- sgtcodfish
-- inteon
+- cm-maintainers
+- thatsmrtalbot
 reviewers:
-- munnerz
-- joshvanl
-- wallrj
-- jakexks
-- maelvls
-- irbekrm
-- sgtcodfish
-- inteon
+- cm-maintainers
 - thatsmrtalbot
 - erikgb

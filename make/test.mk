@@ -123,8 +123,7 @@ E2E_OPENSHIFT ?= false
 ##
 ## @category Development
 e2e: $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
-	BINDIR=$(bin_dir) \
-		make/e2e.sh
+	make/e2e.sh
 
 .PHONY: e2e-ci
 e2e-ci: | $(NEEDS_GO)
