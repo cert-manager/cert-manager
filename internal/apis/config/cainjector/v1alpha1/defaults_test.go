@@ -38,14 +38,14 @@ func TestCAInjectorConfigurationDefaults(t *testing.T) {
 		if err := os.WriteFile(TestFileLocation, defaultData, 0644); err != nil {
 			t.Fatal(err)
 		}
-		t.Log("cainjector api defaults updated")
+		t.Log("cainjector config api defaults updated")
 	}
 	tests := []struct {
 		name   string
 		config *v1alpha1.CAInjectorConfiguration
 	}{
 		{
-			"cainjection",
+			"v1alpha1",
 			&v1alpha1.CAInjectorConfiguration{},
 		},
 	}
