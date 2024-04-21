@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -66,7 +67,7 @@ func CertificateTemplateValidateAndOverrideBasicConstraints(isCA bool, maxPathLe
 	return func(req *x509.CertificateRequest, cert *x509.Certificate) error {
 		if hasExtension(req, OIDExtensionBasicConstraints) {
 			if !cert.BasicConstraintsValid {
-				return fmt.Errorf("encoded CSR error: BasicConstraintsValid is not true")
+				return errors.New("encoded CSR error: BasicConstraintsValid is not true")
 			}
 
 			if cert.IsCA != isCA {

@@ -176,7 +176,7 @@ func forEachSAN(extension []byte, callback func(v asn1.RawValue) error) error {
 	if err != nil {
 		return err
 	} else if len(rest) != 0 {
-		return fmt.Errorf("x509: trailing data after X.509 extension")
+		return errors.New("x509: trailing data after X.509 extension")
 	}
 	if !seq.IsCompound || seq.Tag != asn1.TagSequence || seq.Class != asn1.ClassUniversal {
 		return asn1.StructuralError{Msg: "bad SAN sequence"}

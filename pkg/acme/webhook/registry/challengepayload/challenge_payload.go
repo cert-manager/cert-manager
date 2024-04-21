@@ -18,6 +18,7 @@ package challengepayload
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,10 +63,10 @@ func (r *REST) NamespaceScoped() bool {
 func (r *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateObjectFunc, _ *metav1.CreateOptions) (runtime.Object, error) {
 	payload, ok := obj.(*v1alpha1.ChallengePayload)
 	if !ok {
-		return nil, fmt.Errorf("resource is not of type ChallengePayload")
+		return nil, errors.New("resource is not of type ChallengePayload")
 	}
 	if payload.Request == nil {
-		return nil, fmt.Errorf("payload request field cannot be empty")
+		return nil, errors.New("payload request field cannot be empty")
 	}
 	resp, err := r.callSolver(*payload.Request)
 	if err != nil {

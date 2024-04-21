@@ -24,6 +24,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"errors"
 	"net"
 
 	"fmt"
@@ -335,5 +336,5 @@ func extractSANExtension(extensions []pkix.Extension) (pkix.Extension, error) {
 		}
 	}
 
-	return pkix.Extension{}, fmt.Errorf("SAN extension not present!")
+	return pkix.Extension{}, errors.New("SAN extension not present!")
 }

@@ -231,7 +231,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	if len(commonName) == 0 && sans.Empty() {
-		return nil, fmt.Errorf("no common name (from the commonName field or from a literalSubject), DNS name, URI SAN, Email SAN, IP or OtherName SAN specified on certificate")
+		return nil, errors.New("no common name (from the commonName field or from a literalSubject), DNS name, URI SAN, Email SAN, IP or OtherName SAN specified on certificate")
 	}
 
 	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)

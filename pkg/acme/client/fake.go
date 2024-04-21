@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"golang.org/x/crypto/acme"
@@ -52,63 +53,63 @@ func (f *FakeACME) AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ..
 	if f.FakeAuthorizeOrder != nil {
 		return f.FakeAuthorizeOrder(ctx, id, opt...)
 	}
-	return nil, fmt.Errorf("AuthorizeOrder not implemented")
+	return nil, errors.New("AuthorizeOrder not implemented")
 }
 
 func (f *FakeACME) GetOrder(ctx context.Context, url string) (*acme.Order, error) {
 	if f.FakeGetOrder != nil {
 		return f.FakeGetOrder(ctx, url)
 	}
-	return nil, fmt.Errorf("GetOrder not implemented")
+	return nil, errors.New("GetOrder not implemented")
 }
 
 func (f *FakeACME) FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error) {
 	if f.FakeFetchCert != nil {
 		return f.FakeFetchCert(ctx, url, bundle)
 	}
-	return nil, fmt.Errorf("FetchCert not implemented")
+	return nil, errors.New("FetchCert not implemented")
 }
 
 func (f *FakeACME) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
 	if f.FakeWaitOrder != nil {
 		return f.FakeWaitOrder(ctx, url)
 	}
-	return nil, fmt.Errorf("WaitOrder not implemented")
+	return nil, errors.New("WaitOrder not implemented")
 }
 
 func (f *FakeACME) CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 	if f.FakeCreateOrderCert != nil {
 		return f.FakeCreateOrderCert(ctx, finalizeURL, csr, bundle)
 	}
-	return nil, "", fmt.Errorf("CreateOrderCert not implemented")
+	return nil, "", errors.New("CreateOrderCert not implemented")
 }
 
 func (f *FakeACME) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
 	if f.FakeAccept != nil {
 		return f.FakeAccept(ctx, chal)
 	}
-	return nil, fmt.Errorf("Accept not implemented")
+	return nil, errors.New("Accept not implemented")
 }
 
 func (f *FakeACME) GetChallenge(ctx context.Context, url string) (*acme.Challenge, error) {
 	if f.FakeGetChallenge != nil {
 		return f.FakeGetChallenge(ctx, url)
 	}
-	return nil, fmt.Errorf("GetChallenge not implemented")
+	return nil, errors.New("GetChallenge not implemented")
 }
 
 func (f *FakeACME) GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
 	if f.FakeGetAuthorization != nil {
 		return f.FakeGetAuthorization(ctx, url)
 	}
-	return nil, fmt.Errorf("GetAuthorization not implemented")
+	return nil, errors.New("GetAuthorization not implemented")
 }
 
 func (f *FakeACME) WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
 	if f.FakeWaitAuthorization != nil {
 		return f.FakeWaitAuthorization(ctx, url)
 	}
-	return nil, fmt.Errorf("WaitAuthorization not implemented")
+	return nil, errors.New("WaitAuthorization not implemented")
 }
 
 func (f *FakeACME) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {

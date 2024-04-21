@@ -211,7 +211,7 @@ func UnmarshalNameConstraints(value []byte) (*NameConstraints, error) {
 			var tag cryptobyte_asn1.Tag
 			if !subtrees.ReadASN1(&seq, cryptobyte_asn1.SEQUENCE) ||
 				!seq.ReadAnyASN1(&value, &tag) {
-				return nil, nil, nil, nil, fmt.Errorf("x509: invalid NameConstraints extension")
+				return nil, nil, nil, nil, errors.New("x509: invalid NameConstraints extension")
 			}
 
 			var (

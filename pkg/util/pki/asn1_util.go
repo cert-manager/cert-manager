@@ -157,7 +157,7 @@ func UnmarshalUniversalValue(rawValue asn1.RawValue) (UniversalValue, error) {
 		return uv, err
 	}
 	if len(rest) != 0 {
-		return uv, fmt.Errorf("trailing data")
+		return uv, errors.New("trailing data")
 	}
 
 	return uv, nil
