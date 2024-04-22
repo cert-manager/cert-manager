@@ -35,7 +35,7 @@ targets:
     - folder_name: repository-base
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 04f424fa90aa8ca570278cf0c07b18dea607b542
+      repo_hash: e9363accaaee20a995bbf8f1c9cba2ea77da8935
       repo_path: modules/repository-base
     - folder_name: tools
       repo_url: https://github.com/cert-manager/makefile-modules.git

@@ -9,7 +9,7 @@ on:
     - cron: '0 0 * * *'
 
 jobs:
-  build_images:
+  self_upgrade:
     runs-on: ubuntu-latest
 
     permissions:
