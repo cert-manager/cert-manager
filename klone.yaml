@@ -17,6 +17,11 @@ targets:
       repo_ref: main
       repo_hash: 04f424fa90aa8ca570278cf0c07b18dea607b542
       repo_path: modules/generate-verify
+    - folder_name: go
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: fa9c9274d1d852de501461b9442f7206aaf74007
+      repo_path: modules/go
     - folder_name: help
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main

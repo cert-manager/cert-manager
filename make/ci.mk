@@ -12,23 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: verify-golangci-lint
-verify-golangci-lint: | $(NEEDS_GOLANGCI-LINT)
-	find . -name go.mod -not \( -path "./$(bin_dir)/*" -prune \)  -execdir $(GOLANGCI-LINT) run --timeout=30m --config=$(CURDIR)/.golangci.ci.yaml \;
-
-shared_verify_targets += verify-golangci-lint
-
 .PHONY: verify-modules
 verify-modules: | $(NEEDS_CMREL)
 	$(CMREL) validate-gomod --path $(shell pwd) --no-dummy-modules github.com/cert-manager/cert-manager/integration-tests
 
 shared_verify_targets += verify-modules
-
-.PHONY: verify-imports
-verify-imports: | $(NEEDS_GOIMPORTS)
-	./hack/verify-goimports.sh $(GOIMPORTS) $(SOURCE_DIRS)
-
-shared_verify_targets += verify-imports
 
 .PHONY: verify-chart
 verify-chart: $(bin_dir)/cert-manager-$(VERSION).tgz
