@@ -19,8 +19,9 @@ package predicate
 import (
 	"testing"
 
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"k8s.io/utils/ptr"
+
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func TestCertificateSecretName(t *testing.T) {

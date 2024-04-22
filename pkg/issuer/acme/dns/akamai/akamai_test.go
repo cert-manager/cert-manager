@@ -17,15 +17,14 @@ limitations under the License.
 package akamai
 
 import (
-	"testing"
-
 	"fmt"
 	"reflect"
+	"testing"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
-	"github.com/stretchr/testify/assert"
 )
 
 func testRecordBodyData() *dns.RecordBody {

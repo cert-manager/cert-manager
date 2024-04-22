@@ -18,11 +18,10 @@ package v1alpha1
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	logsapi "k8s.io/component-base/logs/api/v1"
-
-	"time"
 
 	cm "github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	"github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"

@@ -17,11 +17,11 @@ limitations under the License.
 package certificates
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any

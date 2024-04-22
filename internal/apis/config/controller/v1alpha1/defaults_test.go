@@ -21,8 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 )
 
 const TestFileLocation = "testdata/defaults.json"

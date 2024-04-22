@@ -25,6 +25,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -51,7 +52,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
-	"github.com/go-logr/logr"
 )
 
 const (

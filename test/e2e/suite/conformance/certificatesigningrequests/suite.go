@@ -19,13 +19,14 @@ package certificatesigningrequests
 import (
 	"crypto"
 
-	. "github.com/onsi/ginkgo/v2"
 	certificatesv1 "k8s.io/api/certificates/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any

@@ -17,10 +17,10 @@ limitations under the License.
 package rbac
 
 import (
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 )
 
 var _ = RBACDescribe("CertificateRequests", func() {

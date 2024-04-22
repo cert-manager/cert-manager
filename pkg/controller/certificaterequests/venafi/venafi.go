@@ -21,10 +21,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/Venafi/vcert/v5/pkg/endpoint"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"

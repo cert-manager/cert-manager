@@ -19,9 +19,10 @@ package issuers
 import (
 	"fmt"
 
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, error) {
