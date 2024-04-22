@@ -27,7 +27,7 @@ jobs:
           echo "This workflow should not be run on a non-branch-head."
           exit 1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.3
 
       - id: go-version
         run: |
