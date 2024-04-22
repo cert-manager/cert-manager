@@ -1846,7 +1846,7 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 	const fieldManager = "cert-manager-test"
 
 	crt := gen.Certificate("test-certificate",
-		gen.SetCertificateUID(types.UID("uid-123")),
+		gen.SetCertificateUID("uid-123"),
 	)
 
 	tests := map[string]struct {
@@ -2024,7 +2024,7 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 
 func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 	crt := gen.Certificate("test-certificate",
-		gen.SetCertificateUID(types.UID("uid-123")),
+		gen.SetCertificateUID("uid-123"),
 	)
 
 	tests := map[string]struct {
