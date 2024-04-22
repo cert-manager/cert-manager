@@ -107,12 +107,15 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 		t.Fatalf("Failed to resolve %s: %v", u.Host, err)
 	}
 
+	dnsServerStarted := make(chan struct{})
 	dnsServerCalled := int32(0)
 
-	server := &dns.Server{Addr: "127.0.0.1:15353", Net: "udp"}
+	server := &dns.Server{Addr: "127.0.0.1:15353", Net: "udp", NotifyStartedFunc: func() { close(dnsServerStarted) }}
 	defer server.Shutdown()
 
-	dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
+	mux := &dns.ServeMux{}
+	server.Handler = mux
+	mux.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
 		m := new(dns.Msg)
 		m.SetReply(r)
 
@@ -154,7 +157,15 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 			t.Errorf("failed to write DNS response: %v", err)
 		}
 	})
-	go server.ListenAndServe()
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	// Wait for server to have started
+	<-dnsServerStarted
 
 	key := "there is no key"
 
