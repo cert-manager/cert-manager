@@ -64,7 +64,7 @@ upload-release: release | $(NEEDS_RCLONE)
 ifeq ($(strip $(RELEASE_TARGET_BUCKET)),)
 	$(error Trying to upload-release but RELEASE_TARGET_BUCKET is empty)
 endif
-	$(RCLONE) copyto ./$(BINDIR)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
+	$(RCLONE) --gcs-bucket-policy-only copyto ./$(BINDIR)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
 
 # Takes all metadata files in $(BINDIR)/metadata and combines them into one.
 
