@@ -58,7 +58,6 @@ func TestSetupExitHandlerAlwaysErrCodeSIGTERM(t *testing.T) {
 
 		if err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM); err != nil {
 			t.Fatal(err)
-			os.Exit(99)
 		}
 
 		// Wait for the program to shut down.
@@ -83,7 +82,6 @@ func TestSetupExitHandlerAlwaysErrCodeSIGINT(t *testing.T) {
 
 		if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
 			t.Fatal(err)
-			os.Exit(99)
 		}
 
 		// Wait for the program to shut down.
@@ -108,7 +106,6 @@ func TestSetupExitHandlerGracefulShutdownSIGINT(t *testing.T) {
 
 		if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
 			t.Fatal(err)
-			os.Exit(99)
 		}
 
 		// Wait for the program to shut down.

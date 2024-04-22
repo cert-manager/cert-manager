@@ -34,7 +34,7 @@ const (
 	// the experimental.cert-manager.io/request-duration annotation. This
 	// has to be the same as the minimum allowed value for
 	// spec.expirationSeconds of a CertificateSigningRequest
-	CertificateSigningRequestMinimumDuration = time.Duration(time.Second * 600)
+	CertificateSigningRequestMinimumDuration = time.Second * 600
 )
 
 // SelfSigned Issuer specific Annotations

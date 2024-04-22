@@ -344,7 +344,7 @@ func buildCertificates(
 				}
 				// Gateway API hostname explicitly disallows IP addresses, so this
 				// should be OK.
-				tlsHosts[secretRef] = append(tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
+				tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
 			}
 		}
 	default:

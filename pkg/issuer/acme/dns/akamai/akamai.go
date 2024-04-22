@@ -234,17 +234,12 @@ func containsValue(values []string, value string) bool {
 }
 
 func isNotFound(err error) bool {
-
 	if err == nil {
 		return false
 	}
 
 	_, ok := err.(*dns.RecordError)
-	if ok {
-		return true
-	}
-
-	return false
+	return ok
 }
 
 func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {
