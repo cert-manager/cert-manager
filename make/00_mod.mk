@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+repo_name := github.com/cert-manager/cert-manager
+
 include make/util.mk
 
 # SOURCES contains all go files except those in $(bin_dir), the old bindir `bin`, or in
@@ -52,3 +54,5 @@ GOFLAGS := -trimpath
 GOLDFLAGS := -w -s \
 	-X github.com/cert-manager/cert-manager/pkg/util.AppVersion=$(VERSION) \
     -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)
+
+golangci_lint_config := .golangci.yaml
