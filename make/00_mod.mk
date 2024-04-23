@@ -56,3 +56,5 @@ GOLDFLAGS := -w -s \
     -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)
 
 golangci_lint_config := .golangci.yaml
+
+repository_base_no_dependabot := 1
