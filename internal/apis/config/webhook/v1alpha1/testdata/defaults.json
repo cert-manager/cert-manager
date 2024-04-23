@@ -1,0 +1,22 @@
+{
+	"securePort": 6443,
+	"healthzPort": 6080,
+	"tlsConfig": {
+		"filesystem": {},
+		"dynamic": {
+			"LeafDuration": 0
+		}
+	},
+	"enablePprof": false,
+	"pprofAddress": "localhost:6060",
+	"logging": {
+		"format": "text",
+		"flushFrequency": "5s",
+		"verbosity": 0,
+		"options": {
+			"json": {
+				"infoBufferSize": "0"
+			}
+		}
+	}
+}
