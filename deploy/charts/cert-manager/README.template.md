@@ -1811,7 +1811,18 @@ enableServiceLinks indicates whether information about services should be inject
 > []
 > ```
 
-Create dynamic manifests via values:
+Create dynamic manifests via values.  
+  
+For example:
+
+```yaml
+extraObjects:
+  - |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: '{{ template "cert-manager.name" . }}-extra-configmap'
+```
 
 <!-- /AUTO-GENERATED -->
 ### Default Security Contexts
