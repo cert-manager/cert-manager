@@ -19,53 +19,46 @@ package v1alpha1
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
+	"github.com/stretchr/testify/require"
 )
 
-const TestFileLocation = "testdata/defaults.json"
-
 func TestCAInjectorConfigurationDefaults(t *testing.T) {
-	if os.Getenv("UPDATE_DEFAULTS") == "true" {
-		config := &v1alpha1.CAInjectorConfiguration{}
-		SetObjectDefaults_CAInjectorConfiguration(config)
-		defaultData, err := json.Marshal(config)
-		if err != nil {
-			panic(err)
-		}
-		if err := os.WriteFile(TestFileLocation, defaultData, 0644); err != nil {
-			t.Fatal(err)
-		}
-		t.Log("cainjector config api defaults updated")
-	}
 	tests := []struct {
-		name   string
-		config *v1alpha1.CAInjectorConfiguration
+		name         string
+		config       *v1alpha1.CAInjectorConfiguration
+		jsonFilePath string
 	}{
 		{
 			"v1alpha1",
 			&v1alpha1.CAInjectorConfiguration{},
+			"testdata/defaults.json",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			SetObjectDefaults_CAInjectorConfiguration(tt.config)
 
-			var expected *v1alpha1.CAInjectorConfiguration
-			expectedData, err := os.ReadFile(TestFileLocation)
-			err = json.Unmarshal(expectedData, &expected)
-
+			defaultData, err := json.MarshalIndent(tt.config, "", "\t")
 			if err != nil {
-				t.Fatal("testfile not found")
+				t.Fatal(err)
 			}
 
-			if !reflect.DeepEqual(tt.config, expected) {
-				prettyExpected, _ := json.MarshalIndent(expected, "", "\t")
-				prettyGot, _ := json.MarshalIndent(tt.config, "", "\t")
-				t.Errorf("expected defaults\n %v \n but got \n %v", string(prettyExpected), string(prettyGot))
+			if os.Getenv("UPDATE_DEFAULTS") == "true" {
+				if err := os.WriteFile(tt.jsonFilePath, defaultData, 0644); err != nil {
+					t.Fatal(err)
+				}
+				t.Log("cainjector config api defaults updated")
 			}
+
+			expectedData, err := os.ReadFile(tt.jsonFilePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			require.Equal(t, expectedData, defaultData)
 		})
 	}
 }
