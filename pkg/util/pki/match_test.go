@@ -347,7 +347,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				DNSNames: []string{"at", "least", "one", "cn"},
 			}),
 		},
-		"should match if commonName is one of the requested requested dnsNames": {
+		"should match if commonName is one of the requested dnsNames": {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},

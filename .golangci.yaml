@@ -12,7 +12,6 @@ issues:
         - exhaustive
         - gocritic
         - nilerr
-        - dupword
         - bodyclose
         - loggercheck
         - forbidigo
