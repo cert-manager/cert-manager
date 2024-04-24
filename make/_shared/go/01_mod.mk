@@ -72,7 +72,7 @@ shared_generate_targets += generate-golangci-lint-config
 .PHONY: verify-golangci-lint
 ## Verify all Go modules using golangci-lint
 ## @category [shared] Generate/ Verify
-verify-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/scratch
+verify-golangci-lint: | $(NEEDS_GO) $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/scratch
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) -printf '%h\n' \
 		| while read d; do \
 				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config)' in directory '$${d}'"; \

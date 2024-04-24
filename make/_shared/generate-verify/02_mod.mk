@@ -16,18 +16,24 @@
 ## Generate all generate targets.
 ## @category [shared] Generate/ Verify
 generate: $$(shared_generate_targets)
+	@echo "The following targets cannot be run simultaniously with each other or other generate scripts:"
+	$(foreach TARGET,$(shared_generate_targets_dirty), $(MAKE) $(TARGET))
 
 verify_script := $(dir $(lastword $(MAKEFILE_LIST)))/util/verify.sh
 
 # Run the supplied make target argument in a temporary workspace and diff the results.
 verify-%: FORCE
-	$(verify_script) $(MAKE) -s $*
+	+$(verify_script) $(MAKE) $*
 
 verify_generated_targets = $(shared_generate_targets:%=verify-%)
+verify_generated_targets_dirty = $(shared_generate_targets_dirty:%=verify-%)
+
+verify_targets = $(sort $(verify_generated_targets) $(shared_verify_targets))
+verify_targets_dirty = $(sort $(verify_generated_targets_dirty) $(shared_verify_targets_dirty))
 
 .PHONY: verify
 ## Verify code and generate targets.
 ## @category [shared] Generate/ Verify
-verify: $$(verify_generated_targets) $$(shared_verify_targets)
+verify: $$(verify_targets)
 	@echo "The following targets create temporary files in the current directory, that is why they have to be run last:"
-	$(MAKE) noop $(shared_verify_targets_dirty)
+	$(foreach TARGET,$(verify_targets_dirty), $(MAKE) $(TARGET))
