@@ -45,6 +45,7 @@ cleanup() {
 trap "cleanup" EXIT SIGINT
 
 cp -a "${projectdir}/." "${tmp}"
+rm -rf "${tmp}/_bin" # clear all cached files
 pushd "${tmp}" >/dev/null
 
 "$@"

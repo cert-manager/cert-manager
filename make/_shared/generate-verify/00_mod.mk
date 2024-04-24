@@ -13,5 +13,6 @@
 # limitations under the License.
 
 shared_generate_targets ?=
+shared_generate_targets_dirty ?=
 shared_verify_targets ?=
 shared_verify_targets_dirty ?=
