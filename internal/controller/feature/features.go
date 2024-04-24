@@ -107,7 +107,7 @@ const (
 	// `controller.cert-manager.io/fao` label. By default all Certificate
 	// Secrets are labelled with controller.cert-manager.io/fao label. Users
 	// can also label other Secrets, such as issuer credentials Secrets that
-	// they know cert-manager will need access to to speed up issuance.
+	// they know cert-manager will need to access, to speed up issuance.
 	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md
 	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
 

@@ -943,7 +943,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	pkDER := block.Bytes
 	combinedPEM := append(append(pkBytes, '\n'), certPEM...)
 
-	// Wait for the additional output format values to to be observed on the Secret.
+	// Wait for the additional output format values to be observed on the Secret.
 	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
