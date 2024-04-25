@@ -576,6 +576,7 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 MISSING=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v sha256sum >/dev/null || command -v shasum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
+             && (command -v rsync >/dev/null || echo rsync) \
              && ([ -n "$(findstring vendor-go,$(MAKECMDGOALS),)" ] \
                 || command -v $(GO) >/dev/null || echo "$(GO) (or run 'make vendor-go')") \
              && (command -v $(CTR) >/dev/null || echo "$(CTR) (or set CTR to a docker-compatible tool)"))

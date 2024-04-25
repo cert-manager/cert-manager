@@ -48,6 +48,10 @@ FORCE:
 
 noop: # do nothing
 
+# Set empty value for MAKECMDGOALS to prevent the "warning: undefined variable 'MAKECMDGOALS'"
+# warning from happening when running make without arguments
+MAKECMDGOALS ?=
+
 ##################################
 # Host OS and architecture setup #
 ##################################

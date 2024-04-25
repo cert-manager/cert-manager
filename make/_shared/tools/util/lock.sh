@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eu -o pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
 
 # This script is used to lock a file while it is being downloaded. It prevents
 # multiple processes from downloading the same file at the same time or from reading
@@ -66,6 +68,5 @@ finish() {
     rm -rf "$finalfile" || true
   fi
   rm -rf "$lockfile" || true
-  exit $rv
 }
-trap finish EXIT
+trap finish EXIT SIGINT
