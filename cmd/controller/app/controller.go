@@ -259,7 +259,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
 	ctx.HTTP01ResourceMetadataInformersFactory.Start(rootCtx.Done())
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
 		ctx.GWShared.Start(rootCtx.Done())
 	}
 
@@ -357,6 +357,10 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		CertificateOptions: controller.CertificateOptions{
 			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
 			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
+		},
+
+		ConfigOptions: controller.ConfigOptions{
+			EnableGatewayAPI: opts.EnableGatewayAPI,
 		},
 	})
 	if err != nil {

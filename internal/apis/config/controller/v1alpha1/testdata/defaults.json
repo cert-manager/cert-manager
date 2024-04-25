@@ -16,6 +16,7 @@
 	"issuerAmbientCredentials": false,
 	"clusterIssuerAmbientCredentials": true,
 	"enableCertificateOwnerRef": false,
+	"enableGatewayAPI": false,
 	"copiedAnnotationPrefixes": [
 		"*",
 		"-kubectl.kubernetes.io/",

@@ -78,6 +78,7 @@ var (
 	defaultTLSACMEIssuerKind         = "Issuer"
 	defaultTLSACMEIssuerGroup        = cm.GroupName
 	defaultEnableCertificateOwnerRef = false
+	defaultEnableGatewayAPI          = false
 
 	defaultDNS01RecursiveNameserversOnly = false
 	defaultDNS01RecursiveNameservers     = []string{}
@@ -211,6 +212,10 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 
 	if obj.EnableCertificateOwnerRef == nil {
 		obj.EnableCertificateOwnerRef = &defaultEnableCertificateOwnerRef
+	}
+
+	if obj.EnableGatewayAPI == nil {
+		obj.EnableGatewayAPI = &defaultEnableGatewayAPI
 	}
 
 	if len(obj.CopiedAnnotationPrefixes) == 0 {

@@ -56,6 +56,7 @@ const (
 
 	// Owner: N/A
 	// Alpha: v1.5
+	// Beta: v1.15
 	//
 	// ExperimentalGatewayAPISupport enables the gateway-shim controller and adds support for
 	// the Gateway API to the HTTP-01 challenge solver.
@@ -150,7 +151,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
-	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
+	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
 	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
