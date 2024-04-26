@@ -27,11 +27,9 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
-	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	"github.com/cert-manager/cert-manager/pkg/apis/acme"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -109,30 +107,14 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 		return el
 	}
 
-	// If DisallowInsecureCSRUsageDefinition is disabled and usages is empty,
-	// then we should allow the request to be created without requiring that the
-	// CSR usages match the default usages, instead we only validate that the
-	// BasicConstraints are valid.
-	// TODO: simplify this logic when we remove the feature gate
-	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) && len(crSpec.Usages) == 0 {
-		_, err = pki.CertificateTemplateFromCSRPEM(
-			crSpec.Request,
-			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
-		)
-		if err != nil {
-			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
-			return el
-		}
-	} else {
-		_, err = pki.CertificateTemplateFromCSRPEM(
-			crSpec.Request,
-			pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
-			pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
-		)
-		if err != nil {
-			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
-			return el
-		}
+	_, err = pki.CertificateTemplateFromCSRPEM(
+		crSpec.Request,
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
+	)
+	if err != nil {
+		el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
+		return el
 	}
 
 	return el
