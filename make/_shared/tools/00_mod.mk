@@ -124,7 +124,7 @@ TOOLS += operator-sdk=v1.34.1
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 TOOLS += gh=v2.47.0
 # https:///github.com/redhat-openshift-ecosystem/openshift-preflight/releases
-TOOLS += preflight=1.9.1
+TOOLS += preflight=1.9.2
 
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 K8S_CODEGEN_VERSION=v0.29.1
@@ -167,22 +167,11 @@ $(bin_dir)/scratch/%_VERSION: FORCE | $(bin_dir)/scratch
 # --retry-connrefused = retry even if the initial connection was refused
 CURL = curl --silent --show-error --fail --location --retry 10 --retry-connrefused
 
-# In Prow, the pod has the folder "$(bin_dir)/downloaded" mounted into the
-# container. For some reason, even though the permissions are correct,
-# binaries that are mounted with hostPath can't be executed. When in CI, we
-# copy the binaries to work around that. Using $(LN) is only required when
-# dealing with binaries. Other files and folders can be symlinked.
-#
-# Details on how "$(bin_dir)/downloaded" gets cached are available in the
-# description of the PR https://github.com/jetstack/testing/pull/651.
-#
-# We use "printenv CI" instead of just "ifeq ($(CI),)" because otherwise we
-# would get "warning: undefined variable 'CI'".
-ifeq ($(shell printenv CI),)
-LN := ln -f -s
-else
-LN := cp -f -r
-endif
+# LN is expected to be an atomic action, meaning that two Make processes
+# can run the "link $(DOWNLOAD_DIR)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
+# to $(bin_dir)/tools/xxx" operation simulatiously without issues (both
+# will perform the action and the second time the link will be overwritten).
+LN := ln -fs
 
 UC = $(shell echo '$1' | tr a-z A-Z)
 LC = $(shell echo '$1' | tr A-Z a-z)
@@ -204,8 +193,8 @@ TOOL_NAMES :=
 #        in targets or in scripts, because it is agnostic to the
 #        working directory
 # - an unversioned target $(bin_dir)/tools/xxx is generated that
-#   creates a copy/ link to the corresponding versioned target:
-#   $(bin_dir)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
+#   creates a link to the corresponding versioned target:
+#   $(DOWNLOAD_DIR)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 define tool_defs
 TOOL_NAMES += $1
 
@@ -275,7 +264,6 @@ $(bin_dir)/tools/go: $(bin_dir)/scratch/VENDORED_GO_VERSION | $(bin_dir)/tools/g
 
 # The "_" in "_bin" prevents "go mod tidy" from trying to tidy the vendored goroot.
 $(bin_dir)/tools/goroot: $(bin_dir)/scratch/VENDORED_GO_VERSION | $(GOVENDOR_DIR)/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH)/goroot $(bin_dir)/tools
-	@rm -rf $(bin_dir)/tools/goroot
 	@cd $(dir $@) && $(LN) $(patsubst $(bin_dir)/%,../%,$(word 1,$|)) $(notdir $@)
 	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
@@ -324,7 +312,6 @@ GO_DEPENDENCIES += golangci-lint=github.com/golangci/golangci-lint/cmd/golangci-
 GO_DEPENDENCIES += govulncheck=golang.org/x/vuln/cmd/govulncheck
 GO_DEPENDENCIES += operator-sdk=github.com/operator-framework/operator-sdk/cmd/operator-sdk
 GO_DEPENDENCIES += gh=github.com/cli/cli/v2/cmd/gh
-GO_DEPENDENCIES += preflight=github.com/redhat-openshift-ecosystem/openshift-preflight/cmd/preflight
 
 #################
 # go build tags #
@@ -559,6 +546,29 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		unzip -p $(outfile).zip rclone-$(RCLONE_VERSION)-$(OS)-$(HOST_ARCH)/rclone > $(outfile); \
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
+
+PREFLIGHT_linux_amd64_SHA256SUM=20f31e4af2004e8e3407844afea4e973975069169d69794e0633f0cb91d45afd
+PREFLIGHT_linux_arm64_SHA256SUM=c42cf4132027d937da88da07760e8fd9b1a8836f9c7795a1b60513d99c6939fe
+
+# Currently there are no offical releases for darwin, you cannot submit results 
+# on non-official binaries, but we can still run tests.
+#
+# Once https://github.com/redhat-openshift-ecosystem/openshift-preflight/pull/942 is merged
+# we can remove this darwin specific hack
+.PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_darwin_$(HOST_ARCH)
+$(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_darwin_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@source $(lock_script) $@; \
+		mkdir -p $(outfile).dir; \
+		GOWORK=off GOBIN=$(outfile).dir $(GO) install github.com/redhat-openshift-ecosystem/openshift-preflight/cmd/preflight@$(PREFLIGHT_VERSION); \
+		mv $(outfile).dir/preflight $(outfile); \
+		rm -rf $(outfile).dir
+
+.PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_linux_$(HOST_ARCH)
+$(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_linux_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@source $(lock_script) $@; \
+		$(CURL) https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/$(PREFLIGHT_VERSION)/preflight-linux-$(HOST_ARCH) -o $(outfile); \
+		$(checkhash_script) $(outfile) $(PREFLIGHT_linux_$(HOST_ARCH)_SHA256SUM); \
+		chmod +x $(outfile)
 
 #################
 # Other Targets #
