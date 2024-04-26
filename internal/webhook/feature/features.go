@@ -55,6 +55,7 @@ const (
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 
 	// Owner: @inteon
+	// Beta: v1.13
 	// GA: v1.15
 	//
 	// DisallowInsecureCSRUsageDefinition will prevent the webhook from allowing

@@ -45,7 +45,7 @@ issues:
       text: "SA(1002|1006|4000|4006)"
     - linters:
         - staticcheck
-      text: "(NewCertManagerBasicCertificateRequest|DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition)"
+      text: "(NewCertManagerBasicCertificateRequest)"
 linters:
   # Explicitly define all enabled linters
   disable-all: true

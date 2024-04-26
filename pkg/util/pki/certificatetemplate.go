@@ -321,39 +321,22 @@ func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate,
 	)
 }
 
-func makeCertificateTemplateFromCertificateRequestFunc(allowInsecureCSRUsageDefinition bool) func(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-	return func(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-		certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-		keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
-		if err != nil {
-			return nil, err
-		}
-
-		return CertificateTemplateFromCSRPEM(
-			cr.Spec.Request,
-			CertificateTemplateOverrideDuration(certDuration),
-			CertificateTemplateValidateAndOverrideBasicConstraints(cr.Spec.IsCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
-			(func() CertificateTemplateValidatorMutator {
-				if allowInsecureCSRUsageDefinition && len(cr.Spec.Usages) == 0 {
-					// If the CertificateRequest does not specify any usages, and the AllowInsecureCSRUsageDefinition
-					// flag is set, then we allow the usages to be defined solely by the CSR blob, but we still override
-					// the usages to match the old behavior.
-					return certificateTemplateOverrideKeyUsages(keyUsage, extKeyUsage)
-				}
-
-				// Override the key usages, but make sure they match the usages in the CSR if present
-				return CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage)
-			})(),
-		)
-	}
-}
-
 // CertificateTemplateFromCertificateRequest will create a x509.Certificate for the given
 // CertificateRequest resource
-var CertificateTemplateFromCertificateRequest = makeCertificateTemplateFromCertificateRequestFunc(false)
+func CertificateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
+	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
+	keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
+	if err != nil {
+		return nil, err
+	}
 
-// Deprecated: Use CertificateTemplateFromCertificateRequest instead.
-var DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition = makeCertificateTemplateFromCertificateRequestFunc(true)
+	return CertificateTemplateFromCSRPEM(
+		cr.Spec.Request,
+		CertificateTemplateOverrideDuration(certDuration),
+		CertificateTemplateValidateAndOverrideBasicConstraints(cr.Spec.IsCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
+		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),    // Override the key usages, but make sure they match the usages in the CSR if present
+	)
+}
 
 // CertificateTemplateFromCertificateSigningRequest will create a x509.Certificate for the given
 // CertificateSigningRequest resource
