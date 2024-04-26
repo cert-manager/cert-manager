@@ -79,6 +79,11 @@ type ControllerConfiguration struct {
 	// automatically removed when the certificate resource is deleted.
 	EnableCertificateOwnerRef bool
 
+	// Whether gateway API integration is enabled within cert-manager. The
+	// ExperimentalGatewayAPISupport feature gate must also be enabled (default
+	// as of 1.15).
+	EnableGatewayAPI bool
+
 	// Specify which annotations should/shouldn't be copied from Certificate to
 	// CertificateRequest and Order, as well as from CertificateSigningRequest to
 	// Order, by passing a list of annotation key prefixes. A prefix starting with
