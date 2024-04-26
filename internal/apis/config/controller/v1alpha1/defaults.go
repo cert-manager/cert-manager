@@ -166,6 +166,11 @@ var (
 		"-fluxcd.io/",
 		"-argocd.argoproj.io/",
 	}
+
+	defaultCopiedIngressLabelPrefixes = []string{
+		"*",
+		"-applyset.kubernetes.io/",
+	}
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -286,6 +291,10 @@ func SetDefaults_IngressShimConfig(obj *v1alpha1.IngressShimConfig) {
 
 	if len(obj.DefaultAutoCertificateAnnotations) == 0 {
 		obj.DefaultAutoCertificateAnnotations = defaultAutoCertificateAnnotations
+	}
+
+	if len(obj.CopiedLabelPrefixes) == 0 {
+		obj.CopiedLabelPrefixes = defaultCopiedIngressLabelPrefixes
 	}
 }
 

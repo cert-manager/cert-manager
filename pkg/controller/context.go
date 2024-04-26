@@ -218,6 +218,7 @@ type IngressShimOptions struct {
 	DefaultIssuerKind                 string
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
+	CopiedLabelPrefixes               []string
 }
 
 type CertificateOptions struct {
