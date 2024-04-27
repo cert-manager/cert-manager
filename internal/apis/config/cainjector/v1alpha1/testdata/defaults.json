@@ -22,6 +22,9 @@
 		"flushFrequency": "5s",
 		"verbosity": 0,
 		"options": {
+			"text": {
+				"infoBufferSize": "0"
+			},
 			"json": {
 				"infoBufferSize": "0"
 			}
