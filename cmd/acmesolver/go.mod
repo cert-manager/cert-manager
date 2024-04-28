@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/acmesolver-binary
 
-go 1.21
+go 1.22.0
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
@@ -11,7 +11,7 @@ replace github.com/cert-manager/cert-manager => ../../
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.8.0
-	k8s.io/component-base v0.29.2
+	k8s.io/component-base v0.30.0
 )
 
 require (
@@ -40,9 +40,9 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.29.2 // indirect
-	k8s.io/apiextensions-apiserver v0.29.2 // indirect
-	k8s.io/apimachinery v0.29.2 // indirect
+	k8s.io/api v0.30.0 // indirect
+	k8s.io/apiextensions-apiserver v0.30.0 // indirect
+	k8s.io/apimachinery v0.30.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
 	sigs.k8s.io/gateway-api v1.0.0 // indirect
