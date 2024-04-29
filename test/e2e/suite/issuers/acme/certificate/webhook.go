@@ -161,7 +161,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				for _, ch := range l {
 					logf("Found challenge named %q", ch.Name)
 
-					if ch.Status.Presented == false {
+					if !ch.Status.Presented {
 						logf("Challenge %q has not been 'Presented'", ch.Name)
 						allPresented = false
 					}

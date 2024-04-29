@@ -18,7 +18,6 @@ issues:
         - usestdlibvars
         - noctx
         - nilnil
-        - gosimple
         - nakedret
         - asasalint
         - goprintffuncname

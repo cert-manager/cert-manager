@@ -175,7 +175,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 
 		kubeConfig.QPS = 9000
 		kubeConfig.Burst = 9000
-		kubeConfig.BearerToken = fmt.Sprintf("%s", token)
+		kubeConfig.BearerToken = string(token)
 		kubeConfig.CertData = nil
 		kubeConfig.KeyData = nil
 

@@ -199,7 +199,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 
 		kubeConfig.QPS = 9000
 		kubeConfig.Burst = 9000
-		kubeConfig.BearerToken = fmt.Sprintf("%s", token)
+		kubeConfig.BearerToken = string(token)
 		kubeConfig.CertData = nil
 		kubeConfig.KeyData = nil
 		kubeConfig.Timeout = time.Second * 20
