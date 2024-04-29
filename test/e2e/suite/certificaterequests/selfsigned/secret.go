@@ -119,6 +119,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: f.Namespace.Name},
 			Data:       map[string][]byte{},
 		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-", Namespace: f.Namespace.Name},
@@ -221,6 +222,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: f.Namespace.Name},
 			Data:       map[string][]byte{},
 		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-"},

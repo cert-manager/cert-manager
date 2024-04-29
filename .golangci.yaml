@@ -18,7 +18,6 @@ issues:
         - nakedret
         - asasalint
         - goprintffuncname
-        - ineffassign
         - musttag
         - nosprintfhostport
         - exportloopref
