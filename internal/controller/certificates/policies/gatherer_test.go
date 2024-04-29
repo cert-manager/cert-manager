@@ -38,6 +38,13 @@ import (
 )
 
 func TestDataForCertificate(t *testing.T) {
+	cr := func(crName, ownerCertUID string, annot map[string]string) *cmapi.CertificateRequest {
+		return gen.CertificateRequest(crName, gen.SetCertificateRequestNamespace("ns-1"),
+			gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("some-cert-name-that-does-not-matter", ownerCertUID)),
+			gen.AddCertificateRequestAnnotations(annot),
+		)
+	}
+
 	tests := map[string]struct {
 		builder    *testpkg.Builder
 		givenCert  *cmapi.Certificate
@@ -68,8 +75,8 @@ func TestDataForCertificate(t *testing.T) {
 				gen.SetCertificateRevision(1),
 			),
 			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
-				cr("cr-unknown-rev1", "ns-1", "unknown-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-unknown-rev2", "ns-1", "unknown-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-unknown-rev1", "unknown-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unknown-rev2", "unknown-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 			}},
 			wantCurCR:  nil,
 			wantNextCR: nil,
@@ -79,17 +86,17 @@ func TestDataForCertificate(t *testing.T) {
 				gen.SetCertificateUID("cert-1-uid"),
 			),
 			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
-				cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-1-rev2", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-rev1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev2", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 
 				// Edge cases.
-				cr("cr-1-norev", "ns-1", "cert-1-uid", nil),
-				cr("cr-1-empty", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": ""}),
-				cr("cr-unrelated-rev1", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-unrelated-rev2", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-norev", "cert-1-uid", nil),
+				cr("cr-1-empty", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": ""}),
+				cr("cr-unrelated-rev1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unrelated-rev2", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 			}},
 			wantCurCR:  nil,
-			wantNextCR: cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+			wantNextCR: cr("cr-1-rev1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
 		},
 		"when cert revision=1, should return the current CR with revision=1 and the next CR with revision=2": {
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
@@ -97,20 +104,20 @@ func TestDataForCertificate(t *testing.T) {
 				gen.SetCertificateRevision(1),
 			),
 			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
-				cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-1-rev2", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
-				cr("cr-1-rev3", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "3"}),
+				cr("cr-1-rev1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev2", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-rev3", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "3"}),
 
 				// Edge cases.
-				cr("cr-1-no-revision", "ns-1", "cert-1-uid", nil),
-				cr("cr-1-empty", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": ""}),
-				cr("cr-2-rev1", "ns-1", "cert-2-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-unrelated-rev1", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-unrelated-rev2", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
-				cr("cr-unrelated-rev3", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "3"}),
+				cr("cr-1-no-revision", "cert-1-uid", nil),
+				cr("cr-1-empty", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": ""}),
+				cr("cr-2-rev1", "cert-2-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unrelated-rev1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unrelated-rev2", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-unrelated-rev3", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "3"}),
 			}},
-			wantCurCR:  cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-			wantNextCR: cr("cr-1-rev2", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+			wantCurCR:  cr("cr-1-rev1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+			wantNextCR: cr("cr-1-rev2", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 		},
 		"should error when duplicate current CRs are found": {
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
@@ -118,8 +125,8 @@ func TestDataForCertificate(t *testing.T) {
 				gen.SetCertificateRevision(1),
 			),
 			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
-				cr("cr-1-rev1a", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
-				cr("cr-1-rev1b", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev1a", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev1b", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
 			}},
 			wantErr: `multiple CertificateRequests were found for the 'current' revision 1, issuance is skipped until there are no more duplicates`,
 		},
@@ -129,8 +136,8 @@ func TestDataForCertificate(t *testing.T) {
 				gen.SetCertificateRevision(1),
 			),
 			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
-				cr("cr-1-rev2a", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
-				cr("cr-1-rev2b", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-rev2a", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-rev2b", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 			}},
 			wantErr: `multiple CertificateRequests were found for the 'next' revision 2, issuance is skipped until there are no more duplicates`,
 		},
@@ -139,7 +146,7 @@ func TestDataForCertificate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fakeClockStart, _ := time.Parse(time.RFC3339, "2021-01-02T15:04:05Z07:00")
 			log := logtesting.NewTestLogger(t)
-			turnOnKlogIfVerboseTest(t)
+			turnOnKlogIfVerboseTest()
 
 			test.builder.T = t
 			test.builder.Clock = fakeclock.NewFakeClock(fakeClockStart)
@@ -224,7 +231,7 @@ func TestDataForCertificate(t *testing.T) {
 // The logs are helpful for debugging client-go-related issues (informer
 // not starting...). This function passes the flag -v=4 to klog when the
 // tests are being run with -v. Otherwise, the default klog level is used.
-func turnOnKlogIfVerboseTest(t *testing.T) {
+func turnOnKlogIfVerboseTest() {
 	hasVerboseFlag := flag.Lookup("test.v").Value.String() == "true"
 	if !hasVerboseFlag {
 		return
@@ -233,11 +240,4 @@ func turnOnKlogIfVerboseTest(t *testing.T) {
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
 	_ = klogFlags.Set("v", "4")
-}
-
-func cr(crName, crNamespace, ownerCertUID string, annot map[string]string) *cmapi.CertificateRequest {
-	return gen.CertificateRequest(crName, gen.SetCertificateRequestNamespace(crNamespace),
-		gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("some-cert-name-that-does-not-matter", ownerCertUID)),
-		gen.AddCertificateRequestAnnotations(annot),
-	)
 }

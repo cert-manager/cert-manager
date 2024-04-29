@@ -42,7 +42,7 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 
 		val, err := asn1.Marshal(generalNames)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 
 		return pkix.Extension{

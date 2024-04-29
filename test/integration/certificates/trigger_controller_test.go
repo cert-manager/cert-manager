@@ -60,7 +60,7 @@ func TestTriggerController(t *testing.T) {
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
-	namespace := "testns"
+	namespace := "testns-trigger"
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
@@ -96,7 +96,7 @@ func TestTriggerController(t *testing.T) {
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
 	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
+		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: namespace},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
@@ -125,7 +125,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
-	namespace := "testns"
+	namespace := "testns-renew-near-expiry"
 	secretName := "example"
 	certName := "testcrt"
 
@@ -247,7 +247,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
-	namespace := "testns"
+	namespace := "testns-expbackoff"
 	secretName := "example"
 	certName := "testcrt"
 

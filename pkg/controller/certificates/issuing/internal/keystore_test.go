@@ -48,10 +48,8 @@ func mustGeneratePrivateKey(t *testing.T, encoding cmapi.PrivateKeyEncoding) []b
 	return pkBytes
 }
 
-func mustSelfSignCertificate(t *testing.T, pkBytes []byte) []byte {
-	if pkBytes == nil {
-		pkBytes = mustGeneratePrivateKey(t, cmapi.PKCS8)
-	}
+func mustSelfSignCertificate(t *testing.T) []byte {
+	pkBytes := mustGeneratePrivateKey(t, cmapi.PKCS8)
 	pk, err := pki.DecodePrivateKeyBytes(pkBytes)
 	if err != nil {
 		t.Fatal(err)
@@ -74,7 +72,7 @@ func mustSelfSignCertificate(t *testing.T, pkBytes []byte) []byte {
 func mustSelfSignCertificates(t *testing.T, count int) []byte {
 	var buf bytes.Buffer
 	for i := 0; i < count; i++ {
-		buf.Write(mustSelfSignCertificate(t, nil))
+		buf.Write(mustSelfSignCertificate(t))
 	}
 	return buf.Bytes()
 }
@@ -165,7 +163,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 			password: "password",
 			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS1),
-			certPEM:  mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
@@ -192,7 +190,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 			password: "password",
 			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
-			certPEM:  mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
@@ -217,8 +215,8 @@ func TestEncodeJKSKeystore(t *testing.T) {
 			password: "password",
 			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
-			certPEM:  mustSelfSignCertificate(t, nil),
-			caPEM:    mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
+			caPEM:    mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
@@ -242,7 +240,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 			password: "password",
 			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
-			certPEM:  mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
 			caPEM:    mustSelfSignCertificates(t, 3),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
@@ -356,7 +354,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		"encode a JKS bundle for a PKCS1 key and certificate only": {
 			password: "password",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS1),
-			certPEM:  mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
@@ -377,7 +375,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		"encode a JKS bundle for a PKCS8 key and certificate only": {
 			password: "password",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
-			certPEM:  mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
@@ -398,8 +396,8 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		"encode a JKS bundle for a key, certificate and ca": {
 			password: "password",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
-			certPEM:  mustSelfSignCertificate(t, nil),
-			caPEM:    mustSelfSignCertificate(t, nil),
+			certPEM:  mustSelfSignCertificate(t),
+			caPEM:    mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
@@ -450,7 +448,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	})
 	t.Run("encodePKCS12Keystore *prepends* non-leaf certificates to the supplied CA certificate chain", func(t *testing.T) {
 		const password = "password"
-		caChainInPEM := mustSelfSignCertificate(t, nil)
+		caChainInPEM := mustSelfSignCertificate(t)
 		caChainIn, err := pki.DecodeX509CertificateChainBytes(caChainInPEM)
 		require.NoError(t, err)
 
@@ -534,8 +532,8 @@ func TestEncodePKCS12Truststore(t *testing.T) {
 
 func TestManyPasswordLengths(t *testing.T) {
 	rawKey := mustGeneratePrivateKey(t, cmapi.PKCS8)
-	certPEM := mustSelfSignCertificate(t, nil)
-	caPEM := mustSelfSignCertificate(t, nil)
+	certPEM := mustSelfSignCertificate(t)
+	caPEM := mustSelfSignCertificate(t)
 
 	const testN = 10000
 

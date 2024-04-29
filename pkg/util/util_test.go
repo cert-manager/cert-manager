@@ -129,8 +129,8 @@ func TestEqualIPsUnsorted(t *testing.T) {
 	}
 
 	for name, spec := range specs {
-		s1 := parseIPs(t, spec.s1)
-		s2 := parseIPs(t, spec.s2)
+		s1 := parseIPs(spec.s1)
+		s2 := parseIPs(spec.s2)
 
 		t.Run(name, func(t *testing.T) {
 			got := EqualIPsUnsorted(s1, s2)
@@ -244,7 +244,7 @@ func parseURLs(t *testing.T, urlStrs []string) []*url.URL {
 	return urls
 }
 
-func parseIPs(t *testing.T, ipStrs []string) []net.IP {
+func parseIPs(ipStrs []string) []net.IP {
 	var ips []net.IP
 
 	for _, i := range ipStrs {

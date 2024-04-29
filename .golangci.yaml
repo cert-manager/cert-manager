@@ -4,7 +4,6 @@ issues:
         - dogsled
         - errcheck
         - contextcheck
-        - unparam
         - promlinter
         - errname
         - tenv

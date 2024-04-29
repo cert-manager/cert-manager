@@ -251,10 +251,9 @@ func TestAssumeRole(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			provider, err := makeMockSessionProvider(func(aws.Config) StsClient {
+			provider := makeMockSessionProvider(func(aws.Config) StsClient {
 				return c.mockSTS
 			}, c.key, c.secret, c.region, c.role, c.ambient)
-			assert.NoError(t, err)
 			cfg, err := provider.GetSession()
 			if c.expErr {
 				assert.NotNil(t, err)
@@ -287,7 +286,7 @@ func makeMockSessionProvider(
 	defaultSTSProvider func(aws.Config) StsClient,
 	accessKeyID, secretAccessKey, region, role string,
 	ambient bool,
-) (*sessionProvider, error) {
+) *sessionProvider {
 	return &sessionProvider{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -296,7 +295,7 @@ func makeMockSessionProvider(
 		Role:            role,
 		StsProvider:     defaultSTSProvider,
 		log:             logf.Log.WithName("route53-session"),
-	}, nil
+	}
 }
 
 func Test_removeReqID(t *testing.T) {

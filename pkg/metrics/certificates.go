@@ -17,33 +17,23 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/tools/cache"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // UpdateCertificate will update the given Certificate's metrics for its expiry, renewal, and status
 // condition.
-func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate) {
-	key, err := cache.MetaNamespaceKeyFunc(crt)
-	if err != nil {
-		log := logf.WithRelatedResource(m.log, crt)
-		log.Error(err, "failed to get key from certificate object")
-		return
-	}
-
-	m.updateCertificateStatus(key, crt)
-	m.updateCertificateExpiry(ctx, key, crt)
+func (m *Metrics) UpdateCertificate(crt *cmapi.Certificate) {
+	m.updateCertificateStatus(crt)
+	m.updateCertificateExpiry(crt)
 	m.updateCertificateRenewalTime(crt)
 }
 
 // updateCertificateExpiry updates the expiry time of a certificate
-func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *cmapi.Certificate) {
+func (m *Metrics) updateCertificateExpiry(crt *cmapi.Certificate) {
 	expiryTime := 0.0
 
 	if crt.Status.NotAfter != nil {
@@ -76,7 +66,7 @@ func (m *Metrics) updateCertificateRenewalTime(crt *cmapi.Certificate) {
 }
 
 // updateCertificateStatus will update the metric for that Certificate
-func (m *Metrics) updateCertificateStatus(key string, crt *cmapi.Certificate) {
+func (m *Metrics) updateCertificateStatus(crt *cmapi.Certificate) {
 	for _, c := range crt.Status.Conditions {
 		if c.Type == cmapi.CertificateConditionReady {
 			m.updateCertificateReadyStatus(crt, c.Status)

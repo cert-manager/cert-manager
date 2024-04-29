@@ -55,17 +55,14 @@ func (s *Scheduler) ScheduleN(n int) ([]*cmacme.Challenge, error) {
 		return nil, err
 	}
 
-	return s.scheduleN(n, allChallenges)
+	return s.scheduleN(n, allChallenges), nil
 }
 
-func (s *Scheduler) scheduleN(n int, allChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, error) {
+func (s *Scheduler) scheduleN(n int, allChallenges []*cmacme.Challenge) []*cmacme.Challenge {
 	// Determine the list of challenges that could feasibly be scheduled on
 	// this pass of the scheduler.
 	// This function returns a list of candidates sorted by creation timestamp.
-	candidates, inProgressChallengeCount, err := s.determineChallengeCandidates(allChallenges)
-	if err != nil {
-		return nil, err
-	}
+	candidates, inProgressChallengeCount := s.determineChallengeCandidates(allChallenges)
 
 	numberToSelect := n
 	remainingNumberAllowedChallenges := s.maxConcurrentChallenges - inProgressChallengeCount
@@ -76,23 +73,18 @@ func (s *Scheduler) scheduleN(n int, allChallenges []*cmacme.Challenge) ([]*cmac
 		numberToSelect = remainingNumberAllowedChallenges
 	}
 
-	candidates, err = s.selectChallengesToSchedule(candidates, numberToSelect)
-	if err != nil {
-		return nil, err
-	}
-
-	return candidates, nil
+	return s.selectChallengesToSchedule(candidates, numberToSelect)
 }
 
 // selectChallengesToSchedule will apply some sorting heuristic to the allowed
 // challenge candidates and return a maximum of N challenges that should be
 // scheduled for processing.
-func (s *Scheduler) selectChallengesToSchedule(candidates []*cmacme.Challenge, n int) ([]*cmacme.Challenge, error) {
+func (s *Scheduler) selectChallengesToSchedule(candidates []*cmacme.Challenge, n int) []*cmacme.Challenge {
 	// Trim the candidates returned to 'n'
 	if len(candidates) > n {
 		candidates = candidates[:n]
 	}
-	return candidates, nil
+	return candidates
 }
 
 // determineChallengeCandidates will determine which, if any, challenges can
@@ -100,7 +92,7 @@ func (s *Scheduler) selectChallengesToSchedule(candidates []*cmacme.Challenge, n
 // processing.
 // The returned challenges will be sorted in ascending order based on timestamp
 // (i.e. the oldest challenge will be element zero).
-func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, int, error) {
+func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, int) {
 	// consider the entire set of challenges for 'in progress', in case a challenge
 	// has processing=true whilst still being in a 'final' state
 	inProgress := processingChallenges(allChallenges)
@@ -111,7 +103,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmacme.Challen
 	// hit the maximum number of challenges.
 	if inProgressChallengeCount >= s.maxConcurrentChallenges {
 		s.log.V(logs.DebugLevel).Info("hit maximum concurrent challenge limit. refusing to schedule more challenges.", "in_progress", len(inProgress), "max_concurrent", s.maxConcurrentChallenges)
-		return []*cmacme.Challenge{}, inProgressChallengeCount, nil
+		return []*cmacme.Challenge{}, inProgressChallengeCount
 	}
 
 	// Calculate incomplete challenges
@@ -139,7 +131,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmacme.Challen
 	// Finally, sorted the challenges by timestamp to ensure a stable output
 	sortChallengesByTimestamp(candidates)
 
-	return candidates, inProgressChallengeCount, nil
+	return candidates, inProgressChallengeCount
 }
 
 func sortChallengesByTimestamp(chs []*cmacme.Challenge) {
