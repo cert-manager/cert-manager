@@ -126,7 +126,7 @@ func UnmarshalSANs(value []byte) (GeneralNames, error) {
 			if err := isIA5String(name); err != nil {
 				return errors.New("x509: SAN dNSName is malformed")
 			}
-			gns.DNSNames = append(gns.DNSNames, string(name))
+			gns.DNSNames = append(gns.DNSNames, name)
 		case nameTypeX400Address:
 			gns.X400Addresses = append(gns.X400Addresses, v)
 		case nameTypeDirectoryName:

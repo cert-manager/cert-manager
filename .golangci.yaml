@@ -15,7 +15,6 @@ issues:
         - forbidigo
         - interfacebloat
         - predeclared
-        - unconvert
         - usestdlibvars
         - noctx
         - nilnil
