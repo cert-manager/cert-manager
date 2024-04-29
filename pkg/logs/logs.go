@@ -29,10 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/component-base/logs"
 	logsapi "k8s.io/component-base/logs/api/v1"
-	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
 
 	"github.com/cert-manager/cert-manager/pkg/api"
+
+	_ "k8s.io/component-base/logs/json/register"
 )
 
 var Log = klog.TODO().WithName("cert-manager")

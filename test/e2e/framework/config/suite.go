@@ -17,9 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"os"
-
 	"flag"
+	"os"
 )
 
 type Suite struct {

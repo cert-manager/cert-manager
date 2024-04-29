@@ -29,10 +29,6 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -52,6 +48,10 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Define defines simple conformance tests that can be run against any issuer type.

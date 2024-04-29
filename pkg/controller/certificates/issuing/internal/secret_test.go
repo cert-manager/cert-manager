@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +37,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcoreclients "github.com/cert-manager/cert-manager/test/unit/coreclients"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"

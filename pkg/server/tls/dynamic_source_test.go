@@ -30,10 +30,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func signUsingTempCA(t *testing.T, template *x509.Certificate) *x509.Certificate {

@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -31,6 +30,7 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
 var ingressGVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")

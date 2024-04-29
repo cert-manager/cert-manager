@@ -24,9 +24,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"net"
-
 	"fmt"
+	"net"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"

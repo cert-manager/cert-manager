@@ -19,9 +19,10 @@ package configfile
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type WebhookConfigFile struct {

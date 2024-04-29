@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	internalapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	internalv1 "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
@@ -39,7 +40,6 @@ import (
 	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
-	corelisters "k8s.io/client-go/listers/core/v1"
 )
 
 func TestVault_Setup(t *testing.T) {

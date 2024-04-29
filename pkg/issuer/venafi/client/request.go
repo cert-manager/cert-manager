@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/v5/pkg/certificate"
-
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
+
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )

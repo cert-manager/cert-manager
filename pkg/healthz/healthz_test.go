@@ -36,9 +36,10 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/ktesting"
-	_ "k8s.io/klog/v2/ktesting/init" // add command line flags
 
 	"github.com/cert-manager/cert-manager/pkg/healthz"
+
+	_ "k8s.io/klog/v2/ktesting/init" // add command line flags
 )
 
 const (

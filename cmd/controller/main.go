@@ -21,7 +21,6 @@ import (
 	"flag"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app"
-
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )

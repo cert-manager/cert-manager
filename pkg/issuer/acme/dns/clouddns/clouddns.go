@@ -17,15 +17,13 @@ import (
 	"strings"
 	"time"
 
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-
 	"github.com/go-logr/logr"
-
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/option"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.

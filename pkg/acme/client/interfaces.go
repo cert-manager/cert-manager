@@ -19,9 +19,9 @@ package client
 import (
 	"context"
 
-	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
-
 	"golang.org/x/crypto/acme"
+
+	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
 )
 
 // Interface is an Automatic Certificate Management Environment (ACME) client

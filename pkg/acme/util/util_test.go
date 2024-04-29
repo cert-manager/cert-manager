@@ -56,7 +56,7 @@ func TestRetryBackoff(t *testing.T) {
 			},
 		},
 		{
-			name: "Retry a 400 error when when less than 6 times",
+			name: "Retry a 400 error when less than 6 times",
 			args: args{
 				n:    5,
 				r:    &http.Request{},
