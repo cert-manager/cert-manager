@@ -35,7 +35,7 @@ type DNSProviderMock struct {
 }
 
 func (c *DNSProviderMock) makeRequest(method, uri string, body io.Reader) (json.RawMessage, error) {
-	//stub makeRequest
+	// stub makeRequest
 	args := c.Called(method, uri, nil)
 	return args.Get(0).([]uint8), args.Error(1)
 }

@@ -176,10 +176,8 @@ func runTest(t *testing.T, test testT) {
 		}
 
 		simpleError = TranslateToSimpleError(err)
-	} else {
-		if test.expectedVerboseError != "" {
-			t.Errorf("expected error did not occure:\n%s", test.expectedVerboseError)
-		}
+	} else if test.expectedVerboseError != "" {
+		t.Errorf("expected error did not occure:\n%s", test.expectedVerboseError)
 	}
 
 	if simpleError != nil {

@@ -267,7 +267,7 @@ func (s *Suite) Define() {
 
 				pemBlock, _ := pem.Decode(certBytes)
 				cert, err := x509.ParseCertificate(pemBlock.Bytes)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 
 				By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
 				/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
@@ -332,7 +332,6 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			//type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) error
 			valFunc := func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 				certBytes, ok := secret.Data[corev1.TLSCertKey]
 				if !ok {

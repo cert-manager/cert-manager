@@ -53,9 +53,7 @@ const componentController = "controller"
 func NewServerCommand(ctx context.Context) *cobra.Command {
 	return newServerCommand(
 		ctx,
-		func(ctx context.Context, cfg *config.ControllerConfiguration) error {
-			return Run(ctx, cfg)
-		},
+		Run,
 		os.Args[1:],
 	)
 }

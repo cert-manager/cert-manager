@@ -39,7 +39,6 @@ import (
 
 var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	f := framework.NewDefaultFramework("acme-dns01-sample-webhook")
-	//h := f.Helper()
 
 	Context("with the sample webhook solver deployed", func() {
 		issuerName := "test-acme-issuer"
@@ -161,7 +160,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				for _, ch := range l {
 					logf("Found challenge named %q", ch.Name)
 
-					if ch.Status.Presented == false {
+					if !ch.Status.Presented {
 						logf("Challenge %q has not been 'Presented'", ch.Name)
 						allPresented = false
 					}

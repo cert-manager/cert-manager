@@ -22,7 +22,7 @@ import (
 
 // NewFeatureSet constructs a new feature set with the given features.
 func NewFeatureSet(feats ...Feature) FeatureSet {
-	return FeatureSet(sets.New(feats...))
+	return sets.New(feats...)
 }
 
 // FeatureSet represents a set of features.

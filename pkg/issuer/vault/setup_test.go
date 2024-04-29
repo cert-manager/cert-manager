@@ -45,8 +45,7 @@ import (
 func TestVault_Setup(t *testing.T) {
 	// Create a mock Vault HTTP server.
 	vaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login":
+		if r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`))
 		}

@@ -236,18 +236,20 @@ func stabilizeError(err error) error {
 			return nil
 		}
 
-		reponse := *resp
-		reponse.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
-		return &reponse
+		response := *resp
+		response.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
+		return &response
 	}
 
 	var authErr *azidentity.AuthenticationFailedError
 	if errors.As(err, &authErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		authErr.RawResponse = redactResponse(authErr.RawResponse)
 	}
 
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		respErr.RawResponse = redactResponse(respErr.RawResponse)
 	}
 

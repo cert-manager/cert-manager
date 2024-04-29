@@ -80,8 +80,8 @@ func main() {
 			continue
 		}
 
-		doc = string(strings.TrimPrefix(doc, "---"))
-		doc = string(strings.TrimSpace(doc))
+		doc = strings.TrimPrefix(doc, "---")
+		doc = strings.TrimSpace(doc)
 
 		if wantedCRDName == nil {
 			if foundAny {

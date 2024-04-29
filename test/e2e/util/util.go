@@ -385,8 +385,8 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 
 // HasIngresses lets you know if an API exists in the discovery API
 // calling this function always performs a request to the API server.
-func HasIngresses(d discovery.DiscoveryInterface, GroupVersion string) bool {
-	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
+func HasIngresses(d discovery.DiscoveryInterface, groupVersion string) bool {
+	resourceList, err := d.ServerResourcesForGroupVersion(groupVersion)
 	if err != nil {
 		return false
 	}

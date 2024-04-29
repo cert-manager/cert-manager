@@ -254,7 +254,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 }
 
 func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.IPAddresses) <= 0 {
+	if len(a.IPAddresses) == 0 {
 		return nil
 	}
 	el := field.ErrorList{}
@@ -268,7 +268,7 @@ func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) 
 }
 
 func validateEmailAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.EmailAddresses) <= 0 {
+	if len(a.EmailAddresses) == 0 {
 		return nil
 	}
 	el := field.ErrorList{}

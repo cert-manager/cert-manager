@@ -222,18 +222,19 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
 		return err
 	}
-	switch acmeErr.ProblemType {
+
 	// This response type is returned when an authorization has expired or the
 	// request is in some way malformed.
 	// In this case, we should mark the challenge as expired so that the order
 	// can be retried.
 	// TODO: don't mark *all* malformed errors as expired, we may be able to be
 	// more informative to the user by further inspecting the Error response.
-	case "urn:ietf:params:acme:error:malformed":
+	if acmeErr.ProblemType == "urn:ietf:params:acme:error:malformed" {
 		ch.Status.State = cmacme.Expired
 		// absorb the error as updating the challenge's status will trigger a sync
 		return nil
 	}
+
 	if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)

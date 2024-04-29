@@ -27,7 +27,7 @@ import (
 )
 
 func Test_afterFunc(t *testing.T) {
-	// Note that re-implimenting AfterFunc is not a good idea, since testing it
+	// Note that re-implementing AfterFunc is not a good idea, since testing it
 	// is tricky as seen in time_test.go in the standard library. We will just
 	// focus on two important cases: "f" should be run after the duration
 

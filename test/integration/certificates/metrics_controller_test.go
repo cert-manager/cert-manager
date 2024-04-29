@@ -135,6 +135,7 @@ func TestMetricsController(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 
 		output, err := io.ReadAll(resp.Body)
 		if err != nil {
