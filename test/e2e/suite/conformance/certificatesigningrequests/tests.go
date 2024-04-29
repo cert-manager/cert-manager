@@ -417,7 +417,8 @@ func (s *Suite) Define() {
 				// Validate that the request was signed as expected. Add extra
 				// validations which may be required for this test.
 				By("Validating the issued CertificateSigningRequest...")
-				validations := append(test.extraValidations, validation.CertificateSigningRequestSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+				validations := append([]certificatesigningrequests.ValidationFunc(nil), test.extraValidations...)
+				validations = append(validations, validation.CertificateSigningRequestSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 				err = f.Helper().ValidateCertificateSigningRequest(kubeCSR.Name, key, validations...)
 				Expect(err).NotTo(HaveOccurred())
 			}, test.requiredFeatures...)

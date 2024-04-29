@@ -66,13 +66,11 @@ func init() {
 
 func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &CA{
-		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
-		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
-			return pki.CertificateTemplateFromCertificateRequest(cr)
-		},
-		signingFn: pki.SignCSRTemplate,
+		issuerOptions:     ctx.IssuerOptions,
+		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
+		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		templateGenerator: pki.CertificateTemplateFromCertificateRequest,
+		signingFn:         pki.SignCSRTemplate,
 	}
 }
 

@@ -32,13 +32,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func HaveSameSANsAs(CertWithExpectedSAN string) types.GomegaMatcher {
-	return SANEquals(extractSANsFromCertificate(CertWithExpectedSAN))
+func HaveSameSANsAs(certWithExpectedSAN string) types.GomegaMatcher {
+	return SANEquals(extractSANsFromCertificate(certWithExpectedSAN))
 }
 
 // HaveSans will check that the PEM of the certificates
-func SANEquals(SANExtensionExpected interface{}) *SANMatcher {
-	extension, ok := SANExtensionExpected.(pkix.Extension)
+func SANEquals(sanExtensionExpected interface{}) *SANMatcher {
+	extension, ok := sanExtensionExpected.(pkix.Extension)
 	if !ok || !extension.Id.Equal(oidExtensionSubjectAltName) {
 		Fail("Invalid use of the SANEquals matcher, please supply a valid SAN pkix.Extension")
 	}

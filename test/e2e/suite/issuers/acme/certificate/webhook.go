@@ -39,7 +39,6 @@ import (
 
 var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	f := framework.NewDefaultFramework("acme-dns01-sample-webhook")
-	//h := f.Helper()
 
 	Context("with the sample webhook solver deployed", func() {
 		issuerName := "test-acme-issuer"

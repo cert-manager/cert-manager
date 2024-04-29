@@ -85,11 +85,11 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 	if isViolation {
 		switch reason {
 		case policies.InvalidCertificate, policies.ManagedFieldsParseError:
-			//An error here indicates that the managed fields are malformed and the
-			//decoder doesn't understand the managed fields on the Secret, or the
-			//signed certificate data could not be decoded. There is nothing more the
-			//controller can do here, so we exit nil so this controller doesn't end in
-			//an infinite loop.
+			// An error here indicates that the managed fields are malformed and the
+			// decoder doesn't understand the managed fields on the Secret, or the
+			// signed certificate data could not be decoded. There is nothing more the
+			// controller can do here, so we exit nil so this controller doesn't end in
+			// an infinite loop.
 			log.Error(errors.New(message), "failed to determine whether the SecretTemplate matches Secret")
 			return nil
 		default:

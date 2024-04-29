@@ -61,9 +61,7 @@ func NewConfigurationFSLoader(readFileFunc func(filename string) ([]byte, error)
 
 	// Default the readfile function to use os.Readfile for convenience.
 	if readFileFunc == nil {
-		f = func(filename string) ([]byte, error) {
-			return os.ReadFile(filename)
-		}
+		f = os.ReadFile
 	} else {
 		f = readFileFunc
 	}

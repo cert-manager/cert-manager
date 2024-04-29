@@ -176,7 +176,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		renewBeforeHint := crt.Spec.RenewBefore
 		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, renewBeforeHint)
 
-		//update Certificate's Status
+		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore
 		crt.Status.NotAfter = &notAfter
 		crt.Status.RenewalTime = renewalTime

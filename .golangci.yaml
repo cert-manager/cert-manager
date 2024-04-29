@@ -9,7 +9,6 @@ issues:
         - errname
         - tenv
         - exhaustive
-        - gocritic
         - nilerr
         - loggercheck
         - forbidigo

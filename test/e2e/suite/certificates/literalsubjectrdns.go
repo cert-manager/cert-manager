@@ -24,7 +24,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	//. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"

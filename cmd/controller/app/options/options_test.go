@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	//"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"

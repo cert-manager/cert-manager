@@ -457,7 +457,8 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		}
 		defaultAudience += v.issuer.GetName()
 
-		audiences := append(kubernetesAuth.ServiceAccountRef.TokenAudiences, defaultAudience)
+		audiences := append([]string(nil), kubernetesAuth.ServiceAccountRef.TokenAudiences...)
+		audiences = append(audiences, defaultAudience)
 
 		tokenrequest, err := v.createToken(context.Background(), kubernetesAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
 			Spec: authv1.TokenRequestSpec{

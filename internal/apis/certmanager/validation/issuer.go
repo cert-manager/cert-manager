@@ -443,13 +443,10 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				if p.AzureDNS.ManagedIdentity != nil {
 					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"))
 				}
-			} else {
-				// using managed identity
-				if p.AzureDNS.ManagedIdentity != nil && len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
-					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
-				}
-
+			} else if p.AzureDNS.ManagedIdentity != nil && len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
 			}
+
 			// SubscriptionID must always be defined
 			if len(p.AzureDNS.SubscriptionID) == 0 {
 				el = append(el, field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""))
@@ -569,7 +566,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			}
 
 			if len(ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))) == 0 {
-				if len(p.RFC2136.TSIGKeyName) <= 0 {
+				if len(p.RFC2136.TSIGKeyName) == 0 {
 					el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
 				}
 
