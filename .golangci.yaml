@@ -16,7 +16,6 @@ issues:
         - nilnil
         - nakedret
         - musttag
-        - nosprintfhostport
         - exportloopref
         - gomoddirectives
       text: ".*"

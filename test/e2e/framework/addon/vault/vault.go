@@ -311,8 +311,8 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			vaultCA,
 		)
 
-		v.details.URL = fmt.Sprintf("https://%s:8200", dnsName)
-		v.details.ProxyURL = fmt.Sprintf("https://127.0.0.1:%d", v.proxy.listenPort)
+		v.details.URL = fmt.Sprintf("https://%s", net.JoinHostPort(dnsName, "8200"))
+		v.details.ProxyURL = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", strconv.Itoa(v.proxy.listenPort)))
 	}
 
 	return v.details, nil
