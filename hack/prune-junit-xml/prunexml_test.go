@@ -24,6 +24,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -92,8 +94,9 @@ func TestPruneXML(t *testing.T) {
 		<testcase classname="internal/controller/certificaterequests" name="Test_serializeApplyStatus" time="1.610000"></testcase>
 	</testsuite>
 </testsuites>`
+	logger := log.New(os.Stderr, "", 0)
 	suites, _ := fetchXML(strings.NewReader(sourceXML))
-	pruneXML(suites, 32)
+	pruneXML(logger, suites, 32)
 	var output bytes.Buffer
 	writer := bufio.NewWriter(&output)
 	_ = streamXML(writer, suites)

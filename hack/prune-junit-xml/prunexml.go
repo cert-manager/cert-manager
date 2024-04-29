@@ -37,6 +37,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -92,12 +93,14 @@ type JUnitFailure struct {
 var fuzzNameRegex = regexp.MustCompile(`^(.*)\/fuzz_\d+$`)
 
 func main() {
+	logger := log.New(os.Stderr, "", 0)
+
 	maxTextSize := flag.Int("max-text-size", 1, "maximum size of attribute or text (in MB)")
 	flag.Parse()
 
 	if flag.NArg() > 0 {
 		for _, path := range flag.Args() {
-			fmt.Printf("processing junit xml file : %s\n", path)
+			logger.Printf("processing junit xml file : %s\n", path)
 			xmlReader, err := os.Open(path)
 			if err != nil {
 				panic(err)
@@ -108,7 +111,7 @@ func main() {
 				panic(err)
 			}
 
-			pruneXML(suites, *maxTextSize*1e6) // convert MB into bytes (roughly!)
+			pruneXML(logger, suites, *maxTextSize*1e6) // convert MB into bytes (roughly!)
 
 			xmlWriter, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 			if err != nil {
@@ -119,12 +122,12 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println("done.")
+			logger.Println("done.")
 		}
 	}
 }
 
-func pruneXML(suites *JUnitTestSuites, maxBytes int) {
+func pruneXML(logger *log.Logger, suites *JUnitTestSuites, maxBytes int) {
 	// filter empty testSuites
 	filteredSuites := []JUnitTestSuite{}
 	for _, suite := range suites.Suites {
@@ -182,14 +185,14 @@ func pruneXML(suites *JUnitTestSuites, maxBytes int) {
 		for _, testcase := range suite.TestCases {
 			if testcase.SkipMessage != nil {
 				if len(testcase.SkipMessage.Message) > maxBytes {
-					fmt.Printf("clipping skip message in test case : %s\n", testcase.Name)
+					logger.Printf("clipping skip message in test case : %s\n", testcase.Name)
 					testcase.SkipMessage.Message = "[... clipped...]" +
 						testcase.SkipMessage.Message[len(testcase.SkipMessage.Message)-maxBytes:]
 				}
 			}
 			if testcase.Failure != nil {
 				if len(testcase.Failure.Contents) > maxBytes {
-					fmt.Printf("clipping failure message in test case : %s\n", testcase.Name)
+					logger.Printf("clipping failure message in test case : %s\n", testcase.Name)
 					testcase.Failure.Contents = "[... clipped...]" +
 						testcase.Failure.Contents[len(testcase.Failure.Contents)-maxBytes:]
 				}

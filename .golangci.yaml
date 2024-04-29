@@ -10,7 +10,6 @@ issues:
         - tenv
         - exhaustive
         - nilerr
-        - forbidigo
         - interfacebloat
         - noctx
         - nilnil

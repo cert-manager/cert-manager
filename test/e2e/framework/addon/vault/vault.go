@@ -308,7 +308,6 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			v.Base.Details().KubeConfig,
 			v.Namespace,
 			fmt.Sprintf("%s-0", v.chart.ReleaseName),
-			vaultCA,
 		)
 
 		v.details.URL = fmt.Sprintf("https://%s", net.JoinHostPort(dnsName, "8200"))
