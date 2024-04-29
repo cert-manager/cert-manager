@@ -13,7 +13,6 @@ issues:
         - nilnil
         - nakedret
         - musttag
-        - exportloopref
         - gomoddirectives
       text: ".*"
     - linters:
