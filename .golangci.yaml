@@ -29,7 +29,6 @@ issues:
         - goprintffuncname
         - ineffassign
         - musttag
-        - wastedassign
         - nosprintfhostport
         - exportloopref
         - gomoddirectives

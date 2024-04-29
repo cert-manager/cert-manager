@@ -39,8 +39,7 @@ func HaveSameSANsAs(CertWithExpectedSAN string) types.GomegaMatcher {
 // HaveSans will check that the PEM of the certificates
 func SANEquals(SANExtensionExpected interface{}) *SANMatcher {
 	extension, ok := SANExtensionExpected.(pkix.Extension)
-	ok = extension.Id.Equal(oidExtensionSubjectAltName)
-	if !ok {
+	if !ok || !extension.Id.Equal(oidExtensionSubjectAltName) {
 		Fail("Invalid use of the SANEquals matcher, please supply a valid SAN pkix.Extension")
 	}
 	return &SANMatcher{
