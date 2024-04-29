@@ -11,7 +11,6 @@ issues:
         - exhaustive
         - gocritic
         - nilerr
-        - bodyclose
         - loggercheck
         - forbidigo
         - interfacebloat

@@ -243,11 +243,13 @@ func stabilizeError(err error) error {
 
 	var authErr *azidentity.AuthenticationFailedError
 	if errors.As(err, &authErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		authErr.RawResponse = redactResponse(authErr.RawResponse)
 	}
 
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		respErr.RawResponse = redactResponse(respErr.RawResponse)
 	}
 
