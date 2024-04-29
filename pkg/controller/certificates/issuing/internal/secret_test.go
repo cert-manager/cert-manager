@@ -24,9 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,7 +32,6 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
@@ -58,9 +55,6 @@ var (
 // SecretsManager.
 // See: https://github.com/kubernetes/client-go/issues/970
 func Test_SecretsManager(t *testing.T) {
-	// Enable feature gate additional private key for this test
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, true)()
-
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateSecretName("output"),

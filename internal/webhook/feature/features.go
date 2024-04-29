@@ -42,6 +42,7 @@ const (
 
 	// Owner: @joshvanl
 	// Alpha: v1.7.1
+	// Beta: v1.15
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -94,7 +95,7 @@ func init() {
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
 
-	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
+	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
 	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
