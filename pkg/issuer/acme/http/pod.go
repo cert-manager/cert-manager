@@ -292,5 +292,15 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 
 	pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, podTempl.Spec.ImagePullSecrets...)
 
+	if podTempl.Spec.Resources != nil {
+		pod.Spec.Containers[0].Resources = corev1.ResourceRequirements{}
+		if podTempl.Spec.Resources.Requests != nil {
+			pod.Spec.Containers[0].Resources.Requests = podTempl.Spec.Resources.Requests
+		}
+		if podTempl.Spec.Resources.Limits != nil {
+			pod.Spec.Containers[0].Resources.Limits = podTempl.Spec.Resources.Limits
+		}
+	}
+
 	return pod
 }

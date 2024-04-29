@@ -309,6 +309,19 @@ type ACMEChallengeSolverHTTP01IngressPodObjectMeta struct {
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
+type ACMEChallengeSolverHTTP01IngressPodSpecResources struct {
+	// Limits describes the maximum amount of compute resources allowed.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	// +optional
+	Limits corev1.ResourceList `json:"limits,omitempty"`
+	// Requests describes the minimum amount of compute resources required.
+	// If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+	// otherwise to an implementation-defined value. Requests cannot exceed Limits.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	// +optional
+	Requests corev1.ResourceList `json:"requests,omitempty"`
+}
+
 type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
@@ -335,6 +348,10 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's imagePullSecrets
 	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
+	// If specified, the pod's resources
+	// +optional
+	Resources *ACMEChallengeSolverHTTP01IngressPodSpecResources `json:"resources,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
