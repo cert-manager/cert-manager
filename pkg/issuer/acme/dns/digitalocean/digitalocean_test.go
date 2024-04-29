@@ -40,29 +40,22 @@ func init() {
 	}
 }
 
-func restoreEnv() {
-	os.Setenv("DIGITALOCEAN_TOKEN", doToken)
-}
-
 func TestNewDNSProviderValid(t *testing.T) {
-	os.Setenv("DIGITALOCEAN_TOKEN", "")
+	t.Setenv("DIGITALOCEAN_TOKEN", "")
 	_, err := NewDNSProviderCredentials("123", util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
-	restoreEnv()
 }
 
 func TestNewDNSProviderValidEnv(t *testing.T) {
-	os.Setenv("DIGITALOCEAN_TOKEN", "123")
+	t.Setenv("DIGITALOCEAN_TOKEN", "123")
 	_, err := NewDNSProvider(util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
-	restoreEnv()
 }
 
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
-	os.Setenv("DIGITALOCEAN_TOKEN", "")
+	t.Setenv("DIGITALOCEAN_TOKEN", "")
 	_, err := NewDNSProvider(util.RecursiveNameservers, "cert-manager-test")
 	assert.EqualError(t, err, "DigitalOcean token missing")
-	restoreEnv()
 }
 
 func TestDigitalOceanPresent(t *testing.T) {

@@ -50,49 +50,39 @@ func init() {
 	}
 }
 
-func restoreCloudFlareEnv() {
-	os.Setenv("CLOUDFLARE_EMAIL", cflareEmail)
-	os.Setenv("CLOUDFLARE_API_KEY", cflareAPIKey)
-}
-
 func TestNewDNSProviderValidAPIKey(t *testing.T) {
-	os.Setenv("CLOUDFLARE_EMAIL", "")
-	os.Setenv("CLOUDFLARE_API_KEY", "")
+	t.Setenv("CLOUDFLARE_EMAIL", "")
+	t.Setenv("CLOUDFLARE_API_KEY", "")
 	_, err := NewDNSProviderCredentials("123", "123", "", util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
-	restoreCloudFlareEnv()
 }
 
 func TestNewDNSProviderValidAPIToken(t *testing.T) {
-	os.Setenv("CLOUDFLARE_EMAIL", "")
-	os.Setenv("CLOUDFLARE_API_KEY", "")
+	t.Setenv("CLOUDFLARE_EMAIL", "")
+	t.Setenv("CLOUDFLARE_API_KEY", "")
 	_, err := NewDNSProviderCredentials("123", "", "123", util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
-	restoreCloudFlareEnv()
 }
 
 func TestNewDNSProviderKeyAndTokenProvided(t *testing.T) {
-	os.Setenv("CLOUDFLARE_EMAIL", "")
-	os.Setenv("CLOUDFLARE_API_KEY", "")
+	t.Setenv("CLOUDFLARE_EMAIL", "")
+	t.Setenv("CLOUDFLARE_API_KEY", "")
 	_, err := NewDNSProviderCredentials("123", "123", "123", util.RecursiveNameservers, "cert-manager-test")
 	assert.EqualError(t, err, "the Cloudflare API key and API token cannot be both present simultaneously")
-	restoreCloudFlareEnv()
 }
 
 func TestNewDNSProviderValidApiKeyEnv(t *testing.T) {
-	os.Setenv("CLOUDFLARE_EMAIL", "test@example.com")
-	os.Setenv("CLOUDFLARE_API_KEY", "123")
+	t.Setenv("CLOUDFLARE_EMAIL", "test@example.com")
+	t.Setenv("CLOUDFLARE_API_KEY", "123")
 	_, err := NewDNSProvider(util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
-	restoreCloudFlareEnv()
 }
 
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
-	os.Setenv("CLOUDFLARE_EMAIL", "")
-	os.Setenv("CLOUDFLARE_API_KEY", "")
+	t.Setenv("CLOUDFLARE_EMAIL", "")
+	t.Setenv("CLOUDFLARE_API_KEY", "")
 	_, err := NewDNSProvider(util.RecursiveNameservers, "cert-manager-test")
 	assert.EqualError(t, err, "no Cloudflare credential has been given (can be either an API key or an API token)")
-	restoreCloudFlareEnv()
 }
 
 func TestFindNearestZoneForFQDN(t *testing.T) {

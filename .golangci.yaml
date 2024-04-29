@@ -6,7 +6,6 @@ issues:
         - contextcheck
         - promlinter
         - errname
-        - tenv
         - exhaustive
         - nilerr
         - interfacebloat
