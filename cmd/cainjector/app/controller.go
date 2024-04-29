@@ -173,7 +173,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 	err = cainjector.RegisterAllInjectors(ctx, mgr, setupOptions)
 	if err != nil {
-		log.Error(err, "failed to register controllers", err)
+		log.Error(err, "failed to register controllers")
 		return err
 	}
 

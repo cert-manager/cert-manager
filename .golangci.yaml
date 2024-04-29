@@ -10,7 +10,6 @@ issues:
         - tenv
         - exhaustive
         - nilerr
-        - loggercheck
         - forbidigo
         - interfacebloat
         - predeclared

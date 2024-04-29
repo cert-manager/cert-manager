@@ -724,7 +724,9 @@ func getPreferredCertChain(
 		if cert.Issuer.CommonName == preferredChain {
 			// if the issuer's CN matched the preferred chain it means this bundle is
 			// signed by the requested chain
-			log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting preferred ACME bundle with a matching Common Name from %s", name)
+			log.V(logf.DebugLevel).
+				WithValues("Issuer CN", cert.Issuer.CommonName).
+				Info("Selecting preferred ACME bundle with a matching Common Name from chain", "chainName", name)
 			return true, nil
 		}
 

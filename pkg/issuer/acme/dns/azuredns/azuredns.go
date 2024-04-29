@@ -145,7 +145,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
+		c.log.Error(err, "Error getting hosted zone name for fqdn", "fqdn", fqdn)
 		return err
 	}
 
