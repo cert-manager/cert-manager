@@ -24,7 +24,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/acme/dnsproviders"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -35,11 +34,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-type dns01Provider interface {
-	Details() *dnsproviders.Details
-	addon.Addon
-}
 
 const testingACMEEmail = "e2e@cert-manager.io"
 const testingACMEPrivateKey = "test-acme-private-key"

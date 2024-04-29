@@ -141,15 +141,6 @@ func (k printKeyUsage) String() string {
 	return sb.String()
 }
 
-// Deprecated: use CertificateTemplateValidateAndOverrideKeyUsages instead.
-func certificateTemplateOverrideKeyUsages(keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) CertificateTemplateValidatorMutator {
-	return func(req *x509.CertificateRequest, cert *x509.Certificate) error {
-		cert.KeyUsage = keyUsage
-		cert.ExtKeyUsage = extKeyUsage
-		return nil
-	}
-}
-
 // CertificateTemplateFromCSR will create a x509.Certificate for the
 // given *x509.CertificateRequest.
 func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators ...CertificateTemplateValidatorMutator) (*x509.Certificate, error) {

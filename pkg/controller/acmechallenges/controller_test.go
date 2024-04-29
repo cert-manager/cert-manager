@@ -29,11 +29,6 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-const (
-	randomFinalizer         = "random.acme.cert-manager.io"
-	maxConcurrentChallenges = 60
-)
-
 func TestRunScheduler(t *testing.T) {
 	tests := map[string]struct {
 		maxConcurrentChallenges int

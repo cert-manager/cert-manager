@@ -45,7 +45,6 @@ import (
 type injectableTest struct {
 	makeInjectable func(namePrefix string) client.Object
 	getCAs         func(runtime.Object) [][]byte
-	subject        string
 	disabled       string
 }
 
