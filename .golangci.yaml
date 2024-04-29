@@ -16,7 +16,6 @@ issues:
         - nilnil
         - nakedret
         - asasalint
-        - goprintffuncname
         - musttag
         - nosprintfhostport
         - exportloopref
