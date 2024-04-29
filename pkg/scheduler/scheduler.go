@@ -23,7 +23,7 @@ import (
 	"k8s.io/utils/clock"
 )
 
-// We are writting our own time.AfterFunc to be able to mock the clock. The
+// We are writing our own time.AfterFunc to be able to mock the clock. The
 // cancel function can be called concurrently.
 func afterFunc(c clock.Clock, d time.Duration, f func()) (cancel func()) {
 	t := c.NewTimer(d)

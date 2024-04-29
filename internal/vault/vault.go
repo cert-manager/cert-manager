@@ -472,7 +472,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 				// Vault backend can bind the kubernetes auth backend role to the service account and specific namespace of the service account.
 				// Providing additional audiences is not considered a major non-mitigatable security risk
 				// as if someone creates an Issuer in another namespace/globally with the same audiences
-				// in attempt to highjack the certificate vault (if role config mandates sa:namespace) won't authorise the conneciton
+				// in attempt to highjack the certificate vault (if role config mandates sa:namespace) won't authorise the connection
 				// as token subject won't match vault role requirement to have SA originated from the specific namespace.
 				Audiences: audiences,
 

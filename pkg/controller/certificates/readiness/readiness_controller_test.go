@@ -216,7 +216,7 @@ func TestProcessItem(t *testing.T) {
 					Message: "ready message",
 				})),
 		},
-		"update status for a Certificate that has a Ready conditon and the policy evaluates to True- should remain True": {
+		"update status for a Certificate that has a Ready condition and the policy evaluates to True- should remain True": {
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
 				Status:             cmmeta.ConditionTrue,

@@ -236,9 +236,9 @@ func stabilizeError(err error) error {
 			return nil
 		}
 
-		reponse := *resp
-		reponse.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
-		return &reponse
+		response := *resp
+		response.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
+		return &response
 	}
 
 	var authErr *azidentity.AuthenticationFailedError
