@@ -15,7 +15,6 @@ issues:
         - noctx
         - nilnil
         - nakedret
-        - asasalint
         - musttag
         - nosprintfhostport
         - exportloopref
