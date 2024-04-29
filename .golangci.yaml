@@ -13,7 +13,6 @@ issues:
         - forbidigo
         - interfacebloat
         - predeclared
-        - usestdlibvars
         - noctx
         - nilnil
         - nakedret
