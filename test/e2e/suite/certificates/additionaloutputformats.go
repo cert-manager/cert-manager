@@ -367,7 +367,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 					continue
 				}
 				var fieldset fieldpath.Set
-				Expect(fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)))
+				Expect(fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw))).NotTo(HaveOccurred())
 				if fieldset.Has(fieldpath.Path{
 					{FieldName: ptr.To("data")},
 					{FieldName: ptr.To("tls-combined.pem")},

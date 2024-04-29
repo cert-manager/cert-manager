@@ -267,7 +267,7 @@ func (s *Suite) Define() {
 
 				pemBlock, _ := pem.Decode(certBytes)
 				cert, err := x509.ParseCertificate(pemBlock.Bytes)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 
 				By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
 				/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \

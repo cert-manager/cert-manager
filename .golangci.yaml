@@ -25,7 +25,6 @@ issues:
         - gosimple
         - nakedret
         - asasalint
-        - ginkgolinter
         - goprintffuncname
         - ineffassign
         - musttag

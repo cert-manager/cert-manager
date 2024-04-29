@@ -126,7 +126,7 @@ var oidExtensionSubjectAltName = []int{2, 5, 29, 17}
 
 func extractSANsFromCertificate(certDER string) pkix.Extension {
 	block, rest := pem.Decode([]byte(certDER))
-	Expect(len(rest)).To(Equal(0))
+	Expect(rest).To(BeEmpty())
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	Expect(err).NotTo(HaveOccurred())
