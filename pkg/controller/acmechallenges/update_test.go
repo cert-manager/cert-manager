@@ -129,9 +129,9 @@ func runUpdateObjectTests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.TODO()
-			old := gen.Challenge("c1")
-			new := gen.ChallengeFrom(old, tt.mods...)
-			objects := []runtime.Object{old}
+			oldChallenge := gen.Challenge("c1")
+			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
+			objects := []runtime.Object{oldChallenge}
 			if tt.notFound {
 				t.Log("Simulating a situation where the target object has been deleted")
 				objects = nil
@@ -151,7 +151,7 @@ func runUpdateObjectTests(t *testing.T) {
 			}
 			updater := newObjectUpdater(cl, "test-fieldmanager")
 			t.Log("Calling updateObject")
-			updateObjectErr := updater.updateObject(ctx, old, new)
+			updateObjectErr := updater.updateObject(ctx, oldChallenge, newChallenge)
 			if tt.errorMessage == "" {
 				assert.NoError(t, updateObjectErr)
 			} else {
@@ -164,16 +164,16 @@ func runUpdateObjectTests(t *testing.T) {
 
 			if !tt.notFound {
 				t.Log("Checking whether the object was updated")
-				actual, err := cl.AcmeV1().Challenges(old.Namespace).Get(ctx, old.Name, metav1.GetOptions{})
+				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(ctx, oldChallenge.Name, metav1.GetOptions{})
 				require.NoError(t, err)
 				if updateObjectErr == nil {
-					assert.Equal(t, new, actual, "updateObject did not return an error so the object in the API should have been updated")
+					assert.Equal(t, newChallenge, actual, "updateObject did not return an error so the object in the API should have been updated")
 				} else {
 					if !errors.Is(updateObjectErr, simulatedUpdateError) {
-						assert.Equal(t, new.Finalizers, actual.Finalizers, "The Update did not fail so the Finalizers  of the API object should have been updated")
+						assert.Equal(t, newChallenge.Finalizers, actual.Finalizers, "The Update did not fail so the Finalizers  of the API object should have been updated")
 					}
 					if !errors.Is(updateObjectErr, simulatedUpdateStatusError) {
-						assert.Equal(t, new.Status, actual.Status, "The UpdateStatus did not fail so the Status of the API object should have been updated")
+						assert.Equal(t, newChallenge.Status, actual.Status, "The UpdateStatus did not fail so the Status of the API object should have been updated")
 					}
 				}
 			}

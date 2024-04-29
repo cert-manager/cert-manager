@@ -168,21 +168,21 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	return nil
 }
 
-func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *cmapi.CertificateRequest) error {
+func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, oldCR, newCR *cmapi.CertificateRequest) error {
 	log := logf.FromContext(ctx, "updateStatus")
 
 	// if annotations changed we have to call .Update() and not .UpdateStatus()
-	if !reflect.DeepEqual(old.Annotations, new.Annotations) {
-		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", pretty.Diff(old.Annotations, new.Annotations))
-		return c.updateOrApply(ctx, new)
+	if !reflect.DeepEqual(oldCR.Annotations, newCR.Annotations) {
+		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", pretty.Diff(oldCR.Annotations, newCR.Annotations))
+		return c.updateOrApply(ctx, newCR)
 	}
 
-	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
+	if apiequality.Semantic.DeepEqual(oldCR.Status, newCR.Status) {
 		return nil
 	}
 
-	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(old.Status, new.Status))
-	return c.updateStatusOrApply(ctx, new)
+	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(oldCR.Status, newCR.Status))
+	return c.updateStatusOrApply(ctx, newCR)
 }
 
 func (c *Controller) updateOrApply(ctx context.Context, cr *cmapi.CertificateRequest) error {
