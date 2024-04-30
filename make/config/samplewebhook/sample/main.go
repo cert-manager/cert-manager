@@ -105,7 +105,7 @@ func (c *customDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	// TODO: do something more useful with the decoded configuration
-	fmt.Printf("Decoded configuration %v", cfg)
+	fmt.Fprintf(os.Stdout, "Decoded configuration %v", cfg)
 
 	// TODO: add code that sets a record in the DNS provider's console
 	return nil

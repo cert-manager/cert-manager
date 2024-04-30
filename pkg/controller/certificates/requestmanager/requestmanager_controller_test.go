@@ -43,8 +43,8 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-func mustGenerateRSA(t *testing.T, keySize int) []byte {
-	pk, err := pki.GenerateRSAPrivateKey(keySize)
+func mustGenerateRSA(t *testing.T) []byte {
+	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestProcessItem(t *testing.T) {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
-					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t, 2048)},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
@@ -326,7 +326,7 @@ func TestProcessItem(t *testing.T) {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
-					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t, 2048)},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
@@ -414,7 +414,7 @@ func TestProcessItem(t *testing.T) {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
-					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t, 2048)},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
@@ -453,7 +453,7 @@ func TestProcessItem(t *testing.T) {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
-					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t, 2048)},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
@@ -538,7 +538,7 @@ func TestProcessItem(t *testing.T) {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
-					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t, 2048)},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,

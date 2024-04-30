@@ -82,8 +82,7 @@ func BenchmarkScheduleAscending(b *testing.B) {
 			s := &Scheduler{}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				_, err := s.scheduleN(30, chs)
-				require.NoError(b, err)
+				_ = s.scheduleN(30, chs)
 			}
 		})
 	}
@@ -97,8 +96,7 @@ func BenchmarkScheduleRandom(b *testing.B) {
 			s := &Scheduler{}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				_, err := s.scheduleN(30, chs)
-				require.NoError(b, err)
+				_ = s.scheduleN(30, chs)
 			}
 		})
 	}
@@ -112,8 +110,7 @@ func BenchmarkScheduleDuplicates(b *testing.B) {
 			s := &Scheduler{}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				_, err := s.scheduleN(30, chs)
-				require.NoError(b, err)
+				_ = s.scheduleN(30, chs)
 			}
 		})
 	}

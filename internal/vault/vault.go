@@ -569,6 +569,7 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	// 473 = if performance standby
 	// 501 = if not initialized
 	// 503 = if sealed
+	// nolint: usestdlibvars // We use the numeric error codes here that we got from the Vault docs.
 	if err != nil {
 		switch {
 		case healthResp == nil:

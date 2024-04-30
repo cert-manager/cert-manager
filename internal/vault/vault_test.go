@@ -1159,7 +1159,7 @@ func TestNewConfig(t *testing.T) {
 				}),
 			),
 			expectedErr: nil,
-			checkFunc: func(cfg *vault.Config, error error) error {
+			checkFunc: func(cfg *vault.Config, err error) error {
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
 				clientCA := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs
@@ -1185,9 +1185,9 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			checkFunc: func(cfg *vault.Config, error error) error {
-				if error != nil {
-					return error
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
 				}
 
 				testCA := x509.NewCertPool()
@@ -1214,9 +1214,9 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			checkFunc: func(cfg *vault.Config, error error) error {
-				if error != nil {
-					return error
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
 				}
 
 				testCA := x509.NewCertPool()
@@ -1291,9 +1291,9 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			checkFunc: func(cfg *vault.Config, error error) error {
-				if error != nil {
-					return error
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
 				}
 
 				certificates := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.Certificates

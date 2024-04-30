@@ -287,15 +287,9 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 		}
 		v.details.VaultCA = vaultCA
 
-		v.vaultCert, v.vaultCertPrivateKey, err = generateVaultServingCert(vaultCA, vaultCAPrivateKey, dnsName)
-		if err != nil {
-			return nil, err
-		}
+		v.vaultCert, v.vaultCertPrivateKey = generateVaultServingCert(vaultCA, vaultCAPrivateKey, dnsName)
 
-		vaultClientCertificate, vaultClientPrivateKey, err := generateVaultClientCert(vaultCA, vaultCAPrivateKey)
-		if err != nil {
-			return nil, err
-		}
+		vaultClientCertificate, vaultClientPrivateKey := generateVaultClientCert(vaultCA, vaultCAPrivateKey)
 		v.details.VaultClientCertificate = vaultClientCertificate
 		v.details.VaultClientPrivateKey = vaultClientPrivateKey
 		v.details.EnforceMtls = v.EnforceMtls
@@ -308,11 +302,10 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			v.Base.Details().KubeConfig,
 			v.Namespace,
 			fmt.Sprintf("%s-0", v.chart.ReleaseName),
-			vaultCA,
 		)
 
-		v.details.URL = fmt.Sprintf("https://%s:8200", dnsName)
-		v.details.ProxyURL = fmt.Sprintf("https://127.0.0.1:%d", v.proxy.listenPort)
+		v.details.URL = fmt.Sprintf("https://%s", net.JoinHostPort(dnsName, "8200"))
+		v.details.ProxyURL = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", strconv.Itoa(v.proxy.listenPort)))
 	}
 
 	return v.details, nil
@@ -448,7 +441,7 @@ func (v *Vault) Logs() (map[string]string, error) {
 	return v.chart.Logs()
 }
 
-func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error) {
+func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte) {
 	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
 	ca, _ := x509.ParseCertificate(catls.Certificate[0])
 
@@ -471,10 +464,10 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
 
-	return encodePublicKey(certBytes), encodePrivateKey(privateKey), nil
+	return encodePublicKey(certBytes), encodePrivateKey(privateKey)
 }
 
-func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, []byte, error) {
+func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, []byte) {
 	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
 	ca, _ := x509.ParseCertificate(catls.Certificate[0])
 
@@ -495,7 +488,7 @@ func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, 
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
 
-	return encodePublicKey(certBytes), encodePrivateKey(privateKey), nil
+	return encodePublicKey(certBytes), encodePrivateKey(privateKey)
 }
 
 func GenerateCA() ([]byte, []byte, error) {

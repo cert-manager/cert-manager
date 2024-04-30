@@ -61,6 +61,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	outWriter := os.Stdout
+
 	docs := docSeparatorRegexp.Split(string(rawYAMLBytes), -1)
 
 	decoder := crdDecoder()
@@ -85,15 +87,15 @@ func main() {
 
 		if wantedCRDName == nil {
 			if foundAny {
-				fmt.Println("---")
+				fmt.Fprintln(outWriter, "---")
 			}
-			fmt.Println(doc)
+			fmt.Fprintln(outWriter, doc)
 			foundAny = true
 			continue
 		} else {
 			crdName := strings.ToLower(crd.Spec.Names.Plural)
 			if crdName == *wantedCRDName {
-				fmt.Println(doc)
+				fmt.Fprintln(outWriter, doc)
 				return
 			}
 		}

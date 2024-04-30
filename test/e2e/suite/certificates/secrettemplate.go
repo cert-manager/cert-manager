@@ -282,6 +282,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 				WithAnnotations(secret.Annotations).
 				WithLabels(secret.Labels),
 			metav1.ApplyOptions{FieldManager: "e2e-test-client"})
+		Expect(err).NotTo(HaveOccurred())
 
 		By("expect those Annotations and Labels to be present on the Secret")
 		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})

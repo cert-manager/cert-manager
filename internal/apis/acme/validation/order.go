@@ -27,16 +27,16 @@ import (
 )
 
 func ValidateOrderUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, []string) {
-	old, ok := oldObj.(*cmacme.Order)
-	new := newObj.(*cmacme.Order)
+	oldOrder, ok := oldObj.(*cmacme.Order)
+	newOrder := newObj.(*cmacme.Order)
 	// if oldObj is not set, the Update operation is always valid.
-	if !ok || old == nil {
+	if !ok || oldOrder == nil {
 		return nil, nil
 	}
 
 	el := field.ErrorList{}
-	el = append(el, ValidateOrderSpecUpdate(old.Spec, new.Spec, field.NewPath("spec"))...)
-	el = append(el, ValidateOrderStatusUpdate(old.Status, new.Status, field.NewPath("status"))...)
+	el = append(el, ValidateOrderSpecUpdate(oldOrder.Spec, newOrder.Spec, field.NewPath("spec"))...)
+	el = append(el, ValidateOrderStatusUpdate(oldOrder.Status, newOrder.Status, field.NewPath("status"))...)
 	return el, nil
 }
 
@@ -44,35 +44,35 @@ func ValidateOrder(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.E
 	return nil, nil
 }
 
-func ValidateOrderSpecUpdate(old, new cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {
+func ValidateOrderSpecUpdate(oldOrder, newOrder cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	if len(old.Request) > 0 && !bytes.Equal(old.Request, new.Request) {
+	if len(oldOrder.Request) > 0 && !bytes.Equal(oldOrder.Request, newOrder.Request) {
 		el = append(el, field.Forbidden(fldPath.Child("request"), "field is immutable once set"))
 	}
 	return el
 }
 
-func ValidateOrderStatusUpdate(old, new cmacme.OrderStatus, fldPath *field.Path) field.ErrorList {
+func ValidateOrderStatusUpdate(oldStatus, newStatus cmacme.OrderStatus, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	// once the order URL has been set, it cannot be changed
-	if old.URL != "" && old.URL != new.URL {
+	if oldStatus.URL != "" && oldStatus.URL != newStatus.URL {
 		el = append(el, field.Forbidden(fldPath.Child("url"), "field is immutable once set"))
 	}
 	// once the FinalizeURL has been set, it cannot be changed
-	if old.FinalizeURL != "" && old.FinalizeURL != new.FinalizeURL {
+	if oldStatus.FinalizeURL != "" && oldStatus.FinalizeURL != newStatus.FinalizeURL {
 		el = append(el, field.Forbidden(fldPath.Child("finalizeURL"), "field is immutable once set"))
 	}
 	// once the Certificate has been issued, it cannot be changed
-	if len(old.Certificate) > 0 && !bytes.Equal(old.Certificate, new.Certificate) {
+	if len(oldStatus.Certificate) > 0 && !bytes.Equal(oldStatus.Certificate, newStatus.Certificate) {
 		el = append(el, field.Forbidden(fldPath.Child("certificate"), "field is immutable once set"))
 	}
 
-	if len(old.Authorizations) > 0 {
+	if len(oldStatus.Authorizations) > 0 {
 		fldPath := fldPath.Child("authorizations")
 
 		// once at least one Authorization has been inserted, no more can be added
 		// or deleted from the Order
-		if len(old.Authorizations) != len(new.Authorizations) {
+		if len(oldStatus.Authorizations) != len(newStatus.Authorizations) {
 			el = append(el, field.Forbidden(fldPath, "field is immutable once set"))
 		}
 
@@ -80,43 +80,43 @@ func ValidateOrderStatusUpdate(old, new cmacme.OrderStatus, fldPath *field.Path)
 		// the updates that the user requested on each Authorization.
 		// fields on Authorization's cannot be changed after being set from
 		// their zero value.
-		for i := range old.Authorizations {
+		for i := range oldStatus.Authorizations {
 			fldPath := fldPath.Index(i)
-			old := old.Authorizations[i]
-			new := new.Authorizations[i]
-			if old.URL != "" && old.URL != new.URL {
+			oldAuthz := oldStatus.Authorizations[i]
+			newAuthz := newStatus.Authorizations[i]
+			if oldAuthz.URL != "" && oldAuthz.URL != newAuthz.URL {
 				el = append(el, field.Forbidden(fldPath.Child("url"), "field is immutable once set"))
 			}
-			if old.Identifier != "" && old.Identifier != new.Identifier {
+			if oldAuthz.Identifier != "" && oldAuthz.Identifier != newAuthz.Identifier {
 				el = append(el, field.Forbidden(fldPath.Child("identifier"), "field is immutable once set"))
 			}
 			// don't allow the value of the Wildcard field to change unless the
 			// old value is nil
-			if old.Wildcard != nil && (new.Wildcard == nil || *old.Wildcard != *new.Wildcard) {
+			if oldAuthz.Wildcard != nil && (newAuthz.Wildcard == nil || *oldAuthz.Wildcard != *newAuthz.Wildcard) {
 				el = append(el, field.Forbidden(fldPath.Child("wildcard"), "field is immutable once set"))
 			}
-			if old.InitialState != "" && (old.InitialState != new.InitialState) {
+			if oldAuthz.InitialState != "" && (oldAuthz.InitialState != newAuthz.InitialState) {
 				el = append(el, field.Forbidden(fldPath.Child("initialState"), "field is immutable once set"))
 			}
 
-			if len(old.Challenges) > 0 {
+			if len(oldAuthz.Challenges) > 0 {
 				fldPath := fldPath.Child("challenges")
-				if len(old.Challenges) != len(new.Challenges) {
+				if len(oldAuthz.Challenges) != len(newAuthz.Challenges) {
 					el = append(el, field.Forbidden(fldPath, "field is immutable once set"))
 				}
 
-				for i := range old.Challenges {
+				for i := range oldAuthz.Challenges {
 					fldPath := fldPath.Index(i)
-					old := old.Challenges[i]
-					new := new.Challenges[i]
+					oldChallenge := oldAuthz.Challenges[i]
+					newChallenge := newAuthz.Challenges[i]
 
-					if old.URL != "" && old.URL != new.URL {
+					if oldChallenge.URL != "" && oldChallenge.URL != newChallenge.URL {
 						el = append(el, field.Forbidden(fldPath.Child("url"), "field is immutable once set"))
 					}
-					if old.Type != "" && old.Type != new.Type {
+					if oldChallenge.Type != "" && oldChallenge.Type != newChallenge.Type {
 						el = append(el, field.Forbidden(fldPath.Child("type"), "field is immutable once set"))
 					}
-					if old.Token != "" && old.Token != new.Token {
+					if oldChallenge.Token != "" && oldChallenge.Token != newChallenge.Token {
 						el = append(el, field.Forbidden(fldPath.Child("token"), "field is immutable once set"))
 					}
 				}

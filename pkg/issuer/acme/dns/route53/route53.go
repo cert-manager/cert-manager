@@ -122,7 +122,7 @@ func (d *sessionProvider) GetSession() (aws.Config, error) {
 	return cfg, nil
 }
 
-func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool, userAgent string) (*sessionProvider, error) {
+func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool, userAgent string) *sessionProvider {
 	return &sessionProvider{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -132,7 +132,7 @@ func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambie
 		StsProvider:     defaultSTSProvider,
 		log:             logf.Log.WithName("route53-session-provider"),
 		userAgent:       userAgent,
-	}, nil
+	}
 }
 
 func defaultSTSProvider(cfg aws.Config) StsClient {
@@ -147,10 +147,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 	dns01Nameservers []string,
 	userAgent string,
 ) (*DNSProvider, error) {
-	provider, err := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient, userAgent)
-	if err != nil {
-		return nil, err
-	}
+	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient, userAgent)
 
 	cfg, err := provider.GetSession()
 	if err != nil {

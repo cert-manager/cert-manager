@@ -42,5 +42,5 @@ func (f *FakeRecorder) PastEventf(object runtime.Object, timestamp metav1.Time, 
 }
 
 func (f *FakeRecorder) AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...interface{}) {
-	f.Eventf(object, eventtype, reason, messageFmt, args)
+	f.Eventf(object, eventtype, reason, messageFmt, args...)
 }

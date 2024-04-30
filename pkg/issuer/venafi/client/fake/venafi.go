@@ -17,8 +17,6 @@ limitations under the License.
 package fake
 
 import (
-	"time"
-
 	"github.com/Venafi/vcert/v5/pkg/endpoint"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
@@ -26,8 +24,8 @@ import (
 
 type Venafi struct {
 	PingFn                  func() error
-	RequestCertificateFn    func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
-	RetrieveCertificateFn   func(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
+	RequestCertificateFn    func(csrPEM []byte, customFields []api.CustomField) (string, error)
+	RetrieveCertificateFn   func(pickupID string, csrPEM []byte, customFields []api.CustomField) ([]byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
 	VerifyCredentialsFn     func() error
 }
@@ -36,12 +34,12 @@ func (v *Venafi) Ping() error {
 	return v.PingFn()
 }
 
-func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
-	return v.RequestCertificateFn(csrPEM, duration, customFields)
+func (v *Venafi) RequestCertificate(csrPEM []byte, customFields []api.CustomField) (string, error) {
+	return v.RequestCertificateFn(csrPEM, customFields)
 }
 
-func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
-	return v.RetrieveCertificateFn(pickupID, csrPEM, duration, customFields)
+func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, customFields []api.CustomField) ([]byte, error) {
+	return v.RetrieveCertificateFn(pickupID, csrPEM, customFields)
 }
 
 func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {

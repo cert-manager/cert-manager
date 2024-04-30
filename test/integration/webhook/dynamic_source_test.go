@@ -253,6 +253,7 @@ func TestDynamicSource_leaderelection(t *testing.T) {
 			if err := mgr.Add(&tls.DynamicSource{
 				DNSNames: []string{"example.com"},
 				Authority: &testAuthority{
+					t:       t,
 					id:      fmt.Sprintf("manager-%d", i),
 					started: &started,
 				},
@@ -280,6 +281,7 @@ func TestDynamicSource_leaderelection(t *testing.T) {
 }
 
 type testAuthority struct {
+	t       *testing.T
 	id      string
 	started *int64
 }
@@ -289,7 +291,7 @@ func (m *testAuthority) Run(ctx context.Context) error {
 		return nil // context was cancelled, we are shutting down
 	}
 
-	fmt.Println("Starting authority with id", m.id)
+	m.t.Log("Starting authority with id", m.id)
 	atomic.AddInt64(m.started, 1)
 	<-ctx.Done()
 	return nil

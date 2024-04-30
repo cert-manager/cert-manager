@@ -865,7 +865,7 @@ func Test_getCertificateSecret(t *testing.T) {
 			builder.Start()
 			defer builder.Stop()
 
-			gotSecret, err := s.getCertificateSecret(context.Background(), crt)
+			gotSecret, err := s.getCertificateSecret(crt)
 			assert.NoError(t, err)
 
 			assert.Equal(t, test.expSecret, gotSecret, "unexpected returned secret")

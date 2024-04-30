@@ -128,7 +128,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 
-		cr, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+		_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")

@@ -115,12 +115,11 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		}
 	}
 
-	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 	pickupID := cr.ObjectMeta.Annotations[cmapi.VenafiPickupIDAnnotationKey]
 
 	// check if the pickup ID annotation is there, if not set it up.
 	if pickupID == "" {
-		pickupID, err = client.RequestCertificate(cr.Spec.Request, duration, customFields)
+		pickupID, err = client.RequestCertificate(cr.Spec.Request, customFields)
 		// Check some known error types
 		if err != nil {
 			switch err.(type) {
@@ -148,7 +147,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		return nil, nil
 	}
 
-	certPem, err := client.RetrieveCertificate(pickupID, cr.Spec.Request, duration, customFields)
+	certPem, err := client.RetrieveCertificate(pickupID, cr.Spec.Request, customFields)
 	if err != nil {
 		switch err.(type) {
 		case endpoint.ErrCertificatePending, endpoint.ErrRetrieveCertificateTimeout:

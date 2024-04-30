@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -32,24 +31,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
-
-var (
-	route53Secret string
-	route53Key    string
-	route53Region string
-)
-
-func init() {
-	route53Key = os.Getenv("AWS_ACCESS_KEY_ID")
-	route53Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	route53Region = os.Getenv("AWS_REGION")
-}
-
-func restoreRoute53Env() {
-	os.Setenv("AWS_ACCESS_KEY_ID", route53Key)
-	os.Setenv("AWS_SECRET_ACCESS_KEY", route53Secret)
-	os.Setenv("AWS_REGION", route53Region)
-}
 
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg, err := config.LoadDefaultConfig(
@@ -73,10 +54,9 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 }
 
 func TestAmbientCredentialsFromEnv(t *testing.T) {
-	os.Setenv("AWS_ACCESS_KEY_ID", "123")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "123")
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_ACCESS_KEY_ID", "123")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+	t.Setenv("AWS_REGION", "us-east-1")
 
 	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
@@ -88,18 +68,16 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 }
 
 func TestNoCredentialsFromEnv(t *testing.T) {
-	os.Setenv("AWS_ACCESS_KEY_ID", "123")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "123")
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_ACCESS_KEY_ID", "123")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, err := NewDNSProvider("", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
 func TestAmbientRegionFromEnv(t *testing.T) {
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_REGION", "us-east-1")
 
 	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
@@ -108,8 +86,7 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 }
 
 func TestNoRegionFromEnv(t *testing.T) {
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_REGION", "us-east-1")
 
 	provider, err := NewDNSProvider("marx", "swordfish", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
@@ -251,10 +228,9 @@ func TestAssumeRole(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			provider, err := makeMockSessionProvider(func(aws.Config) StsClient {
+			provider := makeMockSessionProvider(func(aws.Config) StsClient {
 				return c.mockSTS
 			}, c.key, c.secret, c.region, c.role, c.ambient)
-			assert.NoError(t, err)
 			cfg, err := provider.GetSession()
 			if c.expErr {
 				assert.NotNil(t, err)
@@ -287,7 +263,7 @@ func makeMockSessionProvider(
 	defaultSTSProvider func(aws.Config) StsClient,
 	accessKeyID, secretAccessKey, region, role string,
 	ambient bool,
-) (*sessionProvider, error) {
+) *sessionProvider {
 	return &sessionProvider{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -296,7 +272,7 @@ func makeMockSessionProvider(
 		Role:            role,
 		StsProvider:     defaultSTSProvider,
 		log:             logf.Log.WithName("route53-session"),
-	}, nil
+	}
 }
 
 func Test_removeReqID(t *testing.T) {

@@ -67,14 +67,14 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.ClusterIssuer) (err er
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(ctx context.Context, old, new *cmapi.ClusterIssuer) error {
-	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
+func (c *controller) updateIssuerStatus(ctx context.Context, oldIssuer, newIssuer *cmapi.ClusterIssuer) error {
+	if apiequality.Semantic.DeepEqual(oldIssuer.Status, newIssuer.Status) {
 		return nil
 	}
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		return internalissuers.ApplyClusterIssuerStatus(ctx, c.cmClient, c.fieldManager, new)
+		return internalissuers.ApplyClusterIssuerStatus(ctx, c.cmClient, c.fieldManager, newIssuer)
 	} else {
-		_, err := c.cmClient.CertmanagerV1().ClusterIssuers().UpdateStatus(ctx, new, metav1.UpdateOptions{})
+		_, err := c.cmClient.CertmanagerV1().ClusterIssuers().UpdateStatus(ctx, newIssuer, metav1.UpdateOptions{})
 		return err
 	}
 }

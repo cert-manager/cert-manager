@@ -52,8 +52,8 @@ type VenafiClientBuilder func(namespace string, secretsLister internalinformers.
 
 // Interface implements a Venafi client
 type Interface interface {
-	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
-	RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
+	RequestCertificate(csrPEM []byte, customFields []api.CustomField) (string, error)
+	RetrieveCertificate(pickupID string, csrPEM []byte, customFields []api.CustomField) ([]byte, error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)

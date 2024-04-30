@@ -27,15 +27,15 @@ import (
 )
 
 func ValidateChallengeUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, []string) {
-	old, ok := oldObj.(*cmacme.Challenge)
-	new := newObj.(*cmacme.Challenge)
+	oldChallenge, ok := oldObj.(*cmacme.Challenge)
+	newChallenge := newObj.(*cmacme.Challenge)
 	// if oldObj is not set, the Update operation is always valid.
-	if !ok || old == nil {
+	if !ok || oldChallenge == nil {
 		return nil, nil
 	}
 
 	el := field.ErrorList{}
-	if !reflect.DeepEqual(old.Spec, new.Spec) {
+	if !reflect.DeepEqual(oldChallenge.Spec, newChallenge.Spec) {
 		el = append(el, field.Forbidden(field.NewPath("spec"), "challenge spec is immutable after creation"))
 	}
 	return el, nil

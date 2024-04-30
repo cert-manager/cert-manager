@@ -72,10 +72,10 @@ func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater
 // Only the Finalizers and Status fields may be modified. If there are any
 // modifications to new object, outside of the Finalizers and Status fields,
 // this function return an error.
-func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacme.Challenge) error {
+func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, newChallenge *cmacme.Challenge) error {
 	if !apiequality.Semantic.DeepEqual(
-		gen.ChallengeFrom(old, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
-		gen.ChallengeFrom(new, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
+		gen.ChallengeFrom(oldChallenge, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
+		gen.ChallengeFrom(newChallenge, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
 	) {
 		return fmt.Errorf(
 			"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
@@ -84,11 +84,11 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacm
 	}
 
 	var updateFunctions []func() (*cmacme.Challenge, error)
-	if !apiequality.Semantic.DeepEqual(old.Status, new.Status) {
+	if !apiequality.Semantic.DeepEqual(oldChallenge.Status, newChallenge.Status) {
 		updateFunctions = append(
 			updateFunctions,
 			func() (*cmacme.Challenge, error) {
-				if obj, err := o.updateStatus(ctx, new); err != nil {
+				if obj, err := o.updateStatus(ctx, newChallenge); err != nil {
 					return obj, fmt.Errorf("when updating the status: %w", err)
 				} else {
 					return obj, nil
@@ -96,11 +96,11 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacm
 			},
 		)
 	}
-	if !apiequality.Semantic.DeepEqual(old.Finalizers, new.Finalizers) {
+	if !apiequality.Semantic.DeepEqual(oldChallenge.Finalizers, newChallenge.Finalizers) {
 		updateFunctions = append(
 			updateFunctions,
 			func() (*cmacme.Challenge, error) {
-				if obj, err := o.update(ctx, new); err != nil {
+				if obj, err := o.update(ctx, newChallenge); err != nil {
 					return obj, fmt.Errorf("when updating the finalizers: %w", err)
 				} else {
 					return obj, nil
@@ -116,7 +116,7 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, old, new *cmacm
 				return nil
 			}
 		} else {
-			new = o
+			newChallenge = o
 		}
 	}
 	return utilerrors.NewAggregate(errors)
@@ -126,12 +126,12 @@ type objectUpdateClientDefault struct {
 	cl versioned.Interface
 }
 
-func (o *objectUpdateClientDefault) update(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return o.cl.AcmeV1().Challenges(new.Namespace).Update(ctx, new, metav1.UpdateOptions{})
+func (o *objectUpdateClientDefault) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	return o.cl.AcmeV1().Challenges(challenge.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
 }
 
-func (o *objectUpdateClientDefault) updateStatus(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return o.cl.AcmeV1().Challenges(new.Namespace).UpdateStatus(ctx, new, metav1.UpdateOptions{})
+func (o *objectUpdateClientDefault) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	return o.cl.AcmeV1().Challenges(challenge.Namespace).UpdateStatus(ctx, challenge, metav1.UpdateOptions{})
 }
 
 type objectUpdateClientSSA struct {
@@ -139,10 +139,10 @@ type objectUpdateClientSSA struct {
 	fieldManager string
 }
 
-func (o *objectUpdateClientSSA) update(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return internalchallenges.Apply(ctx, o.cl, o.fieldManager, new)
+func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	return internalchallenges.Apply(ctx, o.cl, o.fieldManager, challenge)
 }
 
-func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, new *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return internalchallenges.ApplyStatus(ctx, o.cl, o.fieldManager, new)
+func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	return internalchallenges.ApplyStatus(ctx, o.cl, o.fieldManager, challenge)
 }

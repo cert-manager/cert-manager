@@ -297,11 +297,7 @@ func buildCertificates(
 	cmLister cmlisters.CertificateLister,
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
-) (new, update []*cmapi.Certificate, _ error) {
-
-	var newCrts []*cmapi.Certificate
-	var updateCrts []*cmapi.Certificate
-
+) (newCrts, updateCrts []*cmapi.Certificate, _ error) {
 	tlsHosts := make(map[corev1.ObjectReference][]string)
 	switch ingLike := ingLike.(type) {
 	case *networkingv1.Ingress:

@@ -136,7 +136,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
-	var secondReq *cmapi.CertificateRequest
+	var secondReq cmapi.CertificateRequest
 	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -151,7 +151,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 				continue
 			}
 
-			secondReq = &req // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+			secondReq = req
 			return true, nil
 		}
 
@@ -273,7 +273,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
-	var secondReq *cmapi.CertificateRequest
+	var secondReq cmapi.CertificateRequest
 	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -288,7 +288,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 				continue
 			}
 
-			secondReq = &req // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+			secondReq = req
 			return true, nil
 		}
 
