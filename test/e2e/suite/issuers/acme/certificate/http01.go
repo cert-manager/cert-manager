@@ -51,6 +51,7 @@ import (
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
+	ctx := context.TODO()
 
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
@@ -96,10 +97,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetIssuerACMESkipTLSVerify(true),
 			gen.SetIssuerACMESolvers(solvers))
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -107,7 +108,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			func(i *v1.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
@@ -117,7 +118,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		if len(secret.Data) != 1 {
 			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -130,8 +131,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
+		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
 	})
 
 	It("should allow updating an existing failing certificate that had a blocked dns name", func() {
@@ -146,15 +147,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
-		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Making sure the Order failed with a 400 since google.com is invalid")
 		order := &cmacme.Order{}
 		logf, done := log.LogBackoff()
 		defer done()
-		err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
-			orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
+		err = wait.PollUntilContextTimeout(ctx, 1*time.Second, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
+			orders, err := listOwnedOrders(ctx, f.CertManagerClientSet, cert)
 			Expect(err).NotTo(HaveOccurred())
 
 			if len(orders) == 0 || len(orders) > 1 {
@@ -174,12 +175,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be not ready")
-		cert, err = f.Helper().WaitForCertificateNotReadyAndDoneIssuing(cert, 30*time.Second)
+		cert, err = f.Helper().WaitForCertificateNotReadyAndDoneIssuing(ctx, cert, 30*time.Second)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			By("Getting the latest version of the Certificate")
-			cert, err = certClient.Get(context.TODO(), certificateName, metav1.GetOptions{})
+			cert, err = certClient.Get(ctx, certificateName, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -187,7 +188,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			By("Replacing dnsNames with a valid dns name")
 			cert = cert.DeepCopy()
 			cert.Spec.DNSNames = []string{e2eutil.RandomSubdomain(acmeIngressDomain)}
-			_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
+			_, err = certClient.Update(ctx, cert, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
@@ -196,7 +197,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to have the Ready=True condition")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Sanity checking the issued Certificate")
@@ -225,7 +226,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
-		cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(ctx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		notReadyCondition := v1.CertificateCondition{
@@ -242,14 +243,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 			By("Creating an Ingress with the issuer name annotation set")
-			_, err := ingClient.Create(context.TODO(), util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
+			_, err := ingClient.Create(ctx, util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
 				"cert-manager.io/issuer": issuerName,
 			}, acmeIngressDomain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 			By("Creating an Ingress with the issuer name annotation set")
-			_, err := ingClient.Create(context.TODO(), util.NewV1Beta1Ingress(certificateSecretName, certificateSecretName, map[string]string{
+			_, err := ingClient.Create(ctx, util.NewV1Beta1Ingress(certificateSecretName, certificateSecretName, map[string]string{
 				"cert-manager.io/issuer": issuerName,
 			}, acmeIngressDomain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -258,11 +259,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		}
 
 		By("Waiting for Certificate to exist")
-		cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecretName, time.Second*60)
+		cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certificateSecretName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
@@ -281,10 +282,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		issuer := gen.Issuer("selfsign",
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for (selfsign) Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -306,11 +307,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateOrganization("test-org"),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
-		selfcert, err = certClient.Create(context.TODO(), selfcert, metav1.CreateOptions{})
+		selfcert, err = certClient.Create(ctx, selfcert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		selfcert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(selfcert, time.Minute*5)
+		selfcert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, selfcert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
@@ -323,7 +324,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		switch {
 		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
-			_, err = ingress.Create(context.TODO(), &networkingv1.Ingress{
+			_, err = ingress.Create(ctx, &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fixedIngressName,
 					Annotations: map[string]string{
@@ -366,7 +367,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
-			_, err = ingress.Create(context.TODO(), &networkingv1beta1.Ingress{
+			_, err = ingress.Create(ctx, &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fixedIngressName,
 					Annotations: map[string]string{
@@ -418,11 +419,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
-		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err = certClient.Create(ctx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
@@ -440,7 +441,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
-		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		_, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("killing the solver pod")
@@ -448,7 +449,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		var pod corev1.Pod
 		logf, done := log.LogBackoff()
 		defer done()
-		err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, time.Minute*3, true, func(ctx context.Context) (bool, error) {
+		err = wait.PollUntilContextTimeout(ctx, 1*time.Second, time.Minute*3, true, func(ctx context.Context) (bool, error) {
 			logf("Waiting for solver pod to exist")
 			podlist, err := podClient.List(ctx, metav1.ListOptions{})
 			if err != nil {
@@ -468,11 +469,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = podClient.Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+		err = podClient.Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Certificate to exist")
-		cert, err = f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateName, time.Second*60)
+		cert, err = f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certificateName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		// The pod should get remade and the certificate should be made valid.
@@ -480,7 +481,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// were to ask us for the challenge after the pod was killed, but because
 		// we kill it so early, we should always be in the self-check phase
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")

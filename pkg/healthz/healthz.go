@@ -83,6 +83,8 @@ func (o *Server) Start(ctx context.Context, l net.Listener) error {
 		// allow a timeout for graceful shutdown
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
+		// nolint: contextcheck
 		return o.server.Shutdown(shutdownCtx)
 	})
 	return g.Wait()

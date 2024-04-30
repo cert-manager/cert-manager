@@ -25,6 +25,7 @@ limitations under the License.
 package acmedns
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -66,7 +67,7 @@ func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers [
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
+func (c *DNSProvider) Present(_ context.Context, domain, fqdn, value string) error {
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.
 		return c.client.UpdateTXTRecord(account, value)
@@ -77,7 +78,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 
 // CleanUp removes the record matching the specified parameters. It is not
 // implemented for the ACME-DNS provider.
-func (c *DNSProvider) CleanUp(_, _, _ string) error {
+func (c *DNSProvider) CleanUp(_ context.Context, _, _, _ string) error {
 	// ACME-DNS doesn't support the notion of removing a record. For users of
 	// ACME-DNS it is expected the stale records remain in-place.
 	return nil

@@ -104,7 +104,6 @@ func TestMetricsController(t *testing.T) {
 	}
 	ctrl, queue, mustSync := controllermetrics.NewController(&controllerContext)
 	c := controllerpkg.NewController(
-		ctx,
 		"metrics_test",
 		metricsHandler,
 		ctrl.ProcessItem,

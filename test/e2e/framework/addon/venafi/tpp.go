@@ -79,7 +79,7 @@ func (v *VenafiTPP) Setup(cfg *config.Config, _ ...internal.AddonTransferableDat
 	return nil, nil
 }
 
-func (v *VenafiTPP) Provision() error {
+func (v *VenafiTPP) Provision(ctx context.Context) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-e2e-venafi-",
@@ -92,7 +92,7 @@ func (v *VenafiTPP) Provision() error {
 		},
 	}
 
-	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -114,12 +114,12 @@ func (v *VenafiTPP) Details() *TPPDetails {
 	return &v.details
 }
 
-func (v *VenafiTPP) Deprovision() error {
+func (v *VenafiTPP) Deprovision(ctx context.Context) error {
 	if v.createdSecret == nil {
 		return nil
 	}
 
-	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(context.TODO(), v.createdSecret.Name, metav1.DeleteOptions{})
+	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(ctx, v.createdSecret.Name, metav1.DeleteOptions{})
 }
 
 func (v *VenafiTPP) SupportsGlobal() bool {
@@ -153,9 +153,9 @@ func (t *TPPDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 }
 
 // SetAccessToken sets the Secret data["access-token"] value
-func (v *VenafiTPP) SetAccessToken(token string) error {
+func (v *VenafiTPP) SetAccessToken(ctx context.Context, token string) error {
 	v.createdSecret.Data["access-token"] = []byte(token)
-	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(context.TODO(), v.createdSecret, metav1.UpdateOptions{})
+	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(ctx, v.createdSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

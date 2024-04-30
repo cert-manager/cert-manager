@@ -36,16 +36,16 @@ import (
 )
 
 // WaitForCertificateToExist waits for the named certificate to exist and returns the certificate
-func (h *Helper) WaitForCertificateToExist(namespace string, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+func (h *Helper) WaitForCertificateToExist(ctx context.Context, namespace string, name string, timeout time.Duration) (*cmapi.Certificate, error) {
 	client := h.CMClient.CertmanagerV1().Certificates(namespace)
 	var certificate *v1.Certificate
 	logf, done := log.LogBackoff()
 	defer done()
 
-	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
 		logf("Waiting for Certificate %v to exist", name)
 		var err error
-		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		certificate, err = client.Get(ctx, name, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return false, nil
 		}
@@ -58,11 +58,11 @@ func (h *Helper) WaitForCertificateToExist(namespace string, name string, timeou
 	return certificate, pollErr
 }
 
-func (h *Helper) waitForCertificateCondition(client clientset.CertificateInterface, name string, check func(*v1.Certificate) bool, timeout time.Duration) (*cmapi.Certificate, error) {
+func (h *Helper) waitForCertificateCondition(ctx context.Context, client clientset.CertificateInterface, name string, check func(*v1.Certificate) bool, timeout time.Duration) (*cmapi.Certificate, error) {
 	var certificate *v1.Certificate
-	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
 		var err error
-		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		certificate, err = client.Get(ctx, name, metav1.GetOptions{})
 		if nil != err {
 			certificate = nil
 			return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
@@ -93,7 +93,7 @@ func (h *Helper) waitForCertificateCondition(client clientset.CertificateInterfa
 
 // WaitForCertificateReadyAndDoneIssuing waits for the certificate resource to be in a Ready=True state and not be in an Issuing state.
 // The Ready=True condition will be checked against the provided certificate to make sure that it is up-to-date (condition gen. >= cert gen.).
-func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
+func (h *Helper) WaitForCertificateReadyAndDoneIssuing(ctx context.Context, cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
 	ready_true_condition := cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionTrue,
@@ -105,7 +105,7 @@ func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, 
 	}
 	logf, done := log.LogBackoff()
 	defer done()
-	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
+	return h.waitForCertificateCondition(ctx, h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
 		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_true_condition) {
 			logf(
 				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
@@ -134,7 +134,7 @@ func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, 
 
 // WaitForCertificateNotReadyAndDoneIssuing waits for the certificate resource to be in a Ready=False state and not be in an Issuing state.
 // The Ready=False condition will be checked against the provided certificate to make sure that it is up-to-date (condition gen. >= cert gen.).
-func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
+func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(ctx context.Context, cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
 	ready_false_condition := cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionFalse,
@@ -146,7 +146,7 @@ func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificat
 	}
 	logf, done := log.LogBackoff()
 	defer done()
-	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
+	return h.waitForCertificateCondition(ctx, h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
 		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_false_condition) {
 			logf(
 				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
@@ -173,11 +173,11 @@ func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificat
 	}, timeout)
 }
 
-func (h *Helper) waitForIssuerCondition(client clientset.IssuerInterface, name string, check func(issuer *v1.Issuer) bool, timeout time.Duration) (*cmapi.Issuer, error) {
+func (h *Helper) waitForIssuerCondition(ctx context.Context, client clientset.IssuerInterface, name string, check func(issuer *v1.Issuer) bool, timeout time.Duration) (*cmapi.Issuer, error) {
 	var issuer *v1.Issuer
-	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
 		var err error
-		issuer, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		issuer, err = client.Get(ctx, name, metav1.GetOptions{})
 		if nil != err {
 			issuer = nil
 			return false, fmt.Errorf("error getting Issuer %v: %v", name, err)
@@ -197,7 +197,7 @@ func (h *Helper) waitForIssuerCondition(client clientset.IssuerInterface, name s
 
 // WaitIssuerReady waits for the Issuer resource to be in a Ready=True state
 // The Ready=True condition will be checked against the provided issuer to make sure its ready.
-func (h *Helper) WaitIssuerReady(issuer *cmapi.Issuer, timeout time.Duration) (*cmapi.Issuer, error) {
+func (h *Helper) WaitIssuerReady(ctx context.Context, issuer *cmapi.Issuer, timeout time.Duration) (*cmapi.Issuer, error) {
 	ready_true_condition := cmapi.IssuerCondition{
 		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
@@ -205,7 +205,7 @@ func (h *Helper) WaitIssuerReady(issuer *cmapi.Issuer, timeout time.Duration) (*
 
 	logf, done := log.LogBackoff()
 	defer done()
-	return h.waitForIssuerCondition(h.CMClient.CertmanagerV1().Issuers(issuer.Namespace), issuer.Name, func(issuer *v1.Issuer) bool {
+	return h.waitForIssuerCondition(ctx, h.CMClient.CertmanagerV1().Issuers(issuer.Namespace), issuer.Name, func(issuer *v1.Issuer) bool {
 		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
 			logf(
 				"Expected Issuer %v condition %v=%v but it has: %v",
@@ -220,11 +220,11 @@ func (h *Helper) WaitIssuerReady(issuer *cmapi.Issuer, timeout time.Duration) (*
 	}, timeout)
 }
 
-func (h *Helper) waitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, check func(issuer *v1.ClusterIssuer) bool, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
+func (h *Helper) waitForClusterIssuerCondition(ctx context.Context, client clientset.ClusterIssuerInterface, name string, check func(issuer *v1.ClusterIssuer) bool, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
 	var issuer *v1.ClusterIssuer
-	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, timeout, true, func(ctx context.Context) (bool, error) {
 		var err error
-		issuer, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		issuer, err = client.Get(ctx, name, metav1.GetOptions{})
 		if nil != err {
 			issuer = nil
 			return false, fmt.Errorf("error getting Issuer %v: %v", name, err)
@@ -244,14 +244,14 @@ func (h *Helper) waitForClusterIssuerCondition(client clientset.ClusterIssuerInt
 
 // WaitClusterIssuerReady waits for the Cluster Issuer resource to be in a Ready=True state
 // The Ready=True condition will be checked against the provided issuer to make sure its ready.
-func (h *Helper) WaitClusterIssuerReady(issuer *cmapi.ClusterIssuer, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
+func (h *Helper) WaitClusterIssuerReady(ctx context.Context, issuer *cmapi.ClusterIssuer, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
 	ready_true_condition := cmapi.IssuerCondition{
 		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}
 	logf, done := log.LogBackoff()
 	defer done()
-	return h.waitForClusterIssuerCondition(h.CMClient.CertmanagerV1().ClusterIssuers(), issuer.Name, func(issuer *v1.ClusterIssuer) bool {
+	return h.waitForClusterIssuerCondition(ctx, h.CMClient.CertmanagerV1().ClusterIssuers(), issuer.Name, func(issuer *v1.ClusterIssuer) bool {
 		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
 			logf(
 				"Expected Cluster Issuer %v condition %v=%v but it has: %v",
@@ -282,11 +282,11 @@ func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsa
 	return us
 }
 
-func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
+func (h *Helper) defaultKeyUsagesToAdd(ctx context.Context, ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 	var issuerSpec *cmapi.IssuerSpec
 	switch issuerRef.Kind {
 	case "ClusterIssuer":
-		issuerObj, err := h.CMClient.CertmanagerV1().ClusterIssuers().Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
+		issuerObj, err := h.CMClient.CertmanagerV1().ClusterIssuers().Get(ctx, issuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
 				issuerRef, err)
@@ -294,7 +294,7 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 
 		issuerSpec = &issuerObj.Spec
 	default:
-		issuerObj, err := h.CMClient.CertmanagerV1().Issuers(ns).Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
+		issuerObj, err := h.CMClient.CertmanagerV1().Issuers(ns).Get(ctx, issuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
 				issuerRef, err)

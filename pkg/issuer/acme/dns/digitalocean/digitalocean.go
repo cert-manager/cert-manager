@@ -50,10 +50,8 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgen
 		return nil, fmt.Errorf("DigitalOcean token missing")
 	}
 
-	c := oauth2.NewClient(
-		context.Background(),
-		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
-	)
+	unusedCtx := context.Background() // context is not actually used
+	c := oauth2.NewClient(unusedCtx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 
 	clientOpts := []godo.ClientOpt{godo.SetUserAgent(userAgent)}
 	client, err := godo.New(c, clientOpts...)
@@ -68,15 +66,15 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgen
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
+func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
 	// if DigitalOcean does not have this zone then we will find out later
-	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
 
 	// check if the record has already been created
-	records, err := c.findTxtRecord(fqdn)
+	records, err := c.findTxtRecord(ctx, fqdn)
 	if err != nil {
 		return err
 	}
@@ -96,7 +94,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	}
 
 	_, _, err = c.client.Domains.CreateRecord(
-		context.Background(),
+		ctx,
 		util.UnFqdn(zoneName),
 		createRequest,
 	)
@@ -109,19 +107,19 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
+	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
 
-	records, err := c.findTxtRecord(fqdn)
+	records, err := c.findTxtRecord(ctx, fqdn)
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records {
-		_, err = c.client.Domains.DeleteRecord(context.Background(), util.UnFqdn(zoneName), record.ID)
+		_, err = c.client.Domains.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
 
 		if err != nil {
 			return err
@@ -131,15 +129,14 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return nil
 }
 
-func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
-
-	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.DomainRecord, error) {
+	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return nil, err
 	}
 
 	allRecords, _, err := c.client.Domains.RecordsByType(
-		context.Background(),
+		ctx,
 		util.UnFqdn(zoneName),
 		"TXT",
 		nil,

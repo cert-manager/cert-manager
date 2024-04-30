@@ -73,11 +73,11 @@ type kubernetes struct {
 	setup *vault.VaultInitializer
 }
 
-func (k *kubernetes) createIssuer(f *framework.Framework) string {
-	k.initVault(f, f.Namespace.Name)
+func (k *kubernetes) createIssuer(ctx context.Context, f *framework.Framework) string {
+	k.initVault(ctx, f, f.Namespace.Name)
 
 	By("Creating a VaultKubernetes Issuer")
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "vault-issuer-",
 			Namespace:    f.Namespace.Name,
@@ -88,17 +88,17 @@ func (k *kubernetes) createIssuer(f *framework.Framework) string {
 
 	// wait for issuer to be ready
 	By("Waiting for VaultKubernetes Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
-func (k *kubernetes) createClusterIssuer(f *framework.Framework) string {
-	k.initVault(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+func (k *kubernetes) createClusterIssuer(ctx context.Context, f *framework.Framework) string {
+	k.initVault(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating a VaultKubernetes ClusterIssuer")
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "vault-issuer-",
 		},
@@ -108,25 +108,25 @@ func (k *kubernetes) createClusterIssuer(f *framework.Framework) string {
 
 	// wait for issuer to be ready
 	By("Waiting for VaultKubernetes Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }
 
-func (k *kubernetes) delete(f *framework.Framework, signerName string) {
+func (k *kubernetes) delete(ctx context.Context, f *framework.Framework, signerName string) {
 	ref, _ := csrutil.SignerIssuerRefFromSignerName(signerName)
 	if kind, _ := csrutil.IssuerKindFromType(ref.Type); kind == cmapi.ClusterIssuerKind {
-		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		k.setup.CleanKubernetesRole(f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.setup.Role())
+		k.setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.setup.Role())
 	}
 
-	Expect(k.setup.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
+	Expect(k.setup.Clean(ctx)).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 }
 
-func (k *kubernetes) initVault(f *framework.Framework, boundNS string) {
+func (k *kubernetes) initVault(ctx context.Context, f *framework.Framework, boundNS string) {
 	By("Configuring the VaultKubernetes server")
 
 	k.setup = vault.NewVaultInitializerKubernetes(
@@ -135,18 +135,18 @@ func (k *kubernetes) initVault(f *framework.Framework, boundNS string) {
 		k.testWithRootCA,
 		"https://kubernetes.default.svc.cluster.local",
 	)
-	Expect(k.setup.Init()).NotTo(HaveOccurred(), "failed to init vault")
-	Expect(k.setup.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
+	Expect(k.setup.Init(ctx)).NotTo(HaveOccurred(), "failed to init vault")
+	Expect(k.setup.Setup(ctx)).NotTo(HaveOccurred(), "failed to setup vault")
 
 	By("Creating a ServiceAccount for Vault authentication")
 
 	// boundNS is name of the service account for which a Secret containing the service account token will be created
 	boundSA := "vault-issuer-" + rand.String(5)
-	err := k.setup.CreateKubernetesRole(f.KubeClientSet, boundNS, boundSA)
+	err := k.setup.CreateKubernetesRole(ctx, f.KubeClientSet, boundNS, boundSA)
 	Expect(err).NotTo(HaveOccurred())
 
 	k.saTokenSecretName = "vault-sa-secret-" + rand.String(5)
-	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(context.TODO(), vault.NewVaultKubernetesSecret(k.saTokenSecretName, boundSA), metav1.CreateOptions{})
+	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(ctx, vault.NewVaultKubernetesSecret(k.saTokenSecretName, boundSA), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 

@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path"
@@ -37,7 +38,7 @@ var cfg = framework.DefaultConfig
 // the data transferred from the Setup function on the first ginkgo process.
 var isGinkgoProcessNumberOne = false
 
-var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
+var _ = ginkgo.SynchronizedBeforeSuite(func(ctx context.Context) []byte {
 	addon.InitGlobals(cfg)
 
 	isGinkgoProcessNumberOne = true
@@ -56,7 +57,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	}
 
 	return encodedData
-}, func(encodedData []byte) {
+}, func(ctx context.Context, encodedData []byte) {
 	transferredData := []addon.AddonTransferableData{}
 	err := json.Unmarshal(encodedData, &transferredData)
 	if err != nil {
@@ -66,7 +67,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	if isGinkgoProcessNumberOne {
 		// For ginkgo process #1, we need to run ProvisionGlobals to
 		// actually provision the global addons.
-		err = addon.ProvisionGlobals(cfg)
+		err = addon.ProvisionGlobals(ctx, cfg)
 		if err != nil {
 			framework.Failf("Error configuring global addons: %v", err)
 		}
@@ -82,10 +83,10 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	}
 })
 
-var _ = ginkgo.SynchronizedAfterSuite(func() {
+var _ = ginkgo.SynchronizedAfterSuite(func(ctx context.Context) {
 	// Reset the isGinkgoProcessNumberOne flag to false for the next run (when --repeat flag is used)
 	isGinkgoProcessNumberOne = false
-}, func() {
+}, func(ctx context.Context) {
 	ginkgo.By("Retrieving logs for global addons")
 	globalLogs, err := addon.GlobalLogs()
 	if err != nil {
@@ -110,7 +111,7 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {
 	}
 
 	ginkgo.By("Cleaning up the provisioned globals")
-	err = addon.DeprovisionGlobals(cfg)
+	err = addon.DeprovisionGlobals(ctx, cfg)
 	if err != nil {
 		framework.Failf("Error deprovisioning global addons: %v", err)
 	}

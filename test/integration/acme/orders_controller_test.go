@@ -142,7 +142,6 @@ func TestAcmeOrdersController(t *testing.T) {
 		false,
 	)
 	c := controllerpkg.NewController(
-		ctx,
 		"orders_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,

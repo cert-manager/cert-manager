@@ -75,10 +75,6 @@ type Context struct {
 	// RootContext is the root context for the controller
 	RootContext context.Context
 
-	// StopCh is a channel that will be closed when the controller is signalled
-	// to exit
-	StopCh <-chan struct{}
-
 	// FieldManager is the string that should be used as the field manager when
 	// applying API object. This value is derived from the user agent.
 	FieldManager string
@@ -316,7 +312,6 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		log:            logf.FromContext(ctx),
 		ctx: &Context{
 			RootContext:                            ctx,
-			StopCh:                                 ctx.Done(),
 			KubeSharedInformerFactory:              kubeSharedInformerFactory,
 			SharedInformerFactory:                  sharedInformerFactory,
 			GWShared:                               gwSharedInformerFactory,

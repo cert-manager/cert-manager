@@ -39,13 +39,13 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
-
 	const (
 		testName   = "test-literalsubject-rdn-parsing"
 		issuerName = "certificate-literalsubject-rdns"
 		secretName = testName
 	)
 
+	ctx := context.TODO()
 	f := framework.NewDefaultFramework("certificate-literalsubject-rdns")
 
 	createCertificate := func(f *framework.Framework, literalSubject string) (*cmapi.Certificate, error) {
@@ -78,7 +78,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -92,7 +92,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 	It("Should create a certificate with all the supplied RDNs as subject names in reverse string order, including DC and UID", func() {
 		crt, err := createCertificate(f, "CN=James \\\"Jim\\\" Smith\\, III,UID=jamessmith,SERIALNUMBER=1234512345,OU=Admins,OU=IT,DC=net,DC=dc,O=Acme,STREET=La Rambla,L=Barcelona,C=Spain")
 		Expect(err).NotTo(HaveOccurred())
-		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})

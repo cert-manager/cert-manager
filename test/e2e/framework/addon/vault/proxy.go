@@ -17,6 +17,7 @@ limitations under the License.
 package vault
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -135,7 +136,7 @@ func (p *proxy) start() error {
 	return nil
 }
 
-func (p *proxy) stop() error {
+func (p *proxy) stop(ctx context.Context) error {
 	close(p.stopCh)
 
 	p.mu.Lock()
@@ -145,9 +146,13 @@ func (p *proxy) stop() error {
 		return nil
 	}
 
-	err := <-p.doneCh
-	if err != nil {
-		return fmt.Errorf("error while forwarding port: %v", err)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-p.doneCh:
+		if err != nil {
+			return fmt.Errorf("error while forwarding port: %v", err)
+		}
 	}
 
 	return nil

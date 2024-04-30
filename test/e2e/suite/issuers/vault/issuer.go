@@ -37,6 +37,7 @@ import (
 
 var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	f := framework.NewDefaultFramework("create-vault-issuer")
+	ctx := context.TODO()
 
 	issuerName := "test-vault-issuer"
 	vaultSecretServiceAccount := "vault-serviceaccount"
@@ -54,15 +55,15 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			false,
 			"https://kubernetes.default.svc.cluster.local",
 		)
-		Expect(setup.Init()).NotTo(HaveOccurred(), "failed to init vault")
-		Expect(setup.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
+		Expect(setup.Init(ctx)).NotTo(HaveOccurred(), "failed to init vault")
+		Expect(setup.Setup(ctx)).NotTo(HaveOccurred(), "failed to setup vault")
 
 		var err error
-		roleId, secretId, err = setup.CreateAppRole()
+		roleId, secretId, err = setup.CreateAppRole(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("creating a service account for Vault authentication")
-		err = setup.CreateKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
+		err = setup.CreateKubernetesRole(ctx, f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -70,13 +71,13 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		By("Cleaning up AppRole")
 		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), vaultSecretName, metav1.DeleteOptions{})
-		setup.CleanAppRole()
+		setup.CleanAppRole(ctx)
 
 		By("Cleaning up Kubernetes")
-		setup.CleanKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
+		setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
 
 		By("Cleaning up Vault")
-		Expect(setup.Clean()).NotTo(HaveOccurred())
+		Expect(setup.Clean(ctx)).NotTo(HaveOccurred())
 	})
 
 	It("should be ready with a valid AppRole", func() {
@@ -95,7 +96,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			iss.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -116,7 +117,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			iss.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -137,7 +138,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -161,7 +162,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -184,7 +185,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -235,7 +236,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -259,7 +260,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validate that the Issuer is not ready yet")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -279,7 +280,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -314,7 +315,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -336,7 +337,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validate that the issuer isn't ready anymore due to Vault still using the old certificate")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -348,8 +349,8 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		// Note that we reuse the same service account as for the Kubernetes
 		// auth based on secretRef. There should be no problem doing so.
 		By("Creating the Role and RoleBinding to let cert-manager use TokenRequest for the ServiceAccount")
-		vaultaddon.CreateKubernetesRoleForServiceAccountRefAuth(f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
-		defer vaultaddon.CleanKubernetesRoleForServiceAccountRefAuth(f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
+		vaultaddon.CreateKubernetesRoleForServiceAccountRefAuth(ctx, f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
+		defer vaultaddon.CleanKubernetesRoleForServiceAccountRefAuth(ctx, f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
 
 		By("Creating an Issuer")
 		vaultIssuer := gen.Issuer(issuerName,
@@ -362,7 +363,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,

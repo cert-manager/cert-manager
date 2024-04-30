@@ -45,7 +45,6 @@ type queueingController interface {
 }
 
 func NewController(
-	ctx context.Context,
 	name string,
 	metrics *metrics.Metrics,
 	syncFunc func(ctx context.Context, key string) error,
@@ -54,7 +53,6 @@ func NewController(
 	queue workqueue.RateLimitingInterface,
 ) Interface {
 	return &controller{
-		ctx:              ctx,
 		name:             name,
 		metrics:          metrics,
 		syncHandler:      syncFunc,
@@ -65,9 +63,6 @@ func NewController(
 }
 
 type controller struct {
-	// ctx is the root golang context for the controller
-	ctx context.Context
-
 	// name is the name for this controller
 	name string
 
@@ -94,14 +89,14 @@ type controller struct {
 }
 
 // Run starts the controller loop
-func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
-	ctx, cancel := context.WithCancel(c.ctx)
+func (c *controller) Run(workers int, ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	log := logf.FromContext(ctx)
+	log := logf.FromContext(ctx, c.name)
 
 	log.V(logf.DebugLevel).Info("starting control loop")
 	// wait for all the informer caches we depend on are synced
-	if !cache.WaitForCacheSync(stopCh, c.mustSync...) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.mustSync...) {
 		return fmt.Errorf("error waiting for informer caches to sync")
 	}
 
@@ -120,10 +115,10 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 
 	for _, f := range c.runDurationFuncs {
 		f := f // capture range variable
-		go wait.Until(func() { f.fn(ctx) }, f.duration, stopCh)
+		go wait.Until(func() { f.fn(ctx) }, f.duration, ctx.Done())
 	}
 
-	<-stopCh
+	<-ctx.Done()
 	log.V(logf.InfoLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
 	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
@@ -133,7 +128,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 }
 
 func (c *controller) worker(ctx context.Context) {
-	log := logf.FromContext(c.ctx)
+	log := logf.FromContext(ctx)
 
 	log.V(logf.DebugLevel).Info("starting worker")
 	for {

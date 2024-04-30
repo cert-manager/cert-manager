@@ -65,7 +65,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -79,7 +79,7 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -375,7 +375,7 @@ func TestStabilizeResponseError(t *testing.T) {
 		zoneClient:        zc,
 	}
 
-	err = dnsProvider.Present("test.com", "fqdn.test.com.", "test123")
+	err = dnsProvider.Present(context.TODO(), "test.com", "fqdn.test.com.", "test123")
 	require.Error(t, err)
 	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
 --------------------------------------------------------------------------------

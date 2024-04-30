@@ -198,7 +198,7 @@ func NewVaultClientCertificateSecret(secretName string, certificate, key []byte)
 }
 
 // Set up a new Vault client, port-forward to the Vault instance.
-func (v *VaultInitializer) Init() error {
+func (v *VaultInitializer) Init(ctx context.Context) error {
 	cfg := vault.DefaultConfiguration()
 	cfg.Address = v.details.ProxyURL
 
@@ -235,8 +235,8 @@ func (v *VaultInitializer) Init() error {
 		// The timeout below must be aligned with the time taken by the Vault addons to start,
 		// each addon safely takes about 20 seconds to start and two addons are started one after another,
 		// one for without mTLS enforced and another with mTLS enforced
-		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, 45*time.Second, true, func(ctx context.Context) (bool, error) {
-			conn, err := net.DialTimeout("tcp", proxyUrl.Host, time.Second)
+		err = wait.PollUntilContextTimeout(ctx, time.Second, 45*time.Second, true, func(ctx context.Context) (bool, error) {
+			conn, err := (&net.Dialer{Timeout: time.Second}).DialContext(ctx, "tcp", proxyUrl.Host)
 			if err != nil {
 				lastError = err
 				return false, nil
@@ -253,8 +253,8 @@ func (v *VaultInitializer) Init() error {
 	// Wait for Vault to be ready
 	{
 		var lastError error
-		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
-			_, err := v.client.System.ReadHealthStatus(context.TODO())
+		err = wait.PollUntilContextTimeout(ctx, time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
+			_, err := v.client.System.ReadHealthStatus(ctx)
 			if err != nil {
 				lastError = err
 				return false, nil
@@ -271,38 +271,38 @@ func (v *VaultInitializer) Init() error {
 }
 
 // Set up a Vault PKI.
-func (v *VaultInitializer) Setup() error {
+func (v *VaultInitializer) Setup(ctx context.Context) error {
 	// Enable a new Vault secrets engine at v.RootMount
-	if err := v.mountPKI(v.rootMount, "87600h"); err != nil {
+	if err := v.mountPKI(ctx, v.rootMount, "87600h"); err != nil {
 		return err
 	}
 
 	// Generate a self-signed CA cert using the engine at v.RootMount
-	rootCa, err := v.generateRootCert()
+	rootCa, err := v.generateRootCert(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Configure issuing certificate endpoints and CRL distribution points to be
 	// set on certs issued by v.RootMount.
-	if err := v.configureCert(v.rootMount); err != nil {
+	if err := v.configureCert(ctx, v.rootMount); err != nil {
 		return err
 
 	}
 
 	// Enable a new Vault secrets engine at v.intermediateMount
-	if err := v.mountPKI(v.intermediateMount, "43800h"); err != nil {
+	if err := v.mountPKI(ctx, v.intermediateMount, "43800h"); err != nil {
 		return err
 	}
 
 	// Generate a CSR for secrets engine at v.intermediateMount
-	csr, err := v.generateIntermediateSigningReq()
+	csr, err := v.generateIntermediateSigningReq(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Issue a new intermediate CA from v.RootMount for the CSR created above.
-	intermediateCa, err := v.signCertificate(csr)
+	intermediateCa, err := v.signCertificate(ctx, csr)
 	if err != nil {
 		return err
 	}
@@ -313,28 +313,28 @@ func (v *VaultInitializer) Setup() error {
 	if v.configureWithRoot {
 		caChain = fmt.Sprintf("%s\n%s", intermediateCa, rootCa)
 	}
-	if err := v.importSignIntermediate(caChain, v.intermediateMount); err != nil {
+	if err := v.importSignIntermediate(ctx, caChain, v.intermediateMount); err != nil {
 		return err
 	}
 
 	// Configure issuing certificate endpoints and CRL distribution points to be
 	// set on certs issued by v.intermediateMount.
-	if err := v.configureCert(v.intermediateMount); err != nil {
+	if err := v.configureCert(ctx, v.intermediateMount); err != nil {
 		return err
 	}
 
-	if err := v.configureIntermediateRoles(); err != nil {
+	if err := v.configureIntermediateRoles(ctx); err != nil {
 		return err
 	}
 
 	if v.appRoleAuthPath != "" {
-		if err := v.setupAppRoleAuth(); err != nil {
+		if err := v.setupAppRoleAuth(ctx); err != nil {
 			return err
 		}
 	}
 
 	if v.kubernetesAuthPath != "" {
-		if err := v.setupKubernetesBasedAuth(); err != nil {
+		if err := v.setupKubernetesBasedAuth(ctx); err != nil {
 			return err
 		}
 	}
@@ -342,9 +342,7 @@ func (v *VaultInitializer) Setup() error {
 	return nil
 }
 
-func (v *VaultInitializer) Clean() error {
-	ctx := context.Background()
-
+func (v *VaultInitializer) Clean(ctx context.Context) error {
 	if _, err := v.client.System.MountsDisableSecretsEngine(ctx, "/"+v.intermediateMount); err != nil {
 		return fmt.Errorf("unable to unmount %v: %v", v.intermediateMount, err)
 	}
@@ -355,9 +353,7 @@ func (v *VaultInitializer) Clean() error {
 	return nil
 }
 
-func (v *VaultInitializer) CreateAppRole() (string, string, error) {
-	ctx := context.Background()
-
+func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, error) {
 	// create policy
 	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] }`, v.IntermediateSignPath())
 	_, err := v.client.System.PoliciesWriteAclPolicy(
@@ -406,8 +402,7 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 	return respRoleId.Data.RoleId, resp.Data["secret_id"].(string), nil
 }
 
-func (v *VaultInitializer) CleanAppRole() error {
-	ctx := context.Background()
+func (v *VaultInitializer) CleanAppRole(ctx context.Context) error {
 	_, err := v.client.Auth.AppRoleDeleteRole(
 		ctx,
 		v.role,
@@ -425,8 +420,7 @@ func (v *VaultInitializer) CleanAppRole() error {
 	return nil
 }
 
-func (v *VaultInitializer) mountPKI(mount, ttl string) error {
-	ctx := context.Background()
+func (v *VaultInitializer) mountPKI(ctx context.Context, mount, ttl string) error {
 	_, err := v.client.System.MountsEnableSecretsEngine(
 		ctx,
 		"/"+mount,
@@ -444,8 +438,7 @@ func (v *VaultInitializer) mountPKI(mount, ttl string) error {
 	return nil
 }
 
-func (v *VaultInitializer) generateRootCert() (string, error) {
-	ctx := context.Background()
+func (v *VaultInitializer) generateRootCert(ctx context.Context) (string, error) {
 	resp, err := v.client.Secrets.PkiGenerateRoot(
 		ctx,
 		"internal",
@@ -464,8 +457,7 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 	return resp.Data.Certificate, nil
 }
 
-func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
-	ctx := context.Background()
+func (v *VaultInitializer) generateIntermediateSigningReq(ctx context.Context) (string, error) {
 	resp, err := v.client.Secrets.PkiGenerateIntermediate(
 		ctx,
 		"internal",
@@ -485,8 +477,7 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 	return resp.Data.Csr, nil
 }
 
-func (v *VaultInitializer) signCertificate(csr string) (string, error) {
-	ctx := context.Background()
+func (v *VaultInitializer) signCertificate(ctx context.Context, csr string) (string, error) {
 	resp, err := v.client.Secrets.PkiRootSignIntermediate(
 		ctx,
 		schema.PkiRootSignIntermediateRequest{
@@ -504,8 +495,7 @@ func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 	return resp.Data.Certificate, nil
 }
 
-func (v *VaultInitializer) importSignIntermediate(caChain, intermediateMount string) error {
-	ctx := context.Background()
+func (v *VaultInitializer) importSignIntermediate(ctx context.Context, caChain, intermediateMount string) error {
 	_, err := v.client.Secrets.PkiSetSignedIntermediate(
 		ctx,
 		schema.PkiSetSignedIntermediateRequest{
@@ -520,8 +510,7 @@ func (v *VaultInitializer) importSignIntermediate(caChain, intermediateMount str
 	return nil
 }
 
-func (v *VaultInitializer) configureCert(mount string) error {
-	ctx := context.Background()
+func (v *VaultInitializer) configureCert(ctx context.Context, mount string) error {
 	_, err := v.client.Secrets.PkiConfigureUrls(
 		ctx,
 		schema.PkiConfigureUrlsRequest{
@@ -541,8 +530,7 @@ func (v *VaultInitializer) configureCert(mount string) error {
 	return nil
 }
 
-func (v *VaultInitializer) configureIntermediateRoles() error {
-	ctx := context.Background()
+func (v *VaultInitializer) configureIntermediateRoles(ctx context.Context) error {
 	// TODO: Should use Secrets.PkiWriteRole here,
 	// but it is broken. See:
 	// https://github.com/hashicorp/vault-client-go/issues/195
@@ -567,8 +555,7 @@ func (v *VaultInitializer) configureIntermediateRoles() error {
 	return nil
 }
 
-func (v *VaultInitializer) setupAppRoleAuth() error {
-	ctx := context.Background()
+func (v *VaultInitializer) setupAppRoleAuth(ctx context.Context) error {
 	// vault auth-enable approle
 	resp, err := v.client.System.AuthListEnabledMethods(ctx)
 	if err != nil {
@@ -593,8 +580,7 @@ func (v *VaultInitializer) setupAppRoleAuth() error {
 	return nil
 }
 
-func (v *VaultInitializer) setupKubernetesBasedAuth() error {
-	ctx := context.Background()
+func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 	// vault auth-enable kubernetes
 	resp, err := v.client.System.AuthListEnabledMethods(ctx)
 	if err != nil {
@@ -643,8 +629,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 // CreateKubernetesrole creates a service account and ClusterRoleBinding for
 // Kubernetes auth delegation. The name "boundSA" refers to the Vault param
 // "bound_service_account_names".
-func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, boundNS, boundSA string) error {
-	ctx := context.Background()
+func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kubernetes.Interface, boundNS, boundSA string) error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: boundSA,
@@ -692,8 +677,7 @@ func (v *VaultInitializer) IntermediateSignPath() string {
 }
 
 // CleanKubernetesRole cleans up the ClusterRoleBinding and ServiceAccount for Kubernetes auth delegation
-func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, boundNS, boundSA string) error {
-	ctx := context.Background()
+func (v *VaultInitializer) CleanKubernetesRole(ctx context.Context, client kubernetes.Interface, boundNS, boundSA string) error {
 	if err := client.CoreV1().ServiceAccounts(boundNS).Delete(ctx, boundSA, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
@@ -748,13 +732,13 @@ func RoleAndBindingForServiceAccountRefAuth(roleName, namespace, serviceAccount 
 
 // CreateKubernetesRoleForServiceAccountRefAuth creates a service account and a
 // role for using the "serviceAccountRef" field.
-func CreateKubernetesRoleForServiceAccountRefAuth(client kubernetes.Interface, roleName, saNS, saName string) error {
+func CreateKubernetesRoleForServiceAccountRefAuth(ctx context.Context, client kubernetes.Interface, roleName, saNS, saName string) error {
 	role, binding := RoleAndBindingForServiceAccountRefAuth(roleName, saNS, saName)
-	_, err := client.RbacV1().Roles(saNS).Create(context.TODO(), role, metav1.CreateOptions{})
+	_, err := client.RbacV1().Roles(saNS).Create(ctx, role, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount with serviceAccountRef: %s", err.Error())
 	}
-	_, err = client.RbacV1().RoleBindings(saNS).Create(context.TODO(), binding, metav1.CreateOptions{})
+	_, err = client.RbacV1().RoleBindings(saNS).Create(ctx, binding, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount with serviceAccountRef: %s", err.Error())
 	}
@@ -762,16 +746,16 @@ func CreateKubernetesRoleForServiceAccountRefAuth(client kubernetes.Interface, r
 	return nil
 }
 
-func CleanKubernetesRoleForServiceAccountRefAuth(client kubernetes.Interface, roleName, saNS, saName string) error {
-	if err := client.RbacV1().RoleBindings(saNS).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
+func CleanKubernetesRoleForServiceAccountRefAuth(ctx context.Context, client kubernetes.Interface, roleName, saNS, saName string) error {
+	if err := client.RbacV1().RoleBindings(saNS).Delete(ctx, roleName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	if err := client.RbacV1().Roles(saNS).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
+	if err := client.RbacV1().Roles(saNS).Delete(ctx, roleName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	if err := client.CoreV1().ServiceAccounts(saNS).Delete(context.TODO(), saName, metav1.DeleteOptions{}); err != nil {
+	if err := client.CoreV1().ServiceAccounts(saNS).Delete(ctx, saName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 

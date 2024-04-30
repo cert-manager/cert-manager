@@ -430,14 +430,14 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return nil
 	}
 
-	if err := c.waitForCertificateRequestToExist(cr.Namespace, cr.Name); err != nil {
+	if err := c.waitForCertificateRequestToExist(ctx, cr.Namespace, cr.Name); err != nil {
 		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried. %w", err)
 	}
 	return nil
 }
 
-func (c *controller) waitForCertificateRequestToExist(namespace, name string) error {
-	return wait.PollUntilContextTimeout(context.TODO(), time.Millisecond*100, time.Second*5, false, func(ctx context.Context) (bool, error) {
+func (c *controller) waitForCertificateRequestToExist(ctx context.Context, namespace, name string) error {
+	return wait.PollUntilContextTimeout(ctx, time.Millisecond*100, time.Second*5, false, func(_ context.Context) (bool, error) {
 		_, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 		if apierrors.IsNotFound(err) {
 			return false, nil

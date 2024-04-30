@@ -75,31 +75,31 @@ type vaultSecrets struct {
 	secretNamespace string
 }
 
-func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
-	Expect(v.setup.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
+func (v *vaultAppRoleProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.ObjectReference) {
+	Expect(v.setup.Clean(ctx)).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 
-	err := f.KubeClientSet.CoreV1().Secrets(v.secretNamespace).Delete(context.TODO(), v.secretName, metav1.DeleteOptions{})
+	err := f.KubeClientSet.CoreV1().Secrets(v.secretNamespace).Delete(ctx, v.secretName, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	if ref.Kind == "ClusterIssuer" {
-		err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
 
-func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectReference {
+func (v *vaultAppRoleProvisioner) createIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
 	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole Issuer")
 
-	v.vaultSecrets = v.initVault()
+	v.vaultSecrets = v.initVault(ctx)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, v.secretID), metav1.CreateOptions{})
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, v.secretID), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	v.secretName = sec.Name
 	v.secretNamespace = sec.Namespace
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "vault-issuer-",
 		},
@@ -109,7 +109,7 @@ func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.Ob
 
 	// wait for issuer to be ready
 	By("Waiting for Vault Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -119,19 +119,19 @@ func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.Ob
 	}
 }
 
-func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+func (v *vaultAppRoleProvisioner) createClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
 	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole ClusterIssuer")
 
-	v.vaultSecrets = v.initVault()
+	v.vaultSecrets = v.initVault(ctx)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, v.secretID), metav1.CreateOptions{})
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(ctx, vault.NewVaultAppRoleSecret(appRoleSecretGeneratorName, v.secretID), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	v.secretName = sec.Name
 	v.secretNamespace = sec.Namespace
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "vault-cluster-issuer-",
 		},
@@ -141,7 +141,7 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 
 	// wait for issuer to be ready
 	By("Waiting for Vault Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -151,17 +151,17 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 	}
 }
 
-func (v *vaultAppRoleProvisioner) initVault() *vaultSecrets {
+func (v *vaultAppRoleProvisioner) initVault(ctx context.Context) *vaultSecrets {
 	By("Configuring the VaultAppRole server")
 	v.setup = vault.NewVaultInitializerAppRole(
 		addon.Base.Details().KubeClient,
 		*addon.Vault.Details(),
 		false,
 	)
-	Expect(v.setup.Init()).NotTo(HaveOccurred(), "failed to init vault")
-	Expect(v.setup.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
+	Expect(v.setup.Init(ctx)).NotTo(HaveOccurred(), "failed to init vault")
+	Expect(v.setup.Setup(ctx)).NotTo(HaveOccurred(), "failed to setup vault")
 
-	roleID, secretID, err := v.setup.CreateAppRole()
+	roleID, secretID, err := v.setup.CreateAppRole(ctx)
 	Expect(err).NotTo(HaveOccurred(), "vault to create app role from vault")
 
 	return &vaultSecrets{

@@ -37,6 +37,7 @@ func CloudDescribe(name string, body func()) bool {
 
 var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-cloud-setup")
+	ctx := context.TODO()
 
 	var (
 		issuer     *cmapi.Issuer
@@ -62,7 +63,7 @@ var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -77,7 +78,7 @@ var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 		issuer = cloudAddon.Details().BuildIssuer()
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -86,9 +87,9 @@ var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Changing the API key to something bad")
-		err = cloudAddon.SetAPIKey("this_is_a_bad_key")
+		err = cloudAddon.SetAPIKey(ctx, "this_is_a_bad_key")
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
