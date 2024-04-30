@@ -8,7 +8,6 @@ issues:
         - exhaustive
         - nilerr
         - interfacebloat
-        - noctx
         - nilnil
         - nakedret
         - musttag

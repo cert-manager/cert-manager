@@ -130,7 +130,11 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	testMetrics := func(expectedOutput string) error {
-		resp, err := http.DefaultClient.Get(metricsEndpoint)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, metricsEndpoint, nil)
+		if err != nil {
+			return err
+		}
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}
