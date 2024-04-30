@@ -403,7 +403,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 		return err
 	}
 
-	//Set status.revision to revision of the CertificateRequest
+	// Set status.revision to revision of the CertificateRequest
 	crt.Status.Revision = &nextRevision
 
 	// Remove Issuing status condition

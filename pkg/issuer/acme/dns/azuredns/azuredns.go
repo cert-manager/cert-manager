@@ -20,8 +20,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -29,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	"github.com/go-logr/logr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -237,18 +236,20 @@ func stabilizeError(err error) error {
 			return nil
 		}
 
-		reponse := *resp
-		reponse.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
-		return &reponse
+		response := *resp
+		response.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
+		return &response
 	}
 
 	var authErr *azidentity.AuthenticationFailedError
 	if errors.As(err, &authErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		authErr.RawResponse = redactResponse(authErr.RawResponse)
 	}
 
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		respErr.RawResponse = redactResponse(respErr.RawResponse)
 	}
 

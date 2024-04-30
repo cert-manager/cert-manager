@@ -487,6 +487,14 @@ Optional annotations to add to the controller Service.
 
 Optional additional labels to add to the controller Service.
 
+#### **serviceIPFamilyPolicy** ~ `string`
+
+Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
+
+#### **serviceIPFamilies** ~ `array`
+
+Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
+
 #### **podDnsPolicy** ~ `string`
 
 Pod DNS policy.  
@@ -1067,6 +1075,20 @@ Optional additional labels to add to the Webhook Pods.
 > ```
 
 Optional additional labels to add to the Webhook Service.
+#### **webhook.serviceIPFamilyPolicy** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
+#### **webhook.serviceIPFamilies** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
 
 The container registry to pull the webhook image from.

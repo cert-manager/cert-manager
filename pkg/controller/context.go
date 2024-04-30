@@ -153,6 +153,12 @@ type ContextOptions struct {
 	IngressShimOptions
 	CertificateOptions
 	SchedulerOptions
+	ConfigOptions
+}
+
+type ConfigOptions struct {
+	// EnableGatewayAPI indicates if the user has enabled GatewayAPI support.
+	EnableGatewayAPI bool
 }
 
 type IssuerOptions struct {
@@ -275,7 +281,7 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		restConfig.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(restConfig.QPS, restConfig.Burst)
 	}
 
-	clients, err := buildClients(restConfig)
+	clients, err := buildClients(restConfig, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +337,7 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	cmscheme.AddToScheme(scheme)
 	gwscheme.AddToScheme(scheme)
 
-	clients, err := buildClients(restConfig)
+	clients, err := buildClients(restConfig, c.ctx.ContextOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +377,7 @@ type contextClients struct {
 
 // buildClients builds all required clients for the context using the given
 // REST config.
-func buildClients(restConfig *rest.Config) (contextClients, error) {
+func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients, error) {
 	httpClient, err := rest.HTTPClientFor(restConfig)
 	if err != nil {
 		return contextClients{}, fmt.Errorf("error creating HTTP client: %w", err)
@@ -397,7 +403,7 @@ func buildClients(restConfig *rest.Config) (contextClients, error) {
 
 	var gatewayAvailable bool
 	// Check if the Gateway API feature gate was enabled
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
 		// Check if the gateway API CRDs are available. If they are not found
 		// return an error which will cause cert-manager to crashloopbackoff.
 		d := kubeClient.Discovery()

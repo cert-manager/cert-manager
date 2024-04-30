@@ -32,13 +32,3 @@ print-sources:
 .PHONY: print-source-dirs
 print-source-dirs:
 	@echo $(SOURCE_DIRS)
-
-.PHONY: go-workspace
-go-workspace: export GOWORK?=$(abspath go.work)
-## Create a go.work file in the repository root (or GOWORK)
-##
-## @category Development
-go-workspace:
-	@rm -f $(GOWORK)
-	go work init
-	go work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/startupapicheck ./cmd/webhook ./test/integration ./test/e2e

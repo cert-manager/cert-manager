@@ -246,7 +246,7 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 // shouldBackOffReissuingOnFailure returns true if an issuance needs to be
 // delayed and the required delay after calculating the exponential backoff.
 // The backoff periods are 1h, 2h, 4h, 8h, 16h and 32h counting from when the last
-// failure occured,
+// failure occurred,
 // so the returned delay will be backoff_period - (current_time - last_failure_time)
 //
 // Notably, it returns no back-off when the certificate doesn't

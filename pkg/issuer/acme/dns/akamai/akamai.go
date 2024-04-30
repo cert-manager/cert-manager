@@ -25,7 +25,6 @@ import (
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
-
 	"github.com/go-logr/logr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -234,17 +233,12 @@ func containsValue(values []string, value string) bool {
 }
 
 func isNotFound(err error) bool {
-
 	if err == nil {
 		return false
 	}
 
 	_, ok := err.(*dns.RecordError)
-	if ok {
-		return true
-	}
-
-	return false
+	return ok
 }
 
 func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {

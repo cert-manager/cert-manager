@@ -27,7 +27,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -136,6 +135,7 @@ func TestMetricsController(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 
 		output, err := io.ReadAll(resp.Body)
 		if err != nil {

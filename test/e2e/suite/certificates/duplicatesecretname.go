@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 
@@ -33,6 +31,9 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // This test ensures that Certificates in the same Namespace who share the same
@@ -129,8 +130,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 				Expect(err).NotTo(HaveOccurred())
 				var ownedReqs int
 				for _, req := range reqs.Items {
-					// #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
-					if predicate.ResourceOwnedBy(crt)(&req) {
+					if predicate.ResourceOwnedBy(crt)(&req) /* #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010 */ {
 						ownedReqs++
 					}
 				}

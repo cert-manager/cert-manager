@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,7 +33,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	"github.com/stretchr/testify/assert"
 )
 
 // Runs a full set of tests against the trigger 'policy chain' once it is
@@ -1846,7 +1846,7 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 	const fieldManager = "cert-manager-test"
 
 	crt := gen.Certificate("test-certificate",
-		gen.SetCertificateUID(types.UID("uid-123")),
+		gen.SetCertificateUID("uid-123"),
 	)
 
 	tests := map[string]struct {
@@ -2024,7 +2024,7 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 
 func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 	crt := gen.Certificate("test-certificate",
-		gen.SetCertificateUID(types.UID("uid-123")),
+		gen.SetCertificateUID("uid-123"),
 	)
 
 	tests := map[string]struct {

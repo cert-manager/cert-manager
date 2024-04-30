@@ -28,6 +28,11 @@ import (
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
+	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/configfile"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
@@ -35,17 +40,12 @@ import (
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/ingresses"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
-	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/issuers"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/acme"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/ca"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/selfsigned"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/vault"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/venafi"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/configfile"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const componentController = "controller"
@@ -53,9 +53,7 @@ const componentController = "controller"
 func NewServerCommand(ctx context.Context) *cobra.Command {
 	return newServerCommand(
 		ctx,
-		func(ctx context.Context, cfg *config.ControllerConfiguration) error {
-			return Run(ctx, cfg)
-		},
+		Run,
 		os.Args[1:],
 	)
 }

@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -42,27 +43,34 @@ func main() {
 
 	flag.Parse()
 
+	if err := Main(ctx); err != nil {
+		log.Print(err)
+		util.SetExitCode(err)
+	}
+}
+
+func Main(ctx context.Context) error {
 	cl, err := cf.New(*apiKey, *email)
 	if err != nil {
-		log.Fatalf("error creating cloudflare client: %v", err)
+		return fmt.Errorf("error creating cloudflare client: %v", err)
 	}
 
 	zones, err := cl.ListZones(ctx, *zoneName)
 	if err != nil {
-		log.Fatalf("error listing zones: %v", err)
+		return fmt.Errorf("error listing zones: %v", err)
 	}
 	if len(zones) == 0 {
-		log.Fatalf("could not find zone with name %q", *zoneName)
+		return fmt.Errorf("could not find zone with name %q", *zoneName)
 	}
 	if len(zones) > 1 {
-		log.Fatalf("found multiple zones for name %q", *zoneName)
+		return fmt.Errorf("found multiple zones for name %q", *zoneName)
 	}
 	zone := zones[0]
 	rrs, _, err := cl.ListDNSRecords(ctx, cf.ZoneIdentifier(zone.ID), cf.ListDNSRecordsParams{
 		Type: "TXT",
 	})
 	if err != nil {
-		log.Fatalf("error listing TXT records in zone: %v", err)
+		return fmt.Errorf("error listing TXT records in zone: %v", err)
 	}
 
 	log.Printf("Evaluating %d records", len(rrs))
@@ -93,13 +101,15 @@ func main() {
 	}
 
 	if len(errs) > 0 {
-		log.Fatalf("Encountered %d errors whilst cleaning up zone", len(errs))
+		return fmt.Errorf("encountered %d errors whilst cleaning up zone", len(errs))
 	}
 
 	log.Print()
 	log.Printf("Skipped: %d", skipped)
 	log.Printf("Deleted: %d", deleted)
 	log.Printf("Cleanup complete!")
+
+	return nil
 }
 
 func shouldDelete(rr cf.DNSRecord) bool {

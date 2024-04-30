@@ -20,17 +20,16 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.CertManagerDescribe("CA Certificate", func() {
@@ -153,10 +152,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		})
 
 		It("should be able to create a certificate with additional output formats", func() {
-			// Output formats is only enabled via this feature gate being enabled.
-			// Don't run test if the gate isn't enabled.
-			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
-
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")

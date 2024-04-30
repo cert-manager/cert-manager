@@ -144,13 +144,14 @@ func UnmarshalUniversalValue(rawValue asn1.RawValue) (UniversalValue, error) {
 
 	var rest []byte
 	var err error
-	if rawValue.Tag == asn1.TagIA5String {
+	switch {
+	case rawValue.Tag == asn1.TagIA5String:
 		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.IA5String, "ia5")
-	} else if rawValue.Tag == asn1.TagUTF8String {
+	case rawValue.Tag == asn1.TagUTF8String:
 		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.UTF8String, "utf8")
-	} else if rawValue.Tag == asn1.TagPrintableString {
+	case rawValue.Tag == asn1.TagPrintableString:
 		rest, err = asn1.UnmarshalWithParams(rawValue.FullBytes, &uv.PrintableString, "printable")
-	} else {
+	default:
 		uv.Bytes = rawValue.FullBytes
 	}
 	if err != nil {

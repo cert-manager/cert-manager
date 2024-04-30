@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
@@ -40,7 +41,6 @@ import (
 	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/go-logr/logr"
 )
 
 const (

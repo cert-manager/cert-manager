@@ -92,8 +92,7 @@ func SyncFnFor(
 		// "kubernetes.io/tls-acme" annotation are only enabled for the Ingress
 		// resource.
 		var autoAnnotations []string
-		switch ingLike.(type) {
-		case *networkingv1.Ingress:
+		if _, ok := ingLike.(*networkingv1.Ingress); ok {
 			autoAnnotations = defaults.DefaultAutoCertificateAnnotations
 		}
 
@@ -284,11 +283,9 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike me
 	if l.TLS.Mode == nil {
 		errs = append(errs, field.Required(path.Child("tls").Child("mode"),
 			"the mode field is required"))
-	} else {
-		if *l.TLS.Mode != gwapi.TLSModeTerminate {
-			errs = append(errs, field.NotSupported(path.Child("tls").Child("mode"),
-				*l.TLS.Mode, []string{string(gwapi.TLSModeTerminate)}))
-		}
+	} else if *l.TLS.Mode != gwapi.TLSModeTerminate {
+		errs = append(errs, field.NotSupported(path.Child("tls").Child("mode"),
+			*l.TLS.Mode, []string{string(gwapi.TLSModeTerminate)}))
 	}
 
 	return errs
@@ -344,7 +341,7 @@ func buildCertificates(
 				}
 				// Gateway API hostname explicitly disallows IP addresses, so this
 				// should be OK.
-				tlsHosts[secretRef] = append(tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
+				tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
 			}
 		}
 	default:

@@ -37,7 +37,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -45,11 +44,9 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 )
 
 // TestIssuingController performs a basic test to ensure that the issuing
@@ -748,8 +745,6 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 // ensure that values in a Certificate's AddiationOutputFormats will be copied
 // to the target Secret- when they are both added and deleted.
 func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats, true)()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
 
@@ -943,7 +938,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	pkDER := block.Bytes
 	combinedPEM := append(append(pkBytes, '\n'), certPEM...)
 
-	// Wait for the additional output format values to to be observed on the Secret.
+	// Wait for the additional output format values to be observed on the Secret.
 	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {

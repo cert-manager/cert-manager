@@ -40,9 +40,10 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	issuerfake "github.com/cert-manager/cert-manager/pkg/issuer/fake"
-	_ "github.com/cert-manager/cert-manager/pkg/issuer/selfsigned"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	_ "github.com/cert-manager/cert-manager/pkg/issuer/selfsigned"
 )
 
 var (

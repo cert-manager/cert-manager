@@ -145,7 +145,7 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 					return false
 				}
 
-				// the renewal channel has a buffer of 1 - drop event if we are already issueing
+				// the renewal channel has a buffer of 1 - drop event if we are already issuing
 				select {
 				case renewalChan <- struct{}{}:
 				default:

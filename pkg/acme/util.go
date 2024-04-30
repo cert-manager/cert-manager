@@ -28,8 +28,7 @@ import (
 // The 'valid' state is a special case, as it is a final state for Challenges but
 // not for Orders.
 func IsFinalState(s cmacme.State) bool {
-	switch s {
-	case cmacme.Valid:
+	if s == cmacme.Valid {
 		return true
 	}
 	return IsFailureState(s)

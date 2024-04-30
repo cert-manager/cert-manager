@@ -212,10 +212,8 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 			if err != nil {
 				if test.err == "" {
 					t.Errorf("Unexpected error: %s", err.Error())
-				} else {
-					if test.err != err.Error() {
-						t.Errorf("Expected error: %s but got: %s instead", err.Error(), test.err)
-					}
+				} else if test.err != err.Error() {
+					t.Errorf("Expected error: %s but got: %s instead", err.Error(), test.err)
 				}
 			}
 
@@ -298,10 +296,8 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 			if err != nil {
 				if test.err == "" {
 					t.Errorf("Unexpected error: %s", err.Error())
-				} else {
-					if test.err != err.Error() {
-						t.Errorf("Expected error: %s but got: %s instead", err.Error(), test.err)
-					}
+				} else if test.err != err.Error() {
+					t.Errorf("Expected error: %s but got: %s instead", err.Error(), test.err)
 				}
 			}
 
@@ -347,7 +343,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				DNSNames: []string{"at", "least", "one", "cn"},
 			}),
 		},
-		"should match if commonName is one of the requested requested dnsNames": {
+		"should match if commonName is one of the requested dnsNames": {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},

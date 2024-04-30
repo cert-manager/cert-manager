@@ -20,18 +20,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	"github.com/stretchr/testify/require"
-)
-
-const (
-	randomFinalizer         = "random.acme.cert-manager.io"
-	maxConcurrentChallenges = 60
 )
 
 func TestRunScheduler(t *testing.T) {

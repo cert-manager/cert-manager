@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -34,6 +32,9 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	csrutil "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {

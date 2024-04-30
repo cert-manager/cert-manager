@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -31,6 +29,9 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {

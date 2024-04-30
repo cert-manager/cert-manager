@@ -18,15 +18,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-go=$1
-
-clientgen=$2
-deepcopygen=$3
-informergen=$4
-listergen=$5
-defaultergen=$6
-conversiongen=$7
-openapigen=$8
+clientgen=$1
+deepcopygen=$2
+informergen=$3
+listergen=$4
+defaultergen=$5
+conversiongen=$6
+openapigen=$7
 
 # If the envvar "VERIFY_ONLY" is set, we only check if everything's up to date
 # and don't actually generate anything
@@ -124,18 +122,8 @@ clean() {
   find "$path" -name "$name" -delete
 }
 
-mkcp() {
-  src="$1"
-  dst="$2"
-  mkdir -p "$(dirname "$dst")"
-  cp "$src" "$dst"
-}
-
-# Export mkcp for use in sub-shells
-export -f mkcp
-
 gen-openapi-acme() {
-  clean pkg/acme/webhook/openapi '*.go'
+  clean pkg/acme/webhook/openapi 'zz_generated.openapi.go'
   echo "+++ ${VERB} ACME openapi..." >&2
   mkdir -p hack/openapi_reports
   "$openapigen" \

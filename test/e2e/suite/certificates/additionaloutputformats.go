@@ -22,9 +22,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
@@ -38,6 +35,10 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 )
 
 // This test ensures that the Certificates AdditionalCertificateOutputFormats
@@ -50,8 +51,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 	)
 
 	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
-
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-additional-output-formats-",
@@ -368,7 +367,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 					continue
 				}
 				var fieldset fieldpath.Set
-				Expect(fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)))
+				Expect(fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw))).NotTo(HaveOccurred())
 				if fieldset.Has(fieldpath.Path{
 					{FieldName: ptr.To("data")},
 					{FieldName: ptr.To("tls-combined.pem")},

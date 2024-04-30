@@ -17,9 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-
 	"flag"
+	"fmt"
 )
 
 type Helm struct {

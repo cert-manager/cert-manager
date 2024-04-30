@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +29,6 @@ import (
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEnsureService(t *testing.T) {

@@ -24,6 +24,8 @@ import (
 	"encoding/pem"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
@@ -31,11 +33,9 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	//. "github.com/onsi/gomega/gstruct"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
@@ -96,12 +96,12 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(secret.Data).To(HaveKey("tls.crt"))
 		crtPEM := secret.Data["tls.crt"]
 		pemBlock, _ := pem.Decode(crtPEM)
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cert.Subject.Names).To(Equal([]pkix.AttributeTypeAndValue{
 			{Type: asn1.ObjectIdentifier{2, 5, 4, 6}, Value: "Spain"},
@@ -120,7 +120,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 
 	It("Should not allow unknown RDN component", func() {
 		_, err := createCertificate(f, "UNKNOWN=blah")
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Literal subject contains unrecognized key with value [blah]"))
 	})
 

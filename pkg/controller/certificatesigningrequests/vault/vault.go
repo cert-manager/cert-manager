@@ -18,8 +18,6 @@ package vault
 
 import (
 	"context"
-	"crypto"
-	"crypto/x509"
 	"fmt"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -43,8 +41,6 @@ import (
 const (
 	CSRControllerName = "certificatesigningrequests-issuer-vault"
 )
-
-type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
 
 // Vault is a controller for signing Kubernetes CertificateSigningRequest
 // using Vault Issuers.

@@ -127,7 +127,7 @@ func ExtractCommonNameFromRDNSequence(rdns pkix.RDNSequence) string {
 	return ""
 }
 
-// DEPRECATED: this function will be removed in a future release.
+// Deprecated: this function will be removed in a future release.
 func ParseSubjectStringToRawDERBytes(subject string) ([]byte, error) {
 	rdnSequence, err := UnmarshalSubjectStringToRDNSequence(subject)
 	if err != nil {

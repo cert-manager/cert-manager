@@ -44,7 +44,7 @@ cleanup() {
 }
 trap "cleanup" EXIT SIGINT
 
-cp -a "${projectdir}/." "${tmp}"
+rsync -aEq "${projectdir}/." "${tmp}" --exclude "_bin/"
 pushd "${tmp}" >/dev/null
 
 "$@"

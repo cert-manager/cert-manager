@@ -22,18 +22,19 @@ import (
 	"encoding/pem"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("othername san processing", func() {
@@ -102,12 +103,12 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(secret.Data).To(HaveKey("tls.crt"))
 		crtPEM := secret.Data["tls.crt"]
 		pemBlock, _ := pem.Decode(crtPEM)
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
 
@@ -150,7 +151,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 				UTF8Value: "user@example.org",
 			},
 		})
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].oid: Invalid value: \"BAD_OID\": oid syntax invalid"))
 
 	})
@@ -165,7 +166,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 				UTF8Value: "user@example.org",
 			},
 		})
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].utf8Value: Required value: must be set to a valid non-empty UTF8 string"))
 
 	})

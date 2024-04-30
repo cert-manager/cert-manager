@@ -19,7 +19,6 @@ package shimhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -3262,17 +3261,6 @@ func TestSync(t *testing.T) {
 		}
 	})
 
-}
-
-type fakeHelper struct {
-	issuer cmapi.GenericIssuer
-}
-
-func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
-	if f.issuer == nil {
-		return nil, fmt.Errorf("no issuer specified on fake helper")
-	}
-	return f.issuer, nil
 }
 
 func TestIssuerForIngress(t *testing.T) {

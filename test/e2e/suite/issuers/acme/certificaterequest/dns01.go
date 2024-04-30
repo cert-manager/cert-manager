@@ -21,24 +21,19 @@ import (
 	"crypto/x509"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/acme/dnsproviders"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-)
 
-type dns01Provider interface {
-	Details() *dnsproviders.Details
-	addon.Addon
-}
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
 const testingACMEEmail = "e2e@cert-manager.io"
 const testingACMEPrivateKey = "test-acme-private-key"
@@ -81,7 +76,7 @@ func testRFC2136DNSProvider() bool {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+			_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
@@ -124,7 +119,7 @@ func testRFC2136DNSProvider() bool {
 				[]string{dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+			_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
@@ -137,7 +132,7 @@ func testRFC2136DNSProvider() bool {
 				[]string{"*." + dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
+			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
@@ -150,7 +145,7 @@ func testRFC2136DNSProvider() bool {
 				[]string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
+			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*10, key)

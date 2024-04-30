@@ -24,7 +24,6 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -34,7 +33,6 @@ import (
 	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -68,17 +66,11 @@ func init() {
 
 func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &CA{
-		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
-		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
-			if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) {
-				return pki.DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition(cr)
-			}
-
-			return pki.CertificateTemplateFromCertificateRequest(cr)
-		},
-		signingFn: pki.SignCSRTemplate,
+		issuerOptions:     ctx.IssuerOptions,
+		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
+		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		templateGenerator: pki.CertificateTemplateFromCertificateRequest,
+		signingFn:         pki.SignCSRTemplate,
 	}
 }
 

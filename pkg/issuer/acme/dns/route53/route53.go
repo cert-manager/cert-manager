@@ -17,10 +17,6 @@ import (
 	"strings"
 	"time"
 
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-
-	"github.com/go-logr/logr"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
@@ -30,7 +26,10 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
+	"github.com/go-logr/logr"
+
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

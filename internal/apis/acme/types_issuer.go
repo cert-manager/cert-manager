@@ -99,7 +99,7 @@ type ACMEIssuer struct {
 	// Enables requesting a Not After date on certificates that matches the
 	// duration of the certificate. This is not supported by all ACME servers
 	// like Let's Encrypt. If set to true when the ACME server does not support
-	// it it will create an error on the Order.
+	// it, it will create an error on the Order.
 	// Defaults to false.
 	EnableDurationFeature bool
 }
@@ -303,7 +303,7 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 
 	// If specified, the pod's imagePullSecrets
 	// +optional
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchMergeKey:"name" patchStrategy:"merge"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {

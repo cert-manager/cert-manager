@@ -109,14 +109,14 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 		return DNSZone{}, fmt.Errorf("FindNearestZoneForFQDN: FQDN-Parameter can't be empty, please specify a domain!")
 	}
 	mappedFQDN := strings.Split(fqdn, ".")
-	nextName := util.UnFqdn(fqdn) //remove the trailing dot
+	nextName := util.UnFqdn(fqdn) // remove the trailing dot
 	var lastErr error
 	for i := 0; i < len(mappedFQDN)-1; i++ {
 		var from, to = len(mappedFQDN[i]) + 1, len(nextName)
 		if from > to {
 			continue
 		}
-		if mappedFQDN[i] == "*" { //skip wildcard sub-domain-entries
+		if mappedFQDN[i] == "*" { // skip wildcard sub-domain-entries
 			nextName = string([]rune(nextName)[from:to])
 			continue
 		}
@@ -133,7 +133,7 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 		}
 
 		if len(zones) > 0 {
-			return zones[0], nil //we're returning the first zone found, might need to test that further
+			return zones[0], nil // we're returning the first zone found, might need to test that further
 		}
 		nextName = string([]rune(nextName)[from:to])
 	}

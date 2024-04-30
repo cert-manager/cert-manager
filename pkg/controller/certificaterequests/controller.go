@@ -88,8 +88,8 @@ type Controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 
-	//registerExtraInformers is a list of functions that CertificateRequest
-	//controllers can use to register custom informers.
+	// registerExtraInformers is a list of functions that CertificateRequest
+	// controllers can use to register custom informers.
 	registerExtraInformers []RegisterExtraInformerFn
 
 	// Issuer to call sign function

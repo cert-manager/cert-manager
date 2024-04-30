@@ -13,11 +13,21 @@
 # limitations under the License.
 
 base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+base_dependabot_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base-dependabot/
 
+ifdef repository_base_no_dependabot
 .PHONY: generate-base
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-base:
 	cp -r $(base_dir)/. ./
+else
+.PHONY: generate-base
+## Generate base files in the repository
+## @category [shared] Generate/ Verify
+generate-base:
+	cp -r $(base_dir)/. ./
+	cp -r $(base_dependabot_dir)/. ./
+endif
 
 shared_generate_targets += generate-base

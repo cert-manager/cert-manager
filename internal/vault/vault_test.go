@@ -1097,10 +1097,10 @@ type testNewConfigT struct {
 func TestNewConfig(t *testing.T) {
 	caBundleSecretRefFakeSecretLister := func(namespace, secret, key, cert string) *listers.FakeSecretLister {
 		return listers.FakeSecretListerFrom(listers.NewFakeSecretLister(), func(f *listers.FakeSecretLister) {
-			f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+			f.SecretsFn = func(listerNamespace string) clientcorev1.SecretNamespaceLister {
 				return listers.FakeSecretNamespaceListerFrom(listers.NewFakeSecretNamespaceLister(), func(fn *listers.FakeSecretNamespaceLister) {
 					fn.GetFn = func(name string) (*corev1.Secret, error) {
-						if name == secret && namespace == namespace {
+						if name == secret && listerNamespace == namespace {
 							return &corev1.Secret{
 								Data: map[string][]byte{
 									key: []byte(cert),
@@ -1114,10 +1114,10 @@ func TestNewConfig(t *testing.T) {
 	}
 	clientCertificateSecretRefFakeSecretLister := func(namespace, secret, caKey, caCert, clientKey, clientCert, privateKey, privateKeyCert string) *listers.FakeSecretLister {
 		return listers.FakeSecretListerFrom(listers.NewFakeSecretLister(), func(f *listers.FakeSecretLister) {
-			f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+			f.SecretsFn = func(listerNamespace string) clientcorev1.SecretNamespaceLister {
 				return listers.FakeSecretNamespaceListerFrom(listers.NewFakeSecretNamespaceLister(), func(fn *listers.FakeSecretNamespaceLister) {
 					fn.GetFn = func(name string) (*corev1.Secret, error) {
-						if name == secret && namespace == namespace {
+						if name == secret && listerNamespace == namespace {
 							return &corev1.Secret{
 								Data: map[string][]byte{
 									caKey:      []byte(caCert),

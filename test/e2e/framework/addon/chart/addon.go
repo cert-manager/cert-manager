@@ -235,7 +235,8 @@ func (c *Chart) Logs() (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	podList := append(oldLabelPods.Items, newLabelPods.Items...)
+	podList := append([]corev1.Pod(nil), oldLabelPods.Items...)
+	podList = append(podList, newLabelPods.Items...)
 
 	out := make(map[string]string)
 	for _, pod := range podList {

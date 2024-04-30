@@ -25,8 +25,9 @@ import (
 	"strings"
 	"testing"
 
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/assert"
+
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
@@ -80,7 +81,7 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		return
 	}
 
-	block := &pem.Block{Type: "BLAH BLAH BLAH", Bytes: []byte("blahblahblah")}
+	block := &pem.Block{Type: "BLAHBLAHBLAH", Bytes: []byte("blahblahblah")}
 	blahKeyBytes := pem.EncodeToMemory(block)
 
 	privateKeyBlock := &pem.Block{Type: "PRIVATE KEY", Bytes: []byte("blahblahblah")}

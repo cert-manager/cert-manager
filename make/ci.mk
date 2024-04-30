@@ -12,23 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: verify-golangci-lint
-verify-golangci-lint: | $(NEEDS_GOLANGCI-LINT)
-	find . -name go.mod -not \( -path "./$(bin_dir)/*" -prune \)  -execdir $(GOLANGCI-LINT) run --timeout=30m --config=$(CURDIR)/.golangci.ci.yaml \;
-
-shared_verify_targets += verify-golangci-lint
-
 .PHONY: verify-modules
 verify-modules: | $(NEEDS_CMREL)
 	$(CMREL) validate-gomod --path $(shell pwd) --no-dummy-modules github.com/cert-manager/cert-manager/integration-tests
 
 shared_verify_targets += verify-modules
-
-.PHONY: verify-imports
-verify-imports: | $(NEEDS_GOIMPORTS)
-	./hack/verify-goimports.sh $(GOIMPORTS) $(SOURCE_DIRS)
-
-shared_verify_targets += verify-imports
 
 .PHONY: verify-chart
 verify-chart: $(bin_dir)/cert-manager-$(VERSION).tgz
@@ -56,10 +44,11 @@ generate-crds: | $(NEEDS_CONTROLLER-GEN)
 
 shared_generate_targets += generate-crds
 
-.PHONY: verify-codegen
-verify-codegen: | $(NEEDS_GO) $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
+# Overwrite the verify-generate-codegen target with this
+# optimised target.
+.PHONY: verify-generate-codegen
+verify-generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
 	VERIFY_ONLY="true" ./hack/k8s-codegen.sh \
-		$(GO) \
 		$(CLIENT-GEN) \
 		$(DEEPCOPY-GEN) \
 		$(INFORMER-GEN) \
@@ -68,12 +57,11 @@ verify-codegen: | $(NEEDS_GO) $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_
 		$(CONVERSION-GEN) \
 		$(OPENAPI-GEN)
 
-shared_verify_targets += verify-codegen
+shared_verify_targets += verify-generate-codegen
 
 .PHONY: generate-codegen
-generate-codegen: | $(NEEDS_GO) $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
+generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
 	./hack/k8s-codegen.sh \
-		$(GO) \
 		$(CLIENT-GEN) \
 		$(DEEPCOPY-GEN) \
 		$(INFORMER-GEN) \
@@ -82,7 +70,7 @@ generate-codegen: | $(NEEDS_GO) $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEED
 		$(CONVERSION-GEN) \
 		$(OPENAPI-GEN)
 
-shared_generate_targets += generate-codegen
+shared_generate_targets_dirty += generate-codegen
 
 .PHONY: generate-helm-docs
 generate-helm-docs: deploy/charts/cert-manager/README.template.md deploy/charts/cert-manager/values.yaml | $(NEEDS_HELM-TOOL)
@@ -99,8 +87,7 @@ shared_generate_targets += generate-helm-docs
 ## request or change is merged.
 ##
 ## @category CI
-ci-presubmit: $(NEEDS_GO)
-	$(MAKE) -j1 verify
+ci-presubmit: verify
 
 .PHONY: generate-all
 ## Update CRDs, code generation and licenses to the latest versions.

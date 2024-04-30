@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eu -o pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
 
 # This script is a wrapper for outputting purely the sha256 hash of the input file,
 # ideally in a portable way.
