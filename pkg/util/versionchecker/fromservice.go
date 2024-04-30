@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var imageVersion = regexp.MustCompile(`^quay.io/jetstack/cert-manager-webhook:(v(?:\d+)\.(?:\d+)\.(?:\d+)(?:.*))$`)
+var imageVersion = regexp.MustCompile(`^quay\\.io/jetstack/cert-manager-webhook:(v(?:\d+)\.(?:\d+)\.(?:\d+)(?:.*))$`)
 
 func (o *VersionChecker) extractVersionFromService(
 	ctx context.Context,
