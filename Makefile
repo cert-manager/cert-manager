@@ -60,8 +60,10 @@ MAKECMDGOALS ?=
 # binary may not be available in the PATH yet when the Makefiles are
 # evaluated. HOST_OS and HOST_ARCH only support Linux, *BSD and macOS (M1
 # and Intel).
-HOST_OS ?= $(shell uname -s | tr A-Z a-z)
-HOST_ARCH ?= $(shell uname -m)
+host_os := $(shell uname -s | tr A-Z a-z)
+host_arch := $(shell uname -m)
+HOST_OS ?= $(host_os)
+HOST_ARCH ?= $(host_arch)
 
 ifeq (x86_64, $(HOST_ARCH))
 	HOST_ARCH = amd64
@@ -74,7 +76,8 @@ endif
 # Git and versioning information #
 ##################################
 
-VERSION ?= $(shell git describe --tags --always --match='v*' --abbrev=14 --dirty)
+git_version := $(shell git describe --tags --always --match='v*' --abbrev=14 --dirty)
+VERSION ?= $(git_version)
 IS_PRERELEASE := $(shell git describe --tags --always --match='v*' --abbrev=0 | grep -q '-' && echo true || echo false)
 GITCOMMIT := $(shell git rev-parse HEAD)
 GITEPOCH := $(shell git show -s --format=%ct HEAD)
