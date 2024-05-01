@@ -37,7 +37,7 @@ Documentation for cert-manager can be found at [cert-manager.io](https://cert-ma
 For the common use-case of automatically issuing TLS certificates for
 Ingress resources, see the [cert-manager nginx-ingress quick start guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
-For a more comprensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
+For a more comprehensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
 
 ### Installation
 
