@@ -37,11 +37,21 @@ Documentation for cert-manager can be found at [cert-manager.io](https://cert-ma
 For the common use-case of automatically issuing TLS certificates for
 Ingress resources, see the [cert-manager nginx-ingress quick start guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
-For a more comprensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
+For a more comprehensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
 
 ### Installation
 
 [Installation](https://cert-manager.io/docs/installation/) is documented on the website, with a variety of supported methods.
+
+## Developing cert-manager
+
+We actively welcome contributions and we support both Linux and macOS environments for development.
+
+Different platforms have different requirements; we document everything on our [Building cert-manager](https://cert-manager.io/docs/contributing/building/)
+website page.
+
+Note in particular that macOS has several extra requirements, to ensure that modern tools are installed and available. Read the page before
+getting started!
 
 ## Troubleshooting
 
