@@ -43,6 +43,16 @@ For a more comprehensive guide to issuing your first certificate, see our [getti
 
 [Installation](https://cert-manager.io/docs/installation/) is documented on the website, with a variety of supported methods.
 
+## Developing cert-manager
+
+We actively welcome contributions and we support both Linux and macOS environments for development.
+
+Different platforms have different requirements; we document everything on our [Building cert-manager](https://cert-manager.io/docs/contributing/building/)
+website page.
+
+Note in particular that macOS has several extra requirements, to ensure that modern tools are installed and available. Read the page before
+getting started!
+
 ## Troubleshooting
 
 If you encounter any issues whilst using cert-manager, we have a number of ways to get help:
