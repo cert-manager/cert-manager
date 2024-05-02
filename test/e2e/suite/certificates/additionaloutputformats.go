@@ -51,6 +51,8 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 	)
 
 	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
+		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
+
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-additional-output-formats-",
