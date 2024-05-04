@@ -50,6 +50,9 @@ const (
 	// Annotation key for certificate renewBefore.
 	RenewBeforeAnnotationKey = "cert-manager.io/renew-before"
 
+	// Annotation key for certificate renewBeforePercentage.
+	RenewBeforePercentageAnnotationKey = "cert-manager.io/renew-before-percentage"
+
 	// Annotation key for emails subjectAltNames.
 	EmailsAnnotationKey = "cert-manager.io/email-sans"
 

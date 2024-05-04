@@ -173,8 +173,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewBeforeHint := crt.Spec.RenewBefore
-		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, renewBeforeHint)
+		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
 
 		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore

@@ -842,6 +842,7 @@ func autoConvert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *Cer
 	// WARNING: in.Organization requires manual conversion: does not exist in peer-type
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.RenewBeforePercentage = (*int32)(unsafe.Pointer(in.RenewBeforePercentage))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	// WARNING: in.URISANs requires manual conversion: does not exist in peer-type
@@ -896,6 +897,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *cer
 	out.CommonName = in.CommonName
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.RenewBeforePercentage = (*int32)(unsafe.Pointer(in.RenewBeforePercentage))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	// WARNING: in.URIs requires manual conversion: does not exist in peer-type

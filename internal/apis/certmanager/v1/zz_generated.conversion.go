@@ -853,6 +853,7 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 	out.CommonName = in.CommonName
 	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.RenewBeforePercentage = (*int32)(unsafe.Pointer(in.RenewBeforePercentage))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.URIs = *(*[]string)(unsafe.Pointer(&in.URIs))
@@ -893,6 +894,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	out.CommonName = in.CommonName
 	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.RenewBeforePercentage = (*int32)(unsafe.Pointer(in.RenewBeforePercentage))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.URIs = *(*[]string)(unsafe.Pointer(&in.URIs))
