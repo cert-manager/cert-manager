@@ -14,7 +14,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -117,17 +116,13 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	}
 
 	if d.Role != "" && d.WebIdentityToken != "" {
-		d.log.V(logf.DebugLevel).WithValues("role", d.Role).WithValues("path", d.WebIdentityToken).Info("assuming role with web identity")
-		token, err := os.ReadFile(d.WebIdentityToken)
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("failed to read token from file: %s", err)
-		}
+		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
 
 		stsSvc := d.StsProvider(cfg)
 		result, err := stsSvc.AssumeRoleWithWebIdentity(context.TODO(), &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(d.Role),
 			RoleSessionName:  aws.String("cert-manager"),
-			WebIdentityToken: aws.String(string(token)),
+			WebIdentityToken: aws.String(d.WebIdentityToken),
 		})
 		if err != nil {
 			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %s", err)

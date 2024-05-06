@@ -636,41 +636,6 @@ func TestRoute53AssumeRole(t *testing.T) {
 				},
 			},
 		},
-		{
-			solverFixture{
-				Builder: &test.Builder{
-					Context: &controller.Context{
-						RESTConfig: new(rest.Config),
-						ContextOptions: controller.ContextOptions{
-							IssuerOptions: controller.IssuerOptions{
-								IssuerAmbientCredentials: false,
-							},
-						},
-					},
-				},
-				Issuer:       newIssuer(),
-				dnsProviders: newFakeDNSProviders(),
-				Challenge: &cmacme.Challenge{
-					Spec: cmacme.ChallengeSpec{
-						Solver: cmacme.ACMEChallengeSolver{
-							DNS01: &cmacme.ACMEChallengeSolverDNS01{
-								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-									Region:           "us-west-2",
-									Role:             "my-other-role",
-									WebIdentityToken: "path/to/token",
-								},
-							},
-						},
-					},
-				},
-			},
-			result{
-				expectedCall: &fakeDNSProviderCall{
-					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-other-role", "path/to/token", false, util.RecursiveNameservers},
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
