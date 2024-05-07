@@ -83,7 +83,6 @@ func TestTriggerController(t *testing.T) {
 	}
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
 	c := controllerpkg.NewController(
-		ctx,
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -190,7 +189,6 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Start the trigger controller
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
 	c := controllerpkg.NewController(
-		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -287,7 +285,6 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// Start the trigger controller
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
 	c := controllerpkg.NewController(
-		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,

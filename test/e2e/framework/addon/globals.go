@@ -17,6 +17,7 @@ limitations under the License.
 package addon
 
 import (
+	"context"
 	"fmt"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -129,10 +130,10 @@ func SetupGlobalsNonPrimary(cfg *config.Config, transferred []AddonTransferableD
 // the API server for a resource that the addon creates or by checking that an
 // HTTP endpoint is available)
 // This function should be run only on ginkgo process #1.
-func ProvisionGlobals(cfg *config.Config) error {
+func ProvisionGlobals(ctx context.Context, cfg *config.Config) error {
 	for _, g := range allAddons {
 		provisioned = append(provisioned, g)
-		if err := g.Provision(); err != nil {
+		if err := g.Provision(ctx); err != nil {
 			return err
 		}
 	}
@@ -170,7 +171,7 @@ func GlobalLogs() (map[string]string, error) {
 // This should be called by the test suite in a SynchronizedAfterSuite to ensure
 // all global addons are cleaned up after a run. This should be run only on ginkgo
 // process #1.
-func DeprovisionGlobals(cfg *config.Config) error {
+func DeprovisionGlobals(ctx context.Context, cfg *config.Config) error {
 	if !cfg.Cleanup {
 		log.Logf("Skipping deprovisioning as cleanup set to false.")
 		return nil
@@ -179,7 +180,7 @@ func DeprovisionGlobals(cfg *config.Config) error {
 	// deprovision addons in the reverse order to that of provisioning
 	for i := len(provisioned) - 1; i >= 0; i-- {
 		a := provisioned[i]
-		errs = append(errs, a.Deprovision())
+		errs = append(errs, a.Deprovision(ctx))
 	}
 	return utilerrors.NewAggregate(errs)
 }

@@ -50,6 +50,7 @@ type injectableTest struct {
 
 var _ = framework.CertManagerDescribe("CA Injector", func() {
 	f := framework.NewDefaultFramework("cainjector")
+	ctx := context.TODO()
 
 	issuerName := "inject-cert-issuer"
 	secretName := "serving-certs-data"
@@ -66,7 +67,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 				By("Waiting for Issuer to become Ready")
-				err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+				err := util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 					issuerName,
 					certmanager.IssuerCondition{
 						Type:   certmanager.IssuerConditionReady,
@@ -100,7 +101,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				)
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 				By("grabbing the corresponding secret")
@@ -176,7 +177,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return nil
 				})
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")

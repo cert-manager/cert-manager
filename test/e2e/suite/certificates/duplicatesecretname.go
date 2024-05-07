@@ -71,7 +71,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 
 		By("creating Certificate")
 
-		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
+		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(ctx, crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		return crt.Name
@@ -82,10 +82,10 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		issuer := gen.Issuer("self-signed",
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}))
-		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
+		Expect(f.CRClient.Create(ctx, issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			"self-signed", cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -102,21 +102,21 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 			gen.SetCertificateIsCA(true),
 			gen.SetCertificateSecretName("ca-issuer"),
 		)
-		Expect(f.CRClient.Create(context.Background(), crt)).To(Succeed())
-		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Second*10)
+		Expect(f.CRClient.Create(ctx, crt)).To(Succeed())
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Second*10)
 		Expect(err).NotTo(HaveOccurred())
 		issuer = gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "ca-issuer"}),
 		)
-		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
-		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		Expect(f.CRClient.Create(ctx, issuer)).To(Succeed())
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.Background(), issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
+		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
 	It("if Certificates are created in the same Namsespace with the same spec.secretName, they should block issuance, and never create more than one request.", func() {
@@ -168,7 +168,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		for _, crtName := range []string{crt1, crt2, crt3} {
 			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Second*10)
+			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Second*10)
 			Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 		}
 	})

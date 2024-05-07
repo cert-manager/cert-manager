@@ -159,10 +159,11 @@ func (s *Server) Run(ctx context.Context) error {
 			<-ctx.Done()
 
 			// allow a timeout for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			if err := server.Shutdown(ctx); err != nil {
+			// nolint: contextcheck
+			if err := server.Shutdown(shutdownCtx); err != nil {
 				return err
 			}
 			return nil
@@ -200,10 +201,11 @@ func (s *Server) Run(ctx context.Context) error {
 			<-ctx.Done()
 
 			// allow a timeout for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			if err := server.Shutdown(ctx); err != nil {
+			// nolint: contextcheck
+			if err := server.Shutdown(shutdownCtx); err != nil {
 				return err
 			}
 			return nil

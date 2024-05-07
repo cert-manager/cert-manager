@@ -33,6 +33,7 @@ import (
 
 var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-setup")
+	ctx := context.TODO()
 
 	var (
 		issuer   *cmapi.Issuer
@@ -48,7 +49,7 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		if issuer != nil {
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuer.Name, metav1.DeleteOptions{})
 		}
 	})
 
@@ -56,11 +57,11 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 		var err error
 		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
-		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -73,9 +74,9 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 		var err error
 		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
-		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -84,9 +85,9 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Changing the Access Token to something bad")
-		err = tppAddon.SetAccessToken("this_is_a_bad_token")
+		err = tppAddon.SetAccessToken(ctx, "this_is_a_bad_token")
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,

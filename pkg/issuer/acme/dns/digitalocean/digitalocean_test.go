@@ -17,6 +17,7 @@ limitations under the License.
 package digitalocean
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -66,7 +67,7 @@ func TestDigitalOceanPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 
-	err = provider.Present(doDomain, "_acme-challenge."+doDomain+".", "123d==")
+	err = provider.Present(context.TODO(), doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -80,7 +81,7 @@ func TestDigitalOceanCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(doDomain, "_acme-challenge."+doDomain+".", "123d==")
+	err = provider.CleanUp(context.TODO(), doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 

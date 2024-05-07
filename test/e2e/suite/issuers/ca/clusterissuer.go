@@ -34,30 +34,31 @@ import (
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
+	ctx := context.TODO()
 
 	issuerName := "test-ca-clusterissuer" + rand.String(5)
 	secretName := "ca-clusterissuer-signing-keypair-" + rand.String(5)
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), newSigningKeypairSecret(secretName), metav1.CreateOptions{})
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(ctx, newSigningKeypairSecret(secretName), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
-		f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+		f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+		f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, issuerName, metav1.DeleteOptions{})
 	})
 
 	It("should validate a signing keypair", func() {
 		By("Creating an Issuer")
 		clusterIssuer := gen.ClusterIssuer(issuerName,
 			gen.SetIssuerCASecretName(secretName))
-		_, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), clusterIssuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, clusterIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1().ClusterIssuers(),
+		err = util.WaitForClusterIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().ClusterIssuers(),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,

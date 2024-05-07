@@ -16,6 +16,8 @@ limitations under the License.
 
 package controller
 
+import "context"
+
 // This file defines types for controllers to register themselves with the
 // controller package.
 
@@ -26,7 +28,7 @@ type Interface interface {
 	// run, and the workers should shut down upon a signal on stopCh.
 	// This method should block until all workers have exited cleanly, thus
 	// allowing for graceful shutdown of control loops.
-	Run(workers int, stopCh <-chan struct{}) error
+	Run(workers int, ctx context.Context) error
 }
 
 // Constructor is a function that creates a new control loop given a

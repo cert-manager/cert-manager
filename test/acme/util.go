@@ -112,13 +112,13 @@ func allConditions(c ...wait.ConditionWithContextFunc) wait.ConditionWithContext
 
 func (f *fixture) recordHasPropagatedCheck(fqdn, value string) func(ctx context.Context) (bool, error) {
 	return func(ctx context.Context) (bool, error) {
-		return util.PreCheckDNS(fqdn, value, []string{f.testDNSServer}, *f.useAuthoritative)
+		return util.PreCheckDNS(ctx, fqdn, value, []string{f.testDNSServer}, *f.useAuthoritative)
 	}
 }
 
 func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func(ctx context.Context) (bool, error) {
 	return func(ctx context.Context) (bool, error) {
-		msg, err := util.DNSQuery(fqdn, dns.TypeTXT, []string{f.testDNSServer}, *f.useAuthoritative)
+		msg, err := util.DNSQuery(ctx, fqdn, dns.TypeTXT, []string{f.testDNSServer}, *f.useAuthoritative)
 		if err != nil {
 			return false, err
 		}

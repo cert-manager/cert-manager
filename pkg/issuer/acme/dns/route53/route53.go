@@ -61,7 +61,7 @@ type StsClient interface {
 	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
 }
 
-func (d *sessionProvider) GetSession() (aws.Config, error) {
+func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	if d.AccessKeyID == "" && d.SecretAccessKey == "" {
 		if !d.Ambient {
 			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
@@ -85,7 +85,7 @@ func (d *sessionProvider) GetSession() (aws.Config, error) {
 		optFns = append(optFns, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(d.AccessKeyID, d.SecretAccessKey, "")))
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(), optFns...)
+	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
@@ -93,7 +93,7 @@ func (d *sessionProvider) GetSession() (aws.Config, error) {
 	if d.Role != "" {
 		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
 		stsSvc := d.StsProvider(cfg)
-		result, err := stsSvc.AssumeRole(context.TODO(), &sts.AssumeRoleInput{
+		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
 			RoleSessionName: aws.String("cert-manager"),
 		})
@@ -142,14 +142,16 @@ func defaultSTSProvider(cfg aws.Config) StsClient {
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters or, if they're
 // unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role string,
+func NewDNSProvider(
+	ctx context.Context,
+	accessKeyID, secretAccessKey, hostedZoneID, region, role string,
 	ambient bool,
 	dns01Nameservers []string,
 	userAgent string,
 ) (*DNSProvider, error) {
 	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient, userAgent)
 
-	cfg, err := provider.GetSession()
+	cfg, err := provider.GetSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -166,19 +168,19 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 }
 
 // Present creates a TXT record using the specified parameters
-func (r *DNSProvider) Present(domain, fqdn, value string) error {
+func (r *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53types.ChangeActionUpsert, fqdn, value, route53TTL)
+	return r.changeRecord(ctx, route53types.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
+func (r *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53types.ChangeActionDelete, fqdn, value, route53TTL)
+	return r.changeRecord(ctx, route53types.ChangeActionDelete, fqdn, value, route53TTL)
 }
 
-func (r *DNSProvider) changeRecord(action route53types.ChangeAction, fqdn, value string, ttl int) error {
-	hostedZoneID, err := r.getHostedZoneID(fqdn)
+func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.ChangeAction, fqdn, value string, ttl int) error {
+	hostedZoneID, err := r.getHostedZoneID(ctx, fqdn)
 	if err != nil {
 		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %v", err)
 	}
@@ -197,7 +199,7 @@ func (r *DNSProvider) changeRecord(action route53types.ChangeAction, fqdn, value
 		},
 	}
 
-	resp, err := r.client.ChangeResourceRecordSets(context.TODO(), reqParams)
+	resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
 	if err != nil {
 		if errors.Is(err, &route53types.InvalidChangeBatch{}) && action == route53types.ChangeActionDelete {
 			r.log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
@@ -215,7 +217,7 @@ func (r *DNSProvider) changeRecord(action route53types.ChangeAction, fqdn, value
 		reqParams := &route53.GetChangeInput{
 			Id: statusID,
 		}
-		resp, err := r.client.GetChange(context.TODO(), reqParams)
+		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
 			return false, fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))
 		}
@@ -226,12 +228,12 @@ func (r *DNSProvider) changeRecord(action route53types.ChangeAction, fqdn, value
 	})
 }
 
-func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
+func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string, error) {
 	if r.hostedZoneID != "" {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, r.dns01Nameservers)
+	authZone, err := util.FindZoneByFqdn(ctx, fqdn, r.dns01Nameservers)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}
@@ -240,7 +242,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	reqParams := &route53.ListHostedZonesByNameInput{
 		DNSName: aws.String(util.UnFqdn(authZone)),
 	}
-	resp, err := r.client.ListHostedZonesByName(context.TODO(), reqParams)
+	resp, err := r.client.ListHostedZonesByName(ctx, reqParams)
 	if err != nil {
 		return "", removeReqID(err)
 	}

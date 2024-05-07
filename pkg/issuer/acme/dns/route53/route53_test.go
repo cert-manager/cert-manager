@@ -58,7 +58,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(context.TODO())
@@ -72,14 +72,14 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	_, err := NewDNSProvider("", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, err := NewDNSProvider(context.TODO(), "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
 func TestAmbientRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", provider.client.Options().Region, "Expected Region to be set from environment")
@@ -88,7 +88,7 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 func TestNoRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider("marx", "swordfish", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "marx", "swordfish", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", provider.client.Options().Region, "Expected Region to not be set from environment")
@@ -112,25 +112,25 @@ func TestRoute53Present(t *testing.T) {
 	domain := "example.com"
 	keyAuth := "123456d=="
 
-	err = provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
+	err = provider.Present(context.TODO(), domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	subDomain := "foo.example.com"
-	err = provider.Present(subDomain, "_acme-challenge."+subDomain+".", keyAuth)
+	err = provider.Present(context.TODO(), subDomain, "_acme-challenge."+subDomain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	nonExistentSubDomain := "bar.foo.example.com"
-	err = provider.Present(nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
+	err = provider.Present(context.TODO(), nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	nonExistentDomain := "baz.com"
-	err = provider.Present(nonExistentDomain, nonExistentDomain+".", keyAuth)
+	err = provider.Present(context.TODO(), nonExistentDomain, nonExistentDomain+".", keyAuth)
 	assert.Error(t, err, "Expected Present to return an error")
 
 	// This test case makes sure that the request id has been properly
 	// stripped off. It has to be stripped because it changes on every
 	// request which causes spurious challenge updates.
-	err = provider.Present("bar.example.com", "bar.example.com.", keyAuth)
+	err = provider.Present(context.TODO(), "bar.example.com", "bar.example.com.", keyAuth)
 	require.Error(t, err, "Expected Present to return an error")
 	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
@@ -231,7 +231,7 @@ func TestAssumeRole(t *testing.T) {
 			provider := makeMockSessionProvider(func(aws.Config) StsClient {
 				return c.mockSTS
 			}, c.key, c.secret, c.region, c.role, c.ambient)
-			cfg, err := provider.GetSession()
+			cfg, err := provider.GetSession(context.TODO())
 			if c.expErr {
 				assert.NotNil(t, err)
 			} else {

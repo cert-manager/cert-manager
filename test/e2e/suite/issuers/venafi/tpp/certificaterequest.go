@@ -35,6 +35,7 @@ import (
 )
 
 var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func() {
+	ctx := context.TODO()
 	f := framework.NewDefaultFramework("venafi-tpp-certificaterequest")
 	h := f.Helper()
 
@@ -56,11 +57,11 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 
 		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
-		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -72,7 +73,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 	AfterEach(func() {
 		By("Cleaning up")
 		if issuer != nil {
-			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuer.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
@@ -86,11 +87,11 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")
-		_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the CertificateRequest is valid")
-		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30, key)
+		err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, key)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

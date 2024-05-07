@@ -89,7 +89,7 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
 	createTokenFn := func(ns string) internalvault.CreateToken { return v.kclient.CoreV1().ServiceAccounts(ns).CreateToken }
-	client, err := v.clientBuilder(resourceNamespace, createTokenFn, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(ctx, resourceNamespace, createTokenFn, v.secretsLister, issuerObj)
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		log.Error(err, message)

@@ -82,7 +82,6 @@ func TestIssuingController(t *testing.T) {
 
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
-		ctx,
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -299,7 +298,6 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
-		ctx,
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -525,7 +523,6 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
-		ctx,
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -773,7 +770,6 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
 	c := controllerpkg.NewController(
-		ctx,
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -1011,7 +1007,7 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 		FieldManager: fieldManager,
 	}
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
-	c := controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
+	c := controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerNoOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer func() {
 		if stopControllerNoOwnerRef != nil {
@@ -1108,7 +1104,7 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 		FieldManager: fieldManager,
 	}
 	ctrl, queue, mustSync = issuing.NewController(logf.Log, &controllerContext)
-	c = controllerpkg.NewController(ctx, fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
+	c = controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopControllerOwnerRef()
 

@@ -116,13 +116,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	g.Go(func() error {
 		<-rootCtx.Done()
 		// allow a timeout for graceful shutdown
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if err := metricsServer.Shutdown(ctx); err != nil {
-			return err
-		}
-		return nil
+		// nolint: contextcheck
+		return metricsServer.Shutdown(shutdownCtx)
 	})
 	g.Go(func() error {
 		log.V(logf.InfoLevel).Info("starting metrics server", "address", metricsLn.Addr())
@@ -149,13 +147,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		g.Go(func() error {
 			<-rootCtx.Done()
 			// allow a timeout for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			if err := profilerServer.Shutdown(ctx); err != nil {
-				return err
-			}
-			return nil
+			// nolint: contextcheck
+			return profilerServer.Shutdown(shutdownCtx)
 		})
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting profiler", "address", profilerLn.Addr())
@@ -250,7 +246,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting controller")
 
-			return iface.Run(opts.NumberOfConcurrentWorkers, rootCtx.Done())
+			return iface.Run(opts.NumberOfConcurrentWorkers, rootCtx)
 		})
 	}
 

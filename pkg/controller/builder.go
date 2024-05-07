@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // Builder is used to build controllers that implement the queuingController
@@ -72,8 +70,6 @@ func (b *Builder) Complete() (Interface, error) {
 		return nil, err
 	}
 
-	ctx := logf.NewContext(controllerctx.RootContext, logf.FromContext(controllerctx.RootContext), b.name)
-
 	if b.impl == nil {
 		return nil, fmt.Errorf("controller implementation must be non-nil")
 	}
@@ -82,5 +78,5 @@ func (b *Builder) Complete() (Interface, error) {
 		return nil, fmt.Errorf("error registering controller: %v", err)
 	}
 
-	return NewController(ctx, b.name, controllerctx.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
+	return NewController(b.name, controllerctx.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
 }

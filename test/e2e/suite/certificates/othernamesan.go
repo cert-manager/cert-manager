@@ -50,6 +50,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	)
 
 	f := framework.NewDefaultFramework("certificate-othername-san-processing")
+	ctx := context.TODO()
 
 	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
 		crt := &cmapi.Certificate{
@@ -69,7 +70,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 			},
 		}
 		By("creating Certificate with OtherNames")
-		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
+		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(ctx, crt, metav1.CreateOptions{})
 	}
 
 	BeforeEach(func() {
@@ -79,16 +80,16 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}))
-		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
+		Expect(f.CRClient.Create(ctx, issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.Background(), issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
+		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
 	It("Should create a certificate with the supplied otherName SAN value and emailAddress included", func() {
@@ -99,7 +100,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})

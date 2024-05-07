@@ -9,6 +9,7 @@ this directory.
 package util
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -172,14 +173,14 @@ func TestMatchCAA(t *testing.T) {
 }
 
 func TestPreCheckDNSOverHTTPSNoAuthoritative(t *testing.T) {
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"https://1.1.1.1/dns-query"}, false)
+	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"https://1.1.1.1/dns-query"}, false)
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
 }
 
 func TestPreCheckDNSOverHTTPS(t *testing.T) {
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"https://8.8.8.8/dns-query"}, true)
+	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"https://8.8.8.8/dns-query"}, true)
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
@@ -187,7 +188,7 @@ func TestPreCheckDNSOverHTTPS(t *testing.T) {
 
 func TestPreCheckDNS(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true)
+	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true)
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
@@ -195,7 +196,7 @@ func TestPreCheckDNS(t *testing.T) {
 
 func TestPreCheckDNSNonAuthoritative(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"1.1.1.1:53"}, false)
+	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"1.1.1.1:53"}, false)
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
@@ -203,7 +204,7 @@ func TestPreCheckDNSNonAuthoritative(t *testing.T) {
 
 func TestLookupNameserversOK(t *testing.T) {
 	for _, tt := range lookupNameserversTestsOK {
-		nss, err := lookupNameservers(tt.fqdn, RecursiveNameservers)
+		nss, err := lookupNameservers(context.TODO(), tt.fqdn, RecursiveNameservers)
 		if err != nil {
 			t.Fatalf("#%s: got %q; want nil", tt.fqdn, err)
 		}
@@ -219,7 +220,7 @@ func TestLookupNameserversOK(t *testing.T) {
 
 func TestLookupNameserversErr(t *testing.T) {
 	for _, tt := range lookupNameserversTestsErr {
-		_, err := lookupNameservers(tt.fqdn, RecursiveNameservers)
+		_, err := lookupNameservers(context.TODO(), tt.fqdn, RecursiveNameservers)
 		if err == nil {
 			t.Fatalf("#%s: expected %q (error); got <nil>", tt.fqdn, tt.error)
 		}
@@ -233,7 +234,7 @@ func TestLookupNameserversErr(t *testing.T) {
 
 func TestFindZoneByFqdn(t *testing.T) {
 	for _, tt := range findZoneByFqdnTests {
-		res, err := FindZoneByFqdn(tt.fqdn, RecursiveNameservers)
+		res, err := FindZoneByFqdn(context.TODO(), tt.fqdn, RecursiveNameservers)
 		if err != nil {
 			t.Errorf("FindZoneByFqdn failed for %s: %v", tt.fqdn, err)
 		}
@@ -245,7 +246,7 @@ func TestFindZoneByFqdn(t *testing.T) {
 
 func TestCheckAuthoritativeNss(t *testing.T) {
 	for _, tt := range checkAuthoritativeNssTests {
-		ok, _ := checkAuthoritativeNss(tt.fqdn, tt.value, tt.ns)
+		ok, _ := checkAuthoritativeNss(context.TODO(), tt.fqdn, tt.value, tt.ns)
 		if ok != tt.ok {
 			t.Errorf("%s: got %t; want %t", tt.fqdn, ok, tt.ok)
 		}
@@ -254,7 +255,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 
 func TestCheckAuthoritativeNssErr(t *testing.T) {
 	for _, tt := range checkAuthoritativeNssTestsErr {
-		_, err := checkAuthoritativeNss(tt.fqdn, tt.value, tt.ns)
+		_, err := checkAuthoritativeNss(context.TODO(), tt.fqdn, tt.value, tt.ns)
 		if err == nil {
 			t.Fatalf("#%s: expected %q (error); got <nil>", tt.fqdn, tt.error)
 		}
@@ -285,25 +286,25 @@ func TestValidateCAA(t *testing.T) {
 		// google installs a CAA record at google.com
 		// ask for the www.google.com record to test that
 		// we recurse up the labels
-		err := ValidateCAA("www.google.com", []string{"letsencrypt", "pki.goog"}, false, nameservers)
+		err := ValidateCAA(context.TODO(), "www.google.com", []string{"letsencrypt", "pki.goog"}, false, nameservers)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 		// now ask, expecting a CA that won't match
-		err = ValidateCAA("www.google.com", []string{"daniel.homebrew.ca"}, false, nameservers)
+		err = ValidateCAA(context.TODO(), "www.google.com", []string{"daniel.homebrew.ca"}, false, nameservers)
 		if err == nil {
 			t.Fatalf("expected err, got success")
 		}
 		// if the CAA record allows non-wildcards then it has an `issue` tag,
 		// and it is known that it has no issuewild tags, then wildcard certificates
 		// will also be allowed
-		err = ValidateCAA("www.google.com", []string{"pki.goog"}, true, nameservers)
+		err = ValidateCAA(context.TODO(), "www.google.com", []string{"pki.goog"}, true, nameservers)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 		// ask for a domain you know does not have CAA records.
 		// it should succeed
-		err = ValidateCAA("www.example.org", []string{"daniel.homebrew.ca"}, false, nameservers)
+		err = ValidateCAA(context.TODO(), "www.example.org", []string{"daniel.homebrew.ca"}, false, nameservers)
 		if err != nil {
 			t.Fatalf("expected err, got %s", err)
 		}
@@ -311,7 +312,7 @@ func TestValidateCAA(t *testing.T) {
 }
 
 func Test_followCNAMEs(t *testing.T) {
-	dnsQuery = func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
+	dnsQuery = func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
 		msg := &dns.Msg{}
 		msg.Rcode = dns.RcodeSuccess
 		switch fqdn {
@@ -404,7 +405,7 @@ func Test_followCNAMEs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := followCNAMEs(tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
+			got, err := followCNAMEs(context.TODO(), tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("followCNAMEs() error = %v, wantErr %v", err, tt.wantErr)
 				return

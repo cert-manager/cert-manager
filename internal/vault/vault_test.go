@@ -871,7 +871,7 @@ func TestSetToken(t *testing.T) {
 				issuer:        test.issuer,
 			}
 
-			err := v.setToken(test.fakeClient)
+			err := v.setToken(context.TODO(), test.fakeClient)
 			if ((test.expectedErr == nil) != (err == nil)) &&
 				test.expectedErr != nil &&
 				test.expectedErr.Error() != err.Error() {
@@ -1511,6 +1511,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := New(
+				context.TODO(),
 				"k8s-ns1",
 				func(ns string) CreateToken { return nil },
 				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1567,6 +1568,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 	defer server.Close()
 
 	v, err := New(
+		context.TODO(),
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1632,6 +1634,7 @@ func TestSignIntegration(t *testing.T) {
 	defer server.Close()
 
 	v, err := New(
+		context.TODO(),
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),

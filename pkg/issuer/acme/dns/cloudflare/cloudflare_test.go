@@ -9,6 +9,7 @@ this directory.
 package cloudflare
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,7 +35,7 @@ type DNSProviderMock struct {
 	mock.Mock
 }
 
-func (c *DNSProviderMock) makeRequest(method, uri string, body io.Reader) (json.RawMessage, error) {
+func (c *DNSProviderMock) makeRequest(ctx context.Context, method, uri string, body io.Reader) (json.RawMessage, error) {
 	// stub makeRequest
 	args := c.Called(method, uri, nil)
 	return args.Get(0).([]uint8), args.Error(1)
@@ -96,7 +97,7 @@ func TestFindNearestZoneForFQDN(t *testing.T) {
 		{"id":"1a23cc4567b8def91a01c23a456e78cd","name":"sub.domain.com"}
 	]`), nil)
 
-	zone, err := FindNearestZoneForFQDN(dnsProvider, "_acme-challenge.test.sub.domain.com.")
+	zone, err := FindNearestZoneForFQDN(context.TODO(), dnsProvider, "_acme-challenge.test.sub.domain.com.")
 
 	assert.NoError(t, err)
 	assert.Equal(t, zone, DNSZone{ID: "1a23cc4567b8def91a01c23a456e78cd", Name: "sub.domain.com"})
@@ -115,7 +116,7 @@ func TestFindNearestZoneForFQDNInvalidToken(t *testing.T) {
 while querying the Cloudflare API for GET "/zones?name=_acme-challenge.test.sub.domain.com"
 	 Error: 9109: Invalid access token`))
 
-	_, err := FindNearestZoneForFQDN(dnsProvider, "_acme-challenge.test.sub.domain.com.")
+	_, err := FindNearestZoneForFQDN(context.TODO(), dnsProvider, "_acme-challenge.test.sub.domain.com.")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Invalid access token")
@@ -129,7 +130,7 @@ func TestCloudFlarePresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey, cflareAPIToken, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 
-	err = provider.Present(cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
+	err = provider.Present(context.TODO(), cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -143,6 +144,6 @@ func TestCloudFlareCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey, cflareAPIToken, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
+	err = provider.CleanUp(context.TODO(), cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
 	assert.NoError(t, err)
 }

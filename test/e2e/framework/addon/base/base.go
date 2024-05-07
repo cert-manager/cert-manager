@@ -19,6 +19,8 @@ limitations under the License.
 package base
 
 import (
+	"context"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -80,11 +82,11 @@ func (b *Base) Setup(c *config.Config, _ ...internal.AddonTransferableData) (int
 	return nil, nil
 }
 
-func (b *Base) Provision() error {
+func (b *Base) Provision(_ context.Context) error {
 	return nil
 }
 
-func (b *Base) Deprovision() error {
+func (b *Base) Deprovision(_ context.Context) error {
 	return nil
 }
 

@@ -137,20 +137,20 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 }
 
 // Present creates a TXT record using the specified parameters
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
-	return c.createRecord(fqdn, value, 60)
+func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
+	return c.createRecord(ctx, fqdn, value, 60)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	z, err := c.getHostedZoneName(fqdn)
+func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
+	z, err := c.getHostedZoneName(ctx, fqdn)
 	if err != nil {
 		c.log.Error(err, "Error getting hosted zone name for fqdn", "fqdn", fqdn)
 		return err
 	}
 
 	_, err = c.recordClient.Delete(
-		context.TODO(),
+		ctx,
 		c.resourceGroupName,
 		z,
 		c.trimFqdn(fqdn, z),
@@ -162,7 +162,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return nil
 }
 
-func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
+func (c *DNSProvider) createRecord(ctx context.Context, fqdn, value string, ttl int) error {
 	rparams := &dns.RecordSet{
 		Properties: &dns.RecordSetProperties{
 			TTL: to.Ptr(int64(ttl)),
@@ -172,13 +172,13 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		},
 	}
 
-	z, err := c.getHostedZoneName(fqdn)
+	z, err := c.getHostedZoneName(ctx, fqdn)
 	if err != nil {
 		return err
 	}
 
 	_, err = c.recordClient.CreateOrUpdate(
-		context.TODO(),
+		ctx,
 		c.resourceGroupName,
 		z,
 		c.trimFqdn(fqdn, z),
@@ -191,11 +191,11 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	return nil
 }
 
-func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
+func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+	z, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}
@@ -203,7 +203,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	if _, err := c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+	if _, err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
 		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
 	}

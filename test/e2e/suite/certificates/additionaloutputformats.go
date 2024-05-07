@@ -50,6 +50,9 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		secretName = "test-additional-output-formats"
 	)
 
+	ctx := context.TODO()
+	f := framework.NewDefaultFramework("certificates-additional-output-formats")
+
 	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
 		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
 
@@ -70,15 +73,13 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		}
 
 		By("creating Certificate with AdditionalOutputFormats")
-		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
+		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(ctx, crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
+		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		return crt.Name, crt
 	}
-
-	f := framework.NewDefaultFramework("certificates-additional-output-formats")
 
 	BeforeEach(func() {
 		By("creating a self-signing issuer")
@@ -88,7 +89,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -311,7 +312,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(crt, time.Minute*2)
+		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		By("ensuring additional output formats reflect the new private key and certificate")

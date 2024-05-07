@@ -34,6 +34,7 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
+	ctx := context.TODO()
 	f := framework.NewDefaultFramework("create-selfsigned-certificate")
 
 	issuerName := "test-selfsigned-issuer"
@@ -48,10 +49,10 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -69,10 +70,10 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			gen.SetCertificateCommonName("test.domain.com"),
 			gen.SetCertificateOrganization("test-org"),
 		)
-		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err = certClient.Create(ctx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
@@ -109,10 +110,10 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			issuer := gen.Issuer(issuerDurationName,
 				gen.SetIssuerNamespace(f.Namespace.Name),
 				gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
-			_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+			_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 				issuerDurationName,
 				v1.IssuerCondition{
 					Type:   v1.IssuerConditionReady,
@@ -133,17 +134,17 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 				gen.SetCertificateCommonName("test.domain.com"),
 				gen.SetCertificateOrganization("test-org"),
 			)
-			cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+			cert, err = certClient.Create(ctx, cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
 			err = f.Helper().ValidateCertificate(cert)
 			Expect(err).NotTo(HaveOccurred())
 
-			f.CertificateDurationValid(cert, v.expectedDuration, 0)
+			f.CertificateDurationValid(ctx, cert, v.expectedDuration, 0)
 		})
 	}
 
@@ -155,7 +156,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a Certificate")
@@ -170,11 +171,11 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			gen.SetCertificateOrganization("test-org"),
 			gen.SetCertificateKeyEncoding(v1.PKCS8),
 		)
-		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err = certClient.Create(ctx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")

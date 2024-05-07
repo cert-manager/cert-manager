@@ -100,6 +100,7 @@ servers and webhook servers.`,
 
 			return nil
 		},
+		// nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context(), cainjectorConfig)
 		},

@@ -521,7 +521,7 @@ func runTest(t *testing.T, test testT) {
 	vault := NewVault(test.builder.Context).(*Vault)
 
 	if test.fakeVault != nil {
-		vault.vaultClientBuilder = func(ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
+		vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
 			iss cmapi.GenericIssuer) (internalvault.Interface, error) {
 			return test.fakeVault.New(ns, sl, iss)
 		}

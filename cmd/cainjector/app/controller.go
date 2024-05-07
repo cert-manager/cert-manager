@@ -118,6 +118,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
+			// nolint: contextcheck
 			return server.Shutdown(shutdownCtx)
 		}))
 

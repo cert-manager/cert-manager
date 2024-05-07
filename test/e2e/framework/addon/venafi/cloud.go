@@ -70,7 +70,7 @@ func (v *VenafiCloud) Setup(cfg *config.Config, _ ...internal.AddonTransferableD
 	return nil, nil
 }
 
-func (v *VenafiCloud) Provision() error {
+func (v *VenafiCloud) Provision(ctx context.Context) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-e2e-venafi-cloud-",
@@ -81,7 +81,7 @@ func (v *VenafiCloud) Provision() error {
 		},
 	}
 
-	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -106,8 +106,8 @@ func (v *VenafiCloud) Details() *CloudDetails {
 	return &v.details
 }
 
-func (v *VenafiCloud) Deprovision() error {
-	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(context.TODO(), v.createdSecret.Name, metav1.DeleteOptions{})
+func (v *VenafiCloud) Deprovision(ctx context.Context) error {
+	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(ctx, v.createdSecret.Name, metav1.DeleteOptions{})
 }
 
 func (v *VenafiCloud) SupportsGlobal() bool {
@@ -141,9 +141,9 @@ func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 }
 
 // SetAPIKey sets the Secret data["apikey"] value
-func (v *VenafiCloud) SetAPIKey(token string) error {
+func (v *VenafiCloud) SetAPIKey(ctx context.Context, token string) error {
 	v.createdSecret.Data["apikey"] = []byte(token)
-	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(context.TODO(), v.createdSecret, metav1.UpdateOptions{})
+	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Update(ctx, v.createdSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
