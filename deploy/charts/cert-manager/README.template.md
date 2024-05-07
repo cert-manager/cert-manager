@@ -1805,6 +1805,24 @@ Additional volume mounts to add to the cert-manager controller container.
 > ```
 
 enableServiceLinks indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links.
+#### **extraObjects** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Create dynamic manifests via values.  
+  
+For example:
+
+```yaml
+extraObjects:
+  - |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: '{{ template "cert-manager.name" . }}-extra-configmap'
+```
 
 <!-- /AUTO-GENERATED -->
 ### Default Security Contexts
