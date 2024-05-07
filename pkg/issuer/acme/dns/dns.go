@@ -25,6 +25,7 @@ import (
 
 	authv1 "k8s.io/api/authentication/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -45,7 +46,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	webhookslv "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // solver is the old solver type interface.
@@ -353,7 +353,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 				audiences = providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.TokenAudiences
 			}
 
-			jwt, err := s.createToken(resourceNamespace, providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.Name, audiences)
+			jwt, err := s.createToken(ctx, resourceNamespace, providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.Name, audiences)
 			if err != nil {
 				return nil, nil, fmt.Errorf("error getting service account token: %w", err)
 			}
@@ -556,8 +556,8 @@ func (s *Solver) loadSecretData(selector *cmmeta.SecretKeySelector, ns string) (
 	return nil, fmt.Errorf("no key %q in secret %q", selector.Key, ns+"/"+selector.Name)
 }
 
-func (s *Solver) createToken(ns, serviceAccount string, audiences []string) (string, error) {
-	tokenrequest, err := s.Client.CoreV1().ServiceAccounts(ns).CreateToken(context.Background(), serviceAccount, &authv1.TokenRequest{
+func (s *Solver) createToken(ctx context.Context, ns, serviceAccount string, audiences []string) (string, error) {
+	tokenrequest, err := s.Client.CoreV1().ServiceAccounts(ns).CreateToken(ctx, serviceAccount, &authv1.TokenRequest{
 		Spec: authv1.TokenRequestSpec{
 			Audiences:         audiences,
 			ExpirationSeconds: ptr.To(int64(600)),

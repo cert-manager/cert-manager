@@ -64,13 +64,14 @@ type StsClient interface {
 }
 
 func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
-	if d.Role == "" && d.WebIdentityToken != "" {
+	switch {
+	case d.Role == "" && d.WebIdentityToken != "":
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: role must be set when web identity token is set")
-	} else if d.AccessKeyID == "" && d.SecretAccessKey == "" {
+	case d.AccessKeyID == "" && d.SecretAccessKey == "":
 		if !d.Ambient && d.WebIdentityToken == "" {
 			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
 		}
-	} else if d.AccessKeyID == "" || d.SecretAccessKey == "" {
+	case d.AccessKeyID == "" || d.SecretAccessKey == "":
 		// It's always an error to set one of those but not the other
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
 	}
@@ -78,16 +79,16 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityToken == ""
 
 	var optFns []func(*config.LoadOptions) error
-
-	if d.Role != "" && d.WebIdentityToken != "" {
+	switch {
+	case d.Role != "" && d.WebIdentityToken != "":
 		d.log.V(logf.DebugLevel).Info("using assume role with web identity")
 		optFns = append(optFns, config.WithRegion(d.Region))
-	} else if useAmbientCredentials {
+	case useAmbientCredentials:
 		d.log.V(logf.DebugLevel).Info("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	} else {
+	default:
 		d.log.V(logf.DebugLevel).Info("not using ambient credentials")
 		optFns = append(optFns, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(d.AccessKeyID, d.SecretAccessKey, "")))
 	}
@@ -119,7 +120,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
 
 		stsSvc := d.StsProvider(cfg)
-		result, err := stsSvc.AssumeRoleWithWebIdentity(context.TODO(), &sts.AssumeRoleWithWebIdentityInput{
+		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(d.Role),
 			RoleSessionName:  aws.String("cert-manager"),
 			WebIdentityToken: aws.String(d.WebIdentityToken),
