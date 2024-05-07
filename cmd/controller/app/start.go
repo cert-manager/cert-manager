@@ -110,6 +110,7 @@ to renew certificates at an appropriate time before expiry.`,
 
 			return nil
 		},
+		// nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context(), controllerConfig)
 		},

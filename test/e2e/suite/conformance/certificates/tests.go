@@ -1065,13 +1065,13 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			By("Updating the Certificate after having added an additional dnsName")
 			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
 			retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				err = f.CRClient.Get(context.Background(), types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
+				err = f.CRClient.Get(ctx, types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
 				if err != nil {
 					return err
 				}
 
 				testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
-				err = f.CRClient.Update(context.Background(), testCertificate)
+				err = f.CRClient.Update(ctx, testCertificate)
 				if err != nil {
 					return err
 				}
