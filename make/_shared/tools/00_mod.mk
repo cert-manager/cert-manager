@@ -150,7 +150,7 @@ ADDITIONAL_TOOLS ?=
 tools += $(ADDITIONAL_TOOLS)
 
 # https://go.dev/dl/
-VENDORED_GO_VERSION := 1.22.2
+VENDORED_GO_VERSION := 1.22.3
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -359,10 +359,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=5901c52b7a78002aeff14a21f93e0f064f74ce1360fce51c6ee68cd471216a17
-go_linux_arm64_SHA256SUM=36e720b2d564980c162a48c7e97da2e407dfcc4239e1e58d98082dfa2486a0c1
-go_darwin_amd64_SHA256SUM=33e7f63077b1c5bce4f1ecadd4d990cf229667c40bfb00686990c950911b7ab7
-go_darwin_arm64_SHA256SUM=660298be38648723e783ba0398e90431de1cb288c637880cdb124f39bd977f0d
+go_linux_amd64_SHA256SUM=8920ea521bad8f6b7bc377b4824982e011c19af27df88a815e3586ea895f1b36
+go_linux_arm64_SHA256SUM=6c33e52a5b26e7aa021b94475587fce80043a727a54ceb0eee2f9fc160646434
+go_darwin_amd64_SHA256SUM=610e48c1df4d2f852de8bc2e7fd2dc1521aac216f0c0026625db12f67f192024
+go_darwin_arm64_SHA256SUM=02abeab3f4b8981232237ebd88f0a9bad933bc9621791cd7720a9ca29eacbe9d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
@@ -615,6 +615,12 @@ tools: $(tools_paths)
 
 self_file := $(dir $(lastword $(MAKEFILE_LIST)))/00_mod.mk
 
+# see https://stackoverflow.com/a/53408233
+sed_inplace := sed -i''
+ifeq ($(HOST_OS),darwin)
+	sed_inplace := sed -i ''
+endif
+
 # This target is used to learn the sha256sum of the tools. It is used only
 # in the makefile-modules repo, and should not be used in any other repo.
 .PHONY: tools-learn-sha
@@ -635,5 +641,5 @@ tools-learn-sha: | $(bin_dir)
 	HOST_OS=darwin HOST_ARCH=arm64 $(MAKE) vendor-go
 
 	while read p; do \
-		sed -i "$$p" $(self_file); \
+		$(sed_inplace) "$$p" $(self_file); \
 	done <"$(LEARN_FILE)"
