@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2024 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -112,5 +112,105 @@ func TestShouldFailForHexDER(t *testing.T) {
 		t.Fatal("expected error, but got none")
 	}
 
-	assert.Contains(t, err.Error(), "failed to unmarshal hex-encoded string: asn1: syntax error: data truncated")
+	assert.Contains(t, err.Error(), "failed to decode BER encoding: unexpected EOF")
+}
+
+// TestRoundTripRDNSequence tests a set of RDNSequences to ensure that they are
+// the same after a round trip through String() and UnmarshalSubjectStringToRDNSequence().
+func TestRoundTripRDNSequence(t *testing.T) {
+	rdnSequences := []pkix.RDNSequence{
+		{
+			[]pkix.AttributeTypeAndValue{
+				{Type: OIDConstants.Organization, Value: "Corp."},
+				{Type: OIDConstants.OrganizationalUnit, Value: "FooLong"},
+			},
+		},
+		{
+			[]pkix.AttributeTypeAndValue{
+				{Type: OIDConstants.CommonName, Value: "foo-lon❤️\\g.com    "},
+				{Type: OIDConstants.OrganizationalUnit, Value: "Foo===Long"},
+				{Type: OIDConstants.OrganizationalUnit, Value: "Ba  rq"},
+				{Type: OIDConstants.OrganizationalUnit, Value: "Baz"},
+			},
+			[]pkix.AttributeTypeAndValue{
+				{Type: OIDConstants.Organization, Value: "C; orp."},
+				{Type: OIDConstants.Country, Value: "US"},
+			},
+		},
+		{
+			[]pkix.AttributeTypeAndValue{
+				{Type: OIDConstants.CommonName, Value: "fo\x00o-long.com"},
+			},
+		},
+	}
+
+	for _, rdnSeq := range rdnSequences {
+		newRDNSeq, err := UnmarshalSubjectStringToRDNSequence(rdnSeq.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, rdnSeq, newRDNSeq)
+	}
+}
+
+// FuzzRoundTripRDNSequence fuzzes the UnmarshalSubjectStringToRDNSequence function
+// by generating random subject strings and for each successfully parsed RDNSequence,
+// it will ensure that the round trip through String() and UnmarshalSubjectStringToRDNSequence()
+// results in the same RDNSequence.
+func FuzzRoundTripRDNSequence(f *testing.F) {
+	f.Add("CN=foo-long.com,OU=FooLong,OU=Barq,OU=Baz,OU=Dept.,O=Corp.,C=US")
+	f.Add("CN=foo-lon❤️\\,g.com,OU=Foo===Long,OU=Ba # rq,OU=Baz,O=C\\; orp.,C=US")
+	f.Add("CN=fo\x00o-long.com,OU=\x04FooLong")
+
+	f.Fuzz(func(t *testing.T, subjectString string) {
+		t.Parallel()
+		rdnSeq, err := UnmarshalSubjectStringToRDNSequence(subjectString)
+		if err != nil {
+			t.Skip()
+		}
+
+		// See pkix.go for the list of known attribute types
+		var knownMarshalTypes = map[string]bool{
+			"2.5.4.6":  true,
+			"2.5.4.10": true,
+			"2.5.4.11": true,
+			"2.5.4.3":  true,
+			"2.5.4.5":  true,
+			"2.5.4.7":  true,
+			"2.5.4.8":  true,
+			"2.5.4.9":  true,
+			"2.5.4.17": true,
+		}
+		hasSpecialChar := func(s string) bool {
+			for _, char := range s {
+				if char < ' ' || char > '~' {
+					return true
+				}
+			}
+			return false
+		}
+		for _, rdn := range rdnSeq {
+			for _, tv := range rdn {
+				// Skip if the String() function will return a literal OID type, as we
+				// do not yet support parsing these.
+				if _, ok := knownMarshalTypes[tv.Type.String()]; !ok {
+					t.Skip()
+				}
+
+				// Skip if the value contains special characters, as the String() function
+				// will not escape them.
+				if hasSpecialChar(tv.Value.(string)) {
+					t.Skip()
+				}
+			}
+		}
+
+		newRDNSeq, err := UnmarshalSubjectStringToRDNSequence(rdnSeq.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, rdnSeq, newRDNSeq)
+	})
 }
