@@ -27,7 +27,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
-	"github.com/aws/smithy-go/ptr"
 	"github.com/go-logr/logr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -150,7 +149,7 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 
 		if !found {
 			set.Properties.TxtRecords = append(set.Properties.TxtRecords, &dns.TxtRecord{
-				Value: []*string{ptr.String(value)},
+				Value: []*string{to.Ptr(value)},
 			})
 		}
 	})
