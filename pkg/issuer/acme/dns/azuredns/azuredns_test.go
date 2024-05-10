@@ -76,9 +76,9 @@ func TestLiveAzureDnsPresentMultiple(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
-	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
+	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -106,9 +106,9 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
-	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
+	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
