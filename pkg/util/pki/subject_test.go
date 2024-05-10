@@ -120,39 +120,56 @@ func TestShouldFailForHexDER(t *testing.T) {
 // TestRoundTripRDNSequence tests a set of RDNSequences to ensure that they are
 // the same after a round trip through String() and UnmarshalSubjectStringToRDNSequence().
 func TestRoundTripRDNSequence(t *testing.T) {
-	rdnSequences := []pkix.RDNSequence{
+	type testCase struct {
+		name string
+		rdn  pkix.RDNSequence
+	}
+	rdnSequences := []testCase{
 		{
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.Organization, Value: "Corp."},
-				{Type: OIDConstants.OrganizationalUnit, Value: "FooLong"},
+			name: "Simple RDNSequence",
+			rdn: pkix.RDNSequence{
+				[]pkix.AttributeTypeAndValue{
+					{Type: OIDConstants.Organization, Value: "Corp."},
+					{Type: OIDConstants.OrganizationalUnit, Value: "FooLong"},
+				},
 			},
 		},
 		{
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.CommonName, Value: "foo-lon❤️\\g.com    "},
-				{Type: OIDConstants.OrganizationalUnit, Value: "Foo===Long"},
-				{Type: OIDConstants.OrganizationalUnit, Value: "Ba  rq"},
-				{Type: OIDConstants.OrganizationalUnit, Value: "Baz"},
-			},
-			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.Organization, Value: "C; orp."},
-				{Type: OIDConstants.Country, Value: "US"},
+			name: "Character Escaping",
+			rdn: pkix.RDNSequence{
+				[]pkix.AttributeTypeAndValue{
+					{Type: OIDConstants.CommonName, Value: "foo-lon❤️\\g.com    "},
+					{Type: OIDConstants.OrganizationalUnit, Value: "Foo===Long"},
+					{Type: OIDConstants.OrganizationalUnit, Value: "Ba  rq"},
+					{Type: OIDConstants.OrganizationalUnit, Value: "Baz"},
+					{Type: OIDConstants.Country, Value: "fo\x00o-long.com"},
+				},
+				[]pkix.AttributeTypeAndValue{
+					{Type: OIDConstants.Organization, Value: "C; orp."},
+					{Type: OIDConstants.Country, Value: "US"},
+				},
 			},
 		},
 		{
-			[]pkix.AttributeTypeAndValue{
-				{Type: asn1.ObjectIdentifier{0, 5, 80, 99, 58962185}, Value: "fo\x00o-long.com"},
+			name: "Numeric OID",
+			rdn: pkix.RDNSequence{
+				[]pkix.AttributeTypeAndValue{
+					{Type: asn1.ObjectIdentifier{0, 5, 80, 99, 58962185}, Value: "String Value"},
+				},
 			},
 		},
 	}
 
-	for _, rdnSeq := range rdnSequences {
-		newRDNSeq, err := UnmarshalSubjectStringToRDNSequence(rdnSeq.String())
-		if err != nil {
-			t.Fatal(err)
-		}
+	for _, tc := range rdnSequences {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			newRDNSeq, err := UnmarshalSubjectStringToRDNSequence(tc.rdn.String())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		assert.Equal(t, rdnSeq, newRDNSeq)
+			assert.Equal(t, tc.rdn, newRDNSeq)
+		})
 	}
 }
 
@@ -164,6 +181,8 @@ func FuzzRoundTripRDNSequence(f *testing.F) {
 	f.Add("CN=foo-long.com,OU=FooLong,OU=Barq,OU=Baz,OU=Dept.,O=Corp.,C=US")
 	f.Add("CN=foo-lon❤️\\,g.com,OU=Foo===Long,OU=Ba # rq,OU=Baz,O=C\\; orp.,C=US")
 	f.Add("CN=fo\x00o-long.com,OU=\x04FooLong")
+	f.Add("1.2.3.4=String Value")
+	f.Add("1.3.6.1.4.1.1466.0=#04024869")
 
 	f.Fuzz(func(t *testing.T, subjectString string) {
 		t.Parallel()
