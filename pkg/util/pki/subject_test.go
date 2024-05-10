@@ -18,13 +18,14 @@ package pki
 
 import (
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMustParseRDN(t *testing.T) {
-	subject := "SERIALNUMBER=42, L=some-locality, ST=some-state-or-province, STREET=some-street, CN=foo-long.com, OU=FooLong, OU=Barq, OU=Baz, OU=Dept., O=Corp., C=US"
+	subject := "SERIALNUMBER=42, L=some-locality, ST=some-state-or-province, STREET=some-street, CN=foo-long.com, OU=FooLong, OU=Barq, OU=Baz, OU=Dept., O=Corp., C=US+123.544.555= A Test Value "
 	rdnSeq, err := UnmarshalSubjectStringToRDNSequence(subject)
 	if err != nil {
 		t.Fatal(err)
@@ -34,6 +35,7 @@ func TestMustParseRDN(t *testing.T) {
 		pkix.RDNSequence{
 			[]pkix.AttributeTypeAndValue{
 				{Type: OIDConstants.Country, Value: "US"},
+				{Type: asn1.ObjectIdentifier{123, 544, 555}, Value: "A Test Value"},
 			},
 			[]pkix.AttributeTypeAndValue{
 				{Type: OIDConstants.Organization, Value: "Corp."},
@@ -139,7 +141,7 @@ func TestRoundTripRDNSequence(t *testing.T) {
 		},
 		{
 			[]pkix.AttributeTypeAndValue{
-				{Type: OIDConstants.CommonName, Value: "fo\x00o-long.com"},
+				{Type: asn1.ObjectIdentifier{0, 5, 80, 99, 58962185}, Value: "fo\x00o-long.com"},
 			},
 		},
 	}
@@ -170,18 +172,6 @@ func FuzzRoundTripRDNSequence(f *testing.F) {
 			t.Skip()
 		}
 
-		// See pkix.go for the list of known attribute types
-		var knownMarshalTypes = map[string]bool{
-			"2.5.4.6":  true,
-			"2.5.4.10": true,
-			"2.5.4.11": true,
-			"2.5.4.3":  true,
-			"2.5.4.5":  true,
-			"2.5.4.7":  true,
-			"2.5.4.8":  true,
-			"2.5.4.9":  true,
-			"2.5.4.17": true,
-		}
 		hasSpecialChar := func(s string) bool {
 			for _, char := range s {
 				if char < ' ' || char > '~' {
@@ -192,9 +182,10 @@ func FuzzRoundTripRDNSequence(f *testing.F) {
 		}
 		for _, rdn := range rdnSeq {
 			for _, tv := range rdn {
-				// Skip if the String() function will return a literal OID type, as we
-				// do not yet support parsing these.
-				if _, ok := knownMarshalTypes[tv.Type.String()]; !ok {
+				// Skip if the Type was not recognized. The String() output will be
+				// an invalid type, value pair with empty type, which will give a "DN ended with
+				// an incomplete type, value pair" error when parsing.
+				if tv.Type.String() == "" {
 					t.Skip()
 				}
 
