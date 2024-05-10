@@ -1,3 +1,4 @@
+github.com/Azure/go-ntlmssp,https://github.com/Azure/go-ntlmssp/blob/754e69321358/LICENSE,MIT
 github.com/antlr/antlr4/runtime/Go/antlr/v4,https://github.com/antlr/antlr4/blob/8188dc5388df/runtime/Go/antlr/v4/LICENSE,BSD-3-Clause
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
 github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
@@ -12,6 +13,8 @@ github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.9.0/v5/LICENSE,BSD-3-Clause
 github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.4/LICENSE.txt,MIT
 github.com/fsnotify/fsnotify,https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE,BSD-3-Clause
+github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.6/LICENSE,MIT
+github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.8/v3/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.1/LICENSE,Apache-2.0
 github.com/go-logr/stdr,https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.3.0/LICENSE,Apache-2.0
