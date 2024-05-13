@@ -347,7 +347,11 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 
 		webIdentityToken := ""
-		if providerConfig.Route53.Auth != nil {
+		if providerConfig.Route53.Auth != nil && providerConfig.Route53.Auth.Kubernetes != nil && providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef != nil {
+			if providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.Name == "" {
+				return nil, nil, fmt.Errorf("service account name is required for Kubernetes auth")
+			}
+
 			audiences := []string{"sts.amazonaws.com"}
 			if len(providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.TokenAudiences) != 0 {
 				audiences = providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.TokenAudiences
