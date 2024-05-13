@@ -126,8 +126,10 @@ tools += operator-sdk=v1.34.1
 tools += gh=v2.49.0
 # https:///github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 tools += preflight=1.9.2
-# https://github.com/daixiang0/gci/releases/
+# https://github.com/daixiang0/gci/releases
 tools += gci=v0.13.4
+# https://github.com/google/yamlfmt/releases
+tools += yamlfmt=v0.12.1
 
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 K8S_CODEGEN_VERSION := v0.29.3
@@ -326,6 +328,7 @@ go_dependencies += govulncheck=golang.org/x/vuln/cmd/govulncheck
 go_dependencies += operator-sdk=github.com/operator-framework/operator-sdk/cmd/operator-sdk
 go_dependencies += gh=github.com/cli/cli/v2/cmd/gh
 go_dependencies += gci=github.com/daixiang0/gci
+go_dependencies += yamlfmt=github.com/google/yamlfmt/cmd/yamlfmt
 
 #################
 # go build tags #
