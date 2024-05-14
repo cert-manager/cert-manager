@@ -79,8 +79,19 @@ func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, erro
 
 		atvs := make([]pkix.AttributeTypeAndValue, 0, len(ldapRelativeDN.Attributes))
 		for _, ldapATV := range ldapRelativeDN.Attributes {
+			oid, ok := attributeTypeNames[ldapATV.Type]
+			if !ok {
+				// If the attribute type is not known, we try to parse it as an OID.
+				// If it is not an OID, we set Type=nil
+
+				oid, err = ParseObjectIdentifier(ldapATV.Type)
+				if err != nil {
+					oid = nil
+				}
+			}
+
 			atvs = append(atvs, pkix.AttributeTypeAndValue{
-				Type:  attributeTypeNames[ldapATV.Type],
+				Type:  oid,
 				Value: ldapATV.Value,
 			})
 		}
