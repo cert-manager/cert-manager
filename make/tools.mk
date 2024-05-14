@@ -27,7 +27,7 @@ CTR=docker
 TOOLS :=
 TOOLS += helm=v3.11.2
 TOOLS += kubectl=v1.27.2
-TOOLS += kind=v0.18.0
+TOOLS += kind=v0.20.0
 TOOLS += controller-gen=v0.12.0
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
@@ -269,10 +269,10 @@ $(BINDIR)/downloaded/tools/kubectl@$(KUBECTL_VERSION)_%: | $(BINDIR)/downloaded/
 # kind #
 ########
 
-KIND_linux_amd64_SHA256SUM=705c722b0a87c9068e183f6d8baecd155a97a9683949ca837c2a500c9aa95c63
-KIND_darwin_amd64_SHA256SUM=9c91e3a6f380ee4cab79094d3fade94eb10a4416d8d3a6d3e1bb9c616f392de4
-KIND_darwin_arm64_SHA256SUM=96e0765d385c4e5457dc95dc49f66d385727885dfe1ad77520af0a32b7f8ccb2
-KIND_linux_arm64_SHA256SUM=9c0320ac39b1f82f1011ae4e4ceb9c9865b528f59839b4d4eff7ab2804fac5f2
+KIND_linux_amd64_SHA256SUM=513a7213d6d3332dd9ef27c24dab35e5ef10a04fa27274fe1c14d8a246493ded
+KIND_darwin_amd64_SHA256SUM=bffd8fb2006dc89fa0d1dde5ba6bf48caacb707e4df8551528f49145ebfeb7ad
+KIND_darwin_arm64_SHA256SUM=8df041a5cae55471f3b039c3c9942226eb909821af63b5677fc80904caffaabf
+KIND_linux_arm64_SHA256SUM=639f7808443559aa30c3642d9913b1615d611a071e34f122340afeda97b8f422
 $(BINDIR)/downloaded/tools/kind@$(KIND_VERSION)_%: | $(BINDIR)/downloaded/tools $(BINDIR)/tools
 	$(CURL) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(subst _,-,$*) -o $@
 	./hack/util/checkhash.sh $@ $(KIND_$*_SHA256SUM)
@@ -465,7 +465,8 @@ tools: $(TOOLS_PATHS) $(K8S_CODEGEN_TOOLS_PATHS) ## install all tools
 
 .PHONY: update-kind-images
 update-kind-images: $(BINDIR)/tools/crane
-	CRANE=./$(BINDIR)/tools/crane ./hack/latest-kind-images.sh
+	@# Deprecated and will fail. See comments in script.
+	./hack/latest-kind-images.sh
 
 .PHONY: update-base-images
 update-base-images: $(BINDIR)/tools/crane
