@@ -474,6 +474,10 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
+	// Auth configures how cert-manager authenticates.
+	// +optional
+	Auth *Route53Auth `json:"auth,omitempty"`
+
 	// The AccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
@@ -500,6 +504,36 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
 	Region string `json:"region"`
+}
+
+// Route53Auth is configuration used to authenticate with a Route53.
+type Route53Auth struct {
+	// Kubernetes authenticates with Route53 using AssumeRoleWithWebIdentity
+	// by passing a bound ServiceAccount token.
+	Kubernetes *Route53KubernetesAuth `json:"kubernetes"`
+}
+
+// Route53KubernetesAuth is a configuration to authenticate against Route53
+// using a bound Kubernetes ServiceAccount token.
+type Route53KubernetesAuth struct {
+	// A reference to a service account that will be used to request a bound
+	// token (also known as "projected token"). To use this field, you must
+	// configure an RBAC rule to let cert-manager request a token.
+	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef"`
+}
+
+// ServiceAccountRef is a service account used by cert-manager to request a
+// token. The expiration of the token is also set by cert-manager to 10 minutes.
+type ServiceAccountRef struct {
+	// Name of the ServiceAccount used to request a token.
+	Name string `json:"name"`
+
+	// TokenAudiences is an optional list of audiences to include in the
+	// token passed to AWS. The default token consisting of the issuer's namespace
+	// and name is always included.
+	// If unset the audience defaults to `sts.amazonaws.com`.
+	// +optional
+	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the

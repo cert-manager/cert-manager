@@ -492,6 +492,41 @@ spec:
                                     Name of the resource being referred to.
                                     More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
+                            auth:
+                              description: Auth configures how cert-manager authenticates.
+                              type: object
+                              required:
+                                - kubernetes
+                              properties:
+                                kubernetes:
+                                  description: |-
+                                    Kubernetes authenticates with Route53 using AssumeRoleWithWebIdentity
+                                    by passing a bound ServiceAccount token.
+                                  type: object
+                                  required:
+                                    - serviceAccountRef
+                                  properties:
+                                    serviceAccountRef:
+                                      description: |-
+                                        A reference to a service account that will be used to request a bound
+                                        token (also known as "projected token"). To use this field, you must
+                                        configure an RBAC rule to let cert-manager request a token.
+                                      type: object
+                                      required:
+                                        - name
+                                      properties:
+                                        audiences:
+                                          description: |-
+                                            TokenAudiences is an optional list of audiences to include in the
+                                            token passed to AWS. The default token consisting of the issuer's namespace
+                                            and name is always included.
+                                            If unset the audience defaults to `sts.amazonaws.com`.
+                                          type: array
+                                          items:
+                                            type: string
+                                        name:
+                                          description: Name of the ServiceAccount used to request a token.
+                                          type: string
                             hostedZoneID:
                               description: If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
                               type: string

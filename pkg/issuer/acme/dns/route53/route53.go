@@ -47,40 +47,48 @@ type DNSProvider struct {
 }
 
 type sessionProvider struct {
-	AccessKeyID     string
-	SecretAccessKey string
-	Ambient         bool
-	Region          string
-	Role            string
-	StsProvider     func(aws.Config) StsClient
-	log             logr.Logger
-	userAgent       string
+	AccessKeyID      string
+	SecretAccessKey  string
+	Ambient          bool
+	Region           string
+	Role             string
+	WebIdentityToken string
+	StsProvider      func(aws.Config) StsClient
+	log              logr.Logger
+	userAgent        string
 }
 
 type StsClient interface {
 	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+	AssumeRoleWithWebIdentity(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error)
 }
 
 func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
-	if d.AccessKeyID == "" && d.SecretAccessKey == "" {
-		if !d.Ambient {
+	switch {
+	case d.Role == "" && d.WebIdentityToken != "":
+		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: role must be set when web identity token is set")
+	case d.AccessKeyID == "" && d.SecretAccessKey == "":
+		if !d.Ambient && d.WebIdentityToken == "" {
 			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
 		}
-	} else if d.AccessKeyID == "" || d.SecretAccessKey == "" {
+	case d.AccessKeyID == "" || d.SecretAccessKey == "":
 		// It's always an error to set one of those but not the other
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
 	}
 
-	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "")
+	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityToken == ""
 
 	var optFns []func(*config.LoadOptions) error
-
-	if useAmbientCredentials {
+	switch {
+	case d.Role != "" && d.WebIdentityToken != "":
+		d.log.V(logf.DebugLevel).Info("using assume role with web identity")
+		optFns = append(optFns, config.WithRegion(d.Region))
+	case useAmbientCredentials:
 		d.log.V(logf.DebugLevel).Info("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	} else {
+	default:
 		d.log.V(logf.DebugLevel).Info("not using ambient credentials")
 		optFns = append(optFns, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(d.AccessKeyID, d.SecretAccessKey, "")))
 	}
@@ -90,7 +98,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
-	if d.Role != "" {
+	if d.Role != "" && d.WebIdentityToken == "" {
 		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
 		stsSvc := d.StsProvider(cfg)
 		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
@@ -99,6 +107,26 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		})
 		if err != nil {
 			return aws.Config{}, fmt.Errorf("unable to assume role: %s", err)
+		}
+
+		cfg.Credentials = credentials.NewStaticCredentialsProvider(
+			*result.Credentials.AccessKeyId,
+			*result.Credentials.SecretAccessKey,
+			*result.Credentials.SessionToken,
+		)
+	}
+
+	if d.Role != "" && d.WebIdentityToken != "" {
+		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
+
+		stsSvc := d.StsProvider(cfg)
+		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
+			RoleArn:          aws.String(d.Role),
+			RoleSessionName:  aws.String("cert-manager"),
+			WebIdentityToken: aws.String(d.WebIdentityToken),
+		})
+		if err != nil {
+			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %s", err)
 		}
 
 		cfg.Credentials = credentials.NewStaticCredentialsProvider(
@@ -122,16 +150,17 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	return cfg, nil
 }
 
-func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool, userAgent string) *sessionProvider {
+func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webIdentityToken string, ambient bool, userAgent string) *sessionProvider {
 	return &sessionProvider{
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
-		Ambient:         ambient,
-		Region:          region,
-		Role:            role,
-		StsProvider:     defaultSTSProvider,
-		log:             logf.Log.WithName("route53-session-provider"),
-		userAgent:       userAgent,
+		AccessKeyID:      accessKeyID,
+		SecretAccessKey:  secretAccessKey,
+		Ambient:          ambient,
+		Region:           region,
+		Role:             role,
+		WebIdentityToken: webIdentityToken,
+		StsProvider:      defaultSTSProvider,
+		log:              logf.Log.WithName("route53-session-provider"),
+		userAgent:        userAgent,
 	}
 }
 
@@ -144,12 +173,12 @@ func defaultSTSProvider(cfg aws.Config) StsClient {
 // unset and the 'ambient' option is set, credentials from the environment.
 func NewDNSProvider(
 	ctx context.Context,
-	accessKeyID, secretAccessKey, hostedZoneID, region, role string,
+	accessKeyID, secretAccessKey, hostedZoneID, region, role, webIdentityToken string,
 	ambient bool,
 	dns01Nameservers []string,
 	userAgent string,
 ) (*DNSProvider, error) {
-	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient, userAgent)
+	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, ambient, userAgent)
 
 	cfg, err := provider.GetSession(ctx)
 	if err != nil {

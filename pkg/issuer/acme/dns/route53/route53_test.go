@@ -32,6 +32,8 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9uYXdzLmNvbSIsImV4cCI6MTc0MTg4NzYwOCwiaWF0IjoxNzEwMzUxNjM4LCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.SfuV3SW-vEdV-tLFIr2PK2DnN6QYmozygav5OeoH36Q"
+
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
@@ -58,7 +60,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(context.TODO())
@@ -72,14 +74,14 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	_, err := NewDNSProvider(context.TODO(), "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
 func TestAmbientRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", provider.client.Options().Region, "Expected Region to be set from environment")
@@ -88,7 +90,7 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 func TestNoRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider(context.TODO(), "marx", "swordfish", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "marx", "swordfish", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", provider.client.Options().Region, "Expected Region to not be set from environment")
@@ -142,16 +144,17 @@ func TestAssumeRole(t *testing.T) {
 		SessionToken:    aws.String("my-token"),
 	}
 	cases := []struct {
-		name      string
-		ambient   bool
-		role      string
-		expErr    bool
-		expCreds  *ststypes.Credentials
-		expRegion string
-		key       string
-		secret    string
-		region    string
-		mockSTS   *mockSTS
+		name             string
+		ambient          bool
+		role             string
+		webIdentityToken string
+		expErr           bool
+		expCreds         *ststypes.Credentials
+		expRegion        string
+		key              string
+		secret           string
+		region           string
+		mockSTS          *mockSTS
 	}{
 		{
 			name:      "should assume role w/ ambient creds",
@@ -224,17 +227,43 @@ func TestAssumeRole(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:             "should assume role with web identity",
+			role:             "my-role",
+			webIdentityToken: jwt,
+			expErr:           false,
+			expCreds:         creds,
+			mockSTS: &mockSTS{
+				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+					return &sts.AssumeRoleWithWebIdentityOutput{
+						Credentials: creds,
+					}, nil
+				},
+			},
+		},
+		{
+			name:             "require role when using assume role with web identity",
+			webIdentityToken: jwt,
+			expErr:           true,
+			expCreds:         nil,
+			mockSTS: &mockSTS{
+				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+					return nil, fmt.Errorf("error assuming mock role with web identity")
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			provider := makeMockSessionProvider(func(aws.Config) StsClient {
 				return c.mockSTS
-			}, c.key, c.secret, c.region, c.role, c.ambient)
+			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
 			cfg, err := provider.GetSession(context.TODO())
 			if c.expErr {
 				assert.NotNil(t, err)
 			} else {
+				assert.Nil(t, err)
 				sessCreds, _ := cfg.Credentials.Retrieve(context.TODO())
 				assert.Equal(t, c.mockSTS.assumedRole, c.role)
 				assert.Equal(t, *c.expCreds.SecretAccessKey, sessCreds.SecretAccessKey)
@@ -246,8 +275,9 @@ func TestAssumeRole(t *testing.T) {
 }
 
 type mockSTS struct {
-	AssumeRoleFn func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
-	assumedRole  string
+	AssumeRoleFn                func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+	AssumeRoleWithWebIdentityFn func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error)
+	assumedRole                 string
 }
 
 func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
@@ -259,19 +289,29 @@ func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, o
 	return nil, nil
 }
 
+func (m *mockSTS) AssumeRoleWithWebIdentity(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+	if m.AssumeRoleWithWebIdentityFn != nil {
+		m.assumedRole = *params.RoleArn
+		return m.AssumeRoleWithWebIdentityFn(ctx, params, optFns...)
+	}
+
+	return nil, nil
+}
+
 func makeMockSessionProvider(
 	defaultSTSProvider func(aws.Config) StsClient,
-	accessKeyID, secretAccessKey, region, role string,
+	accessKeyID, secretAccessKey, region, role, webIdentityToken string,
 	ambient bool,
 ) *sessionProvider {
 	return &sessionProvider{
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
-		Ambient:         ambient,
-		Region:          region,
-		Role:            role,
-		StsProvider:     defaultSTSProvider,
-		log:             logf.Log.WithName("route53-session"),
+		AccessKeyID:      accessKeyID,
+		SecretAccessKey:  secretAccessKey,
+		Ambient:          ambient,
+		Region:           region,
+		Role:             role,
+		WebIdentityToken: webIdentityToken,
+		StsProvider:      defaultSTSProvider,
+		log:              logf.Log.WithName("route53-session"),
 	}
 }
 
