@@ -138,57 +138,35 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 
 // Present creates a TXT record using the specified parameters
 func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
-	return c.createRecord(ctx, fqdn, value, 60)
+	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
+		var found bool
+		for _, r := range set.Properties.TxtRecords {
+			if len(r.Value) > 0 && *r.Value[0] == value {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			set.Properties.TxtRecords = append(set.Properties.TxtRecords, &dns.TxtRecord{
+				Value: []*string{to.Ptr(value)},
+			})
+		}
+	})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
-	z, err := c.getHostedZoneName(ctx, fqdn)
-	if err != nil {
-		c.log.Error(err, "Error getting hosted zone name for fqdn", "fqdn", fqdn)
-		return err
-	}
+	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
+		var records []*dns.TxtRecord
+		for _, r := range set.Properties.TxtRecords {
+			if len(r.Value) > 0 && *r.Value[0] != value {
+				records = append(records, r)
+			}
+		}
 
-	_, err = c.recordClient.Delete(
-		ctx,
-		c.resourceGroupName,
-		z,
-		c.trimFqdn(fqdn, z),
-		dns.RecordTypeTXT, nil)
-	if err != nil {
-		c.log.Error(err, "Error deleting TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
-		return stabilizeError(err)
-	}
-	return nil
-}
-
-func (c *DNSProvider) createRecord(ctx context.Context, fqdn, value string, ttl int) error {
-	rparams := &dns.RecordSet{
-		Properties: &dns.RecordSetProperties{
-			TTL: to.Ptr(int64(ttl)),
-			TxtRecords: []*dns.TxtRecord{
-				{Value: []*string{&value}},
-			},
-		},
-	}
-
-	z, err := c.getHostedZoneName(ctx, fqdn)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.recordClient.CreateOrUpdate(
-		ctx,
-		c.resourceGroupName,
-		z,
-		c.trimFqdn(fqdn, z),
-		dns.RecordTypeTXT,
-		*rparams, nil)
-	if err != nil {
-		c.log.Error(err, "Error creating TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
-		return stabilizeError(err)
-	}
-	return nil
+		set.Properties.TxtRecords = records
+	})
 }
 
 func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (string, error) {
@@ -218,6 +196,76 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 		z = c.zoneName
 	}
 	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+z)
+}
+
+// Updates or removes DNS TXT record while respecting optimistic concurrency control
+func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater func(*dns.RecordSet)) error {
+	zone, err := c.getHostedZoneName(ctx, fqdn)
+	if err != nil {
+		return err
+	}
+
+	name := c.trimFqdn(fqdn, zone)
+
+	var set *dns.RecordSet
+
+	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.As(err, &respErr); respErr.StatusCode == http.StatusNotFound {
+			set = &dns.RecordSet{
+				Properties: &dns.RecordSetProperties{
+					TTL:        to.Ptr(int64(60)),
+					TxtRecords: []*dns.TxtRecord{},
+				},
+				Etag: to.Ptr(""),
+			}
+		} else {
+			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+			return stabilizeError(err)
+		}
+	} else {
+		set = &resp.RecordSet
+	}
+
+	updater(set)
+
+	if len(set.Properties.TxtRecords) == 0 {
+		if *set.Etag != "" {
+			// Etag will cause the deletion to fail if any updates happen concurrently
+			_, err = c.recordClient.Delete(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, &dns.RecordSetsClientDeleteOptions{IfMatch: set.Etag})
+			if err != nil {
+				c.log.Error(err, "Error deleting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+				return stabilizeError(err)
+			}
+		}
+
+		return nil
+	}
+
+	opts := &dns.RecordSetsClientCreateOrUpdateOptions{}
+	if *set.Etag == "" {
+		// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
+		// Only relevant when this is a new record, for updates conflicts are solved with Etag
+		opts.IfNoneMatch = to.Ptr("*")
+	} else {
+		opts.IfMatch = set.Etag
+	}
+
+	_, err = c.recordClient.CreateOrUpdate(
+		ctx,
+		c.resourceGroupName,
+		zone,
+		name,
+		dns.RecordTypeTXT,
+		*set,
+		opts)
+	if err != nil {
+		c.log.Error(err, "Error upserting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+		return stabilizeError(err)
+	}
+
+	return nil
 }
 
 // The azure-sdk library returns the contents of the HTTP requests in its
