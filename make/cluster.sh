@@ -115,6 +115,7 @@ case "$k8s_version" in
 1.26*) image=$KIND_IMAGE_FULL_K8S_126 ;;
 1.27*) image=$KIND_IMAGE_FULL_K8S_127 ;;
 1.28*) image=$KIND_IMAGE_FULL_K8S_128 ;;
+1.29*) image=$KIND_IMAGE_FULL_K8S_129 ;;
 v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
