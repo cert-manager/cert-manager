@@ -17,9 +17,18 @@ limitations under the License.
 package validation
 
 import (
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	logsapi "k8s.io/component-base/logs/api/v1"
+
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
+	sharedvalidation "github.com/cert-manager/cert-manager/internal/apis/config/shared/validation"
 )
 
-func ValidateCAInjectorConfiguration(cfg *config.CAInjectorConfiguration) error {
-	return nil
+func ValidateCAInjectorConfiguration(cfg *config.CAInjectorConfiguration, fldPath *field.Path) field.ErrorList {
+	var allErrors field.ErrorList
+
+	allErrors = append(allErrors, logsapi.Validate(&cfg.Logging, nil, fldPath.Child("logging"))...)
+	allErrors = append(allErrors, sharedvalidation.ValidateLeaderElectionConfig(&cfg.LeaderElectionConfig, fldPath.Child("leaderElectionConfig"))...)
+
+	return allErrors
 }

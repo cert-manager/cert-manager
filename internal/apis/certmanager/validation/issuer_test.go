@@ -349,7 +349,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 }
 
 func TestValidateACMEIssuerConfig(t *testing.T) {
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
 
 	caBundle := unitcrypto.MustCreateCryptoBundle(t,
 		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
@@ -694,7 +694,8 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 }
 
 func TestValidateIssuerSpec(t *testing.T) {
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
+
 	scenarios := map[string]struct {
 		spec     *cmapi.IssuerSpec
 		errs     field.ErrorList
@@ -822,7 +823,8 @@ func TestValidateIssuerSpec(t *testing.T) {
 }
 
 func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
+
 	scenarios := map[string]struct {
 		isExpectedFailure bool
 		cfg               *cmacme.ACMEChallengeSolverHTTP01
@@ -1519,7 +1521,8 @@ func TestValidateSecretKeySelector(t *testing.T) {
 	validKey := "key"
 	// invalidName := cmmeta.LocalObjectReference{"-name-"}
 	// invalidKey := "-key-"
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
+
 	scenarios := map[string]struct {
 		isExpectedFailure bool
 		selector          *cmmeta.SecretKeySelector
