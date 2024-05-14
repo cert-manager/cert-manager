@@ -504,6 +504,13 @@ For more information, see [Pod's DNS Policy](https://kubernetes.io/docs/concepts
 
 Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).
 
+#### **hostAliases** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Optional hostAliases for cert-manager-controller pods. May be useful when performing ACME DNS-01 self checks.
 #### **nodeSelector** ~ `object`
 > Default value:
 > ```yaml

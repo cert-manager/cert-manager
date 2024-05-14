@@ -337,6 +337,17 @@ podLabels: {}
 #     - "1.1.1.1"
 #     - "8.8.8.8"
 
+# Optional hostAliases for cert-manager-controller pods. May be useful when performing ACME DNS-01 self checks.
+hostAliases: []
+# - ip: 127.0.0.1
+#   hostnames:
+#   - foo.local
+#   - bar.local
+# - ip: 10.1.2.3
+#   hostnames:
+#   - foo.remote
+#   - bar.remote
+
 # The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with
 # matching labels.
 # For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
