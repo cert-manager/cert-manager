@@ -96,7 +96,7 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
 
 	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
-	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
+	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
 	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
 }

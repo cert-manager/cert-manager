@@ -156,7 +156,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.Beta},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
+	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
