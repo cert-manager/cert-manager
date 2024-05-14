@@ -24,4 +24,4 @@ trap 'make kind-logs' EXIT
 # (i.e. "I want to run the exact same e2e test that will be run in CI")
 # and because it allows us to be explicit about where it's getting set when we call "make e2e-ci"
 
-make --no-print-directory e2e FLAKE_ATTEMPTS=2 CI=true K8S_VERSION="$(K8S_VERSION)"
+make --no-print-directory e2e FLAKE_ATTEMPTS=2 CI=true K8S_VERSION="$K8S_VERSION"
