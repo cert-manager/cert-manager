@@ -27,7 +27,7 @@ CTR=docker
 TOOLS :=
 TOOLS += helm=v3.11.2
 TOOLS += kubectl=v1.27.2
-TOOLS += kind=v0.18.0
+TOOLS += kind=v0.20.0
 TOOLS += controller-gen=v0.12.0
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
@@ -464,8 +464,8 @@ endif
 tools: $(TOOLS_PATHS) $(K8S_CODEGEN_TOOLS_PATHS) ## install all tools
 
 .PHONY: update-kind-images
-update-kind-images: $(BINDIR)/tools/crane
-	CRANE=./$(BINDIR)/tools/crane ./hack/latest-kind-images.sh
+update-kind-images:
+	./hack/latest-kind-images.sh $(KIND_VERSION)
 
 .PHONY: update-base-images
 update-base-images: $(BINDIR)/tools/crane
