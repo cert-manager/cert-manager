@@ -18,207 +18,212 @@ package validation
 
 import (
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 )
 
 func TestValidateControllerConfiguration(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *config.ControllerConfiguration
-		wantErr bool
+		name   string
+		config *config.ControllerConfiguration
+		errs   func(*config.ControllerConfiguration) field.ErrorList
 	}{
 		{
 			"with valid config",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
 			},
-			false,
+			nil,
 		},
 		{
-			"with both filesystem and dynamic tls configured",
+			"with invalid logging config",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "unknown",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
+			},
+			func(wc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("logging.format"), wc.Logging.Format, "Unsupported log format"),
+				}
+			},
+		},
+		{
+			"with invalid leader election healthz timeout",
+			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				LeaderElectionConfig: config.LeaderElectionConfig{
+					LeaderElectionConfig: shared.LeaderElectionConfig{
+						Enabled:       true,
+						LeaseDuration: time.Second,
+						RenewDeadline: time.Second,
+						RetryPeriod:   time.Second,
+					},
+					HealthzTimeout: 0,
+				},
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+			},
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("leaderElectionConfig.healthzTimeout"), cc.LeaderElectionConfig.HealthzTimeout, "must be higher than 0"),
+				}
+			},
+		},
+		{
+			"with invalid leader election config",
+			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				LeaderElectionConfig: config.LeaderElectionConfig{
+					LeaderElectionConfig: shared.LeaderElectionConfig{
+						Enabled: true,
+					},
+				},
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+			},
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("leaderElectionConfig.healthzTimeout"), cc.LeaderElectionConfig.HealthzTimeout, "must be higher than 0"),
+					field.Invalid(field.NewPath("leaderElectionConfig.leaseDuration"), cc.LeaderElectionConfig.LeaseDuration, "must be greater than 0"),
+					field.Invalid(field.NewPath("leaderElectionConfig.renewDeadline"), cc.LeaderElectionConfig.RenewDeadline, "must be greater than 0"),
+					field.Invalid(field.NewPath("leaderElectionConfig.retryPeriod"), cc.LeaderElectionConfig.RetryPeriod, "must be greater than 0"),
+				}
+			},
+		},
+		{
+			"with invalid metrics tls config",
+			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				MetricsTLSConfig: shared.TLSConfig{
+					Filesystem: shared.FilesystemServingConfig{
 						CertFile: "/test.crt",
 						KeyFile:  "/test.key",
 					},
-					Dynamic: config.DynamicServingConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretNamespace: "cert-manager",
 						SecretName:      "test",
 						DNSNames:        []string{"example.com"},
 					},
 				},
 			},
-			true,
-		},
-		{
-			"with valid filesystem tls config",
-			&config.ControllerConfiguration{
-				IngressShimConfig: config.IngressShimConfig{
-					DefaultIssuerKind: "Issuer",
-				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
-						CertFile: "/test.crt",
-						KeyFile:  "/test.key",
-					},
-				},
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("metricsTLSConfig"), &cc.MetricsTLSConfig, "cannot specify both filesystem based and dynamic TLS configuration"),
+				}
 			},
-			false,
-		},
-		{
-			"with valid tls config missing keyfile",
-			&config.ControllerConfiguration{
-				IngressShimConfig: config.IngressShimConfig{
-					DefaultIssuerKind: "Issuer",
-				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
-						CertFile: "/test.crt",
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with valid tls config missing certfile",
-			&config.ControllerConfiguration{
-				IngressShimConfig: config.IngressShimConfig{
-					DefaultIssuerKind: "Issuer",
-				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
-						KeyFile: "/test.key",
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with valid dynamic tls config",
-			&config.ControllerConfiguration{
-				IngressShimConfig: config.IngressShimConfig{
-					DefaultIssuerKind: "Issuer",
-				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretNamespace: "cert-manager",
-						SecretName:      "test",
-						DNSNames:        []string{"example.com"},
-					},
-				},
-			},
-			false,
-		},
-		{
-			"with dynamic tls missing secret namespace",
-			&config.ControllerConfiguration{
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretName: "test",
-						DNSNames:   []string{"example.com"},
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with dynamic tls missing secret name",
-			&config.ControllerConfiguration{
-				IngressShimConfig: config.IngressShimConfig{
-					DefaultIssuerKind: "Issuer",
-				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretNamespace: "cert-manager",
-						DNSNames:        []string{"example.com"},
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with dynamic tls missing dns names",
-			&config.ControllerConfiguration{
-				IngressShimConfig: config.IngressShimConfig{
-					DefaultIssuerKind: "Issuer",
-				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretName:      "test",
-						SecretNamespace: "cert-manager",
-						DNSNames:        nil,
-					},
-				},
-			},
-			true,
 		},
 		{
 			"with missing issuer kind",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Required(field.NewPath("ingressShimConfig.defaultIssuerKind"), "must not be empty"),
+				}
+			},
 		},
 		{
 			"with invalid kube-api-burst config",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst: -1, // Must be positive
 				KubernetesAPIQPS:   1,
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher or equal to kubernetesAPIQPS"),
+				}
+			},
 		},
 		{
 			"with invalid kube-api-burst config",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst: 1, // Must be greater than KubernetesAPIQPS
 				KubernetesAPIQPS:   2,
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher or equal to kubernetesAPIQPS"),
+				}
+			},
 		},
 		{
 			"with invalid kube-api-qps config",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   -1, // Must be positive
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be higher than 0"),
+				}
+			},
 		},
 		{
 			"with valid acme http solver nameservers",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -231,11 +236,14 @@ func TestValidateControllerConfiguration(t *testing.T) {
 					},
 				},
 			},
-			false,
+			nil,
 		},
 		{
 			"with invalid acme http solver nameserver missing port",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -248,11 +256,18 @@ func TestValidateControllerConfiguration(t *testing.T) {
 					},
 				},
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("acmeHTTP01Config.solverNameservers[1]"), cc.ACMEHTTP01Config.SolverNameservers[1], "must be in the format <ip address>:<port>"),
+				}
+			},
 		},
 		{
 			"with valid acme dns recursive nameservers",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -265,11 +280,14 @@ func TestValidateControllerConfiguration(t *testing.T) {
 					},
 				},
 			},
-			false,
+			nil,
 		},
 		{
 			"with inalid acme dns recursive nameserver missing port",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -282,31 +300,42 @@ func TestValidateControllerConfiguration(t *testing.T) {
 					},
 				},
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("acmeDNS01Config.recursiveNameservers[0]"), cc.ACMEDNS01Config.RecursiveNameservers[0], "must be in the format <ip address>:<port>"),
+				}
+			},
 		},
-		// TODO: Turns out url.ParseRequestURI allows a lot of bad URLs through,
-		// including empty urls. We should replace that and uncomment this test.
-		//
-		// {
-		// 	"with inalid acme dns recursive nameserver invalid url",
-		// 	&config.ControllerConfiguration{
-		// 		IngressShimConfig: config.IngressShimConfig{
-		// 			DefaultIssuerKind: "Issuer",
-		// 		},
-		// 		KubernetesAPIBurst: 1,
-		// 		KubernetesAPIQPS:   1,
-		// 		ACMEDNS01Config: config.ACMEDNS01Config{
-		// 			RecursiveNameservers: []string{
-		// 				"1.1.1.1:53",
-		// 				"https://",
-		// 			},
-		// 		},
-		// 	},
-		// 	true,
-		// },
+		{
+			"with inalid acme dns recursive nameserver invalid url",
+			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				IngressShimConfig: config.IngressShimConfig{
+					DefaultIssuerKind: "Issuer",
+				},
+				KubernetesAPIBurst: 1,
+				KubernetesAPIQPS:   1,
+				ACMEDNS01Config: config.ACMEDNS01Config{
+					RecursiveNameservers: []string{
+						"1.1.1.1:53",
+						"https://",
+					},
+				},
+			},
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("acmeDNS01Config.recursiveNameservers[1]"), cc.ACMEDNS01Config.RecursiveNameservers[1], "must be in the format https://<DoH RFC 8484 server address>"),
+				}
+			},
+		},
 		{
 			"with valid controllers named",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -314,11 +343,14 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				KubernetesAPIQPS:   1,
 				Controllers:        []string{"issuers", "clusterissuers"},
 			},
-			false,
+			nil,
 		},
 		{
 			"with wildcard controllers named",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -326,11 +358,14 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				KubernetesAPIQPS:   1,
 				Controllers:        []string{"*"},
 			},
-			false,
+			nil,
 		},
 		{
 			"with invalid controllers named",
 			&config.ControllerConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
@@ -338,14 +373,21 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				KubernetesAPIQPS:   1,
 				Controllers:        []string{"foo"},
 			},
-			true,
+			func(cc *config.ControllerConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("controllers").Index(0), "foo", "is not in the list of known controllers"),
+				}
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateControllerConfiguration(tt.config); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateControllerConfiguration() error = %v, wantErr %v", err, tt.wantErr)
+			errList := ValidateControllerConfiguration(tt.config, nil)
+			var expErrs field.ErrorList
+			if tt.errs != nil {
+				expErrs = tt.errs(tt.config)
 			}
+			assert.ElementsMatch(t, expErrs, errList)
 		})
 	}
 }

@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	time "time"
 	unsafe "unsafe"
 
 	controller "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
 	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
@@ -69,26 +69,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.DynamicServingConfig)(nil), (*controller.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_DynamicServingConfig_To_controller_DynamicServingConfig(a.(*v1alpha1.DynamicServingConfig), b.(*controller.DynamicServingConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*controller.DynamicServingConfig)(nil), (*v1alpha1.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(a.(*controller.DynamicServingConfig), b.(*v1alpha1.DynamicServingConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.FilesystemServingConfig)(nil), (*controller.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_FilesystemServingConfig_To_controller_FilesystemServingConfig(a.(*v1alpha1.FilesystemServingConfig), b.(*controller.FilesystemServingConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*controller.FilesystemServingConfig)(nil), (*v1alpha1.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(a.(*controller.FilesystemServingConfig), b.(*v1alpha1.FilesystemServingConfig), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha1.IngressShimConfig)(nil), (*controller.IngressShimConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(a.(*v1alpha1.IngressShimConfig), b.(*controller.IngressShimConfig), scope)
 	}); err != nil {
@@ -109,36 +89,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.TLSConfig)(nil), (*controller.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_TLSConfig_To_controller_TLSConfig(a.(*v1alpha1.TLSConfig), b.(*controller.TLSConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*controller.TLSConfig)(nil), (*v1alpha1.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_TLSConfig_To_v1alpha1_TLSConfig(a.(*controller.TLSConfig), b.(*v1alpha1.TLSConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((**float32)(nil), (*float32)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_Pointer_float32_To_float32(a.(**float32), b.(*float32), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((**int32)(nil), (*int)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_Pointer_int32_To_int(a.(**int32), b.(*int), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*float32)(nil), (**float32)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_float32_To_Pointer_float32(a.(*float32), b.(**float32), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*int)(nil), (**int32)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_int_To_Pointer_int32(a.(*int), b.(**int32), scope)
-	}); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -147,7 +97,9 @@ func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1al
 	if err := v1.Convert_Pointer_bool_To_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
 	}
-	out.CheckRetryPeriod = time.Duration(in.CheckRetryPeriod)
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.CheckRetryPeriod, &out.CheckRetryPeriod, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -161,7 +113,9 @@ func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *cont
 	if err := v1.Convert_bool_To_Pointer_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
 	}
-	out.CheckRetryPeriod = time.Duration(in.CheckRetryPeriod)
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.CheckRetryPeriod, &out.CheckRetryPeriod, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -209,10 +163,10 @@ func Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *contro
 func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *v1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
 	out.KubeConfig = in.KubeConfig
 	out.APIServerHost = in.APIServerHost
-	if err := Convert_Pointer_float32_To_float32(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
+	if err := sharedv1alpha1.Convert_Pointer_float32_To_float32(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
 		return err
 	}
-	if err := Convert_Pointer_int32_To_int(&in.KubernetesAPIBurst, &out.KubernetesAPIBurst, s); err != nil {
+	if err := sharedv1alpha1.Convert_Pointer_int32_To_int(&in.KubernetesAPIBurst, &out.KubernetesAPIBurst, s); err != nil {
 		return err
 	}
 	out.Namespace = in.Namespace
@@ -234,14 +188,14 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 		return err
 	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
-	if err := Convert_Pointer_int32_To_int(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
+	if err := sharedv1alpha1.Convert_Pointer_int32_To_int(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
 		return err
 	}
-	if err := Convert_Pointer_int32_To_int(&in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges, s); err != nil {
+	if err := sharedv1alpha1.Convert_Pointer_int32_To_int(&in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges, s); err != nil {
 		return err
 	}
 	out.MetricsListenAddress = in.MetricsListenAddress
-	if err := Convert_v1alpha1_TLSConfig_To_controller_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
+	if err := sharedv1alpha1.Convert_v1alpha1_TLSConfig_To_shared_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
 		return err
 	}
 	out.HealthzListenAddress = in.HealthzListenAddress
@@ -271,10 +225,10 @@ func Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfigurat
 func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
 	out.APIServerHost = in.APIServerHost
 	out.KubeConfig = in.KubeConfig
-	if err := Convert_float32_To_Pointer_float32(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
+	if err := sharedv1alpha1.Convert_float32_To_Pointer_float32(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
 		return err
 	}
-	if err := Convert_int_To_Pointer_int32(&in.KubernetesAPIBurst, &out.KubernetesAPIBurst, s); err != nil {
+	if err := sharedv1alpha1.Convert_int_To_Pointer_int32(&in.KubernetesAPIBurst, &out.KubernetesAPIBurst, s); err != nil {
 		return err
 	}
 	out.Namespace = in.Namespace
@@ -296,14 +250,14 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 		return err
 	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
-	if err := Convert_int_To_Pointer_int32(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
+	if err := sharedv1alpha1.Convert_int_To_Pointer_int32(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
 		return err
 	}
-	if err := Convert_int_To_Pointer_int32(&in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges, s); err != nil {
+	if err := sharedv1alpha1.Convert_int_To_Pointer_int32(&in.MaxConcurrentChallenges, &out.MaxConcurrentChallenges, s); err != nil {
 		return err
 	}
 	out.MetricsListenAddress = in.MetricsListenAddress
-	if err := Convert_controller_TLSConfig_To_v1alpha1_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
+	if err := sharedv1alpha1.Convert_shared_TLSConfig_To_v1alpha1_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
 		return err
 	}
 	out.HealthzListenAddress = in.HealthzListenAddress
@@ -328,54 +282,6 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 // Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration is an autogenerated conversion function.
 func Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
 	return autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in, out, s)
-}
-
-func autoConvert_v1alpha1_DynamicServingConfig_To_controller_DynamicServingConfig(in *v1alpha1.DynamicServingConfig, out *controller.DynamicServingConfig, s conversion.Scope) error {
-	out.SecretNamespace = in.SecretNamespace
-	out.SecretName = in.SecretName
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.LeafDuration = time.Duration(in.LeafDuration)
-	return nil
-}
-
-// Convert_v1alpha1_DynamicServingConfig_To_controller_DynamicServingConfig is an autogenerated conversion function.
-func Convert_v1alpha1_DynamicServingConfig_To_controller_DynamicServingConfig(in *v1alpha1.DynamicServingConfig, out *controller.DynamicServingConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_DynamicServingConfig_To_controller_DynamicServingConfig(in, out, s)
-}
-
-func autoConvert_controller_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *controller.DynamicServingConfig, out *v1alpha1.DynamicServingConfig, s conversion.Scope) error {
-	out.SecretNamespace = in.SecretNamespace
-	out.SecretName = in.SecretName
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.LeafDuration = time.Duration(in.LeafDuration)
-	return nil
-}
-
-// Convert_controller_DynamicServingConfig_To_v1alpha1_DynamicServingConfig is an autogenerated conversion function.
-func Convert_controller_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *controller.DynamicServingConfig, out *v1alpha1.DynamicServingConfig, s conversion.Scope) error {
-	return autoConvert_controller_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in, out, s)
-}
-
-func autoConvert_v1alpha1_FilesystemServingConfig_To_controller_FilesystemServingConfig(in *v1alpha1.FilesystemServingConfig, out *controller.FilesystemServingConfig, s conversion.Scope) error {
-	out.CertFile = in.CertFile
-	out.KeyFile = in.KeyFile
-	return nil
-}
-
-// Convert_v1alpha1_FilesystemServingConfig_To_controller_FilesystemServingConfig is an autogenerated conversion function.
-func Convert_v1alpha1_FilesystemServingConfig_To_controller_FilesystemServingConfig(in *v1alpha1.FilesystemServingConfig, out *controller.FilesystemServingConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_FilesystemServingConfig_To_controller_FilesystemServingConfig(in, out, s)
-}
-
-func autoConvert_controller_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *controller.FilesystemServingConfig, out *v1alpha1.FilesystemServingConfig, s conversion.Scope) error {
-	out.CertFile = in.CertFile
-	out.KeyFile = in.KeyFile
-	return nil
-}
-
-// Convert_controller_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig is an autogenerated conversion function.
-func Convert_controller_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *controller.FilesystemServingConfig, out *v1alpha1.FilesystemServingConfig, s conversion.Scope) error {
-	return autoConvert_controller_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in, out, s)
 }
 
 func autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *v1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
@@ -405,14 +311,12 @@ func Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *cont
 }
 
 func autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in *v1alpha1.LeaderElectionConfig, out *controller.LeaderElectionConfig, s conversion.Scope) error {
-	if err := v1.Convert_Pointer_bool_To_bool(&in.Enabled, &out.Enabled, s); err != nil {
+	if err := sharedv1alpha1.Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
-	out.Namespace = in.Namespace
-	out.LeaseDuration = time.Duration(in.LeaseDuration)
-	out.RenewDeadline = time.Duration(in.RenewDeadline)
-	out.RetryPeriod = time.Duration(in.RetryPeriod)
-	out.HealthzTimeout = time.Duration(in.HealthzTimeout)
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.HealthzTimeout, &out.HealthzTimeout, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -422,52 +326,16 @@ func Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in
 }
 
 func autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *v1alpha1.LeaderElectionConfig, s conversion.Scope) error {
-	if err := v1.Convert_bool_To_Pointer_bool(&in.Enabled, &out.Enabled, s); err != nil {
+	if err := sharedv1alpha1.Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
-	out.Namespace = in.Namespace
-	out.LeaseDuration = time.Duration(in.LeaseDuration)
-	out.RenewDeadline = time.Duration(in.RenewDeadline)
-	out.RetryPeriod = time.Duration(in.RetryPeriod)
-	out.HealthzTimeout = time.Duration(in.HealthzTimeout)
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.HealthzTimeout, &out.HealthzTimeout, s); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig is an autogenerated conversion function.
 func Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *v1alpha1.LeaderElectionConfig, s conversion.Scope) error {
 	return autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in, out, s)
-}
-
-func autoConvert_v1alpha1_TLSConfig_To_controller_TLSConfig(in *v1alpha1.TLSConfig, out *controller.TLSConfig, s conversion.Scope) error {
-	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
-	out.MinTLSVersion = in.MinTLSVersion
-	if err := Convert_v1alpha1_FilesystemServingConfig_To_controller_FilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha1_DynamicServingConfig_To_controller_DynamicServingConfig(&in.Dynamic, &out.Dynamic, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha1_TLSConfig_To_controller_TLSConfig is an autogenerated conversion function.
-func Convert_v1alpha1_TLSConfig_To_controller_TLSConfig(in *v1alpha1.TLSConfig, out *controller.TLSConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_TLSConfig_To_controller_TLSConfig(in, out, s)
-}
-
-func autoConvert_controller_TLSConfig_To_v1alpha1_TLSConfig(in *controller.TLSConfig, out *v1alpha1.TLSConfig, s conversion.Scope) error {
-	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
-	out.MinTLSVersion = in.MinTLSVersion
-	if err := Convert_controller_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
-		return err
-	}
-	if err := Convert_controller_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(&in.Dynamic, &out.Dynamic, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_controller_TLSConfig_To_v1alpha1_TLSConfig is an autogenerated conversion function.
-func Convert_controller_TLSConfig_To_v1alpha1_TLSConfig(in *controller.TLSConfig, out *v1alpha1.TLSConfig, s conversion.Scope) error {
-	return autoConvert_controller_TLSConfig_To_v1alpha1_TLSConfig(in, out, s)
 }

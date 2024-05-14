@@ -5,10 +5,10 @@
 	"leaderElectionConfig": {
 		"enabled": true,
 		"namespace": "kube-system",
-		"leaseDuration": 60000000000,
-		"renewDeadline": 40000000000,
-		"retryPeriod": 15000000000,
-		"healthzTimeout": 20000000000
+		"leaseDuration": "1m0s",
+		"renewDeadline": "40s",
+		"retryPeriod": "15s",
+		"healthzTimeout": "20s"
 	},
 	"controllers": [
 		"*"
@@ -29,7 +29,7 @@
 	"metricsTLSConfig": {
 		"filesystem": {},
 		"dynamic": {
-			"LeafDuration": 0
+			"leafDuration": "168h0m0s"
 		}
 	},
 	"healthzListenAddress": "0.0.0.0:9403",
@@ -65,6 +65,6 @@
 	},
 	"acmeDNS01Config": {
 		"recursiveNameserversOnly": false,
-		"checkRetryPeriod": 10000000000
+		"checkRetryPeriod": "10s"
 	}
 }

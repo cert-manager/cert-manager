@@ -17,21 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	time "time"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
-)
-
-var (
-	defaultLeaderElect                 = true
-	defaultLeaderElectionNamespace     = "kube-system"
-	defaultLeaderElectionLeaseDuration = 60 * time.Second
-	defaultLeaderElectionRenewDeadline = 40 * time.Second
-	defaultLeaderElectionRetryPeriod   = 15 * time.Second
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -44,29 +34,6 @@ func SetDefaults_CAInjectorConfiguration(obj *v1alpha1.CAInjectorConfiguration) 
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
-}
-
-func SetDefaults_LeaderElectionConfig(obj *v1alpha1.LeaderElectionConfig) {
-	if obj.Enabled == nil {
-		obj.Enabled = &defaultLeaderElect
-	}
-
-	if obj.Namespace == "" {
-		obj.Namespace = defaultLeaderElectionNamespace
-	}
-
-	// TODO: Does it make sense to have a duration of 0?
-	if obj.LeaseDuration == time.Duration(0) {
-		obj.LeaseDuration = defaultLeaderElectionLeaseDuration
-	}
-
-	if obj.RenewDeadline == time.Duration(0) {
-		obj.RenewDeadline = defaultLeaderElectionRenewDeadline
-	}
-
-	if obj.RetryPeriod == time.Duration(0) {
-		obj.RetryPeriod = defaultLeaderElectionRetryPeriod
-	}
 }
 
 func SetDefaults_EnableDataSourceConfig(obj *v1alpha1.EnableDataSourceConfig) {

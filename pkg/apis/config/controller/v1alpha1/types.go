@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logsapi "k8s.io/component-base/logs/api/v1"
+
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -104,7 +104,7 @@ type ControllerConfiguration struct {
 	MetricsListenAddress string `json:"metricsListenAddress,omitempty"`
 
 	// TLS config for the metrics endpoint
-	MetricsTLSConfig TLSConfig `json:"metricsTLSConfig"`
+	MetricsTLSConfig sharedv1alpha1.TLSConfig `json:"metricsTLSConfig"`
 
 	// The host and port address, separated by a ':', that the healthz server
 	// should listen on.
@@ -137,49 +137,12 @@ type ControllerConfiguration struct {
 	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitempty"`
 }
 
-type KubeConfig struct {
-	// Path to a kubeconfig. Only required if out-of-cluster.
-	Path string `json:"path,omitempty"`
-
-	// If true, use the current context from the kubeconfig file.
-	// If false, use the context specified by ControllerConfiguration.Context.
-	// Default: true
-	// +optional
-	CurrentContext *bool `json:"currentContext,omitempty"`
-
-	// The kubeconfig context to use.
-	// Default: current-context from kubeconfig file
-	// +optional
-	Context string `json:"context,omitempty"`
-}
-
 type LeaderElectionConfig struct {
-	// If true, cert-manager will perform leader election between instances to
-	// ensure no more than one instance of cert-manager operates at a time
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Namespace used to perform leader election. Only used if leader election is enabled
-	Namespace string `json:"namespace,omitempty"`
-
-	// The duration that non-leader candidates will wait after observing a leadership
-	// renewal until attempting to acquire leadership of a led but unrenewed leader
-	// slot. This is effectively the maximum duration that a leader can be stopped
-	// before it is replaced by another candidate. This is only applicable if leader
-	// election is enabled.
-	LeaseDuration time.Duration `json:"leaseDuration,omitempty"`
-
-	// The interval between attempts by the acting master to renew a leadership slot
-	// before it stops leading. This must be less than or equal to the lease duration.
-	// This is only applicable if leader election is enabled.
-	RenewDeadline time.Duration `json:"renewDeadline,omitempty"`
-
-	// The duration the clients should wait between attempting acquisition and renewal
-	// of a leadership. This is only applicable if leader election is enabled.
-	RetryPeriod time.Duration `json:"retryPeriod,omitempty"`
+	sharedv1alpha1.LeaderElectionConfig `json:",inline"`
 
 	// Leader election healthz checks within this timeout period after the lease
 	// expires will still return healthy.
-	HealthzTimeout time.Duration `json:"healthzTimeout,omitempty"`
+	HealthzTimeout *sharedv1alpha1.Duration `json:"healthzTimeout,omitempty"`
 }
 
 type IngressShimConfig struct {
@@ -256,57 +219,5 @@ type ACMEDNS01Config struct {
 	// For HTTP01 challenges the propagation check verifies that the challenge
 	// token is served at the challenge URL. This should be a valid duration
 	// string, for example 180s or 1h
-	CheckRetryPeriod time.Duration `json:"checkRetryPeriod,omitempty"`
-}
-
-// TLSConfig configures how TLS certificates are sourced for serving.
-// Only one of 'filesystem' or 'dynamic' may be specified.
-type TLSConfig struct {
-	// cipherSuites is the list of allowed cipher suites for the server.
-	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
-	// If not specified, the default for the Go version will be used and may change over time.
-	CipherSuites []string `json:"cipherSuites,omitempty"`
-
-	// minTLSVersion is the minimum TLS version supported.
-	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
-	// If not specified, the default for the Go version will be used and may change over time.
-	MinTLSVersion string `json:"minTLSVersion,omitempty"`
-
-	// Filesystem enables using a certificate and private key found on the local filesystem.
-	// These files will be periodically polled in case they have changed, and dynamically reloaded.
-	Filesystem FilesystemServingConfig `json:"filesystem"`
-
-	// When Dynamic serving is enabled, the controller will generate a CA used to sign
-	// certificates and persist it into a Kubernetes Secret resource (for other replicas of the
-	// controller to consume).
-	// It will then generate a certificate in-memory for itself using this CA to serve with.
-	Dynamic DynamicServingConfig `json:"dynamic"`
-}
-
-// DynamicServingConfig makes the controller generate a CA and persist it into Secret resources.
-// This CA will be used by all instances of the controller for signing serving certificates.
-type DynamicServingConfig struct {
-	// Namespace of the Kubernetes Secret resource containing the TLS certificate
-	// used as a CA to sign dynamic serving certificates.
-	SecretNamespace string `json:"secretNamespace,omitempty"`
-
-	// Secret resource name containing the TLS certificate
-	// used as a CA to sign dynamic serving certificates.
-	SecretName string `json:"secretName,omitempty"`
-
-	// DNSNames that must be present on serving certificates signed by the CA.
-	DNSNames []string `json:"dnsNames,omitempty"`
-
-	// LeafDuration is a customizable duration on serving certificates signed by the CA.
-	LeafDuration time.Duration
-}
-
-// FilesystemServingConfig enables using a certificate and private key found on the local filesystem.
-// These files will be periodically polled in case they have changed, and dynamically reloaded.
-type FilesystemServingConfig struct {
-	// Path to a file containing TLS certificate & chain to serve with
-	CertFile string `json:"certFile,omitempty"`
-
-	// Path to a file containing a TLS private key to serve with
-	KeyFile string `json:"keyFile,omitempty"`
+	CheckRetryPeriod *sharedv1alpha1.Duration `json:"checkRetryPeriod,omitempty"`
 }

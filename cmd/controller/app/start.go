@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
@@ -100,11 +99,15 @@ to renew certificates at an appropriate time before expiry.`,
 				return err
 			}
 
-			if err := validation.ValidateControllerConfiguration(controllerConfig); err != nil {
-				return fmt.Errorf("error validating flags: %w", err)
+			if err := validation.ValidateControllerConfiguration(controllerConfig, nil); len(err) > 0 {
+				return fmt.Errorf("error validating flags: %w", err.ToAggregate())
 			}
 
-			if err := logf.ValidateAndApplyAsField(&controllerConfig.Logging, field.NewPath("logging")); err != nil {
+			// ValidateControllerConfiguration should already have validated the
+			// logging flags, the logging API does not have a Apply-only function
+			// so we validate again here. This should not catch any validation errors
+			// anymore.
+			if err := logf.ValidateAndApply(&controllerConfig.Logging); err != nil {
 				return fmt.Errorf("failed to validate controller logging flags: %w", err)
 			}
 

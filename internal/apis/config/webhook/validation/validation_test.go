@@ -19,156 +19,123 @@ package validation
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	logsapi "k8s.io/component-base/logs/api/v1"
+
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 )
 
 func TestValidateWebhookConfiguration(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *config.WebhookConfiguration
-		wantErr bool
+		name   string
+		config *config.WebhookConfiguration
+		errs   func(*config.WebhookConfiguration) field.ErrorList
 	}{
 		{
 			"with no tls config",
-			&config.WebhookConfiguration{},
-			false,
+			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+			},
+			nil,
 		},
 		{
-			"with both filesystem and dynamic tls configured",
+			"with invalid logging config",
 			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "unknown",
+				},
+			},
+			func(wc *config.WebhookConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("logging.format"), wc.Logging.Format, "Unsupported log format"),
+				}
+			},
+		},
+		{
+			"with invalid tls config",
+			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				TLSConfig: shared.TLSConfig{
+					Filesystem: shared.FilesystemServingConfig{
 						CertFile: "/test.crt",
 						KeyFile:  "/test.key",
 					},
-					Dynamic: config.DynamicServingConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretNamespace: "cert-manager",
 						SecretName:      "test",
 						DNSNames:        []string{"example.com"},
 					},
 				},
 			},
-			true,
-		},
-		{
-			"with valid filesystem tls config",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
-						CertFile: "/test.crt",
-						KeyFile:  "/test.key",
-					},
-				},
+			func(wc *config.WebhookConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("tlsConfig"), &wc.TLSConfig, "cannot specify both filesystem based and dynamic TLS configuration"),
+				}
 			},
-			false,
-		},
-		{
-			"with valid tls config missing keyfile",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
-						CertFile: "/test.crt",
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with valid tls config missing certfile",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
-						KeyFile: "/test.key",
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with valid dynamic tls config",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretNamespace: "cert-manager",
-						SecretName:      "test",
-						DNSNames:        []string{"example.com"},
-					},
-				},
-			},
-			false,
-		},
-		{
-			"with dynamic tls missing secret namespace",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretName: "test",
-						DNSNames:   []string{"example.com"},
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with dynamic tls missing secret name",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretNamespace: "cert-manager",
-						DNSNames:        []string{"example.com"},
-					},
-				},
-			},
-			true,
-		},
-		{
-			"with dynamic tls missing dns names",
-			&config.WebhookConfiguration{
-				TLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
-						SecretName:      "test",
-						SecretNamespace: "cert-manager",
-						DNSNames:        nil,
-					},
-				},
-			},
-			true,
 		},
 		{
 			"with valid healthz port",
 			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				HealthzPort: 8080,
 			},
-			false,
+			nil,
 		},
 		{
 			"with invalid healthz port",
 			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				HealthzPort: 99999999,
 			},
-			true,
+			func(wc *config.WebhookConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("healthzPort"), wc.HealthzPort, "must be a valid port number"),
+				}
+			},
 		},
-
 		{
 			"with valid secure port",
 			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				SecurePort: 8080,
 			},
-			false,
+			nil,
 		},
 		{
 			"with invalid secure port",
 			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
 				SecurePort: 99999999,
 			},
-			true,
+			func(wc *config.WebhookConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("securePort"), wc.SecurePort, "must be a valid port number"),
+				}
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateWebhookConfiguration(tt.config); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateWebhookConfiguration() error = %v, wantErr %v", err, tt.wantErr)
+			errList := ValidateWebhookConfiguration(tt.config, nil)
+			var expErrs field.ErrorList
+			if tt.errs != nil {
+				expErrs = tt.errs(tt.config)
 			}
+			assert.ElementsMatch(t, expErrs, errList)
 		})
 	}
 }

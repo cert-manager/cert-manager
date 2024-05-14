@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logsapi "k8s.io/component-base/logs/api/v1"
+
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -38,7 +38,7 @@ type CAInjectorConfiguration struct {
 	Namespace string `json:"namespace,omitempty"`
 
 	// LeaderElectionConfig configures the behaviour of the leader election
-	LeaderElectionConfig LeaderElectionConfig `json:"leaderElectionConfig"`
+	LeaderElectionConfig sharedv1alpha1.LeaderElectionConfig `json:"leaderElectionConfig"`
 
 	// EnableDataSourceConfig determines whether cainjector's control loops will watch
 	// cert-manager resources as potential sources of CA data.
@@ -64,31 +64,6 @@ type CAInjectorConfiguration struct {
 	// features.
 	// +optional
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
-}
-
-type LeaderElectionConfig struct {
-	// If true, cert-manager will perform leader election between instances to
-	// ensure no more than one instance of cert-manager operates at a time
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Namespace used to perform leader election. Only used if leader election is enabled
-	Namespace string `json:"namespace,omitempty"`
-
-	// The duration that non-leader candidates will wait after observing a leadership
-	// renewal until attempting to acquire leadership of a led but unrenewed leader
-	// slot. This is effectively the maximum duration that a leader can be stopped
-	// before it is replaced by another candidate. This is only applicable if leader
-	// election is enabled.
-	LeaseDuration time.Duration `json:"leaseDuration,omitempty"`
-
-	// The interval between attempts by the acting master to renew a leadership slot
-	// before it stops leading. This must be less than or equal to the lease duration.
-	// This is only applicable if leader election is enabled.
-	RenewDeadline time.Duration `json:"renewDeadline,omitempty"`
-
-	// The duration the clients should wait between attempting acquisition and renewal
-	// of a leadership. This is only applicable if leader election is enabled.
-	RetryPeriod time.Duration `json:"retryPeriod,omitempty"`
 }
 
 type EnableDataSourceConfig struct {

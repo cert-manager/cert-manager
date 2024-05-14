@@ -62,6 +62,8 @@ deepcopy_inputs=(
   internal/apis/config/webhook \
   pkg/apis/config/controller/v1alpha1 \
   internal/apis/config/controller \
+  pkg/apis/config/shared/v1alpha1 \
+  internal/apis/config/shared \
   pkg/apis/meta/v1 \
   internal/apis/meta \
   pkg/acme/webhook/apis/acme/v1alpha1 \
@@ -85,6 +87,7 @@ defaulter_inputs=(
   internal/apis/acme/v1alpha3 \
   internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
+  internal/apis/config/shared/v1alpha1 \
   internal/apis/config/cainjector/v1alpha1 \
   internal/apis/config/webhook/v1alpha1 \
   internal/apis/config/controller/v1alpha1 \
@@ -101,6 +104,7 @@ conversion_inputs=(
   internal/apis/acme/v1alpha3 \
   internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
+  internal/apis/config/shared/v1alpha1 \
   internal/apis/config/cainjector/v1alpha1 \
   internal/apis/config/webhook/v1alpha1 \
   internal/apis/config/controller/v1alpha1 \
@@ -208,12 +212,22 @@ gen-defaulters() {
   clean internal/apis 'zz_generated.defaults.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.defaults.go'
   echo "+++ ${VERB} defaulting functions..." >&2
-  prefixed_inputs=( "${defaulter_inputs[@]/#/$module_name/}" )
-  joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
+  
+  DEFAULT_EXTRA_PEER_PKGS=(
+    github.com/cert-manager/cert-manager/internal/apis/meta \
+    github.com/cert-manager/cert-manager/internal/apis/meta/v1 \
+    github.com/cert-manager/cert-manager/internal/apis/config/shared \
+    github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1 \
+    github.com/cert-manager/cert-manager/pkg/apis/meta/v1 \
+    github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1 \
+  )
+  DEFAULT_PKGS=( "${defaulter_inputs[@]/#/$module_name/}" )
+
   "$defaultergen" \
     ${VERIFY_FLAGS} \
     --go-header-file hack/boilerplate-go.txt \
-    --input-dirs "$joined" \
+    --extra-peer-dirs "$( IFS=$','; echo "${DEFAULT_EXTRA_PEER_PKGS[*]}" )" \
+    --input-dirs "$( IFS=$','; echo "${DEFAULT_PKGS[*]}" )" \
     --trim-path-prefix="$module_name" \
     -O zz_generated.defaults \
     --output-base ./
@@ -227,16 +241,19 @@ gen-conversions() {
   CONVERSION_EXTRA_PEER_PKGS=(
     github.com/cert-manager/cert-manager/internal/apis/meta \
     github.com/cert-manager/cert-manager/internal/apis/meta/v1 \
-    github.com/cert-manager/cert-manager/pkg/apis/meta/v1
+    github.com/cert-manager/cert-manager/internal/apis/config/shared \
+    github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1 \
+    github.com/cert-manager/cert-manager/pkg/apis/meta/v1 \
+    github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1 \
   )
   CONVERSION_PKGS=( "${conversion_inputs[@]/#/$module_name/}" )
 
   "$conversiongen" \
       ${VERIFY_FLAGS} \
       --go-header-file hack/boilerplate-go.txt \
-      --extra-peer-dirs $( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" ) \
-      --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
-      --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
+      --extra-peer-dirs "$( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" )" \
+      --extra-dirs "$( IFS=$','; echo "${CONVERSION_PKGS[*]}" )" \
+      --input-dirs "$( IFS=$','; echo "${CONVERSION_PKGS[*]}" )" \
       --trim-path-prefix="$module_name" \
       -O zz_generated.conversion \
       --output-base ./
