@@ -24,7 +24,7 @@ CRI_ARCH := $(HOST_ARCH)
 
 # TODO: this version is also defaulted in ./make/cluster.sh. Make it so that it
 # is set in one place only.
-K8S_VERSION := 1.28
+K8S_VERSION := 1.30
 
 IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:0115d7e01987c13e1be90b09c223c3e0d8e9a92e97c0421e712ad3577e2d78e5
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:031d2da484f3d89c78007cbb1cf1d7ae992e069683a2cdca0a0efb63a63fc735
