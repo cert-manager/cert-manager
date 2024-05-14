@@ -87,9 +87,16 @@ type CertificateSpec struct {
 	// +optional
 	Subject *X509Subject `json:"subject,omitempty"`
 
-	// LiteralSubject is an LDAP formatted string that represents the [X.509 Subject field](https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6).
-	// Use this *instead* of the Subject field if you need to ensure the correct ordering of the RDN sequence, such as when issuing certs for LDAP authentication. See https://github.com/cert-manager/cert-manager/issues/3203, https://github.com/cert-manager/cert-manager/issues/4424.
-	// This field is alpha level and is only supported by cert-manager installations where LiteralCertificateSubject feature gate is enabled on both cert-manager controller and webhook.
+	// Requested X.509 certificate subject, represented using the LDAP "String
+	// Representation of a Distinguished Name" [1].
+	// Important: the LDAP string format also specifies the order of the attributes
+	// in the subject, this is important when issuing certs for LDAP authentication.
+	// Example: `CN=foo,DC=corp,DC=example,DC=com`
+	// More info [1]: https://datatracker.ietf.org/doc/html/rfc4514
+	// More info: https://github.com/cert-manager/cert-manager/issues/3203
+	// More info: https://github.com/cert-manager/cert-manager/issues/4424
+	//
+	// Cannot be set if the `subject` or `commonName` field is set.
 	// +optional
 	LiteralSubject string `json:"literalSubject,omitempty"`
 

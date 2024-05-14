@@ -128,9 +128,6 @@ type CertificateSpec struct {
 	// More info: https://github.com/cert-manager/cert-manager/issues/4424
 	//
 	// Cannot be set if the `subject` or `commonName` field is set.
-	// This is an Alpha Feature and is only enabled with the
-	// `--feature-gates=LiteralCertificateSubject=true` option set on both
-	// the controller and webhook components.
 	// +optional
 	LiteralSubject string `json:"literalSubject,omitempty"`
 
