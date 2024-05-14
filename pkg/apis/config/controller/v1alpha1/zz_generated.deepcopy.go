@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -36,6 +37,11 @@ func (in *ACMEDNS01Config) DeepCopyInto(out *ACMEDNS01Config) {
 	if in.RecursiveNameserversOnly != nil {
 		in, out := &in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly
 		*out = new(bool)
+		**out = **in
+	}
+	if in.CheckRetryPeriod != nil {
+		in, out := &in.CheckRetryPeriod, &out.CheckRetryPeriod
+		*out = new(sharedv1alpha1.Duration)
 		**out = **in
 	}
 	return
@@ -195,6 +201,11 @@ func (in *IngressShimConfig) DeepCopy() *IngressShimConfig {
 func (in *LeaderElectionConfig) DeepCopyInto(out *LeaderElectionConfig) {
 	*out = *in
 	in.LeaderElectionConfig.DeepCopyInto(&out.LeaderElectionConfig)
+	if in.HealthzTimeout != nil {
+		in, out := &in.HealthzTimeout, &out.HealthzTimeout
+		*out = new(sharedv1alpha1.Duration)
+		**out = **in
+	}
 	return
 }
 

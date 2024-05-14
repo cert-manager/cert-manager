@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
@@ -144,7 +142,7 @@ type LeaderElectionConfig struct {
 
 	// Leader election healthz checks within this timeout period after the lease
 	// expires will still return healthy.
-	HealthzTimeout time.Duration `json:"healthzTimeout,omitempty"`
+	HealthzTimeout *sharedv1alpha1.Duration `json:"healthzTimeout,omitempty"`
 }
 
 type IngressShimConfig struct {
@@ -221,5 +219,5 @@ type ACMEDNS01Config struct {
 	// For HTTP01 challenges the propagation check verifies that the challenge
 	// token is served at the challenge URL. This should be a valid duration
 	// string, for example 180s or 1h
-	CheckRetryPeriod time.Duration `json:"checkRetryPeriod,omitempty"`
+	CheckRetryPeriod *sharedv1alpha1.Duration `json:"checkRetryPeriod,omitempty"`
 }

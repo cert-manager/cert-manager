@@ -16,8 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import "time"
-
 // TLSConfig configures how TLS certificates are sourced for serving.
 // Only one of 'filesystem' or 'dynamic' may be specified.
 type TLSConfig struct {
@@ -57,7 +55,7 @@ type DynamicServingConfig struct {
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// LeafDuration is a customizable duration on serving certificates signed by the CA.
-	LeafDuration time.Duration `json:"leafDuration,omitempty"`
+	LeafDuration *Duration `json:"leafDuration,omitempty"`
 }
 
 // FilesystemServingConfig enables using a certificate and private key found on the local filesystem.
