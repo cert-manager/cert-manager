@@ -21,6 +21,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logsapi "k8s.io/component-base/logs/api/v1"
+
+	shared "github.com/cert-manager/cert-manager/internal/apis/config/shared"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -102,7 +104,7 @@ type ControllerConfiguration struct {
 	MetricsListenAddress string
 
 	// Metrics endpoint TLS config
-	MetricsTLSConfig TLSConfig
+	MetricsTLSConfig shared.TLSConfig
 
 	// The host and port address, separated by a ':', that the healthz server
 	// should listen on.
@@ -134,28 +136,7 @@ type ControllerConfiguration struct {
 }
 
 type LeaderElectionConfig struct {
-	// If true, cert-manager will perform leader election between instances to
-	// ensure no more than one instance of cert-manager operates at a time
-	Enabled bool
-
-	// Namespace used to perform leader election. Only used if leader election is enabled
-	Namespace string
-
-	// The duration that non-leader candidates will wait after observing a leadership
-	// renewal until attempting to acquire leadership of a led but unrenewed leader
-	// slot. This is effectively the maximum duration that a leader can be stopped
-	// before it is replaced by another candidate. This is only applicable if leader
-	// election is enabled.
-	LeaseDuration time.Duration
-
-	// The interval between attempts by the acting master to renew a leadership slot
-	// before it stops leading. This must be less than or equal to the lease duration.
-	// This is only applicable if leader election is enabled.
-	RenewDeadline time.Duration
-
-	// The duration the clients should wait between attempting acquisition and renewal
-	// of a leadership. This is only applicable if leader election is enabled.
-	RetryPeriod time.Duration
+	shared.LeaderElectionConfig
 
 	// Leader election healthz checks within this timeout period after the lease
 	// expires will still return healthy.
@@ -237,70 +218,4 @@ type ACMEDNS01Config struct {
 	// token is served at the challenge URL. This should be a valid duration
 	// string, for example 180s or 1h
 	CheckRetryPeriod time.Duration
-}
-
-// TLSConfig configures how TLS certificates are sourced for serving.
-// Only one of 'filesystem' or 'dynamic' may be specified.
-type TLSConfig struct {
-	// cipherSuites is the list of allowed cipher suites for the server.
-	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
-	// If not specified, the default for the Go version will be used and may change over time.
-	CipherSuites []string
-
-	// minTLSVersion is the minimum TLS version supported.
-	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
-	// If not specified, the default for the Go version will be used and may change over time.
-	MinTLSVersion string
-
-	// Filesystem enables using a certificate and private key found on the local filesystem.
-	// These files will be periodically polled in case they have changed, and dynamically reloaded.
-	Filesystem FilesystemServingConfig
-
-	// When Dynamic serving is enabled, the controller will generate a CA used to sign
-	// certificates and persist it into a Kubernetes Secret resource (for other replicas of the
-	// controller to consume).
-	// It will then generate a certificate in-memory for itself using this CA to serve with.
-	Dynamic DynamicServingConfig
-}
-
-func (c *TLSConfig) FilesystemConfigProvided() bool {
-	if c.Filesystem.KeyFile != "" || c.Filesystem.CertFile != "" {
-		return true
-	}
-	return false
-}
-
-func (c *TLSConfig) DynamicConfigProvided() bool {
-	if c.Dynamic.SecretNamespace != "" || c.Dynamic.SecretName != "" || len(c.Dynamic.DNSNames) > 0 {
-		return true
-	}
-	return false
-}
-
-// DynamicServingConfig makes the controller generate a CA and persist it into Secret resources.
-// This CA will be used by all instances of the controller for signing serving certificates.
-type DynamicServingConfig struct {
-	// Namespace of the Kubernetes Secret resource containing the TLS certificate
-	// used as a CA to sign dynamic serving certificates.
-	SecretNamespace string
-
-	// Secret resource name containing the TLS certificate
-	// used as a CA to sign dynamic serving certificates.
-	SecretName string
-
-	// DNSNames that must be present on serving certificates signed by the CA.
-	DNSNames []string
-
-	// LeafDuration is a customizable duration on serving certificates signed by the CA.
-	LeafDuration time.Duration
-}
-
-// FilesystemServingConfig enables using a certificate and private key found on the local filesystem.
-// These files will be periodically polled in case they have changed, and dynamically reloaded.
-type FilesystemServingConfig struct {
-	// Path to a file containing TLS certificate & chain to serve with
-	CertFile string
-
-	// Path to a file containing a TLS private key to serve with
-	KeyFile string
 }
