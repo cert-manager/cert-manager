@@ -61,12 +61,6 @@ var (
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
 
-	defaultLeaderElect                 = true
-	defaultLeaderElectionNamespace     = "kube-system"
-	defaultLeaderElectionLeaseDuration = 60 * time.Second
-	defaultLeaderElectionRenewDeadline = 40 * time.Second
-	defaultLeaderElectionRetryPeriod   = 15 * time.Second
-
 	defaultEnableProfiling = false
 	defaultProfilerAddr    = "localhost:6060"
 
@@ -249,27 +243,6 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 }
 
 func SetDefaults_LeaderElectionConfig(obj *v1alpha1.LeaderElectionConfig) {
-	if obj.Enabled == nil {
-		obj.Enabled = &defaultLeaderElect
-	}
-
-	if obj.Namespace == "" {
-		obj.Namespace = defaultLeaderElectionNamespace
-	}
-
-	// TODO: Does it make sense to have a duration of 0?
-	if obj.LeaseDuration == time.Duration(0) {
-		obj.LeaseDuration = defaultLeaderElectionLeaseDuration
-	}
-
-	if obj.RenewDeadline == time.Duration(0) {
-		obj.RenewDeadline = defaultLeaderElectionRenewDeadline
-	}
-
-	if obj.RetryPeriod == time.Duration(0) {
-		obj.RetryPeriod = defaultLeaderElectionRetryPeriod
-	}
-
 	if obj.HealthzTimeout == time.Duration(0) {
 		obj.HealthzTimeout = defaultHealthzLeaderElectionTimeout
 	}

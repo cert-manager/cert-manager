@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 )
 
 func TestValidateControllerConfiguration(t *testing.T) {
@@ -47,12 +48,12 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Filesystem: shared.FilesystemServingConfig{
 						CertFile: "/test.crt",
 						KeyFile:  "/test.key",
 					},
-					Dynamic: config.DynamicServingConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretNamespace: "cert-manager",
 						SecretName:      "test",
 						DNSNames:        []string{"example.com"},
@@ -69,8 +70,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Filesystem: shared.FilesystemServingConfig{
 						CertFile: "/test.crt",
 						KeyFile:  "/test.key",
 					},
@@ -86,8 +87,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Filesystem: shared.FilesystemServingConfig{
 						CertFile: "/test.crt",
 					},
 				},
@@ -102,8 +103,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Filesystem: config.FilesystemServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Filesystem: shared.FilesystemServingConfig{
 						KeyFile: "/test.key",
 					},
 				},
@@ -118,8 +119,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretNamespace: "cert-manager",
 						SecretName:      "test",
 						DNSNames:        []string{"example.com"},
@@ -131,8 +132,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 		{
 			"with dynamic tls missing secret namespace",
 			&config.ControllerConfiguration{
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretName: "test",
 						DNSNames:   []string{"example.com"},
 					},
@@ -148,8 +149,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretNamespace: "cert-manager",
 						DNSNames:        []string{"example.com"},
 					},
@@ -165,8 +166,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				MetricsTLSConfig: config.TLSConfig{
-					Dynamic: config.DynamicServingConfig{
+				MetricsTLSConfig: shared.TLSConfig{
+					Dynamic: shared.DynamicServingConfig{
 						SecretName:      "test",
 						SecretNamespace: "cert-manager",
 						DNSNames:        nil,

@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
 	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -39,6 +40,8 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 func SetObjectDefaults_ControllerConfiguration(in *v1alpha1.ControllerConfiguration) {
 	SetDefaults_ControllerConfiguration(in)
 	SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
+	sharedv1alpha1.SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig.LeaderElectionConfig)
+	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.MetricsTLSConfig.Dynamic)
 	SetDefaults_IngressShimConfig(&in.IngressShimConfig)
 	SetDefaults_ACMEHTTP01Config(&in.ACMEHTTP01Config)
 	SetDefaults_ACMEDNS01Config(&in.ACMEDNS01Config)

@@ -29,7 +29,7 @@
 	"metricsTLSConfig": {
 		"filesystem": {},
 		"dynamic": {
-			"LeafDuration": 0
+			"leafDuration": 604800000000000
 		}
 	},
 	"healthzListenAddress": "0.0.0.0:9403",

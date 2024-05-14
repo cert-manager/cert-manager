@@ -31,6 +31,7 @@ import (
 
 	acmeinstall "github.com/cert-manager/cert-manager/internal/apis/acme/install"
 	cminstall "github.com/cert-manager/cert-manager/internal/apis/certmanager/install"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	metainstall "github.com/cert-manager/cert-manager/internal/apis/meta/install"
 	crapproval "github.com/cert-manager/cert-manager/internal/webhook/admission/certificaterequest/approval"
@@ -114,7 +115,7 @@ func buildAdmissionChain(client kubernetes.Interface) (admission.PluginChain, er
 	return pluginChain, nil
 }
 
-func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
+func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
 	switch {
 	case tlsConfig.FilesystemConfigProvided():
 		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", tlsConfig.Filesystem.KeyFile, "certificate", tlsConfig.Filesystem.CertFile)

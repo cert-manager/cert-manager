@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
 	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -38,7 +39,7 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_CAInjectorConfiguration(in *v1alpha1.CAInjectorConfiguration) {
 	SetDefaults_CAInjectorConfiguration(in)
-	SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
+	sharedv1alpha1.SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
 	SetDefaults_EnableDataSourceConfig(&in.EnableDataSourceConfig)
 	SetDefaults_EnableInjectableConfig(&in.EnableInjectableConfig)
 }
