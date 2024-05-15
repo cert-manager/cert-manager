@@ -46,10 +46,11 @@ shared_generate_targets += generate-govulncheck
 # not want new vulnerabilities in existing code to block the merging of PRs.
 # Instead `make verify-govulnecheck` is intended to be run periodically by a CI job.
 verify-govulncheck: | $(NEEDS_GOVULNCHECK)
-	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) -printf '%h\n' \
+	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
-				echo "Running 'GOTOOLCHAIN=go$(VENDORED_GO_VERSION) $(bin_dir)/tools/govulncheck ./...' in directory '$${d}'"; \
-				pushd "$${d}" >/dev/null; \
+				target=$$(dirname $${d}); \
+				echo "Running 'GOTOOLCHAIN=go$(VENDORED_GO_VERSION) $(bin_dir)/tools/govulncheck ./...' in directory '$${target}'"; \
+				pushd "$${target}" >/dev/null; \
 				GOTOOLCHAIN=go$(VENDORED_GO_VERSION) $(GOVULNCHECK) ./... || exit; \
 				popd >/dev/null; \
 				echo ""; \
@@ -73,10 +74,11 @@ shared_generate_targets += generate-golangci-lint-config
 ## Verify all Go modules using golangci-lint
 ## @category [shared] Generate/ Verify
 verify-golangci-lint: | $(NEEDS_GO) $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/scratch
-	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) -printf '%h\n' \
+	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
-				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config)' in directory '$${d}'"; \
-				pushd "$${d}" >/dev/null; \
+				target=$$(dirname $${d}); \
+				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config)' in directory '$${target}'"; \
+				pushd "$${target}" >/dev/null; \
 				$(GOLANGCI-LINT) run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --timeout 4m || exit; \
 				popd >/dev/null; \
 				echo ""; \
@@ -87,18 +89,19 @@ shared_verify_targets_dirty += verify-golangci-lint
 .PHONY: fix-golangci-lint
 ## Fix all Go modules using golangci-lint
 ## @category [shared] Generate/ Verify
-fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/scratch
-	gci write \
+fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/scratch
+	$(GCI) write \
 		-s "standard" \
 		-s "default" \
 		-s "prefix($(repo_name))" \
 		-s "blank" \
 		-s "dot" .
 
-	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) -printf '%h\n' \
+	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
-				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --fix' in directory '$${d}'"; \
-				pushd "$${d}" >/dev/null; \
+				target=$$(dirname $${d}); \
+				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --fix' in directory '$${target}'"; \
+				pushd "$${target}" >/dev/null; \
 				$(GOLANGCI-LINT) run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --fix || exit; \
 				popd >/dev/null; \
 				echo ""; \
