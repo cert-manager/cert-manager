@@ -28,8 +28,6 @@ set -o pipefail
 
 finalfile="$1"
 lockfile="$finalfile.lock"
-# Timeout in seconds.
-timeout=60
 
 # On OSX, flock is not installed, we just skip locking in that case,
 # this means that running verify in parallel without downloading all
@@ -42,8 +40,8 @@ if [[ "$flock_installed" == "yes" ]]; then
   exec {FD}<>"$lockfile"
 
   # wait for the file to be unlocked
-  if ! flock -x -w $timeout $FD; then
-    echo "Failed to obtain a lock for $lockfile within $timeout seconds"
+  if ! flock -x $FD; then
+    echo "Failed to obtain a lock for $lockfile"
     exit 1
   fi
 fi

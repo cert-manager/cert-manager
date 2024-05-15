@@ -62,8 +62,6 @@ linters:
     - gocritic
     - gofmt
     - goheader
-    - gomoddirectives
-    - gomodguard
     - goprintffuncname
     - gosec
     - gosimple
