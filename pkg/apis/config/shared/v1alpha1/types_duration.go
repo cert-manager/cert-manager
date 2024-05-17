@@ -27,6 +27,7 @@ import (
 // Duration is present for backwards compatibility for fields that
 // previously used time.Duration.
 // +k8s:conversion-gen=false
+// +kubebuilder:validation:XIntOrString
 type Duration struct {
 	// Duration holds the duration
 	Duration metav1.Duration
