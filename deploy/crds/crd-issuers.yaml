@@ -737,7 +737,7 @@ spec:
 
 
                                         * Gateway (Gateway conformance profile)
-                                        * Service (Mesh conformance profile, experimental, ClusterIP Services only)
+                                        * Service (Mesh conformance profile, ClusterIP Services only)
 
 
                                         This API may be extended in the future to support additional kinds of parent
@@ -772,7 +772,7 @@ spec:
 
 
                                             * Gateway (Gateway conformance profile)
-                                            * Service (Mesh conformance profile, experimental, ClusterIP Services only)
+                                            * Service (Mesh conformance profile, ClusterIP Services only)
 
 
                                             Support for other resources is Implementation-Specific.
@@ -859,9 +859,6 @@ spec:
 
 
                                             Support: Extended
-
-
-                                            <gateway:experimental>
                                           type: integer
                                           format: int32
                                           maximum: 65535
@@ -872,14 +869,12 @@ spec:
                                             following resources, SectionName is interpreted as the following:
 
 
-                                            * Gateway: Listener Name. When both Port (experimental) and SectionName
+                                            * Gateway: Listener name. When both Port (experimental) and SectionName
                                             are specified, the name and port of the selected listener must match
                                             both specified values.
-                                            * Service: Port Name. When both Port (experimental) and SectionName
+                                            * Service: Port name. When both Port (experimental) and SectionName
                                             are specified, the name and port of the selected listener must match
-                                            both specified values. Note that attaching Routes to Services as Parents
-                                            is part of experimental Mesh support and is not supported for any other
-                                            purpose.
+                                            both specified values.
 
 
                                             Implementations MAY choose to support attaching Routes to other resources.
@@ -1886,9 +1881,14 @@ spec:
                                                 name:
                                                   description: |-
                                                     Name of the referent.
-                                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                                    This field is effectively required, but due to backwards compatibility is
+                                                    allowed to be empty. Instances of this type with an empty value here are
+                                                    almost certainly wrong.
                                                     TODO: Add other useful fields. apiVersion, kind, uid?
+                                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                                   type: string
+                                                  default: ""
                                               x-kubernetes-map-type: atomic
                                           nodeSelector:
                                             description: |-
