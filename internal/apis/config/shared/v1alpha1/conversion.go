@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	conversion "k8s.io/apimachinery/pkg/conversion"
 
 	shared "github.com/cert-manager/cert-manager/internal/apis/config/shared"
@@ -74,5 +76,19 @@ func Convert_Pointer_int32_To_int(in **int32, out *int, s conversion.Scope) erro
 func Convert_int_To_Pointer_int32(in *int, out **int32, s conversion.Scope) error {
 	temp := int32(*in)
 	*out = &temp
+	return nil
+}
+
+func Convert_Pointer_v1alpha1_Duration_To_time_Duration(in **v1alpha1.Duration, out *time.Duration, s conversion.Scope) error {
+	if *in == nil {
+		*out = 0
+		return nil
+	}
+	*out = (*in).Duration.Duration
+	return nil
+}
+
+func Convert_time_Duration_To_Pointer_v1alpha1_Duration(in *time.Duration, out **v1alpha1.Duration, s conversion.Scope) error {
+	*out = v1alpha1.DurationFromTime(*in)
 	return nil
 }

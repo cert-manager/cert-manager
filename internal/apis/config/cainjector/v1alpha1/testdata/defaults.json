@@ -2,9 +2,9 @@
 	"leaderElectionConfig": {
 		"enabled": true,
 		"namespace": "kube-system",
-		"leaseDuration": 60000000000,
-		"renewDeadline": 40000000000,
-		"retryPeriod": 15000000000
+		"leaseDuration": "1m0s",
+		"renewDeadline": "40s",
+		"retryPeriod": "15s"
 	},
 	"enableDataSourceConfig": {
 		"certificates": true

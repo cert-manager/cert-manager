@@ -25,6 +25,7 @@ import (
 
 	cm "github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	"github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 	challengescontroller "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
@@ -243,8 +244,8 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 }
 
 func SetDefaults_LeaderElectionConfig(obj *v1alpha1.LeaderElectionConfig) {
-	if obj.HealthzTimeout == time.Duration(0) {
-		obj.HealthzTimeout = defaultHealthzLeaderElectionTimeout
+	if obj.HealthzTimeout.IsZero() {
+		obj.HealthzTimeout = sharedv1alpha1.DurationFromTime(defaultHealthzLeaderElectionTimeout)
 	}
 }
 
@@ -306,7 +307,7 @@ func SetDefaults_ACMEDNS01Config(obj *v1alpha1.ACMEDNS01Config) {
 		obj.RecursiveNameserversOnly = &defaultDNS01RecursiveNameserversOnly
 	}
 
-	if obj.CheckRetryPeriod == time.Duration(0) {
-		obj.CheckRetryPeriod = defaultDNS01CheckRetryPeriod
+	if obj.CheckRetryPeriod.IsZero() {
+		obj.CheckRetryPeriod = sharedv1alpha1.DurationFromTime(defaultDNS01CheckRetryPeriod)
 	}
 }

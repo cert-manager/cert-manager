@@ -22,7 +22,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	time "time"
 	unsafe "unsafe"
 
 	controller "github.com/cert-manager/cert-manager/internal/apis/config/controller"
@@ -98,7 +97,9 @@ func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1al
 	if err := v1.Convert_Pointer_bool_To_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
 	}
-	out.CheckRetryPeriod = time.Duration(in.CheckRetryPeriod)
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.CheckRetryPeriod, &out.CheckRetryPeriod, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -112,7 +113,9 @@ func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *cont
 	if err := v1.Convert_bool_To_Pointer_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
 	}
-	out.CheckRetryPeriod = time.Duration(in.CheckRetryPeriod)
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.CheckRetryPeriod, &out.CheckRetryPeriod, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -311,7 +314,9 @@ func autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfi
 	if err := sharedv1alpha1.Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
-	out.HealthzTimeout = time.Duration(in.HealthzTimeout)
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.HealthzTimeout, &out.HealthzTimeout, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -324,7 +329,9 @@ func autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfi
 	if err := sharedv1alpha1.Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
-	out.HealthzTimeout = time.Duration(in.HealthzTimeout)
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.HealthzTimeout, &out.HealthzTimeout, s); err != nil {
+		return err
+	}
 	return nil
 }
 

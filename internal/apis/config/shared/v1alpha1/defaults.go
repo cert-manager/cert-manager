@@ -33,8 +33,8 @@ var (
 )
 
 func SetDefaults_DynamicServingConfig(obj *v1alpha1.DynamicServingConfig) {
-	if obj.LeafDuration == time.Duration(0) {
-		obj.LeafDuration = defaultLeafDuration
+	if obj.LeafDuration.IsZero() {
+		obj.LeafDuration = v1alpha1.DurationFromTime(defaultLeafDuration)
 	}
 }
 
@@ -47,15 +47,15 @@ func SetDefaults_LeaderElectionConfig(obj *v1alpha1.LeaderElectionConfig) {
 		obj.Namespace = defaultLeaderElectionNamespace
 	}
 
-	if obj.LeaseDuration == time.Duration(0) {
-		obj.LeaseDuration = defaultLeaderElectionLeaseDuration
+	if obj.LeaseDuration.IsZero() {
+		obj.LeaseDuration = v1alpha1.DurationFromTime(defaultLeaderElectionLeaseDuration)
 	}
 
-	if obj.RenewDeadline == time.Duration(0) {
-		obj.RenewDeadline = defaultLeaderElectionRenewDeadline
+	if obj.RenewDeadline.IsZero() {
+		obj.RenewDeadline = v1alpha1.DurationFromTime(defaultLeaderElectionRenewDeadline)
 	}
 
-	if obj.RetryPeriod == time.Duration(0) {
-		obj.RetryPeriod = defaultLeaderElectionRetryPeriod
+	if obj.RetryPeriod.IsZero() {
+		obj.RetryPeriod = v1alpha1.DurationFromTime(defaultLeaderElectionRetryPeriod)
 	}
 }

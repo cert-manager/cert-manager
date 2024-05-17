@@ -69,6 +69,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((**v1alpha1.Duration)(nil), (*time.Duration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_Pointer_v1alpha1_Duration_To_time_Duration(a.(**v1alpha1.Duration), b.(*time.Duration), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*float32)(nil), (**float32)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_float32_To_Pointer_float32(a.(*float32), b.(**float32), scope)
 	}); err != nil {
@@ -89,6 +94,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*time.Duration)(nil), (**v1alpha1.Duration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_time_Duration_To_Pointer_v1alpha1_Duration(a.(*time.Duration), b.(**v1alpha1.Duration), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*v1alpha1.LeaderElectionConfig)(nil), (*shared.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(a.(*v1alpha1.LeaderElectionConfig), b.(*shared.LeaderElectionConfig), scope)
 	}); err != nil {
@@ -106,7 +116,9 @@ func autoConvert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in
 	out.SecretNamespace = in.SecretNamespace
 	out.SecretName = in.SecretName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.LeafDuration = time.Duration(in.LeafDuration)
+	if err := Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.LeafDuration, &out.LeafDuration, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -119,7 +131,9 @@ func autoConvert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in
 	out.SecretNamespace = in.SecretNamespace
 	out.SecretName = in.SecretName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.LeafDuration = time.Duration(in.LeafDuration)
+	if err := Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.LeafDuration, &out.LeafDuration, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -155,9 +169,15 @@ func autoConvert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(in
 		return err
 	}
 	out.Namespace = in.Namespace
-	out.LeaseDuration = time.Duration(in.LeaseDuration)
-	out.RenewDeadline = time.Duration(in.RenewDeadline)
-	out.RetryPeriod = time.Duration(in.RetryPeriod)
+	if err := Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.LeaseDuration, &out.LeaseDuration, s); err != nil {
+		return err
+	}
+	if err := Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.RenewDeadline, &out.RenewDeadline, s); err != nil {
+		return err
+	}
+	if err := Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.RetryPeriod, &out.RetryPeriod, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -166,9 +186,15 @@ func autoConvert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in
 		return err
 	}
 	out.Namespace = in.Namespace
-	out.LeaseDuration = time.Duration(in.LeaseDuration)
-	out.RenewDeadline = time.Duration(in.RenewDeadline)
-	out.RetryPeriod = time.Duration(in.RetryPeriod)
+	if err := Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.LeaseDuration, &out.LeaseDuration, s); err != nil {
+		return err
+	}
+	if err := Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.RenewDeadline, &out.RenewDeadline, s); err != nil {
+		return err
+	}
+	if err := Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.RetryPeriod, &out.RetryPeriod, s); err != nil {
+		return err
+	}
 	return nil
 }
 
