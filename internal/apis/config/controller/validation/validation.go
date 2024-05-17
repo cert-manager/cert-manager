@@ -17,102 +17,81 @@ limitations under the License.
 package validation
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"net/url"
 	"strings"
 
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
+	sharedvalidation "github.com/cert-manager/cert-manager/internal/apis/config/shared/validation"
 )
 
-func ValidateControllerConfiguration(cfg *config.ControllerConfiguration) error {
-	var allErrors []error
+func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPath *field.Path) field.ErrorList {
+	var allErrors field.ErrorList
 
-	if cfg.MetricsTLSConfig.FilesystemConfigProvided() && cfg.MetricsTLSConfig.DynamicConfigProvided() {
-		allErrors = append(allErrors, fmt.Errorf("invalid configuration: cannot specify both filesystem based and dynamic TLS configuration"))
-	} else {
-		if cfg.MetricsTLSConfig.FilesystemConfigProvided() {
-			if cfg.MetricsTLSConfig.Filesystem.KeyFile == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.filesystem.keyFile (--metrics-tls-private-key-file) must be specified when using filesystem based TLS config"))
-			}
-			if cfg.MetricsTLSConfig.Filesystem.CertFile == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.filesystem.certFile (--metrics-tls-cert-file) must be specified when using filesystem based TLS config"))
-			}
-		} else if cfg.MetricsTLSConfig.DynamicConfigProvided() {
-			if cfg.MetricsTLSConfig.Dynamic.SecretNamespace == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.dynamic.secretNamespace (--metrics-dynamic-serving-ca-secret-namespace) must be specified when using dynamic TLS config"))
-			}
-			if cfg.MetricsTLSConfig.Dynamic.SecretName == "" {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.dynamic.secretName (--metrics-dynamic-serving-ca-secret-name) must be specified when using dynamic TLS config"))
-			}
-			if len(cfg.MetricsTLSConfig.Dynamic.DNSNames) == 0 {
-				allErrors = append(allErrors, fmt.Errorf("invalid configuration: metricsTLSConfig.dynamic.dnsNames (--metrics-dynamic-serving-dns-names) must be specified when using dynamic TLS config"))
-			}
-		}
+	allErrors = append(allErrors, logsapi.Validate(&cfg.Logging, nil, fldPath.Child("logging"))...)
+	allErrors = append(allErrors, sharedvalidation.ValidateTLSConfig(&cfg.MetricsTLSConfig, fldPath.Child("metricsTLSConfig"))...)
+
+	if cfg.LeaderElectionConfig.Enabled && cfg.LeaderElectionConfig.HealthzTimeout <= 0 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("leaderElectionConfig").Child("healthzTimeout"), cfg.LeaderElectionConfig.HealthzTimeout, "must be higher than 0"))
 	}
+	allErrors = append(allErrors, sharedvalidation.ValidateLeaderElectionConfig(&cfg.LeaderElectionConfig.LeaderElectionConfig, fldPath.Child("leaderElectionConfig"))...)
 
 	if len(cfg.IngressShimConfig.DefaultIssuerKind) == 0 {
-		allErrors = append(allErrors, errors.New("the --default-issuer-kind flag must not be empty"))
+		allErrors = append(allErrors, field.Required(fldPath.Child("ingressShimConfig").Child("defaultIssuerKind"), "must not be empty"))
 	}
 
 	if cfg.KubernetesAPIBurst <= 0 {
-		allErrors = append(allErrors, fmt.Errorf("invalid value for kube-api-burst: %v must be higher than 0", cfg.KubernetesAPIBurst))
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be higher than 0"))
 	}
 
 	if cfg.KubernetesAPIQPS <= 0 {
-		allErrors = append(allErrors, fmt.Errorf("invalid value for kube-api-qps: %v must be higher than 0", cfg.KubernetesAPIQPS))
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be higher than 0"))
 	}
 
 	if float32(cfg.KubernetesAPIBurst) < cfg.KubernetesAPIQPS {
-		allErrors = append(allErrors, fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", cfg.KubernetesAPIQPS, cfg.KubernetesAPIQPS))
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be higher or equal to kubernetesAPIQPS"))
 	}
 
-	for _, server := range cfg.ACMEHTTP01Config.SolverNameservers {
+	for i, server := range cfg.ACMEHTTP01Config.SolverNameservers {
 		// ensure all servers have a port number
 		_, _, err := net.SplitHostPort(server)
 		if err != nil {
-			allErrors = append(allErrors, fmt.Errorf("invalid DNS server (%v): %v", err, server))
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeHTTP01Config").Child("solverNameservers").Index(i), server, "must be in the format <ip address>:<port>"))
 		}
 	}
 
-	for _, server := range cfg.ACMEDNS01Config.RecursiveNameservers {
+	for i, server := range cfg.ACMEDNS01Config.RecursiveNameservers {
 		// ensure all servers follow one of the following formats:
 		// - <ip address>:<port>
 		// - https://<DoH RFC 8484 server address>
 
 		if strings.HasPrefix(server, "https://") {
-			_, err := url.ParseRequestURI(server)
-			if err != nil {
-				allErrors = append(allErrors, fmt.Errorf("invalid DNS server (%v): %v", err, server))
+			if u, err := url.ParseRequestURI(server); err != nil || u.Scheme != "https" || u.Host == "" {
+				allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, "must be in the format https://<DoH RFC 8484 server address>"))
 			}
 		} else {
-			_, _, err := net.SplitHostPort(server)
-			if err != nil {
-				allErrors = append(allErrors, fmt.Errorf("invalid DNS server (%v): %v", err, server))
+			if _, _, err := net.SplitHostPort(server); err != nil {
+				allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, "must be in the format <ip address>:<port>"))
 			}
 		}
 	}
 
-	controllerErrors := []error{}
 	allControllersSet := sets.NewString(defaults.AllControllers...)
-	for _, controller := range cfg.Controllers {
+	for i, controller := range cfg.Controllers {
 		if controller == "*" {
 			continue
 		}
 
 		controller = strings.TrimPrefix(controller, "-")
 		if !allControllersSet.Has(controller) {
-			controllerErrors = append(controllerErrors, fmt.Errorf("%q is not in the list of known controllers", controller))
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("controllers").Index(i), controller, "is not in the list of known controllers"))
 		}
 	}
-	if len(controllerErrors) > 0 {
-		allErrors = append(allErrors, fmt.Errorf("validation failed for '--controllers': %v", controllerErrors))
-	}
 
-	return utilerrors.NewAggregate(allErrors)
+	return allErrors
 }
