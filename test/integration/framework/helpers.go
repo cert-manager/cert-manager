@@ -72,7 +72,7 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, intern
 	certmgrscheme.AddToScheme(scheme)
 	apiext.AddToScheme(scheme)
 	apireg.AddToScheme(scheme)
-	gwapi.AddToScheme(scheme)
+	gwapi.Install(scheme)
 
 	return cl, factory, cmCl, cmFactory, scheme
 }
