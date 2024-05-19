@@ -309,19 +309,19 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		}
 
 		By("Waiting for first Certificate to exist")
-		cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateName, time.Second*60)
+		cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certificateName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for seond Certificate to exist")
-		cert2, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecondSecretName, time.Second*60)
+		cert2, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certificateSecondSecretName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for second the Certificate to be issued...")
-		cert2, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert2, time.Minute*5)
+		cert2, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert2, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
