@@ -72,7 +72,7 @@ tools += rclone=v1.66.0
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
-tools += controller-gen=v0.14.0
+tools += controller-gen=v0.15.0
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 tools += goimports=v0.20.0
 # https://pkg.go.dev/github.com/google/go-licenses/licenses?tab=versions
@@ -132,15 +132,16 @@ tools += gci=v0.13.4
 tools += yamlfmt=v0.12.1
 
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
-K8S_CODEGEN_VERSION := v0.29.3
+K8S_CODEGEN_VERSION := v0.30.1
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
 tools += lister-gen=$(K8S_CODEGEN_VERSION)
 tools += applyconfiguration-gen=$(K8S_CODEGEN_VERSION)
-tools += openapi-gen=$(K8S_CODEGEN_VERSION)
 tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
+# https://github.com/kubernetes/kube-openapi
+tools += openapi-gen=f0e62f92d13f418e2732b21c952fd17cab771c75
 
 # https://github.com/kubernetes-sigs/kubebuilder/blob/tools-releases/build/cloudbuild_tools.yaml
 KUBEBUILDER_ASSETS_VERSION := 1.30.0
@@ -317,9 +318,9 @@ go_dependencies += deepcopy-gen=k8s.io/code-generator/cmd/deepcopy-gen
 go_dependencies += informer-gen=k8s.io/code-generator/cmd/informer-gen
 go_dependencies += lister-gen=k8s.io/code-generator/cmd/lister-gen
 go_dependencies += applyconfiguration-gen=k8s.io/code-generator/cmd/applyconfiguration-gen
-go_dependencies += openapi-gen=k8s.io/code-generator/cmd/openapi-gen
 go_dependencies += defaulter-gen=k8s.io/code-generator/cmd/defaulter-gen
 go_dependencies += conversion-gen=k8s.io/code-generator/cmd/conversion-gen
+go_dependencies += openapi-gen=k8s.io/kube-openapi/cmd/openapi-gen
 go_dependencies += helm-tool=github.com/cert-manager/helm-tool
 go_dependencies += cmctl=github.com/cert-manager/cmctl/v2
 go_dependencies += cmrel=github.com/cert-manager/release/cmd/cmrel

@@ -44,21 +44,6 @@ generate-crds: | $(NEEDS_CONTROLLER-GEN)
 
 shared_generate_targets += generate-crds
 
-# Overwrite the verify-generate-codegen target with this
-# optimised target.
-.PHONY: verify-generate-codegen
-verify-generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
-	VERIFY_ONLY="true" ./hack/k8s-codegen.sh \
-		$(CLIENT-GEN) \
-		$(DEEPCOPY-GEN) \
-		$(INFORMER-GEN) \
-		$(LISTER-GEN) \
-		$(DEFAULTER-GEN) \
-		$(CONVERSION-GEN) \
-		$(OPENAPI-GEN)
-
-shared_verify_targets += verify-generate-codegen
-
 .PHONY: generate-codegen
 generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
 	./hack/k8s-codegen.sh \

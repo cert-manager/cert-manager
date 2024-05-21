@@ -26,21 +26,7 @@ defaultergen=$5
 conversiongen=$6
 openapigen=$7
 
-# If the envvar "VERIFY_ONLY" is set, we only check if everything's up to date
-# and don't actually generate anything
-
-VERIFY_FLAGS=""
-VERB="Generating"
-
-if [[ ${VERIFY_ONLY:-} ]]; then
-	VERIFY_FLAGS="--verify-only"
-	VERB="Verifying"
-fi
-
-export VERIFY_FLAGS
-export VERB
-
-echo "+++ ${VERB} code..." >&2
+echo "+++ Generating code..." >&2
 
 module_name="github.com/cert-manager/cert-manager"
 
@@ -113,11 +99,6 @@ conversion_inputs=(
 
 # clean will delete files matching name in path.
 clean() {
-  if [[ ${VERIFY_ONLY:-} ]]; then
-      # don't delete files if we're only verifying
-      return 0
-  fi
-
   path=$1
   name=$2
   if [[ ! -d "$path" ]]; then
@@ -128,90 +109,76 @@ clean() {
 
 gen-openapi-acme() {
   clean pkg/acme/webhook/openapi 'zz_generated.openapi.go'
-  echo "+++ ${VERB} ACME openapi..." >&2
+  echo "+++ Generating ACME openapi..." >&2
   mkdir -p hack/openapi_reports
   "$openapigen" \
-    ${VERIFY_FLAGS} \
     --go-header-file "hack/boilerplate-go.txt" \
     --report-filename "hack/openapi_reports/acme.txt" \
-    --input-dirs "k8s.io/apimachinery/pkg/version" \
-    --input-dirs "k8s.io/apimachinery/pkg/runtime" \
-    --input-dirs "k8s.io/apimachinery/pkg/apis/meta/v1" \
-    --input-dirs "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1" \
-    --input-dirs "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1" \
-    --trim-path-prefix "github.com/cert-manager/cert-manager" \
-    --output-package "github.com/cert-manager/cert-manager/pkg/acme/webhook/openapi" \
-    --output-base ./ \
-		-O zz_generated.openapi
+    --output-dir ./pkg/acme/webhook/openapi/ \
+    --output-pkg "github.com/cert-manager/cert-manager/pkg/acme/webhook/openapi" \
+		--output-file zz_generated.openapi.go \
+    "k8s.io/apimachinery/pkg/version" \
+    "k8s.io/apimachinery/pkg/runtime" \
+    "k8s.io/apimachinery/pkg/apis/meta/v1" \
+    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1" \
+    "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 }
 
 gen-deepcopy() {
   clean pkg/apis 'zz_generated.deepcopy.go'
   clean pkg/acme/webhook/apis 'zz_generated.deepcopy.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.deepcopy.go'
-  echo "+++ ${VERB} deepcopy methods..." >&2
+  echo "+++ Generating deepcopy methods..." >&2
   prefixed_inputs=( "${deepcopy_inputs[@]/#/$module_name/}" )
-  joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$deepcopygen" \
-    ${VERIFY_FLAGS} \
     --go-header-file hack/boilerplate-go.txt \
-    --input-dirs "$joined" \
-    --output-file-base zz_generated.deepcopy \
-    --trim-path-prefix="$module_name" \
+    --output-file zz_generated.deepcopy.go \
     --bounding-dirs "${module_name}" \
-    --output-base ./
+    "${prefixed_inputs[@]}"
 }
 
 gen-clientsets() {
   clean "${client_subpackage}"/clientset '*.go'
-  echo "+++ ${VERB} clientset..." >&2
+  echo "+++ Generating clientset..." >&2
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$clientgen" \
-    ${VERIFY_FLAGS} \
     --go-header-file hack/boilerplate-go.txt \
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
-    --trim-path-prefix="$module_name" \
-    --output-package "${client_package}"/clientset \
-    --output-base ./
+    --output-dir "${client_subpackage}"/clientset \
+    --output-pkg "${client_package}"/clientset
 }
 
 gen-listers() {
   clean "${client_subpackage}/listers" '*.go'
-  echo "+++ ${VERB} listers..." >&2
+  echo "+++ Generating listers..." >&2
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
-  joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$listergen" \
-    ${VERIFY_FLAGS} \
     --go-header-file hack/boilerplate-go.txt \
-    --input-dirs "$joined" \
-    --trim-path-prefix="$module_name" \
-    --output-package "${client_package}"/listers \
-    --output-base ./
+    --output-dir "${client_subpackage}"/listers \
+    --output-pkg "${client_package}"/listers \
+    "${prefixed_inputs[@]}"
 }
 
 gen-informers() {
   clean "${client_subpackage}"/informers '*.go'
-  echo "+++ ${VERB} informers..." >&2
+  echo "+++ Generating informers..." >&2
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
-  joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$informergen" \
-    ${VERIFY_FLAGS} \
     --go-header-file hack/boilerplate-go.txt \
-    --input-dirs "$joined" \
     --versioned-clientset-package "${client_package}"/clientset/versioned \
     --listers-package "${client_package}"/listers \
-    --trim-path-prefix="$module_name" \
-    --output-package "${client_package}"/informers \
-    --output-base ./
+    --output-dir "${client_subpackage}"/informers \
+    --output-pkg "${client_package}"/informers \
+    "${prefixed_inputs[@]}"
 }
 
 gen-defaulters() {
   clean internal/apis 'zz_generated.defaults.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.defaults.go'
-  echo "+++ ${VERB} defaulting functions..." >&2
+  echo "+++ Generating defaulting functions..." >&2
   
   DEFAULT_EXTRA_PEER_PKGS=(
     github.com/cert-manager/cert-manager/internal/apis/meta \
@@ -224,19 +191,16 @@ gen-defaulters() {
   DEFAULT_PKGS=( "${defaulter_inputs[@]/#/$module_name/}" )
 
   "$defaultergen" \
-    ${VERIFY_FLAGS} \
     --go-header-file hack/boilerplate-go.txt \
     --extra-peer-dirs "$( IFS=$','; echo "${DEFAULT_EXTRA_PEER_PKGS[*]}" )" \
-    --input-dirs "$( IFS=$','; echo "${DEFAULT_PKGS[*]}" )" \
-    --trim-path-prefix="$module_name" \
-    -O zz_generated.defaults \
-    --output-base ./
+    --output-file zz_generated.defaults.go \
+    "${DEFAULT_PKGS[@]}"
 }
 
 gen-conversions() {
   clean internal/apis 'zz_generated.conversion.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.conversion.go'
-  echo "+++ ${VERB} conversion functions..." >&2
+  echo "+++ Generating conversion functions..." >&2
 
   CONVERSION_EXTRA_PEER_PKGS=(
     github.com/cert-manager/cert-manager/internal/apis/meta \
@@ -249,14 +213,11 @@ gen-conversions() {
   CONVERSION_PKGS=( "${conversion_inputs[@]/#/$module_name/}" )
 
   "$conversiongen" \
-      ${VERIFY_FLAGS} \
       --go-header-file hack/boilerplate-go.txt \
       --extra-peer-dirs "$( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" )" \
       --extra-dirs "$( IFS=$','; echo "${CONVERSION_PKGS[*]}" )" \
-      --input-dirs "$( IFS=$','; echo "${CONVERSION_PKGS[*]}" )" \
-      --trim-path-prefix="$module_name" \
-      -O zz_generated.conversion \
-      --output-base ./
+      --output-file zz_generated.conversion.go \
+      "${CONVERSION_PKGS[@]}"
 }
 
 gen-openapi-acme
