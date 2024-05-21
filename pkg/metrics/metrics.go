@@ -16,9 +16,9 @@ limitations under the License.
 
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
-// certificate_expiration_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
-// certificate_renewal_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
-// certificate_ready_status{name, namespace, condition, issuer_name, issuer_kind, issuer_group}
+// certificate_expiration_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group, secret_name}
+// certificate_renewal_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group, secret_name}
+// certificate_ready_status{name, namespace, condition, issuer_name, issuer_kind, issuer_group, secret_name}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -106,7 +106,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Name:      "certificate_expiration_timestamp_seconds",
 				Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
 			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group", "secret_name"},
 		)
 
 		certificateRenewalTimeSeconds = prometheus.NewGaugeVec(
@@ -115,7 +115,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Name:      "certificate_renewal_timestamp_seconds",
 				Help:      "The number of seconds before expiration time the certificate should renew.",
 			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group", "secret_name"},
 		)
 
 		certificateReadyStatus = prometheus.NewGaugeVec(
@@ -124,7 +124,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Name:      "certificate_ready_status",
 				Help:      "The ready status of the certificate.",
 			},
-			[]string{"name", "namespace", "condition", "issuer_name", "issuer_kind", "issuer_group"},
+			[]string{"name", "namespace", "condition", "issuer_name", "issuer_kind", "issuer_group", "secret_name"},
 		)
 
 		// acmeClientRequestCount is a Prometheus summary to collect the number of

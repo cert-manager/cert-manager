@@ -116,6 +116,7 @@ func TestMetricsController(t *testing.T) {
 
 	var (
 		crtName         = "testcrt"
+		secretName      = "test-secret-name"
 		namespace       = "testns"
 		metricsEndpoint = fmt.Sprintf("http://%s/metrics", server.Addr)
 
@@ -173,7 +174,7 @@ func TestMetricsController(t *testing.T) {
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Kind: "Issuer", Name: "test-issuer", Group: "test-issuer-group"}),
-		gen.SetCertificateSecretName(crtName),
+		gen.SetCertificateSecretName(secretName),
 		gen.SetCertificateCommonName(crtName),
 		gen.SetCertificateNamespace(namespace),
 		gen.SetCertificateUID("uid-1"),
@@ -187,15 +188,15 @@ func TestMetricsController(t *testing.T) {
 	// Should expose that Certificate as unknown with no expiry
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
-certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
+certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 0
 # HELP certmanager_certificate_ready_status The ready status of the certificate.
 # TYPE certmanager_certificate_ready_status gauge
-certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 1
+certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 0
+certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 0
+certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 1
 # HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
-certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
+certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 0
 ` + clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
@@ -223,15 +224,15 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	// Should expose that Certificate as ready with expiry
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
-certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
+certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 100
 # HELP certmanager_certificate_ready_status The ready status of the certificate.
 # TYPE certmanager_certificate_ready_status gauge
-certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 1
-certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
+certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 0
+certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 1
+certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 0
 # HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
-certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
+certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns",secret_name="test-secret-name"} 100
 ` + clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
