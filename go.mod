@@ -6,7 +6,11 @@ go 1.22.0
 // please place any replace statements here at the top for visibility and add a
 // comment to it as to when it can be removed
 
-// Can be removed once expfmt.FmtText is no longer used by any of the libraries we depend on.
+// In prometheus/common v0.47.0 and v0.48.0, breaking changes were introduced in the "github.com/prometheus/common/expfmt"
+// package. Not all our dependencies have been upgraded to use the new API. Until then, compiling cert-manager
+// with the newer versions of "github.com/prometheus/common/expfmt" and "github.com/prometheus/client_golang"
+// fails. These replace statements can be removed once expfmt.FmtText is no longer used by any of the libraries
+// we depend on.
 replace github.com/prometheus/common => github.com/prometheus/common v0.46.0
 
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
