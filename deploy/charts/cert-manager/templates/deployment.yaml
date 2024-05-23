@@ -137,6 +137,9 @@ spec:
           {{- with .Values.dns01RecursiveNameservers }}
           - --dns01-recursive-nameservers={{ . }}
           {{- end }}
+          {{- if .Values.disableAutoApproval }}
+          - --controllers=-certificaterequests-approver
+          {{- end }}
           ports:
           - containerPort: 9402
             name: http-metrics
