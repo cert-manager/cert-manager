@@ -143,8 +143,8 @@ tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 tools += openapi-gen=f0e62f92d13f418e2732b21c952fd17cab771c75
 
-# https://github.com/kubernetes-sigs/kubebuilder/blob/tools-releases/build/cloudbuild_tools.yaml
-KUBEBUILDER_ASSETS_VERSION := 1.30.0
+# https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
+KUBEBUILDER_ASSETS_VERSION := v1.30.0
 tools += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 tools += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -439,24 +439,24 @@ $(DOWNLOAD_DIR)/tools/azwi@$(AZWI_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		tar xfO $(outfile).tar.gz azwi > $(outfile) && chmod 775 $(outfile); \
 		rm -f $(outfile).tar.gz
 
-kubebuilder_tools_linux_amd64_SHA256SUM=d51dae845397b7548444157903f2d573493afb6f90ce9417c0f5c61d4b1f908d
-kubebuilder_tools_linux_arm64_SHA256SUM=83123010f603390ee0f417ad1cf2a715f5bff335c5841dcd4221764e52732336
-kubebuilder_tools_darwin_amd64_SHA256SUM=46f5a680f28b6db9fdaaab4659dee68a1f2e04a0d9a39f9b0176562a9e95167b
-kubebuilder_tools_darwin_arm64_SHA256SUM=ce37b6fcd7678d78a610da1ae5e8e68777025b2bf046558820f967fe7a8f0dfd
+kubebuilder_tools_linux_amd64_SHA256SUM=2a9792cb5f1403f524543ce94c3115e3c4a4229f0e86af55fd26c078da448164
+kubebuilder_tools_linux_arm64_SHA256SUM=39cc7274a3075a650a20fcd24b9e2067375732bebaf5356088a8efb35155f068
+kubebuilder_tools_darwin_amd64_SHA256SUM=85890b864330baec88f53aabfc1d5d94a8ca8c17483f34f4823dec0fae7c6e3a
+kubebuilder_tools_darwin_arm64_SHA256SUM=849362d26105b64193b4142982c710306d90248272731a81fb83efac27c5a750
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
 	@source $(lock_script) $@; \
-		$(CURL) https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
+		$(CURL) https://github.com/kubernetes-sigs/controller-tools/releases/download/envtest-$(KUBEBUILDER_ASSETS_VERSION)/envtest-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(kubebuilder_tools_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 $(DOWNLOAD_DIR)/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH): $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz | $(DOWNLOAD_DIR)/tools
 	@source $(lock_script) $@; \
-		tar xfO $< kubebuilder/bin/etcd > $(outfile) && chmod 775 $(outfile)
+		tar xfO $< controller-tools/envtest/etcd > $(outfile) && chmod 775 $(outfile)
 
 $(DOWNLOAD_DIR)/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH): $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz | $(DOWNLOAD_DIR)/tools
 	@source $(lock_script) $@; \
-		tar xfO $< kubebuilder/bin/kube-apiserver > $(outfile) && chmod 775 $(outfile)
+		tar xfO $< controller-tools/envtest/kube-apiserver > $(outfile) && chmod 775 $(outfile)
 
 kyverno_linux_amd64_SHA256SUM=a5f6e9070c17acc47168c8ce4db78e45258376551b8bf68ad2d5ed27454cf666
 kyverno_linux_arm64_SHA256SUM=007e828d622e73614365f5f7e8e107e36ae686e97e8982b1eeb53511fb2363c3
