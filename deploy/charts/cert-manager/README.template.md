@@ -387,6 +387,23 @@ A comma-separated string with the host and port of the recursive nameservers cer
 > ```
 
 Forces cert-manager to use only the recursive nameservers for verification. Enabling this option could cause the DNS01 self check to take longer owing to caching performed by the recursive nameservers.
+#### **disableAutoApproval** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Option to disable cert-manager's build-in auto-approver. The auto-approver approves all CertificateRequests that reference issuers matching the 'approveSignerNames' option. This 'disableAutoApproval' option is useful when you want to make all approval decisions using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).
+#### **approveSignerNames** ~ `array`
+> Default value:
+> ```yaml
+> - issuers.cert-manager.io/*
+> - clusterissuers.cert-manager.io/*
+> ```
+
+List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.  
+ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
+
 #### **extraArgs** ~ `array`
 > Default value:
 > ```yaml
