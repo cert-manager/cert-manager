@@ -50,6 +50,14 @@ func TestEnabledControllers(t *testing.T) {
 			controllers: []string{"*", "-clusterissuers", "-issuers"},
 			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
 		},
+		"if only disabled controllers are specified, implicitly enable all default controllers": {
+			controllers: []string{"-clusterissuers", "-issuers"},
+			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
+		},
+		"if both enabled and disabled controllers are specified, return specified controllers": {
+			controllers: []string{"foo", "-bar"},
+			expEnabled:  sets.New("foo"),
+		},
 	}
 
 	for name, test := range tests {
