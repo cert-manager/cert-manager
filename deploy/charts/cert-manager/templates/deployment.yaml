@@ -66,10 +66,10 @@ spec:
       {{- end }}
       {{- if or .Values.volumes .Values.config}}
       volumes:
-        {{- if .Values.config }} 
+        {{- if .Values.config }}
         - name: config 
           configMap: 
-            name: {{ include "cert-manager.fullname" . }} 
+            name: {{ include "cert-manager.fullname" . }}
         {{- end }}
         {{ with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
@@ -153,11 +153,11 @@ spec:
           {{- end }}
           {{- if or .Values.config .Values.volumeMounts }}
           volumeMounts:
-            {{- if .Values.config}} 
+            {{- if .Values.config }}
             - name: config 
               mountPath: /var/cert-manager/config
             {{- end }}
-            {{- with .Values.volumeMounts }} 
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
