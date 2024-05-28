@@ -243,6 +243,11 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		}
 	}
 
+	// Detect if "*" was implied (in case only disabled controllers were specified)
+	if len(disabled) > 0 && len(enabled) == 0 {
+		enabled = enabled.Insert(defaults.DefaultEnabledControllers...)
+	}
+
 	enabled = enabled.Delete(disabled...)
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
