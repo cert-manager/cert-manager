@@ -66,6 +66,9 @@ spec:
           {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
+          {{- if .Values.cainjector.config }}
+          - --config=/var/cert-manager/config/config.yaml
+          {{- end }}
           {{- with .Values.global.leaderElection }}
           - --leader-election-namespace={{ .namespace }}
           {{- if .leaseDuration }}
@@ -97,9 +100,15 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.cainjector.volumeMounts }}
+          {{- if or .Values.cainjector.config .Values.cainjector.volumeMounts }}
           volumeMounts:
+            {{- if .Values.cainjector.config }}
+            - name: config 
+              mountPath: /var/cert-manager/config
+            {{- end }}
+            {{- with .Values.cainjector.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
       {{- with .Values.cainjector.nodeSelector }}
       nodeSelector:
@@ -117,8 +126,15 @@ spec:
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.cainjector.volumes }}
+      {{- if or .Values.cainjector.volumes .Values.cainjector.config }}
       volumes:
+        {{- if .Values.cainjector.config }}
+        - name: config 
+          configMap: 
+            name: {{ include "cainjector.fullname" . }}
+        {{- end }}
+        {{ with .Values.cainjector.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
 {{- end }}
