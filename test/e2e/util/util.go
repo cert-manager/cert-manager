@@ -56,8 +56,8 @@ func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, d
 	return true
 }
 
-func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1.Issuer) (bool, error)) error {
-	return wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+func WaitForIssuerStatusFunc(ctx context.Context, client clientset.IssuerInterface, name string, fn func(*v1.Issuer) (bool, error)) error {
+	return wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
 		issuer, err := client.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
@@ -68,10 +68,10 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 
 // WaitForIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
-func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1.IssuerCondition) error {
+func WaitForIssuerCondition(ctx context.Context, client clientset.IssuerInterface, name string, condition v1.IssuerCondition) error {
 	logf, done := log.LogBackoff()
 	defer done()
-	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
 		logf("Waiting for issuer %v condition %#v", name, condition)
 		issuer, err := client.Get(ctx, name, metav1.GetOptions{})
 		if nil != err {
@@ -80,16 +80,16 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 
 		return apiutil.IssuerHasCondition(issuer, condition), nil
 	})
-	return wrapErrorWithIssuerStatusCondition(client, pollErr, name, condition.Type)
+	return wrapErrorWithIssuerStatusCondition(ctx, client, pollErr, name, condition.Type)
 }
 
 // try to retrieve last condition to help diagnose tests.
-func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollErr error, name string, conditionType v1.IssuerConditionType) error {
+func wrapErrorWithIssuerStatusCondition(ctx context.Context, client clientset.IssuerInterface, pollErr error, name string, conditionType v1.IssuerConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
 
-	issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
+	issuer, err := client.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return pollErr
 	}
@@ -106,10 +106,10 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 
 // WaitForClusterIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
-func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1.IssuerCondition) error {
+func WaitForClusterIssuerCondition(ctx context.Context, client clientset.ClusterIssuerInterface, name string, condition v1.IssuerCondition) error {
 	logf, done := log.LogBackoff()
 	defer done()
-	pollErr := wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
 		logf("Waiting for clusterissuer %v condition %#v", name, condition)
 		issuer, err := client.Get(ctx, name, metav1.GetOptions{})
 		if nil != err {
@@ -118,16 +118,16 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 
 		return apiutil.IssuerHasCondition(issuer, condition), nil
 	})
-	return wrapErrorWithClusterIssuerStatusCondition(client, pollErr, name, condition.Type)
+	return wrapErrorWithClusterIssuerStatusCondition(ctx, client, pollErr, name, condition.Type)
 }
 
 // try to retrieve last condition to help diagnose tests.
-func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1.IssuerConditionType) error {
+func wrapErrorWithClusterIssuerStatusCondition(ctx context.Context, client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1.IssuerConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
 
-	issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
+	issuer, err := client.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return pollErr
 	}
@@ -144,10 +144,10 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 
 // WaitForCRDToNotExist waits for the CRD with the given name to no
 // longer exist.
-func WaitForCRDToNotExist(client apiextensionsv1.CustomResourceDefinitionInterface, name string) error {
+func WaitForCRDToNotExist(ctx context.Context, client apiextensionsv1.CustomResourceDefinitionInterface, name string) error {
 	logf, done := log.LogBackoff()
 	defer done()
-	return wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
 		logf("Waiting for CRD %v to not exist", name)
 		_, err := client.Get(ctx, name, metav1.GetOptions{})
 		if nil == err {
@@ -385,8 +385,8 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 
 // HasIngresses lets you know if an API exists in the discovery API
 // calling this function always performs a request to the API server.
-func HasIngresses(d discovery.DiscoveryInterface, GroupVersion string) bool {
-	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
+func HasIngresses(d discovery.DiscoveryInterface, groupVersion string) bool {
+	resourceList, err := d.ServerResourcesForGroupVersion(groupVersion)
 	if err != nil {
 		return false
 	}

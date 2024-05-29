@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -33,23 +32,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-var (
-	route53Secret string
-	route53Key    string
-	route53Region string
-)
-
-func init() {
-	route53Key = os.Getenv("AWS_ACCESS_KEY_ID")
-	route53Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	route53Region = os.Getenv("AWS_REGION")
-}
-
-func restoreRoute53Env() {
-	os.Setenv("AWS_ACCESS_KEY_ID", route53Key)
-	os.Setenv("AWS_SECRET_ACCESS_KEY", route53Secret)
-	os.Setenv("AWS_REGION", route53Region)
-}
+const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9uYXdzLmNvbSIsImV4cCI6MTc0MTg4NzYwOCwiaWF0IjoxNzEwMzUxNjM4LCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.SfuV3SW-vEdV-tLFIr2PK2DnN6QYmozygav5OeoH36Q"
 
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg, err := config.LoadDefaultConfig(
@@ -73,12 +56,11 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 }
 
 func TestAmbientCredentialsFromEnv(t *testing.T) {
-	os.Setenv("AWS_ACCESS_KEY_ID", "123")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "123")
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_ACCESS_KEY_ID", "123")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(context.TODO())
@@ -88,30 +70,27 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 }
 
 func TestNoCredentialsFromEnv(t *testing.T) {
-	os.Setenv("AWS_ACCESS_KEY_ID", "123")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "123")
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_ACCESS_KEY_ID", "123")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+	t.Setenv("AWS_REGION", "us-east-1")
 
-	_, err := NewDNSProvider("", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
 func TestAmbientRegionFromEnv(t *testing.T) {
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", provider.client.Options().Region, "Expected Region to be set from environment")
 }
 
 func TestNoRegionFromEnv(t *testing.T) {
-	os.Setenv("AWS_REGION", "us-east-1")
-	defer restoreRoute53Env()
+	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider("marx", "swordfish", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(context.TODO(), "marx", "swordfish", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", provider.client.Options().Region, "Expected Region to not be set from environment")
@@ -135,25 +114,25 @@ func TestRoute53Present(t *testing.T) {
 	domain := "example.com"
 	keyAuth := "123456d=="
 
-	err = provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
+	err = provider.Present(context.TODO(), domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	subDomain := "foo.example.com"
-	err = provider.Present(subDomain, "_acme-challenge."+subDomain+".", keyAuth)
+	err = provider.Present(context.TODO(), subDomain, "_acme-challenge."+subDomain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	nonExistentSubDomain := "bar.foo.example.com"
-	err = provider.Present(nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
+	err = provider.Present(context.TODO(), nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	nonExistentDomain := "baz.com"
-	err = provider.Present(nonExistentDomain, nonExistentDomain+".", keyAuth)
+	err = provider.Present(context.TODO(), nonExistentDomain, nonExistentDomain+".", keyAuth)
 	assert.Error(t, err, "Expected Present to return an error")
 
 	// This test case makes sure that the request id has been properly
 	// stripped off. It has to be stripped because it changes on every
 	// request which causes spurious challenge updates.
-	err = provider.Present("bar.example.com", "bar.example.com.", keyAuth)
+	err = provider.Present(context.TODO(), "bar.example.com", "bar.example.com.", keyAuth)
 	require.Error(t, err, "Expected Present to return an error")
 	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
@@ -165,16 +144,17 @@ func TestAssumeRole(t *testing.T) {
 		SessionToken:    aws.String("my-token"),
 	}
 	cases := []struct {
-		name      string
-		ambient   bool
-		role      string
-		expErr    bool
-		expCreds  *ststypes.Credentials
-		expRegion string
-		key       string
-		secret    string
-		region    string
-		mockSTS   *mockSTS
+		name             string
+		ambient          bool
+		role             string
+		webIdentityToken string
+		expErr           bool
+		expCreds         *ststypes.Credentials
+		expRegion        string
+		key              string
+		secret           string
+		region           string
+		mockSTS          *mockSTS
 	}{
 		{
 			name:      "should assume role w/ ambient creds",
@@ -247,18 +227,43 @@ func TestAssumeRole(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:             "should assume role with web identity",
+			role:             "my-role",
+			webIdentityToken: jwt,
+			expErr:           false,
+			expCreds:         creds,
+			mockSTS: &mockSTS{
+				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+					return &sts.AssumeRoleWithWebIdentityOutput{
+						Credentials: creds,
+					}, nil
+				},
+			},
+		},
+		{
+			name:             "require role when using assume role with web identity",
+			webIdentityToken: jwt,
+			expErr:           true,
+			expCreds:         nil,
+			mockSTS: &mockSTS{
+				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+					return nil, fmt.Errorf("error assuming mock role with web identity")
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			provider, err := makeMockSessionProvider(func(aws.Config) StsClient {
+			provider := makeMockSessionProvider(func(aws.Config) StsClient {
 				return c.mockSTS
-			}, c.key, c.secret, c.region, c.role, c.ambient)
-			assert.NoError(t, err)
-			cfg, err := provider.GetSession()
+			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
+			cfg, err := provider.GetSession(context.TODO())
 			if c.expErr {
 				assert.NotNil(t, err)
 			} else {
+				assert.Nil(t, err)
 				sessCreds, _ := cfg.Credentials.Retrieve(context.TODO())
 				assert.Equal(t, c.mockSTS.assumedRole, c.role)
 				assert.Equal(t, *c.expCreds.SecretAccessKey, sessCreds.SecretAccessKey)
@@ -270,8 +275,9 @@ func TestAssumeRole(t *testing.T) {
 }
 
 type mockSTS struct {
-	AssumeRoleFn func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
-	assumedRole  string
+	AssumeRoleFn                func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+	AssumeRoleWithWebIdentityFn func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error)
+	assumedRole                 string
 }
 
 func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
@@ -283,20 +289,30 @@ func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, o
 	return nil, nil
 }
 
+func (m *mockSTS) AssumeRoleWithWebIdentity(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+	if m.AssumeRoleWithWebIdentityFn != nil {
+		m.assumedRole = *params.RoleArn
+		return m.AssumeRoleWithWebIdentityFn(ctx, params, optFns...)
+	}
+
+	return nil, nil
+}
+
 func makeMockSessionProvider(
 	defaultSTSProvider func(aws.Config) StsClient,
-	accessKeyID, secretAccessKey, region, role string,
+	accessKeyID, secretAccessKey, region, role, webIdentityToken string,
 	ambient bool,
-) (*sessionProvider, error) {
+) *sessionProvider {
 	return &sessionProvider{
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
-		Ambient:         ambient,
-		Region:          region,
-		Role:            role,
-		StsProvider:     defaultSTSProvider,
-		log:             logf.Log.WithName("route53-session"),
-	}, nil
+		AccessKeyID:      accessKeyID,
+		SecretAccessKey:  secretAccessKey,
+		Ambient:          ambient,
+		Region:           region,
+		Role:             role,
+		WebIdentityToken: webIdentityToken,
+		StsProvider:      defaultSTSProvider,
+		log:              logf.Log.WithName("route53-session"),
+	}
 }
 
 func Test_removeReqID(t *testing.T) {

@@ -29,10 +29,6 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -52,6 +48,10 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+
+	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Define defines simple conformance tests that can be run against any issuer type.
@@ -104,7 +104,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -130,7 +130,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -158,7 +158,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -186,7 +186,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -215,7 +215,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -256,7 +256,7 @@ func (s *Suite) Define() {
 
 			By("Waiting for the Certificate to be issued...")
 
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			valFunc := func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
@@ -267,7 +267,7 @@ func (s *Suite) Define() {
 
 				pemBlock, _ := pem.Decode(certBytes)
 				cert, err := x509.ParseCertificate(pemBlock.Bytes)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 
 				By("Including the appropriate GeneralNames ( RFC822 email Address and OtherName) in generated Certificate")
 				/* openssl req -nodes -newkey rsa:2048 -subj "/CN=someCN" \
@@ -329,10 +329,9 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			By("Waiting for the Certificate to be issued...")
 
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			//type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) error
 			valFunc := func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 				certBytes, ok := secret.Data[corev1.TLSCertKey]
 				if !ok {
@@ -394,7 +393,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -426,7 +425,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -451,7 +450,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -477,7 +476,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -507,7 +506,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -532,7 +531,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -562,7 +561,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -591,7 +590,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -618,7 +617,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -646,7 +645,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -658,7 +657,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			// duration.
 			// We set a 30 second buffer time here since Vault issues certificates
 			// with an extra 30 seconds on its duration.
-			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
+			f.CertificateDurationValid(ctx, testCertificate, time.Hour*896, 30*time.Second)
 		}, featureset.DurationFeature, featureset.OnlySAN)
 
 		s.it(f, "should issue a certificate that defines a wildcard DNS Name", func(issuerRef cmmeta.ObjectReference) {
@@ -678,7 +677,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -705,7 +704,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -736,7 +735,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -770,7 +769,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -779,7 +778,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			By("Deleting existing certificate data in Secret")
 			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
-				Get(context.TODO(), testCertificate.Spec.SecretName, metav1.GetOptions{})
+				Get(ctx, testCertificate.Spec.SecretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
 
 			sec = sec.DeepCopy()
@@ -789,11 +788,11 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			sec.Data[corev1.TLSCertKey] = []byte{}
 
-			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.TODO(), sec, metav1.UpdateOptions{})
+			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, sec, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate data")
 
 			By("Waiting for the Certificate to re-issue a certificate")
-			sec, err = f.Helper().WaitForSecretCertificateData(f.Namespace.Name, sec.Name, time.Minute*8)
+			sec, err = f.Helper().WaitForSecretCertificateData(ctx, f.Namespace.Name, sec.Name, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred(), "failed to wait for secret to have a valid 2nd certificate")
 
 			crtPEM2 := sec.Data[corev1.TLSCertKey]
@@ -824,7 +823,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				secretName := "testcert-ingress-tls"
 
 				By("Creating an Ingress with the issuer name annotation set")
-				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+				ingress, err := ingClient.Create(ctx, e2eutil.NewIngress(name, secretName, map[string]string{
 					"cert-manager.io/issuer":       issuerRef.Name,
 					"cert-manager.io/issuer-kind":  issuerRef.Kind,
 					"cert-manager.io/issuer-group": issuerRef.Group,
@@ -837,7 +836,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				secretName := "testcert-ingress-tls"
 
 				By("Creating an Ingress with the issuer name annotation set")
-				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
+				ingress, err := ingClient.Create(ctx, e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
 					"cert-manager.io/issuer":       issuerRef.Name,
 					"cert-manager.io/issuer-kind":  issuerRef.Kind,
 					"cert-manager.io/issuer-group": issuerRef.Group,
@@ -849,11 +848,11 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			}
 
 			By("Waiting for the Certificate to exist...")
-			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*8)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -885,7 +884,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				secretName := "testcert-ingress-tls"
 
 				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
-				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+				ingress, err := ingClient.Create(ctx, e2eutil.NewIngress(name, secretName, map[string]string{
 					"cert-manager.io/issuer":                      issuerRef.Name,
 					"cert-manager.io/issuer-kind":                 issuerRef.Kind,
 					"cert-manager.io/issuer-group":                issuerRef.Group,
@@ -908,7 +907,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				secretName := "testcert-ingress-tls"
 
 				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
-				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
+				ingress, err := ingClient.Create(ctx, e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
 					"cert-manager.io/issuer":                      issuerRef.Name,
 					"cert-manager.io/issuer-kind":                 issuerRef.Kind,
 					"cert-manager.io/issuer-group":                issuerRef.Group,
@@ -929,11 +928,11 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			}
 
 			By("Waiting for the Certificate to exist...")
-			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*8)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the ingres-shim has translated all the supplied
@@ -982,7 +981,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				"cert-manager.io/renew-before": renewBefore.String(),
 			}, domain)
 
-			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
+			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// XXX(Mael): the CertificateRef seems to contain the Gateway name
@@ -991,11 +990,11 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
 
 			By("Waiting for the Certificate to exist...")
-			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*8)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the gateway-shim has translated all the supplied
@@ -1029,7 +1028,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
@@ -1056,7 +1055,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be ready")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
@@ -1066,13 +1065,13 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			By("Updating the Certificate after having added an additional dnsName")
 			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
 			retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				err = f.CRClient.Get(context.Background(), types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
+				err = f.CRClient.Get(ctx, types.NamespacedName{Name: testCertificate.Name, Namespace: testCertificate.Namespace}, testCertificate)
 				if err != nil {
 					return err
 				}
 
 				testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
-				err = f.CRClient.Update(context.Background(), testCertificate)
+				err = f.CRClient.Update(ctx, testCertificate)
 				if err != nil {
 					return err
 				}
@@ -1082,7 +1081,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate Ready condition to be updated")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*8)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
@@ -1109,7 +1108,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
 			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*10)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*10)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")

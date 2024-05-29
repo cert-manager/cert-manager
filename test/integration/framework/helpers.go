@@ -72,7 +72,7 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, intern
 	certmgrscheme.AddToScheme(scheme)
 	apiext.AddToScheme(scheme)
 	apireg.AddToScheme(scheme)
-	gwapi.AddToScheme(scheme)
+	gwapi.Install(scheme)
 
 	return cl, factory, cmCl, cmFactory, scheme
 }
@@ -82,25 +82,25 @@ func StartInformersAndController(t *testing.T, factory internalinformers.KubeInf
 }
 
 func StartInformersAndControllers(t *testing.T, factory internalinformers.KubeInformerFactory, cmFactory cminformers.SharedInformerFactory, cs ...controllerpkg.Interface) StopFunc {
-	stopCh := make(chan struct{})
+	rootCtx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error)
 
-	factory.Start(stopCh)
-	cmFactory.Start(stopCh)
+	factory.Start(rootCtx.Done())
+	cmFactory.Start(rootCtx.Done())
 	group, _ := errgroup.WithContext(context.Background())
 	go func() {
 		defer close(errCh)
 		for _, c := range cs {
 			func(c controllerpkg.Interface) {
 				group.Go(func() error {
-					return c.Run(1, stopCh)
+					return c.Run(1, rootCtx)
 				})
 			}(c)
 		}
 		errCh <- group.Wait()
 	}()
 	return func() {
-		close(stopCh)
+		cancel()
 		err := <-errCh
 		if err != nil {
 			t.Fatal(err)

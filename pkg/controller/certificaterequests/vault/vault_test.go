@@ -64,8 +64,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 	return csr
 }
 
-func generateSelfSignedCertFromCR(cr *cmapi.CertificateRequest, key crypto.Signer,
-	duration time.Duration) ([]byte, error) {
+func generateSelfSignedCertFromCR(cr *cmapi.CertificateRequest, key crypto.Signer) ([]byte, error) {
 	template, err := pki.CertificateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		return nil, fmt.Errorf("error generating template: %v", err)
@@ -134,7 +133,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	rsaPEMCert, err := generateSelfSignedCertFromCR(baseCR, rsaSK, time.Hour*24*60)
+	rsaPEMCert, err := generateSelfSignedCertFromCR(baseCR, rsaSK)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -522,7 +521,7 @@ func runTest(t *testing.T, test testT) {
 	vault := NewVault(test.builder.Context).(*Vault)
 
 	if test.fakeVault != nil {
-		vault.vaultClientBuilder = func(ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
+		vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
 			iss cmapi.GenericIssuer) (internalvault.Interface, error) {
 			return test.fakeVault.New(ns, sl, iss)
 		}

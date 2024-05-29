@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +34,9 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Check that the UserInfo fields on CertificateRequests are populated
@@ -174,7 +175,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 
 		kubeConfig.QPS = 9000
 		kubeConfig.Burst = 9000
-		kubeConfig.BearerToken = fmt.Sprintf("%s", token)
+		kubeConfig.BearerToken = string(token)
 		kubeConfig.CertData = nil
 		kubeConfig.KeyData = nil
 

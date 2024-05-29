@@ -51,7 +51,7 @@ const (
 
 var (
 	// RequeuePeriod is the default period after which an Order should be re-queued.
-	// It can be overriden in tests.
+	// It can be overridden in tests.
 	RequeuePeriod = time.Second * 5
 )
 
@@ -202,7 +202,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		// correctly. Do not change this unless there is a real need for
 		// it.
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
-		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
+		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
@@ -242,7 +242,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
-		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
+		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
@@ -312,10 +312,10 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 		return nil, err
 	}
 
-	return c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
+	return c.updateOrderStatusFromACMEOrder(o, acmeOrder)
 }
 
-func (c *controller) updateOrderStatusFromACMEOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order, acmeOrder *acmeapi.Order) (*acmeapi.Order, error) {
+func (c *controller) updateOrderStatusFromACMEOrder(o *cmacme.Order, acmeOrder *acmeapi.Order) (*acmeapi.Order, error) {
 	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
 	// order's URI field will be empty when calling GetOrder due to the
 	// 'Location' header not being set on the response from the ACME server.
@@ -724,7 +724,9 @@ func getPreferredCertChain(
 		if cert.Issuer.CommonName == preferredChain {
 			// if the issuer's CN matched the preferred chain it means this bundle is
 			// signed by the requested chain
-			log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting preferred ACME bundle with a matching Common Name from %s", name)
+			log.V(logf.DebugLevel).
+				WithValues("Issuer CN", cert.Issuer.CommonName).
+				Info("Selecting preferred ACME bundle with a matching Common Name from chain", "chainName", name)
 			return true, nil
 		}
 

@@ -36,9 +36,10 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/ktesting"
-	_ "k8s.io/klog/v2/ktesting/init" // add command line flags
 
 	"github.com/cert-manager/cert-manager/pkg/healthz"
+
+	_ "k8s.io/klog/v2/ktesting/init" // add command line flags
 )
 
 const (
@@ -276,7 +277,9 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 				lastResponseBody string
 			)
 			assert.Eventually(t, func() bool {
-				resp, err := http.Get(livezURL)
+				req, err := http.NewRequestWithContext(ctx, http.MethodGet, livezURL, nil)
+				require.NoError(t, err)
+				resp, err := http.DefaultClient.Do(req)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, resp.Body.Close())

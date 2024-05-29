@@ -18,6 +18,12 @@ metadata:
     {{- end }}
 spec:
   type: {{ .Values.webhook.serviceType }}
+  {{- if .Values.webhook.serviceIPFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.webhook.serviceIPFamilyPolicy }}
+  {{- end }}
+  {{- if .Values.webhook.serviceIPFamilies }}
+  ipFamilies: {{ .Values.webhook.serviceIPFamilies | toYaml | nindent 2 }}
+  {{- end }}
   {{- with .Values.webhook.loadBalancerIP }}
   loadBalancerIP: {{ . }}
   {{- end }}

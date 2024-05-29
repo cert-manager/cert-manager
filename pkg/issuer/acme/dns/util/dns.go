@@ -9,6 +9,7 @@ this directory.
 package util
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/miekg/dns"
@@ -17,13 +18,13 @@ import (
 // DNS01LookupFQDN returns a DNS name which will be updated to solve the dns-01
 // challenge
 // TODO: move this into the pkg/acme package
-func DNS01LookupFQDN(domain string, followCNAME bool, nameservers ...string) (string, error) {
+func DNS01LookupFQDN(ctx context.Context, domain string, followCNAME bool, nameservers ...string) (string, error) {
 	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
 
 	// Check if the domain has CNAME then return that
 	if followCNAME {
 		var err error
-		fqdn, err = followCNAMEs(fqdn, nameservers)
+		fqdn, err = followCNAMEs(ctx, fqdn, nameservers)
 		if err != nil {
 			return "", err
 		}

@@ -39,16 +39,16 @@ const (
 
 // WaitForAllPodsRunningInNamespace waits default amount of time (PodStartTimeout)
 // for all pods in the specified namespace to become running.
-func (h *Helper) WaitForAllPodsRunningInNamespace(ns string) error {
-	return h.WaitForAllPodsRunningInNamespaceTimeout(ns, PodStartTimeout)
+func (h *Helper) WaitForAllPodsRunningInNamespace(ctx context.Context, ns string) error {
+	return h.WaitForAllPodsRunningInNamespaceTimeout(ctx, ns, PodStartTimeout)
 }
 
-func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time.Duration) error {
+func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ctx context.Context, ns string, timeout time.Duration) error {
 	ginkgo.By("Waiting " + timeout.String() + " for all pods in namespace '" + ns + "' to be Ready")
 	logf, done := log.LogBackoff()
 	defer done()
-	return wait.PollUntilContextTimeout(context.TODO(), Poll, timeout, true, func(ctx context.Context) (bool, error) {
-		pods, err := h.KubeClient.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
+	return wait.PollUntilContextTimeout(ctx, Poll, timeout, true, func(ctx context.Context) (bool, error) {
+		pods, err := h.KubeClient.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}

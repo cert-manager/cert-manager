@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/v5/pkg/certificate"
-
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
+
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -45,8 +45,8 @@ var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi i
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
 // It will return a pickup ID which can be used with RetrieveCertificate to get the certificate
-func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
-	vreq, err := v.buildVReq(csrPEM, duration, customFields)
+func (v *Venafi) RequestCertificate(csrPEM []byte, customFields []api.CustomField) (string, error) {
+	vreq, err := v.buildVReq(csrPEM, customFields)
 	if err != nil {
 		return "", err
 	}
@@ -81,8 +81,8 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	return v.vcertClient.RequestCertificate(vreq)
 }
 
-func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
-	vreq, err := v.buildVReq(csrPEM, duration, customFields)
+func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, customFields []api.CustomField) ([]byte, error) {
+	vreq, err := v.buildVReq(csrPEM, customFields)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration ti
 	return []byte(chain), nil
 }
 
-func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (*certificate.Request, error) {
+func (v *Venafi) buildVReq(csrPEM []byte, customFields []api.CustomField) (*certificate.Request, error) {
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.

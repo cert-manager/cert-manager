@@ -26,20 +26,20 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/onsi/gomega/types"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 )
 
-func HaveSameSANsAs(CertWithExpectedSAN string) types.GomegaMatcher {
-	return SANEquals(extractSANsFromCertificate(CertWithExpectedSAN))
+func HaveSameSANsAs(certWithExpectedSAN string) types.GomegaMatcher {
+	return SANEquals(extractSANsFromCertificate(certWithExpectedSAN))
 }
 
 // HaveSans will check that the PEM of the certificates
-func SANEquals(SANExtensionExpected interface{}) *SANMatcher {
-	extension, ok := SANExtensionExpected.(pkix.Extension)
-	ok = extension.Id.Equal(oidExtensionSubjectAltName)
-	if !ok {
+func SANEquals(sanExtensionExpected interface{}) *SANMatcher {
+	extension, ok := sanExtensionExpected.(pkix.Extension)
+	if !ok || !extension.Id.Equal(oidExtensionSubjectAltName) {
 		Fail("Invalid use of the SANEquals matcher, please supply a valid SAN pkix.Extension")
 	}
 	return &SANMatcher{
@@ -126,7 +126,7 @@ var oidExtensionSubjectAltName = []int{2, 5, 29, 17}
 
 func extractSANsFromCertificate(certDER string) pkix.Extension {
 	block, rest := pem.Decode([]byte(certDER))
-	Expect(len(rest)).To(Equal(0))
+	Expect(rest).To(BeEmpty())
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	Expect(err).NotTo(HaveOccurred())

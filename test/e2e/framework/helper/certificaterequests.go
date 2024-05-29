@@ -40,14 +40,14 @@ import (
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
-func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
+func (h *Helper) WaitForCertificateRequestReady(ctx context.Context, ns, name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
 	var cr *cmapi.CertificateRequest
 	logf, done := log.LogBackoff()
 	defer done()
-	err := wait.PollUntilContextTimeout(context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 		var err error
 		logf("Waiting for CertificateRequest %s to be ready", name)
-		cr, err = h.CMClient.CertmanagerV1().CertificateRequests(ns).Get(context.TODO(), name, metav1.GetOptions{})
+		cr, err = h.CMClient.CertmanagerV1().CertificateRequests(ns).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 		}
@@ -73,7 +73,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 // CertificateRequest has a certificate issued for it, and that the details on
 // the x509 certificate are correct as defined by the CertificateRequest's
 // spec.
-func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.Request: %s", err)
@@ -155,7 +155,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
 	}
 
-	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(cr.Namespace, &cr.Spec.IssuerRef)
+	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(ctx, cr.Namespace, &cr.Spec.IssuerRef)
 	if err != nil {
 		return nil, err
 	}
@@ -199,18 +199,18 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		return nil, fmt.Errorf("CertificateRequest does not have an Approved condition set to True: %+v", cr.Status.Conditions)
 	}
 	if apiutil.CertificateRequestIsDenied(cr) {
-		return nil, fmt.Errorf("CertificateRequest has a Denied conditon set to True: %+v", cr.Status.Conditions)
+		return nil, fmt.Errorf("CertificateRequest has a Denied condition set to True: %+v", cr.Status.Conditions)
 	}
 
 	return cert, nil
 }
 
-func (h *Helper) WaitCertificateRequestIssuedValid(ns, name string, timeout time.Duration, key crypto.Signer) error {
-	return h.WaitCertificateRequestIssuedValidTLS(ns, name, timeout, key, nil)
+func (h *Helper) WaitCertificateRequestIssuedValid(ctx context.Context, ns, name string, timeout time.Duration, key crypto.Signer) error {
+	return h.WaitCertificateRequestIssuedValidTLS(ctx, ns, name, timeout, key, nil)
 }
 
-func (h *Helper) WaitCertificateRequestIssuedValidTLS(ns, name string, timeout time.Duration, key crypto.Signer, rootCAPEM []byte) error {
-	cr, err := h.WaitForCertificateRequestReady(ns, name, timeout)
+func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, name string, timeout time.Duration, key crypto.Signer, rootCAPEM []byte) error {
+	cr, err := h.WaitForCertificateRequestReady(ctx, ns, name, timeout)
 	if err != nil {
 		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
 		h.Kubectl(ns).DescribeResource("certificaterequest", name)
@@ -218,7 +218,7 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ns, name string, timeout t
 		return err
 	}
 
-	_, err = h.ValidateIssuedCertificateRequest(cr, key, rootCAPEM)
+	_, err = h.ValidateIssuedCertificateRequest(ctx, cr, key, rootCAPEM)
 	if err != nil {
 		log.Logf("Error validating issued certificate: %v", err)
 		h.Kubectl(ns).DescribeResource("certificaterequest", name)

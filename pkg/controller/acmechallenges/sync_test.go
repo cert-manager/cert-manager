@@ -316,6 +316,7 @@ func TestSyncHappyPath(t *testing.T) {
 						))),
 				},
 				ExpectedEvents: []string{
+					//nolint: dupword
 					"Normal Presented Presented challenge using HTTP-01 challenge mechanism",
 				},
 			},

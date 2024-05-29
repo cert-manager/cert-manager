@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -31,6 +29,9 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
@@ -78,17 +79,17 @@ type tpp struct {
 	*venafi.VenafiTPP
 }
 
-func (t *tpp) delete(f *framework.Framework, signerName string) {
-	Expect(t.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
+func (t *tpp) delete(ctx context.Context, f *framework.Framework, signerName string) {
+	Expect(t.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
 	ref, _ := util.SignerIssuerRefFromSignerName(signerName)
 
 	if ref.Type == "clusterissuers" {
-		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
 
-func (t *tpp) createIssuer(f *framework.Framework) string {
+func (t *tpp) createIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a Venafi Issuer")
 
 	t.VenafiTPP = &venafi.VenafiTPP{
@@ -101,16 +102,16 @@ func (t *tpp) createIssuer(f *framework.Framework) string {
 	}
 	Expect(err).NotTo(HaveOccurred(), "failed to setup tpp venafi")
 
-	Expect(t.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
+	Expect(t.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := t.Details().BuildIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
-func (t *tpp) createClusterIssuer(f *framework.Framework) string {
+func (t *tpp) createClusterIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a Venafi ClusterIssuer")
 
 	t.VenafiTPP = &venafi.VenafiTPP{
@@ -123,10 +124,10 @@ func (t *tpp) createClusterIssuer(f *framework.Framework) string {
 	}
 	Expect(err).NotTo(HaveOccurred(), "failed to setup tpp venafi")
 
-	Expect(t.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
+	Expect(t.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := t.Details().BuildClusterIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)

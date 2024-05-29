@@ -87,8 +87,8 @@ type Controller struct {
 	// the signer kind to react to when a certificate signing request is synced
 	signerType string
 
-	//registerExtraInformers is a list of functions that
-	//CertificateSigningRequest controllers can use to register custom informers.
+	// registerExtraInformers is a list of functions that
+	// CertificateSigningRequest controllers can use to register custom informers.
 	registerExtraInformers []RegisterExtraInformerFn
 
 	// used for testing

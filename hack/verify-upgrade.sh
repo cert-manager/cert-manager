@@ -84,7 +84,7 @@ $helm upgrade \
     "$HELM_CHART"
 
 # Wait for the cert-manager api to be available
-$cmctl check api --wait=2m -v
+$cmctl check api --wait=2m -v=5
 
 echo "+++ Creating some cert-manager resources.."
 
@@ -100,7 +100,7 @@ $kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 make e2e-setup-certmanager
 
 # Wait for the cert-manager api to be available
-$cmctl check api --wait=2m -v
+$cmctl check api --wait=2m -v=5
 
 # Test that the existing cert-manager resources can still be retrieved
 $kubectl get issuer/selfsigned-issuer cert/test1
@@ -145,7 +145,7 @@ $kubectl wait \
 	--namespace "${NAMESPACE}"
 
 # Wait for the cert-manager api to be available
-$cmctl check api --wait=2m -v
+$cmctl check api --wait=2m -v=5
 
 # Create a cert-manager issuer and cert
 $kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="first"
@@ -187,7 +187,7 @@ until $rollout_cmd; do
 done
 
 # Wait for the cert-manager api to be available
-$cmctl check api --wait=2m -v
+$cmctl check api --wait=2m -v=5
 
 # Test that the existing cert-manager resources can still be retrieved
 $kubectl get issuer/selfsigned-issuer cert/test1

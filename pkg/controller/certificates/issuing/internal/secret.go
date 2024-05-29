@@ -86,7 +86,7 @@ func NewSecretsManager(
 // If the Secret resource does not exist, it will be created on Apply.
 // UpdateData will also update deprecated annotations if they exist.
 func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate, data SecretData) error {
-	secret, err := s.getCertificateSecret(ctx, crt)
+	secret, err := s.getCertificateSecret(crt)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 
 // getCertificateSecret will return a secret which is ready for fields to be
 // applied. Only the Secret Type will be persisted from the original Secret.
-func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Certificate) (*corev1.Secret, error) {
+func (s *SecretsManager) getCertificateSecret(crt *cmapi.Certificate) (*corev1.Secret, error) {
 	// Get existing secret if it exists.
 	existingSecret, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 

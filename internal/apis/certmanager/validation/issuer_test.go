@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/clock"
+	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
@@ -46,6 +47,7 @@ var (
 		Key: "validkey",
 	}
 	// TODO (JS): Missing test for validCloudflareProvider
+	// nolint: unused
 	validCloudflareProvider = cmacme.ACMEIssuerDNS01ProviderCloudflare{
 		APIKey: &validSecretKeyRef,
 		Email:  "valid",
@@ -347,7 +349,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 }
 
 func TestValidateACMEIssuerConfig(t *testing.T) {
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
 
 	caBundle := unitcrypto.MustCreateCryptoBundle(t,
 		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
@@ -692,7 +694,8 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 }
 
 func TestValidateIssuerSpec(t *testing.T) {
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
+
 	scenarios := map[string]struct {
 		spec     *cmapi.IssuerSpec
 		errs     field.ErrorList
@@ -820,7 +823,8 @@ func TestValidateIssuerSpec(t *testing.T) {
 }
 
 func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
+
 	scenarios := map[string]struct {
 		isExpectedFailure bool
 		cfg               *cmacme.ACMEChallengeSolverHTTP01
@@ -833,12 +837,12 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		},
 		"ingress class field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: strPtr("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: ptr.To("abc")},
 			},
 		},
 		"ingressClassName field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: strPtr("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: ptr.To("abc")},
 			},
 		},
 		"neither field specified": {
@@ -856,8 +860,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					Name:             "abc",
-					Class:            strPtr("abc"),
-					IngressClassName: strPtr("abc"),
+					Class:            ptr.To("abc"),
+					IngressClassName: ptr.To("abc"),
 				},
 			},
 			errs: []*field.Error{
@@ -867,7 +871,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"ingressClassName is invalid": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: strPtr("azure/application-gateway"),
+					IngressClassName: ptr.To("azure/application-gateway"),
 				},
 			},
 			errs: []*field.Error{
@@ -1517,7 +1521,8 @@ func TestValidateSecretKeySelector(t *testing.T) {
 	validKey := "key"
 	// invalidName := cmmeta.LocalObjectReference{"-name-"}
 	// invalidKey := "-key-"
-	fldPath := field.NewPath("")
+	fldPath := (*field.Path)(nil)
+
 	scenarios := map[string]struct {
 		isExpectedFailure bool
 		selector          *cmmeta.SecretKeySelector

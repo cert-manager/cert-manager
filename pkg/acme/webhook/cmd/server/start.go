@@ -22,7 +22,6 @@ import (
 	"net"
 
 	"github.com/spf13/cobra"
-
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/component-base/logs"
@@ -67,6 +66,7 @@ func NewCommandStartWebhookServer(_ context.Context, groupName string, solvers .
 	cmd := &cobra.Command{
 		Short: "Launch an ACME solver API server",
 		Long:  "Launch an ACME solver API server",
+		// nolint:contextcheck // False positive
 		RunE: func(c *cobra.Command, args []string) error {
 			runCtx := c.Context()
 

@@ -871,7 +871,7 @@ func TestSetToken(t *testing.T) {
 				issuer:        test.issuer,
 			}
 
-			err := v.setToken(test.fakeClient)
+			err := v.setToken(context.TODO(), test.fakeClient)
 			if ((test.expectedErr == nil) != (err == nil)) &&
 				test.expectedErr != nil &&
 				test.expectedErr.Error() != err.Error() {
@@ -1097,10 +1097,10 @@ type testNewConfigT struct {
 func TestNewConfig(t *testing.T) {
 	caBundleSecretRefFakeSecretLister := func(namespace, secret, key, cert string) *listers.FakeSecretLister {
 		return listers.FakeSecretListerFrom(listers.NewFakeSecretLister(), func(f *listers.FakeSecretLister) {
-			f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+			f.SecretsFn = func(listerNamespace string) clientcorev1.SecretNamespaceLister {
 				return listers.FakeSecretNamespaceListerFrom(listers.NewFakeSecretNamespaceLister(), func(fn *listers.FakeSecretNamespaceLister) {
 					fn.GetFn = func(name string) (*corev1.Secret, error) {
-						if name == secret && namespace == namespace {
+						if name == secret && listerNamespace == namespace {
 							return &corev1.Secret{
 								Data: map[string][]byte{
 									key: []byte(cert),
@@ -1114,10 +1114,10 @@ func TestNewConfig(t *testing.T) {
 	}
 	clientCertificateSecretRefFakeSecretLister := func(namespace, secret, caKey, caCert, clientKey, clientCert, privateKey, privateKeyCert string) *listers.FakeSecretLister {
 		return listers.FakeSecretListerFrom(listers.NewFakeSecretLister(), func(f *listers.FakeSecretLister) {
-			f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+			f.SecretsFn = func(listerNamespace string) clientcorev1.SecretNamespaceLister {
 				return listers.FakeSecretNamespaceListerFrom(listers.NewFakeSecretNamespaceLister(), func(fn *listers.FakeSecretNamespaceLister) {
 					fn.GetFn = func(name string) (*corev1.Secret, error) {
-						if name == secret && namespace == namespace {
+						if name == secret && listerNamespace == namespace {
 							return &corev1.Secret{
 								Data: map[string][]byte{
 									caKey:      []byte(caCert),
@@ -1159,7 +1159,7 @@ func TestNewConfig(t *testing.T) {
 				}),
 			),
 			expectedErr: nil,
-			checkFunc: func(cfg *vault.Config, error error) error {
+			checkFunc: func(cfg *vault.Config, err error) error {
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))
 				clientCA := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs
@@ -1185,9 +1185,9 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			checkFunc: func(cfg *vault.Config, error error) error {
-				if error != nil {
-					return error
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
 				}
 
 				testCA := x509.NewCertPool()
@@ -1214,9 +1214,9 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			checkFunc: func(cfg *vault.Config, error error) error {
-				if error != nil {
-					return error
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
 				}
 
 				testCA := x509.NewCertPool()
@@ -1291,9 +1291,9 @@ func TestNewConfig(t *testing.T) {
 					},
 				},
 				)),
-			checkFunc: func(cfg *vault.Config, error error) error {
-				if error != nil {
-					return error
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
 				}
 
 				certificates := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.Certificates
@@ -1511,6 +1511,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := New(
+				context.TODO(),
 				"k8s-ns1",
 				func(ns string) CreateToken { return nil },
 				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1567,6 +1568,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 	defer server.Close()
 
 	v, err := New(
+		context.TODO(),
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1632,6 +1634,7 @@ func TestSignIntegration(t *testing.T) {
 	defer server.Close()
 
 	v, err := New(
+		context.TODO(),
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),

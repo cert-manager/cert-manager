@@ -20,8 +20,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -29,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	"github.com/go-logr/logr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -138,65 +137,43 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 }
 
 // Present creates a TXT record using the specified parameters
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
-	return c.createRecord(fqdn, value, 60)
+func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
+	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
+		var found bool
+		for _, r := range set.Properties.TxtRecords {
+			if len(r.Value) > 0 && *r.Value[0] == value {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			set.Properties.TxtRecords = append(set.Properties.TxtRecords, &dns.TxtRecord{
+				Value: []*string{to.Ptr(value)},
+			})
+		}
+	})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	z, err := c.getHostedZoneName(fqdn)
-	if err != nil {
-		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
-		return err
-	}
+func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
+	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
+		var records []*dns.TxtRecord
+		for _, r := range set.Properties.TxtRecords {
+			if len(r.Value) > 0 && *r.Value[0] != value {
+				records = append(records, r)
+			}
+		}
 
-	_, err = c.recordClient.Delete(
-		context.TODO(),
-		c.resourceGroupName,
-		z,
-		c.trimFqdn(fqdn, z),
-		dns.RecordTypeTXT, nil)
-	if err != nil {
-		c.log.Error(err, "Error deleting TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
-		return stabilizeError(err)
-	}
-	return nil
+		set.Properties.TxtRecords = records
+	})
 }
 
-func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
-	rparams := &dns.RecordSet{
-		Properties: &dns.RecordSetProperties{
-			TTL: to.Ptr(int64(ttl)),
-			TxtRecords: []*dns.TxtRecord{
-				{Value: []*string{&value}},
-			},
-		},
-	}
-
-	z, err := c.getHostedZoneName(fqdn)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.recordClient.CreateOrUpdate(
-		context.TODO(),
-		c.resourceGroupName,
-		z,
-		c.trimFqdn(fqdn, z),
-		dns.RecordTypeTXT,
-		*rparams, nil)
-	if err != nil {
-		c.log.Error(err, "Error creating TXT", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
-		return stabilizeError(err)
-	}
-	return nil
-}
-
-func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
+func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+	z, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}
@@ -204,7 +181,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	if _, err := c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+	if _, err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
 		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
 	}
@@ -219,6 +196,76 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 		z = c.zoneName
 	}
 	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+z)
+}
+
+// Updates or removes DNS TXT record while respecting optimistic concurrency control
+func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater func(*dns.RecordSet)) error {
+	zone, err := c.getHostedZoneName(ctx, fqdn)
+	if err != nil {
+		return err
+	}
+
+	name := c.trimFqdn(fqdn, zone)
+
+	var set *dns.RecordSet
+
+	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.As(err, &respErr); respErr.StatusCode == http.StatusNotFound {
+			set = &dns.RecordSet{
+				Properties: &dns.RecordSetProperties{
+					TTL:        to.Ptr(int64(60)),
+					TxtRecords: []*dns.TxtRecord{},
+				},
+				Etag: to.Ptr(""),
+			}
+		} else {
+			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+			return stabilizeError(err)
+		}
+	} else {
+		set = &resp.RecordSet
+	}
+
+	updater(set)
+
+	if len(set.Properties.TxtRecords) == 0 {
+		if *set.Etag != "" {
+			// Etag will cause the deletion to fail if any updates happen concurrently
+			_, err = c.recordClient.Delete(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, &dns.RecordSetsClientDeleteOptions{IfMatch: set.Etag})
+			if err != nil {
+				c.log.Error(err, "Error deleting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+				return stabilizeError(err)
+			}
+		}
+
+		return nil
+	}
+
+	opts := &dns.RecordSetsClientCreateOrUpdateOptions{}
+	if *set.Etag == "" {
+		// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
+		// Only relevant when this is a new record, for updates conflicts are solved with Etag
+		opts.IfNoneMatch = to.Ptr("*")
+	} else {
+		opts.IfMatch = set.Etag
+	}
+
+	_, err = c.recordClient.CreateOrUpdate(
+		ctx,
+		c.resourceGroupName,
+		zone,
+		name,
+		dns.RecordTypeTXT,
+		*set,
+		opts)
+	if err != nil {
+		c.log.Error(err, "Error upserting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+		return stabilizeError(err)
+	}
+
+	return nil
 }
 
 // The azure-sdk library returns the contents of the HTTP requests in its
@@ -237,18 +284,20 @@ func stabilizeError(err error) error {
 			return nil
 		}
 
-		reponse := *resp
-		reponse.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
-		return &reponse
+		response := *resp
+		response.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
+		return &response
 	}
 
 	var authErr *azidentity.AuthenticationFailedError
 	if errors.As(err, &authErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		authErr.RawResponse = redactResponse(authErr.RawResponse)
 	}
 
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) {
+		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
 		respErr.RawResponse = redactResponse(respErr.RawResponse)
 	}
 

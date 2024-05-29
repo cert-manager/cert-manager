@@ -42,6 +42,7 @@ const (
 
 	// Owner: @joshvanl
 	// Alpha: v1.7.1
+	// Beta: v1.15
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -56,6 +57,7 @@ const (
 
 	// Owner: @inteon
 	// Beta: v1.13
+	// GA: v1.15
 	//
 	// DisallowInsecureCSRUsageDefinition will prevent the webhook from allowing
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
@@ -91,10 +93,10 @@ func init() {
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
+	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
 
-	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:          {Default: false, PreRelease: featuregate.Alpha},
+	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
+	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
 	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
 }

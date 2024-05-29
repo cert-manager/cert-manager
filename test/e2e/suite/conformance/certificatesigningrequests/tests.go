@@ -23,8 +23,6 @@ import (
 	"net/url"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +36,9 @@ import (
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Defines simple conformance tests that can be run against any issuer type.
@@ -49,7 +50,6 @@ import (
 // they are not active, these tests will fail.
 func (s *Suite) Define() {
 	Describe("CertificateSigningRequest with issuer type "+s.Name, func() {
-		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificatesigningrequests")
 
 		sharedCommonName := "<SHOULD_GET_REPLACED>"
@@ -361,7 +361,7 @@ func (s *Suite) Define() {
 		}
 
 		defineTest := func(test testCase) {
-			s.it(f, test.name, func(signerName string) {
+			s.it(f, test.name, func(ctx context.Context, signerName string) {
 				// Generate request CSR
 				csr, key, err := gen.CSR(test.keyAlgo, test.csrModifiers()...)
 				Expect(err).NotTo(HaveOccurred())
@@ -383,17 +383,22 @@ func (s *Suite) Define() {
 				// Provision any resources needed for the request, or modify the
 				// request based on Issuer requirements
 				if s.ProvisionFunc != nil {
-					s.ProvisionFunc(f, kubeCSR, key)
+					s.ProvisionFunc(ctx, f, kubeCSR, key)
 				}
 				// Ensure related resources are cleaned up at the end of the test
 				if s.DeProvisionFunc != nil {
-					defer s.DeProvisionFunc(f, kubeCSR)
+					defer s.DeProvisionFunc(ctx, f, kubeCSR)
 				}
 
 				// Create the request, and delete at the end of the test
 				By("Creating a CertificateSigningRequest")
 				Expect(f.CRClient.Create(ctx, kubeCSR)).NotTo(HaveOccurred())
-				defer f.CRClient.Delete(context.TODO(), kubeCSR)
+				// nolint: contextcheck // This is a cleanup context
+				defer func() {
+					cleanupCtx := context.Background()
+
+					f.CRClient.Delete(cleanupCtx, kubeCSR)
+				}()
 
 				// Approve the request for testing, so that cert-manager may sign the
 				// request.
@@ -404,19 +409,20 @@ func (s *Suite) Define() {
 					Reason:  "e2e.cert-manager.io",
 					Message: "Request approved for e2e testing.",
 				})
-				kubeCSR, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), kubeCSR.Name, kubeCSR, metav1.UpdateOptions{})
+				kubeCSR, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(ctx, kubeCSR.Name, kubeCSR, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for the status.Certificate and CA annotation to be populated in
 				// a reasonable amount of time.
 				By("Waiting for the CertificateSigningRequest to be issued...")
-				kubeCSR, err = f.Helper().WaitForCertificateSigningRequestSigned(kubeCSR.Name, time.Minute*5)
+				kubeCSR, err = f.Helper().WaitForCertificateSigningRequestSigned(ctx, kubeCSR.Name, time.Minute*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Validate that the request was signed as expected. Add extra
 				// validations which may be required for this test.
 				By("Validating the issued CertificateSigningRequest...")
-				validations := append(test.extraValidations, validation.CertificateSigningRequestSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+				validations := append([]certificatesigningrequests.ValidationFunc(nil), test.extraValidations...)
+				validations = append(validations, validation.CertificateSigningRequestSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 				err = f.Helper().ValidateCertificateSigningRequest(kubeCSR.Name, key, validations...)
 				Expect(err).NotTo(HaveOccurred())
 			}, test.requiredFeatures...)

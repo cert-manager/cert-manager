@@ -30,10 +30,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func signUsingTempCA(t *testing.T, template *x509.Certificate) *x509.Certificate {
@@ -237,7 +238,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				template.NotAfter = template.NotBefore.Add(150 * time.Millisecond)
 
 				signedCert := signUsingTempCA(t, template)
-				// Reset the NotBefor and NotAfter so we have high percision values here
+				// Reset the NotBefor and NotAfter so we have high precision values here
 				signedCert.NotBefore = time.Now()
 				signedCert.NotAfter = signedCert.NotBefore.Add(150 * time.Millisecond)
 
@@ -257,14 +258,19 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 
 				for i := 0; i < 5; i++ {
 					// Sleep for a short time to allow the DynamicSource to generate a new certificate
-					time.Sleep(100 * time.Millisecond)
+					// The certificate should get renewed after 100ms, we wait for 200ms to allow for
+					// possible delays of max 100ms (based on experiments, we noticed that issuance of
+					// a cert takes about 30ms, so 100ms should be a large enough margin).
+					time.Sleep(200 * time.Millisecond)
 
 					// Call the GetCertificate method, should return a NEW certificate
-					cert2, err := source.GetCertificate(&tls.ClientHelloInfo{})
+					newCert, err := source.GetCertificate(&tls.ClientHelloInfo{})
 					assert.NoError(t, err)
-					assert.NotNil(t, cert2)
+					assert.NotNil(t, newCert)
 
-					assert.NotEqual(t, cert.Certificate[0], cert2.Certificate[0])
+					assert.NotEqual(t, cert.Certificate[0], newCert.Certificate[0])
+
+					cert = newCert
 				}
 			},
 			cancelAtEnd: true,

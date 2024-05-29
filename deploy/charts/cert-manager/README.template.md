@@ -387,6 +387,23 @@ A comma-separated string with the host and port of the recursive nameservers cer
 > ```
 
 Forces cert-manager to use only the recursive nameservers for verification. Enabling this option could cause the DNS01 self check to take longer owing to caching performed by the recursive nameservers.
+#### **disableAutoApproval** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Option to disable cert-manager's build-in auto-approver. The auto-approver approves all CertificateRequests that reference issuers matching the 'approveSignerNames' option. This 'disableAutoApproval' option is useful when you want to make all approval decisions using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).
+#### **approveSignerNames** ~ `array`
+> Default value:
+> ```yaml
+> - issuers.cert-manager.io/*
+> - clusterissuers.cert-manager.io/*
+> ```
+
+List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.  
+ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
+
 #### **extraArgs** ~ `array`
 > Default value:
 > ```yaml
@@ -487,6 +504,14 @@ Optional annotations to add to the controller Service.
 
 Optional additional labels to add to the controller Service.
 
+#### **serviceIPFamilyPolicy** ~ `string`
+
+Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
+
+#### **serviceIPFamilies** ~ `array`
+
+Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
+
 #### **podDnsPolicy** ~ `string`
 
 Pod DNS policy.  
@@ -496,6 +521,13 @@ For more information, see [Pod's DNS Policy](https://kubernetes.io/docs/concepts
 
 Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).
 
+#### **hostAliases** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Optional hostAliases for cert-manager-controller pods. May be useful when performing ACME DNS-01 self checks.
 #### **nodeSelector** ~ `object`
 > Default value:
 > ```yaml
@@ -1067,6 +1099,20 @@ Optional additional labels to add to the Webhook Pods.
 > ```
 
 Optional additional labels to add to the Webhook Service.
+#### **webhook.serviceIPFamilyPolicy** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).
+#### **webhook.serviceIPFamilies** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
 
 The container registry to pull the webhook image from.
@@ -1783,6 +1829,24 @@ Additional volume mounts to add to the cert-manager controller container.
 > ```
 
 enableServiceLinks indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links.
+#### **extraObjects** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Create dynamic manifests via values.  
+  
+For example:
+
+```yaml
+extraObjects:
+  - |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: '{{ template "cert-manager.name" . }}-extra-configmap'
+```
 
 <!-- /AUTO-GENERATED -->
 ### Default Security Contexts

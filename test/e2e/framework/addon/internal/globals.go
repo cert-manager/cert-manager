@@ -17,6 +17,8 @@ limitations under the License.
 package internal
 
 import (
+	"context"
+
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 )
 
@@ -30,11 +32,11 @@ type Addon interface {
 
 	// For non-global addons, this function is called on all ginkgo processes. For global
 	// addons, this function is called only on ginkgo process #1.
-	Provision() error
+	Provision(ctx context.Context) error
 
 	// For non-global addons, this function is called on all ginkgo processes. For global
 	// addons, this function is called only on ginkgo process #1.
-	Deprovision() error
+	Deprovision(ctx context.Context) error
 
 	SupportsGlobal() bool
 }

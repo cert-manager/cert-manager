@@ -18,17 +18,20 @@ limitations under the License.
 
 package framework
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 type CleanupActionHandle *int
 
 var cleanupActionsLock sync.Mutex
-var cleanupActions = map[CleanupActionHandle]func(){}
+var cleanupActions = map[CleanupActionHandle]func(ctx context.Context){}
 
 // AddCleanupAction installs a function that will be called in the event of the
 // whole test being terminated.  This allows arbitrary pieces of the overall
 // test to hook into SynchronizedAfterSuite().
-func AddCleanupAction(fn func()) CleanupActionHandle {
+func AddCleanupAction(fn func(ctx context.Context)) CleanupActionHandle {
 	p := CleanupActionHandle(new(int))
 	cleanupActionsLock.Lock()
 	defer cleanupActionsLock.Unlock()
@@ -47,8 +50,8 @@ func RemoveCleanupAction(p CleanupActionHandle) {
 // RunCleanupActions runs all functions installed by AddCleanupAction.  It does
 // not remove them (see RemoveCleanupAction) but it does run unlocked, so they
 // may remove themselves.
-func RunCleanupActions() {
-	list := []func(){}
+func RunCleanupActions(ctx context.Context) {
+	list := []func(ctx context.Context){}
 	func() {
 		cleanupActionsLock.Lock()
 		defer cleanupActionsLock.Unlock()
@@ -58,6 +61,6 @@ func RunCleanupActions() {
 	}()
 	// Run unlocked.
 	for _, fn := range list {
-		fn()
+		fn(ctx)
 	}
 }

@@ -216,21 +216,45 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 
 	issuerRefPath := fldPath.Child("issuerRef")
 	if issuerRef.Name == "" {
+		// all issuerRefs must specify a name
 		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
 	}
+
 	if issuerRef.Group == "" || issuerRef.Group == internalcmapi.SchemeGroupVersion.Group {
+		// if the user leaves the group blank, it's effectively defaulted to the built-in issuers (i.e. cert-manager.io)
+		// if the cert-manager.io group is used, we can do extra validation on the Kind
+		// if an external group is used, we don't have a mechanism currently to determine which Kinds are valid for those groups
+		// so we don't check
 		switch issuerRef.Kind {
 		case "":
+			// do nothing
+
 		case "Issuer", "ClusterIssuer":
+			// do nothing
+
 		default:
-			el = append(el, field.Invalid(issuerRefPath.Child("kind"), issuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
+			kindPath := issuerRefPath.Child("kind")
+			errMsg := "must be one of Issuer or ClusterIssuer"
+
+			if issuerRef.Group == "" {
+				// Sometimes the user sets a kind for an external issuer (e.g. "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
+				// to set the group (an easy mistake to make - see https://github.com/cert-manager/csi-driver/issues/197).
+				// If the users forgets the group but otherwise has a correct Kind set for an external issuer, we can give a hint
+				// as to what they need to do to fix.
+
+				// If the user explicitly set the group to the cert-manager group though, we don't give the hint
+				errMsg += fmt.Sprintf(" (did you forget to set %s?)", kindPath.Child("group").String())
+			}
+
+			el = append(el, field.Invalid(kindPath, issuerRef.Kind, errMsg))
 		}
 	}
+
 	return el
 }
 
 func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.IPAddresses) <= 0 {
+	if len(a.IPAddresses) == 0 {
 		return nil
 	}
 	el := field.ErrorList{}
@@ -244,7 +268,7 @@ func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) 
 }
 
 func validateEmailAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.EmailAddresses) <= 0 {
+	if len(a.EmailAddresses) == 0 {
 		return nil
 	}
 	el := field.ErrorList{}

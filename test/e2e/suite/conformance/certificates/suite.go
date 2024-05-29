@@ -17,11 +17,13 @@ limitations under the License.
 package certificates
 
 import (
-	. "github.com/onsi/ginkgo/v2"
+	"context"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any
@@ -35,14 +37,14 @@ type Suite struct {
 	// returns an ObjectReference to that Issuer that will be used as the
 	// IssuerRef on Certificate resources that this suite creates.
 	// This field must be provided.
-	CreateIssuerFunc func(*framework.Framework) cmmeta.ObjectReference
+	CreateIssuerFunc func(context.Context, *framework.Framework) cmmeta.ObjectReference
 
 	// DeleteIssuerFunc is a function that is run after the test has completed
 	// in order to clean up resources created for a test (e.g. the resources
 	// created in CreateIssuerFunc).
 	// This function will be run regardless whether the test passes or fails.
 	// If not specified, this function will be skipped.
-	DeleteIssuerFunc func(*framework.Framework, cmmeta.ObjectReference)
+	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.ObjectReference)
 
 	// DomainSuffix is a suffix used on all domain requests.
 	// This is useful when the issuer being tested requires special
@@ -99,13 +101,13 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectRef
 	if s.UnsupportedFeatures.HasAny(requiredFeatures...) {
 		return
 	}
-	It(name, func() {
+	It(name, func(ctx context.Context) {
 		By("Creating an issuer resource")
-		issuerRef := s.CreateIssuerFunc(f)
+		issuerRef := s.CreateIssuerFunc(ctx, f)
 		defer func() {
 			if s.DeleteIssuerFunc != nil {
 				By("Cleaning up the issuer resource")
-				s.DeleteIssuerFunc(f, issuerRef)
+				s.DeleteIssuerFunc(ctx, f, issuerRef)
 			}
 		}()
 		fn(issuerRef)

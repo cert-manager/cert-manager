@@ -117,22 +117,22 @@ func (c *Chart) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (
 }
 
 // Provision an instance of tiller-deploy
-func (c *Chart) Provision() error {
+func (c *Chart) Provision(ctx context.Context) error {
 	if len(c.Repo.Name) > 0 && len(c.Repo.Url) > 0 {
-		err := c.addRepo()
+		err := c.addRepo(ctx)
 		if err != nil {
 			return fmt.Errorf("error adding helm repo: %v", err)
 		}
 	}
 
 	if c.UpdateDeps {
-		err := c.runDepUpdate()
+		err := c.runDepUpdate(ctx)
 		if err != nil {
 			return fmt.Errorf("error updating helm chart dependencies: %v", err)
 		}
 	}
 
-	err := c.runInstall()
+	err := c.runInstall(ctx)
 	if err != nil {
 		return fmt.Errorf("error install helm chart: %v", err)
 	}
@@ -140,15 +140,15 @@ func (c *Chart) Provision() error {
 	return nil
 }
 
-func (c *Chart) runDepUpdate() error {
-	err := c.buildHelmCmd("dep", "update", c.ChartName).Run()
+func (c *Chart) runDepUpdate(ctx context.Context) error {
+	err := c.buildHelmCmd(ctx, "dep", "update", c.ChartName).Run()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Chart) runInstall() error {
+func (c *Chart) runInstall(ctx context.Context) error {
 	args := []string{"upgrade", c.ReleaseName, c.ChartName,
 		"--install",
 		"--wait",
@@ -164,25 +164,25 @@ func (c *Chart) runInstall() error {
 		args = append(args, "--set", fmt.Sprintf("%s=%s", s.Key, s.Value))
 	}
 
-	cmd := c.buildHelmCmd(args...)
+	cmd := c.buildHelmCmd(ctx, args...)
 
 	return cmd.Run()
 }
 
-func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
+func (c *Chart) buildHelmCmd(ctx context.Context, args ...string) *exec.Cmd {
 	args = append([]string{
 		"--kubeconfig", c.config.KubeConfig,
 		"--kube-context", c.config.KubeContext,
 	}, args...)
-	cmd := exec.Command(c.config.Addons.Helm.Path, args...)
+	cmd := exec.CommandContext(ctx, c.config.Addons.Helm.Path, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd
 }
 
 // Deprovision the deployed chart
-func (c *Chart) Deprovision() error {
-	cmd := c.buildHelmCmd("delete", "--namespace", c.Namespace, c.ReleaseName)
+func (c *Chart) Deprovision(ctx context.Context) error {
+	cmd := c.buildHelmCmd(ctx, "delete", "--namespace", c.Namespace, c.ReleaseName)
 	stdoutBuf := &bytes.Buffer{}
 	cmd.Stdout = stdoutBuf
 
@@ -223,19 +223,20 @@ func (c *Chart) SupportsGlobal() bool {
 	return c.ReleaseName != ""
 }
 
-func (c *Chart) Logs() (map[string]string, error) {
+func (c *Chart) Logs(ctx context.Context) (map[string]string, error) {
 	kc := c.Base.Details().KubeClient
-	oldLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
+	oldLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(ctx, metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
 	if err != nil {
 		return nil, err
 	}
 
 	// also check pods with the new style labels used in the cert-manager chart
-	newLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + c.ReleaseName})
+	newLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + c.ReleaseName})
 	if err != nil {
 		return nil, err
 	}
-	podList := append(oldLabelPods.Items, newLabelPods.Items...)
+	podList := append([]corev1.Pod(nil), oldLabelPods.Items...)
+	podList = append(podList, newLabelPods.Items...)
 
 	out := make(map[string]string)
 	for _, pod := range podList {
@@ -244,7 +245,7 @@ func (c *Chart) Logs() (map[string]string, error) {
 				resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
 					Container: con.Name,
 					Previous:  b,
-				}).Do(context.TODO())
+				}).Do(ctx)
 
 				err := resp.Error()
 				if err != nil {
@@ -271,8 +272,8 @@ func (c *Chart) Logs() (map[string]string, error) {
 	return out, nil
 }
 
-func (c *Chart) addRepo() error {
-	err := c.buildHelmCmd("repo", "add", c.Repo.Name, c.Repo.Url).Run()
+func (c *Chart) addRepo(ctx context.Context) error {
+	err := c.buildHelmCmd(ctx, "repo", "add", c.Repo.Name, c.Repo.Url).Run()
 	if err != nil {
 		return err
 	}

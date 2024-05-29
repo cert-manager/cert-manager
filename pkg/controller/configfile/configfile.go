@@ -19,9 +19,10 @@ package configfile
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/scheme"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type ControllerConfigFile struct {

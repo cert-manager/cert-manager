@@ -23,8 +23,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -35,10 +33,14 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	f := framework.NewDefaultFramework("create-acme-issuer")
+	ctx := context.TODO()
 
 	issuerName := "test-acme-issuer"
 
@@ -60,7 +62,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -69,7 +71,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			func(i *v1.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
@@ -99,7 +101,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -109,7 +111,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 		By("Verifying the ACME account URI is set")
 		var finalURI string
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			func(i *v1.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
@@ -143,7 +145,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -152,7 +154,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the ACME account URI has been recovered correctly")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			func(i *v1.Issuer) (bool, error) {
 				uri := i.GetStatus().ACMEStatus().URI
@@ -180,7 +182,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become non-Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -202,7 +204,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -211,7 +213,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			func(i *v1.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
@@ -229,7 +231,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		}
 
 		By("Verifying the ACME account email has been registered")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			func(i *v1.Issuer) (bool, error) {
 				registeredEmail := i.GetStatus().ACMEStatus().LastRegisteredEmail
@@ -248,7 +250,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -257,7 +259,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the changed ACME account email has been registered")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			func(i *v1.Issuer) (bool, error) {
 				registeredEmail := i.GetStatus().ACMEStatus().LastRegisteredEmail
@@ -299,7 +301,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			acmeIssuer.Name,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,

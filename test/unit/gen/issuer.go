@@ -17,10 +17,11 @@ limitations under the License.
 package gen
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type IssuerModifier func(v1.GenericIssuer)

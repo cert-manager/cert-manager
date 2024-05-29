@@ -54,7 +54,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run all required controllers
-	stopControllers := runAllControllers(t, ctx, config)
+	stopControllers := runAllControllers(t, config)
 	defer stopControllers()
 
 	_, _, cmCl, _, _ := framework.NewClients(t, config)
@@ -136,7 +136,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
-	var secondReq *cmapi.CertificateRequest
+	var secondReq cmapi.CertificateRequest
 	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -151,7 +151,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 				continue
 			}
 
-			secondReq = &req // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+			secondReq = req
 			return true, nil
 		}
 
@@ -191,7 +191,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run all required controllers
-	stopControllers := runAllControllers(t, ctx, config)
+	stopControllers := runAllControllers(t, config)
 	defer stopControllers()
 
 	_, _, cmCl, _, _ := framework.NewClients(t, config)
@@ -273,7 +273,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
-	var secondReq *cmapi.CertificateRequest
+	var secondReq cmapi.CertificateRequest
 	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -288,7 +288,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 				continue
 			}
 
-			secondReq = &req // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+			secondReq = req
 			return true, nil
 		}
 
@@ -320,7 +320,7 @@ type comparablePublicKey interface {
 	Equal(crypto.PublicKey) bool
 }
 
-func runAllControllers(t *testing.T, ctx context.Context, config *rest.Config) framework.StopFunc {
+func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 	log := logf.Log
 	clock := clock.RealClock{}
@@ -341,22 +341,22 @@ func runAllControllers(t *testing.T, ctx context.Context, config *rest.Config) f
 
 	// TODO: set field mananager before calling each of those- is that what we do in actual code?
 	revCtrl, revQueue, revMustSync := revisionmanager.NewController(log, &controllerContext)
-	revisionManager := controllerpkg.NewController(ctx, "revisionmanager_controller", metrics, revCtrl.ProcessItem, revMustSync, nil, revQueue)
+	revisionManager := controllerpkg.NewController("revisionmanager_controller", metrics, revCtrl.ProcessItem, revMustSync, nil, revQueue)
 
 	readyCtrl, readyQueue, readyMustSync := readiness.NewController(log, &controllerContext, policies.NewReadinessPolicyChain(clock), pki.RenewalTime, readiness.BuildReadyConditionFromChain)
-	readinessManager := controllerpkg.NewController(ctx, "readiness_controller", metrics, readyCtrl.ProcessItem, readyMustSync, nil, readyQueue)
+	readinessManager := controllerpkg.NewController("readiness_controller", metrics, readyCtrl.ProcessItem, readyMustSync, nil, readyQueue)
 
 	issueCtrl, issueQueue, issueMustSync := issuing.NewController(log, &controllerContext)
-	issueManager := controllerpkg.NewController(ctx, "issuing_controller", metrics, issueCtrl.ProcessItem, issueMustSync, nil, issueQueue)
+	issueManager := controllerpkg.NewController("issuing_controller", metrics, issueCtrl.ProcessItem, issueMustSync, nil, issueQueue)
 
 	reqCtrl, reqQueue, reqMustSync := requestmanager.NewController(log, &controllerContext)
-	requestManager := controllerpkg.NewController(ctx, "requestmanager_controller", metrics, reqCtrl.ProcessItem, reqMustSync, nil, reqQueue)
+	requestManager := controllerpkg.NewController("requestmanager_controller", metrics, reqCtrl.ProcessItem, reqMustSync, nil, reqQueue)
 
 	keyCtrl, keyQueue, keyMustSync := keymanager.NewController(log, &controllerContext)
-	keyManager := controllerpkg.NewController(ctx, "keymanager_controller", metrics, keyCtrl.ProcessItem, keyMustSync, nil, keyQueue)
+	keyManager := controllerpkg.NewController("keymanager_controller", metrics, keyCtrl.ProcessItem, keyMustSync, nil, keyQueue)
 
 	triggerCtrl, triggerQueue, triggerMustSync := trigger.NewController(log, &controllerContext, policies.NewTriggerPolicyChain(clock).Evaluate)
-	triggerManager := controllerpkg.NewController(ctx, "trigger_controller", metrics, triggerCtrl.ProcessItem, triggerMustSync, nil, triggerQueue)
+	triggerManager := controllerpkg.NewController("trigger_controller", metrics, triggerCtrl.ProcessItem, triggerMustSync, nil, triggerQueue)
 
 	return framework.StartInformersAndControllers(t, factory, cmFactory, revisionManager, requestManager, keyManager, triggerManager, readinessManager, issueManager)
 }

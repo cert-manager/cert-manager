@@ -64,13 +64,13 @@ upload-release: release | $(NEEDS_RCLONE)
 ifeq ($(strip $(RELEASE_TARGET_BUCKET)),)
 	$(error Trying to upload-release but RELEASE_TARGET_BUCKET is empty)
 endif
-	$(RCLONE) copyto ./$(bin_dir)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(RELEASE_VERSION)
+	$(RCLONE) --gcs-bucket-policy-only copyto ./$(bin_dir)/release :gcs:$(RELEASE_TARGET_BUCKET)/stage/gcb/release/$(VERSION)
 
 # Takes all metadata files in $(bin_dir)/metadata and combines them into one.
 
 $(bin_dir)/release/metadata.json: $(wildcard $(bin_dir)/metadata/*.json) | $(bin_dir)/release
 	jq -n \
-		--arg releaseVersion "$(RELEASE_VERSION)" \
+		--arg releaseVersion "$(VERSION)" \
 		--arg buildSource "make" \
 		--arg gitCommitRef "$(GITCOMMIT)" \
 		'.releaseVersion = $$releaseVersion | .gitCommitRef = $$gitCommitRef | .buildSource = $$buildSource | .artifacts += [inputs]' $^ > $@
@@ -86,12 +86,12 @@ $(bin_dir)/release/cert-manager-server-linux-amd64.tar.gz $(bin_dir)/release/cer
 	@$(eval CTR_BASENAME := $(basename $(basename $(notdir $@))))
 	@$(eval CTR_SCRATCHDIR := $(bin_dir)/scratch/release-container-bundle/$(CTR_BASENAME))
 	mkdir -p $(CTR_SCRATCHDIR)/server/images
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/version
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/acmesolver.docker_tag
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/cainjector.docker_tag
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/controller.docker_tag
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/webhook.docker_tag
-	echo "$(RELEASE_VERSION)" > $(CTR_SCRATCHDIR)/server/images/startupapicheck.docker_tag
+	echo "$(VERSION)" > $(CTR_SCRATCHDIR)/version
+	echo "$(VERSION)" > $(CTR_SCRATCHDIR)/server/images/acmesolver.docker_tag
+	echo "$(VERSION)" > $(CTR_SCRATCHDIR)/server/images/cainjector.docker_tag
+	echo "$(VERSION)" > $(CTR_SCRATCHDIR)/server/images/controller.docker_tag
+	echo "$(VERSION)" > $(CTR_SCRATCHDIR)/server/images/webhook.docker_tag
+	echo "$(VERSION)" > $(CTR_SCRATCHDIR)/server/images/startupapicheck.docker_tag
 	cp $(bin_dir)/scratch/cert-manager.license $(CTR_SCRATCHDIR)/LICENSES
 	gunzip -c $(bin_dir)/containers/cert-manager-acmesolver-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/acmesolver.tar
 	gunzip -c $(bin_dir)/containers/cert-manager-cainjector-linux-$*.tar.gz >$(CTR_SCRATCHDIR)/server/images/cainjector.tar

@@ -23,13 +23,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -39,10 +39,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/go-logr/logr"
 )
 
 const (
@@ -150,11 +148,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	}
 
 	var template *x509.Certificate
-	if !utilfeature.DefaultMutableFeatureGate.Enabled(feature.DisallowInsecureCSRUsageDefinition) {
-		template, err = pki.DeprecatedCertificateTemplateFromCertificateRequestAndAllowInsecureCSRUsageDefinition(cr)
-	} else {
-		template, err = pki.CertificateTemplateFromCertificateRequest(cr)
-	}
+	template, err = pki.CertificateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		message := "Error generating certificate template"
 		s.reporter.Failed(cr, err, "ErrorGenerating", message)

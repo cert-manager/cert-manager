@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,12 +35,6 @@ import (
 
 const (
 	ControllerName = "gateway-shim"
-
-	// resyncPeriod is set to 10 hours across cert-manager. These 10 hours come
-	// from a discussion on the controller-runtime project that boils down to:
-	// never change this without an explicit reason.
-	// https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
-	resyncPeriod = 10 * time.Hour
 )
 
 type controller struct {

@@ -20,9 +20,6 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	api "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -45,6 +42,9 @@ import (
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from
@@ -114,7 +114,7 @@ func NewFramework(baseName string, cfg *config.Config) *Framework {
 }
 
 // BeforeEach gets a client and makes a namespace.
-func (f *Framework) BeforeEach() {
+func (f *Framework) BeforeEach(ctx context.Context) {
 	f.cleanupHandle = AddCleanupAction(f.AfterEach)
 
 	By("Creating a kubernetes client")
@@ -146,13 +146,13 @@ func (f *Framework) BeforeEach() {
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Building a namespace api object")
-	f.Namespace, err = f.CreateKubeNamespace(f.BaseName)
+	f.Namespace, err = f.CreateKubeNamespace(ctx, f.BaseName)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Using the namespace " + f.Namespace.Name)
 
 	By("Building a ResourceQuota api object")
-	_, err = f.CreateKubeResourceQuota()
+	_, err = f.CreateKubeResourceQuota(ctx)
 	Expect(err).NotTo(HaveOccurred())
 
 	f.helper.CMClient = f.CertManagerClientSet
@@ -160,7 +160,7 @@ func (f *Framework) BeforeEach() {
 }
 
 // AfterEach deletes the namespace, after reading its events.
-func (f *Framework) AfterEach() {
+func (f *Framework) AfterEach(ctx context.Context) {
 	RemoveCleanupAction(f.cleanupHandle)
 
 	f.printAddonLogs()
@@ -172,12 +172,12 @@ func (f *Framework) AfterEach() {
 	for i := len(f.requiredAddons) - 1; i >= 0; i-- {
 		a := f.requiredAddons[i]
 		By("De-provisioning test-scoped addon")
-		err := a.Deprovision()
+		err := a.Deprovision(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
 	By("Deleting test namespace")
-	err := f.DeleteKubeNamespace(f.Namespace.Name)
+	err := f.DeleteKubeNamespace(ctx, f.Namespace.Name)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -220,7 +220,7 @@ type loggableAddon interface {
 func (f *Framework) RequireAddon(a addon.Addon) {
 	f.requiredAddons = append(f.requiredAddons, a)
 
-	BeforeEach(func() {
+	BeforeEach(func(ctx context.Context) {
 		By("Provisioning test-scoped addon")
 		_, err := a.Setup(f.Config)
 		if errors.IsSkip(err) {
@@ -228,7 +228,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 		}
 		Expect(err).NotTo(HaveOccurred())
 
-		err = a.Provision()
+		err = a.Provision(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	})
 }
@@ -237,9 +237,9 @@ func (f *Framework) Helper() *helper.Helper {
 	return f.helper
 }
 
-func (f *Framework) CertificateDurationValid(c *v1.Certificate, duration, fuzz time.Duration) {
+func (f *Framework) CertificateDurationValid(ctx context.Context, c *v1.Certificate, duration, fuzz time.Duration) {
 	By("Verifying TLS certificate exists")
-	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), c.Spec.SecretName, metav1.GetOptions{})
+	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, c.Spec.SecretName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {

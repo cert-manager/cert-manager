@@ -36,7 +36,7 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 	sansGenerator := func(t *testing.T, generalNames []asn1.RawValue, critical bool) pkix.Extension {
 		val, err := asn1.Marshal(generalNames)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 
 		return pkix.Extension{

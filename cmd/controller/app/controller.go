@@ -25,6 +25,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -38,6 +39,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -51,7 +53,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
-	"github.com/go-logr/logr"
 )
 
 const (
@@ -116,13 +117,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	g.Go(func() error {
 		<-rootCtx.Done()
 		// allow a timeout for graceful shutdown
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if err := metricsServer.Shutdown(ctx); err != nil {
-			return err
-		}
-		return nil
+		// nolint: contextcheck
+		return metricsServer.Shutdown(shutdownCtx)
 	})
 	g.Go(func() error {
 		log.V(logf.InfoLevel).Info("starting metrics server", "address", metricsLn.Addr())
@@ -149,13 +148,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		g.Go(func() error {
 			<-rootCtx.Done()
 			// allow a timeout for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			if err := profilerServer.Shutdown(ctx); err != nil {
-				return err
-			}
-			return nil
+			// nolint: contextcheck
+			return profilerServer.Shutdown(shutdownCtx)
 		})
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting profiler", "address", profilerLn.Addr())
@@ -250,7 +247,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting controller")
 
-			return iface.Run(opts.NumberOfConcurrentWorkers, rootCtx.Done())
+			return iface.Run(opts.NumberOfConcurrentWorkers, rootCtx)
 		})
 	}
 
@@ -259,7 +256,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
 	ctx.HTTP01ResourceMetadataInformersFactory.Start(rootCtx.Done())
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
 		ctx.GWShared.Start(rootCtx.Done())
 	}
 
@@ -358,6 +355,10 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
 			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
 		},
+
+		ConfigOptions: controller.ConfigOptions{
+			EnableGatewayAPI: opts.EnableGatewayAPI,
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -411,7 +412,7 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 	return nil
 }
 
-func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
+func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
 	switch {
 	case tlsConfig.FilesystemConfigProvided():
 		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", tlsConfig.Filesystem.KeyFile, "certificate", tlsConfig.Filesystem.CertFile)

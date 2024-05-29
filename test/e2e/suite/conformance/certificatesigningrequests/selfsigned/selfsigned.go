@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +32,9 @@ import (
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
@@ -53,7 +54,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	}).Define()
 })
 
-func provision(f *framework.Framework, csr *certificatesv1.CertificateSigningRequest, key crypto.Signer) {
+func provision(ctx context.Context, f *framework.Framework, csr *certificatesv1.CertificateSigningRequest, key crypto.Signer) {
 	By("Creating SelfSigned requester key Secret")
 	ref, _ := util.SignerIssuerRefFromSignerName(csr.Spec.SignerName)
 	ns := "cert-manager"
@@ -64,7 +65,7 @@ func provision(f *framework.Framework, csr *certificatesv1.CertificateSigningReq
 	keyPEM, err := pki.EncodePKCS8PrivateKey(key)
 	Expect(err).NotTo(HaveOccurred(), "failed to encode requester's private key")
 
-	secret, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
+	secret, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-requester-key-",
 			Namespace:    ns,
@@ -80,7 +81,7 @@ func provision(f *framework.Framework, csr *certificatesv1.CertificateSigningReq
 	}
 	csr.Annotations[experimentalapi.CertificateSigningRequestPrivateKeyAnnotationKey] = secret.Name
 }
-func deProvision(f *framework.Framework, csr *certificatesv1.CertificateSigningRequest) {
+func deProvision(ctx context.Context, f *framework.Framework, csr *certificatesv1.CertificateSigningRequest) {
 	By("Deleting SelfSigned requester key Secret")
 	ref, _ := util.SignerIssuerRefFromSignerName(csr.Spec.SignerName)
 	ns := f.Config.Addons.CertManager.ClusterResourceNamespace
@@ -88,14 +89,14 @@ func deProvision(f *framework.Framework, csr *certificatesv1.CertificateSigningR
 		ns = ref.Namespace
 	}
 
-	err := f.KubeClientSet.CoreV1().Secrets(ns).Delete(context.TODO(), csr.Annotations[experimentalapi.CertificateSigningRequestPrivateKeyAnnotationKey], metav1.DeleteOptions{})
+	err := f.KubeClientSet.CoreV1().Secrets(ns).Delete(ctx, csr.Annotations[experimentalapi.CertificateSigningRequestPrivateKeyAnnotationKey], metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create requester's private key Secret")
 }
 
-func createSelfSignedIssuer(f *framework.Framework) string {
+func createSelfSignedIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a SelfSigned Issuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-issuer-",
 		},
@@ -109,16 +110,16 @@ func createSelfSignedIssuer(f *framework.Framework) string {
 
 	// wait for issuer to be ready
 	By("Waiting for Self Signed Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", f.Namespace.Name, issuer.Name)
 }
 
-func createSelfSignedClusterIssuer(f *framework.Framework) string {
+func createSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a SelfSigned ClusterIssuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-cluster-issuer-",
 		},
@@ -132,14 +133,14 @@ func createSelfSignedClusterIssuer(f *framework.Framework) string {
 
 	// wait for issuer to be ready
 	By("Waiting for Self Signed Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }
 
-func deleteSelfSignedClusterIssuer(f *framework.Framework, signerName string) {
+func deleteSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework, signerName string) {
 	ref, _ := util.SignerIssuerRefFromSignerName(signerName)
-	err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+	err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }

@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -39,17 +37,20 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type injectableTest struct {
 	makeInjectable func(namePrefix string) client.Object
 	getCAs         func(runtime.Object) [][]byte
-	subject        string
 	disabled       string
 }
 
 var _ = framework.CertManagerDescribe("CA Injector", func() {
 	f := framework.NewDefaultFramework("cainjector")
+	ctx := context.TODO()
 
 	issuerName := "inject-cert-issuer"
 	secretName := "serving-certs-data"
@@ -66,7 +67,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 				By("Waiting for Issuer to become Ready")
-				err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+				err := util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 					issuerName,
 					certmanager.IssuerCondition{
 						Type:   certmanager.IssuerConditionReady,
@@ -100,7 +101,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				)
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 				By("grabbing the corresponding secret")
@@ -176,7 +177,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return nil
 				})
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*2)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")

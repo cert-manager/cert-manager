@@ -6,9 +6,9 @@
      as well as in Helm charts, etc.
      if you change its location or name, you'll need to update several other repos too! -->
 
-<p align="center"><a href="https://prow.build-infra.jetstack.net/?job=ci-cert-manager-master-make-test">
+<p align="center"><a href="https://prow.infra.cert-manager.io/?job=ci-cert-manager-master-make-test">
 <!-- prow build badge, godoc, and go report card-->
-<img alt="Build Status" src="https://prow.build-infra.jetstack.net/badge.svg?jobs=ci-cert-manager-master-make-test">
+<img alt="Build Status" src="https://prow.infra.cert-manager.io/badge.svg?jobs=ci-cert-manager-master-make-test">
 </a>
 <a href="https://godoc.org/github.com/cert-manager/cert-manager"><img src="https://godoc.org/github.com/cert-manager/cert-manager?status.svg"></a>
 <a href="https://goreportcard.com/report/github.com/cert-manager/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cert-manager/cert-manager" /></a>
@@ -37,11 +37,21 @@ Documentation for cert-manager can be found at [cert-manager.io](https://cert-ma
 For the common use-case of automatically issuing TLS certificates for
 Ingress resources, see the [cert-manager nginx-ingress quick start guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
-For a more comprensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
+For a more comprehensive guide to issuing your first certificate, see our [getting started guide](https://cert-manager.io/docs/getting-started/).
 
 ### Installation
 
 [Installation](https://cert-manager.io/docs/installation/) is documented on the website, with a variety of supported methods.
+
+## Developing cert-manager
+
+We actively welcome contributions and we support both Linux and macOS environments for development.
+
+Different platforms have different requirements; we document everything on our [Building cert-manager](https://cert-manager.io/docs/contributing/building/)
+website page.
+
+Note in particular that macOS has several extra requirements, to ensure that modern tools are installed and available. Read the page before
+getting started!
 
 ## Troubleshooting
 

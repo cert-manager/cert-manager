@@ -140,6 +140,9 @@ spec:
           {{- with .Values.dns01RecursiveNameservers }}
           - --dns01-recursive-nameservers={{ . }}
           {{- end }}
+          {{- if .Values.disableAutoApproval }}
+          - --controllers=-certificaterequests-approver
+          {{- end }}
           ports:
           - containerPort: 9402
             name: http-metrics
@@ -153,8 +156,8 @@ spec:
           {{- end }}
           {{- if or .Values.config .Values.volumeMounts }}
           volumeMounts:
-            {{- if .Values.config}}
-            - name: config
+            {{- if .Values.config }}
+            - name: config 
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.volumeMounts }}
@@ -225,4 +228,7 @@ spec:
       {{- with .Values.podDnsConfig }}
       dnsConfig:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hostAliases }}
+      hostAliases: {{ toYaml . | nindent 8 }}
       {{- end }}

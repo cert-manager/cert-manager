@@ -26,13 +26,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/component-base/logs"
 	logsapi "k8s.io/component-base/logs/api/v1"
-	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/klog/v2"
 
 	"github.com/cert-manager/cert-manager/pkg/api"
+
+	_ "k8s.io/component-base/logs/json/register"
 )
 
 var Log = klog.TODO().WithName("cert-manager")
@@ -87,10 +87,6 @@ func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 
 func ValidateAndApply(opts *logsapi.LoggingConfiguration) error {
 	return logsapi.ValidateAndApply(opts, nil)
-}
-
-func ValidateAndApplyAsField(opts *logsapi.LoggingConfiguration, fldPath *field.Path) error {
-	return logsapi.ValidateAndApplyAsField(opts, nil, fldPath)
 }
 
 // FlushLogs flushes logs immediately.

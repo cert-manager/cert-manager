@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
@@ -97,16 +96,21 @@ functionality for cert-manager.`,
 				return err
 			}
 
-			if err := validation.ValidateWebhookConfiguration(webhookConfig); err != nil {
-				return fmt.Errorf("error validating flags: %w", err)
+			if err := validation.ValidateWebhookConfiguration(webhookConfig, nil); len(err) > 0 {
+				return fmt.Errorf("error validating flags: %w", err.ToAggregate())
 			}
 
-			if err := logf.ValidateAndApplyAsField(&webhookConfig.Logging, field.NewPath("logging")); err != nil {
+			// ValidateWebhookConfiguration should already have validated the
+			// logging flags, the logging API does not have a Apply-only function
+			// so we validate again here. This should not catch any validation errors
+			// anymore.
+			if err := logf.ValidateAndApply(&webhookConfig.Logging); err != nil {
 				return fmt.Errorf("failed to validate webhook logging flags: %w", err)
 			}
 
 			return nil
 		},
+		// nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context(), webhookConfig)
 		},

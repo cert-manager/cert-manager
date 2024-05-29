@@ -24,9 +24,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"net"
-
 	"fmt"
+	"net"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -48,7 +47,7 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]
 	case "", cmapi.RSAKeyAlgorithm:
 		return rsaPrivateKeyMatchesSpec(pk, spec)
 	case cmapi.Ed25519KeyAlgorithm:
-		return ed25519PrivateKeyMatchesSpec(pk, spec)
+		return ed25519PrivateKeyMatchesSpec(pk)
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
 	default:
@@ -98,7 +97,7 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 	return violations, nil
 }
 
-func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey) ([]string, error) {
 	_, ok := pk.(ed25519.PrivateKey)
 	if !ok {
 		return []string{"spec.privateKey.algorithm"}, nil

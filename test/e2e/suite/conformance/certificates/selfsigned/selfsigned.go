@@ -20,14 +20,15 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
@@ -43,10 +44,10 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	}).Define()
 })
 
-func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
+func createSelfSignedIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned Issuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-issuer-",
 		},
@@ -56,7 +57,7 @@ func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 
 	// wait for issuer to be ready
 	By("Waiting for Self Signed Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -66,15 +67,15 @@ func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	}
 }
 
-func deleteSelfSignedClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
-	err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+func deleteSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework, issuer cmmeta.ObjectReference) {
+	err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, issuer.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+func createSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned ClusterIssuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-cluster-issuer-",
 		},
@@ -84,7 +85,7 @@ func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReferenc
 
 	// wait for issuer to be ready
 	By("Waiting for Self Signed Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{

@@ -22,9 +22,6 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -35,6 +32,9 @@ import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
@@ -172,14 +172,14 @@ type acmeIssuerProvisioner struct {
 	secretNamespace string
 }
 
-func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
+func (a *acmeIssuerProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.ObjectReference) {
 	if a.eab != nil {
-		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(context.TODO(), a.eab.Key.Name, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(ctx, a.eab.Key.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 
 	if ref.Kind == "ClusterIssuer" {
-		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
@@ -190,8 +190,8 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 // - pebble
 // - a properly configured Issuer resource
 
-func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, "")
+func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(ctx, f, "")
 
 	By("Creating an ACME HTTP01 Ingress Issuer")
 	issuer := &cmapi.Issuer{
@@ -201,12 +201,12 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(f *framework.Framework
 		Spec: a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme HTTP01 Ingress Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -216,8 +216,8 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(f *framework.Framework
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating an ACME HTTP01 Ingress ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
@@ -227,12 +227,12 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(f *framework.Fr
 		Spec: a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme HTTP01 Ingress Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -242,8 +242,8 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(f *framework.Fr
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, "")
+func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(ctx, f, "")
 
 	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
 	labels := make(map[string]string)
@@ -263,12 +263,12 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(f *framework.Framework
 		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme HTTP01 Gateway Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -278,7 +278,7 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(f *framework.Framework
 	}
 }
 
-func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a Public ACME Server Staging HTTP01 Issuer")
 
 	var PublicACMEServerStagingURL string
@@ -295,12 +295,12 @@ func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *fra
 		Spec: a.createHTTP01IngressIssuerSpec(PublicACMEServerStagingURL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create Public ACME Server Staging HTTP01 issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for Public ACME Server Staging HTTP01 Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -310,8 +310,8 @@ func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *fra
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
 	labels := make(map[string]string)
@@ -332,11 +332,11 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(f *framework.Fr
 		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	By("Waiting for acme HTTP01 Gateway Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -406,8 +406,8 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, f.Namespace.Name)
+func (a *acmeIssuerProvisioner) createDNS01Issuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(ctx, f, f.Namespace.Name)
 
 	By("Creating an ACME DNS01 Issuer")
 	issuer := &cmapi.Issuer{
@@ -416,12 +416,12 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 		},
 		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
 	}
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme DNS01 Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -431,8 +431,8 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating an ACME DNS01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
@@ -441,12 +441,12 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 		},
 		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
 	}
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme DNS01 Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return cmmeta.ObjectReference{
@@ -482,7 +482,7 @@ func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL, dnsServer strin
 	}
 }
 
-func (a *acmeIssuerProvisioner) ensureEABSecret(f *framework.Framework, ns string) {
+func (a *acmeIssuerProvisioner) ensureEABSecret(ctx context.Context, f *framework.Framework, ns string) {
 	if a.eab == nil {
 		return
 	}
@@ -490,7 +490,7 @@ func (a *acmeIssuerProvisioner) ensureEABSecret(f *framework.Framework, ns strin
 	if ns == "" {
 		ns = f.Namespace.Name
 	}
-	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
+	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "external-account-binding-",
 			Namespace:    ns,

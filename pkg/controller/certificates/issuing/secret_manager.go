@@ -55,7 +55,7 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 	log = log.WithValues("secret", secret.Name)
 
 	// If there is no certificate or private key data available at the target
-	// Secret then exit early. The absense of these keys should cause an issuance
+	// Secret then exit early. The absence of these keys should cause an issuance
 	// of the Certificate, so there is no need to run post issuance checks.
 	if secret.Data == nil ||
 		len(secret.Data[corev1.TLSCertKey]) == 0 ||
@@ -85,11 +85,11 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 	if isViolation {
 		switch reason {
 		case policies.InvalidCertificate, policies.ManagedFieldsParseError:
-			//An error here indicates that the managed fields are malformed and the
-			//decoder doesn't understand the managed fields on the Secret, or the
-			//signed certificate data could not be decoded. There is nothing more the
-			//controller can do here, so we exit nil so this controller doesn't end in
-			//an infinite loop.
+			// An error here indicates that the managed fields are malformed and the
+			// decoder doesn't understand the managed fields on the Secret, or the
+			// signed certificate data could not be decoded. There is nothing more the
+			// controller can do here, so we exit nil so this controller doesn't end in
+			// an infinite loop.
 			log.Error(errors.New(message), "failed to determine whether the SecretTemplate matches Secret")
 			return nil
 		default:

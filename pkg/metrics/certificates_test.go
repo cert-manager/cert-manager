@@ -17,7 +17,6 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -195,7 +194,7 @@ func TestCertificateMetrics(t *testing.T) {
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
 			m := New(logtesting.NewTestLogger(t), clock.RealClock{})
-			m.UpdateCertificate(context.TODO(), test.crt)
+			m.UpdateCertificate(test.crt)
 
 			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
 				strings.NewReader(expiryMetadata+test.expectedExpiry),
@@ -279,9 +278,9 @@ func TestCertificateCache(t *testing.T) {
 	)
 
 	// Observe all three Certificate metrics
-	m.UpdateCertificate(context.TODO(), crt1)
-	m.UpdateCertificate(context.TODO(), crt2)
-	m.UpdateCertificate(context.TODO(), crt3)
+	m.UpdateCertificate(crt1)
+	m.UpdateCertificate(crt2)
+	m.UpdateCertificate(crt3)
 
 	// Check all three metrics exist
 	if err := testutil.CollectAndCompare(m.certificateReadyStatus,

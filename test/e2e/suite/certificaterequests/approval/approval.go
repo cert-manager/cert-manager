@@ -23,13 +23,12 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	crdapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	crdclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
@@ -41,6 +40,9 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // This test ensures that the approval condition may only be set by users who
@@ -53,9 +55,10 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		saclient clientset.Interface
 		request  *cmapi.CertificateRequest
 
-		crd       *crdapi.CustomResourceDefinition
-		crdclient crdclientset.Interface
-		group     string
+		crd        *crdapi.CustomResourceDefinition
+		crdclient  crdclientset.Interface
+		issuerKind string
+		group      string
 	)
 
 	// isNotFoundError returns true if an error from the cert-manager admission
@@ -106,6 +109,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		var err error
 		crdclient, err = crdclientset.NewForConfig(f.KubeClientConfig)
 		Expect(err).NotTo(HaveOccurred())
+		issuerKind = fmt.Sprintf("Issuer%s", rand.String(5))
 		group = e2eutil.RandomSubdomain("example.io")
 
 		sa, err = f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), &corev1.ServiceAccount{
@@ -198,7 +202,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 
 		kubeConfig.QPS = 9000
 		kubeConfig.Burst = 9000
-		kubeConfig.BearerToken = fmt.Sprintf("%s", token)
+		kubeConfig.BearerToken = string(token)
 		kubeConfig.CertData = nil
 		kubeConfig.KeyData = nil
 		kubeConfig.Timeout = time.Second * 20
@@ -214,7 +218,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 			gen.SetCertificateRequestCSR(csr),
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 				Name:  "test-issuer",
-				Kind:  "Issuer",
+				Kind:  issuerKind,
 				Group: group,
 			}),
 		)
@@ -239,7 +243,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("attempting to approve a certificate request without the approve permission should error", func() {
-		createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		createCRD(crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		approvedCR := request.DeepCopy()
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		err := retry.OnError(retry.DefaultBackoff, retryOnNotFound(approvedCR.Spec.IssuerRef), func() error {
@@ -250,7 +254,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("attempting to deny a certificate request without the approve permission should error", func() {
-		createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		createCRD(crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		deniedCR := request.DeepCopy()
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		err := retry.OnError(retry.DefaultBackoff, retryOnNotFound(deniedCR.Spec.IssuerRef), func() error {
@@ -292,7 +296,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to approve requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -305,7 +309,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to deny requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -318,7 +322,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to approve requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -330,8 +334,21 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		})).ToNot(HaveOccurred())
 	})
 
+	It("a service account with the approve permissions for cluster scoped clusterissuers.example.io/test-issuer should be able to approve requests", func() {
+		crd = createCRD(crdclient, group, "clusterissuers", issuerKind, crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("clusterissuers.%s/test-issuer", group))
+
+		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		Expect(retry.OnError(retry.DefaultBackoff, retryOnNotFound(approvedCR.Spec.IssuerRef), func() error {
+			_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+			return err
+		})).ToNot(HaveOccurred())
+	})
+
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/<namespace>.test-issuer should not be able to approve requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", f.Namespace.Name, group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -345,7 +362,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/<namespace>.test-issuer should be able to approve requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", group, f.Namespace.Name))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -358,7 +375,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/test-issuer should not be able to approve requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -374,7 +391,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	//
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to deny requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -387,7 +404,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/<namespace>.test-issuer should not be able to deny requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", f.Namespace.Name, group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -401,7 +418,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/<namespace>.test-issuer should be able to deny requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", group, f.Namespace.Name))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
@@ -414,7 +431,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/test-issuer should not be able to denied requests", func() {
-		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		crd = createCRD(crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})

@@ -28,8 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	_ "github.com/cert-manager/cert-manager/e2e-tests/suite"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite"
 )
 
 func init() {

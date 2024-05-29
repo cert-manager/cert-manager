@@ -27,7 +27,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -105,7 +104,6 @@ func TestMetricsController(t *testing.T) {
 	}
 	ctrl, queue, mustSync := controllermetrics.NewController(&controllerContext)
 	c := controllerpkg.NewController(
-		ctx,
 		"metrics_test",
 		metricsHandler,
 		ctrl.ProcessItem,
@@ -132,10 +130,15 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	testMetrics := func(expectedOutput string) error {
-		resp, err := http.DefaultClient.Get(metricsEndpoint)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, metricsEndpoint, nil)
 		if err != nil {
 			return err
 		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
 		output, err := io.ReadAll(resp.Body)
 		if err != nil {

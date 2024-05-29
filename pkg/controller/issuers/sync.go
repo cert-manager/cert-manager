@@ -67,15 +67,15 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.Issuer) (err error) {
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(ctx context.Context, old, new *cmapi.Issuer) error {
-	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
+func (c *controller) updateIssuerStatus(ctx context.Context, oldIssuer, newIssuer *cmapi.Issuer) error {
+	if apiequality.Semantic.DeepEqual(oldIssuer.Status, newIssuer.Status) {
 		return nil
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		return internalissuers.ApplyIssuerStatus(ctx, c.cmClient, c.fieldManager, new)
+		return internalissuers.ApplyIssuerStatus(ctx, c.cmClient, c.fieldManager, newIssuer)
 	} else {
-		_, err := c.cmClient.CertmanagerV1().Issuers(new.Namespace).UpdateStatus(ctx, new, metav1.UpdateOptions{})
+		_, err := c.cmClient.CertmanagerV1().Issuers(newIssuer.Namespace).UpdateStatus(ctx, newIssuer, metav1.UpdateOptions{})
 		return err
 	}
 }

@@ -31,4 +31,4 @@ print-sources:
 
 .PHONY: print-source-dirs
 print-source-dirs:
-	@echo $(call get-sources,cut -d'/' -f2 | sort | uniq | tr '\n' ' ')
+	@echo $(SOURCE_DIRS)

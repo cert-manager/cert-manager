@@ -21,18 +21,19 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func (a *acme) createHTTP01Issuer(f *framework.Framework) string {
-	a.ensureEABSecret(f, "")
+func (a *acme) createHTTP01Issuer(ctx context.Context, f *framework.Framework) string {
+	a.ensureEABSecret(ctx, f, "")
 
 	By("Creating an ACME HTTP01 Issuer")
 	issuer := &cmapi.Issuer{
@@ -42,19 +43,19 @@ func (a *acme) createHTTP01Issuer(f *framework.Framework) string {
 		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme HTTP01 Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
-func (a *acme) createHTTP01ClusterIssuer(f *framework.Framework) string {
-	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+func (a *acme) createHTTP01ClusterIssuer(ctx context.Context, f *framework.Framework) string {
+	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating an ACME HTTP01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
@@ -64,12 +65,12 @@ func (a *acme) createHTTP01ClusterIssuer(f *framework.Framework) string {
 		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for acme HTTP01 Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)

@@ -20,12 +20,12 @@ limitations under the License.
 package akamai
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
-
 	"github.com/go-logr/logr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -51,7 +51,7 @@ type DNSProvider struct {
 	serviceConsumerDomain  string
 	dnsclient              OpenEdgegridDNSService
 	TTL                    int
-	findHostedDomainByFqdn func(string, []string) (string, error)
+	findHostedDomainByFqdn func(context.Context, string, []string) (string, error)
 	isNotFound             func(error) bool
 	log                    logr.Logger
 }
@@ -86,8 +86,8 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 	return dnsp, nil
 }
 
-func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
-	zone, err := util.FindZoneByFqdn(fqdn, ns)
+func findHostedDomainByFqdn(ctx context.Context, fqdn string, ns []string) (string, error) {
+	zone, err := util.FindZoneByFqdn(ctx, fqdn, ns)
 	if err != nil {
 		return "", err
 	}
@@ -96,11 +96,10 @@ func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
 }
 
 // Present creates/updates a TXT record to fulfill the dns-01 challenge.
-func (a *DNSProvider) Present(domain, fqdn, value string) error {
-
+func (a *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
 	logf.V(logf.DebugLevel).Infof("entering Present. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
 
-	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
+	hostedDomain, err := a.findHostedDomainByFqdn(ctx, fqdn, a.dns01Nameservers)
 	if err != nil {
 		return fmt.Errorf("edgedns: failed to determine hosted domain for %q: %w", fqdn, err)
 	}
@@ -157,11 +156,10 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 }
 
 // CleanUp removes/updates the TXT record matching the specified parameters.
-func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
-
+func (a *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
 	logf.V(logf.DebugLevel).Infof("entering CleanUp. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
 
-	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
+	hostedDomain, err := a.findHostedDomainByFqdn(ctx, fqdn, a.dns01Nameservers)
 	if err != nil {
 		return fmt.Errorf("edgedns: failed to determine hosted domain for %q: %w", fqdn, err)
 	}
@@ -234,17 +232,12 @@ func containsValue(values []string, value string) bool {
 }
 
 func isNotFound(err error) bool {
-
 	if err == nil {
 		return false
 	}
 
 	_, ok := err.(*dns.RecordError)
-	if ok {
-		return true
-	}
-
-	return false
+	return ok
 }
 
 func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {

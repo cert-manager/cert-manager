@@ -22,17 +22,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/ptr"
 
 	internalcmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -49,14 +50,6 @@ var (
 	}
 	maxSecretTemplateAnnotationsBytesLimit = 256 * (1 << 10) // 256 kB
 )
-
-func strPtr(s string) *string {
-	return &s
-}
-
-func int32Ptr(i int32) *int32 {
-	return &i
-}
 
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
@@ -77,7 +70,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"valid with blank issuerRef kind": {
+		"valid with blank issuerRef kind and no group": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
@@ -89,7 +82,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"valid with 'Issuer' issuerRef kind": {
+		"valid with 'Issuer' issuerRef kind and no group": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
@@ -115,21 +108,49 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"invalid issuerRef kind": {
+		"valid with 'Issuer' issuerRef kind and explicit internal group": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-						Kind: "invalid",
+						Name:  "valid",
+						Kind:  "Issuer",
+						Group: "cert-manager.io",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"invalid with external issuerRef kind and empty group": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "abc",
+						Kind: "AWSPCAClusterIssuer",
 					},
 				},
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("issuerRef", "kind"), "invalid", "must be one of Issuer or ClusterIssuer"),
+				field.Invalid(fldPath.Child("issuerRef", "kind"), "AWSPCAClusterIssuer", "must be one of Issuer or ClusterIssuer (did you forget to set spec.issuerRef.kind.group?)"),
 			},
+		},
+		"valid with external issuerRef kind and external group": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "abc",
+						Kind:  "AWSPCAClusterIssuer",
+						Group: "awspca.cert-manager.io",
+					},
+				},
+			},
+			a: someAdmissionRequest,
 		},
 		"certificate missing secretName": {
 			cfg: &internalcmapi.Certificate{
@@ -168,7 +189,7 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
 			},
 		},
-		"certificate with no issuerRef": {
+		"invalid with no issuerRef": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
@@ -573,7 +594,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: int32Ptr(1),
+					RevisionHistoryLimit: ptr.To(int32(1)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -584,7 +605,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: int32Ptr(0),
+					RevisionHistoryLimit: ptr.To(int32(0)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -601,9 +622,7 @@ func TestValidateCertificate(t *testing.T) {
 						Annotations: map[string]string{},
 						Labels:      map[string]string{},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -621,9 +640,7 @@ func TestValidateCertificate(t *testing.T) {
 							"my-label.com/foo": "evn-production",
 						},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -641,9 +658,7 @@ func TestValidateCertificate(t *testing.T) {
 							"cert-manager.io/allow-direct-injection": "true",
 						},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "invalid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -662,9 +677,7 @@ func TestValidateCertificate(t *testing.T) {
 							"app.com/invalid": strings.Repeat("0", maxSecretTemplateAnnotationsBytesLimit),
 						},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "invalid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -682,9 +695,7 @@ func TestValidateCertificate(t *testing.T) {
 							"app.com/invalid-chars": "invalid=chars",
 						},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "invalid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -706,9 +717,7 @@ func TestValidateCertificate(t *testing.T) {
 							DNSDomains: []string{"example.com"},
 						},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a:                             someAdmissionRequest,
@@ -721,9 +730,7 @@ func TestValidateCertificate(t *testing.T) {
 					SecretName:      "abc",
 					IsCA:            true,
 					NameConstraints: &internalcmapi.NameConstraints{},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-					},
+					IssuerRef:       validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
@@ -744,9 +751,7 @@ func TestValidateCertificate(t *testing.T) {
 							DNSDomains: []string{"example.com"},
 						},
 					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "valid",
-					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,

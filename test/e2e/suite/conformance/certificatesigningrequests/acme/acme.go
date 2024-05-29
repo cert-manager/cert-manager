@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/base64"
 
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -30,6 +29,8 @@ import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
@@ -111,21 +112,21 @@ type acme struct {
 	secretNamespace string
 }
 
-func (a *acme) delete(f *framework.Framework, signerName string) {
+func (a *acme) delete(ctx context.Context, f *framework.Framework, signerName string) {
 	if a.eab != nil {
-		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(context.TODO(), a.eab.Key.Name, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(ctx, a.eab.Key.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 
 	ref, _ := util.SignerIssuerRefFromSignerName(signerName)
 
 	if ref.Type == "clusterissuers" {
-		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
 
-func (a *acme) ensureEABSecret(f *framework.Framework, ns string) {
+func (a *acme) ensureEABSecret(ctx context.Context, f *framework.Framework, ns string) {
 	if a.eab == nil {
 		return
 	}
@@ -133,7 +134,7 @@ func (a *acme) ensureEABSecret(f *framework.Framework, ns string) {
 	if ns == "" {
 		ns = f.Namespace.Name
 	}
-	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
+	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "external-account-binding-",
 			Namespace:    ns,

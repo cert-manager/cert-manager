@@ -198,8 +198,8 @@ func getExtensionFromPem(pemData string) (pkix.Extension, error) {
 	if pemData == "" {
 		return pkix.Extension{}, nil
 	}
+
 	pemData = strings.TrimSpace(pemData)
-	fmt.Println(pemData)
 	csrPEM := []byte(pemData)
 
 	block, _ := pem.Decode(csrPEM)

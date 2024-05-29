@@ -99,7 +99,7 @@ type ACMEIssuer struct {
 	// Enables requesting a Not After date on certificates that matches the
 	// duration of the certificate. This is not supported by all ACME servers
 	// like Let's Encrypt. If set to true when the ACME server does not support
-	// it it will create an error on the Order.
+	// it, it will create an error on the Order.
 	// Defaults to false.
 	EnableDurationFeature bool
 }
@@ -303,7 +303,7 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 
 	// If specified, the pod's imagePullSecrets
 	// +optional
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchMergeKey:"name" patchStrategy:"merge"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
@@ -421,6 +421,9 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
+	// Auth configures how cert-manager authenticates.
+	Auth *Route53Auth
+
 	// The AccessKeyID is used for authentication.
 	// Cannot be set when SecretAccessKeyID is set.
 	// If neither the Access Key nor Key ID are set, we fall-back to using env
@@ -451,6 +454,35 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
 	Region string
+}
+
+// Route53Auth is configuration used to authenticate with a Route53.
+type Route53Auth struct {
+	// Kubernetes authenticates with Route53 using AssumeRoleWithWebIdentity
+	// by passing a bound ServiceAccount token.
+	Kubernetes *Route53KubernetesAuth
+}
+
+// Route53KubernetesAuth is a configuration to authenticate against Route53
+// using a bound Kubernetes ServiceAccount token.
+type Route53KubernetesAuth struct {
+	// A reference to a service account that will be used to request a bound
+	// token (also known as "projected token"). To use this field, you must
+	// configure an RBAC rule to let cert-manager request a token.
+	ServiceAccountRef *ServiceAccountRef
+}
+
+// ServiceAccountRef is a service account used by cert-manager to request a
+// token. The expiration of the token is also set by cert-manager to 10 minutes.
+type ServiceAccountRef struct {
+	// Name of the ServiceAccount used to request a token.
+	Name string
+
+	// TokenAudiences is an optional list of audiences to include in the
+	// token passed to AWS. The default token consisting of the issuer's namespace
+	// and name is always included.
+	// If unset the audience defaults to `sts.amazonaws.com`.
+	TokenAudiences []string
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the

@@ -24,7 +24,7 @@ CRI_ARCH := $(HOST_ARCH)
 
 # TODO: this version is also defaulted in ./make/cluster.sh. Make it so that it
 # is set in one place only.
-K8S_VERSION := 1.28
+K8S_VERSION := 1.30
 
 IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:0115d7e01987c13e1be90b09c223c3e0d8e9a92e97c0421e712ad3577e2d78e5
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:031d2da484f3d89c78007cbb1cf1d7ae992e069683a2cdca0a0efb63a63fc735
@@ -306,7 +306,7 @@ e2e-setup-certmanager: e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(b
 		$(addprefix --version,$(E2E_CERT_MANAGER_VERSION)) \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
-		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200}" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
@@ -334,7 +334,7 @@ e2e-setup-certmanager: $(bin_dir)/cert-manager.tgz $(foreach binaryname,controll
 		--set startupapicheck.image.tag="$(TAG)" \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
-		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200}" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
@@ -350,8 +350,8 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(KUBECTL) apply -n bind -f - >/dev/null
 
 .PHONY: e2e-setup-gatewayapi
-e2e-setup-gatewayapi: $(bin_dir)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml $(bin_dir)/scratch/kind-exists $(NEEDS_KUBECTL)
-	$(KUBECTL) apply --server-side -f $(bin_dir)/downloaded/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
+e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml $(bin_dir)/scratch/kind-exists $(NEEDS_KUBECTL)
+	$(KUBECTL) apply --server-side -f $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
@@ -496,6 +496,3 @@ kind-logs: $(bin_dir)/scratch/kind-exists | $(NEEDS_KIND)
 	rm -rf $(ARTIFACTS)/cert-manager-e2e-logs
 	mkdir -p $(ARTIFACTS)/cert-manager-e2e-logs
 	$(KIND) export logs $(ARTIFACTS)/cert-manager-e2e-logs --name=$(shell cat $(bin_dir)/scratch/kind-exists)
-
-$(bin_dir)/scratch:
-	@mkdir -p $@

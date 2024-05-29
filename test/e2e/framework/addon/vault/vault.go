@@ -287,15 +287,9 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 		}
 		v.details.VaultCA = vaultCA
 
-		v.vaultCert, v.vaultCertPrivateKey, err = generateVaultServingCert(vaultCA, vaultCAPrivateKey, dnsName)
-		if err != nil {
-			return nil, err
-		}
+		v.vaultCert, v.vaultCertPrivateKey = generateVaultServingCert(vaultCA, vaultCAPrivateKey, dnsName)
 
-		vaultClientCertificate, vaultClientPrivateKey, err := generateVaultClientCert(vaultCA, vaultCAPrivateKey)
-		if err != nil {
-			return nil, err
-		}
+		vaultClientCertificate, vaultClientPrivateKey := generateVaultClientCert(vaultCA, vaultCAPrivateKey)
 		v.details.VaultClientCertificate = vaultClientCertificate
 		v.details.VaultClientPrivateKey = vaultClientPrivateKey
 		v.details.EnforceMtls = v.EnforceMtls
@@ -308,22 +302,21 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			v.Base.Details().KubeConfig,
 			v.Namespace,
 			fmt.Sprintf("%s-0", v.chart.ReleaseName),
-			vaultCA,
 		)
 
-		v.details.URL = fmt.Sprintf("https://%s:8200", dnsName)
-		v.details.ProxyURL = fmt.Sprintf("https://127.0.0.1:%d", v.proxy.listenPort)
+		v.details.URL = fmt.Sprintf("https://%s", net.JoinHostPort(dnsName, "8200"))
+		v.details.ProxyURL = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", strconv.Itoa(v.proxy.listenPort)))
 	}
 
 	return v.details, nil
 }
 
 // Provision will actually deploy this instance of Vault to the cluster.
-func (v *Vault) Provision() error {
+func (v *Vault) Provision(ctx context.Context) error {
 	kubeClient := v.Base.Details().KubeClient
 
 	// If the namespace doesn't exist, create it
-	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v.Namespace,
 		},
@@ -350,13 +343,13 @@ func (v *Vault) Provision() error {
 			"client.key": string(v.details.VaultClientPrivateKey),
 		},
 	}
-	_, err = kubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), tlsSecret, metav1.CreateOptions{})
+	_, err = kubeClient.CoreV1().Secrets(v.Namespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	// Deploy the vault chart
-	err = v.chart.Provision()
+	err = v.chart.Provision(ctx)
 	if err != nil {
 		return err
 	}
@@ -373,8 +366,8 @@ func (v *Vault) Provision() error {
 		}
 
 		var lastError error
-		err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
-			pod, err := kubeClient.CoreV1().Pods(v.proxy.podNamespace).Get(context.TODO(), v.proxy.podName, metav1.GetOptions{})
+		err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+			pod, err := kubeClient.CoreV1().Pods(v.proxy.podNamespace).Get(ctx, v.proxy.podName, metav1.GetOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
 				return false, err
 			}
@@ -403,7 +396,7 @@ func (v *Vault) Provision() error {
 				GetLogs(v.proxy.podName, &corev1.PodLogOptions{
 					TailLines: ptr.To(int64(100)),
 				}).
-				DoRaw(context.TODO())
+				DoRaw(ctx)
 
 			if err != nil {
 				return fmt.Errorf("error waiting for vault pod to be ready: %w; failed to retrieve logs: %w", lastError, err)
@@ -426,29 +419,29 @@ func (v *Vault) Details() *Details {
 }
 
 // Deprovision will destroy this instance of Vault
-func (v *Vault) Deprovision() error {
-	if err := v.proxy.stop(); err != nil {
+func (v *Vault) Deprovision(ctx context.Context) error {
+	if err := v.proxy.stop(ctx); err != nil {
 		return err
 	}
 
 	kubeClient := v.Base.Details().KubeClient
-	err := kubeClient.CoreV1().Secrets(v.Namespace).Delete(context.TODO(), "vault-tls", metav1.DeleteOptions{})
+	err := kubeClient.CoreV1().Secrets(v.Namespace).Delete(ctx, "vault-tls", metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 
-	return v.chart.Deprovision()
+	return v.chart.Deprovision(ctx)
 }
 
 func (v *Vault) SupportsGlobal() bool {
 	return v.chart.SupportsGlobal()
 }
 
-func (v *Vault) Logs() (map[string]string, error) {
-	return v.chart.Logs()
+func (v *Vault) Logs(ctx context.Context) (map[string]string, error) {
+	return v.chart.Logs(ctx)
 }
 
-func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error) {
+func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte) {
 	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
 	ca, _ := x509.ParseCertificate(catls.Certificate[0])
 
@@ -471,10 +464,10 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
 
-	return encodePublicKey(certBytes), encodePrivateKey(privateKey), nil
+	return encodePublicKey(certBytes), encodePrivateKey(privateKey)
 }
 
-func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, []byte, error) {
+func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, []byte) {
 	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
 	ca, _ := x509.ParseCertificate(catls.Certificate[0])
 
@@ -495,7 +488,7 @@ func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, 
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
 
-	return encodePublicKey(certBytes), encodePrivateKey(privateKey), nil
+	return encodePublicKey(certBytes), encodePrivateKey(privateKey)
 }
 
 func GenerateCA() ([]byte, []byte, error) {

@@ -1,0 +1,93 @@
+issues:
+  exclude-rules:
+    - linters:
+        - dogsled
+        - errcheck
+        - promlinter
+        - errname
+        - exhaustive
+        - nilerr
+        - interfacebloat
+        - nilnil
+        - nakedret
+        - musttag
+        - gomoddirectives
+      text: ".*"
+    - linters:
+        - gosec
+      text: "G(101|107|204|306|402)"
+    - linters:
+        - staticcheck
+      text: "SA(1002|1006|4000|4006)"
+    - linters:
+        - staticcheck
+      text: "(NewCertManagerBasicCertificateRequest)"
+linters:
+  # Explicitly define all enabled linters
+  disable-all: true
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - decorder
+    - dogsled
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - execinquery
+    - exhaustive
+    - exportloopref
+    - forbidigo
+    - gci
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    - gofmt
+    - goheader
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - gosmopolitan
+    - govet
+    - grouper
+    - importas
+    - ineffassign
+    - interfacebloat
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - musttag
+    - nakedret
+    - nilerr
+    - nilnil
+    - noctx
+    - nosprintfhostport
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - sloglint
+    - staticcheck
+    - tagalign
+    - tenv
+    - testableexamples
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+linters-settings:
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(github.com/cert-manager/cert-manager) # Custom section: groups all imports with the specified Prefix.
+      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+      - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.

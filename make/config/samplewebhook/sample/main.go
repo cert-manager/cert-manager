@@ -56,7 +56,7 @@ type customDNSProviderSolver struct {
 	// 3. uncomment the relevant code in the Initialize method below
 	// 4. ensure your webhook's service account has the required RBAC role
 	//    assigned to it for interacting with the Kubernetes APIs you need.
-	//client kubernetes.Clientset
+	// client kubernetes.Clientset
 }
 
 // customDNSProviderConfig is a structure that is used to decode into when
@@ -79,8 +79,8 @@ type customDNSProviderConfig struct {
 	// These fields will be set by users in the
 	// `issuer.spec.acme.dns01.providers.webhook.config` field.
 
-	//Email           string `json:"email"`
-	//APIKeySecretRef cmmeta.SecretKeySelector `json:"apiKeySecretRef"`
+	// Email           string `json:"email"`
+	// APIKeySecretRef cmmeta.SecretKeySelector `json:"apiKeySecretRef"`
 }
 
 // Name is used as the name for this DNS solver when referencing it on the ACME
@@ -105,7 +105,7 @@ func (c *customDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	// TODO: do something more useful with the decoded configuration
-	fmt.Printf("Decoded configuration %v", cfg)
+	fmt.Fprintf(os.Stdout, "Decoded configuration %v", cfg)
 
 	// TODO: add code that sets a record in the DNS provider's console
 	return nil
@@ -135,12 +135,12 @@ func (c *customDNSProviderSolver) Initialize(kubeClientConfig *rest.Config, stop
 	///// UNCOMMENT THE BELOW CODE TO MAKE A KUBERNETES CLIENTSET AVAILABLE TO
 	///// YOUR CUSTOM DNS PROVIDER
 
-	//cl, err := kubernetes.NewForConfig(kubeClientConfig)
-	//if err != nil {
-	//	return err
-	//}
+	// cl, err := kubernetes.NewForConfig(kubeClientConfig)
+	// if err != nil {
+	// 	return err
+	// }
 	//
-	//c.client = cl
+	// c.client = cl
 
 	///// END OF CODE TO MAKE KUBERNETES CLIENTSET AVAILABLE
 	return nil

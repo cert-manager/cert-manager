@@ -75,10 +75,6 @@ func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimit
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
-	// Set context deadline for full sync in 10 seconds
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	defer cancel()
-
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return nil
@@ -95,7 +91,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	// Update that Certificates metrics
-	c.metrics.UpdateCertificate(ctx, crt)
+	c.metrics.UpdateCertificate(crt)
 
 	return nil
 }

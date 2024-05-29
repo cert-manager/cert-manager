@@ -12,6 +12,7 @@ package cloudflare
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,7 +35,7 @@ const cloudFlareMaxBodySize = 1024 * 1024 // 1mb
 
 // DNSProviderType is the Mockable Interface
 type DNSProviderType interface {
-	makeRequest(method, uri string, body io.Reader) (json.RawMessage, error)
+	makeRequest(ctx context.Context, method, uri string, body io.Reader) (json.RawMessage, error)
 }
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
@@ -104,24 +105,24 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 //
 // It will try to call the API for each branch (from bottom to top) and see if there's a Zone-Record returned.
 // Calling See https://api.cloudflare.com/#zone-list-zones
-func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
+func FindNearestZoneForFQDN(ctx context.Context, c DNSProviderType, fqdn string) (DNSZone, error) {
 	if fqdn == "" {
 		return DNSZone{}, fmt.Errorf("FindNearestZoneForFQDN: FQDN-Parameter can't be empty, please specify a domain!")
 	}
 	mappedFQDN := strings.Split(fqdn, ".")
-	nextName := util.UnFqdn(fqdn) //remove the trailing dot
+	nextName := util.UnFqdn(fqdn) // remove the trailing dot
 	var lastErr error
 	for i := 0; i < len(mappedFQDN)-1; i++ {
 		var from, to = len(mappedFQDN[i]) + 1, len(nextName)
 		if from > to {
 			continue
 		}
-		if mappedFQDN[i] == "*" { //skip wildcard sub-domain-entries
+		if mappedFQDN[i] == "*" { // skip wildcard sub-domain-entries
 			nextName = string([]rune(nextName)[from:to])
 			continue
 		}
 		lastErr = nil
-		result, err := c.makeRequest("GET", "/zones?name="+nextName, nil)
+		result, err := c.makeRequest(ctx, "GET", "/zones?name="+nextName, nil)
 		if err != nil {
 			lastErr = err
 			continue
@@ -133,7 +134,7 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 		}
 
 		if len(zones) > 0 {
-			return zones[0], nil //we're returning the first zone found, might need to test that further
+			return zones[0], nil // we're returning the first zone found, might need to test that further
 		}
 		nextName = string([]rune(nextName)[from:to])
 	}
@@ -144,8 +145,8 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
-	_, err := c.findTxtRecord(fqdn, value)
+func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
+	_, err := c.findTxtRecord(ctx, fqdn, value)
 	if err == errNoExistingRecord {
 		rec := cloudFlareRecord{
 			Type:    "TXT",
@@ -159,12 +160,12 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 			return err
 		}
 
-		zoneID, err := c.getHostedZoneID(fqdn)
+		zoneID, err := c.getHostedZoneID(ctx, fqdn)
 		if err != nil {
 			return err
 		}
 
-		_, err = c.makeRequest("POST", fmt.Sprintf("/zones/%s/dns_records", zoneID), bytes.NewReader(body))
+		_, err = c.makeRequest(ctx, "POST", fmt.Sprintf("/zones/%s/dns_records", zoneID), bytes.NewReader(body))
 		if err != nil {
 			return err
 		}
@@ -180,8 +181,8 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	record, err := c.findTxtRecord(fqdn, value)
+func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
+	record, err := c.findTxtRecord(ctx, fqdn, value)
 	// Nothing to cleanup
 	if err == errNoExistingRecord {
 		return nil
@@ -190,7 +191,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		return err
 	}
 
-	_, err = c.makeRequest("DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", record.ZoneID, record.ID), nil)
+	_, err = c.makeRequest(ctx, "DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", record.ZoneID, record.ID), nil)
 	if err != nil {
 		return err
 	}
@@ -198,8 +199,8 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return nil
 }
 
-func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
-	hostedZone, err := FindNearestZoneForFQDN(c, fqdn)
+func (c *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string, error) {
+	hostedZone, err := FindNearestZoneForFQDN(ctx, c, fqdn)
 	if err != nil {
 		return "", err
 	}
@@ -208,13 +209,14 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 
 var errNoExistingRecord = errors.New("No existing record found")
 
-func (c *DNSProvider) findTxtRecord(fqdn, content string) (*cloudFlareRecord, error) {
-	zoneID, err := c.getHostedZoneID(fqdn)
+func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn, content string) (*cloudFlareRecord, error) {
+	zoneID, err := c.getHostedZoneID(ctx, fqdn)
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := c.makeRequest(
+		ctx,
 		"GET",
 		fmt.Sprintf("/zones/%s/dns_records?per_page=100&type=TXT&name=%s", zoneID, util.UnFqdn(fqdn)),
 		nil,
@@ -238,7 +240,7 @@ func (c *DNSProvider) findTxtRecord(fqdn, content string) (*cloudFlareRecord, er
 	return nil, errNoExistingRecord
 }
 
-func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawMessage, error) {
+func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body io.Reader) (json.RawMessage, error) {
 	// APIError contains error details for failed requests
 	type APIError struct {
 		Code       int        `json:"code,omitempty"`
@@ -253,7 +255,7 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 		Result  json.RawMessage `json:"result"`
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", CloudFlareAPIURL, uri), body)
+	req, err := http.NewRequestWithContext(ctx, method, fmt.Sprintf("%s%s", CloudFlareAPIURL, uri), body)
 	if err != nil {
 		return nil, err
 	}

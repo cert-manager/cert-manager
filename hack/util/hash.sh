@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2021 The cert-manager Authors.
+# Copyright 2023 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eu -o pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# This script is used by the $(bin_dir)/metadata/cert-manager-manifests.tar.gz.metadata.json
+# and $(bin_dir)/metadata/cert-manager-server-linux-amd64.tar.gz.metadata.json Make targets.
 
 # This script is a wrapper for outputting purely the sha256 hash of the input file,
 # ideally in a portable way.
 
-sha256sum $1 | cut -d" " -f1
+case "$(uname -s)" in
+    Darwin*)    shasum -a 256 "$1";;
+    *)          sha256sum "$1" 
+esac | cut -d" " -f1

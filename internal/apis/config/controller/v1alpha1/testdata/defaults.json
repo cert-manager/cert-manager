@@ -1,0 +1,70 @@
+{
+	"kubernetesAPIQPS": 20,
+	"kubernetesAPIBurst": 50,
+	"clusterResourceNamespace": "kube-system",
+	"leaderElectionConfig": {
+		"enabled": true,
+		"namespace": "kube-system",
+		"leaseDuration": "1m0s",
+		"renewDeadline": "40s",
+		"retryPeriod": "15s",
+		"healthzTimeout": "20s"
+	},
+	"controllers": [
+		"*"
+	],
+	"issuerAmbientCredentials": false,
+	"clusterIssuerAmbientCredentials": true,
+	"enableCertificateOwnerRef": false,
+	"enableGatewayAPI": false,
+	"copiedAnnotationPrefixes": [
+		"*",
+		"-kubectl.kubernetes.io/",
+		"-fluxcd.io/",
+		"-argocd.argoproj.io/"
+	],
+	"numberOfConcurrentWorkers": 5,
+	"maxConcurrentChallenges": 60,
+	"metricsListenAddress": "0.0.0.0:9402",
+	"metricsTLSConfig": {
+		"filesystem": {},
+		"dynamic": {
+			"leafDuration": "168h0m0s"
+		}
+	},
+	"healthzListenAddress": "0.0.0.0:9403",
+	"enablePprof": false,
+	"pprofAddress": "localhost:6060",
+	"logging": {
+		"format": "text",
+		"flushFrequency": "5s",
+		"verbosity": 0,
+		"options": {
+			"text": {
+				"infoBufferSize": "0"
+			},
+			"json": {
+				"infoBufferSize": "0"
+			}
+		}
+	},
+	"ingressShimConfig": {
+		"defaultIssuerKind": "Issuer",
+		"defaultIssuerGroup": "cert-manager.io",
+		"defaultAutoCertificateAnnotations": [
+			"kubernetes.io/tls-acme"
+		]
+	},
+	"acmeHTTP01Config": {
+		"solverImage": "quay.io/jetstack/cert-manager-acmesolver:canary",
+		"solverResourceRequestCPU": "10m",
+		"solverResourceRequestMemory": "64Mi",
+		"solverResourceLimitsCPU": "100m",
+		"solverResourceLimitsMemory": "64Mi",
+		"solverRunAsNonRoot": true
+	},
+	"acmeDNS01Config": {
+		"recursiveNameserversOnly": false,
+		"checkRetryPeriod": "10s"
+	}
+}

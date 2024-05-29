@@ -21,18 +21,16 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	authorizationv1 "k8s.io/api/authorization/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/component-base/featuregate"
 
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func nowStamp() string {
@@ -93,8 +91,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 	time.Sleep(time.Second)
 
 	By("Impersonating the Service Account")
-	var impersonateConfig *rest.Config
-	impersonateConfig = f.KubeClientConfig
+	impersonateConfig := f.KubeClientConfig
 	impersonateConfig.Impersonate.UserName = "system:serviceaccount:" + f.Namespace.Name + ":" + viewServiceAccountName
 	impersonateClient, err := kubernetes.NewForConfig(impersonateConfig)
 	Expect(err).NotTo(HaveOccurred())

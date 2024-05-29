@@ -23,12 +23,10 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
-
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -91,16 +89,21 @@ servers and webhook servers.`,
 				return err
 			}
 
-			if err := validation.ValidateCAInjectorConfiguration(cainjectorConfig); err != nil {
-				return fmt.Errorf("error validating flags: %w", err)
+			if err := validation.ValidateCAInjectorConfiguration(cainjectorConfig, nil); len(err) > 0 {
+				return fmt.Errorf("error validating flags: %w", err.ToAggregate())
 			}
 
-			if err := logf.ValidateAndApplyAsField(&cainjectorConfig.Logging, field.NewPath("logging")); err != nil {
+			// ValidateCAInjectorConfiguration should already have validated the
+			// logging flags, the logging API does not have a Apply-only function
+			// so we validate again here. This should not catch any validation errors
+			// anymore.
+			if err := logf.ValidateAndApply(&cainjectorConfig.Logging); err != nil {
 				return fmt.Errorf("failed to validate cainjector logging flags: %w", err)
 			}
 
 			return nil
 		},
+		// nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context(), cainjectorConfig)
 		},

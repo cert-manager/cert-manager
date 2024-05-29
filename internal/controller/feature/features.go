@@ -56,6 +56,7 @@ const (
 
 	// Owner: N/A
 	// Alpha: v1.5
+	// Beta: v1.15
 	//
 	// ExperimentalGatewayAPISupport enables the gateway-shim controller and adds support for
 	// the Gateway API to the HTTP-01 challenge solver.
@@ -63,6 +64,7 @@ const (
 
 	// Owner: @joshvanl
 	// Alpha: v1.7
+	// Beta: v1.15
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -107,12 +109,13 @@ const (
 	// `controller.cert-manager.io/fao` label. By default all Certificate
 	// Secrets are labelled with controller.cert-manager.io/fao label. Users
 	// can also label other Secrets, such as issuer credentials Secrets that
-	// they know cert-manager will need access to to speed up issuance.
+	// they know cert-manager will need to access, to speed up issuance.
 	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md
 	SecretsFilteredCaching featuregate.Feature = "SecretsFilteredCaching"
 
 	// Owner: @inteon
 	// Beta: v1.13
+	// GA: v1.15
 	//
 	// DisallowInsecureCSRUsageDefinition will prevent the webhook from allowing
 	// CertificateRequest's usages to be only defined in the CSR, while leaving
@@ -144,16 +147,16 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available on the cert-manager controller binary.
 var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.Beta},
+	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
 	StableCertificateRequestName:       {Default: true, PreRelease: featuregate.Beta},
 	SecretsFilteredCaching:             {Default: true, PreRelease: featuregate.Beta},
 
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
-	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
-	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
+	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
+	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.Beta},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
-	LiteralCertificateSubject:                        {Default: false, PreRelease: featuregate.Alpha},
+	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},

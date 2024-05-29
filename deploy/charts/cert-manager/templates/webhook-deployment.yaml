@@ -159,8 +159,8 @@ spec:
             - name: config
               mountPath: /var/cert-manager/config
             {{- end }}
-            {{- if .Values.webhook.volumeMounts }}
-            {{- toYaml .Values.webhook.volumeMounts | nindent 12 }}
+            {{- with .Values.webhook.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
       {{- with .Values.webhook.nodeSelector }}
@@ -186,7 +186,7 @@ spec:
           configMap:
             name: {{ include "webhook.fullname" . }}
         {{- end }}
-        {{- if .Values.webhook.volumes }}
-        {{- toYaml .Values.webhook.volumes | nindent 8 }}
+        {{- with .Values.webhook.volumes }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}

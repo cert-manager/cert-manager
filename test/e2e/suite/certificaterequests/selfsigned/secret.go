@@ -19,8 +19,6 @@ package selfsigned
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/clock"
@@ -30,6 +28,9 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // This test ensures that a self-signed certificaterequest will still be signed
@@ -118,6 +119,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: f.Namespace.Name},
 			Data:       map[string][]byte{},
 		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-", Namespace: f.Namespace.Name},
@@ -220,6 +222,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: f.Namespace.Name},
 			Data:       map[string][]byte{},
 		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-"},

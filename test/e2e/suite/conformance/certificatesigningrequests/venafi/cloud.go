@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -31,6 +29,9 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
@@ -76,17 +77,17 @@ type cloud struct {
 	*venafi.VenafiCloud
 }
 
-func (c *cloud) delete(f *framework.Framework, signerName string) {
-	Expect(c.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloud venafi")
+func (c *cloud) delete(ctx context.Context, f *framework.Framework, signerName string) {
+	Expect(c.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision cloud venafi")
 
 	ref, _ := util.SignerIssuerRefFromSignerName(signerName)
 	if ref.Type == "clusterissuers" {
-		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
 
-func (c *cloud) createIssuer(f *framework.Framework) string {
+func (c *cloud) createIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a Venafi Cloud Issuer")
 
 	c.VenafiCloud = &venafi.VenafiCloud{
@@ -99,15 +100,15 @@ func (c *cloud) createIssuer(f *framework.Framework) string {
 	}
 	Expect(err).NotTo(HaveOccurred(), "failed to provision venafi cloud issuer")
 
-	Expect(c.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
+	Expect(c.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := c.Details().BuildIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	// wait for issuer to be ready
 	By("Waiting for Venafi Cloud Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
@@ -116,7 +117,7 @@ func (c *cloud) createIssuer(f *framework.Framework) string {
 // createClusterIssuer creates and returns name of a Venafi Cloud
 // ClusterIssuer. The name is of the form
 // "clusterissuers.cert-manager.io/issuer-ab3de1".
-func (c *cloud) createClusterIssuer(f *framework.Framework) string {
+func (c *cloud) createClusterIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a Venafi Cloud ClusterIssuer")
 
 	c.VenafiCloud = &venafi.VenafiCloud{
@@ -129,15 +130,15 @@ func (c *cloud) createClusterIssuer(f *framework.Framework) string {
 	}
 	Expect(err).NotTo(HaveOccurred(), "failed to setup tpp venafi")
 
-	Expect(c.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
+	Expect(c.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := c.Details().BuildClusterIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	// wait for issuer to be ready
 	By("Waiting for Venafi Cloud Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)

@@ -24,8 +24,6 @@ import (
 	"math/big"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -34,6 +32,9 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
@@ -55,15 +56,15 @@ type ca struct {
 	secretName string
 }
 
-func (c *ca) createIssuer(f *framework.Framework) string {
+func (c *ca) createIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a CA Issuer")
 
-	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
 
 	c.secretName = rootCertSecret.Name
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "ca-issuer-",
 		},
@@ -79,21 +80,21 @@ func (c *ca) createIssuer(f *framework.Framework) string {
 
 	// wait for issuer to be ready
 	By("Waiting for CA Issuer to be Ready")
-	issuer, err = f.Helper().WaitIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", f.Namespace.Name, issuer.Name)
 }
 
-func (c *ca) createClusterIssuer(f *framework.Framework) string {
+func (c *ca) createClusterIssuer(ctx context.Context, f *framework.Framework) string {
 	By("Creating a CA ClusterIssuer")
 
-	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(context.TODO(), newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(ctx, newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
 
 	c.secretName = rootCertSecret.Name
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "ca-cluster-issuer-",
 		},
@@ -109,20 +110,20 @@ func (c *ca) createClusterIssuer(f *framework.Framework) string {
 
 	// wait for issuer to be ready
 	By("Waiting for CA Cluster Issuer to be Ready")
-	issuer, err = f.Helper().WaitClusterIssuerReady(issuer, time.Minute*5)
+	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("clusterissuers.cert-manager.io/%s", issuer.Name)
 }
 
-func (c *ca) deleteClusterIssuer(f *framework.Framework, signerName string) {
+func (c *ca) deleteClusterIssuer(ctx context.Context, f *framework.Framework, signerName string) {
 	By("Deleting CA ClusterIssuer")
 	ref, _ := util.SignerIssuerRefFromSignerName(signerName)
 
-	err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(context.TODO(), c.secretName, metav1.DeleteOptions{})
+	err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(ctx, c.secretName, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to delete root signing keypair secret")
 
-	err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+	err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to delete ca issuer")
 }
 

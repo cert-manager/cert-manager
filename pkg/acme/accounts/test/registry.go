@@ -20,10 +20,9 @@ import (
 	"crypto/rsa"
 	"net/http"
 
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-
-	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 )
 
 var _ accounts.Registry = &FakeRegistry{}

@@ -1,0 +1,33 @@
+{
+	"leaderElectionConfig": {
+		"enabled": true,
+		"namespace": "kube-system",
+		"leaseDuration": "1m0s",
+		"renewDeadline": "40s",
+		"retryPeriod": "15s"
+	},
+	"enableDataSourceConfig": {
+		"certificates": true
+	},
+	"enableInjectableConfig": {
+		"validatingWebhookConfigurations": true,
+		"mutatingWebhookConfigurations": true,
+		"customResourceDefinitions": true,
+		"apiServices": true
+	},
+	"enablePprof": false,
+	"pprofAddress": "localhost:6060",
+	"logging": {
+		"format": "text",
+		"flushFrequency": "5s",
+		"verbosity": 0,
+		"options": {
+			"text": {
+				"infoBufferSize": "0"
+			},
+			"json": {
+				"infoBufferSize": "0"
+			}
+		}
+	}
+}

@@ -60,7 +60,7 @@ func TestTriggerController(t *testing.T) {
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
-	namespace := "testns"
+	namespace := "testns-trigger"
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
@@ -83,7 +83,6 @@ func TestTriggerController(t *testing.T) {
 	}
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
 	c := controllerpkg.NewController(
-		ctx,
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -96,7 +95,7 @@ func TestTriggerController(t *testing.T) {
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
 	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
+		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: namespace},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
@@ -125,7 +124,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
-	namespace := "testns"
+	namespace := "testns-renew-near-expiry"
 	secretName := "example"
 	certName := "testcrt"
 
@@ -190,7 +189,6 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Start the trigger controller
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
 	c := controllerpkg.NewController(
-		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -247,7 +245,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
-	namespace := "testns"
+	namespace := "testns-expbackoff"
 	secretName := "example"
 	certName := "testcrt"
 
@@ -287,7 +285,6 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// Start the trigger controller
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
 	c := controllerpkg.NewController(
-		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,

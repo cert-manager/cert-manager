@@ -1,0 +1,4 @@
+# CVE-2020-8559 is a vuln in old Kubernetes versions which seems to be incorrectly flagged by trivy. It seems like
+# the version detection is wrongly looking at apiserver packages with versions < 1 - but all apiserver packages have
+# a major version of 0. In any case this is a vuln in Kubernetes clusters, not in our code.
+CVE-2020-8559

@@ -62,7 +62,6 @@ func TestRevisionManagerController(t *testing.T) {
 	ctrl, queue, mustSync := revisionmanager.NewController(logf.Log, &controllerContext)
 
 	c := controllerpkg.NewController(
-		ctx,
 		"revisionmanager_controller_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,

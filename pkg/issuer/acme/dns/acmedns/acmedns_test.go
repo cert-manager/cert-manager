@@ -17,11 +17,13 @@ limitations under the License.
 package acmedns
 
 import (
+	"context"
 	"os"
 	"testing"
 
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 var (
@@ -74,6 +76,6 @@ func TestLiveAcmeDnsPresent(t *testing.T) {
 	assert.NoError(t, err)
 
 	// ACME-DNS requires 43 character keys or it throws a bad TXT error
-	err = provider.Present(acmednsDomain, "", "LG3tptA6W7T1vw4ujbmDxH2lLu6r8TUIqLZD3pzPmgE")
+	err = provider.Present(context.TODO(), acmednsDomain, "", "LG3tptA6W7T1vw4ujbmDxH2lLu6r8TUIqLZD3pzPmgE")
 	assert.NoError(t, err)
 }

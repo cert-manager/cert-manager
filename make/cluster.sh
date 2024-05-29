@@ -25,7 +25,7 @@ set -e
 source ./make/kind_images.sh
 
 mode=kind
-k8s_version=1.28
+k8s_version=1.30
 name=kind
 
 help() {
@@ -105,14 +105,12 @@ if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
 fi
 
 case "$k8s_version" in
-1.22*) image=$KIND_IMAGE_K8S_122 ;;
-1.23*) image=$KIND_IMAGE_K8S_123 ;;
-1.24*) image=$KIND_IMAGE_K8S_124 ;;
 1.25*) image=$KIND_IMAGE_K8S_125 ;;
 1.26*) image=$KIND_IMAGE_K8S_126 ;;
 1.27*) image=$KIND_IMAGE_K8S_127 ;;
 1.28*) image=$KIND_IMAGE_K8S_128 ;;
 1.29*) image=$KIND_IMAGE_K8S_129 ;;
+1.30*) image=$KIND_IMAGE_K8S_130 ;;
 v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
@@ -123,26 +121,6 @@ if [ -n "$show_image" ]; then
 fi
 
 setup_kind() {
-  # When running in our CI environment the Docker network's subnet choice will
-  # cause issues with routing, which can manifest in errors such as this one:
-  #
-  #   dial tcp: lookup charts.jetstack.io on 10.8.240.10:53: read udp 10.8.0.2:54823->10.8.240.10:53: i/o timeout
-  #
-  # as seen in the build [1].  We create this custom network as a workaround
-  # until we have a way to properly patch this.
-  #
-  # [1]: https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_approver-policy/36/pull-cert-manager-approver-policy-smoke/1447565895923666944#1:build-log.txt%3A222
-  if printenv CI >/dev/null; then
-    if ! docker network inspect kind >/dev/null 2>&1; then
-      docker network create --driver=bridge --subnet=192.168.0.0/16 --gateway 192.168.0.1 kind
-    fi
-
-    # Wait for the network to be created so kind does not overwrite it.
-    while ! docker network inspect kind >/dev/null; do
-      sleep 100ms
-    done
-  fi
-
   # (1) Does the kind cluster already exist?
   if ! kind get clusters -q | grep -q "^$kind_cluster_name\$"; then
     trace kind create cluster --config "make/config/kind/cluster.yaml" \

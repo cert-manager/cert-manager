@@ -18,8 +18,6 @@ package vault
 
 import (
 	"context"
-	"crypto"
-	"crypto/x509"
 	"fmt"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -43,8 +41,6 @@ import (
 const (
 	CSRControllerName = "certificatesigningrequests-issuer-vault"
 )
-
-type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
 
 // Vault is a controller for signing Kubernetes CertificateSigningRequest
 // using Vault Issuers.
@@ -93,7 +89,7 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
 	createTokenFn := func(ns string) internalvault.CreateToken { return v.kclient.CoreV1().ServiceAccounts(ns).CreateToken }
-	client, err := v.clientBuilder(resourceNamespace, createTokenFn, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(ctx, resourceNamespace, createTokenFn, v.secretsLister, issuerObj)
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		log.Error(err, message)

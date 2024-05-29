@@ -17,13 +17,14 @@ limitations under the License.
 package vault
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"sync"
 
+	"github.com/onsi/ginkgo/v2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
@@ -37,8 +38,6 @@ type proxy struct {
 
 	podNamespace, podName string
 
-	logs bytes.Buffer
-
 	stopCh chan struct{}
 	mu     sync.Mutex
 	doneCh chan error
@@ -48,7 +47,6 @@ func newProxy(
 	clientset kubernetes.Interface,
 	kubeConfig *rest.Config,
 	podNamespace, podName string,
-	vaultCA []byte,
 ) *proxy {
 	freePort, err := freePort()
 	if err != nil {
@@ -130,7 +128,7 @@ func (p *proxy) start() error {
 				doneCh <- err
 				return
 			default:
-				fmt.Printf("error while forwarding port: %v\n", err)
+				fmt.Fprintf(ginkgo.GinkgoWriter, "error while forwarding port: %v\n", err)
 			}
 		}
 	}()
@@ -138,10 +136,7 @@ func (p *proxy) start() error {
 	return nil
 }
 
-func (p *proxy) stop() error {
-	defer func() {
-		fmt.Printf("proxy logs: %s\n", p.logs.String())
-	}()
+func (p *proxy) stop(ctx context.Context) error {
 	close(p.stopCh)
 
 	p.mu.Lock()
@@ -151,9 +146,13 @@ func (p *proxy) stop() error {
 		return nil
 	}
 
-	err := <-p.doneCh
-	if err != nil {
-		return fmt.Errorf("error while forwarding port: %v", err)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-p.doneCh:
+		if err != nil {
+			return fmt.Errorf("error while forwarding port: %v", err)
+		}
 	}
 
 	return nil

@@ -1,0 +1,44 @@
+# This klone.yaml file describes the Makefile modules and versions that are
+# cloned into the "make/_shared" folder. These modules are dynamically imported
+# by the root Makefile. The "make upgrade-klone" target can be used to pull
+# the latest version from the upstream repositories (using the repo_ref value).
+#
+# More info can be found here: https://github.com/cert-manager/makefile-modules
+
+targets:
+  make/_shared:
+    - folder_name: boilerplate
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/boilerplate
+    - folder_name: generate-verify
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/generate-verify
+    - folder_name: go
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/go
+    - folder_name: help
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/help
+    - folder_name: klone
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/klone
+    - folder_name: repository-base
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/repository-base
+    - folder_name: tools
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: f370709172d660a1589ed120aa34fd9adbeadc64
+      repo_path: modules/tools

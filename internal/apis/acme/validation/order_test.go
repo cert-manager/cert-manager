@@ -55,11 +55,11 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 			field.Forbidden(fldPath, "field is immutable once set"),
 		}
 		var expectedWarnings []string
-		old := &cmacme.Order{}
-		new := &cmacme.Order{}
-		setter(old, testValueOptionOne)
-		setter(new, testValueOptionTwo)
-		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, old, new)
+		oldOrder := &cmacme.Order{}
+		newOrder := &cmacme.Order{}
+		setter(oldOrder, testValueOptionOne)
+		setter(newOrder, testValueOptionTwo)
+		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
 		if len(errs) != len(expectedErrs) {
 			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
 			return
@@ -77,11 +77,11 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 	t.Run("should allow updates to "+fldPath.String()+" if not already set", func(t *testing.T) {
 		expectedErrs := []*field.Error{}
 		var expectedWarnings []string
-		old := &cmacme.Order{}
-		new := &cmacme.Order{}
-		setter(old, testValueNone)
-		setter(new, testValueOptionOne)
-		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, old, new)
+		oldOrder := &cmacme.Order{}
+		newOrder := &cmacme.Order{}
+		setter(oldOrder, testValueNone)
+		setter(newOrder, testValueOptionOne)
+		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
 		if len(errs) != len(expectedErrs) {
 			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
 			return
