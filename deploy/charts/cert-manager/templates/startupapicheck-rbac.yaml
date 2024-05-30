@@ -18,7 +18,7 @@ metadata:
   {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
-    resources: ["certificates"]
+    resources: ["certificaterequests"]
     verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

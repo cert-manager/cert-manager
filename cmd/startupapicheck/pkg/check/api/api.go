@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	cmcmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
@@ -54,7 +53,6 @@ func (o *Options) Complete() error {
 
 	o.APIChecker, err = cmapichecker.New(
 		o.RESTConfig,
-		runtime.NewScheme(),
 		o.Namespace,
 	)
 	if err != nil {
