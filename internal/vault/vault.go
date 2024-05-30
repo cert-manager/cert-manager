@@ -23,11 +23,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	authv1 "k8s.io/api/authentication/v1"
@@ -38,6 +40,7 @@ import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -430,6 +433,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 }
 
 func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Client, kubernetesAuth *v1.VaultKubernetesAuth) (string, error) {
+	log := logf.FromContext(ctx)
 	var jwt string
 	switch {
 	case kubernetesAuth.SecretRef.Name != "":
@@ -459,6 +463,13 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 
 		audiences := append([]string(nil), kubernetesAuth.ServiceAccountRef.TokenAudiences...)
 		audiences = append(audiences, defaultAudience)
+
+		kubernetesDefaultAud, err := getDefaultAudiencesFromCertManagerSA()
+		if err != nil {
+			kubernetesDefaultAud = []string{}
+			log.V(logf.WarnLevel).Info("failed to get default audiences from cert-manager service account", "error", err.Error())
+		}
+		audiences = append(audiences, kubernetesDefaultAud...)
 
 		tokenrequest, err := v.createToken(ctx, kubernetesAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
 			Spec: authv1.TokenRequestSpec{
@@ -528,6 +539,34 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	}
 
 	return token, nil
+}
+
+func getDefaultAudiencesFromCertManagerSA() ([]string, error) {
+
+	// Read the service account token
+	token, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read service account token: %w", err)
+	}
+
+	// Parse the token
+	parsedToken, _, err := new(jwt.Parser).ParseUnverified(string(token), jwt.MapClaims{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse service account token: %w", err)
+	}
+
+	// Extract the audience
+	claims, ok := parsedToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse token claims")
+	}
+
+	audience, ok := claims["aud"].([]string)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse token audience")
+	}
+
+	return audience, nil
 }
 
 func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
