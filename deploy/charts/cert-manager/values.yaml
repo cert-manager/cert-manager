@@ -563,8 +563,12 @@ prometheus:
     endpointAdditionalProperties: {}
 
 # +docs:section=Webhook
+certManager:
+  enabled: true
+
 
 webhook:
+  enabled: true
   # Number of replicas of the cert-manager webhook to run.
   #
   # The default is 1, but in production set this to 2 or 3 to provide high
