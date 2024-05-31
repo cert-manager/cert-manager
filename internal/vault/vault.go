@@ -433,7 +433,6 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 }
 
 func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Client, kubernetesAuth *v1.VaultKubernetesAuth) (string, error) {
-	log := logf.FromContext(ctx)
 	var jwt string
 	switch {
 	case kubernetesAuth.SecretRef.Name != "":
@@ -464,11 +463,8 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		audiences := append([]string(nil), kubernetesAuth.ServiceAccountRef.TokenAudiences...)
 		audiences = append(audiences, defaultAudience)
 
-		kubernetesDefaultAud, err := getDefaultAudiencesFromCertManagerSA()
-		if err != nil {
-			kubernetesDefaultAud = []string{}
-			log.V(logf.WarnLevel).Info("failed to get default audiences from cert-manager service account", "error", err.Error())
-		}
+		kubernetesDefaultAud := mustDefaultAudiencesFromCertManagerSA(ctx)
+
 		audiences = append(audiences, kubernetesDefaultAud...)
 
 		tokenrequest, err := v.createToken(ctx, kubernetesAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
@@ -541,32 +537,53 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	return token, nil
 }
 
-func getDefaultAudiencesFromCertManagerSA() ([]string, error) {
+func mustDefaultAudiencesFromCertManagerSA(ctx context.Context, tokens ...[]byte) []string {
+	log := logf.FromContext(ctx)
+	audience := []string{}
+
+	var token []byte
+	var err error
 
 	// Read the service account token
-	token, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read service account token: %w", err)
+	if len(tokens) > 0 {
+		token = tokens[0]
+	} else {
+		token, err = os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+		if err != nil {
+			log.V(logf.WarnLevel).Info("failed to read service account token", "error", err)
+			return audience
+		}
 	}
 
 	// Parse the token
 	parsedToken, _, err := new(jwt.Parser).ParseUnverified(string(token), jwt.MapClaims{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse service account token: %w", err)
+		log.V(logf.WarnLevel).Info("failed to parse service account token", "error", err)
+		return audience
 	}
 
 	// Extract the audience
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse token claims")
+		log.V(logf.WarnLevel).Info("failed to parse token claims")
+		return audience
 	}
 
-	audience, ok := claims["aud"].([]string)
+	audienceInterface, ok := claims["aud"].([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("failed to parse token audience")
+		log.V(logf.WarnLevel).Info("failed to parse token audience")
+		return audience
 	}
 
-	return audience, nil
+	audience = make([]string, len(audienceInterface))
+	for i, v := range audienceInterface {
+		audience[i], ok = v.(string)
+		if !ok {
+			log.V(logf.WarnLevel).Info("failed to parse token audience as strings")
+		}
+	}
+
+	return audience
 }
 
 func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {

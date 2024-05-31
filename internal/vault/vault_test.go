@@ -48,6 +48,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/cert-manager/cert-manager/test/unit/listers"
+	"github.com/golang-jwt/jwt"
 )
 
 const (
@@ -1605,6 +1606,56 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 
 	err = v.IsVaultInitializedAndUnsealed()
 	require.NoError(t, err)
+}
+
+// TestMustDefaultAudiencesFromCertManagerSAWithAud demonstrates that function correctly
+// extracts the audiences from the token and returns them.
+func TestMustDefaultAudiencesFromCertManagerSAWithAud(t *testing.T) {
+	// Create a test token with an audience
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"aud": []string{"audience1", "audience2"},
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte("your-256-bit-secret"))
+	if err != nil {
+		t.Fatalf("Failed to sign token: %v", err)
+	}
+
+	// Convert the token string to a byte slice
+	tokenBytes := []byte(tokenString)
+
+	// Call the function with the test token
+	audiences := mustDefaultAudiencesFromCertManagerSA(context.Background(), tokenBytes)
+
+	// Check the audiences
+	if len(audiences) != 2 || audiences[0] != "audience1" || audiences[1] != "audience2" {
+		t.Errorf("Unexpected audiences: %v", audiences)
+	}
+}
+
+// TestMustDefaultAudiencesFromCertManagerSAWithEmptyAud demonstrates that function correctly
+// returns an empty slice when the token has no audience.
+func TestMustDefaultAudiencesFromCertManagerSAWithEmptyAud(t *testing.T) {
+	// Create a test token without an audience
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte("your-256-bit-secret"))
+	if err != nil {
+		t.Fatalf("Failed to sign token: %v", err)
+	}
+
+	// Convert the token string to a byte slice
+	tokenBytes := []byte(tokenString)
+
+	// Call the function with the test token
+	audiences := mustDefaultAudiencesFromCertManagerSA(context.Background(), tokenBytes)
+
+	// Check the audiences
+	if len(audiences) != 0 {
+		t.Errorf("Expected no audiences, but got: %v", audiences)
+	}
 }
 
 // TestSignIntegration demonstrates that it interacts only with the API endpoint
