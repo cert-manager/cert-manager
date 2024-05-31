@@ -128,6 +128,8 @@ setup_kind() {
       --name "$kind_cluster_name"
   fi
 
+  # in the case of a large context output condition throws 141 as pipeline continues to putput when grep found a match https://tldp.org/LDP/lpg/node20.html
+  set +o pipefail
   # (2) Does the kube config contain the context for this existing kind cluster?
   if ! kubectl config get-contexts -oname 2>/dev/null | grep -q "^kind-${kind_cluster_name}$"; then
     printf "${red}${redcross}Error${end}: the kind cluster ${yel}$kind_cluster_name${end} already exists, but your current kube config does not contain the context ${yel}kind-$kind_cluster_name${end}. Run:\n" >&2
@@ -135,6 +137,7 @@ setup_kind() {
     printf "and then retry.\n"
     exit 1
   fi
+  set -o pipefail
 
   # (3) Is the existing kind cluster selected as the current context in the kube
   # config?
