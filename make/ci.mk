@@ -67,6 +67,22 @@ generate-helm-docs: deploy/charts/cert-manager/README.template.md deploy/charts/
 
 shared_generate_targets += generate-helm-docs
 
+.PHONY: generate-helm-schema
+## Generate Helm chart schema.
+## @category [shared] Generate/ Verify
+generate-helm-schema: | $(NEEDS_HELM-TOOL) $(NEEDS_GOJQ)
+	$(HELM-TOOL) schema -i deploy/charts/cert-manager/values.yaml | $(GOJQ) > deploy/charts/cert-manager/values.schema.json
+
+shared_generate_targets += generate-helm-schema
+
+.PHONY: verify-helm-values
+## Verify Helm chart values using helm-tool.
+## @category [shared] Generate/ Verify
+verify-helm-values: | $(NEEDS_HELM-TOOL) $(NEEDS_GOJQ)
+	$(HELM-TOOL) lint -i deploy/charts/cert-manager/values.yaml -d deploy/charts/cert-manager/templates -e deploy/charts/cert-manager/values.linter.exceptions
+
+shared_verify_targets += verify-helm-values
+
 .PHONY: ci-presubmit
 ## Run all checks (but not Go tests) which should pass before any given pull
 ## request or change is merged.

@@ -292,6 +292,14 @@ Override the namespace used to store DNS provider credentials etc. for ClusterIs
 > ```
 
 This namespace allows you to define where the services are installed into. If not set then they use the namespace of the release. This is helpful when installing cert manager as a chart dependency (sub chart).
+#### **fullnameOverride** ~ `string`
+
+Override the "cert-manager.fullname" value. This value is used as part of most of the names of the resources created by this Helm chart.
+
+#### **nameOverride** ~ `string`
+
+Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsitencies in the Helm chart when it comes to these annotations (some resources use eg. "cainjector.name" which resolves to the value "cainjector").
+
 #### **serviceAccount.create** ~ `bool`
 > Default value:
 > ```yaml
@@ -661,6 +669,10 @@ resources. Additionally, a service is created which can be used together with yo
 > ```
 
 Create a ServiceMonitor to add cert-manager to Prometheus.
+#### **prometheus.servicemonitor.namespace** ~ `string`
+
+The namespace that the service monitor should live in, defaults to the cert-manager namespace.
+
 #### **prometheus.servicemonitor.prometheusInstance** ~ `string`
 > Default value:
 > ```yaml
@@ -745,6 +757,10 @@ endpointAdditionalProperties:
 > ```
 
 Create a PodMonitor to add cert-manager to Prometheus.
+#### **prometheus.podmonitor.namespace** ~ `string`
+
+The namespace that the pod monitor should live in, defaults to the cert-manager namespace.
+
 #### **prometheus.podmonitor.prometheusInstance** ~ `string`
 > Default value:
 > ```yaml
@@ -1845,7 +1861,7 @@ extraObjects:
     apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: '{{ template "cert-manager.name" . }}-extra-configmap'
+      name: '{{ template "cert-manager.fullname" . }}-extra-configmap'
 ```
 
 <!-- /AUTO-GENERATED -->

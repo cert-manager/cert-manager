@@ -166,6 +166,19 @@ clusterResourceNamespace: ""
 # This is helpful when installing cert manager as a chart dependency (sub chart).
 namespace: ""
 
+# Override the "cert-manager.fullname" value. This value is used as part of
+# most of the names of the resources created by this Helm chart.
+# +docs:property
+# fullnameOverride: "my-cert-manager"
+
+# Override the "cert-manager.name" value, which is used to annotate some of
+# the resources that are created by this Chart (using "app.kubernetes.io/name").
+# NOTE: There are some inconsitencies in the Helm chart when it comes to
+# these annotations (some resources use eg. "cainjector.name" which resolves
+# to the value "cainjector").
+# +docs:property
+# nameOverride: "my-cert-manager"
+
 serviceAccount:
   # Specifies whether a service account should be created.
   create: true
@@ -479,6 +492,11 @@ prometheus:
     # Create a ServiceMonitor to add cert-manager to Prometheus.
     enabled: false
 
+    # The namespace that the service monitor should live in, defaults
+    # to the cert-manager namespace.
+    # +docs:property
+    # namespace: cert-manager
+
     # Specifies the `prometheus` label on the created ServiceMonitor. This is
     # used when different Prometheus instances have label selectors matching
     # different ServiceMonitors.
@@ -524,6 +542,11 @@ prometheus:
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
     enabled: false
+
+    # The namespace that the pod monitor should live in, defaults
+    # to the cert-manager namespace.
+    # +docs:property
+    # namespace: cert-manager
 
     # Specifies the `prometheus` label on the created PodMonitor. This is
     # used when different Prometheus instances have label selectors matching
@@ -1345,5 +1368,11 @@ startupapicheck:
 #     apiVersion: v1
 #     kind: ConfigMap
 #     metadata:
-#       name: '{{ template "cert-manager.name" . }}-extra-configmap'
+#       name: '{{ template "cert-manager.fullname" . }}-extra-configmap'
 extraObjects: []
+
+# Field used by our release pipeline to produce the static manifests.
+# The field defaults to "helm" but is set to "static" when we render
+# the static YAML manifests.
+# +docs:hidden
+creator: "helm"
