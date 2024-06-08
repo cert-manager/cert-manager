@@ -84,6 +84,12 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 
 	if isViolation {
 		switch reason {
+		case policies.IncorrectCertificate:
+			// An error here indicates that the certificate is the not the owner of
+			// the created secret. This maybe the case of secret being referenced
+			// in multiple certificates.
+			log.Error(errors.New(message), "certificate name does not match the secret annotation")
+			return nil
 		case policies.InvalidCertificate, policies.ManagedFieldsParseError:
 			// An error here indicates that the managed fields are malformed and the
 			// decoder doesn't understand the managed fields on the Secret, or the
