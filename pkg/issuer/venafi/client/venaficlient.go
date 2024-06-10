@@ -43,6 +43,8 @@ const (
 	tppUsernameKey    = "username"
 	tppPasswordKey    = "password"
 	tppAccessTokenKey = "access-token"
+	tppClientId       = "cert-manager.io"
+	tppScopes         = "certificate:manage"
 
 	defaultAPIKeyKey = "api-key"
 )
@@ -93,7 +95,8 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		return nil, err
 	}
 
-	vcertClient, err := vcert.NewClient(cfg)
+	// Don't authenticate just now, do this later in VerifyCredentials
+	vcertClient, err := vcert.NewClient(cfg, false)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
@@ -116,14 +119,18 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 
 	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
 
-	return &Venafi{
+	v := &Venafi{
 		namespace:     namespace,
 		secretsLister: secretsLister,
 		vcertClient:   instrumentedVCertClient,
 		cloudClient:   cc,
 		tppClient:     tppc,
 		config:        cfg,
-	}, nil
+	}
+	if err := v.VerifyCredentials(); err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
@@ -355,9 +362,22 @@ func (v *Venafi) VerifyCredentials() error {
 		}
 
 		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
-			err := v.tppClient.Authenticate(&endpoint.Authentication{
+			// Use vcert libray GetRefreshToken which brings back a token pair.
+			// This includes the access_token which we set against the tppClient.
+			resp, err := v.tppClient.GetRefreshToken(&endpoint.Authentication{
 				User:     v.config.Credentials.User,
 				Password: v.config.Credentials.Password,
+				ClientId: tppClientId,
+				Scope:    tppScopes,
+			})
+
+			if err != nil {
+				return fmt.Errorf("tppClient.GetRefreshToken: %v", err)
+			}
+
+			// So that the access_token is stored on the tppClient object
+			err = v.tppClient.Authenticate(&endpoint.Authentication{
+				AccessToken: resp.Access_token,
 			})
 
 			if err != nil {
