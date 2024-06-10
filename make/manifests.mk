@@ -86,7 +86,7 @@ $(bin_dir)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(bin_dir)/rele
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-$(bin_dir)/cert-manager-$(VERSION).tgz: $(bin_dir)/helm/cert-manager/README.md $(bin_dir)/helm/cert-manager/Chart.yaml $(bin_dir)/helm/cert-manager/values.yaml $(HELM_TEMPLATE_TARGETS) $(bin_dir)/helm/cert-manager/templates/NOTES.txt $(bin_dir)/helm/cert-manager/templates/_helpers.tpl $(bin_dir)/helm/cert-manager/templates/crds.yaml | $(NEEDS_HELM) $(bin_dir)/helm/cert-manager
+$(bin_dir)/cert-manager-$(VERSION).tgz: $(bin_dir)/helm/cert-manager/README.md $(bin_dir)/helm/cert-manager/Chart.yaml $(bin_dir)/helm/cert-manager/values.yaml $(bin_dir)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(bin_dir)/helm/cert-manager/templates/NOTES.txt $(bin_dir)/helm/cert-manager/templates/_helpers.tpl $(bin_dir)/helm/cert-manager/templates/crds.yaml | $(NEEDS_HELM) $(bin_dir)/helm/cert-manager
 	$(HELM) package --app-version=$(VERSION) --version=$(VERSION) --destination "$(dir $@)" ./$(bin_dir)/helm/cert-manager
 
 $(bin_dir)/cert-manager-$(VERSION).tgz.prov: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_CMREL) $(bin_dir)/helm/cert-manager
@@ -108,6 +108,9 @@ $(bin_dir)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(bin_dir)/h
 	./hack/concat-yaml.sh $^ > $@
 
 $(bin_dir)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | $(bin_dir)/helm/cert-manager
+	cp $< $@
+
+$(bin_dir)/helm/cert-manager/values.schema.json: deploy/charts/cert-manager/values.schema.json | $(bin_dir)/helm/cert-manager
 	cp $< $@
 
 $(bin_dir)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | $(bin_dir)/helm/cert-manager

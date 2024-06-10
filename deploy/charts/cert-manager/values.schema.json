@@ -1,0 +1,2095 @@
+{
+  "$defs": {
+    "helm-values": {
+      "additionalProperties": false,
+      "properties": {
+        "acmesolver": {
+          "$ref": "#/$defs/helm-values.acmesolver"
+        },
+        "affinity": {
+          "$ref": "#/$defs/helm-values.affinity"
+        },
+        "approveSignerNames": {
+          "$ref": "#/$defs/helm-values.approveSignerNames"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.automountServiceAccountToken"
+        },
+        "cainjector": {
+          "$ref": "#/$defs/helm-values.cainjector"
+        },
+        "clusterResourceNamespace": {
+          "$ref": "#/$defs/helm-values.clusterResourceNamespace"
+        },
+        "config": {
+          "$ref": "#/$defs/helm-values.config"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/$defs/helm-values.containerSecurityContext"
+        },
+        "crds": {
+          "$ref": "#/$defs/helm-values.crds"
+        },
+        "creator": {
+          "$ref": "#/$defs/helm-values.creator"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/helm-values.deploymentAnnotations"
+        },
+        "disableAutoApproval": {
+          "$ref": "#/$defs/helm-values.disableAutoApproval"
+        },
+        "dns01RecursiveNameservers": {
+          "$ref": "#/$defs/helm-values.dns01RecursiveNameservers"
+        },
+        "dns01RecursiveNameserversOnly": {
+          "$ref": "#/$defs/helm-values.dns01RecursiveNameserversOnly"
+        },
+        "enableCertificateOwnerRef": {
+          "$ref": "#/$defs/helm-values.enableCertificateOwnerRef"
+        },
+        "enableServiceLinks": {
+          "$ref": "#/$defs/helm-values.enableServiceLinks"
+        },
+        "extraArgs": {
+          "$ref": "#/$defs/helm-values.extraArgs"
+        },
+        "extraEnv": {
+          "$ref": "#/$defs/helm-values.extraEnv"
+        },
+        "extraObjects": {
+          "$ref": "#/$defs/helm-values.extraObjects"
+        },
+        "featureGates": {
+          "$ref": "#/$defs/helm-values.featureGates"
+        },
+        "fullnameOverride": {
+          "$ref": "#/$defs/helm-values.fullnameOverride"
+        },
+        "global": {
+          "$ref": "#/$defs/helm-values.global"
+        },
+        "hostAliases": {
+          "$ref": "#/$defs/helm-values.hostAliases"
+        },
+        "http_proxy": {
+          "$ref": "#/$defs/helm-values.http_proxy"
+        },
+        "https_proxy": {
+          "$ref": "#/$defs/helm-values.https_proxy"
+        },
+        "image": {
+          "$ref": "#/$defs/helm-values.image"
+        },
+        "ingressShim": {
+          "$ref": "#/$defs/helm-values.ingressShim"
+        },
+        "installCRDs": {
+          "$ref": "#/$defs/helm-values.installCRDs"
+        },
+        "livenessProbe": {
+          "$ref": "#/$defs/helm-values.livenessProbe"
+        },
+        "maxConcurrentChallenges": {
+          "$ref": "#/$defs/helm-values.maxConcurrentChallenges"
+        },
+        "nameOverride": {
+          "$ref": "#/$defs/helm-values.nameOverride"
+        },
+        "namespace": {
+          "$ref": "#/$defs/helm-values.namespace"
+        },
+        "no_proxy": {
+          "$ref": "#/$defs/helm-values.no_proxy"
+        },
+        "nodeSelector": {
+          "$ref": "#/$defs/helm-values.nodeSelector"
+        },
+        "podAnnotations": {
+          "$ref": "#/$defs/helm-values.podAnnotations"
+        },
+        "podDisruptionBudget": {
+          "$ref": "#/$defs/helm-values.podDisruptionBudget"
+        },
+        "podDnsConfig": {
+          "$ref": "#/$defs/helm-values.podDnsConfig"
+        },
+        "podDnsPolicy": {
+          "$ref": "#/$defs/helm-values.podDnsPolicy"
+        },
+        "podLabels": {
+          "$ref": "#/$defs/helm-values.podLabels"
+        },
+        "prometheus": {
+          "$ref": "#/$defs/helm-values.prometheus"
+        },
+        "replicaCount": {
+          "$ref": "#/$defs/helm-values.replicaCount"
+        },
+        "resources": {
+          "$ref": "#/$defs/helm-values.resources"
+        },
+        "securityContext": {
+          "$ref": "#/$defs/helm-values.securityContext"
+        },
+        "serviceAccount": {
+          "$ref": "#/$defs/helm-values.serviceAccount"
+        },
+        "serviceAnnotations": {
+          "$ref": "#/$defs/helm-values.serviceAnnotations"
+        },
+        "serviceIPFamilies": {
+          "$ref": "#/$defs/helm-values.serviceIPFamilies"
+        },
+        "serviceIPFamilyPolicy": {
+          "$ref": "#/$defs/helm-values.serviceIPFamilyPolicy"
+        },
+        "serviceLabels": {
+          "$ref": "#/$defs/helm-values.serviceLabels"
+        },
+        "startupapicheck": {
+          "$ref": "#/$defs/helm-values.startupapicheck"
+        },
+        "strategy": {
+          "$ref": "#/$defs/helm-values.strategy"
+        },
+        "tolerations": {
+          "$ref": "#/$defs/helm-values.tolerations"
+        },
+        "topologySpreadConstraints": {
+          "$ref": "#/$defs/helm-values.topologySpreadConstraints"
+        },
+        "volumeMounts": {
+          "$ref": "#/$defs/helm-values.volumeMounts"
+        },
+        "volumes": {
+          "$ref": "#/$defs/helm-values.volumes"
+        },
+        "webhook": {
+          "$ref": "#/$defs/helm-values.webhook"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.acmesolver": {
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "$ref": "#/$defs/helm-values.acmesolver.image"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.acmesolver.image": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.digest"
+        },
+        "pullPolicy": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.pullPolicy"
+        },
+        "registry": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.registry"
+        },
+        "repository": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.repository"
+        },
+        "tag": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.tag"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.acmesolver.image.digest": {
+      "description": "Setting a digest will override any tag.",
+      "type": "string"
+    },
+    "helm-values.acmesolver.image.pullPolicy": {
+      "default": "IfNotPresent",
+      "description": "Kubernetes imagePullPolicy on Deployment.",
+      "type": "string"
+    },
+    "helm-values.acmesolver.image.registry": {
+      "description": "The container registry to pull the acmesolver image from.",
+      "type": "string"
+    },
+    "helm-values.acmesolver.image.repository": {
+      "default": "quay.io/jetstack/cert-manager-acmesolver",
+      "description": "The container image for the cert-manager acmesolver.",
+      "type": "string"
+    },
+    "helm-values.acmesolver.image.tag": {
+      "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion is used.",
+      "type": "string"
+    },
+    "helm-values.affinity": {
+      "default": {},
+      "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
+      "type": "object"
+    },
+    "helm-values.approveSignerNames": {
+      "default": [
+        "issuers.cert-manager.io/*",
+        "clusterissuers.cert-manager.io/*"
+      ],
+      "description": "List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.\nref: https://cert-manager.io/docs/concepts/certificaterequest/#approval",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.automountServiceAccountToken": {
+      "description": "Automounting API credentials for a particular pod.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector": {
+      "additionalProperties": false,
+      "properties": {
+        "affinity": {
+          "$ref": "#/$defs/helm-values.cainjector.affinity"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.cainjector.automountServiceAccountToken"
+        },
+        "config": {
+          "$ref": "#/$defs/helm-values.cainjector.config"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/$defs/helm-values.cainjector.containerSecurityContext"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/helm-values.cainjector.deploymentAnnotations"
+        },
+        "enableServiceLinks": {
+          "$ref": "#/$defs/helm-values.cainjector.enableServiceLinks"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.cainjector.enabled"
+        },
+        "extraArgs": {
+          "$ref": "#/$defs/helm-values.cainjector.extraArgs"
+        },
+        "featureGates": {
+          "$ref": "#/$defs/helm-values.cainjector.featureGates"
+        },
+        "image": {
+          "$ref": "#/$defs/helm-values.cainjector.image"
+        },
+        "nodeSelector": {
+          "$ref": "#/$defs/helm-values.cainjector.nodeSelector"
+        },
+        "podAnnotations": {
+          "$ref": "#/$defs/helm-values.cainjector.podAnnotations"
+        },
+        "podDisruptionBudget": {
+          "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget"
+        },
+        "podLabels": {
+          "$ref": "#/$defs/helm-values.cainjector.podLabels"
+        },
+        "replicaCount": {
+          "$ref": "#/$defs/helm-values.cainjector.replicaCount"
+        },
+        "resources": {
+          "$ref": "#/$defs/helm-values.cainjector.resources"
+        },
+        "securityContext": {
+          "$ref": "#/$defs/helm-values.cainjector.securityContext"
+        },
+        "serviceAccount": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAccount"
+        },
+        "strategy": {
+          "$ref": "#/$defs/helm-values.cainjector.strategy"
+        },
+        "tolerations": {
+          "$ref": "#/$defs/helm-values.cainjector.tolerations"
+        },
+        "topologySpreadConstraints": {
+          "$ref": "#/$defs/helm-values.cainjector.topologySpreadConstraints"
+        },
+        "volumeMounts": {
+          "$ref": "#/$defs/helm-values.cainjector.volumeMounts"
+        },
+        "volumes": {
+          "$ref": "#/$defs/helm-values.cainjector.volumes"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.affinity": {
+      "default": {},
+      "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
+      "type": "object"
+    },
+    "helm-values.cainjector.automountServiceAccountToken": {
+      "description": "Automounting API credentials for a particular pod.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.config": {
+      "default": {},
+      "description": "This is used to configure options for the cainjector pod. It allows setting options that are usually provided via flags. An APIVersion and Kind must be specified in your values.yaml file.\nFlags override options that are set here.\n\nFor example:\napiVersion: cainjector.config.cert-manager.io/v1alpha1\nkind: CAInjectorConfiguration\nlogging:\n verbosity: 2\n format: text\nleaderElectionConfig:\n namespace: kube-system",
+      "type": "object"
+    },
+    "helm-values.cainjector.containerSecurityContext": {
+      "default": {
+        "allowPrivilegeEscalation": false,
+        "capabilities": {
+          "drop": [
+            "ALL"
+          ]
+        },
+        "readOnlyRootFilesystem": true
+      },
+      "description": "Container Security Context to be set on the cainjector component container. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.cainjector.deploymentAnnotations": {
+      "description": "Optional additional annotations to add to the cainjector Deployment.",
+      "type": "object"
+    },
+    "helm-values.cainjector.enableServiceLinks": {
+      "default": false,
+      "description": "enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.enabled": {
+      "default": true,
+      "description": "Create the CA Injector deployment",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.extraArgs": {
+      "default": [],
+      "description": "Additional command line flags to pass to cert-manager cainjector binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-cainjector:<version> --help`.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.featureGates": {
+      "default": "",
+      "description": "Comma separated list of feature gates that should be enabled on the cainjector pod.",
+      "type": "string"
+    },
+    "helm-values.cainjector.image": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/helm-values.cainjector.image.digest"
+        },
+        "pullPolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.image.pullPolicy"
+        },
+        "registry": {
+          "$ref": "#/$defs/helm-values.cainjector.image.registry"
+        },
+        "repository": {
+          "$ref": "#/$defs/helm-values.cainjector.image.repository"
+        },
+        "tag": {
+          "$ref": "#/$defs/helm-values.cainjector.image.tag"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.image.digest": {
+      "description": "Setting a digest will override any tag.",
+      "type": "string"
+    },
+    "helm-values.cainjector.image.pullPolicy": {
+      "default": "IfNotPresent",
+      "description": "Kubernetes imagePullPolicy on Deployment.",
+      "type": "string"
+    },
+    "helm-values.cainjector.image.registry": {
+      "description": "The container registry to pull the cainjector image from.",
+      "type": "string"
+    },
+    "helm-values.cainjector.image.repository": {
+      "default": "quay.io/jetstack/cert-manager-cainjector",
+      "description": "The container image for the cert-manager cainjector",
+      "type": "string"
+    },
+    "helm-values.cainjector.image.tag": {
+      "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion will be used.",
+      "type": "string"
+    },
+    "helm-values.cainjector.nodeSelector": {
+      "default": {
+        "kubernetes.io/os": "linux"
+      },
+      "description": "The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nThis default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.",
+      "type": "object"
+    },
+    "helm-values.cainjector.podAnnotations": {
+      "description": "Optional additional annotations to add to the cainjector Pods.",
+      "type": "object"
+    },
+    "helm-values.cainjector.podDisruptionBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.enabled"
+        },
+        "maxUnavailable": {
+          "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.maxUnavailable"
+        },
+        "minAvailable": {
+          "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.minAvailable"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.podDisruptionBudget.enabled": {
+      "default": false,
+      "description": "Enable or disable the PodDisruptionBudget resource.\n\nThis prevents downtime during voluntary disruptions such as during a Node upgrade. For example, the PodDisruptionBudget will block `kubectl drain` if it is used on the Node where the only remaining cert-manager\nPod is currently running.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.podDisruptionBudget.maxUnavailable": {
+      "description": "`maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `minAvailable` is set.",
+      "type": "number"
+    },
+    "helm-values.cainjector.podDisruptionBudget.minAvailable": {
+      "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `maxUnavailable` is set.",
+      "type": "number"
+    },
+    "helm-values.cainjector.podLabels": {
+      "default": {},
+      "description": "Optional additional labels to add to the CA Injector Pods.",
+      "type": "object"
+    },
+    "helm-values.cainjector.replicaCount": {
+      "default": 1,
+      "description": "The number of replicas of the cert-manager cainjector to run.\n\nThe default is 1, but in production set this to 2 or 3 to provide high availability.\n\nIf `replicas > 1`, consider setting `cainjector.podDisruptionBudget.enabled=true`.\n\nNote that cert-manager uses leader election to ensure that there can only be a single instance active at a time.",
+      "type": "number"
+    },
+    "helm-values.cainjector.resources": {
+      "default": {},
+      "description": "Resources to provide to the cert-manager cainjector pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
+      "type": "object"
+    },
+    "helm-values.cainjector.securityContext": {
+      "default": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "description": "Pod Security Context to be set on the cainjector component Pod. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.cainjector.serviceAccount": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAccount.annotations"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAccount.automountServiceAccountToken"
+        },
+        "create": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAccount.create"
+        },
+        "labels": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAccount.labels"
+        },
+        "name": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAccount.name"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.serviceAccount.annotations": {
+      "description": "Optional additional annotations to add to the controller's Service Account.",
+      "type": "object"
+    },
+    "helm-values.cainjector.serviceAccount.automountServiceAccountToken": {
+      "default": true,
+      "description": "Automount API credentials for a Service Account.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.serviceAccount.create": {
+      "default": true,
+      "description": "Specifies whether a service account should be created.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.serviceAccount.labels": {
+      "description": "Optional additional labels to add to the cainjector's Service Account.",
+      "type": "object"
+    },
+    "helm-values.cainjector.serviceAccount.name": {
+      "description": "The name of the service account to use.\nIf not set and create is true, a name is generated using the fullname template",
+      "type": "string"
+    },
+    "helm-values.cainjector.strategy": {
+      "default": {},
+      "description": "Deployment update strategy for the cert-manager cainjector deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).\n\nFor example:\nstrategy:\n  type: RollingUpdate\n  rollingUpdate:\n    maxSurge: 0\n    maxUnavailable: 1",
+      "type": "object"
+    },
+    "helm-values.cainjector.tolerations": {
+      "default": [],
+      "description": "A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.topologySpreadConstraints": {
+      "default": [],
+      "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.volumeMounts": {
+      "default": [],
+      "description": "Additional volume mounts to add to the cert-manager controller container.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.volumes": {
+      "default": [],
+      "description": "Additional volumes to add to the cert-manager controller pod.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.clusterResourceNamespace": {
+      "default": "",
+      "description": "Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources. By default, the same namespace as cert-manager is deployed within is used. This namespace will not be automatically created by the Helm chart.",
+      "type": "string"
+    },
+    "helm-values.config": {
+      "default": {},
+      "description": "This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags. An APIVersion and Kind must be specified in your values.yaml file.\nFlags will override options that are set here.\n\nFor example:\nconfig:\n  apiVersion: controller.config.cert-manager.io/v1alpha1\n  kind: ControllerConfiguration\n  logging:\n    verbosity: 2\n    format: text\n  leaderElectionConfig:\n    namespace: kube-system\n  kubernetesAPIQPS: 9000\n  kubernetesAPIBurst: 9000\n  numberOfConcurrentWorkers: 200\n  featureGates:\n    AdditionalCertificateOutputFormats: true\n    DisallowInsecureCSRUsageDefinition: true\n    ExperimentalCertificateSigningRequestControllers: true\n    ExperimentalGatewayAPISupport: true\n    LiteralCertificateSubject: true\n    SecretsFilteredCaching: true\n    ServerSideApply: true\n    StableCertificateRequestName: true\n    UseCertificateRequestBasicConstraints: true\n    ValidateCAA: true\n  metricsTLSConfig:\n    dynamic:\n      secretNamespace: \"cert-manager\"\n      secretName: \"cert-manager-metrics-ca\"\n      dnsNames:\n      - cert-manager-metrics\n      - cert-manager-metrics.cert-manager\n      - cert-manager-metrics.cert-manager.svc",
+      "type": "object"
+    },
+    "helm-values.containerSecurityContext": {
+      "default": {
+        "allowPrivilegeEscalation": false,
+        "capabilities": {
+          "drop": [
+            "ALL"
+          ]
+        },
+        "readOnlyRootFilesystem": true
+      },
+      "description": "Container Security Context to be set on the controller component container. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.crds": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "#/$defs/helm-values.crds.enabled"
+        },
+        "keep": {
+          "$ref": "#/$defs/helm-values.crds.keep"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.crds.enabled": {
+      "default": false,
+      "description": "This option decides if the CRDs should be installed as part of the Helm installation.",
+      "type": "boolean"
+    },
+    "helm-values.crds.keep": {
+      "default": true,
+      "description": "This option makes it so that the \"helm.sh/resource-policy\": keep annotation is added to the CRD. This will prevent Helm from uninstalling the CRD when the Helm release is uninstalled. WARNING: when the CRDs are removed, all cert-manager custom resources\n(Certificates, Issuers, ...) will be removed too by the garbage collector.",
+      "type": "boolean"
+    },
+    "helm-values.creator": {
+      "default": "helm",
+      "description": "Field used by our release pipeline to produce the static manifests. The field defaults to \"helm\" but is set to \"static\" when we render the static YAML manifests.",
+      "type": "string"
+    },
+    "helm-values.deploymentAnnotations": {
+      "description": "Optional additional annotations to add to the controller Deployment.",
+      "type": "object"
+    },
+    "helm-values.disableAutoApproval": {
+      "default": false,
+      "description": "Option to disable cert-manager's build-in auto-approver. The auto-approver approves all CertificateRequests that reference issuers matching the 'approveSignerNames' option. This 'disableAutoApproval' option is useful when you want to make all approval decisions using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).",
+      "type": "boolean"
+    },
+    "helm-values.dns01RecursiveNameservers": {
+      "default": "",
+      "description": "A comma-separated string with the host and port of the recursive nameservers cert-manager should query.",
+      "type": "string"
+    },
+    "helm-values.dns01RecursiveNameserversOnly": {
+      "default": false,
+      "description": "Forces cert-manager to use only the recursive nameservers for verification. Enabling this option could cause the DNS01 self check to take longer owing to caching performed by the recursive nameservers.",
+      "type": "boolean"
+    },
+    "helm-values.enableCertificateOwnerRef": {
+      "default": false,
+      "description": "When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted.",
+      "type": "boolean"
+    },
+    "helm-values.enableServiceLinks": {
+      "default": false,
+      "description": "enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.",
+      "type": "boolean"
+    },
+    "helm-values.extraArgs": {
+      "default": [],
+      "description": "Additional command line flags to pass to cert-manager controller binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.\n\nUse this flag to enable or disable arbitrary controllers. For example, to disable the CertificiateRequests approver.\n\nFor example:\nextraArgs:\n  - --controllers=*,-certificaterequests-approver",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.extraEnv": {
+      "default": [],
+      "description": "Additional environment variables to pass to cert-manager controller binary.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.extraObjects": {
+      "default": [],
+      "description": "Create dynamic manifests via values.\n\nFor example:\nextraObjects:\n  - |\n    apiVersion: v1\n    kind: ConfigMap\n    metadata:\n      name: '{{ template \"cert-manager.fullname\" . }}-extra-configmap'",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.featureGates": {
+      "default": "",
+      "description": "A comma-separated list of feature gates that should be enabled on the controller pod.",
+      "type": "string"
+    },
+    "helm-values.fullnameOverride": {
+      "description": "Override the \"cert-manager.fullname\" value. This value is used as part of most of the names of the resources created by this Helm chart.",
+      "type": "string"
+    },
+    "helm-values.global": {
+      "additionalProperties": false,
+      "description": "Global values shared across all (sub)charts",
+      "properties": {
+        "commonLabels": {
+          "$ref": "#/$defs/helm-values.global.commonLabels"
+        },
+        "imagePullSecrets": {
+          "$ref": "#/$defs/helm-values.global.imagePullSecrets"
+        },
+        "leaderElection": {
+          "$ref": "#/$defs/helm-values.global.leaderElection"
+        },
+        "logLevel": {
+          "$ref": "#/$defs/helm-values.global.logLevel"
+        },
+        "podSecurityPolicy": {
+          "$ref": "#/$defs/helm-values.global.podSecurityPolicy"
+        },
+        "priorityClassName": {
+          "$ref": "#/$defs/helm-values.global.priorityClassName"
+        },
+        "rbac": {
+          "$ref": "#/$defs/helm-values.global.rbac"
+        },
+        "revisionHistoryLimit": {
+          "$ref": "#/$defs/helm-values.global.revisionHistoryLimit"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.global.commonLabels": {
+      "default": {},
+      "description": "Labels to apply to all resources.\nPlease note that this does not add labels to the resources created dynamically by the controllers. For these resources, you have to add the labels in the template in the cert-manager custom resource: For example, podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress. For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress).\nFor example, secretTemplate in CertificateSpec\nFor more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec).",
+      "type": "object"
+    },
+    "helm-values.global.imagePullSecrets": {
+      "default": [],
+      "description": "Reference to one or more secrets to be used when pulling images. For more information, see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).\n\nFor example:\nimagePullSecrets:\n  - name: \"image-pull-secret\"",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.global.leaderElection": {
+      "additionalProperties": false,
+      "properties": {
+        "leaseDuration": {
+          "$ref": "#/$defs/helm-values.global.leaderElection.leaseDuration"
+        },
+        "namespace": {
+          "$ref": "#/$defs/helm-values.global.leaderElection.namespace"
+        },
+        "renewDeadline": {
+          "$ref": "#/$defs/helm-values.global.leaderElection.renewDeadline"
+        },
+        "retryPeriod": {
+          "$ref": "#/$defs/helm-values.global.leaderElection.retryPeriod"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.global.leaderElection.leaseDuration": {
+      "description": "The duration that non-leader candidates will wait after observing a leadership renewal until attempting to acquire leadership of a led but unrenewed leader slot. This is effectively the maximum duration that a leader can be stopped before it is replaced by another candidate.",
+      "type": "string"
+    },
+    "helm-values.global.leaderElection.namespace": {
+      "default": "kube-system",
+      "description": "Override the namespace used for the leader election lease.",
+      "type": "string"
+    },
+    "helm-values.global.leaderElection.renewDeadline": {
+      "description": "The interval between attempts by the acting master to renew a leadership slot before it stops leading. This must be less than or equal to the lease duration.",
+      "type": "string"
+    },
+    "helm-values.global.leaderElection.retryPeriod": {
+      "description": "The duration the clients should wait between attempting acquisition and renewal of a leadership.",
+      "type": "string"
+    },
+    "helm-values.global.logLevel": {
+      "default": 2,
+      "description": "Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.",
+      "type": "number"
+    },
+    "helm-values.global.podSecurityPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "#/$defs/helm-values.global.podSecurityPolicy.enabled"
+        },
+        "useAppArmor": {
+          "$ref": "#/$defs/helm-values.global.podSecurityPolicy.useAppArmor"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.global.podSecurityPolicy.enabled": {
+      "default": false,
+      "description": "Create PodSecurityPolicy for cert-manager.\n\nNote that PodSecurityPolicy was deprecated in Kubernetes 1.21 and removed in Kubernetes 1.25.",
+      "type": "boolean"
+    },
+    "helm-values.global.podSecurityPolicy.useAppArmor": {
+      "default": true,
+      "description": "Configure the PodSecurityPolicy to use AppArmor.",
+      "type": "boolean"
+    },
+    "helm-values.global.priorityClassName": {
+      "default": "",
+      "description": "The optional priority class to be used for the cert-manager pods.",
+      "type": "string"
+    },
+    "helm-values.global.rbac": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregateClusterRoles": {
+          "$ref": "#/$defs/helm-values.global.rbac.aggregateClusterRoles"
+        },
+        "create": {
+          "$ref": "#/$defs/helm-values.global.rbac.create"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.global.rbac.aggregateClusterRoles": {
+      "default": true,
+      "description": "Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)",
+      "type": "boolean"
+    },
+    "helm-values.global.rbac.create": {
+      "default": true,
+      "description": "Create required ClusterRoles and ClusterRoleBindings for cert-manager.",
+      "type": "boolean"
+    },
+    "helm-values.global.revisionHistoryLimit": {
+      "description": "The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).",
+      "type": "number"
+    },
+    "helm-values.hostAliases": {
+      "default": [],
+      "description": "Optional hostAliases for cert-manager-controller pods. May be useful when performing ACME DNS-01 self checks.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.http_proxy": {
+      "description": "Configures the HTTP_PROXY environment variable where a HTTP proxy is required.",
+      "type": "string"
+    },
+    "helm-values.https_proxy": {
+      "description": "Configures the HTTPS_PROXY environment variable where a HTTP proxy is required.",
+      "type": "string"
+    },
+    "helm-values.image": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/helm-values.image.digest"
+        },
+        "pullPolicy": {
+          "$ref": "#/$defs/helm-values.image.pullPolicy"
+        },
+        "registry": {
+          "$ref": "#/$defs/helm-values.image.registry"
+        },
+        "repository": {
+          "$ref": "#/$defs/helm-values.image.repository"
+        },
+        "tag": {
+          "$ref": "#/$defs/helm-values.image.tag"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.image.digest": {
+      "description": "Setting a digest will override any tag.",
+      "type": "string"
+    },
+    "helm-values.image.pullPolicy": {
+      "default": "IfNotPresent",
+      "description": "Kubernetes imagePullPolicy on Deployment.",
+      "type": "string"
+    },
+    "helm-values.image.registry": {
+      "description": "The container registry to pull the manager image from.",
+      "type": "string"
+    },
+    "helm-values.image.repository": {
+      "default": "quay.io/jetstack/cert-manager-controller",
+      "description": "The container image for the cert-manager controller.",
+      "type": "string"
+    },
+    "helm-values.image.tag": {
+      "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion is used.",
+      "type": "string"
+    },
+    "helm-values.ingressShim": {
+      "additionalProperties": false,
+      "properties": {
+        "defaultIssuerGroup": {
+          "$ref": "#/$defs/helm-values.ingressShim.defaultIssuerGroup"
+        },
+        "defaultIssuerKind": {
+          "$ref": "#/$defs/helm-values.ingressShim.defaultIssuerKind"
+        },
+        "defaultIssuerName": {
+          "$ref": "#/$defs/helm-values.ingressShim.defaultIssuerName"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.ingressShim.defaultIssuerGroup": {
+      "description": "Optional default issuer group to use for ingress resources.",
+      "type": "string"
+    },
+    "helm-values.ingressShim.defaultIssuerKind": {
+      "description": "Optional default issuer kind to use for ingress resources.",
+      "type": "string"
+    },
+    "helm-values.ingressShim.defaultIssuerName": {
+      "description": "Optional default issuer to use for ingress resources.",
+      "type": "string"
+    },
+    "helm-values.installCRDs": {
+      "default": false,
+      "description": "This option is equivalent to setting crds.enabled=true and crds.keep=true. Deprecated: use crds.enabled and crds.keep instead.",
+      "type": "boolean"
+    },
+    "helm-values.livenessProbe": {
+      "default": {
+        "enabled": true,
+        "failureThreshold": 8,
+        "initialDelaySeconds": 10,
+        "periodSeconds": 10,
+        "successThreshold": 1,
+        "timeoutSeconds": 15
+      },
+      "description": "LivenessProbe settings for the controller container of the controller Pod.\n\nThis is enabled by default, in order to enable the clock-skew liveness probe that restarts the controller in case of a skew between the system clock and the monotonic clock. LivenessProbe durations and thresholds are based on those used for the Kubernetes controller-manager. For more information see the following on the\n[Kubernetes GitHub repository](https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245)",
+      "type": "object"
+    },
+    "helm-values.maxConcurrentChallenges": {
+      "default": 60,
+      "description": "The maximum number of challenges that can be scheduled as 'processing' at once.",
+      "type": "number"
+    },
+    "helm-values.nameOverride": {
+      "description": "Override the \"cert-manager.name\" value, which is used to annotate some of the resources that are created by this Chart (using \"app.kubernetes.io/name\"). NOTE: There are some inconsitencies in the Helm chart when it comes to these annotations (some resources use eg. \"cainjector.name\" which resolves to the value \"cainjector\").",
+      "type": "string"
+    },
+    "helm-values.namespace": {
+      "default": "",
+      "description": "This namespace allows you to define where the services are installed into. If not set then they use the namespace of the release. This is helpful when installing cert manager as a chart dependency (sub chart).",
+      "type": "string"
+    },
+    "helm-values.no_proxy": {
+      "description": "Configures the NO_PROXY environment variable where a HTTP proxy is required, but certain domains should be excluded.",
+      "type": "string"
+    },
+    "helm-values.nodeSelector": {
+      "default": {
+        "kubernetes.io/os": "linux"
+      },
+      "description": "The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nThis default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.",
+      "type": "object"
+    },
+    "helm-values.podAnnotations": {
+      "description": "Optional additional annotations to add to the controller Pods.",
+      "type": "object"
+    },
+    "helm-values.podDisruptionBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "#/$defs/helm-values.podDisruptionBudget.enabled"
+        },
+        "maxUnavailable": {
+          "$ref": "#/$defs/helm-values.podDisruptionBudget.maxUnavailable"
+        },
+        "minAvailable": {
+          "$ref": "#/$defs/helm-values.podDisruptionBudget.minAvailable"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.podDisruptionBudget.enabled": {
+      "default": false,
+      "description": "Enable or disable the PodDisruptionBudget resource.\n\nThis prevents downtime during voluntary disruptions such as during a Node upgrade. For example, the PodDisruptionBudget will block `kubectl drain` if it is used on the Node where the only remaining cert-manager\nPod is currently running.",
+      "type": "boolean"
+    },
+    "helm-values.podDisruptionBudget.maxUnavailable": {
+      "description": "This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set.",
+      "type": "number"
+    },
+    "helm-values.podDisruptionBudget.minAvailable": {
+      "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set.",
+      "type": "number"
+    },
+    "helm-values.podDnsConfig": {
+      "description": "Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to \"None\", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).",
+      "type": "object"
+    },
+    "helm-values.podDnsPolicy": {
+      "description": "Pod DNS policy.\nFor more information, see [Pod's DNS Policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).",
+      "type": "string"
+    },
+    "helm-values.podLabels": {
+      "default": {},
+      "description": "Optional additional labels to add to the controller Pods.",
+      "type": "object"
+    },
+    "helm-values.prometheus": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "#/$defs/helm-values.prometheus.enabled"
+        },
+        "podmonitor": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor"
+        },
+        "servicemonitor": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.prometheus.enabled": {
+      "default": true,
+      "description": "Enable Prometheus monitoring for the cert-manager controller to use with the. Prometheus Operator. If this option is enabled without enabling `prometheus.servicemonitor.enabled` or\n`prometheus.podmonitor.enabled`, 'prometheus.io' annotations are added to the cert-manager Deployment\nresources. Additionally, a service is created which can be used together with your own ServiceMonitor (managed outside of this Helm chart). Otherwise, a ServiceMonitor/ PodMonitor is created.",
+      "type": "boolean"
+    },
+    "helm-values.prometheus.podmonitor": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.annotations"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.enabled"
+        },
+        "endpointAdditionalProperties": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.endpointAdditionalProperties"
+        },
+        "honorLabels": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.honorLabels"
+        },
+        "interval": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.interval"
+        },
+        "labels": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.labels"
+        },
+        "namespace": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.namespace"
+        },
+        "path": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.path"
+        },
+        "prometheusInstance": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.prometheusInstance"
+        },
+        "scrapeTimeout": {
+          "$ref": "#/$defs/helm-values.prometheus.podmonitor.scrapeTimeout"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.prometheus.podmonitor.annotations": {
+      "default": {},
+      "description": "Additional annotations to add to the PodMonitor.",
+      "type": "object"
+    },
+    "helm-values.prometheus.podmonitor.enabled": {
+      "default": false,
+      "description": "Create a PodMonitor to add cert-manager to Prometheus.",
+      "type": "boolean"
+    },
+    "helm-values.prometheus.podmonitor.endpointAdditionalProperties": {
+      "default": {},
+      "description": "EndpointAdditionalProperties allows setting additional properties on the endpoint such as relabelings, metricRelabelings etc.\n\nFor example:\nendpointAdditionalProperties:\n relabelings:\n - action: replace\n   sourceLabels:\n   - __meta_kubernetes_pod_node_name\n   targetLabel: instance",
+      "type": "object"
+    },
+    "helm-values.prometheus.podmonitor.honorLabels": {
+      "default": false,
+      "description": "Keep labels from scraped data, overriding server-side labels.",
+      "type": "boolean"
+    },
+    "helm-values.prometheus.podmonitor.interval": {
+      "default": "60s",
+      "description": "The interval to scrape metrics.",
+      "type": "string"
+    },
+    "helm-values.prometheus.podmonitor.labels": {
+      "default": {},
+      "description": "Additional labels to add to the PodMonitor.",
+      "type": "object"
+    },
+    "helm-values.prometheus.podmonitor.namespace": {
+      "description": "The namespace that the pod monitor should live in, defaults to the cert-manager namespace.",
+      "type": "string"
+    },
+    "helm-values.prometheus.podmonitor.path": {
+      "default": "/metrics",
+      "description": "The path to scrape for metrics.",
+      "type": "string"
+    },
+    "helm-values.prometheus.podmonitor.prometheusInstance": {
+      "default": "default",
+      "description": "Specifies the `prometheus` label on the created PodMonitor. This is used when different Prometheus instances have label selectors matching different PodMonitors.",
+      "type": "string"
+    },
+    "helm-values.prometheus.podmonitor.scrapeTimeout": {
+      "default": "30s",
+      "description": "The timeout before a metrics scrape fails.",
+      "type": "string"
+    },
+    "helm-values.prometheus.servicemonitor": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.annotations"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.enabled"
+        },
+        "endpointAdditionalProperties": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.endpointAdditionalProperties"
+        },
+        "honorLabels": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.honorLabels"
+        },
+        "interval": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.interval"
+        },
+        "labels": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.labels"
+        },
+        "namespace": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.namespace"
+        },
+        "path": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.path"
+        },
+        "prometheusInstance": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.prometheusInstance"
+        },
+        "scrapeTimeout": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.scrapeTimeout"
+        },
+        "targetPort": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.targetPort"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.prometheus.servicemonitor.annotations": {
+      "default": {},
+      "description": "Additional annotations to add to the ServiceMonitor.",
+      "type": "object"
+    },
+    "helm-values.prometheus.servicemonitor.enabled": {
+      "default": false,
+      "description": "Create a ServiceMonitor to add cert-manager to Prometheus.",
+      "type": "boolean"
+    },
+    "helm-values.prometheus.servicemonitor.endpointAdditionalProperties": {
+      "default": {},
+      "description": "EndpointAdditionalProperties allows setting additional properties on the endpoint such as relabelings, metricRelabelings etc.\n\nFor example:\nendpointAdditionalProperties:\n relabelings:\n - action: replace\n   sourceLabels:\n   - __meta_kubernetes_pod_node_name\n   targetLabel: instance",
+      "type": "object"
+    },
+    "helm-values.prometheus.servicemonitor.honorLabels": {
+      "default": false,
+      "description": "Keep labels from scraped data, overriding server-side labels.",
+      "type": "boolean"
+    },
+    "helm-values.prometheus.servicemonitor.interval": {
+      "default": "60s",
+      "description": "The interval to scrape metrics.",
+      "type": "string"
+    },
+    "helm-values.prometheus.servicemonitor.labels": {
+      "default": {},
+      "description": "Additional labels to add to the ServiceMonitor.",
+      "type": "object"
+    },
+    "helm-values.prometheus.servicemonitor.namespace": {
+      "description": "The namespace that the service monitor should live in, defaults to the cert-manager namespace.",
+      "type": "string"
+    },
+    "helm-values.prometheus.servicemonitor.path": {
+      "default": "/metrics",
+      "description": "The path to scrape for metrics.",
+      "type": "string"
+    },
+    "helm-values.prometheus.servicemonitor.prometheusInstance": {
+      "default": "default",
+      "description": "Specifies the `prometheus` label on the created ServiceMonitor. This is used when different Prometheus instances have label selectors matching different ServiceMonitors.",
+      "type": "string"
+    },
+    "helm-values.prometheus.servicemonitor.scrapeTimeout": {
+      "default": "30s",
+      "description": "The timeout before a metrics scrape fails.",
+      "type": "string"
+    },
+    "helm-values.prometheus.servicemonitor.targetPort": {
+      "default": 9402,
+      "description": "The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.",
+      "type": "number"
+    },
+    "helm-values.replicaCount": {
+      "default": 1,
+      "description": "The number of replicas of the cert-manager controller to run.\n\nThe default is 1, but in production set this to 2 or 3 to provide high availability.\n\nIf `replicas > 1`, consider setting `podDisruptionBudget.enabled=true`.\n\nNote that cert-manager uses leader election to ensure that there can only be a single instance active at a time.",
+      "type": "number"
+    },
+    "helm-values.resources": {
+      "default": {},
+      "description": "Resources to provide to the cert-manager controller pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
+      "type": "object"
+    },
+    "helm-values.securityContext": {
+      "default": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "description": "Pod Security Context.\nFor more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.serviceAccount": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.serviceAccount.annotations"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.serviceAccount.automountServiceAccountToken"
+        },
+        "create": {
+          "$ref": "#/$defs/helm-values.serviceAccount.create"
+        },
+        "labels": {
+          "$ref": "#/$defs/helm-values.serviceAccount.labels"
+        },
+        "name": {
+          "$ref": "#/$defs/helm-values.serviceAccount.name"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.serviceAccount.annotations": {
+      "description": "Optional additional annotations to add to the controller's Service Account.",
+      "type": "object"
+    },
+    "helm-values.serviceAccount.automountServiceAccountToken": {
+      "default": true,
+      "description": "Automount API credentials for a Service Account.",
+      "type": "boolean"
+    },
+    "helm-values.serviceAccount.create": {
+      "default": true,
+      "description": "Specifies whether a service account should be created.",
+      "type": "boolean"
+    },
+    "helm-values.serviceAccount.labels": {
+      "description": "Optional additional labels to add to the controller's Service Account.",
+      "type": "object"
+    },
+    "helm-values.serviceAccount.name": {
+      "description": "The name of the service account to use.\nIf not set and create is true, a name is generated using the fullname template.",
+      "type": "string"
+    },
+    "helm-values.serviceAnnotations": {
+      "description": "Optional annotations to add to the controller Service.",
+      "type": "object"
+    },
+    "helm-values.serviceIPFamilies": {
+      "description": "Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.serviceIPFamilyPolicy": {
+      "description": "Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).",
+      "type": "string"
+    },
+    "helm-values.serviceLabels": {
+      "description": "Optional additional labels to add to the controller Service.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck": {
+      "additionalProperties": false,
+      "properties": {
+        "affinity": {
+          "$ref": "#/$defs/helm-values.startupapicheck.affinity"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.startupapicheck.automountServiceAccountToken"
+        },
+        "backoffLimit": {
+          "$ref": "#/$defs/helm-values.startupapicheck.backoffLimit"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/$defs/helm-values.startupapicheck.containerSecurityContext"
+        },
+        "enableServiceLinks": {
+          "$ref": "#/$defs/helm-values.startupapicheck.enableServiceLinks"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.startupapicheck.enabled"
+        },
+        "extraArgs": {
+          "$ref": "#/$defs/helm-values.startupapicheck.extraArgs"
+        },
+        "image": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image"
+        },
+        "jobAnnotations": {
+          "$ref": "#/$defs/helm-values.startupapicheck.jobAnnotations"
+        },
+        "nodeSelector": {
+          "$ref": "#/$defs/helm-values.startupapicheck.nodeSelector"
+        },
+        "podAnnotations": {
+          "$ref": "#/$defs/helm-values.startupapicheck.podAnnotations"
+        },
+        "podLabels": {
+          "$ref": "#/$defs/helm-values.startupapicheck.podLabels"
+        },
+        "rbac": {
+          "$ref": "#/$defs/helm-values.startupapicheck.rbac"
+        },
+        "resources": {
+          "$ref": "#/$defs/helm-values.startupapicheck.resources"
+        },
+        "securityContext": {
+          "$ref": "#/$defs/helm-values.startupapicheck.securityContext"
+        },
+        "serviceAccount": {
+          "$ref": "#/$defs/helm-values.startupapicheck.serviceAccount"
+        },
+        "timeout": {
+          "$ref": "#/$defs/helm-values.startupapicheck.timeout"
+        },
+        "tolerations": {
+          "$ref": "#/$defs/helm-values.startupapicheck.tolerations"
+        },
+        "volumeMounts": {
+          "$ref": "#/$defs/helm-values.startupapicheck.volumeMounts"
+        },
+        "volumes": {
+          "$ref": "#/$defs/helm-values.startupapicheck.volumes"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.startupapicheck.affinity": {
+      "default": {},
+      "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.automountServiceAccountToken": {
+      "description": "Automounting API credentials for a particular pod.",
+      "type": "boolean"
+    },
+    "helm-values.startupapicheck.backoffLimit": {
+      "default": 4,
+      "description": "Job backoffLimit",
+      "type": "number"
+    },
+    "helm-values.startupapicheck.containerSecurityContext": {
+      "default": {
+        "allowPrivilegeEscalation": false,
+        "capabilities": {
+          "drop": [
+            "ALL"
+          ]
+        },
+        "readOnlyRootFilesystem": true
+      },
+      "description": "Container Security Context to be set on the controller component container. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.enableServiceLinks": {
+      "default": false,
+      "description": "enableServiceLinks indicates whether information about services should be injected into pod's environment variables, matching the syntax of Docker links.",
+      "type": "boolean"
+    },
+    "helm-values.startupapicheck.enabled": {
+      "default": true,
+      "description": "Enables the startup api check.",
+      "type": "boolean"
+    },
+    "helm-values.startupapicheck.extraArgs": {
+      "default": [
+        "-v"
+      ],
+      "description": "Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-startupapicheck:<version> --help`.\n\nVerbose logging is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.startupapicheck.image": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.digest"
+        },
+        "pullPolicy": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.pullPolicy"
+        },
+        "registry": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.registry"
+        },
+        "repository": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.repository"
+        },
+        "tag": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.tag"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.startupapicheck.image.digest": {
+      "description": "Setting a digest will override any tag.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.image.pullPolicy": {
+      "default": "IfNotPresent",
+      "description": "Kubernetes imagePullPolicy on Deployment.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.image.registry": {
+      "description": "The container registry to pull the startupapicheck image from.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.image.repository": {
+      "default": "quay.io/jetstack/cert-manager-startupapicheck",
+      "description": "The container image for the cert-manager startupapicheck.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.image.tag": {
+      "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion is used.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.jobAnnotations": {
+      "default": {
+        "helm.sh/hook": "post-install",
+        "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded",
+        "helm.sh/hook-weight": "1"
+      },
+      "description": "Optional additional annotations to add to the startupapicheck Job.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.nodeSelector": {
+      "default": {
+        "kubernetes.io/os": "linux"
+      },
+      "description": "The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nThis default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.podAnnotations": {
+      "description": "Optional additional annotations to add to the startupapicheck Pods.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.podLabels": {
+      "default": {},
+      "description": "Optional additional labels to add to the startupapicheck Pods.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.rbac": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.startupapicheck.rbac.annotations"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.startupapicheck.rbac.annotations": {
+      "default": {
+        "helm.sh/hook": "post-install",
+        "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded",
+        "helm.sh/hook-weight": "-5"
+      },
+      "description": "annotations for the startup API Check job RBAC and PSP resources.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.resources": {
+      "default": {},
+      "description": "Resources to provide to the cert-manager controller pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.securityContext": {
+      "default": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "description": "Pod Security Context to be set on the startupapicheck component Pod. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.serviceAccount": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.startupapicheck.serviceAccount.annotations"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.startupapicheck.serviceAccount.automountServiceAccountToken"
+        },
+        "create": {
+          "$ref": "#/$defs/helm-values.startupapicheck.serviceAccount.create"
+        },
+        "labels": {
+          "$ref": "#/$defs/helm-values.startupapicheck.serviceAccount.labels"
+        },
+        "name": {
+          "$ref": "#/$defs/helm-values.startupapicheck.serviceAccount.name"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.startupapicheck.serviceAccount.annotations": {
+      "default": {
+        "helm.sh/hook": "post-install",
+        "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded",
+        "helm.sh/hook-weight": "-5"
+      },
+      "description": "Optional additional annotations to add to the Job's Service Account.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.serviceAccount.automountServiceAccountToken": {
+      "default": true,
+      "description": "Automount API credentials for a Service Account.",
+      "type": "boolean"
+    },
+    "helm-values.startupapicheck.serviceAccount.create": {
+      "default": true,
+      "description": "Specifies whether a service account should be created.",
+      "type": "boolean"
+    },
+    "helm-values.startupapicheck.serviceAccount.labels": {
+      "description": "Optional additional labels to add to the startupapicheck's Service Account.",
+      "type": "object"
+    },
+    "helm-values.startupapicheck.serviceAccount.name": {
+      "description": "The name of the service account to use.\nIf not set and create is true, a name is generated using the fullname template.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.timeout": {
+      "default": "1m",
+      "description": "Timeout for 'kubectl check api' command.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.tolerations": {
+      "default": [],
+      "description": "A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.startupapicheck.volumeMounts": {
+      "default": [],
+      "description": "Additional volume mounts to add to the cert-manager controller container.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.startupapicheck.volumes": {
+      "default": [],
+      "description": "Additional volumes to add to the cert-manager controller pod.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.strategy": {
+      "default": {},
+      "description": "Deployment update strategy for the cert-manager controller deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).\n\nFor example:\nstrategy:\n  type: RollingUpdate\n  rollingUpdate:\n    maxSurge: 0\n    maxUnavailable: 1",
+      "type": "object"
+    },
+    "helm-values.tolerations": {
+      "default": [],
+      "description": "A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.topologySpreadConstraints": {
+      "default": [],
+      "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.volumeMounts": {
+      "default": [],
+      "description": "Additional volume mounts to add to the cert-manager controller container.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.volumes": {
+      "default": [],
+      "description": "Additional volumes to add to the cert-manager controller pod.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook": {
+      "additionalProperties": false,
+      "properties": {
+        "affinity": {
+          "$ref": "#/$defs/helm-values.webhook.affinity"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.webhook.automountServiceAccountToken"
+        },
+        "config": {
+          "$ref": "#/$defs/helm-values.webhook.config"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/$defs/helm-values.webhook.containerSecurityContext"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/helm-values.webhook.deploymentAnnotations"
+        },
+        "enableServiceLinks": {
+          "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
+        },
+        "extraArgs": {
+          "$ref": "#/$defs/helm-values.webhook.extraArgs"
+        },
+        "featureGates": {
+          "$ref": "#/$defs/helm-values.webhook.featureGates"
+        },
+        "hostNetwork": {
+          "$ref": "#/$defs/helm-values.webhook.hostNetwork"
+        },
+        "image": {
+          "$ref": "#/$defs/helm-values.webhook.image"
+        },
+        "livenessProbe": {
+          "$ref": "#/$defs/helm-values.webhook.livenessProbe"
+        },
+        "loadBalancerIP": {
+          "$ref": "#/$defs/helm-values.webhook.loadBalancerIP"
+        },
+        "mutatingWebhookConfiguration": {
+          "$ref": "#/$defs/helm-values.webhook.mutatingWebhookConfiguration"
+        },
+        "mutatingWebhookConfigurationAnnotations": {
+          "$ref": "#/$defs/helm-values.webhook.mutatingWebhookConfigurationAnnotations"
+        },
+        "networkPolicy": {
+          "$ref": "#/$defs/helm-values.webhook.networkPolicy"
+        },
+        "nodeSelector": {
+          "$ref": "#/$defs/helm-values.webhook.nodeSelector"
+        },
+        "podAnnotations": {
+          "$ref": "#/$defs/helm-values.webhook.podAnnotations"
+        },
+        "podDisruptionBudget": {
+          "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget"
+        },
+        "podLabels": {
+          "$ref": "#/$defs/helm-values.webhook.podLabels"
+        },
+        "readinessProbe": {
+          "$ref": "#/$defs/helm-values.webhook.readinessProbe"
+        },
+        "replicaCount": {
+          "$ref": "#/$defs/helm-values.webhook.replicaCount"
+        },
+        "resources": {
+          "$ref": "#/$defs/helm-values.webhook.resources"
+        },
+        "securePort": {
+          "$ref": "#/$defs/helm-values.webhook.securePort"
+        },
+        "securityContext": {
+          "$ref": "#/$defs/helm-values.webhook.securityContext"
+        },
+        "serviceAccount": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAccount"
+        },
+        "serviceAnnotations": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAnnotations"
+        },
+        "serviceIPFamilies": {
+          "$ref": "#/$defs/helm-values.webhook.serviceIPFamilies"
+        },
+        "serviceIPFamilyPolicy": {
+          "$ref": "#/$defs/helm-values.webhook.serviceIPFamilyPolicy"
+        },
+        "serviceLabels": {
+          "$ref": "#/$defs/helm-values.webhook.serviceLabels"
+        },
+        "serviceType": {
+          "$ref": "#/$defs/helm-values.webhook.serviceType"
+        },
+        "strategy": {
+          "$ref": "#/$defs/helm-values.webhook.strategy"
+        },
+        "timeoutSeconds": {
+          "$ref": "#/$defs/helm-values.webhook.timeoutSeconds"
+        },
+        "tolerations": {
+          "$ref": "#/$defs/helm-values.webhook.tolerations"
+        },
+        "topologySpreadConstraints": {
+          "$ref": "#/$defs/helm-values.webhook.topologySpreadConstraints"
+        },
+        "url": {
+          "$ref": "#/$defs/helm-values.webhook.url"
+        },
+        "validatingWebhookConfiguration": {
+          "$ref": "#/$defs/helm-values.webhook.validatingWebhookConfiguration"
+        },
+        "validatingWebhookConfigurationAnnotations": {
+          "$ref": "#/$defs/helm-values.webhook.validatingWebhookConfigurationAnnotations"
+        },
+        "volumeMounts": {
+          "$ref": "#/$defs/helm-values.webhook.volumeMounts"
+        },
+        "volumes": {
+          "$ref": "#/$defs/helm-values.webhook.volumes"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.affinity": {
+      "default": {},
+      "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
+      "type": "object"
+    },
+    "helm-values.webhook.automountServiceAccountToken": {
+      "description": "Automounting API credentials for a particular pod.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.config": {
+      "default": {},
+      "description": "This is used to configure options for the webhook pod. This allows setting options that would usually be provided using flags. An APIVersion and Kind must be specified in your values.yaml file.\nFlags override options that are set here.\n\nFor example:\napiVersion: webhook.config.cert-manager.io/v1alpha1\nkind: WebhookConfiguration\n# The port that the webhook listens on for requests.\n# In GKE private clusters, by default Kubernetes apiservers are allowed to\n# talk to the cluster nodes only on 443 and 10250. Configuring\n# securePort: 10250 therefore will work out-of-the-box without needing to add firewall\n# rules or requiring NET_BIND_SERVICE capabilities to bind port numbers < 1000.\n# This should be uncommented and set as a default by the chart once\n# the apiVersion of WebhookConfiguration graduates beyond v1alpha1.\nsecurePort: 10250",
+      "type": "object"
+    },
+    "helm-values.webhook.containerSecurityContext": {
+      "default": {
+        "allowPrivilegeEscalation": false,
+        "capabilities": {
+          "drop": [
+            "ALL"
+          ]
+        },
+        "readOnlyRootFilesystem": true
+      },
+      "description": "Container Security Context to be set on the webhook component container. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.webhook.deploymentAnnotations": {
+      "description": "Optional additional annotations to add to the webhook Deployment.",
+      "type": "object"
+    },
+    "helm-values.webhook.enableServiceLinks": {
+      "default": false,
+      "description": "enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.extraArgs": {
+      "default": [],
+      "description": "Additional command line flags to pass to cert-manager webhook binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-webhook:<version> --help`.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.featureGates": {
+      "default": "",
+      "description": "Comma separated list of feature gates that should be enabled on the webhook pod.",
+      "type": "string"
+    },
+    "helm-values.webhook.hostNetwork": {
+      "default": false,
+      "description": "Specifies if the webhook should be started in hostNetwork mode.\n\nRequired for use in some managed kubernetes clusters (such as AWS EKS) with custom. CNI (such as calico), because control-plane managed by AWS cannot communicate with pods' IP CIDR and admission webhooks are not working\n\nSince the default port for the webhook conflicts with kubelet on the host network, `webhook.securePort` should be changed to an available port if running in hostNetwork mode.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.image": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/helm-values.webhook.image.digest"
+        },
+        "pullPolicy": {
+          "$ref": "#/$defs/helm-values.webhook.image.pullPolicy"
+        },
+        "registry": {
+          "$ref": "#/$defs/helm-values.webhook.image.registry"
+        },
+        "repository": {
+          "$ref": "#/$defs/helm-values.webhook.image.repository"
+        },
+        "tag": {
+          "$ref": "#/$defs/helm-values.webhook.image.tag"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.image.digest": {
+      "description": "Setting a digest will override any tag",
+      "type": "string"
+    },
+    "helm-values.webhook.image.pullPolicy": {
+      "default": "IfNotPresent",
+      "description": "Kubernetes imagePullPolicy on Deployment.",
+      "type": "string"
+    },
+    "helm-values.webhook.image.registry": {
+      "description": "The container registry to pull the webhook image from.",
+      "type": "string"
+    },
+    "helm-values.webhook.image.repository": {
+      "default": "quay.io/jetstack/cert-manager-webhook",
+      "description": "The container image for the cert-manager webhook",
+      "type": "string"
+    },
+    "helm-values.webhook.image.tag": {
+      "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion will be used.",
+      "type": "string"
+    },
+    "helm-values.webhook.livenessProbe": {
+      "default": {
+        "failureThreshold": 3,
+        "initialDelaySeconds": 60,
+        "periodSeconds": 10,
+        "successThreshold": 1,
+        "timeoutSeconds": 1
+      },
+      "description": "Liveness probe values.\nFor more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).",
+      "type": "object"
+    },
+    "helm-values.webhook.loadBalancerIP": {
+      "description": "Specify the load balancer IP for the created service.",
+      "type": "string"
+    },
+    "helm-values.webhook.mutatingWebhookConfiguration": {
+      "additionalProperties": false,
+      "properties": {
+        "namespaceSelector": {
+          "$ref": "#/$defs/helm-values.webhook.mutatingWebhookConfiguration.namespaceSelector"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.mutatingWebhookConfiguration.namespaceSelector": {
+      "default": {},
+      "description": "Configure spec.namespaceSelector for mutating webhooks.",
+      "type": "object"
+    },
+    "helm-values.webhook.mutatingWebhookConfigurationAnnotations": {
+      "description": "Optional additional annotations to add to the webhook MutatingWebhookConfiguration.",
+      "type": "object"
+    },
+    "helm-values.webhook.networkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "$ref": "#/$defs/helm-values.webhook.networkPolicy.egress"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.webhook.networkPolicy.enabled"
+        },
+        "ingress": {
+          "$ref": "#/$defs/helm-values.webhook.networkPolicy.ingress"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.networkPolicy.egress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": 80,
+              "protocol": "TCP"
+            },
+            {
+              "port": 443,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "UDP"
+            },
+            {
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ],
+          "to": [
+            {
+              "ipBlock": {
+                "cidr": "0.0.0.0/0"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Egress rule for the webhook network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.networkPolicy.enabled": {
+      "default": false,
+      "description": "Create network policies for the webhooks.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.networkPolicy.ingress": {
+      "default": [
+        {
+          "from": [
+            {
+              "ipBlock": {
+                "cidr": "0.0.0.0/0"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Ingress rule for the webhook network policy. By default, it allows all inbound traffic.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.nodeSelector": {
+      "default": {
+        "kubernetes.io/os": "linux"
+      },
+      "description": "The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nThis default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.",
+      "type": "object"
+    },
+    "helm-values.webhook.podAnnotations": {
+      "description": "Optional additional annotations to add to the webhook Pods.",
+      "type": "object"
+    },
+    "helm-values.webhook.podDisruptionBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.enabled"
+        },
+        "maxUnavailable": {
+          "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.maxUnavailable"
+        },
+        "minAvailable": {
+          "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.minAvailable"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.podDisruptionBudget.enabled": {
+      "default": false,
+      "description": "Enable or disable the PodDisruptionBudget resource.\n\nThis prevents downtime during voluntary disruptions such as during a Node upgrade. For example, the PodDisruptionBudget will block `kubectl drain` if it is used on the Node where the only remaining cert-manager\nPod is currently running.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.podDisruptionBudget.maxUnavailable": {
+      "description": "This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `minAvailable` is set.",
+      "type": "number"
+    },
+    "helm-values.webhook.podDisruptionBudget.minAvailable": {
+      "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set.",
+      "type": "number"
+    },
+    "helm-values.webhook.podLabels": {
+      "default": {},
+      "description": "Optional additional labels to add to the Webhook Pods.",
+      "type": "object"
+    },
+    "helm-values.webhook.readinessProbe": {
+      "default": {
+        "failureThreshold": 3,
+        "initialDelaySeconds": 5,
+        "periodSeconds": 5,
+        "successThreshold": 1,
+        "timeoutSeconds": 1
+      },
+      "description": "Readiness probe values.\nFor more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).",
+      "type": "object"
+    },
+    "helm-values.webhook.replicaCount": {
+      "default": 1,
+      "description": "Number of replicas of the cert-manager webhook to run.\n\nThe default is 1, but in production set this to 2 or 3 to provide high availability.\n\nIf `replicas > 1`, consider setting `webhook.podDisruptionBudget.enabled=true`.",
+      "type": "number"
+    },
+    "helm-values.webhook.resources": {
+      "default": {},
+      "description": "Resources to provide to the cert-manager webhook pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
+      "type": "object"
+    },
+    "helm-values.webhook.securePort": {
+      "default": 10250,
+      "description": "The port that the webhook listens on for requests. In GKE private clusters, by default Kubernetes apiservers are allowed to talk to the cluster nodes only on 443 and 10250. Configuring securePort: 10250, therefore will work out-of-the-box without needing to add firewall rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000.",
+      "type": "number"
+    },
+    "helm-values.webhook.securityContext": {
+      "default": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "description": "Pod Security Context to be set on the webhook component Pod. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).",
+      "type": "object"
+    },
+    "helm-values.webhook.serviceAccount": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAccount.annotations"
+        },
+        "automountServiceAccountToken": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAccount.automountServiceAccountToken"
+        },
+        "create": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAccount.create"
+        },
+        "labels": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAccount.labels"
+        },
+        "name": {
+          "$ref": "#/$defs/helm-values.webhook.serviceAccount.name"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.serviceAccount.annotations": {
+      "description": "Optional additional annotations to add to the controller's Service Account.",
+      "type": "object"
+    },
+    "helm-values.webhook.serviceAccount.automountServiceAccountToken": {
+      "default": true,
+      "description": "Automount API credentials for a Service Account.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.serviceAccount.create": {
+      "default": true,
+      "description": "Specifies whether a service account should be created.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.serviceAccount.labels": {
+      "description": "Optional additional labels to add to the webhook's Service Account.",
+      "type": "object"
+    },
+    "helm-values.webhook.serviceAccount.name": {
+      "description": "The name of the service account to use.\nIf not set and create is true, a name is generated using the fullname template.",
+      "type": "string"
+    },
+    "helm-values.webhook.serviceAnnotations": {
+      "description": "Optional additional annotations to add to the webhook Service.",
+      "type": "object"
+    },
+    "helm-values.webhook.serviceIPFamilies": {
+      "default": [],
+      "description": "Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.serviceIPFamilyPolicy": {
+      "default": "",
+      "description": "Optionally set the IP family policy for the controller Service to configure dual-stack; see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services).",
+      "type": "string"
+    },
+    "helm-values.webhook.serviceLabels": {
+      "default": {},
+      "description": "Optional additional labels to add to the Webhook Service.",
+      "type": "object"
+    },
+    "helm-values.webhook.serviceType": {
+      "default": "ClusterIP",
+      "description": "Specifies how the service should be handled. Useful if you want to expose the webhook outside of the cluster. In some cases, the control plane cannot reach internal services.",
+      "type": "string"
+    },
+    "helm-values.webhook.strategy": {
+      "default": {},
+      "description": "The update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)\n\nFor example:\nstrategy:\n  type: RollingUpdate\n  rollingUpdate:\n    maxSurge: 0\n    maxUnavailable: 1",
+      "type": "object"
+    },
+    "helm-values.webhook.timeoutSeconds": {
+      "default": 30,
+      "description": "The number of seconds the API server should wait for the webhook to respond before treating the call as a failure. The value must be between 1 and 30 seconds. For more information, see\n[Validating webhook configuration v1](https://kubernetes.io/docs/reference/kubernetes-api/extend-resources/validating-webhook-configuration-v1/).\n\nThe default is set to the maximum value of 30 seconds as users sometimes report that the connection between the K8S API server and the cert-manager webhook server times out. If *this* timeout is reached, the error message will be \"context deadline exceeded\", which doesn't help the user diagnose what phase of the HTTPS connection timed out. For example, it could be during DNS resolution, TCP connection, TLS negotiation, HTTP negotiation, or slow HTTP response from the webhook server. By setting this timeout to its maximum value the underlying timeout error message has more chance of being returned to the end user.",
+      "type": "number"
+    },
+    "helm-values.webhook.tolerations": {
+      "default": [],
+      "description": "A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.topologySpreadConstraints": {
+      "default": [],
+      "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.url": {
+      "default": {},
+      "description": "Overrides the mutating webhook and validating webhook so they reach the webhook service using the `url` field instead of a service.",
+      "type": "object"
+    },
+    "helm-values.webhook.validatingWebhookConfiguration": {
+      "additionalProperties": false,
+      "properties": {
+        "namespaceSelector": {
+          "$ref": "#/$defs/helm-values.webhook.validatingWebhookConfiguration.namespaceSelector"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.webhook.validatingWebhookConfiguration.namespaceSelector": {
+      "default": {
+        "matchExpressions": [
+          {
+            "key": "cert-manager.io/disable-validation",
+            "operator": "NotIn",
+            "values": [
+              "true"
+            ]
+          }
+        ]
+      },
+      "description": "Configure spec.namespaceSelector for validating webhooks.",
+      "type": "object"
+    },
+    "helm-values.webhook.validatingWebhookConfigurationAnnotations": {
+      "description": "Optional additional annotations to add to the webhook ValidatingWebhookConfiguration.",
+      "type": "object"
+    },
+    "helm-values.webhook.volumeMounts": {
+      "default": [],
+      "description": "Additional volume mounts to add to the cert-manager controller container.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.volumes": {
+      "default": [],
+      "description": "Additional volumes to add to the cert-manager controller pod.",
+      "items": {},
+      "type": "array"
+    }
+  },
+  "$ref": "#/$defs/helm-values",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
