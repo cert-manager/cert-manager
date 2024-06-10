@@ -96,3 +96,14 @@ func OutputFormatDER(privateKey []byte) []byte {
 func OutputFormatCombinedPEM(privateKey, certificate []byte) []byte {
 	return bytes.Join([][]byte{privateKey, certificate}, []byte("\n"))
 }
+
+// OutputFormatFullChain returns the byte slice of the PEM encoded full certificate
+// chain, including the root. To be used for Additional Output Format FullChain.
+func OutputFormatFullChain(certificate, ca []byte) []byte {
+	if ca == nil {
+		return certificate
+	}
+	chainWithCA := bytes.Join([][]byte{certificate, ca}, []byte("\n"))
+	bundle, _ := utilpki.ParseSingleCertificateRootChainPEM(chainWithCA)
+	return bundle.ChainPEM
+}

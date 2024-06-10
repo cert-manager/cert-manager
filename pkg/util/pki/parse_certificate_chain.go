@@ -38,13 +38,23 @@ type chainNode struct {
 }
 
 // ParseSingleCertificateChainPEM decodes a PEM encoded certificate chain before
-// calling ParseSingleCertificateChainPEM
+// calling ParseSingleCertificateChain
 func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 	certs, err := DecodeX509CertificateChainBytes(pembundle)
 	if err != nil {
 		return PEMBundle{}, err
 	}
 	return ParseSingleCertificateChain(certs)
+}
+
+// ParseSingleCertificateRootChainPEM decodes a PEM encoded certificate chain before
+// calling ParseSingleCertificateRootChain
+func ParseSingleCertificateRootChainPEM(pembundle []byte) (PEMBundle, error) {
+	certs, err := DecodeX509CertificateChainBytes(pembundle)
+	if err != nil {
+		return PEMBundle{}, err
+	}
+	return ParseSingleCertificateRootChain(certs)
 }
 
 // ParseSingleCertificateChain returns the PEM-encoded chain of certificates as
@@ -67,13 +77,36 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
+	chain, err := parseSingleCertificateChain(certs)
+	if err != nil {
+		return PEMBundle{}, err
+	}
+	// Root certificates are omitted from the chain as per
+	// https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
+	// > [T]he self-signed certificate that specifies the root certificate authority
+	// > MAY be omitted from the chain, under the assumption that the remote end must
+	// > already possess it in order to validate it in any case.
+	return chain.toBundleAndCA(true)
+}
+
+// ParseSingleCertificateChainWithRoot returns a certificate chain and CA like ParseSingleCertificateChain,
+// with the exception that the chain will include the root certificate, if present.
+func ParseSingleCertificateRootChain(certs []*x509.Certificate) (PEMBundle, error) {
+	chain, err := parseSingleCertificateChain(certs)
+	if err != nil {
+		return PEMBundle{}, err
+	}
+	return chain.toBundleAndCA(false)
+}
+
+func parseSingleCertificateChain(certs []*x509.Certificate) (*chainNode, error) {
 	for _, cert := range certs {
 		if cert == nil {
-			return PEMBundle{}, errors.NewInvalidData("certificate chain contains nil certificate")
+			return nil, errors.NewInvalidData("certificate chain contains nil certificate")
 		}
 
 		if len(cert.Raw) == 0 {
-			return PEMBundle{}, errors.NewInvalidData("certificate chain contains certificate without Raw set")
+			return nil, errors.NewInvalidData("certificate chain contains certificate without Raw set")
 		}
 	}
 
@@ -96,7 +129,7 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// certificates to 1000. This helps us avoid issues with O(n^2) time complexity
 	// in the algorithm below.
 	if len(certs) > 1000 {
-		return PEMBundle{}, errors.NewInvalidData("certificate chain is too long, must be less than 1000 certificates")
+		return nil, errors.NewInvalidData("certificate chain is too long, must be less than 1000 certificates")
 	}
 
 	// A certificate chain can be well described as a linked list. Here we build
@@ -144,16 +177,18 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 		// If no chains were merged in this pass, the chain can never be built as a
 		// single list. Error.
 		if !mergedTwoChains {
-			return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
+			return nil, errors.NewInvalidData("certificate chain is malformed or broken")
 		}
 	}
 
-	// There is only a single chain left at index 0. Return chain as PEM.
-	return chains[0].toBundleAndCA()
+	// There is only a single chain left at index 0.
+	return chains[0], nil
 }
 
 // toBundleAndCA will return the PEM bundle of this chain.
-func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
+// If `exludeSelfSignedRoot` is true and the root of the chain is a self-signed
+// certificate, it will be omitted in the output chain.
+func (c *chainNode) toBundleAndCA(excludeSelfSignedRoot bool) (PEMBundle, error) {
 	var (
 		certs []*x509.Certificate
 		ca    *x509.Certificate
@@ -162,17 +197,11 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 	for {
 		// If the issuer is nil, we have hit the root of the chain. Assign the CA
 		// to this certificate and stop traversing. If the certificate at the root
-		// of the chain is not self-signed (i.e. is not a root CA), then also append
-		// that certificate to the chain.
-
-		// Root certificates are omitted from the chain as per
-		// https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
-		// > [T]he self-signed certificate that specifies the root certificate authority
-		// > MAY be omitted from the chain, under the assumption that the remote end must
-		// > already possess it in order to validate it in any case.
+		// of the chain is self-signed (i.e. is a root CA), omit it from the chain
+		// based on `excludeSelfSignedRoot`.
 
 		if c.issuer == nil {
-			if len(certs) > 0 && !isSelfSignedCertificate(c.cert) {
+			if len(certs) > 0 && !(isSelfSignedCertificate(c.cert) && excludeSelfSignedRoot) {
 				certs = append(certs, c.cert)
 			}
 
