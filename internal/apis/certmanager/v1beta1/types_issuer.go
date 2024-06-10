@@ -306,6 +306,14 @@ type ServiceAccountRef struct {
 	// consisting of the issuer's namespace and name is always included.
 	// +optional
 	TokenAudiences []string `json:"audiences,omitempty"`
+
+	// EnableKubeAudience will include the default Kubernetes audience as the
+	// service account's token audience. This is useful when the short lived service
+	// account token is used to authenticate with Vault and Vault does not have JWT validation token configured.
+	// This enables Vault to use the service account token as a JWT token with the audience set to the Kubernetes API server.
+	// If unset the audience defaults to `false`
+	// +optional
+	EnableKubeAudience bool `json:"enableKubeAudience,omitempty"`
 }
 
 type CAIssuer struct {

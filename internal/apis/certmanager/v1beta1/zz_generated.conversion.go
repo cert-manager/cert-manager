@@ -1400,6 +1400,7 @@ func Convert_certmanager_SelfSignedIssuer_To_v1beta1_SelfSignedIssuer(in *certma
 func autoConvert_v1beta1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *ServiceAccountRef, out *certmanager.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
 	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
+	out.EnableKubeAudience = in.EnableKubeAudience
 	return nil
 }
 
@@ -1411,6 +1412,7 @@ func Convert_v1beta1_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *Serv
 func autoConvert_certmanager_ServiceAccountRef_To_v1beta1_ServiceAccountRef(in *certmanager.ServiceAccountRef, out *ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
 	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
+	out.EnableKubeAudience = in.EnableKubeAudience
 	return nil
 }
 

@@ -57,6 +57,7 @@ github.com/go-openapi/jsonpointer,https://github.com/go-openapi/jsonpointer/blob
 github.com/go-openapi/jsonreference,https://github.com/go-openapi/jsonreference/blob/v0.21.0/LICENSE,Apache-2.0
 github.com/go-openapi/swag,https://github.com/go-openapi/swag/blob/v0.23.0/LICENSE,Apache-2.0
 github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
+github.com/golang-jwt/jwt,https://github.com/golang-jwt/jwt/blob/v3.2.2/LICENSE,MIT
 github.com/golang-jwt/jwt/v5,https://github.com/golang-jwt/jwt/blob/v5.2.1/LICENSE,MIT
 github.com/golang/groupcache/lru,https://github.com/golang/groupcache/blob/41bb18bfe9da/LICENSE,Apache-2.0
 github.com/golang/protobuf,https://github.com/golang/protobuf/blob/v1.5.4/LICENSE,BSD-3-Clause
