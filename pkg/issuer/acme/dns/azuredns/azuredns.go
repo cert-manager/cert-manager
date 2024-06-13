@@ -11,11 +11,9 @@ this directory.
 package azuredns
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -279,27 +277,63 @@ func stabilizeError(err error) error {
 		return nil
 	}
 
-	redactResponse := func(resp *http.Response) *http.Response {
-		if resp == nil {
-			return nil
+	return NormalizedError{
+		Cause: err,
+	}
+}
+
+type NormalizedError struct {
+	Cause error
+}
+
+func (e NormalizedError) Error() string {
+	var (
+		authErr *azidentity.AuthenticationFailedError
+		respErr *azcore.ResponseError
+	)
+
+	switch {
+	case errors.As(e.Cause, &authErr):
+		msg := new(strings.Builder)
+		fmt.Fprintln(msg, "authentication failed:")
+
+		if authErr.RawResponse != nil {
+			if authErr.RawResponse.Request != nil {
+				fmt.Fprintf(msg, "%s %s://%s%s\n", authErr.RawResponse.Request.Method, authErr.RawResponse.Request.URL.Scheme, authErr.RawResponse.Request.URL.Host, authErr.RawResponse.Request.URL.Path)
+			}
+
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
+			fmt.Fprintf(msg, "RESPONSE %s\n", authErr.RawResponse.Status)
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
 		}
 
-		response := *resp
-		response.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
-		return &response
-	}
+		fmt.Fprint(msg, "see logs for more information")
 
-	var authErr *azidentity.AuthenticationFailedError
-	if errors.As(err, &authErr) {
-		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
-		authErr.RawResponse = redactResponse(authErr.RawResponse)
-	}
+		return msg.String()
+	case errors.As(e.Cause, &respErr):
+		msg := new(strings.Builder)
+		fmt.Fprintln(msg, "request error:")
 
-	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) {
-		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
-		respErr.RawResponse = redactResponse(respErr.RawResponse)
-	}
+		if respErr.RawResponse != nil {
+			if respErr.RawResponse.Request != nil {
+				fmt.Fprintf(msg, "%s %s://%s%s\n", respErr.RawResponse.Request.Method, respErr.RawResponse.Request.URL.Scheme, respErr.RawResponse.Request.URL.Host, respErr.RawResponse.Request.URL.Path)
+			}
 
-	return err
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
+			fmt.Fprintf(msg, "RESPONSE %s\n", respErr.RawResponse.Status)
+			if respErr.ErrorCode != "" {
+				fmt.Fprintf(msg, "ERROR CODE: %s\n", respErr.ErrorCode)
+			} else {
+				fmt.Fprintln(msg, "ERROR CODE UNAVAILABLE")
+			}
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
+		}
+
+		fmt.Fprint(msg, "see logs for more information")
+
+		return msg.String()
+
+	default:
+		return e.Cause.Error()
+	}
 }
