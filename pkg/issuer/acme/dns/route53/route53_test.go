@@ -38,11 +38,6 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("abc", "123", " ")),
-		config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL: ts.URL,
-			}, nil
-		})),
 		config.WithRegion("mock-region"),
 		config.WithRetryMaxAttempts(1),
 		config.WithHTTPClient(ts.Client()),
@@ -50,6 +45,8 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	cfg.BaseEndpoint = aws.String(ts.URL)
 
 	client := route53.NewFromConfig(cfg)
 	return &DNSProvider{client: client, dns01Nameservers: util.RecursiveNameservers}, nil
