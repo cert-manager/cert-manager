@@ -356,14 +356,12 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		_, err = spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 		err = stabilizeError(err)
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, fmt.Sprintf(`WorkloadIdentityCredential authentication failed
+		assert.ErrorContains(t, err, fmt.Sprintf(`authentication failed:
 POST %s/adfs/oauth2/token
 --------------------------------------------------------------------------------
 RESPONSE 502 Bad Gateway
 --------------------------------------------------------------------------------
-<REDACTED>
---------------------------------------------------------------------------------
-To troubleshoot, visit https://aka.ms/azsdk/go/identity/troubleshoot#workload`, ts.URL))
+see logs for more information`, ts.URL))
 	})
 }
 
@@ -406,12 +404,11 @@ func TestStabilizeResponseError(t *testing.T) {
 
 	err = dnsProvider.Present(context.TODO(), "test.com", "fqdn.test.com.", "test123")
 	require.Error(t, err)
-	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
+	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: request error:
+GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
 --------------------------------------------------------------------------------
-RESPONSE 502: 502 Bad Gateway
+RESPONSE 502 Bad Gateway
 ERROR CODE: TEST_ERROR_CODE
 --------------------------------------------------------------------------------
-<REDACTED>
---------------------------------------------------------------------------------
-`, ts.URL))
+see logs for more information`, ts.URL))
 }
