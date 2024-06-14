@@ -141,6 +141,9 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		}
 
 		caBundle, err := caBundleForVcertTPP(tpp, secretsLister, namespace)
+		if err != nil {
+			return nil, err
+		}
 
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
