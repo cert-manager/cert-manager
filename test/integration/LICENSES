@@ -53,7 +53,7 @@ github.com/google/gnostic,https://github.com/google/gnostic/blob/v0.6.9/LICENSE,
 github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.6.0/LICENSE,BSD-3-Clause
 github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/google/shlex,https://github.com/google/shlex/blob/e7afc7fbc510/COPYING,Apache-2.0
-github.com/google/uuid,https://github.com/google/uuid/blob/v1.3.1/LICENSE,BSD-3-Clause
+github.com/google/uuid,https://github.com/google/uuid/blob/v1.6.0/LICENSE,BSD-3-Clause
 github.com/gorilla/mux,https://github.com/gorilla/mux/blob/v1.8.0/LICENSE,BSD-3-Clause
 github.com/gosuri/uitable,https://github.com/gosuri/uitable/blob/v0.0.4/LICENSE,MIT
 github.com/gosuri/uitable/util/wordwrap,https://github.com/gosuri/uitable/blob/v0.0.4/util/wordwrap/LICENSE.md,MIT
@@ -104,7 +104,7 @@ github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.42.0/L
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.42.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.9.0/LICENSE,Apache-2.0
 github.com/rivo/uniseg,https://github.com/rivo/uniseg/blob/v0.2.0/LICENSE.txt,MIT
-github.com/rogpeppe/go-internal/fmtsort,https://github.com/rogpeppe/go-internal/blob/v1.10.0/LICENSE,BSD-3-Clause
+github.com/rogpeppe/go-internal/fmtsort,https://github.com/rogpeppe/go-internal/blob/v1.12.0/LICENSE,BSD-3-Clause
 github.com/rubenv/sql-migrate,https://github.com/rubenv/sql-migrate/blob/v1.3.1/LICENSE,MIT
 github.com/rubenv/sql-migrate/sqlparse,https://github.com/rubenv/sql-migrate/blob/v1.3.1/sqlparse/LICENSE,MIT
 github.com/russross/blackfriday/v2,https://github.com/russross/blackfriday/blob/v2.1.0/LICENSE.txt,BSD-2-Clause
@@ -134,13 +134,13 @@ go.starlark.net,https://github.com/google/starlark-go/blob/8dd3e2ee1dd5/LICENSE,
 go.uber.org/atomic,https://github.com/uber-go/atomic/blob/v1.9.0/LICENSE.txt,MIT
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.6.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.24.0/LICENSE.txt,MIT
-golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.22.0:LICENSE,BSD-3-Clause
-golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.24.0:LICENSE,BSD-3-Clause
+golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.24.0:LICENSE,BSD-3-Clause
+golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.26.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.11.0:LICENSE,BSD-3-Clause
-golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.3.0:LICENSE,BSD-3-Clause
-golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.19.0:LICENSE,BSD-3-Clause
-golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.19.0:LICENSE,BSD-3-Clause
-golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.14.0:LICENSE,BSD-3-Clause
+golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.7.0:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.21.0:LICENSE,BSD-3-Clause
+golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.21.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.16.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
 gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.3.0/v2/LICENSE,Apache-2.0
 google.golang.org/genproto/googleapis/api,https://github.com/googleapis/go-genproto/blob/b8732ec3820d/googleapis/api/LICENSE,Apache-2.0
