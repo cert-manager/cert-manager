@@ -83,7 +83,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 
 		dnsNames := []string{rand.String(10) + ".venafi-e2e.example"}
 
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")

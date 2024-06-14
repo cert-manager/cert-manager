@@ -153,7 +153,7 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, vaultIssuerName, issuerKind,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, vaultIssuerName, issuerKind,
 			&metav1.Duration{
 				Duration: time.Hour * 24 * 90,
 			},
@@ -245,7 +245,7 @@ func runVaultAppRoleTests(issuerKind string) {
 			By("Creating a CertificateRequest")
 			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, vaultIssuerName,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, vaultIssuerName,
 				issuerKind, v.inputDuration, crDNSNames, crIPAddresses, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})

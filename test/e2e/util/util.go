@@ -22,8 +22,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"net"
 	"net/url"
@@ -46,7 +44,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -163,8 +161,13 @@ func WaitForCRDToNotExist(ctx context.Context, client apiextensionsv1.CustomReso
 }
 
 // Deprecated: use test/unit/gen/CertificateRequest in future
-func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind string, duration *metav1.Duration,
-	dnsNames []string, ips []net.IP, uris []string, keyAlgorithm x509.PublicKeyAlgorithm) (*v1.CertificateRequest, crypto.Signer, error) {
+func NewCertManagerBasicCertificateRequest(
+	name, namespace string,
+	issuerName, issuerKind string,
+	duration *metav1.Duration,
+	dnsNames []string, ips []net.IP, uris []string,
+	keyAlgorithm x509.PublicKeyAlgorithm,
+) (*v1.CertificateRequest, crypto.Signer, error) {
 	cn := "test.domain.com"
 	if len(dnsNames) > 0 {
 		cn = dnsNames[0]
@@ -179,68 +182,25 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 		parsedURIs = append(parsedURIs, parsed)
 	}
 
-	var sk crypto.Signer
-	var signatureAlgorithm x509.SignatureAlgorithm
-	var err error
-
-	switch keyAlgorithm {
-	case x509.RSA:
-		sk, err = pki.GenerateRSAPrivateKey(2048)
-		if err != nil {
-			return nil, nil, err
-		}
-		signatureAlgorithm = x509.SHA256WithRSA
-	case x509.ECDSA:
-		sk, err = pki.GenerateECPrivateKey(pki.ECCurve256)
-		if err != nil {
-			return nil, nil, err
-		}
-		signatureAlgorithm = x509.ECDSAWithSHA256
-	case x509.Ed25519:
-		sk, err = pki.GenerateEd25519PrivateKey()
-		if err != nil {
-			return nil, nil, err
-		}
-		signatureAlgorithm = x509.PureEd25519
-	default:
-		return nil, nil, fmt.Errorf("unrecognised key algorithm: %s", err)
-	}
-
-	csr := &x509.CertificateRequest{
-		Version:            0,
-		SignatureAlgorithm: signatureAlgorithm,
-		PublicKeyAlgorithm: keyAlgorithm,
-		PublicKey:          sk.Public(),
-		Subject: pkix.Name{
-			CommonName: cn,
-		},
-		DNSNames:    dnsNames,
-		IPAddresses: ips,
-		URIs:        parsedURIs,
-	}
-
-	csrBytes, err := pki.EncodeCSR(csr, sk)
+	csrPEM, sk, err := gen.CSR(keyAlgorithm,
+		gen.SetCSRCommonName(cn),
+		gen.SetCSRDNSNames(dnsNames...),
+		gen.SetCSRIPAddresses(ips...),
+		gen.SetCSRURIs(parsedURIs...),
+	)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
-	})
-
-	return &v1.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.CertificateRequestSpec{
-			Duration: duration,
-			Request:  csrPEM,
-			IssuerRef: cmmeta.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
-			},
-		},
-	}, sk, nil
+	return gen.CertificateRequest(name,
+		gen.SetCertificateRequestNamespace(namespace),
+		gen.SetCertificateRequestDuration(duration),
+		gen.SetCertificateRequestCSR(csrPEM),
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			Name: issuerName,
+			Kind: issuerKind,
+		}),
+	), sk, nil
 }
 
 func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1.Certificate {

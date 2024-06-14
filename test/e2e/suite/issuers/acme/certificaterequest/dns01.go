@@ -116,7 +116,7 @@ func testRFC2136DNSProvider() bool {
 
 			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
 				[]string{dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -129,7 +129,7 @@ func testRFC2136DNSProvider() bool {
 		It("should obtain a signed certificate for a wildcard domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
 				[]string{"*." + dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -142,7 +142,7 @@ func testRFC2136DNSProvider() bool {
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
 				[]string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
