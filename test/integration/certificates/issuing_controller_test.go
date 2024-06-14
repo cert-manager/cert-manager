@@ -148,21 +148,10 @@ func TestIssuingController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -371,21 +360,10 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -589,21 +567,10 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -836,21 +803,10 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, pk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)

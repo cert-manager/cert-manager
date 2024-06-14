@@ -28,10 +28,56 @@ import (
 	"net"
 	"net/url"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 type CSRModifier func(*x509.CertificateRequest) error
+
+var defaultGenerateCSROptions = []pki.GenerateCSROption{
+	pki.WithEncodeBasicConstraintsInRequest(true),
+	pki.WithNameConstraints(true),
+	pki.WithOtherNames(true),
+	pki.WithUseLiteralSubject(true),
+}
+
+func CSRForCertificate(crt *v1.Certificate, mods ...CSRModifier) (csr []byte, sk crypto.Signer, err error) {
+	cr, err := pki.GenerateCSR(crt, defaultGenerateCSROptions...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	modifiers := []CSRModifier{}
+	modifiers = append(modifiers, func(c *x509.CertificateRequest) error {
+		*c = *cr
+		return nil
+	})
+	modifiers = append(modifiers, mods...)
+
+	return CSR(cr.PublicKeyAlgorithm, modifiers...)
+}
+
+func CSRWithSignerForCertificate(crt *v1.Certificate, sk crypto.Signer, mods ...CSRModifier) (csr []byte, err error) {
+	cr, err := pki.GenerateCSR(crt, defaultGenerateCSROptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	modifiers := []CSRModifier{}
+	modifiers = append(modifiers, func(c *x509.CertificateRequest) error {
+		if c.PublicKeyAlgorithm != cr.PublicKeyAlgorithm {
+			return fmt.Errorf("public key algorithm mismatch: %s != %s", c.PublicKeyAlgorithm, cr.PublicKeyAlgorithm)
+		}
+		if c.SignatureAlgorithm != cr.SignatureAlgorithm {
+			return fmt.Errorf("signature algorithm mismatch: %s != %s", c.SignatureAlgorithm, cr.SignatureAlgorithm)
+		}
+		*c = *cr
+		return nil
+	})
+	modifiers = append(modifiers, mods...)
+
+	return CSRWithSigner(sk, modifiers...)
+}
 
 func CSR(keyAlgorithm x509.PublicKeyAlgorithm, mods ...CSRModifier) (csr []byte, sk crypto.Signer, err error) {
 	switch keyAlgorithm {

@@ -18,7 +18,6 @@ package validation
 
 import (
 	"context"
-	"encoding/pem"
 	"strings"
 	"testing"
 	"time"
@@ -33,7 +32,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/api"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var certGVK = schema.GroupVersionKind{
@@ -200,22 +199,9 @@ func TestValidationCertificateRequests(t *testing.T) {
 }
 
 func mustGenerateCSR(t *testing.T, cert *cmapi.Certificate) []byte {
-	request, err := pki.GenerateCSR(cert)
+	csr, _, err := gen.CSRForCertificate(cert)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	sk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	csrBytes, err := pki.EncodeCSR(request, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-	csr := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
-	})
-
 	return csr
 }

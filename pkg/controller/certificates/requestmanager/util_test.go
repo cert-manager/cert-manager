@@ -19,7 +19,6 @@ package requestmanager
 import (
 	"crypto"
 	"crypto/x509"
-	"encoding/pem"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,17 +76,12 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 		return nil, err
 	}
 
-	privateKey, err := pki.GeneratePrivateKeyForCertificate(crt)
+	csrPEM, privateKey, err := gen.CSRForCertificate(crt)
 	if err != nil {
 		return nil, err
 	}
 
 	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.PrivateKey.Encoding)
-	if err != nil {
-		return nil, err
-	}
-
-	csrPEM, err := generateCSRImpl(crt, privateKeyBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -172,27 +166,4 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 		cert:                                   cert,
 		certBytes:                              certBytes,
 	}, nil
-}
-
-func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
-	csr, err := pki.GenerateCSR(crt)
-	if err != nil {
-		return nil, err
-	}
-
-	signer, err := pki.DecodePrivateKeyBytes(pk)
-	if err != nil {
-		return nil, err
-	}
-
-	csrDER, err := pki.EncodeCSR(csr, signer)
-	if err != nil {
-		return nil, err
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
-
-	return csrPEM, nil
 }
