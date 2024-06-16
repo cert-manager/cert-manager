@@ -47,7 +47,7 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.TETRATE_DOCKERHUB_USER }}
           DOCKER_PASSWORD: ${{ secrets.TETRATE_DOCKERHUB_PASS }}
-          HUB: tetrateio
+          HUB: tetrate
           TAG: ${{ github.event.inputs.tag }} 
         run: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
