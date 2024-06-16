@@ -1,0 +1,54 @@
+name: Make a release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag [e.g. 1.14.4]
+        required: true
+      goversion:
+        description: Go Version to use [eg 1.22.4]
+        required: true
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+  packages: write
+
+jobs:
+  build_fips_images:
+    name: build fips images
+    runs-on: default-runner-set
+    steps:
+      - name: Checkout to choosen tag
+        uses: actions/checkout@v4
+        with:
+            ref: ${{ github.event.inputs.tag }}
+            fetch-depth: 0
+      - name: Setup golang
+        uses: actions/setup-go@v5 
+        with:
+          go-version: ${{ github.event.inputs.goversion }} # The Go version to download (if necessary) and use.
+      - run: go version
+      - name: Print GitHub event ref for debugging
+        run: echo ${{ github.event.ref }}            
+      - name: Build and push fips images
+        if: ${{ contains(github.event.inputs.tag,'fips') }}
+        env:
+          CGO_ENABLED: 1
+          GOEXPERIMENT: boringcrypto
+          HOST_ARCH: amd64
+          TAG: ${{ github.event.inputs.tag }}
+        run: make RELEASE_VERSION=${TAG} GOLDFLAGS='-linkmode "external" -extldflags "-static"' _bin/release/cert-manager-server-linux-amd64.tar.gz
+      - name: Build and push vanilla images
+        if: ${{ !contains(github.event.inputs.tag,'fips') }}
+        env:
+          TAG: ${{ github.event.inputs.tag }}
+        run: make RELEASE_VERSION=${TAG}  all-containers
+      - name: Push images
+        env:
+          DOCKER_USERNAME: ${{ secrets.TETRATE_DOCKERHUB_USER }}
+          DOCKER_PASSWORD: ${{ secrets.TETRATE_DOCKERHUB_PASS }}
+          HUB: tetrateio
+          TAG: ${{ github.event.inputs.tag }} 
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          bash ./.github/multiarch.sh
