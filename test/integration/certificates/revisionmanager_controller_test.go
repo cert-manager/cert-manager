@@ -18,7 +18,6 @@ package certificates
 
 import (
 	"context"
-	"encoding/pem"
 	"strconv"
 	"testing"
 	"time"
@@ -36,7 +35,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/revisionmanager"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -107,26 +105,10 @@ func TestRevisionManagerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create a new private key
-	sk, err := utilpki.GenerateRSAPrivateKey(2048)
+	csrPEM, _, err := gen.CSRForCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	csr, err := utilpki.GenerateCSR(crt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Create 6 CertificateRequests which are owned by this Certificate
 	for i := 0; i < 6; i++ {
