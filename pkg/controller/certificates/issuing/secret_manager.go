@@ -19,16 +19,19 @@ package issuing
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // ensureSecretData ensures that the Certificate's Secret is up to date with
@@ -65,22 +68,61 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 		return nil
 	}
 
-	data := internal.SecretData{
-		PrivateKey:      secret.Data[corev1.TLSPrivateKeyKey],
-		Certificate:     secret.Data[corev1.TLSCertKey],
-		CA:              secret.Data[cmmeta.TLSCAKey],
-		CertificateName: secret.Annotations[cmapi.CertificateNameKey],
-		IssuerName:      secret.Annotations[cmapi.IssuerNameAnnotationKey],
-		IssuerKind:      secret.Annotations[cmapi.IssuerKindAnnotationKey],
-		IssuerGroup:     secret.Annotations[cmapi.IssuerGroupAnnotationKey],
-	}
-
 	// Check whether the Certificate's Secret has correct output format and
 	// metadata.
 	reason, message, isViolation := c.postIssuancePolicyChain.Evaluate(policies.Input{
 		Certificate: crt,
 		Secret:      secret,
 	})
+
+	certificateHash := secret.Annotations[cmapi.CertificateHashAnnotationKey]
+	if certificateHash == "" {
+		log.V(logf.DebugLevel).Info("secret doesn't contain certificate hash annotation")
+
+		// If the certificate hash is not set, we try to calculate a hash from
+		// the certificate data and set it on the secret. We only do this after
+		// we verified that the certificate is Ready, so we don't set the wrong
+		// hash on a secret that is not up to date.
+		// This is to ensure that all secrets have the certificate hash
+		// annotation and we can remove the fallback chain in a future release.
+
+		readyCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady)
+		issuingCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+
+		// If the certificate's ready condition is not up-to-date, we do not change the
+		// certificate hash annotation. Also, if the certificate is already being issued,
+		// we do not need to update the certificate hash annotation (as it will be updated once
+		// the certificate is issued).
+		if readyCondition != nil && readyCondition.ObservedGeneration != crt.Generation {
+			// Leave the certificate hash annotation empty, so that the next time the
+			// certificate is reconciled, we will try to set the certificate hash again.
+		} else if issuingCondition != nil && issuingCondition.Status == cmmeta.ConditionTrue {
+			// Leave the certificate hash annotation empty, so that the next time the
+			// certificate is reconciled, we will try to set the certificate hash again.
+		} else if readyCondition == nil || readyCondition.Status != cmmeta.ConditionTrue {
+			log.V(logf.DebugLevel).Info("certificate is not ready, setting the certificate hash to a mismatching value")
+
+			certificateHash = "secret-not-up-to-date"
+		} else {
+			hash, err := utilpki.CertificateInfoHash(crt)
+			if err != nil {
+				return fmt.Errorf("failed to compute certificate hash: %w", err)
+			}
+
+			certificateHash = hash
+		}
+	}
+
+	data := internal.SecretData{
+		PrivateKey:      secret.Data[corev1.TLSPrivateKeyKey],
+		Certificate:     secret.Data[corev1.TLSCertKey],
+		CA:              secret.Data[cmmeta.TLSCAKey],
+		CertificateHash: certificateHash,
+		CertificateName: secret.Annotations[cmapi.CertificateNameKey],
+		IssuerName:      secret.Annotations[cmapi.IssuerNameAnnotationKey],
+		IssuerKind:      secret.Annotations[cmapi.IssuerKindAnnotationKey],
+		IssuerGroup:     secret.Annotations[cmapi.IssuerGroupAnnotationKey],
+	}
 
 	if isViolation {
 		switch reason {
