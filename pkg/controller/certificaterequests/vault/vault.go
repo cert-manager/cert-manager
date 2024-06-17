@@ -92,7 +92,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 		message := "Failed to initialise vault client for signing"
 		v.reporter.Pending(cr, err, "VaultInitError", message)
 		log.Error(err, message)
-		return nil, nil
+		return nil, err // Return error to requeue and retry
 	}
 
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
