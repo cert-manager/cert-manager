@@ -10,6 +10,7 @@ IMAGES=(cert-manager-acmesolver
 cert-manager-startupapicheck
 cert-manager-webhook
 cert-manager-controller
+cert-manager-cainjector
 )
 
 if [[ ${TAG} =~ "fips" ]]; then
