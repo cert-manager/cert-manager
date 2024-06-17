@@ -222,10 +222,10 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
-		RequestCertificateFn: func(csrPEM []byte, customFields []api.CustomField) (string, error) {
+		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 			return "test", nil
 		},
-		RetrieveCertificateFn: func(string, []byte, []api.CustomField) ([]byte, error) {
+		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
@@ -233,33 +233,33 @@ func TestSign(t *testing.T) {
 		},
 	}
 	clientReturnsGenericError := &internalvenafifake.Venafi{
-		RequestCertificateFn: func(csrPEM []byte, customFields []api.CustomField) (string, error) {
+		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 			return "", errors.New("this is an error")
 		},
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
-		RequestCertificateFn: func(csrPEM []byte, customFields []api.CustomField) (string, error) {
+		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 			return "test", nil
 		},
-		RetrieveCertificateFn: func(string, []byte, []api.CustomField) ([]byte, error) {
+		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
 			return append(certPEM, rootPEM...), nil
 		},
 	}
 
 	clientReturnsCertIfCustomField := &internalvenafifake.Venafi{
-		RequestCertificateFn: func(csrPEM []byte, fields []api.CustomField) (string, error) {
+		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, fields []api.CustomField) (string, error) {
 			if len(fields) > 0 && fields[0].Name == "cert-manager-test" && fields[0].Value == "test ok" {
 				return "test", nil
 			}
 			return "", errors.New("Custom field not set")
 		},
-		RetrieveCertificateFn: func(string, []byte, []api.CustomField) ([]byte, error) {
+		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
 			return append(certPEM, rootPEM...), nil
 		},
 	}
 
 	clientReturnsInvalidCustomFieldType := &internalvenafifake.Venafi{
-		RequestCertificateFn: func(csrPEM []byte, fields []api.CustomField) (string, error) {
+		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, fields []api.CustomField) (string, error) {
 			return "", client.ErrCustomFieldsType{Type: fields[0].Type}
 		},
 	}
