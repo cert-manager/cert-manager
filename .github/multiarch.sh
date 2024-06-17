@@ -9,6 +9,7 @@ BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 IMAGES=(cert-manager-acmesolver
 cert-manager-startupapicheck
 cert-manager-webhook
+cert-manager-ctl
 cert-manager-controller
 cert-manager-cainjector
 )
