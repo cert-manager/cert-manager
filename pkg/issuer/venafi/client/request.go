@@ -122,7 +122,7 @@ func (v *Venafi) buildVReq(csrPEM []byte, customFields []api.CustomField) (*cert
 	}
 
 	// Create a vcert Request structure
-	vreq := newVRequest(tmpl)
+	vreq := newVRequest(tmpl, duration)
 
 	// Convert over custom fields from our struct type to venafi's
 	vfields, err := convertCustomFieldsToVcert(customFields)
@@ -182,8 +182,10 @@ func convertCustomFieldsToVcert(customFields []api.CustomField) ([]certificate.C
 	return out, nil
 }
 
-func newVRequest(cert *x509.Certificate) *certificate.Request {
+func newVRequest(cert *x509.Certificate, duration time.Duration) *certificate.Request {
 	req := certificate.NewRequest(cert)
+
+	req.ValidityDurationm = &duration
 	req.ChainOption = certificate.ChainOptionRootLast
 
 	// overwrite entire Subject block
