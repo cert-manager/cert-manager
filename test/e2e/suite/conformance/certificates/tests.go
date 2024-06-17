@@ -375,63 +375,75 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				},
 				requiredFeatures: []featureset.Feature{featureset.KeyUsagesFeature, featureset.OnlySAN},
 			},
+			{
+				name: "should issue a certificate that defines a long domain",
+				certModifiers: func() []gen.CertificateModifier {
+					const maxLengthOfDomainSegment = 63
+					return []gen.CertificateModifier{
+						gen.SetCertificateDNSNames(e2eutil.RandomSubdomainLength(s.DomainSuffix, maxLengthOfDomainSegment)),
+					}
+				}(),
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.LongDomainFeatureSet},
+			},
+			{
+				name: "should issue a certificate that defines a wildcard DNS Name and its apex DNS Name",
+				certModifiers: func() []gen.CertificateModifier {
+					dnsDomain := e2eutil.RandomSubdomain(s.DomainSuffix)
+
+					return []gen.CertificateModifier{
+						gen.SetCertificateDNSNames("*."+dnsDomain, dnsDomain),
+					}
+				}(),
+				requiredFeatures: []featureset.Feature{featureset.WildcardsFeature, featureset.OnlySAN},
+			},
 		}
 
-		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
-			testCertificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testcert",
-					Namespace: f.Namespace.Name,
-				},
-				Spec: cmapi.CertificateSpec{
-					SecretName: "testcert-tls",
-					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
-					IssuerRef:  issuerRef,
-				},
-			}
-			By("Creating a Certificate")
-			err := f.CRClient.Create(ctx, testCertificate)
-			Expect(err).NotTo(HaveOccurred())
+		defineTest := func(test testCase) {
+			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
+				randomTestID := rand.String(10)
+				certificate := &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "e2e-conformance-" + randomTestID,
+						Namespace: f.Namespace.Name,
+						Annotations: map[string]string{
+							"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						SecretName: "e2e-conformance-tls-" + randomTestID,
+						IssuerRef:  issuerRef,
+					},
+				}
 
-			By("Waiting for the Certificate to be issued...")
-			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
-			Expect(err).NotTo(HaveOccurred())
+				certificate = gen.CertificateFrom(
+					certificate,
+					test.certModifiers...,
+				)
 
-			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
-			Expect(err).NotTo(HaveOccurred())
+				By("Creating a Certificate")
+				err := f.CRClient.Create(ctx, certificate)
+				Expect(err).NotTo(HaveOccurred())
 
-			By("Deleting existing certificate data in Secret")
-			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
-				Get(ctx, testCertificate.Spec.SecretName, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
+				By("Waiting for the Certificate to be issued...")
+				certificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, certificate, time.Minute*8)
+				Expect(err).NotTo(HaveOccurred())
 
-			sec = sec.DeepCopy()
-			crtPEM1 := sec.Data[corev1.TLSCertKey]
-			crt1, err := pki.DecodeX509CertificateBytes(crtPEM1)
-			Expect(err).NotTo(HaveOccurred(), "failed to get decode first signed certificate data")
+				By("Validating the issued Certificate...")
+				validations := []certificates.ValidationFunc(nil)
+				validations = append(validations, test.extraValidations...)
+				validations = append(validations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+				err = f.Helper().ValidateCertificate(certificate, validations...)
+				Expect(err).NotTo(HaveOccurred())
+			}, test.requiredFeatures...)
+		}
 
-			sec.Data[corev1.TLSCertKey] = []byte{}
+		for _, test := range tests {
+			defineTest(test)
+		}
 
-			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, sec, metav1.UpdateOptions{})
-			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate data")
-
-			By("Waiting for the Certificate to re-issue a certificate")
-			sec, err = f.Helper().WaitForSecretCertificateData(ctx, f.Namespace.Name, sec.Name, time.Minute*8)
-			Expect(err).NotTo(HaveOccurred(), "failed to wait for secret to have a valid 2nd certificate")
-
-			crtPEM2 := sec.Data[corev1.TLSCertKey]
-			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
-			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
-
-			By("Ensuing both certificates are signed by same private key")
-			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
-			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
-
-			if !match {
-				Fail("Both signed certificates not signed by same private key")
-			}
-		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
+		/////////////////////////////////////
+		////// Gateway/ Ingress Tests ///////
+		/////////////////////////////////////
 
 		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			if s.HTTP01TestType != "Ingress" {
@@ -631,18 +643,65 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 		})
 
-		tests = append(tests, []testCase{
-			{
-				name: "should issue a certificate that defines a long domain",
-				certModifiers: func() []gen.CertificateModifier {
-					const maxLengthOfDomainSegment = 63
-					return []gen.CertificateModifier{
-						gen.SetCertificateDNSNames(e2eutil.RandomSubdomainLength(s.DomainSuffix, maxLengthOfDomainSegment)),
-					}
-				}(),
-				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.LongDomainFeatureSet},
-			},
-		}...)
+		////////////////////////////////////////
+		/////// Complex behavioral tests ///////
+		////////////////////////////////////////
+
+		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+					IssuerRef:  issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, testCertificate, time.Minute*8)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Deleting existing certificate data in Secret")
+			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
+				Get(ctx, testCertificate.Spec.SecretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
+
+			sec = sec.DeepCopy()
+			crtPEM1 := sec.Data[corev1.TLSCertKey]
+			crt1, err := pki.DecodeX509CertificateBytes(crtPEM1)
+			Expect(err).NotTo(HaveOccurred(), "failed to get decode first signed certificate data")
+
+			sec.Data[corev1.TLSCertKey] = []byte{}
+
+			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, sec, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate data")
+
+			By("Waiting for the Certificate to re-issue a certificate")
+			sec, err = f.Helper().WaitForSecretCertificateData(ctx, f.Namespace.Name, sec.Name, time.Minute*8)
+			Expect(err).NotTo(HaveOccurred(), "failed to wait for secret to have a valid 2nd certificate")
+
+			crtPEM2 := sec.Data[corev1.TLSCertKey]
+			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
+			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
+
+			By("Ensuing both certificates are signed by same private key")
+			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
+			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
+
+			if !match {
+				Fail("Both signed certificates not signed by same private key")
+			}
+		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
 		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -695,62 +754,5 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
-
-		tests = append(tests, []testCase{
-			{
-				name: "should issue a certificate that defines a wildcard DNS Name and its apex DNS Name",
-				certModifiers: func() []gen.CertificateModifier {
-					dnsDomain := e2eutil.RandomSubdomain(s.DomainSuffix)
-
-					return []gen.CertificateModifier{
-						gen.SetCertificateDNSNames("*."+dnsDomain, dnsDomain),
-					}
-				}(),
-				requiredFeatures: []featureset.Feature{featureset.WildcardsFeature, featureset.OnlySAN},
-			},
-		}...)
-
-		defineTest := func(test testCase) {
-			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
-				randomTestID := rand.String(10)
-				certificate := &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "e2e-conformance-" + randomTestID,
-						Namespace: f.Namespace.Name,
-						Annotations: map[string]string{
-							"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
-						},
-					},
-					Spec: cmapi.CertificateSpec{
-						SecretName: "e2e-conformance-tls-" + randomTestID,
-						IssuerRef:  issuerRef,
-					},
-				}
-
-				certificate = gen.CertificateFrom(
-					certificate,
-					test.certModifiers...,
-				)
-
-				By("Creating a Certificate")
-				err := f.CRClient.Create(ctx, certificate)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Waiting for the Certificate to be issued...")
-				certificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, certificate, time.Minute*8)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Validating the issued Certificate...")
-				validations := []certificates.ValidationFunc(nil)
-				validations = append(validations, test.extraValidations...)
-				validations = append(validations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
-				err = f.Helper().ValidateCertificate(certificate, validations...)
-				Expect(err).NotTo(HaveOccurred())
-			}, test.requiredFeatures...)
-		}
-
-		for _, test := range tests {
-			defineTest(test)
-		}
 	})
 }
