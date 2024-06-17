@@ -45,7 +45,7 @@ import (
 func TestVault_Setup(t *testing.T) {
 	// Create a mock Vault HTTP server.
 	vaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" {
+		if r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" || r.URL.Path == "/v1/auth/cert/login" {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`))
 		}
@@ -402,6 +402,19 @@ func TestVault_Setup(t *testing.T) {
 				},
 			},
 			expectErr: "error initializing Vault client: parse \" https://vault.example.com\": first path segment in URL cannot contain colon",
+		},
+		{
+			name: "valid auth.clientCertificate: All fields can be omitted",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: vaultServer.URL,
+					Auth: v1.VaultAuth{
+						ClientCertificate: &v1.VaultClientCertificateAuth{},
+					},
+				},
+			},
+			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 	}
 	for _, tt := range tests {
