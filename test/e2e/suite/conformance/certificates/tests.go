@@ -62,11 +62,8 @@ func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
 		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
+		s.setup(f)
 
-		sharedIPAddress := "127.0.0.1"
-
-		// Wrap this in a BeforeEach else flags will not have been parsed and
-		// f.Config will not be populated at the time that this code is run.
 		BeforeEach(func() {
 			// Special case Public ACME Servers against being run in the standard
 			// e2e tests.
@@ -74,78 +71,38 @@ func (s *Suite) Define() {
 				Skip("Not running public ACME tests against local cluster.")
 				return
 			}
-			if s.completed {
-				return
-			}
-			s.complete(f)
-
-			switch s.HTTP01TestType {
-			case "Ingress":
-				sharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
-			case "Gateway":
-				sharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
-				framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
-			}
+			s.validate()
 		})
 
 		type testCase struct {
+			name          string // ginkgo v2 does not support using map[string] to store the test names (#5345)
 			certModifiers []gen.CertificateModifier
+			// The list of features that are required by the Issuer for the test to
+			// run.
+			requiredFeatures []featureset.Feature
 			// Extra validations which may be needed for testing, on a test case by
 			// case basis. All default validations will be run on every test.
 			extraValidations []certificates.ValidationFunc
 		}
 
-		runTest := func(f *framework.Framework, test testCase, issuerRef cmmeta.ObjectReference) {
-			randomTestID := rand.String(10)
-			certificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "e2e-conformance-" + randomTestID,
-					Namespace: f.Namespace.Name,
-				},
-				Spec: cmapi.CertificateSpec{
-					SecretName: "e2e-conformance-tls-" + randomTestID,
-					IssuerRef:  issuerRef,
-				},
-			}
-
-			certificate = gen.CertificateFrom(
-				certificate,
-				test.certModifiers...,
-			)
-
-			By("Creating a Certificate")
-			err := f.CRClient.Create(ctx, certificate)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Waiting for the Certificate to be issued...")
-			certificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, certificate, time.Minute*8)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Validating the issued Certificate...")
-			validations := append(test.extraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
-			err = f.Helper().ValidateCertificate(certificate, validations...)
-			Expect(err).NotTo(HaveOccurred())
-		}
-
-		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+		tests := []testCase{
+			{
+				name: "should issue a basic, defaulted certificate for a single distinct DNS Name",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.OnlySAN)
-
-		s.it(f, "should issue a CA certificate with the CA basicConstraint set", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN},
+			},
+			{
+				name: "should issue a CA certificate with the CA basicConstraint set",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateIsCA(true),
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.IssueCAFeature)
-
-		s.it(f, "should issue an ECDSA, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.IssueCAFeature},
+			},
+			{
+				name: "should issue an ECDSA, defaulted certificate for a single distinct DNS Name",
 				certModifiers: []gen.CertificateModifier{
 					func(c *cmapi.Certificate) {
 						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
@@ -154,11 +111,10 @@ func (s *Suite) Define() {
 					},
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.ECDSAFeature, featureset.OnlySAN)
-
-		s.it(f, "should issue an Ed25519, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.ECDSAFeature, featureset.OnlySAN},
+			},
+			{
+				name: "should issue an Ed25519, defaulted certificate for a single distinct DNS Name",
 				certModifiers: []gen.CertificateModifier{
 					func(c *cmapi.Certificate) {
 						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
@@ -167,23 +123,20 @@ func (s *Suite) Define() {
 					},
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.OnlySAN, featureset.Ed25519FeatureSet)
-
-		s.it(f, "should issue a basic, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.Ed25519FeatureSet},
+			},
+			{
+				name: "should issue a basic, defaulted certificate for a single Common Name",
 				certModifiers: []gen.CertificateModifier{
 					// Some issuers use the CN to define the cert's "ID"
 					// if one cert manages to be in an error state in the issuer it might throw an error
 					// this makes the CN more unique
 					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
 				},
-			}, issuerRef)
-		}, featureset.CommonNameFeature)
-
-		s.it(f, "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress", func(issuerRef cmmeta.ObjectReference) {
-			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.OtherNames)
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
+			},
+			{
+				name: "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateOtherNames(
 						cmapi.OtherName{
@@ -214,36 +167,34 @@ func (s *Suite) Define() {
 						-addext 'subjectAltName=email:email@domain.test,otherName:msUPN;utf8:upn@domain2.test,otherName:msUPN;UTF8:upn@domain.test' -x509 -out server.crt
 						*/
 						Expect(cert.Extensions).Should(HaveSameSANsAs(`-----BEGIN CERTIFICATE-----
-		MIIDZjCCAk6gAwIBAgIUWmJ+z4OCWZg4V3XjSfEN+hItXjUwDQYJKoZIhvcNAQEL
-		BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTI0MDEwMzA4NTU1NloXDTI0MDIwMjA4
-		NTU1NlowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
-		MIIBCgKCAQEAr5xmoX7/vp+wid+gOvbigYXLP/OvILyRpyj/e6IqJqj83+ImMtHt
-		QtOHN/E1bYQ8juVXqhhwy5BDXV6qHCfEjAKJF/oHpdVGk4GoMV/noAjbyAdqxFb+
-		Cr/62sZWFHcuBuh/msJj6MWWAYZkb6HPiyDaV4HdRrrefifQnBGmsO0DE2guy7Yr
-		CMnE25H0yZ6z1e2tecsXSEkHyPNpil39oJ+1dT3UG8coU32rMOMKs7Za/xF0yMtU
-		TrCzZ/ylFL4vJi/s0i9zgjBQloJud+s3J+MnbYFgv0MIaosZXuk7/FR0HNIM19Zw
-		VLH6dgVCcF02bnnVpOAd6KPEzdqjYdDv/QIDAQABo4G1MIGyMB0GA1UdDgQWBBRF
-		KVGbYoD2H1NE47wJL6xFQ83Q+DAfBgNVHSMEGDAWgBRFKVGbYoD2H1NE47wJL6xF
-		Q83Q+DAPBgNVHRMBAf8EBTADAQH/MF8GA1UdEQRYMFaBEWVtYWlsQGRvbWFpbi50
-		ZXN0oCAGCisGAQQBgjcUAgOgEgwQdXBuQGRvbWFpbjIudGVzdKAfBgorBgEEAYI3
-		FAIDoBEMD3VwbkBkb21haW4udGVzdDANBgkqhkiG9w0BAQsFAAOCAQEAmrouGUth
-		yyL3jJTe2XZCqbjNgwXrT5N8SwF8JrPNzTyuh4Qiug3N/3djmq4N4V60UAJU8Xpr
-		Uf8TZBQwF6VD/TSvvJKB3qjSW0T46cF++10ueEgT7mT/icyPeiMw1syWpQlciIvv
-		WZ/PIvHm2sTB+v8v9rhiFDyQxlnvbtG0D0TV/dEZmyrqfrBpWOP8TFgexRMQU2/4
-		Gb9fYHRK+LBKRTFudEXNWcDYxK3umfht/ZUsMeWUP70XaNsTd9tQWRsctxGpU10s
-		cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
-		/XMa5c3nWcbXcA==
-		-----END CERTIFICATE-----
-		`))
+MIIDZjCCAk6gAwIBAgIUWmJ+z4OCWZg4V3XjSfEN+hItXjUwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGc29tZUNOMB4XDTI0MDEwMzA4NTU1NloXDTI0MDIwMjA4
+NTU1NlowETEPMA0GA1UEAwwGc29tZUNOMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAr5xmoX7/vp+wid+gOvbigYXLP/OvILyRpyj/e6IqJqj83+ImMtHt
+QtOHN/E1bYQ8juVXqhhwy5BDXV6qHCfEjAKJF/oHpdVGk4GoMV/noAjbyAdqxFb+
+Cr/62sZWFHcuBuh/msJj6MWWAYZkb6HPiyDaV4HdRrrefifQnBGmsO0DE2guy7Yr
+CMnE25H0yZ6z1e2tecsXSEkHyPNpil39oJ+1dT3UG8coU32rMOMKs7Za/xF0yMtU
+TrCzZ/ylFL4vJi/s0i9zgjBQloJud+s3J+MnbYFgv0MIaosZXuk7/FR0HNIM19Zw
+VLH6dgVCcF02bnnVpOAd6KPEzdqjYdDv/QIDAQABo4G1MIGyMB0GA1UdDgQWBBRF
+KVGbYoD2H1NE47wJL6xFQ83Q+DAfBgNVHSMEGDAWgBRFKVGbYoD2H1NE47wJL6xF
+Q83Q+DAPBgNVHRMBAf8EBTADAQH/MF8GA1UdEQRYMFaBEWVtYWlsQGRvbWFpbi50
+ZXN0oCAGCisGAQQBgjcUAgOgEgwQdXBuQGRvbWFpbjIudGVzdKAfBgorBgEEAYI3
+FAIDoBEMD3VwbkBkb21haW4udGVzdDANBgkqhkiG9w0BAQsFAAOCAQEAmrouGUth
+yyL3jJTe2XZCqbjNgwXrT5N8SwF8JrPNzTyuh4Qiug3N/3djmq4N4V60UAJU8Xpr
+Uf8TZBQwF6VD/TSvvJKB3qjSW0T46cF++10ueEgT7mT/icyPeiMw1syWpQlciIvv
+WZ/PIvHm2sTB+v8v9rhiFDyQxlnvbtG0D0TV/dEZmyrqfrBpWOP8TFgexRMQU2/4
+Gb9fYHRK+LBKRTFudEXNWcDYxK3umfht/ZUsMeWUP70XaNsTd9tQWRsctxGpU10s
+cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
+/XMa5c3nWcbXcA==
+-----END CERTIFICATE-----
+`))
 						return nil
 					},
 				},
-			}, issuerRef)
-		}, featureset.OtherNamesFeature)
-
-		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name with a literal subject", func(issuerRef cmmeta.ObjectReference) {
-			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.OtherNamesFeature},
+			},
+			{
+				name: "should issue a basic, defaulted certificate for a single distinct DNS Name with a literal subject",
 				certModifiers: func() []gen.CertificateModifier {
 					host := fmt.Sprintf("*.%s.foo-long.bar.com", rand.String(10))
 					literalSubject := fmt.Sprintf("CN=%s,OU=FooLong,OU=Bar,OU=Baz,OU=Dept.,O=Corp.", host)
@@ -287,11 +238,10 @@ func (s *Suite) Define() {
 						return nil
 					},
 				},
-			}, issuerRef)
-		}, featureset.LiteralSubjectFeature)
-
-		s.it(f, "should issue an ECDSA, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.LiteralSubjectFeature},
+			},
+			{
+				name: "should issue an ECDSA, defaulted certificate for a single Common Name",
 				certModifiers: []gen.CertificateModifier{
 					func(c *cmapi.Certificate) {
 						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
@@ -303,11 +253,10 @@ func (s *Suite) Define() {
 					// this makes the CN more unique
 					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
 				},
-			}, issuerRef)
-		}, featureset.ECDSAFeature, featureset.CommonNameFeature)
-
-		s.it(f, "should issue an Ed25519, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.ECDSAFeature, featureset.CommonNameFeature},
+			},
+			{
+				name: "should issue an Ed25519, defaulted certificate for a single Common Name",
 				certModifiers: []gen.CertificateModifier{
 					func(c *cmapi.Certificate) {
 						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
@@ -319,48 +268,43 @@ func (s *Suite) Define() {
 					// this makes the CN more unique
 					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
 				},
-			}, issuerRef)
-		}, featureset.Ed25519FeatureSet, featureset.CommonNameFeature)
-
-		s.it(f, "should issue a certificate that defines an IP Address", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.Ed25519FeatureSet, featureset.CommonNameFeature},
+			},
+			{
+				name: "should issue a certificate that defines an IP Address",
 				certModifiers: []gen.CertificateModifier{
-					gen.SetCertificateIPs(sharedIPAddress),
+					gen.SetCertificateIPs(s.SharedIPAddress),
 				},
-			}, issuerRef)
-		}, featureset.IPAddressFeature)
-
-		s.it(f, "should issue a certificate that defines a DNS Name and IP Address", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.IPAddressFeature},
+			},
+			{
+				name: "should issue a certificate that defines a DNS Name and IP Address",
 				certModifiers: []gen.CertificateModifier{
-					gen.SetCertificateIPs(sharedIPAddress),
+					gen.SetCertificateIPs(s.SharedIPAddress),
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.OnlySAN, featureset.IPAddressFeature)
-
-		s.it(f, "should issue a certificate that defines a Common Name and IP Address", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.IPAddressFeature},
+			},
+			{
+				name: "should issue a certificate that defines a Common Name and IP Address",
 				certModifiers: []gen.CertificateModifier{
-					gen.SetCertificateIPs(sharedIPAddress),
+					gen.SetCertificateIPs(s.SharedIPAddress),
 					// Some issuers use the CN to define the cert's "ID"
 					// if one cert manages to be in an error state in the issuer it might throw an error
 					// this makes the CN more unique
 					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
 				},
-			}, issuerRef)
-		}, featureset.CommonNameFeature, featureset.IPAddressFeature)
-
-		s.it(f, "should issue a certificate that defines an Email Address", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.IPAddressFeature},
+			},
+			{
+				name: "should issue a certificate that defines an Email Address",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateEmails("alice@example.com"),
 				},
-			}, issuerRef)
-		}, featureset.EmailSANsFeature, featureset.OnlySAN)
-
-		s.it(f, "should issue a certificate that defines a Common Name and URI SAN", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.EmailSANsFeature, featureset.OnlySAN},
+			},
+			{
+				name: "should issue a certificate that defines a Common Name and URI SAN",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateURIs("spiffe://cluster.local/ns/sandbox/sa/foo"),
 					// Some issuers use the CN to define the cert's "ID"
@@ -368,11 +312,10 @@ func (s *Suite) Define() {
 					// this makes the CN more unique
 					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
 				},
-			}, issuerRef)
-		}, featureset.URISANsFeature, featureset.CommonNameFeature)
-
-		s.it(f, "should issue a certificate that defines a 2 distinct DNS Names with one copied to the Common Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.URISANsFeature, featureset.CommonNameFeature},
+			},
+			{
+				name: "should issue a certificate that defines a 2 distinct DNS Names with one copied to the Common Name",
 				certModifiers: func() []gen.CertificateModifier {
 					commonName := e2eutil.RandomSubdomain(s.DomainSuffix)
 
@@ -381,45 +324,40 @@ func (s *Suite) Define() {
 						gen.SetCertificateDNSNames(commonName, e2eutil.RandomSubdomain(s.DomainSuffix)),
 					}
 				}(),
-			}, issuerRef)
-		}, featureset.CommonNameFeature)
-
-		s.it(f, "should issue a certificate that defines a distinct DNS Name and another distinct Common Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
+			},
+			{
+				name: "should issue a certificate that defines a distinct DNS Name and another distinct Common Name",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateCommonName(e2eutil.RandomSubdomain(s.DomainSuffix)),
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.CommonNameFeature)
-
-		s.it(f, "should issue a certificate that defines a DNS Name and sets a duration", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
+			},
+			{
+				name: "should issue a certificate that defines a DNS Name and sets a duration",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 					gen.SetCertificateDuration(&metav1.Duration{Duration: time.Hour * 896}),
 				},
-			}, issuerRef)
-		}, featureset.DurationFeature, featureset.OnlySAN)
-
-		s.it(f, "should issue a certificate that defines a wildcard DNS Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.DurationFeature, featureset.OnlySAN},
+			},
+			{
+				name: "should issue a certificate that defines a wildcard DNS Name",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateDNSNames("*." + e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
-			}, issuerRef)
-		}, featureset.WildcardsFeature, featureset.OnlySAN)
-
-		s.it(f, "should issue a certificate that includes only a URISANs name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.WildcardsFeature, featureset.OnlySAN},
+			},
+			{
+				name: "should issue a certificate that includes only a URISANs name",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateURIs("spiffe://cluster.local/ns/sandbox/sa/foo"),
 				},
-			}, issuerRef)
-		}, featureset.URISANsFeature, featureset.OnlySAN)
-
-		s.it(f, "should issue a certificate that includes arbitrary key usages", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+				requiredFeatures: []featureset.Feature{featureset.URISANsFeature, featureset.OnlySAN},
+			},
+			{
+				name: "should issue a certificate that includes arbitrary key usages",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 					gen.SetCertificateKeyUsages(
@@ -435,8 +373,9 @@ func (s *Suite) Define() {
 					certificates.ExpectKeyUsageUsageDigitalSignature,
 					certificates.ExpectKeyUsageUsageDataEncipherment,
 				},
-			}, issuerRef)
-		}, featureset.KeyUsagesFeature, featureset.OnlySAN)
+				requiredFeatures: []featureset.Feature{featureset.KeyUsagesFeature, featureset.OnlySAN},
+			},
+		}
 
 		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -692,16 +631,18 @@ func (s *Suite) Define() {
 			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 		})
 
-		s.it(f, "should issue a certificate that defines a long domain", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+		tests = append(tests, []testCase{
+			{
+				name: "should issue a certificate that defines a long domain",
 				certModifiers: func() []gen.CertificateModifier {
 					const maxLengthOfDomainSegment = 63
 					return []gen.CertificateModifier{
 						gen.SetCertificateDNSNames(e2eutil.RandomSubdomainLength(s.DomainSuffix, maxLengthOfDomainSegment)),
 					}
 				}(),
-			}, issuerRef)
-		}, featureset.OnlySAN, featureset.LongDomainFeatureSet)
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.LongDomainFeatureSet},
+			},
+		}...)
 
 		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -755,8 +696,9 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate that defines a wildcard DNS Name and its apex DNS Name", func(issuerRef cmmeta.ObjectReference) {
-			runTest(f, testCase{
+		tests = append(tests, []testCase{
+			{
+				name: "should issue a certificate that defines a wildcard DNS Name and its apex DNS Name",
 				certModifiers: func() []gen.CertificateModifier {
 					dnsDomain := e2eutil.RandomSubdomain(s.DomainSuffix)
 
@@ -764,7 +706,51 @@ func (s *Suite) Define() {
 						gen.SetCertificateDNSNames("*."+dnsDomain, dnsDomain),
 					}
 				}(),
-			}, issuerRef)
-		}, featureset.WildcardsFeature, featureset.OnlySAN)
+				requiredFeatures: []featureset.Feature{featureset.WildcardsFeature, featureset.OnlySAN},
+			},
+		}...)
+
+		defineTest := func(test testCase) {
+			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
+				randomTestID := rand.String(10)
+				certificate := &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "e2e-conformance-" + randomTestID,
+						Namespace: f.Namespace.Name,
+						Annotations: map[string]string{
+							"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						SecretName: "e2e-conformance-tls-" + randomTestID,
+						IssuerRef:  issuerRef,
+					},
+				}
+
+				certificate = gen.CertificateFrom(
+					certificate,
+					test.certModifiers...,
+				)
+
+				By("Creating a Certificate")
+				err := f.CRClient.Create(ctx, certificate)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the Certificate to be issued...")
+				certificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, certificate, time.Minute*8)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Validating the issued Certificate...")
+				validations := []certificates.ValidationFunc(nil)
+				validations = append(validations, test.extraValidations...)
+				validations = append(validations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+				err = f.Helper().ValidateCertificate(certificate, validations...)
+				Expect(err).NotTo(HaveOccurred())
+			}, test.requiredFeatures...)
+		}
+
+		for _, test := range tests {
+			defineTest(test)
+		}
 	})
 }
