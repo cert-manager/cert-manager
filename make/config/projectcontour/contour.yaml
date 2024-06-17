@@ -6,7 +6,9 @@
 #
 # Specify the Gateway API configuration.
 gateway:
-  controllerName: projectcontour.io/projectcontour/contour
+  gatewayRef:
+    name: acmesolver
+    namespace: projectcontour
 #
 # should contour expect to be running inside a k8s cluster
 # incluster: true

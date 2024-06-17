@@ -3,7 +3,7 @@ github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENS
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/acmesolver-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/acmesolver-binary/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt,MIT
-github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.1/LICENSE,Apache-2.0
+github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.2/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.3.0/LICENSE,Apache-2.0
 github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
 github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.6.0/LICENSE,BSD-3-Clause
@@ -26,11 +26,11 @@ golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.16.0:LICENSE,BSD-3
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.34.1/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
-k8s.io/api/core/v1,https://github.com/kubernetes/api/blob/v0.30.1/LICENSE,Apache-2.0
-k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,https://github.com/kubernetes/apiextensions-apiserver/blob/v0.30.1/LICENSE,Apache-2.0
-k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.30.1/LICENSE,Apache-2.0
-k8s.io/apimachinery/third_party/forked/golang/reflect,https://github.com/kubernetes/apimachinery/blob/v0.30.1/third_party/forked/golang/LICENSE,BSD-3-Clause
-k8s.io/component-base,https://github.com/kubernetes/component-base/blob/v0.30.1/LICENSE,Apache-2.0
+k8s.io/api/core/v1,https://github.com/kubernetes/api/blob/v0.30.2/LICENSE,Apache-2.0
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,https://github.com/kubernetes/apiextensions-apiserver/blob/v0.30.2/LICENSE,Apache-2.0
+k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.30.2/LICENSE,Apache-2.0
+k8s.io/apimachinery/third_party/forked/golang/reflect,https://github.com/kubernetes/apimachinery/blob/v0.30.2/third_party/forked/golang/LICENSE,BSD-3-Clause
+k8s.io/component-base,https://github.com/kubernetes/component-base/blob/v0.30.2/LICENSE,Apache-2.0
 k8s.io/klog/v2,https://github.com/kubernetes/klog/blob/v2.120.1/LICENSE,Apache-2.0
 k8s.io/utils,https://github.com/kubernetes/utils/blob/fe8a2dddb1d0/LICENSE,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/fe8a2dddb1d0/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
