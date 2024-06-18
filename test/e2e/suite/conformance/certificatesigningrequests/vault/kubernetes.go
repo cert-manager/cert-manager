@@ -38,30 +38,30 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.KeyUsagesFeature,
+		featureset.Ed25519FeatureSet,
+		featureset.IssueCAFeature,
+	)
+
 	issuer := &kubernetes{
 		testWithRootCA: true,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault Kubernetes Auth Issuer With Root CA",
-		CreateIssuerFunc: issuer.createIssuer,
-		DeleteIssuerFunc: issuer.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault Kubernetes Auth Issuer With Root CA",
+		CreateIssuerFunc:    issuer.createIssuer,
+		DeleteIssuerFunc:    issuer.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	clusterIssuer := &kubernetes{
 		testWithRootCA: true,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault Kubernetes Auth ClusterIssuer With Root CA",
-		CreateIssuerFunc: clusterIssuer.createClusterIssuer,
-		DeleteIssuerFunc: clusterIssuer.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault Kubernetes Auth ClusterIssuer With Root CA",
+		CreateIssuerFunc:    clusterIssuer.createClusterIssuer,
+		DeleteIssuerFunc:    clusterIssuer.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 
