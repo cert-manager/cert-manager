@@ -446,7 +446,7 @@ func TestSetToken(t *testing.T) {
 
 		fakeClient *vaultfake.FakeClient
 	}{
-		"if neither token secret ref, app role secret ref, or kube auth then not found then error": {
+		"if neither token secret ref, app role secret ref, clientCertificate auth or kube auth not found then error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
@@ -456,7 +456,7 @@ func TestSetToken(t *testing.T) {
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
+				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
 			),
 		},
 
@@ -555,6 +555,92 @@ func TestSetToken(t *testing.T) {
 				},
 			}, nil),
 			expectedToken: "my-roleapp-token",
+			expectedErr:   nil,
+		},
+
+		"if clientCertificate auth is set but referenced secret doesn't exist return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							SecretName: "secret-ref-name",
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret does not exist")),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("secret does not exist"),
+		},
+
+		"if clientCertificate auth set but referenced secret doesn't contain tls.crt return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							SecretName: "secret-ref-name",
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{
+					Data: map[string][]byte{
+						"tls.key": []byte(testLeafCertificate),
+					},
+				}, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("no data for tls.crt in secret 'test-namespace/secret-ref-name'"),
+		},
+
+		"if clientCertificate auth set but referenced secret doesn't contain tls.key return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+							SecretName: "secret-ref-name",
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{
+					Data: map[string][]byte{
+						"tls.crt": []byte(testLeafCertificate),
+					},
+				}, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("no data for tls.key in secret 'test-namespace/secret-ref-name'"),
+		},
+
+		"if clientCertificate auth set but there is no secret referenced, do not return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapi.VaultAuth{
+						ClientCertificate: &cmapi.VaultClientCertificateAuth{},
+					},
+				}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: io.NopCloser(
+						strings.NewReader(
+							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
+					),
+				},
+			}, nil),
+			expectedToken: "my-token",
 			expectedErr:   nil,
 		},
 

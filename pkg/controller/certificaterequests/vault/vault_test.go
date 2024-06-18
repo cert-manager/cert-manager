@@ -201,7 +201,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal VaultInitError Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
+					"Normal VaultInitError Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -213,7 +213,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
+								Message:            "Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
