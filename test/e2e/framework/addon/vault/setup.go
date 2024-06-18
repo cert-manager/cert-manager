@@ -378,7 +378,7 @@ func (v *VaultInitializer) Setup(ctx context.Context) error {
 	}
 
 	if v.clientCertAuthPath != "" {
-		if err := v.setupClientCertAuth(); err != nil {
+		if err := v.setupClientCertAuth(ctx); err != nil {
 			return err
 		}
 	}
@@ -806,8 +806,7 @@ func CleanKubernetesRoleForServiceAccountRefAuth(ctx context.Context, client kub
 	return nil
 }
 
-func (v *VaultInitializer) setupClientCertAuth() error {
-	ctx := context.Background()
+func (v *VaultInitializer) setupClientCertAuth(ctx context.Context) error {
 	// vault auth-enable cert
 	resp, err := v.client.System.AuthListEnabledMethods(ctx)
 	if err != nil {
@@ -832,8 +831,7 @@ func (v *VaultInitializer) setupClientCertAuth() error {
 	return nil
 }
 
-func (v *VaultInitializer) CreateClientCertRole() (key []byte, cert []byte, _ error) {
-	ctx := context.Background()
+func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte, cert []byte, _ error) {
 	privateKey, err := rsa.GenerateKey(cryptorand.Reader, 2048)
 	if err != nil {
 		return nil, nil, err
