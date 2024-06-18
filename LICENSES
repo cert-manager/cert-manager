@@ -122,7 +122,7 @@ github.com/sosodev/duration,https://github.com/sosodev/duration/blob/v1.3.1/LICE
 github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.8.0/LICENSE.txt,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 github.com/stoewer/go-strcase,https://github.com/stoewer/go-strcase/blob/v1.3.0/LICENSE,MIT
-github.com/vektah/gqlparser/v2,https://github.com/vektah/gqlparser/blob/v2.5.11/LICENSE,MIT
+github.com/vektah/gqlparser/v2,https://github.com/vektah/gqlparser/blob/v2.5.15/LICENSE,MIT
 github.com/youmark/pkcs8,https://github.com/youmark/pkcs8/blob/3c2c7870ae76/LICENSE,MIT
 go.etcd.io/etcd/api/v3,https://github.com/etcd-io/etcd/blob/api/v3.5.13/api/LICENSE,Apache-2.0
 go.etcd.io/etcd/client/pkg/v3,https://github.com/etcd-io/etcd/blob/client/pkg/v3.5.13/client/pkg/LICENSE,Apache-2.0
