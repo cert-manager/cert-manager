@@ -331,10 +331,9 @@ func ExpectIsCA(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) 
 			markedIsCA, cert.IsCA)
 	}
 
-	hasCertSign := (cert.KeyUsage & x509.KeyUsageCertSign) == x509.KeyUsageCertSign
-	if hasCertSign != markedIsCA {
-		return fmt.Errorf("Expected certificate to have KeyUsageCertSign=%t, but got=%t", markedIsCA, hasCertSign)
-	}
+	// NOTE: For CertificateSigningRequests that are marked as CA, we do not automatically
+	// add the KeyUsageCertSign bit to the KeyUsage field. This behaviour is different
+	// to the behaviour of the cert-manager Certificate resource.
 
 	return nil
 }
