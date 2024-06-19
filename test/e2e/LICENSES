@@ -10,6 +10,8 @@ github.com/davecgh/go-spew/spew,https://github.com/davecgh/go-spew/blob/d8f796af
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.10.1/LICENSE,MIT
 github.com/evanphx/json-patch/v5,https://github.com/evanphx/json-patch/blob/v5.6.0/v5/LICENSE,BSD-3-Clause
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
+github.com/go-jose/go-jose/v3,https://github.com/go-jose/go-jose/blob/v3.0.3/LICENSE,Apache-2.0
+github.com/go-jose/go-jose/v3/json,https://github.com/go-jose/go-jose/blob/v3.0.3/json/LICENSE,BSD-3-Clause
 github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.4/v3/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.3.0/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.2.4/LICENSE,Apache-2.0
@@ -32,7 +34,7 @@ github.com/hashicorp/go-secure-stdlib/parseutil,https://github.com/hashicorp/go-
 github.com/hashicorp/go-secure-stdlib/strutil,https://github.com/hashicorp/go-secure-stdlib/blob/strutil/v0.1.2/strutil/LICENSE,MPL-2.0
 github.com/hashicorp/go-sockaddr,https://github.com/hashicorp/go-sockaddr/blob/v1.0.2/LICENSE,MPL-2.0
 github.com/hashicorp/hcl,https://github.com/hashicorp/hcl/blob/v1.0.0/LICENSE,MPL-2.0
-github.com/hashicorp/vault/api,https://github.com/hashicorp/vault/blob/api/v1.9.1/api/LICENSE,MPL-2.0
+github.com/hashicorp/vault/api,https://github.com/hashicorp/vault/blob/api/v1.9.2/api/LICENSE,MPL-2.0
 github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.13/LICENSE,BSD-3-Clause
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
@@ -69,8 +71,6 @@ golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.16.0:LICENSE,BSD-3
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.3.0:LICENSE,BSD-3-Clause
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.33.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
-gopkg.in/square/go-jose.v2,https://github.com/square/go-jose/blob/v2.6.0/LICENSE,Apache-2.0
-gopkg.in/square/go-jose.v2/json,https://github.com/square/go-jose/blob/v2.6.0/json/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
 k8s.io/api,https://github.com/kubernetes/api/blob/v0.27.2/LICENSE,Apache-2.0
