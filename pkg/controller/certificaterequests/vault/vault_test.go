@@ -329,6 +329,47 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
+		"a client with a token secret referenced with token but temporary failed to authenticate should report pending and return error": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{tokenSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
+								Key: "my-token-key",
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "token-secret",
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{
+					"Normal VaultInitError Failed to initialise vault client for signing: failed to create vault client, temporary auth failure",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Failed to initialise vault client for signing: failed to create vault client, temporary auth failure",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+			fakeVault: fakevault.New().WithNew(func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*fakevault.Vault, error) {
+				return nil, errors.New("failed to create vault client, temporary auth failure")
+			}),
+			expectedErr: true,
+		},
 		"a client with a token secret referenced with token but failed to sign should report fail": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
