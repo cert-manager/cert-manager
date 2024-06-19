@@ -97,8 +97,10 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
-	// Explicitly set the region to aws-global so that AssumeRole can be used
-	// with the global sts endpoint.
+	// For backwards compatibility with cert-manager <= 1.14, where we used the aws-sdk-go v1
+	// library, we configure the SDK here to use the global sts endpoint. This was the default
+	// behaviour of the SDK v1 library, but has to be explicitly set in the v2 library. For the
+	// route53 calls, we use the region provided by the user (see below).
 	stsCfg := cfg.Copy()
 	stsCfg.Region = "aws-global"
 
@@ -142,7 +144,8 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 
 	// If ambient credentials aren't permitted, always set the region, even if to
 	// empty string, to avoid it falling back on the environment.
-	// this has to be set after session is constructed
+	// This has to be set after session is constructed, as a different region (aws-global)
+	// is used for the STS service.
 	if d.Region != "" || !useAmbientCredentials {
 		cfg.Region = d.Region
 	}
