@@ -74,7 +74,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 	}
 
 	BeforeEach(func() {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.OtherNames)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.OtherNames)
 
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer(issuerName,
