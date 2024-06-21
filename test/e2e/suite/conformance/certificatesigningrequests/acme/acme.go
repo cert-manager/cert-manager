@@ -55,7 +55,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.EmailSANsFeature,
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
-		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,
 	)
 
@@ -70,7 +69,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.EmailSANsFeature,
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
-		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,
 	)
 
