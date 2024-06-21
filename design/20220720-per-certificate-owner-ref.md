@@ -201,7 +201,7 @@ will mutate the object when the value is "empty", for example the
 **PostIssuancePolicyChain**
 
 In ([policies.go#L95](https://github.com/cert-manager/cert-manager/blob/b78af1ef867f8776715cae3dd6a8b83049c4d9b2/internal/controller/certificates/policies/policies.go#L95-L104)), cert-manager does a few sanity checks right after the issuer (either an
-internal or an external issue) has filled the CertificateRequest's status
+internal or an external issuer) has filled the CertificateRequest's status
 with the signed certificate.
 
 One of the checks is called
@@ -243,12 +243,12 @@ This feature will be supported in all the versions of Kubernetes that are suppor
 
 **CSI driver**
 
-It is possible to use the
+It is possible to use a
 [`csi-driver`](https://github.com/cert-manager/csi-driver) to circumvent
 the problem of "too many ephemeral Secret resources stored in etcd". Using
-the CSI driver, no Secret resource is created, alleviating the issue. Since Flant offers its customers the capability to use Certificate resources,
+a CSI driver, no Secret resource is created, alleviating the issue. Since Flant offers its customers the capability to use Certificate resources,
 and wants to keep supporting the Certificate type, switching from Certificate
-resources to the CSI driver isn't an option.
+resources to a CSI driver isn't an option.
 
 **Ad-hoc tool to delete orphaned Secrets**
 
