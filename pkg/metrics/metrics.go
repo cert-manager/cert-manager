@@ -28,7 +28,6 @@ package metrics
 import (
 	"net"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -190,12 +189,9 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 
 	// Create Registry and register the recommended collectors
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	registry.MustRegister(
-		collectors.NewGoCollector(
-			collectors.WithGoCollectorRuntimeMetrics(collectors.MetricsAll),
-			collectors.WithoutGoCollectorRuntimeMetrics(regexp.MustCompile("^/godebug/.*")),
-		),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		collectors.NewGoCollector(),
 	)
 	// Create server and register Prometheus metrics handler
 	m := &Metrics{

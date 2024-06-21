@@ -145,7 +145,8 @@ func TestMetricsController(t *testing.T) {
 			return err
 		}
 
-		if strings.TrimSpace(string(output)) != strings.TrimSpace(expectedOutput) {
+		trimmedOutput := strings.SplitN(string(output), "# HELP go_gc_duration_seconds", 2)[0]
+		if strings.TrimSpace(trimmedOutput) != strings.TrimSpace(expectedOutput) {
 			return fmt.Errorf("got unexpected metrics output\nexp:\n%s\ngot:\n%s\n",
 				expectedOutput, output)
 		}
