@@ -36,6 +36,7 @@ import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -218,7 +219,7 @@ func (v *Vault) setToken(client Client) error {
 		return nil
 	}
 
-	return fmt.Errorf("error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
+	return cmerrors.NewInvalidData("error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
