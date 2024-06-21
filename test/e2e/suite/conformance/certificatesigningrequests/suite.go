@@ -77,6 +77,10 @@ type Suite struct {
 	// nginx-ingress addon.
 	DomainSuffix string
 
+	// HTTP01TestType is set to "Ingress" or "Gateway" to determine which IPs
+	// and Domains will be used to run the ACME HTTP-01 test suites.
+	HTTP01TestType string
+
 	// UnsupportedFeatures is a list of features that are not supported by this
 	// invocation of the test suite.
 	// This is useful if a particular issuers explicitly does not support
@@ -90,11 +94,25 @@ type Suite struct {
 // setup will set default values for fields on the Suite struct.
 func (s *Suite) setup(f *framework.Framework) {
 	if s.SharedIPAddress == "" {
-		s.SharedIPAddress = "127.0.0.1"
+		switch s.HTTP01TestType {
+		case "Ingress":
+			s.SharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
+		case "Gateway":
+			s.SharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
+		default:
+			s.SharedIPAddress = "127.0.0.1"
+		}
 	}
 
 	if s.DomainSuffix == "" {
-		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		switch s.HTTP01TestType {
+		case "Ingress":
+			s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		case "Gateway":
+			s.DomainSuffix = f.Config.Addons.Gateway.Domain
+		default:
+			s.DomainSuffix = "example.com"
+		}
 	}
 
 	if s.UnsupportedFeatures == nil {
@@ -116,6 +134,10 @@ func (s *Suite) validate() {
 		Fail("CreateIssuerFunc must be set")
 	}
 
+	if s.HTTP01TestType == "Gateway" {
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+	}
+
 	s.validated = true
 }
 
@@ -125,7 +147,7 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(context.Context,
 		return
 	}
 	It(name, func(ctx context.Context) {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		By("Creating an issuer resource")
 		signerName := s.CreateIssuerFunc(ctx, f)

@@ -49,7 +49,7 @@ func Skipf(format string, args ...interface{}) {
 	Skip(nowStamp() + ": " + msg)
 }
 
-func RequireFeatureGate(f *Framework, featureSet featuregate.FeatureGate, gate featuregate.Feature) {
+func RequireFeatureGate(featureSet featuregate.FeatureGate, gate featuregate.Feature) {
 	if !featureSet.Enabled(gate) {
 		Skipf("feature gate %q is not enabled, skipping test", gate)
 	}

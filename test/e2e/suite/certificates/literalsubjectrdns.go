@@ -49,7 +49,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 	f := framework.NewDefaultFramework("certificate-literalsubject-rdns")
 
 	createCertificate := func(f *framework.Framework, literalSubject string) (*cmapi.Certificate, error) {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: testName + "-",

@@ -83,7 +83,7 @@ func (s *Suite) Define() {
 				sharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
 			case "Gateway":
 				sharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
-				framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+				framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 			}
 		})
 
@@ -224,7 +224,7 @@ func (s *Suite) Define() {
 		}, featureset.CommonNameFeature)
 
 		s.it(f, "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress", func(issuerRef cmmeta.ObjectReference) {
-			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.OtherNames)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.OtherNames)
 			emailAddresses := []string{"email@domain.test"}
 			otherNames := []cmapi.OtherName{
 				{
@@ -305,7 +305,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		}, featureset.OtherNamesFeature)
 
 		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name with a literal subject", func(issuerRef cmmeta.ObjectReference) {
-			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
@@ -963,7 +963,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		})
 
 		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
-			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 
 			name := "testcert-gateway"
 			secretName := "testcert-gateway-tls"

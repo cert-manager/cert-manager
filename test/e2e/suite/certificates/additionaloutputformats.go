@@ -54,7 +54,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 	f := framework.NewDefaultFramework("certificates-additional-output-formats")
 
 	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
 
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
@@ -332,7 +332,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 
 	It("if a third party set additional output formats, they then get added to the Certificate, when they are removed again they should persist as they are still owned by a third party", func() {
 		// This e2e test requires that the ServerSideApply feature gate is enabled.
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ServerSideApply)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ServerSideApply)
 
 		crtName, crt := createCertificate(f, nil)
 

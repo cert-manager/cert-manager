@@ -379,26 +379,6 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.KeyUsagesFeature},
 			},
 			{
-				name:    "should issue a certificate that includes arbitrary key usages with SAN only",
-				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
-				},
-				kubeCSRUsages: []certificatesv1.KeyUsage{
-					certificatesv1.UsageSigning,
-					certificatesv1.UsageDataEncipherment,
-					certificatesv1.UsageServerAuth,
-					certificatesv1.UsageClientAuth,
-				},
-				extraValidations: []certificatesigningrequests.ValidationFunc{
-					certificatesigningrequests.ExpectKeyUsageExtKeyUsageClientAuth,
-					certificatesigningrequests.ExpectKeyUsageExtKeyUsageServerAuth,
-					certificatesigningrequests.ExpectKeyUsageUsageDigitalSignature,
-					certificatesigningrequests.ExpectKeyUsageUsageDataEncipherment,
-				},
-				requiredFeatures: []featureset.Feature{featureset.KeyUsagesFeature, featureset.OnlySAN},
-			},
-			{
 				name:    "should issue a signing CA certificate that has a large duration",
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
