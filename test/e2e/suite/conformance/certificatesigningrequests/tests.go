@@ -208,7 +208,7 @@ func (s *Suite) Define() {
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
 				},
-				requiredFeatures: []featureset.Feature{featureset.IssueCAFeature},
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.IssueCAFeature},
 			},
 			{
 				name:    "should issue a certificate that defines an Email Address",
