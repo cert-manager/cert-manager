@@ -1651,6 +1651,10 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 }
 
 func TestValidateVenafiTPP(t *testing.T) {
+	caBundle := unitcrypto.MustCreateCryptoBundle(t,
+		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
+		clock.RealClock{},
+	).CertBytes
 	fldPath := field.NewPath("test")
 	scenarios := map[string]struct {
 		cfg  *cmapi.VenafiTPP
@@ -1665,6 +1669,21 @@ func TestValidateVenafiTPP(t *testing.T) {
 			cfg: &cmapi.VenafiTPP{},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("url"), ""),
+			},
+		},
+		"venafi TPP issuer defines both caBundle and caBundleSecretRef": {
+			cfg: &cmapi.VenafiTPP{
+				URL:      "https://tpp.example.com/vedsdk",
+				CABundle: caBundle,
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key: "ca.crt",
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "test-secret",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as TPP CA Bundle"),
 			},
 		},
 	}

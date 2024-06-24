@@ -34,6 +34,7 @@ import (
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -139,6 +140,11 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			return nil, err
 		}
 
+		caBundle, err := caBundleForVcertTPP(tpp, secretsLister, namespace)
+		if err != nil {
+			return nil, err
+		}
+
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
@@ -156,7 +162,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			// below. But we want to retain the CA bundle validation errors that
 			// were returned in previous versions of this code.
 			// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/client.go#L55-L61
-			ConnectionTrust: string(tpp.CABundle),
+			ConnectionTrust: string(caBundle),
 			Credentials: &endpoint.Authentication{
 				User:        username,
 				Password:    password,
@@ -164,7 +170,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			},
 			Client: httpClientForVcert(&httpClientForVcertOptions{
 				UserAgent:               ptr.To(userAgent),
-				CABundle:                tpp.CABundle,
+				CABundle:                caBundle,
 				TLSRenegotiationSupport: ptr.To(tls.RenegotiateOnceAsClient),
 			}),
 		}, nil
@@ -310,6 +316,48 @@ func httpClientForVcert(options *httpClientForVcertOptions) *http.Client {
 		Transport: roundTripper,
 		Timeout:   time.Second * 30,
 	}
+}
+
+// caBundleForVcertTPP is used to by ConnectionTrust and Client fields of vcert.Config.
+// This function sets appropriate CA based on provided bundle or kubernetes secret
+// If no custom CA bundle is configured, an empty byte slice is returned.
+// Assumes exactly one of the in-line/Secret CA bundles are defined.
+// If the `key` of the Secret CA bundle is not defined, its value defaults to
+// `ca.crt`.
+func caBundleForVcertTPP(tpp *cmapi.VenafiTPP, secretsLister internalinformers.SecretLister, namespace string) (caBundle []byte, err error) {
+	if len(tpp.CABundle) > 0 {
+		return tpp.CABundle, nil
+	}
+
+	secretRef := tpp.CABundleSecretRef
+	if secretRef == nil {
+		return nil, nil
+	}
+
+	var certBytes []byte
+	var ok bool
+
+	if secretRef != nil {
+		secret, err := secretsLister.Secrets(namespace).Get(secretRef.Name)
+		if err != nil {
+			return nil, fmt.Errorf("could not access secret '%s/%s': %s", namespace, secretRef.Name, err)
+		}
+
+		var key string
+		if secretRef.Key != "" {
+			key = secretRef.Key
+		} else {
+			key = cmmeta.TLSCAKey
+		}
+
+		certBytes, ok = secret.Data[key]
+		if !ok {
+			return nil, fmt.Errorf("no data for %q in secret '%s/%s'", key, namespace, secretRef.Name)
+		}
+
+	}
+
+	return certBytes, nil
 }
 
 func (v *Venafi) Ping() error {

@@ -1116,6 +1116,11 @@ func (in *VenafiTPP) DeepCopyInto(out *VenafiTPP) {
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		**out = **in
+	}
 	return
 }
 

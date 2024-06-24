@@ -1771,6 +1771,15 @@ func autoConvert_v1_VenafiTPP_To_certmanager_VenafiTPP(in *v1.VenafiTPP, out *ce
 		return err
 	}
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CABundleSecretRef = nil
+	}
 	return nil
 }
 
@@ -1785,6 +1794,15 @@ func autoConvert_certmanager_VenafiTPP_To_v1_VenafiTPP(in *certmanager.VenafiTPP
 		return err
 	}
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CABundleSecretRef = nil
+	}
 	return nil
 }
 

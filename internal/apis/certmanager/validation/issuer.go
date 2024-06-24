@@ -363,6 +363,25 @@ func ValidateVenafiTPP(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el fiel
 
 	// TODO: validate CABundle using validateCABundleNotEmpty
 
+	// Validate only one of CABundle/CABundleSecretRef is passed
+	el = append(el, validateVenafiTPPCABundleUnique(tpp, fldPath)...)
+
+	return el
+}
+
+func validateVenafiTPPCABundleUnique(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el field.ErrorList) {
+	numCAs := 0
+	if len(tpp.CABundle) > 0 {
+		numCAs++
+	}
+	if tpp.CABundleSecretRef != nil {
+		numCAs++
+	}
+
+	if numCAs > 1 {
+		el = append(el, field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as TPP CA Bundle"))
+	}
+
 	return el
 }
 
