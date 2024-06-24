@@ -35,6 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 
@@ -400,6 +401,16 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 		defineTest := func(test testCase) {
 			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
+				requiredFeatures := sets.New(test.requiredFeatures...)
+
+				if requiredFeatures.Has(featureset.OtherNamesFeature) {
+					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.OtherNames)
+				}
+
+				if requiredFeatures.Has(featureset.LiteralSubjectFeature) {
+					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
+				}
+
 				randomTestID := rand.String(10)
 				certificate := &cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
