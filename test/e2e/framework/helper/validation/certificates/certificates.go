@@ -138,6 +138,22 @@ func ExpectCertificateOrganizationToMatch(certificate *cmapi.Certificate, secret
 	if certificate.Spec.Subject != nil {
 		expectedOrganization = certificate.Spec.Subject.Organizations
 	}
+	if certificate.Spec.LiteralSubject != "" {
+		sequence, err := pki.UnmarshalSubjectStringToRDNSequence(certificate.Spec.LiteralSubject)
+		if err != nil {
+			return err
+		}
+
+		for _, rdns := range sequence {
+			for _, atv := range rdns {
+				if atv.Type.Equal(pki.OIDConstants.Organization) {
+					if str, ok := atv.Value.(string); ok {
+						expectedOrganization = append(expectedOrganization, str)
+					}
+				}
+			}
+		}
+	}
 
 	if !util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) {
 		return fmt.Errorf("Expected certificate valid for O %v, but got a certificate valid for O %v", expectedOrganization, cert.Subject.Organization)

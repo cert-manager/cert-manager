@@ -21,7 +21,9 @@ import (
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 
 	. "github.com/onsi/ginkgo/v2"
 )
@@ -46,6 +48,11 @@ type Suite struct {
 	// If not specified, this function will be skipped.
 	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.ObjectReference)
 
+	// SharedIPAddress is the IP address that will be used in all certificates
+	// that require an IP address to be set. For HTTP-01 tests, this IP address
+	// will be set to the IP address of the Ingress/ Gateway controller.
+	SharedIPAddress string
+
 	// DomainSuffix is a suffix used on all domain requests.
 	// This is useful when the issuer being tested requires special
 	// configuration for a set of domains in order for certificates to be
@@ -64,18 +71,21 @@ type Suite struct {
 	// certain features due to restrictions in their implementation.
 	UnsupportedFeatures featureset.FeatureSet
 
-	// completed is used internally to track whether Complete() has been called
-	completed bool
+	// validated is used internally to track whether Validate has been called already.
+	validated bool
 }
 
-// complete will validate configuration and set default values.
-func (s *Suite) complete(f *framework.Framework) {
-	if s.Name == "" {
-		Fail("Name must be set")
-	}
-
-	if s.CreateIssuerFunc == nil {
-		Fail("CreateIssuerFunc must be set")
+// setup will set default values for fields on the Suite struct.
+func (s *Suite) setup(f *framework.Framework) {
+	if s.SharedIPAddress == "" {
+		switch s.HTTP01TestType {
+		case "Ingress":
+			s.SharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
+		case "Gateway":
+			s.SharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
+		default:
+			s.SharedIPAddress = "127.0.0.1"
+		}
 	}
 
 	if s.DomainSuffix == "" {
@@ -92,8 +102,27 @@ func (s *Suite) complete(f *framework.Framework) {
 	if s.UnsupportedFeatures == nil {
 		s.UnsupportedFeatures = make(featureset.FeatureSet)
 	}
+}
 
-	s.completed = true
+// validate will validate the Suite struct to ensure all required fields are set.
+func (s *Suite) validate() {
+	if s.validated {
+		return
+	}
+
+	if s.Name == "" {
+		Fail("Name must be set")
+	}
+
+	if s.CreateIssuerFunc == nil {
+		Fail("CreateIssuerFunc must be set")
+	}
+
+	if s.HTTP01TestType == "Gateway" {
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+	}
+
+	s.validated = true
 }
 
 // it is called by the tests to in Define() to setup and run the test
