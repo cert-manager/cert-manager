@@ -227,7 +227,6 @@ enableCertificateOwnerRef: false
 #      AdditionalCertificateOutputFormats: true
 #      DisallowInsecureCSRUsageDefinition: true
 #      ExperimentalCertificateSigningRequestControllers: true
-#      ExperimentalGatewayAPISupport: true
 #      LiteralCertificateSubject: true
 #      SecretsFilteredCaching: true
 #      ServerSideApply: true
@@ -259,6 +258,12 @@ dns01RecursiveNameserversOnly: false
 # option. This 'disableAutoApproval' option is useful when you want to make all approval decisions
 # using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).
 disableAutoApproval: false
+
+
+# Option to enable the Gateway API support. Gateway API support is still in beta,
+# and only tested with v1 Gateway API.
+# This replaces the ExperimentalGatewayAPISupport featureGate
+enableGatewayApi: false
 
 # List of signer names that cert-manager will approve by default. CertificateRequests
 # referencing these signer names will be auto-approved by cert-manager. Defaults to just

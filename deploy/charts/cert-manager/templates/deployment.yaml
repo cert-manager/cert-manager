@@ -67,8 +67,8 @@ spec:
       {{- if or .Values.volumes .Values.config}}
       volumes:
         {{- if .Values.config }}
-        - name: config 
-          configMap: 
+        - name: config
+          configMap:
             name: {{ include "cert-manager.fullname" . }}
         {{- end }}
         {{ with .Values.volumes }}
@@ -140,6 +140,9 @@ spec:
           {{- if .Values.disableAutoApproval }}
           - --controllers=-certificaterequests-approver
           {{- end }}
+          {{- if .Values.enableGatewayApi }}
+          - --enable-gateway-api=true
+          {{- end }}
           ports:
           - containerPort: 9402
             name: http-metrics
@@ -154,7 +157,7 @@ spec:
           {{- if or .Values.config .Values.volumeMounts }}
           volumeMounts:
             {{- if .Values.config }}
-            - name: config 
+            - name: config
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.volumeMounts }}
