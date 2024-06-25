@@ -140,7 +140,7 @@ spec:
           {{- if .Values.disableAutoApproval }}
           - --controllers=-certificaterequests-approver
           {{- end }}
-          {{- if .Values.enableGatewayApi }}
+          {{- if .Values.enableGatewayAPI }}
           - --enable-gateway-api=true
           {{- end }}
           ports:

@@ -263,7 +263,7 @@ disableAutoApproval: false
 # Option to enable the Gateway API support. Gateway API support is still in beta,
 # and only tested with v1 Gateway API.
 # This replaces the ExperimentalGatewayAPISupport featureGate
-enableGatewayApi: false
+enableGatewayAPI: false
 
 # List of signer names that cert-manager will approve by default. CertificateRequests
 # referencing these signer names will be auto-approved by cert-manager. Defaults to just
