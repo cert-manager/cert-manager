@@ -344,8 +344,9 @@ When this flag is enabled, secrets will be automatically removed when the certif
 > {}
 > ```
 
-This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags. An APIVersion and Kind must be specified in your values.yaml file.  
-Flags will override options that are set here.  
+This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags.  
+  
+If `apiVersion` and `kind` are unspecified they default to the current latest version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.  
   
 For example:
 
@@ -860,8 +861,9 @@ The default is set to the maximum value of 30 seconds as users sometimes report 
 > {}
 > ```
 
-This is used to configure options for the webhook pod. This allows setting options that would usually be provided using flags. An APIVersion and Kind must be specified in your values.yaml file.  
-Flags override options that are set here.  
+This is used to configure options for the webhook pod. This allows setting options that would usually be provided using flags.  
+  
+If `apiVersion` and `kind` are unspecified they default to the current latest version (currently `webhook.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.  
   
 For example:
 
@@ -1310,8 +1312,9 @@ Note that cert-manager uses leader election to ensure that there can only be a s
 > {}
 > ```
 
-This is used to configure options for the cainjector pod. It allows setting options that are usually provided via flags. An APIVersion and Kind must be specified in your values.yaml file.  
-Flags override options that are set here.  
+This is used to configure options for the cainjector pod. It allows setting options that are usually provided via flags.  
+  
+If `apiVersion` and `kind` are unspecified they default to the current latest version (currently `cainjector.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.  
   
 For example:
 
