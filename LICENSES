@@ -64,7 +64,7 @@ github.com/grpc-ecosystem/grpc-gateway/v2,https://github.com/grpc-ecosystem/grpc
 github.com/hashicorp/errwrap,https://github.com/hashicorp/errwrap/blob/v1.1.0/LICENSE,MPL-2.0
 github.com/hashicorp/go-cleanhttp,https://github.com/hashicorp/go-cleanhttp/blob/v0.5.2/LICENSE,MPL-2.0
 github.com/hashicorp/go-multierror,https://github.com/hashicorp/go-multierror/blob/v1.1.1/LICENSE,MPL-2.0
-github.com/hashicorp/go-retryablehttp,https://github.com/hashicorp/go-retryablehttp/blob/v0.7.5/LICENSE,MPL-2.0
+github.com/hashicorp/go-retryablehttp,https://github.com/hashicorp/go-retryablehttp/blob/v0.7.7/LICENSE,MPL-2.0
 github.com/hashicorp/go-rootcerts,https://github.com/hashicorp/go-rootcerts/blob/v1.0.2/LICENSE,MPL-2.0
 github.com/hashicorp/go-secure-stdlib/parseutil,https://github.com/hashicorp/go-secure-stdlib/blob/parseutil/v0.1.8/parseutil/LICENSE,MPL-2.0
 github.com/hashicorp/go-secure-stdlib/strutil,https://github.com/hashicorp/go-secure-stdlib/blob/strutil/v0.1.2/strutil/LICENSE,MPL-2.0
