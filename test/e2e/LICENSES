@@ -25,7 +25,7 @@ github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Ap
 github.com/google/uuid,https://github.com/google/uuid/blob/v1.6.0/LICENSE,BSD-3-Clause
 github.com/gorilla/websocket,https://github.com/gorilla/websocket/blob/v1.5.1/LICENSE,BSD-3-Clause
 github.com/hashicorp/go-cleanhttp,https://github.com/hashicorp/go-cleanhttp/blob/v0.5.2/LICENSE,MPL-2.0
-github.com/hashicorp/go-retryablehttp,https://github.com/hashicorp/go-retryablehttp/blob/v0.7.6/LICENSE,MPL-2.0
+github.com/hashicorp/go-retryablehttp,https://github.com/hashicorp/go-retryablehttp/blob/v0.7.7/LICENSE,MPL-2.0
 github.com/hashicorp/go-rootcerts,https://github.com/hashicorp/go-rootcerts/blob/v1.0.2/LICENSE,MPL-2.0
 github.com/hashicorp/go-secure-stdlib/strutil,https://github.com/hashicorp/go-secure-stdlib/blob/strutil/v0.1.2/strutil/LICENSE,MPL-2.0
 github.com/hashicorp/vault-client-go,https://github.com/hashicorp/vault-client-go/blob/v0.4.3/LICENSE,MPL-2.0
