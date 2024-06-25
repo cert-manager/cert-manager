@@ -304,7 +304,7 @@ e2e-setup-certmanager: e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(b
 		--wait \
 		--namespace cert-manager \
 		--repo $(E2E_CERT_MANAGER_REPO) \
-		$(addprefix --version,$(E2E_CERT_MANAGER_VERSION)) \
+		$(addprefix --version=,$(E2E_CERT_MANAGER_VERSION)) \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
 		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api}" \
