@@ -208,8 +208,10 @@ enableCertificateOwnerRef: false
 
 # This property is used to configure options for the controller pod.
 # This allows setting options that would usually be provided using flags.
-# An APIVersion and Kind must be specified in your values.yaml file.
-# Flags will override options that are set here.
+#
+# If `apiVersion` and `kind` are unspecified they default to the current latest 
+# version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin 
+# the version by specifying the `apiVersion` yourself.
 #
 # For example:
 #  config:
@@ -614,8 +616,10 @@ webhook:
 
   # This is used to configure options for the webhook pod.
   # This allows setting options that would usually be provided using flags.
-  # An APIVersion and Kind must be specified in your values.yaml file.
-  # Flags override options that are set here.
+  #
+  # If `apiVersion` and `kind` are unspecified they default to the current latest 
+  # version (currently `webhook.config.cert-manager.io/v1alpha1`). You can pin 
+  # the version by specifying the `apiVersion` yourself.
   #
   # For example:
   #  apiVersion: webhook.config.cert-manager.io/v1alpha1
@@ -965,8 +969,10 @@ cainjector:
 
   # This is used to configure options for the cainjector pod.
   # It allows setting options that are usually provided via flags.
-  # An APIVersion and Kind must be specified in your values.yaml file.
-  # Flags override options that are set here.
+  #
+  # If `apiVersion` and `kind` are unspecified they default to the current latest 
+  # version (currently `cainjector.config.cert-manager.io/v1alpha1`). You can pin 
+  # the version by specifying the `apiVersion` yourself.
   #
   # For example:
   #  apiVersion: cainjector.config.cert-manager.io/v1alpha1
