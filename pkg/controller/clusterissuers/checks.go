@@ -60,11 +60,11 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 					affected = append(affected, iss)
 					continue
 				}
-			}
-			if iss.Spec.Venafi.TPP.CABundleSecretRef != nil {
-				if iss.Spec.Venafi.TPP.CABundleSecretRef.Name == secret.Name {
-					affected = append(affected, iss)
-					continue
+				if iss.Spec.Venafi.TPP.CABundleSecretRef != nil {
+					if iss.Spec.Venafi.TPP.CABundleSecretRef.Name == secret.Name {
+						affected = append(affected, iss)
+						continue
+					}
 				}
 			}
 			if iss.Spec.Venafi.Cloud != nil {
