@@ -149,9 +149,9 @@ type VenafiTPP struct {
 	// for example: "https://tpp.example.com/vedsdk".
 	URL string `json:"url"`
 
-	// CredentialsRef is a reference to a Secret containing the username and
-	// password for the TPP server.
-	// The secret must contain two keys, 'username' and 'password'.
+	// CredentialsRef is a reference to a Secret containing the Venafi TPP API credentials.
+	// The secret must contain the key 'access-token' for the Access Token Authentication,
+	// or two keys, 'username' and 'password' for the API Keys Authentication.
 	CredentialsRef cmmeta.LocalObjectReference `json:"credentialsRef"`
 
 	// Base64-encoded bundle of PEM CAs which will be used to validate the certificate
