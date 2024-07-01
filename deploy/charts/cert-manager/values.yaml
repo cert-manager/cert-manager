@@ -199,6 +199,11 @@ serviceAccount:
   # Automount API credentials for a Service Account.
   automountServiceAccountToken: true
 
+rbac:
+  # Optional additional annotations to add to the controller's ClusterRoles, ClusterRoleBindings, Roles and RoleBindings.
+  # +docs:property
+  annotations: {}
+
 # Automounting API credentials for a particular pod.
 # +docs:property
 # automountServiceAccountToken: true
@@ -704,6 +709,11 @@ webhook:
   # +docs:property
   # validatingWebhookConfigurationAnnotations: {}
 
+  rbac:
+  # Optional additional annotations to add to the webhook's ClusterRoles, ClusterRoleBindings, Roles and RoleBindings.
+  # +docs:property
+    annotations: {}
+
   validatingWebhookConfiguration:
     # Configure spec.namespaceSelector for validating webhooks.
     # +docs:property
@@ -1153,6 +1163,11 @@ cainjector:
 
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
+
+  rbac:
+    # Optional additional annotations to add to the cainjector's ClusterRoles, ClusterRoleBindings, Roles and RoleBindings.
+    # +docs:property
+    annotations: {}
 
   # Automounting API credentials for a particular pod.
   # +docs:property
