@@ -10,6 +10,7 @@ data:
     	dnssec-validation auto;
     	auth-nxdomain no;    # conform to RFC1035
     	listen-on { any; };
+    	max-cache-size 192m;
     };
 
     zone "http01.example.com" {
