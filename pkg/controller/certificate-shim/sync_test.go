@@ -2463,6 +2463,68 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:         "should skip TLS protocol listener in TLS passthrough mode",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedEvents: []string{
+				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
+			},
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{{
+						Hostname: ptrHostname("example.com"),
+						Port:     443,
+						Protocol: gwapi.HTTPSProtocolType,
+						TLS: &gwapi.GatewayTLSConfig{
+							Mode: ptrMode(gwapi.TLSModeTerminate),
+							CertificateRefs: []gwapi.SecretObjectReference{
+								{
+									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+									Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+									Name:  "example-com-tls",
+								},
+							},
+						},
+					}, {
+						Hostname: ptrHostname("subdomain.example.com"),
+						Port:     443,
+						Protocol: gwapi.TLSProtocolType,
+						TLS: &gwapi.GatewayTLSConfig{
+							Mode:            ptrMode(gwapi.TLSModePassthrough),
+							CertificateRefs: []gwapi.SecretObjectReference{},
+						},
+					}},
+				},
+			},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						Usages:     cmapi.DefaultKeyUsages(),
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "should error if the specified issuer is not found",
 			IngressLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
