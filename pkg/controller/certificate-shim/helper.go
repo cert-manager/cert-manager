@@ -163,6 +163,14 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
 
+	if renewBeforePercentage, found := ingLikeAnnotations[cmapi.RenewBeforePercentageAnnotationKey]; found {
+		pct, err := strconv.ParseInt(renewBeforePercentage, 10, 32)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforePercentageAnnotationKey, err)
+		}
+		crt.Spec.RenewBeforePercentage = ptr.To(int32(pct))
+	}
+
 	if usages, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; found {
 		var newUsages []cmapi.KeyUsage
 		for _, usageName := range strings.Split(usages, ",") {

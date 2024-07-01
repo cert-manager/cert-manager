@@ -203,7 +203,7 @@ func NewCertManagerBasicCertificateRequest(
 	), sk, nil
 }
 
-func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1.Certificate {
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration *metav1.Duration, renewBefore *metav1.Duration) *v1.Certificate {
 	return &v1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,

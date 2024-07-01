@@ -123,8 +123,18 @@ type CertificateSpec struct {
 	// issued certificate's duration. Minimum accepted value is 5 minutes.
 	// Value must be in units accepted by Go time.ParseDuration
 	// https://golang.org/pkg/time/#ParseDuration
+	// Cannot be set if the `renewBeforePercentage` field is set.
 	// +optional
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
+
+	// `renewBeforePercentage` is like `renewBefore`, except it is a relative percentage
+	// rather than an absolute duration.
+	// Value must be an integer in the range (0,100). The minimum effective
+	// `renewBefore` derived from the `renewBeforePercentage` and `duration` fields is 5
+	// minutes.
+	// Cannot be set if the `renewBefore` field is set.
+	// +optional
+	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
 
 	// DNSNames is a list of DNS subjectAltNames to be set on the Certificate.
 	// +optional
