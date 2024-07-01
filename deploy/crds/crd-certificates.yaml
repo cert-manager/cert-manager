@@ -111,6 +111,7 @@ spec:
                         enum:
                           - DER
                           - CombinedPEM
+                          - FullChain
                 commonName:
                   description: |-
                     Requested common name X509 certificate subject attribute.
