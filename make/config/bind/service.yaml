@@ -11,7 +11,7 @@ spec:
   clusterIP: {SERVICE_IP_PREFIX}.16
   ports:
   - port: 53
-    targetPort: 53
+    targetPort: 8053
     protocol: UDP
   selector:
     app: bind
