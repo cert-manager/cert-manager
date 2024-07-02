@@ -374,6 +374,7 @@ func buildCertificates(
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
 				Labels:          ingLike.GetLabels(),
+				Annotations:     ingLike.GetAnnotations(),
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
