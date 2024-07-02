@@ -163,8 +163,12 @@ func TestDataForCertificate(t *testing.T) {
 			// tests, we "force" the creation of the indexer for the CR
 			// type by registering a fake handler.
 			noop := cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {}}
-			test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(noop)
-			test.builder.KubeSharedInformerFactory.Secrets().Informer().AddEventHandler(noop)
+			if _, err := test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(noop); err != nil {
+				t.Fatalf("failed to add event handler to CertificateRequest informer: %v", err)
+			}
+			if _, err := test.builder.KubeSharedInformerFactory.Secrets().Informer().AddEventHandler(noop); err != nil {
+				t.Fatalf("failed to add event handler to Secret informer: %v", err)
+			}
 
 			// Even though we are only relying on listers in this unit test
 			// and do not use the informer event handlers, we still need to

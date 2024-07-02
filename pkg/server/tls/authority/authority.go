@@ -120,11 +120,13 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 		}),
 	)
 	informer := factory.Core().V1().Secrets().Informer()
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    d.handleAdd,
 		UpdateFunc: d.handleUpdate,
 		DeleteFunc: d.handleDelete,
-	})
+	}); err != nil {
+		return fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	d.lister = factory.Core().V1().Secrets().Lister().Secrets(d.SecretNamespace)
 	d.client = cl.CoreV1().Secrets(d.SecretNamespace)

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/miekg/dns"
@@ -33,6 +34,8 @@ const (
 )
 
 type BasicServer struct {
+	T *testing.T
+
 	// Zones is a list of DNS zones that this server should accept responses
 	// for.
 	Zones []string
@@ -84,6 +87,7 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) err
 
 	if b.Handler == nil {
 		b.Handler = &rfc2136Handler{
+			t:          b.T,
 			log:        log,
 			txtRecords: make(map[string][]string),
 			zones:      b.Zones,
@@ -98,9 +102,10 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) err
 	b.server.NotifyStartedFunc = waitLock.Unlock
 	go func() {
 		log.V(logf.DebugLevel).Info("starting DNS server")
-		b.server.ActivateAndServe()
+		if err := b.server.ActivateAndServe(); err != nil {
+			b.T.Errorf("failed to start DNS server: %v", err)
+		}
 		log.V(logf.DebugLevel).Info("DNS server exited")
-		pc.Close()
 	}()
 	waitLock.Lock()
 	defer waitLock.Unlock()

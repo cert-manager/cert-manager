@@ -121,7 +121,9 @@ func (b *Builder) Init() {
 		b.StringGenerator = rand.String
 	}
 	scheme := metadatafake.NewTestScheme()
-	metav1.AddMetaToScheme(scheme)
+	if err := metav1.AddMetaToScheme(scheme); err != nil {
+		b.T.Fatalf("error adding meta to scheme: %v", err)
+	}
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)

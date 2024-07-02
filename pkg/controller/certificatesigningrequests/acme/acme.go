@@ -84,7 +84,7 @@ func controllerBuilder() *certificatesigningrequests.Controller {
 			orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 			csrLister := ctx.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 
-			orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+			if _, err := orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 				WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
 					log, queue,
 					certificatesv1.SchemeGroupVersion.WithKind("CertificateSigningRequest"),
@@ -92,7 +92,9 @@ func controllerBuilder() *certificatesigningrequests.Controller {
 						return csrLister.Get(name)
 					},
 				),
-			})
+			}); err != nil {
+				return nil, fmt.Errorf("error setting up event handler: %v", err)
+			}
 			return []cache.InformerSynced{orderInformer.HasSynced}, nil
 		},
 	)
