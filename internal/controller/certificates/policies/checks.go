@@ -87,10 +87,7 @@ func SecretPrivateKeyMismatchesSpec(input Input) (string, string, bool) {
 		return InvalidKeyPair, fmt.Sprintf("Issuing certificate as Secret contains invalid private key data: %v", err), true
 	}
 
-	violations, err := pki.PrivateKeyMatchesSpec(pk, input.Certificate.Spec)
-	if err != nil {
-		return SecretMismatch, fmt.Sprintf("Failed to check private key is up to date: %v", err), true
-	}
+	violations := pki.PrivateKeyMatchesSpec(pk, input.Certificate.Spec)
 	if len(violations) > 0 {
 		return SecretMismatch, fmt.Sprintf("Existing private key is not up to date for spec: %v", violations), true
 	}
@@ -240,14 +237,12 @@ func CurrentCertificateRequestMismatchesSpec(input Input) (string, string, bool)
 // and is instead called by currentCertificateRequestValidForSpec if no there
 // is no existing CertificateRequest resource.
 func currentSecretValidForSpec(input Input) (string, string, bool) {
-	violations, err := pki.SecretDataAltNamesMatchSpec(input.Secret, input.Certificate.Spec)
+	x509Cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
 	if err != nil {
-		// This case should never be reached as we already check the certificate data can
-		// be parsed in an earlier policy check, but handle it anyway.
-		// TODO: log a message
-		return "", "", false
+		return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
 	}
-
+	// nolint: staticcheck // FuzzyX509AltNamesMatchSpec is used here for backwards compatibility
+	violations := pki.FuzzyX509AltNamesMatchSpec(x509Cert, input.Certificate.Spec)
 	if len(violations) > 0 {
 		return SecretMismatch, fmt.Sprintf("Issuing certificate as Existing issued Secret is not up to date for spec: %v", violations), true
 	}

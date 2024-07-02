@@ -18,12 +18,12 @@ package pki_test
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
 	"reflect"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -61,7 +61,6 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 		expectedAlgo cmapi.PrivateKeyAlgorithm
 		expectedSize int
 		violations   []string
-		err          string
 	}{
 		"should match if keySize and algorithm are correct (RSA)": {
 			key:          mustGenerateRSA(t, 2048),
@@ -98,7 +97,7 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			violations, err := pki.PrivateKeyMatchesSpec(
+			violations := pki.PrivateKeyMatchesSpec(
 				test.key,
 				cmapi.CertificateSpec{
 					PrivateKey: &cmapi.CertificatePrivateKey{
@@ -107,16 +106,6 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 					},
 				},
 			)
-			switch {
-			case err != nil:
-				if test.err != err.Error() {
-					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
-				}
-			default:
-				if test.err != "" {
-					t.Errorf("got no error but expected: %s", test.err)
-				}
-			}
 			if !reflect.DeepEqual(violations, test.violations) {
 				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
 			}
@@ -302,11 +291,10 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 	}
 }
 
-func TestSecretDataAltNamesMatchSpec(t *testing.T) {
+func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 	tests := map[string]struct {
-		data       []byte
+		x509       *x509.Certificate
 		spec       cmapi.CertificateSpec
-		err        string
 		violations []string
 	}{
 		"should match if common name and dns names exactly equal": {
@@ -314,7 +302,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			}),
@@ -324,7 +312,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"cn", "at", "least", "one"},
 			}),
 		},
@@ -333,7 +321,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one", "cn"},
 			}),
 		},
@@ -341,7 +329,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "at",
 				DNSNames:   []string{"least", "one"},
 			}),
@@ -351,7 +339,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			}),
 			violations: []string{"spec.commonName"},
@@ -361,7 +349,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one", "other"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			}),
 			violations: []string{"spec.commonName", "spec.dnsNames"},
@@ -370,7 +358,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one", "other"},
 			}),
@@ -381,7 +369,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one", "other"},
 			}),
@@ -391,7 +379,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "at",
 				DNSNames:   []string{"at", "least", "one"},
 			}),
@@ -401,7 +389,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "at",
 				DNSNames:   []string{"at", "least", "one", "cn"},
 			}),
@@ -410,7 +398,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			}),
 		},
@@ -418,7 +406,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.2.1"},
 			}),
 			violations: []string{"spec.ipAddresses"},
@@ -427,7 +415,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName:  "127.0.0.1",
 				IPAddresses: []string{"127.0.0.1"},
 			}),
@@ -436,17 +424,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			violations, err := pki.SecretDataAltNamesMatchSpec(&corev1.Secret{Data: map[string][]byte{corev1.TLSCertKey: test.data}}, test.spec)
-			switch {
-			case err != nil:
-				if test.err != err.Error() {
-					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
-				}
-			default:
-				if test.err != "" {
-					t.Errorf("got no error but expected: %s", test.err)
-				}
-			}
+			violations := pki.FuzzyX509AltNamesMatchSpec(test.x509, test.spec)
 			if !reflect.DeepEqual(violations, test.violations) {
 				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
 			}
@@ -454,23 +432,29 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 	}
 }
 
-func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) *x509.Certificate {
 	template, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{Spec: spec})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pemData, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
+	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return pemData
+	// Marshal and unmarshal to ensure all fields are set correctly
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, pk.Public(), pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return cert
 }
 
 func mustBuildCertificateRequest(t *testing.T, crt *cmapi.Certificate) *cmapi.CertificateRequest {
