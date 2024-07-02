@@ -82,7 +82,6 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":
 		d.log.V(logf.DebugLevel).Info("using assume role with web identity")
-		optFns = append(optFns, config.WithRegion(d.Region))
 	case useAmbientCredentials:
 		d.log.V(logf.DebugLevel).Info("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
@@ -98,9 +97,16 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
+	// For backwards compatibility with cert-manager <= 1.14, where we used the aws-sdk-go v1
+	// library, we configure the SDK here to use the global sts endpoint. This was the default
+	// behaviour of the SDK v1 library, but has to be explicitly set in the v2 library. For the
+	// route53 calls, we use the region provided by the user (see below).
+	stsCfg := cfg.Copy()
+	stsCfg.Region = "aws-global"
+
 	if d.Role != "" && d.WebIdentityToken == "" {
 		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
-		stsSvc := d.StsProvider(cfg)
+		stsSvc := d.StsProvider(stsCfg)
 		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
 			RoleSessionName: aws.String("cert-manager"),
@@ -119,7 +125,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	if d.Role != "" && d.WebIdentityToken != "" {
 		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
 
-		stsSvc := d.StsProvider(cfg)
+		stsSvc := d.StsProvider(stsCfg)
 		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(d.Role),
 			RoleSessionName:  aws.String("cert-manager"),
@@ -138,7 +144,8 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 
 	// If ambient credentials aren't permitted, always set the region, even if to
 	// empty string, to avoid it falling back on the environment.
-	// this has to be set after session is constructed
+	// This has to be set after session is constructed, as a different region (aws-global)
+	// is used for the STS service.
 	if d.Region != "" || !useAmbientCredentials {
 		cfg.Region = d.Region
 	}
