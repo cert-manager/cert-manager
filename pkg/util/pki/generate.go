@@ -176,16 +176,12 @@ func EncodeECPrivateKey(pk *ecdsa.PrivateKey) ([]byte, error) {
 // PublicKeyForPrivateKey will return the crypto.PublicKey for the given
 // crypto.PrivateKey. It only supports RSA and ECDSA keys.
 func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
-	switch k := pk.(type) {
-	case *rsa.PrivateKey:
-		return k.Public(), nil
-	case *ecdsa.PrivateKey:
-		return k.Public(), nil
-	case ed25519.PrivateKey:
-		return k.Public(), nil
-	default:
-		return nil, fmt.Errorf("unknown private key type: %T", pk)
+	pka, ok := pk.(interface{ Public() crypto.PublicKey })
+	if !ok {
+		return false, fmt.Errorf("unrecognised private key type: %T", pk)
 	}
+
+	return pka.Public(), nil
 }
 
 // PublicKeyMatchesCertificate checks whether the given public key matches the
@@ -211,14 +207,10 @@ func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (
 // Returns true if the keys are the same, false if they differ or an error if
 // the key type of `a` cannot be determined.
 func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
-	switch pub := a.(type) {
-	case *rsa.PublicKey:
-		return pub.Equal(b), nil
-	case *ecdsa.PublicKey:
-		return pub.Equal(b), nil
-	case ed25519.PublicKey:
-		return pub.Equal(b), nil
-	default:
+	pka, ok := a.(interface{ Equal(crypto.PublicKey) bool })
+	if !ok {
 		return false, fmt.Errorf("unrecognised public key type: %T", a)
 	}
+
+	return pka.Equal(b), nil
 }
