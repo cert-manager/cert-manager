@@ -1147,6 +1147,124 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			expectedAction: false,
 		},
+		"do nothing on certificate name and secret annotation mismatch": {
+			key:            "test-namespace/test-name",
+			enableOwnerRef: false,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					SecretName: "something",
+					Keystores: &cmapi.CertificateKeystores{
+						JKS: &cmapi.JKSKeystore{
+							Create: true,
+						},
+					},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.CertificateNameKey:       "mismatch-cert",
+					},
+					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
+								"f:ownerReferences": {
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
+						}},
+					},
+				},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
+			},
+			expectedAction: false,
+		},
+		"trigger update on missing keystore data when secret annotation matches certificate name": {
+			key:            "test-namespace/test-name",
+			enableOwnerRef: false,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					SecretName: "something",
+					Keystores: &cmapi.CertificateKeystores{
+						JKS: &cmapi.JKSKeystore{
+							Create: true,
+						},
+					},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.CertificateNameKey:       "test-name",
+					},
+					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
+								"f:ownerReferences": {
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`),
+						}},
+					},
+				},
+				Data: map[string][]byte{
+					"tls.crt": cert,
+					"tls.key": pk,
+				},
+			},
+			expectedAction: true,
+		},
 	}
 
 	for name, test := range tests {
