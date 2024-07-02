@@ -212,11 +212,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return c.deleteSecretResources(ctx, secrets)
 	}
 
-	violations, err := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
-	if err != nil {
-		log.Error(err, "Internal error verifying if private key matches spec - please open an issue.")
-		return nil
-	}
+	violations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if len(violations) > 0 {
 		log.V(logf.DebugLevel).Info("Regenerating private key due to change in fields", "violations", violations)
 		c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonDeleted, "Regenerating private key due to change in fields: %v", violations)
@@ -246,11 +242,7 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Failed to decode private key stored in Secret %q - generating new key", crt.Spec.SecretName)
 		return c.createAndSetNextPrivateKey(ctx, crt)
 	}
-	violations, err := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
-	if err != nil {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Failed to check if private key stored in Secret %q is up to date - generating new key", crt.Spec.SecretName)
-		return c.createAndSetNextPrivateKey(ctx, crt)
-	}
+	violations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if len(violations) > 0 {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonCannotRegenerateKey, "User intervention required: existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v, but cert-manager cannot create new private key as the Certificate's .spec.privateKey.rotationPolicy is unset or set to Never. To allow cert-manager to create a new private key you can set .spec.privateKey.rotationPolicy to 'Always' (this will result in the private key being regenerated every time a cert is renewed) ", crt.Spec.SecretName, violations)
 		return nil
