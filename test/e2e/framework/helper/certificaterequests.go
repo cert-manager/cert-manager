@@ -213,16 +213,16 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, n
 	cr, err := h.WaitForCertificateRequestReady(ctx, ns, name, timeout)
 	if err != nil {
 		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
-		h.Kubectl(ns).DescribeResource("certificaterequest", name)
-		h.Kubectl(ns).Describe("order", "challenge")
+		err = combineError(err, h.Kubectl(ns).DescribeResource("certificaterequest", name))
+		err = combineError(err, h.Kubectl(ns).Describe("order", "challenge"))
 		return err
 	}
 
 	_, err = h.ValidateIssuedCertificateRequest(ctx, cr, key, rootCAPEM)
 	if err != nil {
 		log.Logf("Error validating issued certificate: %v", err)
-		h.Kubectl(ns).DescribeResource("certificaterequest", name)
-		h.Kubectl(ns).Describe("order", "challenge")
+		err = combineError(err, h.Kubectl(ns).DescribeResource("certificaterequest", name))
+		err = combineError(err, h.Kubectl(ns).Describe("order", "challenge"))
 		return err
 	}
 

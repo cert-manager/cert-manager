@@ -153,7 +153,9 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
 	if ctx.Namespace == "" {
 		// register handler function for clusterissuer resources
-		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
+		if _, err := clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer}); err != nil {
+			return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+		}
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
 	}
 
@@ -161,8 +163,12 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.csrLister = csrInformer.Lister()
 
 	// register handler functions
-	csrInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
-	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
+	if _, err := csrInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(issuerInformer.Lister(), clusterIssuerInformer.Lister())

@@ -328,9 +328,15 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	restConfig := util.RestConfigWithUserAgent(c.baseRestConfig, component...)
 
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	cmscheme.AddToScheme(scheme)
-	gwscheme.AddToScheme(scheme)
+	if err := kscheme.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := cmscheme.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := gwscheme.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
 
 	clients, err := buildClients(restConfig, c.ctx.ContextOptions)
 	if err != nil {

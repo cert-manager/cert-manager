@@ -52,7 +52,8 @@ var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should set Ready=True accordingly", func() {

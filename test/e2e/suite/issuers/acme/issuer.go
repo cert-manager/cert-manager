@@ -46,8 +46,10 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should register ACME account", func() {

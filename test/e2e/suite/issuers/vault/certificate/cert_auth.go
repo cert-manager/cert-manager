@@ -104,12 +104,15 @@ func runVaultClientCertAuthTest(issuerKind string, testWithRoot bool, unsupporte
 		Expect(setup.Clean(ctx)).NotTo(HaveOccurred())
 
 		if issuerKind == cmapi.IssuerKind {
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		} else {
-			f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}
 
-		f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should generate a new valid certificate", func() {

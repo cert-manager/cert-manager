@@ -50,7 +50,9 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 
 	var finalConfig *config.CAInjectorConfiguration
 
-	logsapi.ResetForTest(nil)
+	if err := logsapi.ResetForTest(nil); err != nil {
+		t.Error(err)
+	}
 
 	cmd := newCAInjectorCommand(context.TODO(), func(ctx context.Context, cc *config.CAInjectorConfiguration) error {
 		finalConfig = cc

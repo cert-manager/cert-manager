@@ -95,10 +95,10 @@ func NewDefaultFramework(baseName string) *Framework {
 // It uses the config provided to it for the duration of the tests.
 func NewFramework(baseName string, cfg *config.Config) *Framework {
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	certmgrscheme.AddToScheme(scheme)
-	apiext.AddToScheme(scheme)
-	apireg.AddToScheme(scheme)
+	Expect(kscheme.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(certmgrscheme.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiext.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apireg.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	f := &Framework{
 		Config:   cfg,

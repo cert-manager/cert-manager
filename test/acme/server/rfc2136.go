@@ -19,6 +19,7 @@ package server
 import (
 	"fmt"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -28,6 +29,7 @@ import (
 )
 
 type rfc2136Handler struct {
+	t   *testing.T
 	log logr.Logger
 
 	txtRecords map[string][]string
@@ -44,7 +46,11 @@ func (b *rfc2136Handler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 
 	m := new(dns.Msg)
 	m.SetReply(req)
-	defer w.WriteMsg(m)
+	defer func() {
+		if err := w.WriteMsg(m); err != nil {
+			b.t.Errorf("failed to write response: %v", err)
+		}
+	}()
 
 	var zone string
 	if len(req.Question) > 0 {

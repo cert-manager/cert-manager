@@ -44,10 +44,10 @@ func (h *Helper) ValidateCertificate(certificate *cmapi.Certificate, validations
 		err := fn(certificate, secret)
 		if err != nil {
 			log.Logf("Certificate:\n")
-			h.describeCMObject(certificate)
+			err = combineError(err, h.describeCMObject(certificate))
 
 			log.Logf("Secret:\n")
-			h.describeKubeObject(secret)
+			err = combineError(err, h.describeKubeObject(secret))
 
 			return err
 		}

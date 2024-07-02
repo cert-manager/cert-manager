@@ -107,8 +107,10 @@ func testRFC2136DNSProvider() bool {
 
 		AfterEach(func() {
 			By("Cleaning up")
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
-			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, testingACMEPrivateKey, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, testingACMEPrivateKey, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should obtain a signed certificate for a regular domain", func() {
