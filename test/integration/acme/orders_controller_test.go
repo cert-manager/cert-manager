@@ -136,11 +136,14 @@ func TestAcmeOrdersController(t *testing.T) {
 	}
 
 	// Create a new orders controller.
-	ctrl, queue, mustSync := acmeorders.NewController(
+	ctrl, queue, mustSync, err := acmeorders.NewController(
 		logf.Log,
 		&controllerContext,
 		false,
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"orders_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -161,8 +164,7 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	// Create a Namespace.
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testName}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 

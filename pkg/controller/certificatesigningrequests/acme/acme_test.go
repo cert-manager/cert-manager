@@ -916,7 +916,9 @@ func Test_ProcessItem(t *testing.T) {
 			defer test.builder.Stop()
 
 			controller := controllerBuilder()
-			controller.Register(test.builder.Context)
+			if _, _, err := controller.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 
 			test.builder.Start()
 

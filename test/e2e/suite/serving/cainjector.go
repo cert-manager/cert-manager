@@ -162,7 +162,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				injectable, cert := generalSetup(test.makeInjectable("changed"))
 
 				By("changing the name of the corresponding secret in the cert")
-				retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}, cert)
 					if err != nil {
 						return err
@@ -176,8 +176,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					}
 					return nil
 				})
+				Expect(err).NotTo(HaveOccurred())
 
-				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*2)
+				cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*2)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")

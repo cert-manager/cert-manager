@@ -76,8 +76,10 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, certificateRequestSecretName, metav1.DeleteOptions{})
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, certificateRequestSecretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("Self Signed and private key", func() {

@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,7 +50,7 @@ type controller struct {
 	metrics *metrics.Metrics
 }
 
-func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
+func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
@@ -59,7 +60,9 @@ func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimit
 	// Reconcile over all Certificate events. We do _not_ reconcile on Secret
 	// events that are related to Certificates. It is the responsibility of the
 	// Certificates controllers to update accordingly.
-	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
+	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// build a list of InformerSynced functions that will be returned by the
 	// Register method.  the controller will only begin processing items once all
@@ -71,7 +74,7 @@ func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimit
 	return &controller{
 		certificateLister: certificateInformer.Lister(),
 		metrics:           ctx.Metrics,
-	}, queue, mustSync
+	}, queue, mustSync, nil
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
@@ -97,10 +100,9 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 }
 
 func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	ctrl, queue, mustSync := NewController(ctx)
+	ctrl, queue, mustSync, err := NewController(ctx)
 	c.controller = ctrl
-
-	return queue, mustSync, nil
+	return queue, mustSync, err
 }
 
 func init() {

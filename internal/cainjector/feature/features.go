@@ -21,6 +21,7 @@ limitations under the License.
 package feature
 
 import (
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/featuregate"
 
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -48,7 +49,7 @@ const (
 )
 
 func init() {
-	utilfeature.DefaultMutableFeatureGate.Add(cainjectorFeatureGates)
+	utilruntime.Must(utilfeature.DefaultMutableFeatureGate.Add(cainjectorFeatureGates))
 }
 
 // cainjectorFeatureGates defines all feature gates for the cainjector component.

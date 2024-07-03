@@ -18,6 +18,7 @@ package acmeorders
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -77,7 +78,7 @@ func NewController(
 	log logr.Logger,
 	ctx *controllerpkg.Context,
 	isNamespaced bool,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
+) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 
 	// Create a queue used to queue up Orders to be processed.
 	queue := workqueue.NewNamedRateLimitingQueue(
@@ -117,21 +118,29 @@ func NewController(
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
 		clusterIssuerLister = clusterIssuerInformer.Lister()
 		// register handler function for clusterissuer resources
-		clusterIssuerInformer.Informer().AddEventHandler(
+		if _, err := clusterIssuerInformer.Informer().AddEventHandler(
 			&controllerpkg.BlockingEventHandler{WorkFunc: handleGenericIssuerFunc(queue, orderLister)},
-		)
+		); err != nil {
+			return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+		}
 	}
 
 	// register handler functions
-	orderInformer.Informer().AddEventHandler(
+	if _, err := orderInformer.Informer().AddEventHandler(
 		&controllerpkg.QueuingEventHandler{Queue: queue},
-	)
-	issuerInformer.Informer().AddEventHandler(
+	); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := issuerInformer.Informer().AddEventHandler(
 		&controllerpkg.BlockingEventHandler{WorkFunc: handleGenericIssuerFunc(queue, orderLister)},
-	)
-	challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, orderGvk, orderGetterFunc(orderLister)),
-	})
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	return &controller{
 		clock:               ctx.Clock,
@@ -147,7 +156,7 @@ func NewController(
 		cmClient:            ctx.CMClient,
 		accountRegistry:     ctx.AccountRegistry,
 		fieldManager:        ctx.FieldManager,
-	}, queue, mustSync
+	}, queue, mustSync, nil
 
 }
 
@@ -202,14 +211,14 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	// If --namespace flag was set thus limiting cert-manager to a single namespace.
 	isNamespaced := ctx.Namespace != ""
 
-	ctrl, queue, mustSync := NewController(
+	ctrl, queue, mustSync, err := NewController(
 		log,
 		ctx,
 		isNamespaced,
 	)
 	c.controller = ctrl
 
-	return queue, mustSync, nil
+	return queue, mustSync, err
 }
 
 func init() {

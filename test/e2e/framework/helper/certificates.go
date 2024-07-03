@@ -75,17 +75,17 @@ func (h *Helper) waitForCertificateCondition(ctx context.Context, client clients
 		log.Logf("Failed waiting for certificate %v: %v\n", name, pollErr.Error())
 
 		log.Logf("Certificate:\n")
-		h.describeCMObject(certificate)
+		pollErr = combineError(pollErr, h.describeCMObject(certificate))
 
 		log.Logf("Order and challenge descriptions:\n")
-		h.Kubectl(certificate.Namespace).Describe("order", "challenge")
+		pollErr = combineError(pollErr, h.Kubectl(certificate.Namespace).Describe("order", "challenge"))
 
 		log.Logf("CertificateRequest description:\n")
 		crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
 		if err != nil {
-			log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
+			pollErr = combineError(pollErr, fmt.Errorf("failed to compute CertificateRequest name from certificate: %w", err))
 		} else {
-			h.Kubectl(certificate.Namespace).DescribeResource("certificaterequest", crName)
+			pollErr = combineError(pollErr, h.Kubectl(certificate.Namespace).DescribeResource("certificaterequest", crName))
 		}
 	}
 	return certificate, pollErr
@@ -189,7 +189,7 @@ func (h *Helper) waitForIssuerCondition(ctx context.Context, client clientset.Is
 		log.Logf("Failed waiting for issuer %v :%v\n", name, pollErr.Error())
 
 		log.Logf("Issuer:\n")
-		h.describeCMObject(issuer)
+		pollErr = combineError(pollErr, h.describeCMObject(issuer))
 	}
 
 	return issuer, pollErr
@@ -236,7 +236,7 @@ func (h *Helper) waitForClusterIssuerCondition(ctx context.Context, client clien
 		log.Logf("Failed waiting for issuer %v :%v\n", name, pollErr.Error())
 
 		log.Logf("Issuer:\n")
-		h.describeCMObject(issuer)
+		pollErr = combineError(pollErr, h.describeCMObject(issuer))
 	}
 
 	return issuer, pollErr

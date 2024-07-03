@@ -78,7 +78,7 @@ func init() {
 					orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
 
-					orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+					if _, err := orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 						WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
 							log, queue,
 							cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind),
@@ -86,7 +86,9 @@ func init() {
 								return certificateRequestLister.CertificateRequests(namespace).Get(name)
 							},
 						),
-					})
+					}); err != nil {
+						return nil, fmt.Errorf("error setting up event handler: %v", err)
+					}
 					return []cache.InformerSynced{orderInformer.HasSynced}, nil
 				},
 			)).

@@ -616,7 +616,9 @@ func TestProcessItem(t *testing.T) {
 				apiutil.IssuerSelfSigned,
 				func(*controller.Context) certificatesigningrequests.Signer { return selfsigned },
 			)
-			controller.Register(test.builder.Context)
+			if _, _, err := controller.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 			test.builder.Start()
 
 			err := controller.ProcessItem(context.Background(), test.csr.Name)

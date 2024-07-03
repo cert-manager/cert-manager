@@ -67,7 +67,9 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	webhookFlags.AddFlags(fs)
 	options.AddConfigFlags(fs, webhookConfig)
 	// Parse the arguments passed in into the WebhookOptions struct
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		t.Fatalf("Failed parsing arguments: %v", err)
+	}
 
 	var caPEM []byte
 	tempDir, err := os.MkdirTemp("", "webhook-tls-")

@@ -73,7 +73,8 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		if issuer != nil {
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}
 	})
 

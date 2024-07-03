@@ -68,11 +68,21 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, intern
 	cmFactory := cminformers.NewSharedInformerFactory(cmCl, 0)
 
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	certmgrscheme.AddToScheme(scheme)
-	apiext.AddToScheme(scheme)
-	apireg.AddToScheme(scheme)
-	gwapi.Install(scheme)
+	if err := kscheme.AddToScheme(scheme); err != nil {
+		t.Fatal(err)
+	}
+	if err := certmgrscheme.AddToScheme(scheme); err != nil {
+		t.Fatal(err)
+	}
+	if err := apiext.AddToScheme(scheme); err != nil {
+		t.Fatal(err)
+	}
+	if err := apireg.AddToScheme(scheme); err != nil {
+		t.Fatal(err)
+	}
+	if err := gwapi.Install(scheme); err != nil {
+		t.Fatal(err)
+	}
 
 	return cl, factory, cmCl, cmFactory, scheme
 }

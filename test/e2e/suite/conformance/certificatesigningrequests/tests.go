@@ -462,7 +462,8 @@ func (s *Suite) Define() {
 				defer func() {
 					cleanupCtx := context.Background()
 
-					f.CRClient.Delete(cleanupCtx, kubeCSR)
+					err := f.CRClient.Delete(cleanupCtx, kubeCSR)
+					Expect(err).NotTo(HaveOccurred())
 				}()
 
 				// Approve the request for testing, so that cert-manager may sign the
