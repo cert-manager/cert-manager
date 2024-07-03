@@ -91,7 +91,7 @@ type controller struct {
 func NewController(
 	log logr.Logger,
 	ctx *controllerpkg.Context,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
+) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -101,21 +101,29 @@ func NewController(
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
-	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
-	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
-	})
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Issuer reconciles on changes to the Secret named `spec.nextPrivateKeySecretName`
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ResourceOwnerOf,
 			predicate.ExtractResourceName(predicate.CertificateNextPrivateKeySecretName)),
-	})
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Issuer reconciles on changes to the Secret named `spec.secretName`
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ExtractResourceName(predicate.CertificateSecretName)),
-	})
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -144,7 +152,7 @@ func NewController(
 		),
 		fieldManager:         ctx.FieldManager,
 		localTemporarySigner: pki.GenerateLocallySignedTemporaryCertificate,
-	}, queue, mustSync
+	}, queue, mustSync, nil
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
@@ -471,10 +479,10 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync := NewController(log, ctx)
+	ctrl, queue, mustSync, err := NewController(log, ctx)
 	c.controller = ctrl
 
-	return queue, mustSync, nil
+	return queue, mustSync, err
 }
 
 func init() {

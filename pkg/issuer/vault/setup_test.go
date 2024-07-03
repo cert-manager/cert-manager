@@ -47,7 +47,9 @@ func TestVault_Setup(t *testing.T) {
 	vaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" || r.URL.Path == "/v1/auth/cert/login" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`))
+			if _, err := w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`)); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}))
 	defer vaultServer.Close()

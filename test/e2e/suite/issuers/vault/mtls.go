@@ -65,6 +65,8 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 		roleId, secretId, err = setup.CreateAppRole(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
+		vaultSecretName = ""
+
 		By("creating a service account for Vault authentication")
 		err = setup.CreateKubernetesRole(ctx, f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
 		Expect(err).NotTo(HaveOccurred())
@@ -77,12 +79,18 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 
 	JustAfterEach(func() {
 		By("Cleaning up AppRole")
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
-		setup.CleanAppRole(ctx)
+		err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		if vaultSecretName != "" {
+			err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}
+		err = setup.CleanAppRole(ctx)
+		Expect(err).NotTo(HaveOccurred())
 
 		By("Cleaning up Kubernetes")
-		setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
+		err = setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Namespace.Name, vaultSecretServiceAccount)
+		Expect(err).NotTo(HaveOccurred())
 
 		By("Cleaning up Vault")
 		Expect(setup.Clean(ctx)).NotTo(HaveOccurred())
@@ -443,8 +451,12 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 		// Note that we reuse the same service account as for the Kubernetes
 		// auth based on secretRef. There should be no problem doing so.
 		By("Creating the Role and RoleBinding to let cert-manager use TokenRequest for the ServiceAccount")
-		vaultaddon.CreateKubernetesRoleForServiceAccountRefAuth(ctx, f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
-		defer vaultaddon.CleanKubernetesRoleForServiceAccountRefAuth(ctx, f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
+		err := vaultaddon.CreateKubernetesRoleForServiceAccountRefAuth(ctx, f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
+		Expect(err).NotTo(HaveOccurred())
+		defer func() {
+			err := vaultaddon.CleanKubernetesRoleForServiceAccountRefAuth(ctx, f.KubeClientSet, setup.Role(), f.Namespace.Name, vaultSecretServiceAccount)
+			Expect(err).NotTo(HaveOccurred())
+		}()
 
 		By("Creating an Issuer")
 		vaultIssuer := gen.Issuer(issuerName,
@@ -455,7 +467,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 			gen.SetIssuerVaultClientCertSecretRef(vaultClientCertificateSecretName, corev1.TLSCertKey),
 			gen.SetIssuerVaultClientKeySecretRef(vaultClientCertificateSecretName, corev1.TLSPrivateKeyKey),
 			gen.SetIssuerVaultKubernetesAuthServiceAccount(vaultSecretServiceAccount, setup.Role(), setup.KubernetesAuthPath()))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, vaultIssuer, metav1.CreateOptions{})
+		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")

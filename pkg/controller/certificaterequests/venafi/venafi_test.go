@@ -833,7 +833,9 @@ func runTest(t *testing.T, test testT) {
 		apiutil.IssuerVenafi,
 		func(*controllerpkg.Context) certificaterequests.Issuer { return v },
 	)
-	controller.Register(test.builder.Context)
+	if _, _, err := controller.Register(test.builder.Context); err != nil {
+		t.Fatal(err)
+	}
 	test.builder.Start()
 
 	// Deep copy the certificate request to prevent pulling condition state across tests

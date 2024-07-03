@@ -120,7 +120,8 @@ func (k *kubernetes) delete(ctx context.Context, f *framework.Framework, signerN
 		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		k.setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.setup.Role())
+		err = k.setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.setup.Role())
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	Expect(k.setup.Clean(ctx)).NotTo(HaveOccurred(), "failed to deprovision vault initializer")

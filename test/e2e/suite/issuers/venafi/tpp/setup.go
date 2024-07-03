@@ -49,7 +49,8 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		if issuer != nil {
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuer.Name, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuer.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}
 	})
 

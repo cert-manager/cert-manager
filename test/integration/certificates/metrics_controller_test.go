@@ -102,7 +102,10 @@ func TestMetricsController(t *testing.T) {
 			Metrics: metricsHandler,
 		},
 	}
-	ctrl, queue, mustSync := controllermetrics.NewController(&controllerContext)
+	ctrl, queue, mustSync, err := controllermetrics.NewController(&controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"metrics_test",
 		metricsHandler,

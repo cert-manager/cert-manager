@@ -86,9 +86,11 @@ func init() {
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 						ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
 					)
-					secretInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+					if _, err := secretInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 						WorkFunc: handleSecretReferenceWorkFunc(log, certificateSigningRequestLister, helper, queue, ctx.IssuerOptions),
-					})
+					}); err != nil {
+						return nil, fmt.Errorf("error setting up event handler: %v", err)
+					}
 					return []cache.InformerSynced{
 						secretInformer.HasSynced,
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Informer().HasSynced,
