@@ -20,8 +20,6 @@ import (
 	"os/exec"
 	"strings"
 
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
-
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 )
 
@@ -62,18 +60,4 @@ func (k *Kubectl) Run(args ...string) error {
 	cmd.Stdout = log.Writer
 	cmd.Stderr = log.Writer
 	return cmd.Run()
-}
-
-func combineError(err1 error, err2 error) error {
-	if err1 == nil && err2 == nil {
-		return nil
-	}
-	if err1 == nil {
-		return err2
-	}
-	if err2 == nil {
-		return err1
-	}
-
-	return kerrors.NewAggregate([]error{err1, err2})
 }
