@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -83,18 +84,10 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	}
 
 	scheme := runtime.NewScheme()
-	if err := kscheme.AddToScheme(scheme); err != nil {
-		return err
-	}
-	if err := cmscheme.AddToScheme(scheme); err != nil {
-		return err
-	}
-	if err := apiext.AddToScheme(scheme); err != nil {
-		return err
-	}
-	if err := apireg.AddToScheme(scheme); err != nil {
-		return err
-	}
+	utilruntime.Must(kscheme.AddToScheme(scheme))
+	utilruntime.Must(cmscheme.AddToScheme(scheme))
+	utilruntime.Must(apiext.AddToScheme(scheme))
+	utilruntime.Must(apireg.AddToScheme(scheme))
 
 	mgr, err := ctrl.NewManager(
 		restConfig,

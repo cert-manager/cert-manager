@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
@@ -328,15 +329,9 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	restConfig := util.RestConfigWithUserAgent(c.baseRestConfig, component...)
 
 	scheme := runtime.NewScheme()
-	if err := kscheme.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := cmscheme.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := gwscheme.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
+	utilruntime.Must(kscheme.AddToScheme(scheme))
+	utilruntime.Must(cmscheme.AddToScheme(scheme))
+	utilruntime.Must(gwscheme.AddToScheme(scheme))
 
 	clients, err := buildClients(restConfig, c.ctx.ContextOptions)
 	if err != nil {

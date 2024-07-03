@@ -26,6 +26,7 @@ import (
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
@@ -68,21 +69,11 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, intern
 	cmFactory := cminformers.NewSharedInformerFactory(cmCl, 0)
 
 	scheme := runtime.NewScheme()
-	if err := kscheme.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	if err := certmgrscheme.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	if err := apiext.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	if err := apireg.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	if err := gwapi.Install(scheme); err != nil {
-		t.Fatal(err)
-	}
+	utilruntime.Must(kscheme.AddToScheme(scheme))
+	utilruntime.Must(certmgrscheme.AddToScheme(scheme))
+	utilruntime.Must(apiext.AddToScheme(scheme))
+	utilruntime.Must(apireg.AddToScheme(scheme))
+	utilruntime.Must(gwapi.Install(scheme))
 
 	return cl, factory, cmCl, cmFactory, scheme
 }
