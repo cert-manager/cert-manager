@@ -110,8 +110,6 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, certificateSecretName, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should call the dummy webhook provider and mark the challenges as presented=true", func() {

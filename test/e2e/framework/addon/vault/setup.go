@@ -799,10 +799,6 @@ func CleanKubernetesRoleForServiceAccountRefAuth(ctx context.Context, client kub
 		return err
 	}
 
-	if err := client.CoreV1().ServiceAccounts(saNS).Delete(ctx, saName, metav1.DeleteOptions{}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
