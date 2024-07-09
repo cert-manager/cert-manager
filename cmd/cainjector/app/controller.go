@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,6 +81,46 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			Cache: cache.Options{
 				ReaderFailOnMissingInformer: true,
 				DefaultNamespaces:           defaultNamespaces,
+			},
+			Client: client.Options{
+				Cache: &client.CacheOptions{
+					// Why do we disable the cache for v1.Secret?
+					//
+					// 1. To reduce memory use of cainjector, by disabling
+					//    in-memory cache of Secret resources.
+					// 2. To reduce the load on the K8S API server when
+					//    cainjector starts up, caused by the initial listing of
+					//    Secret resources in the cluster.
+					//
+					// Clusters may contain many and / or large Secret
+					// resources.
+					// For example OpenShift clusters may have thousands of
+					// ServiceAccounts and each of these has a Secret with the
+					// associated token.
+					// Or where helm is used, there will be large Secret
+					// resources containing the configuration of each Helm
+					// deployment.
+					//
+					// Ordinarily, the controller-runtime client would implicitly
+					// initialize a client-go cache which would list every
+					// Secret, including the entire data of every Secret.
+					// This initial list operation can place enormous load on
+					// the K8S API server.
+					//
+					// The problem can be alleviated by disabling the implicit cache:
+					// * Here in the client CacheOptions and,
+					// * in NewControllerManagedBy.Watches, by supplying the
+					//   builder.OnlyMetadata option.
+					//
+					// The disadvantage is that this will cause *increased*
+					// ongoing load on the K8S API server later, because the
+					// reconciler for each injectable will GET the source Secret
+					// directly from the K8S API server every time the
+					// injectable is reconciled.
+					DisableFor: []client.Object{
+						&corev1.Secret{},
+					},
+				},
 			},
 			LeaderElection:                opts.LeaderElectionConfig.Enabled,
 			LeaderElectionNamespace:       opts.LeaderElectionConfig.Namespace,

@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -163,16 +162,25 @@ func dropNotFound(err error) error {
 	return err
 }
 
-// owningCertForSecret gets the name of the owning certificate for a
-// given secret, returning nil if no such object exists.
-func owningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
-	val, ok := secret.Annotations[certmanager.CertificateNameKey]
+// owningCertForSecret gets the name of the owning certificate for a given
+// secret, returning nil if the supplied secret does not have a
+// `cert-manager.io/certificate-name` annotation.
+// The secret may be a v1.Secret or a v1.PartialObjectMetadata.
+//
+// NOTE: "owning" here does not mean [ownerReference][1], because
+// cert-manager does not set the ownerReference of the Secret,
+// unless the [`--enable-certificate-owner-ref` flag is true][2].
+//
+// [1]: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+// [2]: https://cert-manager.io/docs/cli/controller/
+func owningCertForSecret(secret client.Object) *types.NamespacedName {
+	val, ok := secret.GetAnnotations()[certmanager.CertificateNameKey]
 	if !ok {
 		return nil
 	}
 	return &types.NamespacedName{
 		Name:      val,
-		Namespace: secret.Namespace,
+		Namespace: secret.GetNamespace(),
 	}
 }
 
