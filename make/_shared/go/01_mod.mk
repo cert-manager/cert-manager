@@ -23,6 +23,41 @@ endif
 go_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
 golangci_lint_override := $(dir $(lastword $(MAKEFILE_LIST)))/.golangci.override.yaml
 
+.PHONY: go-workspace
+go-workspace: export GOWORK?=$(abspath go.work)
+## Create a go.work file in the repository root (or GOWORK)
+##
+## @category Development
+go-workspace: | $(NEEDS_GO)
+	@rm -f $(GOWORK)
+	$(GO) work init
+	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
+		| while read d; do \
+				target=$$(dirname $${d}); \
+				$(GO) work use "$${target}"; \
+			done
+
+.PHONY: go-tidy
+## Alias for `make generate-go-mod-tidy`
+## @category [shared] Generate/ Verify
+go-tidy: generate-go-mod-tidy
+
+.PHONY: generate-go-mod-tidy
+## Run `go mod tidy` on all Go modules
+## @category [shared] Generate/ Verify
+generate-go-mod-tidy: | $(NEEDS_GO)
+	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
+		| while read d; do \
+				target=$$(dirname $${d}); \
+				echo "Running 'go mod tidy' in directory '$${target}'"; \
+				pushd "$${target}" >/dev/null; \
+				$(GO) mod tidy || exit; \
+				popd >/dev/null; \
+				echo ""; \
+			done
+
+shared_generate_targets += generate-go-mod-tidy
+
 .PHONY: generate-govulncheck
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
