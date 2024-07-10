@@ -90,6 +90,22 @@ This proposal suggests a mechanism how to avoid caching cert-manager unrelated `
 
 - use the same mechanism to improve memory consumption by cainjector. This proposal focuses on controller only as it is the more complex part however we need to fix this problem in cainjector too and it would be nice to be consistent
 
+  > 📖 Update: In [#7161: Reduce memory usage by only caching the metadata of Secret resources](https://github.com/cert-manager/cert-manager/pull/716199)
+  > we addressed the high startup memory usage of cainjector with metatdata-only caching features of controller-runtime.
+  > We did not use the split cache design that was implemented for the
+  > controller, and this contradicts the goal above: "use the same mechanism to
+  > improve memory consumption by cainjector ... to be consistent".
+  > Why? Because the split cache mechanism is overkill for cainjector.
+  > The split cache design is designed to reduce memory use **and** minimize the
+  > ongoing load on the K8S API server; which is appropriate for the controller
+  > because it has multiple controller loops each reading Secret resources every
+  > time a Certificate is reconciled.
+  > It is not necessary for cainjector, because cainjector reads relatively few
+  > Secret resources, infrequently; `cainjector` only reads Secrets having the
+  > `cert-manager.io/allow-direct-injection` or Secrets created from
+  > Certificates having that annotation. And it only reads the Secret data once
+  > during while reconciling the target resource.
+
 #### Must not
 
 - make our controllers less reliable (i.e by introducing edge cases where a cert-manager related event does not trigger a reconcile). Given the wide usage of cert-manager and the various different usage scenarios, any such edge case would be likely to occur for some users
@@ -509,7 +525,7 @@ The configured `Secret` will be retrieved when the issuer is reconciled (events 
 #### Upstream mechanisms
 
 There are a number of existing upstream mechanisms how to limit what gets stored in the cache. This section focuses on what is available for client-go informers which we use in cert-manager controllers, but there is a controller-runtime wrapper available for each of these mechanisms that should make it usable in cainjector as well.
- 
+
  ##### Filtering
 
 Filtering which objects get watched using [label or field selectors](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L328-L332). These selectors allow to filter what resources are retrieved during the initial list call and watch calls to kube apiserver by informer's `ListerWatcher` component (and therefore will end up in the cache). client-go informer factory allows configuring individual informers with [list options](https://github.com/kubernetes/client-go/blob/v12.0.0/informers/factory.go#L78-L84) that will be used [for list and watch calls](https://github.com/kubernetes/client-go/blob/v12.0.0/informers/core/v1/secret.go#L59-L72).
@@ -688,7 +704,7 @@ See an example flag implementation for cainjector in https://github.com/cert-man
 It might work well for cases where 'known' selectors need to be passed that we could event document such as `type!=helm.sh/release.v1`.
 
 #### Drawbacks
- 
+
 - bad user experience- no straightforward way to tell if the selector actually does what was expected and an easy footgun especially when users attempt to specify which `Secret`s _should_ (rather than _shouldn't_) be watched
 
 - users should aim to use 'negative' selectors, but that be complicated if there is a large number of random `Secret`s in cluster that don't have a unifying selector
