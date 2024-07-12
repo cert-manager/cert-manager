@@ -713,18 +713,24 @@ webhook:
           operator: "NotIn"
           values:
             - "true"
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - kube-node-lease
 
   mutatingWebhookConfiguration:
     # Configure spec.namespaceSelector for mutating webhooks.
     # +docs:property
-    namespaceSelector: {}
-    #  matchLabels:
-    #    key: value
-    #  matchExpressions:
-    #    - key: kubernetes.io/metadata.name
-    #      operator: NotIn
-    #      values:
-    #        - kube-system
+    namespaceSelector:
+      #  matchLabels:
+      #    key: value
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - kube-node-lease
 
 
   # Additional command line flags to pass to cert-manager webhook binary.
