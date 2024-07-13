@@ -268,9 +268,8 @@ func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string,
 	}
 
 	// .DNSName should not have a trailing dot
-	reqParams := &route53.ListHostedZonesByNameInput{
-		DNSName: aws.String(util.UnFqdn(authZone)),
-	}
+	reqParams := &route53.ListHostedZonesByNameInput{}
+
 	resp, err := r.client.ListHostedZonesByName(ctx, reqParams)
 	if err != nil {
 		return "", removeReqID(err)
@@ -287,7 +286,7 @@ func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string,
 	}
 	authZone, err = util.FindBestMatch(fqdn, hostedZones...)
 	if err != nil {
-		return "", fmt.Errorf("zone %s not found in Route 53 for domain %s", authZone, fqdn)
+		return "", fmt.Errorf("error for domain %s with hosted zones %v: %v", fqdn, hostedZones, err)
 	}
 
 	hostedZoneID, ok := zoneToID[authZone]
