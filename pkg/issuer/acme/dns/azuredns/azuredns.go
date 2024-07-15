@@ -210,7 +210,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
 	if err != nil {
 		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr); respErr.StatusCode == http.StatusNotFound {
+		if errors.As(err, &respErr); respErr != nil && respErr.StatusCode == http.StatusNotFound {
 			set = &dns.RecordSet{
 				Properties: &dns.RecordSetProperties{
 					TTL:        to.Ptr(int64(60)),
