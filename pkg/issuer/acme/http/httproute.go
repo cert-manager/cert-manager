@@ -117,7 +117,7 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
 		expectedLabels[k] = v
 	}
-	actualLabels := ch.Labels
+	actualLabels := httpRoute.Labels
 	if reflect.DeepEqual(expectedSpec, actualSpec) && reflect.DeepEqual(expectedLabels, actualLabels) {
 		return httpRoute, nil
 	}
@@ -132,6 +132,7 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 		newHTTPRoute := oldHTTPRoute.DeepCopy()
 		newHTTPRoute.Spec = expectedSpec
 		newHTTPRoute.Labels = expectedLabels
+		newHTTPRoute.GenerateName = ""
 		ret, err = s.GWClient.GatewayV1().HTTPRoutes(newHTTPRoute.Namespace).Update(ctx, newHTTPRoute, metav1.UpdateOptions{})
 		if err != nil {
 			return err
