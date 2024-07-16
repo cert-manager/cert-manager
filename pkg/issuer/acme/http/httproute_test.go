@@ -117,6 +117,44 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 
 func TestEnsureGatewayHTTPRoute(t *testing.T) {
 	tests := map[string]solverFixture{
+		"should not create another httproute if one exists": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				_, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
+				if err != nil {
+					t.Errorf("error listing HTTPRoutes: %v", err)
+					t.Fail()
+					return
+				}
+
+				if len(httpRoutes) != 1 {
+					t.Errorf("Expected 1 HTTPRoute, but got: %v", len(httpRoutes))
+				}
+
+				gotHTTPRouteSpec := httpRoutes[0].Spec
+				expectedHTTPRoute := generateHTTPRouteSpec(s.Challenge, "fakeservice")
+				if !reflect.DeepEqual(gotHTTPRouteSpec, expectedHTTPRoute) {
+					t.Errorf("Expected HTTPRoute specs to match, but got diff:\n%v",
+						diff.ObjectDiff(gotHTTPRouteSpec, expectedHTTPRoute))
+				}
+			},
+		},
 		"should update challenge httproute if service changes": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
