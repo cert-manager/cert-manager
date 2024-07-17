@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
+permissions:
+  contents: read
+
 jobs:
   self_upgrade:
     runs-on: ubuntu-latest
@@ -27,13 +30,13 @@ jobs:
           echo "This workflow should not be run on a non-branch-head."
           exit 1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - id: go-version
         run: |
           make print-go-version >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ steps.go-version.outputs.result }}
 
@@ -64,7 +67,7 @@ jobs:
           git push -f origin "$SELF_UPGRADE_BRANCH"
 
       - if: ${{ steps.is-up-to-date.outputs.result != 'true' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const { repo, owner } = context.repo;
@@ -77,7 +80,7 @@ jobs:
             });
             
             if (pulls.data.length < 1) {
-              await github.rest.pulls.create({
+              const result = await github.rest.pulls.create({
                 title: '[CI] Merge ' + process.env.SELF_UPGRADE_BRANCH + ' into ' + process.env.SOURCE_BRANCH,
                 owner: owner,
                 repo: repo,
@@ -86,5 +89,11 @@ jobs:
                 body: [
                   'This PR is auto-generated to bump the Makefile modules.',
                 ].join('\n'),
+              });
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: result.data.number,
+                labels: ['skip-review']
               });
             }
