@@ -99,6 +99,43 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				}
 			},
 		},
+		"should clean-up if there are multiple httproute resources": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			},
+			Err: true,
+			PreFn: func(t *testing.T, s *solverFixture) {
+				_, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+
+				_, err = s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
+				if err != nil {
+					t.Errorf("error listing HTTPRoutes: %v", err)
+					t.Fail()
+					return
+				}
+				if len(httpRoutes) != 1 {
+					t.Errorf("Expected 1 HTTPRoute, but got: %v", len(httpRoutes))
+				}
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
