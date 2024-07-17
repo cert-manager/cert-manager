@@ -95,7 +95,7 @@ func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 	}
 	httpRoute := &gwapi.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    "cm-acme-http-solver",
+			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       ch.Namespace,
 			Labels:          labels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
