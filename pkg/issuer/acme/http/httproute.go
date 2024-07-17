@@ -166,6 +166,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 					{
 						BackendRef: gwapi.BackendRef{
 							BackendObjectReference: gwapi.BackendObjectReference{
+								Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
 								Kind:      func() *gwapi.Kind { k := gwapi.Kind("Service"); return &k }(),
 								Name:      gwapi.ObjectName(svcName),
 								Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
