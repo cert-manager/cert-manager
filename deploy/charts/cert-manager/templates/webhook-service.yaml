@@ -32,6 +32,12 @@ spec:
     port: 443
     protocol: TCP
     targetPort: "https"
+{{- if and .Values.prometheus.enabled (not .Values.prometheus.podmonitor.enabled) }}
+  - name: metrics
+    port: 9402
+    protocol: TCP
+    targetPort: "http-metrics"
+{{- end }}
   selector:
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}

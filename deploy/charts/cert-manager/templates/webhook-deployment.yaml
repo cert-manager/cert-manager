@@ -43,6 +43,14 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
+      {{- if not .Values.podAnnotations }}
+      annotations:
+      {{- end }}
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9402'
+      {{- end }}
     spec:
       serviceAccountName: {{ template "webhook.serviceAccountName" . }}
       {{- if hasKey .Values.webhook "automountServiceAccountToken" }}
@@ -95,6 +103,9 @@ spec:
           {{- with .Values.webhook.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
+          {{- if not .Values.prometheus.enabled }}
+          - --metrics-listen-address=0
+          {{- end }}
           ports:
           - name: https
             protocol: TCP
@@ -112,6 +123,11 @@ spec:
             {{- else }}
             containerPort: 6080
             {{- end }}
+          {{- if .Values.prometheus.enabled }}
+          - containerPort: 9402
+            name: http-metrics
+            protocol: TCP
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /livez

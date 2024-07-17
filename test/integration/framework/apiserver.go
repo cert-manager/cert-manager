@@ -100,7 +100,10 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 	}
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(
-		t, ctx, []string{"--kubeconfig", f.Name()},
+		// Disable the metrics server to avoid multiple webhook servers
+		// attempting to listen on metrics port 9402 when tests are running in
+		// parallel.
+		t, ctx, []string{"--kubeconfig", f.Name(), "--metrics-listen-address=0"},
 	)
 
 	crds := readCustomResourcesAtPath(t, *options.crdsDir)

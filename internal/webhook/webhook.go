@@ -71,16 +71,20 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 	metainstall.Install(scheme)
 
 	s := &server.Server{
-		ResourceScheme:    scheme,
-		ListenAddr:        opts.SecurePort,
-		HealthzAddr:       &opts.HealthzPort,
-		EnablePprof:       opts.EnablePprof,
-		PprofAddress:      opts.PprofAddress,
-		CertificateSource: buildCertificateSource(log, opts.TLSConfig, restcfg),
-		CipherSuites:      opts.TLSConfig.CipherSuites,
-		MinTLSVersion:     opts.TLSConfig.MinTLSVersion,
-		ValidationWebhook: admissionHandler,
-		MutationWebhook:   admissionHandler,
+		ResourceScheme:           scheme,
+		ListenAddr:               opts.SecurePort,
+		HealthzAddr:              &opts.HealthzPort,
+		EnablePprof:              opts.EnablePprof,
+		PprofAddress:             opts.PprofAddress,
+		CertificateSource:        buildCertificateSource(log, opts.TLSConfig, restcfg),
+		CipherSuites:             opts.TLSConfig.CipherSuites,
+		MinTLSVersion:            opts.TLSConfig.MinTLSVersion,
+		ValidationWebhook:        admissionHandler,
+		MutationWebhook:          admissionHandler,
+		MetricsListenAddress:     opts.MetricsListenAddress,
+		MetricsCertificateSource: buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
+		MetricsCipherSuites:      opts.MetricsTLSConfig.CipherSuites,
+		MetricsMinTLSVersion:     opts.MetricsTLSConfig.MinTLSVersion,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
