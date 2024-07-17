@@ -132,7 +132,6 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 		newHTTPRoute := oldHTTPRoute.DeepCopy()
 		newHTTPRoute.Spec = expectedSpec
 		newHTTPRoute.Labels = expectedLabels
-		newHTTPRoute.GenerateName = ""
 		ret, err = s.GWClient.GatewayV1().HTTPRoutes(newHTTPRoute.Namespace).Update(ctx, newHTTPRoute, metav1.UpdateOptions{})
 		if err != nil {
 			return err
