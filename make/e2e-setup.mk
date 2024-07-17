@@ -156,10 +156,10 @@ endef
 # get the message "warning: undefined variable 'CI'".
 .PHONY: preload-kind-image
 ifeq ($(shell printenv CI),)
-preload-kind-image:
+preload-kind-image: | $(NEEDS_CTR)
 	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
-preload-kind-image: $(call image-tar,kind)
+preload-kind-image: $(call image-tar,kind) | $(NEEDS_CTR)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
@@ -417,7 +417,7 @@ $(call local-image-tar,pebble).dir/pebble: $(bin_dir)/downloaded/pebble-$(PEBBLE
 	tar xzf $< -C /tmp
 	cd /tmp/pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) $(GOFLAGS) -o $(CURDIR)/$@ ./cmd/pebble
 
-$(call local-image-tar,pebble): $(call local-image-tar,pebble).dir/pebble make/config/pebble/Containerfile.pebble
+$(call local-image-tar,pebble): $(call local-image-tar,pebble).dir/pebble make/config/pebble/Containerfile.pebble | $(NEEDS_CTR)
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
 	$(CTR) build --quiet \
 		-f make/config/pebble/Containerfile.pebble \
@@ -439,7 +439,7 @@ $(call local-image-tar,samplewebhook).dir/samplewebhook: make/config/samplewebho
 	@mkdir -p $(dir $@)
 	GOOS=linux GOARCH=$(CRI_ARCH) $(GOBUILD) -o $@ $(GOFLAGS) make/config/samplewebhook/sample/main.go
 
-$(call local-image-tar,samplewebhook): $(call local-image-tar,samplewebhook).dir/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook
+$(call local-image-tar,samplewebhook): $(call local-image-tar,samplewebhook).dir/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook | $(NEEDS_CTR)
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
 	$(CTR) build --quiet \
 		-f make/config/samplewebhook/Containerfile.samplewebhook \

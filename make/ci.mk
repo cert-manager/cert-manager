@@ -19,7 +19,7 @@ verify-modules: | $(NEEDS_CMREL)
 shared_verify_targets += verify-modules
 
 .PHONY: verify-chart
-verify-chart: $(bin_dir)/cert-manager-$(VERSION).tgz
+verify-chart: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_CTR)
 	DOCKER=$(CTR) ./hack/verify-chart-version.sh $<
 
 .PHONY: verify-errexit
