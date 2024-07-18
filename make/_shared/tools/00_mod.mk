@@ -42,7 +42,13 @@ for_each_kv = $(foreach item,$2,$(eval $(call $1,$(word 1,$(subst =, ,$(item))),
 # variables: https://stackoverflow.com/questions/54726457
 export PATH := $(CURDIR)/$(bin_dir)/tools:$(PATH)
 
-CTR=docker
+CTR ?= docker
+.PHONY: __require-ctr
+ifneq ($(shell command -v $(CTR) >/dev/null || echo notfound),)
+__require-ctr:
+	@:$(error "$(CTR) (or set CTR to a docker-compatible tool)")
+endif
+NEEDS_CTR = __require-ctr
 
 tools :=
 # https://github.com/helm/helm/releases
@@ -241,8 +247,13 @@ detected_vendoring := $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(bin_
 export VENDOR_GO ?= $(detected_vendoring)
 
 ifeq ($(VENDOR_GO),)
+.PHONY: __require-go
+ifneq ($(shell command -v go >/dev/null || echo notfound),)
+__require-go:
+	@:$(error "$(GO) (or run 'make vendor-go')")
+endif
 GO := go
-NEEDS_GO := #
+NEEDS_GO = __require-go
 else
 export GOROOT := $(CURDIR)/$(bin_dir)/tools/goroot
 export PATH := $(CURDIR)/$(bin_dir)/tools/goroot/bin:$(PATH)
@@ -604,10 +615,7 @@ $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_linux_$(HOST_ARCH): | $(DOW
 missing=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v sha256sum >/dev/null || command -v shasum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
-             && (command -v rsync >/dev/null || echo rsync) \
-             && ([ -n "$(findstring vendor-go,$(MAKECMDGOALS),)" ] \
-                || command -v $(GO) >/dev/null || echo "$(GO) (or run 'make vendor-go')") \
-             && (command -v $(CTR) >/dev/null || echo "$(CTR) (or set CTR to a docker-compatible tool)"))
+             && (command -v rsync >/dev/null || echo rsync))
 ifneq ($(missing),)
 $(error Missing required tools: $(missing))
 endif
@@ -616,34 +624,3 @@ endif
 ## Download and setup all tools
 ## @category [shared] Tools
 tools: $(tools_paths)
-
-self_file := $(dir $(lastword $(MAKEFILE_LIST)))/00_mod.mk
-
-# see https://stackoverflow.com/a/53408233
-sed_inplace := sed -i''
-ifeq ($(HOST_OS),darwin)
-	sed_inplace := sed -i ''
-endif
-
-# This target is used to learn the sha256sum of the tools. It is used only
-# in the makefile-modules repo, and should not be used in any other repo.
-.PHONY: tools-learn-sha
-tools-learn-sha: | $(bin_dir)
-	rm -rf ./$(bin_dir)/
-	mkdir -p ./$(bin_dir)/scratch/
-	$(eval export LEARN_FILE=$(CURDIR)/$(bin_dir)/scratch/learn_tools_file)
-	echo -n "" > "$(LEARN_FILE)"
-
-	HOST_OS=linux HOST_ARCH=amd64 $(MAKE) tools
-	HOST_OS=linux HOST_ARCH=arm64 $(MAKE) tools
-	HOST_OS=darwin HOST_ARCH=amd64 $(MAKE) tools
-	HOST_OS=darwin HOST_ARCH=arm64 $(MAKE) tools
-
-	HOST_OS=linux HOST_ARCH=amd64 $(MAKE) vendor-go
-	HOST_OS=linux HOST_ARCH=arm64 $(MAKE) vendor-go
-	HOST_OS=darwin HOST_ARCH=amd64 $(MAKE) vendor-go
-	HOST_OS=darwin HOST_ARCH=arm64 $(MAKE) vendor-go
-
-	while read p; do \
-		$(sed_inplace) "$$p" $(self_file); \
-	done <"$(LEARN_FILE)"
