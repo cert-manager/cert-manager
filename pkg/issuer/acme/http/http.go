@@ -125,6 +125,9 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 			return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 		}
 		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+			if !s.GatewaySolverEnabled {
+				return fmt.Errorf("couldn't Present challenge %s/%s: gateway api is not enabled", ch.Namespace, ch.Name)
+			}
 			_, gatewayErr = s.ensureGatewayHTTPRoute(ctx, ch, svcName)
 			return utilerrors.NewAggregate([]error{podErr, svcErr, gatewayErr})
 		}

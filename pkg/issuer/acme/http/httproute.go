@@ -95,7 +95,7 @@ func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 	}
 	httpRoute := &gwapi.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    "cm-acme-http-solver",
+			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       ch.Namespace,
 			Labels:          labels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
@@ -117,7 +117,7 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
 		expectedLabels[k] = v
 	}
-	actualLabels := ch.Labels
+	actualLabels := httpRoute.Labels
 	if reflect.DeepEqual(expectedSpec, actualSpec) && reflect.DeepEqual(expectedLabels, actualLabels) {
 		return httpRoute, nil
 	}
@@ -165,6 +165,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 					{
 						BackendRef: gwapi.BackendRef{
 							BackendObjectReference: gwapi.BackendObjectReference{
+								Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
 								Kind:      func() *gwapi.Kind { k := gwapi.Kind("Service"); return &k }(),
 								Name:      gwapi.ObjectName(svcName),
 								Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
