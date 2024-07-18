@@ -128,6 +128,17 @@ func TestInvalidAzureDns(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestAuthenticationError(t *testing.T) {
+	provider, err := NewDNSProviderCredentials("", "invalid-client-id", "invalid-client-secret", "subid", "tenid", "rg", "example.com", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	assert.NoError(t, err)
+
+	err = provider.Present(context.TODO(), "example.com", "_acme-challenge.example.com.", "123d==")
+	assert.Error(t, err)
+
+	err = provider.CleanUp(context.TODO(), "example.com", "_acme-challenge.example.com.", "123d==")
+	assert.Error(t, err)
+}
+
 func populateFederatedToken(t *testing.T, filename string, content string) {
 	t.Helper()
 
