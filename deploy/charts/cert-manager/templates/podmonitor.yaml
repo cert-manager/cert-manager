@@ -45,6 +45,6 @@ spec:
       scrapeTimeout: {{ .Values.prometheus.podmonitor.scrapeTimeout }}
       honorLabels: {{ .Values.prometheus.podmonitor.honorLabels }}
       {{- with .Values.prometheus.podmonitor.endpointAdditionalProperties }}
-      {{- toYaml . | nindent 4 }}
+      {{- toYaml . | nindent 6 }}
       {{- end }}
 {{- end }}
