@@ -73,6 +73,11 @@ func (s *Suite) Define() {
 				Skip("Not running public ACME tests against local cluster.")
 				return
 			}
+
+			if s.HTTP01TestType == "Gateway" {
+				framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+			}
+
 			if s.completed {
 				return
 			}
@@ -83,7 +88,6 @@ func (s *Suite) Define() {
 				sharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
 			case "Gateway":
 				sharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
-				framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 			}
 		})
 
