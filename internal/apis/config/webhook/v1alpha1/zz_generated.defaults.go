@@ -38,4 +38,5 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 func SetObjectDefaults_WebhookConfiguration(in *v1alpha1.WebhookConfiguration) {
 	SetDefaults_WebhookConfiguration(in)
 	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.TLSConfig.Dynamic)
+	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.MetricsTLSConfig.Dynamic)
 }

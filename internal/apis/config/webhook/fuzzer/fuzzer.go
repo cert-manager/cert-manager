@@ -33,6 +33,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.PprofAddress == "" {
 				s.PprofAddress = "something:1234"
 			}
+			if s.MetricsListenAddress == "" {
+				s.MetricsListenAddress = "something:1234"
+			}
 
 			logsapi.SetRecommendedLoggingConfiguration(&s.Logging)
 		},

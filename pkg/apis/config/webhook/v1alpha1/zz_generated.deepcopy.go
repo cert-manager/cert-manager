@@ -48,6 +48,7 @@ func (in *WebhookConfiguration) DeepCopyInto(out *WebhookConfiguration) {
 			(*out)[key] = val
 		}
 	}
+	in.MetricsTLSConfig.DeepCopyInto(&out.MetricsTLSConfig)
 	return
 }
 

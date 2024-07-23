@@ -81,6 +81,8 @@ func WebhookConfigurationPathRefs(cfg *config.WebhookConfiguration) ([]*string, 
 	return []*string{
 		&cfg.TLSConfig.Filesystem.KeyFile,
 		&cfg.TLSConfig.Filesystem.CertFile,
+		&cfg.MetricsTLSConfig.Filesystem.KeyFile,
+		&cfg.MetricsTLSConfig.Filesystem.CertFile,
 		&cfg.KubeConfig,
 	}, nil
 }

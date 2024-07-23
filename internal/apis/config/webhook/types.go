@@ -62,4 +62,12 @@ type WebhookConfiguration struct {
 	// featureGates is a map of feature names to bools that enable or disable experimental
 	// features.
 	FeatureGates map[string]bool
+
+	// The host and port that the metrics endpoint should listen on.
+	// The value "0" disables the metrics server.
+	// Defaults to '0.0.0.0:9402'.
+	MetricsListenAddress string
+
+	// Metrics endpoint TLS config
+	MetricsTLSConfig shared.TLSConfig
 }
