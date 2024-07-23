@@ -298,6 +298,12 @@
         "serviceAccount": {
           "$ref": "#/$defs/helm-values.cainjector.serviceAccount"
         },
+        "serviceAnnotations": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceAnnotations"
+        },
+        "serviceLabels": {
+          "$ref": "#/$defs/helm-values.cainjector.serviceLabels"
+        },
         "strategy": {
           "$ref": "#/$defs/helm-values.cainjector.strategy"
         },
@@ -327,7 +333,7 @@
     },
     "helm-values.cainjector.config": {
       "default": {},
-      "description": "This is used to configure options for the cainjector pod. It allows setting options that are usually provided via flags.\n\nIf `apiVersion` and `kind` are unspecified they default to the current latest version (currently `cainjector.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.\n\nFor example:\napiVersion: cainjector.config.cert-manager.io/v1alpha1\nkind: CAInjectorConfiguration\nlogging:\n verbosity: 2\n format: text\nleaderElectionConfig:\n namespace: kube-system",
+      "description": "This is used to configure options for the cainjector pod. It allows setting options that are usually provided via flags.\n\nIf `apiVersion` and `kind` are unspecified they default to the current latest version (currently `cainjector.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.\n\nFor example:\napiVersion: cainjector.config.cert-manager.io/v1alpha1\nkind: CAInjectorConfiguration\nlogging:\n verbosity: 2\n format: text\nleaderElectionConfig:\n namespace: kube-system\n# Configure the metrics server for TLS\n# See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls\nmetricsTLSConfig:\n  dynamic:\n    secretNamespace: \"cert-manager\"\n    secretName: \"cert-manager-metrics-ca\"\n    dnsNames:\n    - cert-manager-metrics",
       "type": "object"
     },
     "helm-values.cainjector.containerSecurityContext": {
@@ -517,6 +523,15 @@
     "helm-values.cainjector.serviceAccount.name": {
       "description": "The name of the service account to use.\nIf not set and create is true, a name is generated using the fullname template",
       "type": "string"
+    },
+    "helm-values.cainjector.serviceAnnotations": {
+      "description": "Optional additional annotations to add to the cainjector metrics Service.",
+      "type": "object"
+    },
+    "helm-values.cainjector.serviceLabels": {
+      "default": {},
+      "description": "Optional additional labels to add to the CA Injector metrics Service.",
+      "type": "object"
     },
     "helm-values.cainjector.strategy": {
       "default": {},

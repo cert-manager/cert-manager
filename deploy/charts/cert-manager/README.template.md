@@ -1343,6 +1343,14 @@ logging:
  format: text
 leaderElectionConfig:
  namespace: kube-system
+# Configure the metrics server for TLS
+# See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
+metricsTLSConfig:
+  dynamic:
+    secretNamespace: "cert-manager"
+    secretName: "cert-manager-metrics-ca"
+    dnsNames:
+    - cert-manager-metrics
 ```
 #### **cainjector.strategy** ~ `object`
 > Default value:
@@ -1412,6 +1420,10 @@ Optional additional annotations to add to the cainjector Deployment.
 #### **cainjector.podAnnotations** ~ `object`
 
 Optional additional annotations to add to the cainjector Pods.
+
+#### **cainjector.serviceAnnotations** ~ `object`
+
+Optional additional annotations to add to the cainjector metrics Service.
 
 #### **cainjector.extraArgs** ~ `array`
 > Default value:
@@ -1519,6 +1531,13 @@ topologySpreadConstraints:
 > ```
 
 Optional additional labels to add to the CA Injector Pods.
+#### **cainjector.serviceLabels** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+Optional additional labels to add to the CA Injector metrics Service.
 #### **cainjector.image.registry** ~ `string`
 
 The container registry to pull the cainjector image from.
