@@ -42,4 +42,5 @@ func SetObjectDefaults_CAInjectorConfiguration(in *v1alpha1.CAInjectorConfigurat
 	sharedv1alpha1.SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
 	SetDefaults_EnableDataSourceConfig(&in.EnableDataSourceConfig)
 	SetDefaults_EnableInjectableConfig(&in.EnableInjectableConfig)
+	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.MetricsTLSConfig.Dynamic)
 }

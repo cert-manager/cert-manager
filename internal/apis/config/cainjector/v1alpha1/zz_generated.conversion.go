@@ -88,6 +88,10 @@ func autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfig
 	out.PprofAddress = in.PprofAddress
 	out.Logging = in.Logging
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
+	out.MetricsListenAddress = in.MetricsListenAddress
+	if err := sharedv1alpha1.Convert_v1alpha1_TLSConfig_To_shared_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -112,6 +116,10 @@ func autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfig
 	out.PprofAddress = in.PprofAddress
 	out.Logging = in.Logging
 	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
+	out.MetricsListenAddress = in.MetricsListenAddress
+	if err := sharedv1alpha1.Convert_shared_TLSConfig_To_v1alpha1_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
+		return err
+	}
 	return nil
 }
 
