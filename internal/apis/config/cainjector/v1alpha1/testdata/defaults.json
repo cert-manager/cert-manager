@@ -29,5 +29,12 @@
 				"infoBufferSize": "0"
 			}
 		}
+	},
+	"metricsListenAddress": "0.0.0.0:9402",
+	"metricsTLSConfig": {
+		"filesystem": {},
+		"dynamic": {
+			"leafDuration": "168h0m0s"
+		}
 	}
 }

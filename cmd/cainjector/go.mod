@@ -15,6 +15,9 @@ replace github.com/prometheus/common => github.com/prometheus/common v0.46.0
 
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
 
+// Can be removed once github.com/go-ldap/ldap/v3 releases a version that requires this version.
+replace github.com/go-asn1-ber/asn1-ber => github.com/go-asn1-ber/asn1-ber v1.5.6
+
 replace github.com/cert-manager/cert-manager => ../../
 
 require (

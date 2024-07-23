@@ -18,6 +18,7 @@ package app
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,7 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	ciphers "k8s.io/component-base/cli/flag"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -39,9 +42,12 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	cmservertls "github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
@@ -60,12 +66,20 @@ const (
 func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	log := logf.FromContext(ctx)
 
+	restConfig := util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "cainjector")
+
 	var defaultNamespaces map[string]cache.Config
 	if opts.Namespace != "" {
 		// If a namespace has been provided, only watch resources in that namespace
 		defaultNamespaces = map[string]cache.Config{
 			opts.Namespace: {},
 		}
+	}
+
+	metricsServerCertificateSource := buildCertificateSource(opts.MetricsTLSConfig, restConfig)
+	metricsServerOptions, err := buildMetricsServerOptions(opts, metricsServerCertificateSource)
+	if err != nil {
+		return err
 	}
 
 	scheme := runtime.NewScheme()
@@ -75,7 +89,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	apireg.AddToScheme(scheme)
 
 	mgr, err := ctrl.NewManager(
-		util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "cainjector"),
+		restConfig,
 		ctrl.Options{
 			Scheme: scheme,
 			Cache: cache.Options{
@@ -130,10 +144,16 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			LeaseDuration:                 &opts.LeaderElectionConfig.LeaseDuration,
 			RenewDeadline:                 &opts.LeaderElectionConfig.RenewDeadline,
 			RetryPeriod:                   &opts.LeaderElectionConfig.RetryPeriod,
-			Metrics:                       metricsserver.Options{BindAddress: "0"},
+			Metrics:                       *metricsServerOptions,
 		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
+	}
+
+	if metricsServerCertificateSource != nil {
+		if err := mgr.Add(metricsServerCertificateSource); err != nil {
+			return err
+		}
 	}
 
 	// if a PprofAddr is provided, start the pprof listener
@@ -241,3 +261,50 @@ func (runnableNoLeaderElectionFunc) NeedLeaderElection() bool {
 var _ manager.Runnable = runnableNoLeaderElectionFunc(nil)
 
 var _ manager.LeaderElectionRunnable = runnableNoLeaderElectionFunc(nil)
+
+func buildMetricsServerOptions(opts *config.CAInjectorConfiguration, cs cmservertls.CertificateSource) (*metricsserver.Options, error) {
+	msOptions := metricsserver.Options{
+		BindAddress: opts.MetricsListenAddress,
+	}
+	if cs != nil {
+		metricsCipherSuites, err := ciphers.TLSCipherSuites(opts.MetricsTLSConfig.CipherSuites)
+		if err != nil {
+			return nil, err
+		}
+		metricsMinVersion, err := ciphers.TLSVersion(opts.MetricsTLSConfig.MinTLSVersion)
+		if err != nil {
+			return nil, err
+		}
+		msOptions.SecureServing = true
+		msOptions.TLSOpts = []func(*tls.Config){
+			func(cfg *tls.Config) {
+				cfg.CipherSuites = metricsCipherSuites
+				cfg.MinVersion = metricsMinVersion
+				cfg.GetCertificate = cs.GetCertificate
+			},
+		}
+	}
+	return &msOptions, nil
+}
+
+func buildCertificateSource(tlsConfig shared.TLSConfig, restCfg *rest.Config) cmservertls.CertificateSource {
+	switch {
+	case tlsConfig.FilesystemConfigProvided():
+		return &cmservertls.FileCertificateSource{
+			CertPath: tlsConfig.Filesystem.CertFile,
+			KeyPath:  tlsConfig.Filesystem.KeyFile,
+		}
+
+	case tlsConfig.DynamicConfigProvided():
+		return &cmservertls.DynamicSource{
+			DNSNames: tlsConfig.Dynamic.DNSNames,
+			Authority: &authority.DynamicAuthority{
+				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
+				SecretName:      tlsConfig.Dynamic.SecretName,
+				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
+				RESTConfig:      restCfg,
+			},
+		}
+	}
+	return nil
+}
