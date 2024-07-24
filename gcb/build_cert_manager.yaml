@@ -15,7 +15,7 @@ steps:
   args: ['fetch', '--unshallow']
 
 ## Build release artifacts and push to a bucket
-- name: 'eu.gcr.io/jetstack-build-infra-images/make-dind:20230406-0ef4440-bullseye'
+- name: 'europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/make-dind:20240422-6b43e85-bookworm'
   entrypoint: bash
   args:
   - -c
