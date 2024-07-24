@@ -44,7 +44,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
-      {{- if not .Values.podAnnotations }}
+      {{- if not .Values.webhook.podAnnotations }}
       annotations:
       {{- end }}
         prometheus.io/path: "/metrics"

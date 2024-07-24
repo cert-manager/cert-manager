@@ -33,6 +33,7 @@ spec:
       - key: app.kubernetes.io/name
         operator: In
         values:
+        - {{ include "cainjector.name" . }}
         - {{ template "cert-manager.name" . }}
         - {{ include "webhook.name" . }}
       - key: app.kubernetes.io/instance
@@ -42,6 +43,7 @@ spec:
       - key: app.kubernetes.io/component
         operator: In
         values:
+        - cainjector
         - controller
         - webhook
 {{- if .Values.prometheus.servicemonitor.namespace }}

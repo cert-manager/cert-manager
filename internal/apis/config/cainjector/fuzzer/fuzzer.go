@@ -46,6 +46,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.LeaderElectionConfig.RetryPeriod == 0 {
 				s.LeaderElectionConfig.RetryPeriod = 1234
 			}
+			if s.MetricsListenAddress == "" {
+				s.MetricsListenAddress = "something:1234"
+			}
 
 			logsapi.SetRecommendedLoggingConfiguration(&s.Logging)
 		},

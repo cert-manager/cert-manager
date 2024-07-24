@@ -79,6 +79,8 @@ func (cfg *CAInjectorConfigFile) GetPathRefs() ([]*string, error) {
 // passing the configuration to the application. This method must be kept up to date as new fields are added.
 func CAInjectorConfigurationPathRefs(cfg *config.CAInjectorConfiguration) ([]*string, error) {
 	return []*string{
+		&cfg.MetricsTLSConfig.Filesystem.KeyFile,
+		&cfg.MetricsTLSConfig.Filesystem.CertFile,
 		&cfg.KubeConfig,
 	}, nil
 }

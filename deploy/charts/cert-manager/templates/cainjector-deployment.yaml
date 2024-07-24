@@ -44,6 +44,14 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
+      {{- if not .Values.cainjector.podAnnotations }}
+      annotations:
+      {{- end }}
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9402'
+      {{- end }}
     spec:
       serviceAccountName: {{ template "cainjector.serviceAccountName" . }}
       {{- if hasKey .Values.cainjector "automountServiceAccountToken" }}
@@ -87,6 +95,15 @@ spec:
           {{- with .Values.cainjector.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
+          {{- if not .Values.prometheus.enabled }}
+          - --metrics-listen-address=0
+          {{- end }}
+          {{- if .Values.prometheus.enabled }}
+          ports:
+          - containerPort: 9402
+            name: http-metrics
+            protocol: TCP
+          {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -103,7 +120,7 @@ spec:
           {{- if or .Values.cainjector.config .Values.cainjector.volumeMounts }}
           volumeMounts:
             {{- if .Values.cainjector.config }}
-            - name: config 
+            - name: config
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.cainjector.volumeMounts }}
@@ -129,8 +146,8 @@ spec:
       {{- if or .Values.cainjector.volumes .Values.cainjector.config }}
       volumes:
         {{- if .Values.cainjector.config }}
-        - name: config 
-          configMap: 
+        - name: config
+          configMap:
             name: {{ include "cainjector.fullname" . }}
         {{- end }}
         {{ with .Values.cainjector.volumes }}

@@ -1,0 +1,30 @@
+{{- if and .Values.prometheus.enabled (not .Values.prometheus.podmonitor.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "cainjector.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+{{- with .Values.cainjector.serviceAnnotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+    {{- with .Values.cainjector.serviceLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: 9402
+    name: http-metrics
+  selector:
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+{{- end }}
