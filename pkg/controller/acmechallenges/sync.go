@@ -131,8 +131,6 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	if ch.Status.State == "" {
 		err := c.syncChallengeStatus(ctx, cl, ch)
 		if err != nil {
-			log.Error(err, "error synchronizing with ACME server")
-			ch.Status.Reason = fmt.Sprintf("error synchronizing with ACME server: %v", err)
 			return c.handleError(ch, err)
 		}
 
@@ -384,7 +382,6 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthorizationURL)
 	if err != nil {
 		log.Error(err, "error waiting for authorization")
-		ch.Status.Reason = fmt.Sprintf("Error waiting for authorization: %v", err)
 		return c.handleAuthorizationError(ch, err)
 	}
 
