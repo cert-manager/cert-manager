@@ -125,7 +125,8 @@ func TestAcmeOrdersController(t *testing.T) {
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock: clock.RealClock{},
+			Clock:   clock.RealClock{},
+			Metrics: metrics.New(logf.Log, clock.RealClock{}),
 			ACMEOptions: controllerpkg.ACMEOptions{
 				AccountRegistry: accountRegistry,
 			},

@@ -27,10 +27,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/rand"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -316,7 +319,8 @@ func TestScheduleN(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)
+			fixedClock := fakeclock.NewFakeClock(time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC))
+			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges, metrics.New(logf.Log, fixedClock))
 
 			if test.expected == nil {
 				test.expected = []*cmacme.Challenge{}

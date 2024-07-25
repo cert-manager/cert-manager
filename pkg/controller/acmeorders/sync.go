@@ -324,6 +324,7 @@ func (c *controller) updateOrderStatusFromACMEOrder(o *cmacme.Order, acmeOrder *
 	}
 	o.Status.FinalizeURL = acmeOrder.FinalizeURL
 	c.setOrderState(&o.Status, acmeOrder.Status)
+	c.metrics.ObserveACMEOrderStateChange(o)
 	// once the 'authorizations' slice contains at least one item, it cannot be
 	// updated. If it does not contain any items, update it containing the list
 	// of authorizations returned on the Order.
