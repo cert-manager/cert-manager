@@ -327,7 +327,7 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	}
 
 	if acmeChallenge == nil {
-		return errors.New("challenge was not present in authorization, consider whether the challenge has expired")
+		return errors.New("challenge was not present in authorization")
 	}
 
 	// TODO: should we validate the State returned by the ACME server here?
