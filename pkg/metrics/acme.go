@@ -33,8 +33,8 @@ func (m *Metrics) ObserveACMEChallengeStateChange(ch *cmacme.Challenge) {
 // ObserveACMEChallengeStateChangeWithTime denotes when an ACME challenge state change has occurred
 func (m *Metrics) ObserveACMEChallengeStateChangeWithTime(ch *cmacme.Challenge, t time.Time) {
 	labels := []string{
-		ch.GetObjectMeta().GetNamespace(),
 		ch.GetObjectMeta().GetName(),
+		ch.GetObjectMeta().GetNamespace(),
 		ch.Spec.IssuerRef.Name,
 		ch.Spec.IssuerRef.Kind,
 		ch.Spec.IssuerRef.Group,
@@ -51,8 +51,8 @@ func (m *Metrics) ObserveACMEOrderStateChange(o *cmacme.Order) {
 // ObserveACMEOrderStateChangeWithTime denotes when an ACME order state change has occurred as of time t
 func (m *Metrics) ObserveACMEOrderStateChangeWithTime(o *cmacme.Order, t time.Time) {
 	labels := []string{
-		o.GetObjectMeta().GetNamespace(),
 		o.GetObjectMeta().GetName(),
+		o.GetObjectMeta().GetNamespace(),
 		o.Spec.IssuerRef.Name,
 		o.Spec.IssuerRef.Kind,
 		o.Spec.IssuerRef.Group,
