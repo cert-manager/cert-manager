@@ -135,7 +135,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "certificate_acme_challenge_status",
-				Help:      "The ready status of the certificate.",
+				Help:      "The state of the ACME Challenge.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group", "state"},
 		)
@@ -144,7 +144,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "certificate_acme_order_status",
-				Help:      "The ready status of the certificate.",
+				Help:      "The state of the ACME order.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group", "state"},
 		)
@@ -153,7 +153,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "acme_client_scheduled",
-				Help:      "The ready status of the certificate.",
+				Help:      "The number of ACME challenges per issuer that have been submitted for scheduling.",
 			},
 			[]string{"issuer_name", "namespace"},
 		)
