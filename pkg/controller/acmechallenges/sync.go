@@ -131,6 +131,8 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	if ch.Status.State == "" {
 		err := c.syncChallengeStatus(ctx, cl, ch)
 		if err != nil {
+			logf.V(logf.ErrorLevel).ErrorS(err, "error synchronizing with ACME server")
+			ch.Status.Reason = fmt.Sprintf("error synchronizing with ACME server: %v", err)
 			return handleError(ch, err)
 		}
 
@@ -220,6 +222,9 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	var acmeErr *acmeapi.Error
 	var ok bool
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		ch.Status.State = cmacme.Errored
+		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
+		logf.V(logf.ErrorLevel).ErrorS(err, "unexpected non-ACME API error")
 		return err
 	}
 
