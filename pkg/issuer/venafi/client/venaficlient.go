@@ -97,9 +97,9 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 	}
 
 	// Using `false` here ensures we do not immediately authenticate to the
-	// Venafi backend. Doing so invokes a call which force the API Key usage
+	// Venafi backend. Doing so invokes a call which forces the use of APIKey 
 	// on the TPP side. This auth method has been removed since 22.4 of TPP.
-	// This reults results in an APIKey usage error.
+	// This results in an APIKey usage error.
 	// Reference code from vcert library which still refers to the APIKey.
 	// ref: https://github.com/Venafi/vcert/blob/master/pkg/venafi/tpp/connector.go#L137-L146
 	//
