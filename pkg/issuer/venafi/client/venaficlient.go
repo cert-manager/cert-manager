@@ -375,7 +375,7 @@ func (v *Venafi) VerifyCredentials() error {
 		}
 
 		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
-			// Use vcert libray GetRefreshToken which brings back a token pair.
+			// Use vcert library GetRefreshToken which brings back a token pair.
 			// This includes the access_token which we set against the tppClient.
 			// Replaces usage of v.tppClient.Authenticate function which would
 			// have called the APIKey endpoint resulting in error.
