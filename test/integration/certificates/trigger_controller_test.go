@@ -81,7 +81,10 @@ func TestTriggerController(t *testing.T) {
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
+	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -187,7 +190,10 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
+	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shoudReissue)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -283,7 +289,10 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
+	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shoudReissue)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),

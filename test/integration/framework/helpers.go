@@ -26,6 +26,7 @@ import (
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
@@ -68,11 +69,11 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, intern
 	cmFactory := cminformers.NewSharedInformerFactory(cmCl, 0)
 
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	certmgrscheme.AddToScheme(scheme)
-	apiext.AddToScheme(scheme)
-	apireg.AddToScheme(scheme)
-	gwapi.Install(scheme)
+	utilruntime.Must(kscheme.AddToScheme(scheme))
+	utilruntime.Must(certmgrscheme.AddToScheme(scheme))
+	utilruntime.Must(apiext.AddToScheme(scheme))
+	utilruntime.Must(apireg.AddToScheme(scheme))
+	utilruntime.Must(gwapi.Install(scheme))
 
 	return cl, factory, cmCl, cmFactory, scheme
 }

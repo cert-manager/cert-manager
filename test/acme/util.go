@@ -82,11 +82,13 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 	}
 
 	return name, func() {
-		f.clientset.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{})
+		if err := f.clientset.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{}); err != nil {
+			t.Fatalf("error deleting test namespace %q: %v", name, err)
+		}
 	}
 }
 
-func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.ChallengeRequest {
+func (f *fixture) buildChallengeRequest(ns string) *whapi.ChallengeRequest {
 	return &whapi.ChallengeRequest{
 		ResourceNamespace:       ns,
 		ResolvedFQDN:            f.resolvedFQDN,

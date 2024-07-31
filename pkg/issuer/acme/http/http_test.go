@@ -111,7 +111,11 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 	dnsServerCalled := int32(0)
 
 	server := &dns.Server{Addr: "127.0.0.1:15353", Net: "udp", NotifyStartedFunc: func() { close(dnsServerStarted) }}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Error(err)
+		}
+	}()
 
 	mux := &dns.ServeMux{}
 	server.Handler = mux

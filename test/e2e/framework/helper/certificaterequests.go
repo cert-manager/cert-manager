@@ -28,6 +28,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
@@ -213,17 +214,21 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, n
 	cr, err := h.WaitForCertificateRequestReady(ctx, ns, name, timeout)
 	if err != nil {
 		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
-		h.Kubectl(ns).DescribeResource("certificaterequest", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		return err
+		return kerrors.NewAggregate([]error{
+			err,
+			h.Kubectl(ns).DescribeResource("certificaterequest", name),
+			h.Kubectl(ns).Describe("order", "challenge"),
+		})
 	}
 
 	_, err = h.ValidateIssuedCertificateRequest(ctx, cr, key, rootCAPEM)
 	if err != nil {
 		log.Logf("Error validating issued certificate: %v", err)
-		h.Kubectl(ns).DescribeResource("certificaterequest", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		return err
+		return kerrors.NewAggregate([]error{
+			err,
+			h.Kubectl(ns).DescribeResource("certificaterequest", name),
+			h.Kubectl(ns).Describe("order", "challenge"),
+		})
 	}
 
 	return nil

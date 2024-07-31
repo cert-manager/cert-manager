@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -83,10 +84,10 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	}
 
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	cmscheme.AddToScheme(scheme)
-	apiext.AddToScheme(scheme)
-	apireg.AddToScheme(scheme)
+	utilruntime.Must(kscheme.AddToScheme(scheme))
+	utilruntime.Must(cmscheme.AddToScheme(scheme))
+	utilruntime.Must(apiext.AddToScheme(scheme))
+	utilruntime.Must(apireg.AddToScheme(scheme))
 
 	mgr, err := ctrl.NewManager(
 		restConfig,
@@ -172,7 +173,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 		}
 
-		mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
+		if err := mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
 			<-ctx.Done()
 
 			// allow a timeout for graceful shutdown
@@ -181,14 +182,18 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 			// nolint: contextcheck
 			return server.Shutdown(shutdownCtx)
-		}))
+		})); err != nil {
+			return err
+		}
 
-		mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
+		if err := mgr.Add(runnableNoLeaderElectionFunc(func(ctx context.Context) error {
 			if err := server.Serve(pprofListener); err != http.ErrServerClosed {
 				return err
 			}
 			return nil
-		}))
+		})); err != nil {
+			return err
+		}
 	}
 
 	// If cainjector has been configured to watch Certificate CRDs (true by default)

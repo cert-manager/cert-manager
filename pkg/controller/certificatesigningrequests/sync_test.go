@@ -330,7 +330,9 @@ func TestController_Sync(t *testing.T) {
 			}
 
 			c := New(util.IssuerSelfSigned, func(*controller.Context) Signer { return scenario.signerImpl })
-			c.Register(scenario.builder.Context)
+			if _, _, err := c.Register(scenario.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 
 			scenario.builder.Start()
 

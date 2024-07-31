@@ -440,7 +440,9 @@ func runTest(t *testing.T, test testT) {
 		apiutil.IssuerCA,
 		func(*controller.Context) certificaterequests.Issuer { return ca },
 	)
-	controller.Register(test.builder.Context)
+	if _, _, err := controller.Register(test.builder.Context); err != nil {
+		t.Fatal(err)
+	}
 	test.builder.Start()
 
 	err := controller.Sync(context.Background(), test.certificateRequest)

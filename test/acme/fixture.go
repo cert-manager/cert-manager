@@ -24,6 +24,7 @@ import (
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -34,8 +35,8 @@ import (
 func init() {
 	vFlag := flag.Lookup("v")
 	if vFlag != nil {
-		flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
-		vFlag.Value.Set("12")
+		utilruntime.Must(flag.Set("alsologtostderr", fmt.Sprintf("%t", true)))
+		utilruntime.Must(vFlag.Value.Set("12"))
 	}
 }
 
@@ -138,7 +139,9 @@ func (f *fixture) setup(t *testing.T) func() {
 
 	stopCh := make(chan struct{})
 
-	f.testSolver.Initialize(env.Config, stopCh)
+	if err := f.testSolver.Initialize(env.Config, stopCh); err != nil {
+		t.Fatalf("error initializing solver: %v", err)
+	}
 
 	return func() {
 		close(stopCh)
