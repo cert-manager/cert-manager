@@ -29,13 +29,14 @@ import (
 	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	"github.com/Venafi/vcert/v5/pkg/venafi/cloud"
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
+	"github.com/go-logr/logr"
+	"k8s.io/utils/ptr"
+
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/go-logr/logr"
-	"k8s.io/utils/ptr"
 )
 
 const (
