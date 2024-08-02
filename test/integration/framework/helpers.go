@@ -27,12 +27,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/kubectl/pkg/util/openapi"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	"github.com/cert-manager/cert-manager/pkg/api"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -41,10 +42,11 @@ import (
 func NewEventRecorder(t *testing.T) record.EventRecorder {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(t.Logf)
-	return eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: t.Name()})
+	return eventBroadcaster.NewRecorder(api.Scheme, corev1.EventSource{Component: t.Name()})
 }
 
 func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, internalinformers.KubeInformerFactory, cmclient.Interface, cminformers.SharedInformerFactory) {
+	config.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
 	cl, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		t.Fatal(err)
