@@ -25,7 +25,7 @@ export PATH := $(PWD)/$(BINDIR)/tools:$(PATH)
 CTR=docker
 
 TOOLS :=
-TOOLS += helm=v3.11.2
+TOOLS += helm=v3.14.4
 TOOLS += kubectl=v1.27.2
 TOOLS += kind=v0.20.0
 TOOLS += controller-gen=v0.12.0
@@ -236,10 +236,10 @@ $(foreach GO_DEPENDENCY,$(GO_DEPENDENCIES),$(eval $(call go_dependency,$(word 1,
 # Helm #
 ########
 
-HELM_linux_amd64_SHA256SUM=781d826daec584f9d50a01f0f7dadfd25a3312217a14aa2fbb85107b014ac8ca
-HELM_darwin_amd64_SHA256SUM=404938fd2c6eff9e0dab830b0db943fca9e1572cd3d7ee40904705760faa390f
-HELM_darwin_arm64_SHA256SUM=f61a3aa55827de2d8c64a2063fd744b618b443ed063871b79f52069e90813151
-HELM_linux_arm64_SHA256SUM=0a60baac83c3106017666864e664f52a4e16fbd578ac009f9a85456a9241c5db
+HELM_linux_amd64_SHA256SUM=a5844ef2c38ef6ddf3b5a8f7d91e7e0e8ebc39a38bb3fc8013d629c1ef29c259
+HELM_linux_arm64_SHA256SUM=113ccc53b7c57c2aba0cd0aa560b5500841b18b5210d78641acfddc53dac8ab2
+HELM_darwin_amd64_SHA256SUM=73434aeac36ad068ce2e5582b8851a286dc628eae16494a26e2ad0b24a7199f9
+HELM_darwin_arm64_SHA256SUM=61e9c5455f06b2ad0a1280975bf65892e707adc19d766b0cf4e9006e3b7b4b6c
 $(BINDIR)/downloaded/tools/helm@$(HELM_VERSION)_%: | $(BINDIR)/downloaded/tools
 	$(CURL) https://get.helm.sh/helm-$(HELM_VERSION)-$(subst _,-,$*).tar.gz -o $@.tar.gz
 	./hack/util/checkhash.sh $@.tar.gz $(HELM_$*_SHA256SUM)
