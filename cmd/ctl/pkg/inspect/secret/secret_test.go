@@ -18,6 +18,7 @@ package secret
 
 import (
 	"crypto/x509"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -183,9 +184,10 @@ func Test_describeDebugging(t *testing.T) {
 		ca            []byte
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name      string
+		args      args
+		want      string
+		wantMacOS string
 	}{
 		{
 			name: "Debug test cert without trusting CA",
@@ -198,13 +200,22 @@ func Test_describeDebugging(t *testing.T) {
 	Trusted by this computer:	no: x509: certificate signed by unknown authority
 	CRL Status:	No CRL endpoints set
 	OCSP Status:	Cannot check OCSP, does not have a CA or intermediate certificate provided`,
+			wantMacOS: `Debugging:
+	Trusted by this computer:	no: x509: “cert-manager” certificate is not trusted
+	CRL Status:	No CRL endpoints set
+	OCSP Status:	Cannot check OCSP, does not have a CA or intermediate certificate provided`,
 		},
 		// TODO: add fake clock and test with trusting CA
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := describeDebugging(tt.args.cert, tt.args.intermediates, tt.args.ca); got != tt.want {
-				t.Errorf("describeDebugging() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
+			want := tt.want
+			if runtime.GOOS == "darwin" && tt.wantMacOS != "" {
+				want = tt.wantMacOS
+			}
+
+			if got := describeDebugging(tt.args.cert, tt.args.intermediates, tt.args.ca); got != want {
+				t.Errorf("describeDebugging() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(want))
 			}
 		})
 	}
@@ -297,9 +308,10 @@ func Test_describeTrusted(t *testing.T) {
 		intermediates [][]byte
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name      string
+		args      args
+		want      string
+		wantMacOS string
 	}{
 		{
 			name: "Describe test certificate",
@@ -307,7 +319,8 @@ func Test_describeTrusted(t *testing.T) {
 				cert:          MustParseCertificate(t, testCert),
 				intermediates: nil,
 			},
-			want: "no: x509: certificate signed by unknown authority",
+			want:      "no: x509: certificate signed by unknown authority",
+			wantMacOS: "no: x509: “cert-manager” certificate is not trusted",
 		},
 		{
 			name: "Describe test certificate with adding it to the trust store",
@@ -319,9 +332,14 @@ func Test_describeTrusted(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		want := tt.want
+		if runtime.GOOS == "darwin" && tt.wantMacOS != "" {
+			want = tt.wantMacOS
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
-			if got := describeTrusted(tt.args.cert, tt.args.intermediates); got != tt.want {
-				t.Errorf("describeTrusted() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
+			if got := describeTrusted(tt.args.cert, tt.args.intermediates); got != want {
+				t.Errorf("describeTrusted() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(want))
 			}
 		})
 	}
