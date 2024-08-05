@@ -134,6 +134,11 @@ func TestEnsurePod(t *testing.T) {
 			ObjectMeta: pod.ObjectMeta,
 		}
 	)
+	scPod := pod.DeepCopy()
+	scPod.Spec.SecurityContext.RunAsUser = ptr.To(int64(1020))
+	scPod.Spec.SecurityContext.RunAsNonRoot = nil
+	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
+	scPod.Spec.Tolerations = []corev1.Toleration{}
 	tests := map[string]testT{
 		"should do nothing if pod already exists": {
 			builder: &testpkg.Builder{
@@ -148,6 +153,59 @@ func TestEnsurePod(t *testing.T) {
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
 			},
 			chal: chal,
+		},
+		"should have the correct default security context": {
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+			},
+		},
+		"security context should be configurable": {
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
+											RunAsUser: ptr.To(int64(1020)),
+											SeccompProfile: &corev1.SeccompProfile{
+												Type: corev1.SeccompProfileTypeRuntimeDefault,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+			},
 		},
 		"should clean up if multiple pods exist": {
 			builder: &testpkg.Builder{
