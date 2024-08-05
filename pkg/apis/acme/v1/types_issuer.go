@@ -286,6 +286,11 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
 	// https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
 	ParentRefs []gwapi.ParentReference `json:"parentRefs,omitempty"`
+
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges.
+	// +optional
+	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {

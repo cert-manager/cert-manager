@@ -710,6 +710,7 @@ func autoConvert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEC
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	out.ParentRefs = *(*[]apisv1.ParentReference)(unsafe.Pointer(&in.ParentRefs))
+	out.PodTemplate = (*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
 	return nil
 }
 
@@ -722,6 +723,7 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEC
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	out.ParentRefs = *(*[]apisv1.ParentReference)(unsafe.Pointer(&in.ParentRefs))
+	out.PodTemplate = (*ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
 	return nil
 }
 

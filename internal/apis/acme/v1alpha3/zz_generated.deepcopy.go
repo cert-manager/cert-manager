@@ -207,6 +207,11 @@ func (in *ACMEChallengeSolverHTTP01GatewayHTTPRoute) DeepCopyInto(out *ACMEChall
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.PodTemplate != nil {
+		in, out := &in.PodTemplate, &out.PodTemplate
+		*out = new(ACMEChallengeSolverHTTP01IngressPodTemplate)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
