@@ -155,6 +155,10 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 			pod = s.mergePodObjectMetaWithPodTemplate(pod,
 				ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
 		}
+		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+			pod = s.mergePodObjectMetaWithPodTemplate(pod,
+				ch.Spec.Solver.HTTP01.GatewayHTTPRoute.PodTemplate)
+		}
 	}
 
 	return pod
