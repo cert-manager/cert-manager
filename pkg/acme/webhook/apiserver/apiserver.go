@@ -25,12 +25,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/apiserver/pkg/endpoints/openapi"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmopenapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/openapi"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/registry/challengepayload"
 )
 
@@ -54,12 +56,6 @@ func init() {
 		&metav1.APIGroupList{},
 		&metav1.APIGroup{},
 		&metav1.APIResourceList{},
-		&metav1.ListOptions{},
-		&metav1.GetOptions{},
-		&metav1.PatchOptions{},
-		&metav1.DeleteOptions{},
-		&metav1.CreateOptions{},
-		&metav1.UpdateOptions{},
 	)
 }
 
@@ -109,6 +105,9 @@ func (c *Config) Complete() CompletedConfig {
 		Minor: "1",
 	}
 
+	completedCfg.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+	completedCfg.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+
 	return CompletedConfig{&completedCfg}
 }
 
@@ -138,7 +137,7 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 	apiGroupInfo := genericapiserver.APIGroupInfo{
 		VersionedResourcesStorageMap: map[string]map[string]rest.Storage{},
 		// TODO unhardcode this. It was hardcoded before, but we need to re-evaluate
-		OptionsExternalVersion: &schema.GroupVersion{Version: "v1alpha1"},
+		OptionsExternalVersion: &schema.GroupVersion{Version: "v1"},
 		Scheme:                 Scheme,
 		ParameterCodec:         metav1.ParameterCodec,
 		NegotiatedSerializer:   Codecs,
