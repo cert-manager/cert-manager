@@ -26,6 +26,7 @@ informergen=$4
 listergen=$5
 defaultergen=$6
 conversiongen=$7
+openapigen=$8
 
 # If the envvar "VERIFY_ONLY" is set, we only check if everything's up to date
 # and don't actually generate anything
@@ -132,6 +133,25 @@ mkcp() {
 # Export mkcp for use in sub-shells
 export -f mkcp
 
+gen-openapi-acme() {
+  clean pkg/acme/webhook/openapi '*.go'
+  echo "+++ ${VERB} ACME openapi..." >&2
+  mkdir -p hack/openapi_reports
+  "$openapigen" \
+    ${VERIFY_FLAGS} \
+    --go-header-file "hack/boilerplate-go.txt" \
+    --report-filename "hack/openapi_reports/acme.txt" \
+    --input-dirs "k8s.io/apimachinery/pkg/version" \
+    --input-dirs "k8s.io/apimachinery/pkg/runtime" \
+    --input-dirs "k8s.io/apimachinery/pkg/apis/meta/v1" \
+    --input-dirs "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1" \
+    --input-dirs "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1" \
+    --trim-path-prefix "github.com/cert-manager/cert-manager" \
+    --output-package "github.com/cert-manager/cert-manager/pkg/acme/webhook/openapi" \
+    --output-base ./ \
+		-O zz_generated.openapi 
+}
+
 gen-deepcopy() {
   clean pkg/apis 'zz_generated.deepcopy.go'
   clean pkg/acme/webhook/apis 'zz_generated.deepcopy.go'
@@ -233,6 +253,7 @@ gen-conversions() {
       --output-base ./
 }
 
+gen-openapi-acme
 gen-deepcopy
 gen-clientsets
 gen-listers
