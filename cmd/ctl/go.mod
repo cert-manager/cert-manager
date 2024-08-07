@@ -18,13 +18,13 @@ require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.24.0
 	helm.sh/helm/v3 v3.14.2
-	k8s.io/api v0.29.0
-	k8s.io/apiextensions-apiserver v0.29.0
-	k8s.io/apimachinery v0.29.0
-	k8s.io/cli-runtime v0.29.0
-	k8s.io/client-go v0.29.0
+	k8s.io/api v0.29.7
+	k8s.io/apiextensions-apiserver v0.29.7
+	k8s.io/apimachinery v0.29.7
+	k8s.io/cli-runtime v0.29.7
+	k8s.io/client-go v0.29.7
 	k8s.io/klog/v2 v2.110.1
-	k8s.io/kubectl v0.29.0
+	k8s.io/kubectl v0.29.7
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.15.0
 	sigs.k8s.io/yaml v1.3.0
@@ -76,7 +76,7 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
@@ -159,9 +159,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.29.0 // indirect
-	k8s.io/component-base v0.29.0 // indirect
-	k8s.io/kube-aggregator v0.29.0 // indirect
+	k8s.io/apiserver v0.29.7 // indirect
+	k8s.io/component-base v0.29.7 // indirect
+	k8s.io/kube-aggregator v0.29.7 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	sigs.k8s.io/gateway-api v0.7.0 // indirect
