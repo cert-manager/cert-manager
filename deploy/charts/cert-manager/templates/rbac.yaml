@@ -46,6 +46,51 @@ subjects:
 
 ---
 
+{{- if .Values.serviceAccount.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "cert-manager.serviceAccountName" . }}-tokenrequest
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["{{ template "cert-manager.serviceAccountName" . }}"]
+    verbs: ["create"]
+
+---
+
+# grant cert-manager permission to create tokens for the serviceaccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cert-manager.fullname" . }}-{{ template "cert-manager.serviceAccountName" .  }}-tokenrequest
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "cert-manager.serviceAccountName" . }}-tokenrequest
+subjects:
+  - apiGroup: ""
+    kind: ServiceAccount
+    name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}
+
+---
+
 # Issuer controller role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
