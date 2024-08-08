@@ -268,9 +268,6 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	log.V(logf.DebugLevel).Info("order URL not set, submitting Order to ACME server")
 
 	dnsIdentifierSet := sets.New[string](o.Spec.DNSNames...)
-	if o.Spec.CommonName != "" {
-		dnsIdentifierSet.Insert(o.Spec.CommonName)
-	}
 	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
 
 	ipIdentifierSet := sets.New[string](o.Spec.IPAddresses...)
