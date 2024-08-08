@@ -145,13 +145,6 @@ Configure the PodSecurityPolicy to use AppArmor.
 > ```
 
 Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.
-#### **global.leaderElection.namespace** ~ `string`
-> Default value:
-> ```yaml
-> kube-system
-> ```
-
-Override the namespace used for the leader election lease.
 #### **global.leaderElection.leaseDuration** ~ `string`
 
 The duration that non-leader candidates will wait after observing a leadership renewal until attempting to acquire leadership of a led but unrenewed leader slot. This is effectively the maximum duration that a leader can be stopped before it is replaced by another candidate.
