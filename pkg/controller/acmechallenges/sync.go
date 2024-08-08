@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -380,9 +381,12 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthorizationURL)
+	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, 20*time.Second)
+	defer cancelAuthorization()
+	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
 	if err != nil {
-		log.Error(err, "error waiting for authorization")
+		log.V(logf.ErrorLevel).Error(err, "error waiting for authorization")
+		ch.Status.Reason = fmt.Sprintf("Error waiting for authorization: %v", err)
 		return c.handleAuthorizationError(ch, err)
 	}
 
