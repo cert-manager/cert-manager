@@ -44,6 +44,9 @@ const (
 	tppUsernameKey    = "username"
 	tppPasswordKey    = "password"
 	tppAccessTokenKey = "access-token"
+	// Setting ClientId & Scope statically for simplicity
+	tppClientId = "cert-manager.io"
+	tppScopes   = "certificate:manage"
 
 	defaultAPIKeyKey = "api-key"
 )
@@ -94,7 +97,16 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		return nil, err
 	}
 
-	vcertClient, err := vcert.NewClient(cfg)
+	// Using `false` here ensures we do not immediately authenticate to the
+	// Venafi backend. Doing so invokes a call which forces the use of APIKey
+	// on the TPP side. This auth method has been removed since 22.4 of TPP.
+	// This results in an APIKey usage error.
+	// Reference code from vcert library which still refers to the APIKey.
+	// ref: https://github.com/Venafi/vcert/blob/master/pkg/venafi/tpp/connector.go#L137-L146
+	//
+	// cert-manager uses the VerifyCredentials function below after the client
+	// has been created.
+	vcertClient, err := vcert.NewClient(cfg, false)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
@@ -117,14 +129,22 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 
 	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
 
-	return &Venafi{
+	v := &Venafi{
 		namespace:     namespace,
 		secretsLister: secretsLister,
 		vcertClient:   instrumentedVCertClient,
 		cloudClient:   cc,
 		tppClient:     tppc,
 		config:        cfg,
-	}, nil
+	}
+
+	// Since we did not authenticate when creating the client, authenticate
+	// now to verify the credentials passed. Ensure that upon leaving this
+	// function that credentials have been verified.
+	if err := v.VerifyCredentials(); err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
@@ -403,9 +423,24 @@ func (v *Venafi) VerifyCredentials() error {
 		}
 
 		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
-			err := v.tppClient.Authenticate(&endpoint.Authentication{
+			// Use vcert library GetRefreshToken which brings back a token pair.
+			// This includes the access_token which we set against the tppClient.
+			// Replaces usage of v.tppClient.Authenticate function which would
+			// have called the APIKey endpoint resulting in error.
+			resp, err := v.tppClient.GetRefreshToken(&endpoint.Authentication{
 				User:     v.config.Credentials.User,
 				Password: v.config.Credentials.Password,
+				ClientId: tppClientId,
+				Scope:    tppScopes,
+			})
+
+			if err != nil {
+				return fmt.Errorf("tppClient.GetRefreshToken: %v", err)
+			}
+
+			// Ensure that the access_token is stored on the tppClient object.
+			err = v.tppClient.Authenticate(&endpoint.Authentication{
+				AccessToken: resp.Access_token,
 			})
 
 			if err != nil {
