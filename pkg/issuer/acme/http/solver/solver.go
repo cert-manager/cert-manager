@@ -18,6 +18,7 @@ package solver
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -57,7 +58,14 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// extract vars from the request
-		host := strings.Split(r.Host, ":")[0]
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			host = r.Host
+			if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+				host = strings.TrimPrefix(host, "[")
+				host = strings.TrimSuffix(host, "]")
+			}
+		}
 		basePath := path.Dir(r.URL.EscapedPath())
 		token := path.Base(r.URL.EscapedPath())
 
