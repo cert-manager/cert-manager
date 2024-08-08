@@ -346,12 +346,16 @@ var (
 
 // CertificateOutputFormatType specifies which additional output formats should
 // be written to the Certificate's target Secret.
-// Allowed values are `DER` or `CombinedPEM`.
+// Allowed values are `DER`, `CombinedPEM`, or `FullChain`.
 // When Type is set to `DER` an additional entry `key.der` will be written to
 // the Secret, containing the binary format of the private key.
 // When Type is set to `CombinedPEM` an additional entry `tls-combined.pem`
 // will be written to the Secret, containing the PEM formatted private key and
 // signed certificate chain (tls.key + tls.crt concatenated).
+// When Type is set to `FullChain` an additional entry `tls-full-chain.pem`
+// will be written to the Secret, containing the PEM formatted signed
+// certificate chain, including the root certificate if present.
+// +kubebuilder:validation:Enum=DER;CombinedPEM;FullChain
 type CertificateOutputFormatType string
 
 const (
@@ -366,6 +370,11 @@ const (
 	// character, followed by the chain of signed certificate PEM documents
 	// (`<private key> + \n + <signed certificate chain>`).
 	CertificateOutputFormatCombinedPEM CertificateOutputFormatType = "CombinedPEM"
+
+	// CertificateOutputFormatFullChain  writes the Certificate's complete certificate chain,
+	// including root certificates if present, in PEM format, to the `tls-full-chain.pem`
+	// target Secret Data key.
+	CertificateOutputFormatFullChain CertificateOutputFormatType = "FullChain"
 )
 
 // CertificateAdditionalOutputFormat defines an additional output format of a

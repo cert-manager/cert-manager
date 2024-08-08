@@ -626,6 +626,15 @@ func SecretAdditionalOutputFormatsMismatch(input Input) (string, string, bool) {
 			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatDER(input.Secret.Data[corev1.TLSPrivateKeyKey])) {
 				return AdditionalOutputFormatsMismatch, message, true
 			}
+
+		case cmapi.CertificateOutputFormatFullChain:
+			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatFullChainKey]
+			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatFullChain(
+				input.Secret.Data[corev1.TLSCertKey],
+				input.Secret.Data[cmmeta.TLSCAKey],
+			)) {
+				return AdditionalOutputFormatsMismatch, message, true
+			}
 		}
 	}
 
@@ -644,8 +653,8 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 	const message = "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields"
 	return func(input Input) (string, string, bool) {
 		var (
-			crtHasCombinedPEM, crtHasDER       bool
-			secretHasCombinedPEM, secretHasDER bool
+			crtHasCombinedPEM, crtHasDER, ctrHasFullChain          bool
+			secretHasCombinedPEM, secretHasDER, secretHasFullChain bool
 		)
 
 		// Gather which additional output formats have been defined on the
@@ -656,6 +665,8 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 				crtHasCombinedPEM = true
 			case cmapi.CertificateOutputFormatDER:
 				crtHasDER = true
+			case cmapi.CertificateOutputFormatFullChain:
+				ctrHasFullChain = true
 			}
 		}
 
@@ -684,11 +695,18 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 			}) {
 				secretHasDER = true
 			}
+
+			if fieldset.Has(fieldpath.Path{
+				{FieldName: ptr.To("data")},
+				{FieldName: ptr.To(cmapi.CertificateOutputFormatFullChainKey)},
+			}) {
+				secretHasFullChain = true
+			}
 		}
 
 		// Format present or missing on the Certificate should be reflected on the
 		// Secret.
-		if crtHasCombinedPEM != secretHasCombinedPEM || crtHasDER != secretHasDER {
+		if crtHasCombinedPEM != secretHasCombinedPEM || crtHasDER != secretHasDER || ctrHasFullChain != secretHasFullChain {
 			return AdditionalOutputFormatsMismatch, message, true
 		}
 
