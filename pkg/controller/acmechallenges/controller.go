@@ -37,6 +37,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 type controller struct {
@@ -79,6 +80,9 @@ type controller struct {
 	// objectUpdater implements the updateObject function which is used to save
 	// changes to the Challenge.Status and Challenge.Finalizers
 	objectUpdater
+
+	// metrics instruments ACME challenges
+	metrics *metrics.Metrics
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
@@ -130,8 +134,10 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// register handler functions
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 
+	c.metrics = ctx.Metrics
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
-	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
+	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister,
+		ctx.SchedulerOptions.MaxConcurrentChallenges, ctx.Metrics)
 	c.recorder = ctx.Recorder
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 

@@ -131,7 +131,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	if ch.Status.State == "" {
 		err := c.syncChallengeStatus(ctx, cl, ch)
 		if err != nil {
-			return handleError(ch, err)
+			return c.handleError(ch, err)
 		}
 
 		// if the state has not changed, return an error
@@ -154,7 +154,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		// Find out which identity the ACME server says it will use.
 		dir, err := cl.Discover(ctx)
 		if err != nil {
-			return handleError(ch, err)
+			return c.handleError(ch, err)
 		}
 		// TODO(dmo): figure out if missing CAA identity in directory
 		// means no CAA check is performed by ACME server or if any valid
@@ -212,7 +212,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 // handleError will handle ACME error types, updating the challenge resource
 // with any new information found whilst inspecting the error response.
 // This may include marking the challenge as expired.
-func handleError(ch *cmacme.Challenge, err error) error {
+func (c *controller) handleError(ch *cmacme.Challenge, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -232,12 +232,14 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	if acmeErr.ProblemType == "urn:ietf:params:acme:error:malformed" {
 		ch.Status.State = cmacme.Expired
 		// absorb the error as updating the challenge's status will trigger a sync
+		c.metrics.ObserveACMEChallengeStateChange(ch)
 		return nil
 	}
 
 	if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
+		c.metrics.ObserveACMEChallengeStateChange(ch)
 		return nil
 	}
 
@@ -345,6 +347,7 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 		}
 	}
 	ch.Status.State = cmState
+	c.metrics.ObserveACMEChallengeStateChange(ch)
 
 	return nil
 }
@@ -367,11 +370,12 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	acmeChal, err := cl.Accept(ctx, acmeChal)
 	if acmeChal != nil {
 		ch.Status.State = cmacme.State(acmeChal.Status)
+		c.metrics.ObserveACMEChallengeStateChange(ch)
 	}
 	if err != nil {
 		log.Error(err, "error accepting challenge")
 		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
-		return handleError(ch, err)
+		return c.handleError(ch, err)
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
@@ -383,6 +387,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 
 	ch.Status.State = cmacme.State(authorization.Status)
 	ch.Status.Reason = "Successfully authorized domain"
+	c.metrics.ObserveACMEChallengeStateChange(ch)
 	c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
 
 	return nil
@@ -391,7 +396,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) error {
 	authErr, ok := err.(*acmeapi.AuthorizationError)
 	if !ok {
-		return handleError(ch, err)
+		return c.handleError(ch, err)
 	}
 
 	// TODO: the AuthorizationError above could technically contain the final
@@ -402,6 +407,7 @@ func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) e
 	//   if the returned state is 'invalid'
 	ch.Status.State = cmacme.Invalid
 	ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
+	c.metrics.ObserveACMEChallengeStateChange(ch)
 	c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonFailed, "Accepting challenge authorization failed: %v", authErr)
 
 	// return nil here, as accepting the challenge did not error, the challenge

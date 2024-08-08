@@ -84,6 +84,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	if apierrors.IsNotFound(err) {
 		// If the Certificate no longer exists, remove it's metrics from being exposed.
 		c.metrics.RemoveCertificate(key)
+		c.metrics.RemoveACMEObjects(key)
 		return nil
 	}
 	if err != nil {

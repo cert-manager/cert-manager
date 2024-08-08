@@ -35,6 +35,7 @@ import (
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/scheduler"
 )
 
@@ -70,6 +71,9 @@ type controller struct {
 
 	// scheduledWorkQueue holds items to be re-queued after a period of time.
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
+
+	// metrics insruments ACME orders
+	metrics *metrics.Metrics
 }
 
 // NewController constructs an orders controller using the provided options.
@@ -147,6 +151,7 @@ func NewController(
 		cmClient:            ctx.CMClient,
 		accountRegistry:     ctx.AccountRegistry,
 		fieldManager:        ctx.FieldManager,
+		metrics:             ctx.ContextOptions.Metrics,
 	}, queue, mustSync
 
 }

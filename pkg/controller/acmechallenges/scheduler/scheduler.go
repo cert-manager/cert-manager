@@ -27,6 +27,7 @@ import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 // Scheduler implements an ACME challenge scheduler that applies heuristics
@@ -36,12 +37,19 @@ type Scheduler struct {
 	log                     logr.Logger
 	challengeLister         cmacmelisters.ChallengeLister
 	maxConcurrentChallenges int
+	metrics                 *metrics.Metrics
+}
+
+type issuerSchedulerMetricLabels struct {
+	namespace  string
+	issuerName string
 }
 
 // New will construct a new instance of a scheduler
-func New(ctx context.Context, l cmacmelisters.ChallengeLister, maxConcurrentChallenges int) *Scheduler {
+func New(ctx context.Context, l cmacmelisters.ChallengeLister, maxConcurrentChallenges int, metrics *metrics.Metrics) *Scheduler {
 	log := logs.FromContext(ctx, "challenge-scheduler")
-	return &Scheduler{log: log, challengeLister: l, maxConcurrentChallenges: maxConcurrentChallenges}
+	return &Scheduler{log: log, challengeLister: l, maxConcurrentChallenges: maxConcurrentChallenges,
+		metrics: metrics}
 }
 
 // ScheduleN will return a maximum of N challenge resources that should be
@@ -84,7 +92,31 @@ func (s *Scheduler) selectChallengesToSchedule(candidates []*cmacme.Challenge, n
 	if len(candidates) > n {
 		candidates = candidates[:n]
 	}
+
+	for k, v := range s.surveyChallenges(candidates) {
+		labels := []string{
+			k.issuerName,
+			k.namespace,
+		}
+		s.metrics.ObserveACMEScheduled(v, labels...)
+	}
 	return candidates
+}
+
+// surveyChallenges returns a map of the candidate challenge count(map value: int)
+// per issuer(map key: issuerSchedulerMetricLabels)
+func (s *Scheduler) surveyChallenges(candidates []*cmacme.Challenge) map[issuerSchedulerMetricLabels]int {
+	measurements := make(map[issuerSchedulerMetricLabels]int)
+	for _, ch := range candidates {
+		if ch.Spec.IssuerRef.Kind == "ClusterIssuer" {
+			measurements[issuerSchedulerMetricLabels{issuerName: ch.Spec.IssuerRef.Name,
+				namespace: "-"}] += 1
+		} else {
+			measurements[issuerSchedulerMetricLabels{issuerName: ch.Spec.IssuerRef.Name,
+				namespace: ch.ObjectMeta.Namespace}] += 1
+		}
+	}
+	return measurements
 }
 
 // determineChallengeCandidates will determine which, if any, challenges can
