@@ -203,7 +203,17 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 				), testIssuerHTTP01Enabled},
-				ExpectedActions: []testpkg.Action{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+							"status",
+							gen.DefaultTestNamespace,
+							gen.ChallengeFrom(baseChallenge,
+								gen.SetChallengeURL("testurl"),
+								gen.SetChallengeProcessing(true),
+								gen.SetChallengeReason("unexpected non-ACME API error: challenge was not present in authorization"),
+								gen.SetChallengeState(cmacme.Errored)))),
+				},
 			},
 			expectErr: true,
 			acmeClient: &acmecl.FakeACME{

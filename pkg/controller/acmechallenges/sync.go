@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -131,6 +132,8 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	if ch.Status.State == "" {
 		err := c.syncChallengeStatus(ctx, cl, ch)
 		if err != nil {
+			logf.V(logf.ErrorLevel).ErrorS(err, "error synchronizing with ACME server")
+			ch.Status.Reason = fmt.Sprintf("error synchronizing with ACME server: %v", err)
 			return handleError(ch, err)
 		}
 
@@ -220,6 +223,9 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	var acmeErr *acmeapi.Error
 	var ok bool
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		ch.Status.State = cmacme.Errored
+		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
+		logf.V(logf.ErrorLevel).ErrorS(err, "unexpected non-ACME API error")
 		return err
 	}
 
@@ -375,9 +381,12 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthorizationURL)
+	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, 20*time.Second)
+	defer cancelAuthorization()
+	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
 	if err != nil {
-		log.Error(err, "error waiting for authorization")
+		log.V(logf.ErrorLevel).Error(err, "error waiting for authorization")
+		ch.Status.Reason = fmt.Sprintf("Error waiting for authorization: %v", err)
 		return c.handleAuthorizationError(ch, err)
 	}
 
