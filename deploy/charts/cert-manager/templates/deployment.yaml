@@ -67,8 +67,8 @@ spec:
       {{- if or .Values.volumes .Values.config}}
       volumes:
         {{- if .Values.config }}
-        - name: config 
-          configMap: 
+        - name: config
+          configMap:
             name: {{ include "cert-manager.fullname" . }}
         {{- end }}
         {{ with .Values.volumes }}
@@ -154,7 +154,7 @@ spec:
           {{- if or .Values.config .Values.volumeMounts }}
           volumeMounts:
             {{- if .Values.config }}
-            - name: config 
+            - name: config
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.volumeMounts }}
@@ -162,6 +162,10 @@ spec:
             {{- end }}
           {{- end }}
           env:
+          # TODO: We can remove this when we upgrade to client-go@v0.31.0
+          # See https://github.com/kubernetes/kubernetes/commit/9248cccc27fdd52a9a99fd9ad6e47ada9ee8b568
+          - name: ENABLE_CLIENT_GO_WATCH_LIST_ALPHA
+            value: "1"
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:

@@ -22,6 +22,7 @@ package feature
 
 import (
 	"k8s.io/apimachinery/pkg/util/runtime"
+	clientfeatures "k8s.io/client-go/features"
 	"k8s.io/component-base/featuregate"
 
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -141,6 +142,18 @@ const (
 
 func init() {
 	runtime.Must(utilfeature.DefaultMutableFeatureGate.Add(defaultCertManagerFeatureGates))
+
+	// Copied from https://github.com/kubernetes/kubernetes/blob/31062790a17634c2e728e44d444361800caa5b97/pkg/features/kube_features.go#L965-L972
+	// See https://github.com/kubernetes/kubernetes/pull/122738
+	//
+	// Register all client-go features with cert-manager's feature gate instance and make all client-go
+	// feature checks use cert-manager's instance. The effect is that for cert-manager-controller, client-go
+	// features are wired to the existing --feature-gates flag just as all other features
+	// are. Further, client-go features automatically support the existing mechanisms for
+	// feature enablement metrics and test overrides.
+	ca := &clientAdapter{utilfeature.DefaultMutableFeatureGate}
+	runtime.Must(clientfeatures.AddFeaturesToExistingFeatureGates(ca))
+	clientfeatures.ReplaceFeatureGates(ca)
 }
 
 // defaultCertManagerFeatureGates consists of all known cert-manager feature keys.

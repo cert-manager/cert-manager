@@ -18,6 +18,13 @@
 
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
+featureGates:
+  # Enable the WatchList / Streaming Lists feature on the API server.
+  #
+  # - https://kind.sigs.k8s.io/docs/user/configuration/#feature-gates
+  # - https://kubernetes.io/docs/reference/using-api/api-concepts/#streaming-lists
+  WatchList: true
+
 kubeadmConfigPatches:
   - |
     kind: ClusterConfiguration

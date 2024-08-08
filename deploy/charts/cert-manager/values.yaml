@@ -43,7 +43,8 @@ global:
     useAppArmor: true
 
   # Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.
-  logLevel: 2
+  # TODO: Temporarily increased so that we can observe the WatchList / streaming list log messages
+  logLevel: 6
 
   leaderElection:
     # Override the namespace used for the leader election lease.
