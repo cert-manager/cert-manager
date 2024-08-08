@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Venafi/vcert/v5/pkg/certificate"
 	"github.com/Venafi/vcert/v5/pkg/endpoint"
@@ -214,7 +215,7 @@ func TestVenafi_RequestCertificate(t *testing.T) {
 					"foo.example.com", "bar.example.com"})
 			}
 
-			got, err := v.RequestCertificate(tt.args.csrPEM, tt.args.customFields)
+			got, err := v.RequestCertificate(tt.args.csrPEM, time.Minute, tt.args.customFields)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RequestCertificate() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -235,6 +236,7 @@ func TestVenafi_RetrieveCertificate(t *testing.T) {
 
 	type args struct {
 		csrPEM       []byte
+		duration     time.Duration
 		customFields []api.CustomField
 	}
 	tests := []struct {
@@ -278,11 +280,11 @@ func TestVenafi_RetrieveCertificate(t *testing.T) {
 			// this is needed to provide the fake venafi client with a "valid" pickup id
 			// testing errors in this should be done in TestVenafi_RequestCertificate
 			// any error returned in these tests is a hard fail
-			pickupID, err := v.RequestCertificate(tt.args.csrPEM, tt.args.customFields)
+			pickupID, err := v.RequestCertificate(tt.args.csrPEM, tt.args.duration, tt.args.customFields)
 			if err != nil {
 				t.Errorf("RequestCertificate() should but error but got error = %v", err)
 			}
-			got, err := v.RetrieveCertificate(pickupID, tt.args.csrPEM, tt.args.customFields)
+			got, err := v.RetrieveCertificate(pickupID, tt.args.csrPEM, tt.args.duration, tt.args.customFields)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetrieveCertificate() error = %v, wantErr %v", err, tt.wantErr)
 				return
