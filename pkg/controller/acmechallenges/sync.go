@@ -385,8 +385,8 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	// The underlying ACME implementation from golang.org/x/crypto of WaitAuthorization retries on 
-	// response parsing errors.  In the event that an ACME server is not returning expected JSON 
+	// The underlying ACME implementation from golang.org/x/crypto of WaitAuthorization retries on
+	// response parsing errors.  In the event that an ACME server is not returning expected JSON
 	// responses, the call to WaitAuthorization can and has been seen to not return and loop forever,
 	// blocking the challenge's processing. Here, we defensively add a timeout for this exchange
 	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
