@@ -662,13 +662,14 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 								"f:cert-manager.io/issuer-name": {},
 								"f:cert-manager.io/issuer-kind": {},
 								"f:cert-manager.io/issuer-group": {},
-								"f:cert-manager.io/uri-sans": {}
+								"f:cert-manager.io/uri-sans": {},
+								"f:cert-manager.io/ip-sans": {}
 							}
 						}}`),
 				}},
 			},
 			expReason:    SecretManagedMetadataMismatch,
-			expMessage:   "Secret has these extra Annotations: [cert-manager.io/uri-sans]",
+			expMessage:   "Secret has these extra Annotations: [cert-manager.io/ip-sans cert-manager.io/uri-sans]",
 			expViolation: true,
 		},
 	}
@@ -725,7 +726,7 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			expReason:    "",
 			expMessage:   "",
 		},
-		"if SecretTemplate is non-nil, Secret Annotations match but Labels are nil, return true": {
+		"if SecretTemplate is non-nil, Secret Annotations match and there are no common Labels, return false": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
@@ -734,11 +735,11 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      nil,
 			}},
-			expViolation: true,
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate Labels missing or incorrect value on Secret",
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
 		},
-		"if SecretTemplate is non-nil, Secret Labels match but Annotations are nil, return true": {
+		"if SecretTemplate is non-nil, Secret Labels match and there are no common Annotations, return false": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
@@ -747,35 +748,9 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 				Annotations: nil,
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			}},
-			expViolation: true,
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
-		},
-		"if SecretTemplate is non-nil, Secret Labels match but Annotations don't match keys, return true": {
-			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      map[string]string{"abc": "123", "def": "456"},
-			},
-			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{"foo2": "bar1", "foo1": "bar2"},
-				Labels:      map[string]string{"abc": "123", "def": "456"},
-			}},
-			expViolation: true,
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
-		},
-		"if SecretTemplate is non-nil, Secret Annotations match but Labels don't match keys, return true": {
-			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      map[string]string{"abc": "123", "def": "456"},
-			},
-			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      map[string]string{"def": "123", "abc": "456"},
-			}},
-			expViolation: true,
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate Labels missing or incorrect value on Secret",
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
 		},
 		"if SecretTemplate is non-nil, Secret Labels match but Annotations don't match values, return true": {
 			tmpl: &cmapi.CertificateSecretTemplate{
@@ -905,7 +880,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 		},
 		"if template annotations do not match managed fields, should return true": {
 			tmpl: &cmapi.CertificateSecretTemplate{
-				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2", "foo4": "bar4"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
@@ -923,13 +898,13 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Secret is missing these Template Annotations: [foo2]",
+			expMessage:   "Secret is missing these Template Annotations: [foo2 foo4]",
 			expViolation: true,
 		},
 		"if template labels do not match managed fields, should return true": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      map[string]string{"abc": "123", "def": "456"},
+				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -946,7 +921,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Secret is missing these Template Labels: [def]",
+			expMessage:   "Secret is missing these Template Labels: [def ghi]",
 			expViolation: true,
 		},
 		"if template annotations and labels match managed fields, should return false": {
@@ -983,7 +958,8 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {},
-								"f:foo3": {}
+								"f:foo3": {},
+								"f:foo4": {}
 							},
 							"f:labels": {
 								"f:abc": {},
@@ -993,7 +969,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Secret has these extra Annotations: [foo3]",
+			expMessage:   "Secret has these extra Annotations: [foo3 foo4]",
 			expViolation: true,
 		},
 		"if template labels is a subset of managed fields, return true": {
@@ -1011,13 +987,14 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 							"f:labels": {
 								"f:abc": {},
 								"f:def": {},
-								"f:ghi": {}
+								"f:ghi": {},
+								"f:jkl": {}
 							}
 						}}`),
 				}},
 			},
 			expReason:    SecretTemplateMismatch,
-			expMessage:   "Secret has these extra Labels: [ghi]",
+			expMessage:   "Secret has these extra Labels: [ghi jkl]",
 			expViolation: true,
 		},
 		"if managed fields annotations is a subset of template, return true": {
