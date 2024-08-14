@@ -772,7 +772,7 @@ func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
 }
 
 // mapsHaveMatchingValues returns true if the two maps have the same values for
-// all common keys. Otherwise, the key for which the values differ is returned.
+// all common keys. Otherwise, the first key for which the values differ is returned.
 // This function is stable and will always return the same key if the maps are
 // the same.
 func mapsHaveMatchingValues[Key cmp.Ordered, Value comparable](a, b map[Key]Value) (bool, Key) {
