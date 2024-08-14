@@ -148,6 +148,18 @@ func Test__caRequiresRegeneration(t *testing.T) {
 			expect: false,
 		},
 		{
+			name: "Root CA certificate is expired",
+			secret: &corev1.Secret{
+				Data: generateSecretData(
+					func(cert *x509.Certificate) {
+						cert.NotBefore = time.Now().Add(-1 * time.Hour)
+						cert.NotAfter = time.Now().Add(-1 * time.Minute)
+					},
+				),
+			},
+			expect: true,
+		},
+		{
 			name: "Ok",
 			secret: &corev1.Secret{
 				Data: generateSecretData(nil),
