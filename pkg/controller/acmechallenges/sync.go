@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -42,6 +43,10 @@ const (
 	reasonPresentError   = "PresentError"
 	reasonPresented      = "Presented"
 	reasonFailed         = "Failed"
+
+	// How long to wait for an authorization response from the ACME server in acceptChallenge()
+	// before giving up
+	authorizationTimeout = 20 * time.Second
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -220,6 +225,9 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	var acmeErr *acmeapi.Error
 	var ok bool
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		ch.Status.State = cmacme.Errored
+		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
+		logf.V(logf.ErrorLevel).ErrorS(err, "unexpected non-ACME API error")
 		return err
 	}
 
@@ -375,7 +383,15 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthorizationURL)
+	// The underlying ACME implementation from golang.org/x/crypto of WaitAuthorization retries on
+	// response parsing errors.  In the event that an ACME server is not returning expected JSON
+	// responses, the call to WaitAuthorization can and has been seen to not return and loop forever,
+	// blocking the challenge's processing. Here, we defensively add a timeout for this exchange
+	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
+	// in the err variable.
+	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, authorizationTimeout)
+	defer cancelAuthorization()
+	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
 	if err != nil {
 		log.Error(err, "error waiting for authorization")
 		return c.handleAuthorizationError(ch, err)
