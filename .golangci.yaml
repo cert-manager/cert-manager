@@ -2,7 +2,6 @@ issues:
   exclude-rules:
     - linters:
         - dogsled
-        - errcheck
         - promlinter
         - errname
         - exhaustive

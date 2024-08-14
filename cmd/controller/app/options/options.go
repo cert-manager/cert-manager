@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	cliflag "k8s.io/component-base/cli/flag"
 
@@ -219,11 +220,11 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.StringVar(&c.HealthzListenAddress, "internal-healthz-listen-address", c.HealthzListenAddress, ""+
 		"The host and port that the healthz server should listen on. "+
 		"The healthz server serves the /livez endpoint, which is called by the LivenessProbe.")
-	fs.MarkHidden("internal-healthz-listen-address")
+	utilruntime.Must(fs.MarkHidden("internal-healthz-listen-address"))
 
 	fs.DurationVar(&c.LeaderElectionConfig.HealthzTimeout, "internal-healthz-leader-election-timeout", c.LeaderElectionConfig.HealthzTimeout, ""+
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
-	fs.MarkHidden("internal-healthz-leader-election-timeout")
+	utilruntime.Must(fs.MarkHidden("internal-healthz-leader-election-timeout"))
 
 	logf.AddFlags(&c.Logging, fs)
 }

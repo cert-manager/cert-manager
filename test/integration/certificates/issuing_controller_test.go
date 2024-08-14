@@ -80,7 +80,8 @@ func TestIssuingController(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -102,8 +103,7 @@ func TestIssuingController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -285,7 +285,8 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -307,8 +308,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -499,7 +499,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -521,8 +522,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -735,7 +735,8 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -757,8 +758,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -962,7 +962,8 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: fieldManager,
 	}
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerNoOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer func() {
@@ -1059,7 +1060,8 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: fieldManager,
 	}
-	ctrl, queue, mustSync = issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err = issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c = controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopControllerOwnerRef()

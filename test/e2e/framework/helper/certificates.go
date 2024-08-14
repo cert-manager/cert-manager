@@ -25,6 +25,7 @@ import (
 
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
@@ -74,19 +75,23 @@ func (h *Helper) waitForCertificateCondition(ctx context.Context, client clients
 	if pollErr != nil && certificate != nil {
 		log.Logf("Failed waiting for certificate %v: %v\n", name, pollErr.Error())
 
+		errs := []error{pollErr}
+
 		log.Logf("Certificate:\n")
-		h.describeCMObject(certificate)
+		errs = append(errs, h.describeCMObject(certificate))
 
 		log.Logf("Order and challenge descriptions:\n")
-		h.Kubectl(certificate.Namespace).Describe("order", "challenge")
+		errs = append(errs, h.Kubectl(certificate.Namespace).Describe("order", "challenge"))
 
 		log.Logf("CertificateRequest description:\n")
 		crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
 		if err != nil {
-			log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
+			errs = append(errs, fmt.Errorf("failed to compute CertificateRequest name from certificate: %w", err))
 		} else {
-			h.Kubectl(certificate.Namespace).DescribeResource("certificaterequest", crName)
+			errs = append(errs, h.Kubectl(certificate.Namespace).DescribeResource("certificaterequest", crName))
 		}
+
+		pollErr = kerrors.NewAggregate(errs)
 	}
 	return certificate, pollErr
 }
@@ -189,7 +194,7 @@ func (h *Helper) waitForIssuerCondition(ctx context.Context, client clientset.Is
 		log.Logf("Failed waiting for issuer %v :%v\n", name, pollErr.Error())
 
 		log.Logf("Issuer:\n")
-		h.describeCMObject(issuer)
+		pollErr = kerrors.NewAggregate([]error{pollErr, h.describeCMObject(issuer)})
 	}
 
 	return issuer, pollErr
@@ -236,7 +241,7 @@ func (h *Helper) waitForClusterIssuerCondition(ctx context.Context, client clien
 		log.Logf("Failed waiting for issuer %v :%v\n", name, pollErr.Error())
 
 		log.Logf("Issuer:\n")
-		h.describeCMObject(issuer)
+		pollErr = kerrors.NewAggregate([]error{pollErr, h.describeCMObject(issuer)})
 	}
 
 	return issuer, pollErr

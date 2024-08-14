@@ -21,6 +21,7 @@ import (
 	"crypto"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
@@ -43,13 +44,14 @@ func (h *Helper) ValidateCertificate(certificate *cmapi.Certificate, validations
 	for _, fn := range validations {
 		err := fn(certificate, secret)
 		if err != nil {
+			errs := []error{err}
 			log.Logf("Certificate:\n")
-			h.describeCMObject(certificate)
+			errs = append(errs, h.describeCMObject(certificate))
 
 			log.Logf("Secret:\n")
-			h.describeKubeObject(secret)
+			errs = append(errs, h.describeKubeObject(secret))
 
-			return err
+			return kerrors.NewAggregate(errs)
 		}
 	}
 

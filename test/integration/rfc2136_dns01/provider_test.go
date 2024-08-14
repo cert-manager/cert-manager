@@ -33,6 +33,7 @@ import (
 func TestRunSuiteWithTSIG(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:             t,
 		Zones:         []string{rfc2136TestZone},
 		EnableTSIG:    true,
 		TSIGZone:      rfc2136TestZone,
@@ -76,6 +77,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 func TestRunSuiteNoTSIG(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:     t,
 		Zones: []string{rfc2136TestZone},
 	}
 	if err := server.Run(ctx); err != nil {

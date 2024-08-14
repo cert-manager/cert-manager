@@ -64,9 +64,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// to do some cleanup, we would use a finalizer, and the cleanup logic would
 	// be triggered by the "Updated" event when the object gets marked for
 	// deletion.
-	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+	if _, err := ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: queue,
-	})
+	}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// We still re-queue on "Add" because the workqueue will remove any
 	// duplicate key, although the Ingress controller already re-queues the
@@ -77,9 +79,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	//
 	// We want to immediately recreate a Certificate when the Certificate is
 	// deleted.
-	cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		WorkFunc: certificateHandler(queue),
-	})
+	}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	return queue, mustSync, nil
 }

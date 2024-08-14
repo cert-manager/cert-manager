@@ -50,7 +50,9 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 
 	var finalConfig *config.ControllerConfiguration
 
-	logsapi.ResetForTest(nil)
+	if err := logsapi.ResetForTest(nil); err != nil {
+		t.Error(err)
+	}
 	cmd := newServerCommand(context.TODO(), func(ctx context.Context, cc *config.ControllerConfiguration) error {
 		finalConfig = cc
 		return nil

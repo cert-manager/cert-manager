@@ -54,6 +54,7 @@ const defaultPort = "53"
 func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:       t,
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerHello),
 	}
@@ -80,13 +81,18 @@ func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 func TestRFC2136ServerSuccess(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:       t,
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnSuccess),
 	}
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Fatalf("failed to shutdown test server: %v", err)
+		}
+	}()
 
 	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "")
 	if err != nil {
@@ -100,13 +106,18 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 func TestRFC2136ServerError(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:       t,
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnErr),
 	}
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Fatalf("failed to shutdown test server: %v", err)
+		}
+	}()
 
 	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "")
 	if err != nil {
@@ -122,6 +133,7 @@ func TestRFC2136ServerError(t *testing.T) {
 func TestRFC2136TsigClient(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:             t,
 		Zones:         []string{rfc2136TestZone},
 		Handler:       dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnSuccess),
 		EnableTSIG:    true,
@@ -132,7 +144,11 @@ func TestRFC2136TsigClient(t *testing.T) {
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Fatalf("failed to shutdown test server: %v", err)
+		}
+	}()
 
 	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	if err != nil {
@@ -306,12 +322,17 @@ func TestRFC2136InvalidTSIGAlgorithm(t *testing.T) {
 func TestRFC2136ValidUpdatePacket(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
+		T:     t,
 		Zones: []string{rfc2136TestZone},
 	}
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Errorf("failed to gracefully shut down test server: %v", err)
+		}
+	}()
 
 	txtRR, _ := dns.NewRR(fmt.Sprintf("%s %d IN TXT %s", rfc2136TestFqdn, rfc2136TestTTL, rfc2136TestValue))
 	rrs := []dns.RR{txtRR}

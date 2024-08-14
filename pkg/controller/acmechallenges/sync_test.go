@@ -594,7 +594,9 @@ func runTest(t *testing.T, test testT) {
 	defer test.builder.Stop()
 
 	c := &controller{}
-	c.Register(test.builder.Context)
+	if _, _, err := c.Register(test.builder.Context); err != nil {
+		t.Fatal(err)
+	}
 	c.helper = issuer.NewHelper(
 		test.builder.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 		test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),

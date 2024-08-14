@@ -57,7 +57,10 @@ func TestRevisionManagerController(t *testing.T) {
 		SharedInformerFactory: cmFactory,
 	}
 
-	ctrl, queue, mustSync := revisionmanager.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := revisionmanager.NewController(logf.Log, &controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	c := controllerpkg.NewController(
 		"revisionmanager_controller_test",
@@ -78,8 +81,7 @@ func TestRevisionManagerController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 

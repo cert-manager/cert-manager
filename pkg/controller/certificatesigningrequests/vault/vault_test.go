@@ -439,7 +439,9 @@ func TestProcessItem(t *testing.T) {
 				apiutil.IssuerVault,
 				func(*controllerpkg.Context) certificatesigningrequests.Signer { return vault },
 			)
-			controller.Register(test.builder.Context)
+			if _, _, err := controller.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 			test.builder.Start()
 
 			err := controller.ProcessItem(context.Background(), test.csr.Name)
