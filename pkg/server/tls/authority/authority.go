@@ -316,7 +316,7 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 		return true
 	}
 	// renew the root CA when the current one is 2/3 of the way through its life
-	if time.Until(x509Cert.NotAfter) < (x509Cert.NotBefore.Sub(x509Cert.NotAfter) / 3) {
+	if time.Until(x509Cert.NotAfter) < (x509Cert.NotAfter.Sub(x509Cert.NotBefore) / 3) {
 		d.log.V(logf.InfoLevel).Info("Root CA certificate is nearing expiry. Regenerating...")
 		return true
 	}
