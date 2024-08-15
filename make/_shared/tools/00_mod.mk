@@ -615,7 +615,8 @@ $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_linux_$(HOST_ARCH): | $(DOW
 missing=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v sha256sum >/dev/null || command -v shasum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
-             && (command -v rsync >/dev/null || echo rsync))
+             && (command -v rsync >/dev/null || echo rsync) \
+             && (command -v bash >/dev/null || echo bash))
 ifneq ($(missing),)
 $(error Missing required tools: $(missing))
 endif
