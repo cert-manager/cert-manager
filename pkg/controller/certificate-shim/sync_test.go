@@ -68,6 +68,79 @@ func Test_hasShimAnnotation(t *testing.T) {
 	})
 }
 
+func Test_certNeedsUpdate(t *testing.T) {
+	type testT struct {
+		CertA *cmapi.Certificate
+		CertB *cmapi.Certificate
+		Want  bool
+	}
+
+	t.Run("ingress", func(t *testing.T) {
+		tests := []testT{
+			{
+				CertA: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+					},
+				},
+				CertB: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+					},
+				},
+				Want: false,
+			},
+			{
+				CertA: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"changing-label": "will be updated",
+						},
+					},
+				},
+				CertB: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"changing-label": "is updated",
+						},
+					},
+				},
+				Want: true,
+			},
+			{
+				CertA: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+					},
+				},
+				CertB: &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "nginx",
+						},
+					},
+				},
+				Want: true,
+			},
+		}
+		for _, test := range tests {
+			certNeedsUpdate := certNeedsUpdate(test.CertA, test.CertB)
+			if certNeedsUpdate != test.Want {
+				t.Errorf("Expected certNeedsUpdate=%v for certificates \n%#v\nand\n%#v", test.Want, test.CertA, test.CertB)
+			}
+		}
+	})
+}
+
 func TestSync(t *testing.T) {
 	clusterIssuer := gen.ClusterIssuer("issuer-name")
 	acmeIssuerNewFormat := gen.Issuer("issuer-name",
