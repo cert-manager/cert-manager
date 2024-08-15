@@ -630,6 +630,7 @@ type ServiceAccountRef struct {
 	// and name is always included.
 	// If unset the audience defaults to `sts.amazonaws.com`.
 	// +optional
+	// +default=["sts.amazonaws.com"]
 	TokenAudiences []string `json:"audiences,omitempty"`
 }
 

@@ -22,11 +22,15 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/go-logr/logr"
+	authv1 "k8s.io/api/authentication/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -47,15 +51,15 @@ type DNSProvider struct {
 }
 
 type sessionProvider struct {
-	AccessKeyID      string
-	SecretAccessKey  string
-	Ambient          bool
-	Region           string
-	Role             string
-	WebIdentityToken string
-	StsProvider      func(aws.Config) StsClient
-	log              logr.Logger
-	userAgent        string
+	AccessKeyID               string
+	SecretAccessKey           string
+	Ambient                   bool
+	Region                    string
+	Role                      string
+	WebIdentityTokenRetriever stscreds.IdentityTokenRetriever
+	StsProvider               func(aws.Config) StsClient
+	log                       logr.Logger
+	userAgent                 string
 }
 
 type StsClient interface {
@@ -65,10 +69,10 @@ type StsClient interface {
 
 func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	switch {
-	case d.Role == "" && d.WebIdentityToken != "":
+	case d.Role == "" && d.WebIdentityTokenRetriever != nil:
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: role must be set when web identity token is set")
 	case d.AccessKeyID == "" && d.SecretAccessKey == "":
-		if !d.Ambient && d.WebIdentityToken == "" {
+		if !d.Ambient && d.WebIdentityTokenRetriever == nil {
 			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
 		}
 	case d.AccessKeyID == "" || d.SecretAccessKey == "":
@@ -76,11 +80,11 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
 	}
 
-	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityToken == ""
+	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityTokenRetriever == nil
 
 	var optFns []func(*config.LoadOptions) error
 	switch {
-	case d.Role != "" && d.WebIdentityToken != "":
+	case d.Role != "" && d.WebIdentityTokenRetriever != nil:
 		d.log.V(logf.DebugLevel).Info("using assume role with web identity")
 	case useAmbientCredentials:
 		d.log.V(logf.DebugLevel).Info("using ambient credentials")
@@ -97,49 +101,37 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
-	// For backwards compatibility with cert-manager <= 1.14, where we used the aws-sdk-go v1
-	// library, we configure the SDK here to use the global sts endpoint. This was the default
-	// behaviour of the SDK v1 library, but has to be explicitly set in the v2 library. For the
-	// route53 calls, we use the region provided by the user (see below).
-	stsCfg := cfg.Copy()
-	stsCfg.Region = "aws-global"
-
-	if d.Role != "" && d.WebIdentityToken == "" {
-		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
+	if d.Role != "" {
+		// For backwards compatibility with cert-manager <= 1.14, where we used the aws-sdk-go v1
+		// library, we configure the SDK here to use the global sts endpoint. This was the default
+		// behaviour of the SDK v1 library, but has to be explicitly set in the v2 library. For the
+		// route53 calls, we use the region provided by the user (see below).
+		stsCfg := cfg.Copy()
+		stsCfg.Region = "aws-global"
 		stsSvc := d.StsProvider(stsCfg)
-		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
-			RoleArn:         aws.String(d.Role),
-			RoleSessionName: aws.String("cert-manager"),
-		})
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role: %s", err)
+
+		var creds aws.CredentialsProvider
+		if d.WebIdentityTokenRetriever == nil {
+			d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
+			creds = stscreds.NewAssumeRoleProvider(
+				stsSvc,
+				d.Role,
+				func(o *stscreds.AssumeRoleOptions) {
+					o.RoleSessionName = "cert-manager"
+				},
+			)
+		} else {
+			d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
+			creds = stscreds.NewWebIdentityRoleProvider(
+				stsSvc,
+				d.Role,
+				d.WebIdentityTokenRetriever,
+				func(o *stscreds.WebIdentityRoleOptions) {
+					o.RoleSessionName = "cert-manager"
+				},
+			)
 		}
-
-		cfg.Credentials = credentials.NewStaticCredentialsProvider(
-			*result.Credentials.AccessKeyId,
-			*result.Credentials.SecretAccessKey,
-			*result.Credentials.SessionToken,
-		)
-	}
-
-	if d.Role != "" && d.WebIdentityToken != "" {
-		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
-
-		stsSvc := d.StsProvider(stsCfg)
-		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
-			RoleArn:          aws.String(d.Role),
-			RoleSessionName:  aws.String("cert-manager"),
-			WebIdentityToken: aws.String(d.WebIdentityToken),
-		})
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %s", err)
-		}
-
-		cfg.Credentials = credentials.NewStaticCredentialsProvider(
-			*result.Credentials.AccessKeyId,
-			*result.Credentials.SecretAccessKey,
-			*result.Credentials.SessionToken,
-		)
+		cfg.Credentials = aws.NewCredentialsCache(creds)
 	}
 
 	// If ambient credentials aren't permitted, always set the region, even if to
@@ -157,17 +149,17 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	return cfg, nil
 }
 
-func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webIdentityToken string, ambient bool, userAgent string) *sessionProvider {
+func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webIdentityTokenRetriever stscreds.IdentityTokenRetriever, ambient bool, userAgent string) *sessionProvider {
 	return &sessionProvider{
-		AccessKeyID:      accessKeyID,
-		SecretAccessKey:  secretAccessKey,
-		Ambient:          ambient,
-		Region:           region,
-		Role:             role,
-		WebIdentityToken: webIdentityToken,
-		StsProvider:      defaultSTSProvider,
-		log:              logf.Log.WithName("route53-session-provider"),
-		userAgent:        userAgent,
+		AccessKeyID:               accessKeyID,
+		SecretAccessKey:           secretAccessKey,
+		Ambient:                   ambient,
+		Region:                    region,
+		Role:                      role,
+		WebIdentityTokenRetriever: webIdentityTokenRetriever,
+		StsProvider:               defaultSTSProvider,
+		log:                       logf.Log.WithName("route53-session-provider"),
+		userAgent:                 userAgent,
 	}
 }
 
@@ -180,12 +172,13 @@ func defaultSTSProvider(cfg aws.Config) StsClient {
 // unset and the 'ambient' option is set, credentials from the environment.
 func NewDNSProvider(
 	ctx context.Context,
-	accessKeyID, secretAccessKey, hostedZoneID, region, role, webIdentityToken string,
+	accessKeyID, secretAccessKey, hostedZoneID, region, role string,
+	webIdentityTokenRetriever stscreds.IdentityTokenRetriever,
 	ambient bool,
 	dns01Nameservers []string,
 	userAgent string,
 ) (*DNSProvider, error) {
-	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, ambient, userAgent)
+	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityTokenRetriever, ambient, userAgent)
 
 	cfg, err := provider.GetSession(ctx)
 	if err != nil {
@@ -337,4 +330,31 @@ func removeReqID(err error) error {
 		responseError.RequestID = "<REDACTED>"
 	}
 	return err
+}
+
+type ServiceAccountTokenCreator interface {
+	CreateToken(ctx context.Context, serviceAccountName string, tokenRequest *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error)
+}
+
+type KubernetesServiceAccountTokenRetriever struct {
+	ServiceAccountName string
+	Audiences          []string
+	Namespace          string
+	Client             ServiceAccountTokenCreator
+}
+
+var _ stscreds.IdentityTokenRetriever = &KubernetesServiceAccountTokenRetriever{}
+
+func (o *KubernetesServiceAccountTokenRetriever) GetIdentityToken() ([]byte, error) {
+	tokenrequest, err := o.Client.CreateToken(context.TODO(), o.ServiceAccountName, &authv1.TokenRequest{
+		Spec: authv1.TokenRequestSpec{
+			Audiences:         o.Audiences,
+			ExpirationSeconds: ptr.To(int64(600)),
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to request token for %s/%s: %w", o.Namespace, o.ServiceAccountName, err)
+	}
+
+	return []byte(tokenrequest.Status.Token), nil
 }
