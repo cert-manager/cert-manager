@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -248,8 +249,7 @@ func (b *Builder) AllActionsExecuted() error {
 
 	var unexpectedActions []coretesting.Action
 	var errs []error
-	missingActions := make([]Action, len(b.ExpectedActions))
-	copy(missingActions, b.ExpectedActions)
+	missingActions := slices.Clone(b.ExpectedActions)
 	for _, a := range firedActions {
 		// skip list and watch actions
 		if a.GetVerb() == "list" || a.GetVerb() == "watch" {
