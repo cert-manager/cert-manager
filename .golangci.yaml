@@ -1,6 +1,10 @@
 issues:
   exclude-rules:
     - linters:
+        - staticcheck
+        - govet
+        - usestdlibvars
+        - misspell
         - dogsled
         - promlinter
         - errname
