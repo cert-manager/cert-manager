@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type OrderLister interface {
 
 // orderLister implements the OrderLister interface.
 type orderLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.Order]
 }
 
 // NewOrderLister returns a new OrderLister.
 func NewOrderLister(indexer cache.Indexer) OrderLister {
-	return &orderLister{indexer: indexer}
-}
-
-// List lists all Orders in the indexer.
-func (s *orderLister) List(selector labels.Selector) (ret []*v1.Order, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Order))
-	})
-	return ret, err
+	return &orderLister{listers.New[*v1.Order](indexer, v1.Resource("order"))}
 }
 
 // Orders returns an object that can list and get Orders.
 func (s *orderLister) Orders(namespace string) OrderNamespaceLister {
-	return orderNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return orderNamespaceLister{listers.NewNamespaced[*v1.Order](s.ResourceIndexer, namespace)}
 }
 
 // OrderNamespaceLister helps list and get Orders.
@@ -74,26 +66,5 @@ type OrderNamespaceLister interface {
 // orderNamespaceLister implements the OrderNamespaceLister
 // interface.
 type orderNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Orders in the indexer for a given namespace.
-func (s orderNamespaceLister) List(selector labels.Selector) (ret []*v1.Order, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Order))
-	})
-	return ret, err
-}
-
-// Get retrieves the Order from the indexer for a given namespace and name.
-func (s orderNamespaceLister) Get(name string) (*v1.Order, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("order"), name)
-	}
-	return obj.(*v1.Order), nil
+	listers.ResourceIndexer[*v1.Order]
 }

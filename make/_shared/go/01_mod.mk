@@ -126,6 +126,8 @@ shared_verify_targets_dirty += verify-golangci-lint
 ## @category [shared] Generate/ Verify
 fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/scratch
 	$(GCI) write \
+		--skip-generated \
+		--skip-vendor \
 		-s "standard" \
 		-s "default" \
 		-s "prefix($(repo_name))" \

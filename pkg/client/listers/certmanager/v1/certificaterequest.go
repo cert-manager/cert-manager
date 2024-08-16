@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type CertificateRequestLister interface {
 
 // certificateRequestLister implements the CertificateRequestLister interface.
 type certificateRequestLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.CertificateRequest]
 }
 
 // NewCertificateRequestLister returns a new CertificateRequestLister.
 func NewCertificateRequestLister(indexer cache.Indexer) CertificateRequestLister {
-	return &certificateRequestLister{indexer: indexer}
-}
-
-// List lists all CertificateRequests in the indexer.
-func (s *certificateRequestLister) List(selector labels.Selector) (ret []*v1.CertificateRequest, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.CertificateRequest))
-	})
-	return ret, err
+	return &certificateRequestLister{listers.New[*v1.CertificateRequest](indexer, v1.Resource("certificaterequest"))}
 }
 
 // CertificateRequests returns an object that can list and get CertificateRequests.
 func (s *certificateRequestLister) CertificateRequests(namespace string) CertificateRequestNamespaceLister {
-	return certificateRequestNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return certificateRequestNamespaceLister{listers.NewNamespaced[*v1.CertificateRequest](s.ResourceIndexer, namespace)}
 }
 
 // CertificateRequestNamespaceLister helps list and get CertificateRequests.
@@ -74,26 +66,5 @@ type CertificateRequestNamespaceLister interface {
 // certificateRequestNamespaceLister implements the CertificateRequestNamespaceLister
 // interface.
 type certificateRequestNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all CertificateRequests in the indexer for a given namespace.
-func (s certificateRequestNamespaceLister) List(selector labels.Selector) (ret []*v1.CertificateRequest, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.CertificateRequest))
-	})
-	return ret, err
-}
-
-// Get retrieves the CertificateRequest from the indexer for a given namespace and name.
-func (s certificateRequestNamespaceLister) Get(name string) (*v1.CertificateRequest, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("certificaterequest"), name)
-	}
-	return obj.(*v1.CertificateRequest), nil
+	listers.ResourceIndexer[*v1.CertificateRequest]
 }

@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type IssuerLister interface {
 
 // issuerLister implements the IssuerLister interface.
 type issuerLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.Issuer]
 }
 
 // NewIssuerLister returns a new IssuerLister.
 func NewIssuerLister(indexer cache.Indexer) IssuerLister {
-	return &issuerLister{indexer: indexer}
-}
-
-// List lists all Issuers in the indexer.
-func (s *issuerLister) List(selector labels.Selector) (ret []*v1.Issuer, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Issuer))
-	})
-	return ret, err
+	return &issuerLister{listers.New[*v1.Issuer](indexer, v1.Resource("issuer"))}
 }
 
 // Issuers returns an object that can list and get Issuers.
 func (s *issuerLister) Issuers(namespace string) IssuerNamespaceLister {
-	return issuerNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return issuerNamespaceLister{listers.NewNamespaced[*v1.Issuer](s.ResourceIndexer, namespace)}
 }
 
 // IssuerNamespaceLister helps list and get Issuers.
@@ -74,26 +66,5 @@ type IssuerNamespaceLister interface {
 // issuerNamespaceLister implements the IssuerNamespaceLister
 // interface.
 type issuerNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Issuers in the indexer for a given namespace.
-func (s issuerNamespaceLister) List(selector labels.Selector) (ret []*v1.Issuer, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Issuer))
-	})
-	return ret, err
-}
-
-// Get retrieves the Issuer from the indexer for a given namespace and name.
-func (s issuerNamespaceLister) Get(name string) (*v1.Issuer, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("issuer"), name)
-	}
-	return obj.(*v1.Issuer), nil
+	listers.ResourceIndexer[*v1.Issuer]
 }

@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -39,30 +39,10 @@ type ClusterIssuerLister interface {
 
 // clusterIssuerLister implements the ClusterIssuerLister interface.
 type clusterIssuerLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.ClusterIssuer]
 }
 
 // NewClusterIssuerLister returns a new ClusterIssuerLister.
 func NewClusterIssuerLister(indexer cache.Indexer) ClusterIssuerLister {
-	return &clusterIssuerLister{indexer: indexer}
-}
-
-// List lists all ClusterIssuers in the indexer.
-func (s *clusterIssuerLister) List(selector labels.Selector) (ret []*v1.ClusterIssuer, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.ClusterIssuer))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterIssuer from the index for a given name.
-func (s *clusterIssuerLister) Get(name string) (*v1.ClusterIssuer, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("clusterissuer"), name)
-	}
-	return obj.(*v1.ClusterIssuer), nil
+	return &clusterIssuerLister{listers.New[*v1.ClusterIssuer](indexer, v1.Resource("clusterissuer"))}
 }
