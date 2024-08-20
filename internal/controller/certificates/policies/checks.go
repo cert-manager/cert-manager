@@ -18,8 +18,10 @@ package policies
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/x509"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -332,25 +334,21 @@ func issuerGroupsEqual(l, r string) bool {
 // SecretSecretTemplateMismatch will inspect the given Secret's Annotations
 // and Labels, and compare these maps against those that appear on the given
 // Certificate's SecretTemplate.
-// Returns false if all the Certificate's SecretTemplate Annotations and Labels
-// appear on the Secret, or put another way, the Certificate's SecretTemplate
-// is a subset of that in the Secret's Annotations/Labels.
-// Returns true otherwise.
+// NOTE: This function only compares the values of annotations and labels that
+// exist both in the Certificate's SecretTemplate and the Secret. Missing and
+// extra annotations or labels are detected by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch
+// and SecretSecretTemplateManagedFieldsMismatch functions instead.
 func SecretSecretTemplateMismatch(input Input) (string, string, bool) {
 	if input.Certificate.Spec.SecretTemplate == nil {
 		return "", "", false
 	}
 
-	for kSpec, vSpec := range input.Certificate.Spec.SecretTemplate.Annotations {
-		if v, ok := input.Secret.Annotations[kSpec]; !ok || v != vSpec {
-			return SecretTemplateMismatch, "Certificate's SecretTemplate Annotations missing or incorrect value on Secret", true
-		}
+	if match, _ := mapsHaveMatchingValues(input.Certificate.Spec.SecretTemplate.Annotations, input.Secret.Annotations); !match {
+		return SecretTemplateMismatch, "Certificate's SecretTemplate Annotations missing or incorrect value on Secret", true
 	}
 
-	for kSpec, vSpec := range input.Certificate.Spec.SecretTemplate.Labels {
-		if v, ok := input.Secret.Labels[kSpec]; !ok || v != vSpec {
-			return SecretTemplateMismatch, "Certificate's SecretTemplate Labels missing or incorrect value on Secret", true
-		}
+	if match, _ := mapsHaveMatchingValues(input.Certificate.Spec.SecretTemplate.Labels, input.Secret.Labels); !match {
+		return SecretTemplateMismatch, "Certificate's SecretTemplate Labels missing or incorrect value on Secret", true
 	}
 
 	return "", "", false
@@ -472,21 +470,21 @@ func SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string)
 		if !managedLabels.Equal(expLabels) {
 			missingLabels := expLabels.Difference(managedLabels)
 			if len(missingLabels) > 0 {
-				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Labels: %v", missingLabels.UnsortedList()), true
+				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Labels: %v", sets.List(missingLabels)), true
 			}
 
 			extraLabels := managedLabels.Difference(expLabels)
-			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Labels: %v", extraLabels.UnsortedList()), true
+			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Labels: %v", sets.List(extraLabels)), true
 		}
 
 		if !managedAnnotations.Equal(expAnnotations) {
 			missingAnnotations := expAnnotations.Difference(managedAnnotations)
 			if len(missingAnnotations) > 0 {
-				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Annotations: %v", missingAnnotations.UnsortedList()), true
+				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Annotations: %v", sets.List(missingAnnotations)), true
 			}
 
 			extraAnnotations := managedAnnotations.Difference(expAnnotations)
-			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", extraAnnotations.UnsortedList()), true
+			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", sets.List(extraAnnotations)), true
 		}
 
 		return "", "", false
@@ -543,21 +541,21 @@ func SecretSecretTemplateManagedFieldsMismatch(fieldManager string) Func {
 		if !managedLabels.Equal(expLabels) {
 			missingLabels := expLabels.Difference(managedLabels)
 			if len(missingLabels) > 0 {
-				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Labels: %v", missingLabels.UnsortedList()), true
+				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Labels: %v", sets.List(missingLabels)), true
 			}
 
 			extraLabels := managedLabels.Difference(expLabels)
-			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Labels: %v", extraLabels.UnsortedList()), true
+			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Labels: %v", sets.List(extraLabels)), true
 		}
 
 		if !managedAnnotations.Equal(expAnnotations) {
 			missingAnnotations := expAnnotations.Difference(managedAnnotations)
 			if len(missingAnnotations) > 0 {
-				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Annotations: %v", missingAnnotations.UnsortedList()), true
+				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Annotations: %v", sets.List(missingAnnotations)), true
 			}
 
 			extraAnnotations := managedAnnotations.Difference(expAnnotations)
-			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", extraAnnotations.UnsortedList()), true
+			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", sets.List(extraAnnotations)), true
 		}
 
 		return "", "", false
@@ -580,23 +578,20 @@ func SecretBaseLabelsMismatch(input Input) (string, string, bool) {
 	return SecretManagedMetadataMismatch, fmt.Sprintf("wrong base label %s value %q, expected \"true\"", cmapi.PartOfCertManagerControllerLabelKey, value), true
 }
 
-// SecretCertificateDetailsAnnotationsMismatch - When the certificate details annotations are
-// not matching, the secret is updated.
-// NOTE: The presence of the certificate details annotations is checked
-// by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch function.
+// SecretCertificateDetailsAnnotationsMismatch returns a validation violation when
+// annotations on the Secret do not match the details of the x509 certificate that
+// is stored in the Secret. This function will only compare the annotations that
+// already exist on the Secret and are also present in the certificate metadata.
+// NOTE: Missing and extra annotations are detected by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch
+// function instead.
 func SecretCertificateDetailsAnnotationsMismatch(input Input) (string, string, bool) {
 	dataAnnotations, err := certificateDataAnnotationsForSecret(input.Secret)
 	if err != nil {
 		return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
 	}
 
-	for k, v := range dataAnnotations {
-		existing, ok := input.Secret.Annotations[k]
-		if !ok || existing == v {
-			continue
-		}
-
-		return SecretManagedMetadataMismatch, fmt.Sprintf("Secret metadata %s does not match certificate metadata %s", input.Secret.Annotations[k], v), true
+	if match, key := mapsHaveMatchingValues(dataAnnotations, input.Secret.Annotations); !match {
+		return SecretTemplateMismatch, fmt.Sprintf("Secret metadata %s does not match certificate metadata %s", input.Secret.Annotations[key], dataAnnotations[key]), true
 	}
 
 	return "", "", false
@@ -774,4 +769,29 @@ func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
 
 		return "", "", false
 	}
+}
+
+// mapsHaveMatchingValues returns true if the two maps have the same values for
+// all common keys. Otherwise, the first key for which the values differ is returned.
+// This function is stable and will always return the same key if the maps are
+// the same.
+func mapsHaveMatchingValues[Key cmp.Ordered, Value comparable](a, b map[Key]Value) (bool, Key) {
+	keys := make([]Key, 0, len(a))
+	for k := range a {
+		if _, ok := b[k]; !ok {
+			continue
+		}
+
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
+	for _, k := range keys {
+		if b[k] != a[k] {
+			return false, k
+		}
+	}
+
+	var zero Key
+	return true, zero
 }
