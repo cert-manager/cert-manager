@@ -23,6 +23,7 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 )
@@ -111,8 +112,8 @@ func TestParseSingleCertificateChain(t *testing.T) {
 			pems = append(pems, cert.pem)
 		}
 
-		for i := len(pems) - 1; i >= 0; i-- {
-			thousandCertBundle.ChainPEM = joinPEM(thousandCertBundle.ChainPEM, pems[i])
+		for _, pem := range slices.Backward(pems) {
+			thousandCertBundle.ChainPEM = joinPEM(thousandCertBundle.ChainPEM, pem)
 		}
 	}
 
