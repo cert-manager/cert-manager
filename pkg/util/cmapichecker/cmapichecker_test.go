@@ -59,7 +59,6 @@ const (
 
 func TestCheck(t *testing.T) {
 	type testT struct {
-		apisResponse          func(t *testing.T, r *http.Request) (int, []byte)
 		discoveryResponse     func(t *testing.T, r *http.Request) (int, []byte)
 		createValidResponse   func(t *testing.T, r *http.Request) (int, []byte)
 		createInvalidResponse func(t *testing.T, r *http.Request) (int, []byte)
@@ -70,22 +69,11 @@ func TestCheck(t *testing.T) {
 
 	tests := map[string]testT{
 		"no errors": {},
-		"without any cert-manager CRDs installed (missing from /apis)": {
-			apisResponse: func(t *testing.T, r *http.Request) (int, []byte) {
-				return http.StatusOK, []byte(`{
-					"kind": "APIGroupList",
-					"apiVersion": "v1",
-					"groups": []
-				}`)
-			},
-			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in group "cert-manager.io"`,
-			expectedSimpleError: ErrCertManagerCRDsNotFound.Error(),
-		},
 		"without any cert-manager CRDs installed (404)": {
 			discoveryResponse: func(t *testing.T, r *http.Request) (int, []byte) {
 				return http.StatusNotFound, nil
 			},
-			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in group "cert-manager.io"`,
+			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in version "cert-manager.io/v1"`,
 			expectedSimpleError: ErrCertManagerCRDsNotFound.Error(),
 		},
 		"without any cert-manager CRDs installed (empty list)": {
@@ -97,7 +85,7 @@ func TestCheck(t *testing.T) {
 					"resources":[]
 				}`)
 			},
-			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in group "cert-manager.io"`,
+			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in version "cert-manager.io/v1"`,
 			expectedSimpleError: ErrCertManagerCRDsNotFound.Error(),
 		},
 		"without certificate request CRD installed": {
@@ -117,14 +105,14 @@ func TestCheck(t *testing.T) {
 					]
 				}`)
 			},
-			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in group "cert-manager.io"`,
+			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in version "cert-manager.io/v1"`,
 			expectedSimpleError: ErrCertManagerCRDsNotFound.Error(),
 		},
 		"with missing certificate request endpoint": {
 			discoveryResponse: func(t *testing.T, r *http.Request) (int, []byte) {
 				return http.StatusNotFound, nil
 			},
-			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in group "cert-manager.io"`,
+			expectedError:       `error finding the scope of the object: failed to get restmapping: no matches for kind "CertificateRequest" in version "cert-manager.io/v1"`,
 			expectedSimpleError: ErrCertManagerCRDsNotFound.Error(),
 		},
 		"dry-run certificate request was not mutated": {
@@ -256,28 +244,6 @@ func TestCheck(t *testing.T) {
 			// fake https server to simulate the Kubernetes API server responses
 			mockKubernetesAPI := func(t *testing.T, r *http.Request) (int, []byte) {
 				switch r.URL.Path {
-				case "/api":
-					return http.StatusOK, []byte(`{"kind":"APIVersions","versions":["v1"]}`)
-				case "/apis":
-					if test.apisResponse != nil {
-						return test.apisResponse(t, r)
-					}
-
-					return http.StatusOK, []byte(`{
-						"kind": "APIGroupList",
-						"apiVersion": "v1",
-						"groups": [{
-							"name": "cert-manager.io",
-							"versions": [{
-								"groupVersion": "cert-manager.io/v1",
-								"version": "v1"
-							}],
-							"preferredVersion": {
-								"groupVersion": "cert-manager.io/v1",
-								"version": "v1"
-							}
-						}]
-					}`)
 				case "/apis/cert-manager.io/v1":
 					if test.discoveryResponse != nil {
 						return test.discoveryResponse(t, r)

@@ -3193,28 +3193,37 @@ func TestSync(t *testing.T) {
 			var expectedActions []testpkg.Action
 			for _, cr := range test.ExpectedCreate {
 				expectedActions = append(expectedActions,
-					testpkg.NewAction(coretesting.NewCreateAction(
+					testpkg.NewAction(coretesting.NewCreateActionWithOptions(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
 						cr,
+						metav1.CreateOptions{
+							FieldManager: "cert-manager-test",
+						},
 					)),
 				)
 			}
 			for _, cr := range test.ExpectedUpdate {
 				expectedActions = append(expectedActions,
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateActionWithOptions(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
 						cr,
+						metav1.UpdateOptions{
+							// TODO: set field manager here too
+						},
 					)),
 				)
 			}
 			for _, cr := range test.ExpectedDelete {
 				expectedActions = append(expectedActions,
-					testpkg.NewAction(coretesting.NewDeleteAction(
+					testpkg.NewAction(coretesting.NewDeleteActionWithOptions(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
 						cr.Name,
+						metav1.DeleteOptions{
+							// TODO: set field manager here too
+						},
 					)))
 			}
 			b := &testpkg.Builder{

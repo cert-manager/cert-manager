@@ -63,6 +63,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		roleId, secretId, err = setup.CreateAppRole(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
+		issuerName = ""
 		vaultSecretName = ""
 
 		By("creating a service account for Vault authentication")

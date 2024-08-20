@@ -743,7 +743,7 @@ func TestProcessItem(t *testing.T) {
 
 			// Enable any features for a particular test
 			for feature, value := range test.featuresFlags {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature, value)()
+				featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature, value)
 			}
 
 			// Start the informers and begin processing updates

@@ -45,7 +45,7 @@ func TestUpdateObjectSSA(t *testing.T) {
 		"https://github.com/kubernetes/client-go/issues/970",
 		"https://github.com/kubernetes/client-go/issues/992",
 	)
-	defer featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)()
+	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
 	runUpdateObjectTests(t)
 }
 
