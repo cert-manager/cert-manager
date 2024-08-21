@@ -27,6 +27,7 @@ import (
 	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -933,7 +934,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	gotScheduled := false
 	fakeScheduler := schedulertest.FakeScheduler{
-		AddFunc: func(obj interface{}, duration time.Duration) {
+		AddFunc: func(obj types.NamespacedName, duration time.Duration) {
 			gotScheduled = true
 		},
 	}

@@ -36,6 +36,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -578,7 +579,9 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.ProcessItem(context.Background(), test.csr.Name)
+	err := controller.ProcessItem(context.Background(), types.NamespacedName{
+		Name: test.csr.Name,
+	})
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

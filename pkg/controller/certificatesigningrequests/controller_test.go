@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -34,7 +35,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/fake"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -75,7 +75,7 @@ func TestController(t *testing.T) {
 		// key that should be passed to ProcessItem. If not set, the
 		// 'namespace/name' of the 'CertificateSigningRequest' field will be used.
 		// If neither is set, the key will be "".
-		key string
+		key types.NamespacedName
 
 		// CertificateSigningRequest to be synced for the test. If not set, the
 		// 'key' will be passed to ProcessItem instead.
@@ -107,13 +107,19 @@ func TestController(t *testing.T) {
 			sarReaction: sarReactionExpectNoCall,
 		},
 		"do nothing if an invalid 'key' is used": {
-			key:         "abc/def/ghi",
+			key: types.NamespacedName{
+				Namespace: "abc",
+				Name:      "def/ghi",
+			},
 			signerType:  apiutil.IssuerCA,
 			signerImpl:  signerExpectNoCall,
 			sarReaction: sarReactionExpectNoCall,
 		},
 		"do nothing if a key references a CertificateSigningRequest that does not exist": {
-			key:         "namespace/name",
+			key: types.NamespacedName{
+				Namespace: "namespace",
+				Name:      "name",
+			},
 			signerType:  apiutil.IssuerCA,
 			signerImpl:  signerExpectNoCall,
 			sarReaction: sarReactionExpectNoCall,
@@ -621,10 +627,10 @@ func TestController(t *testing.T) {
 			defer builder.Stop()
 
 			key := test.key
-			if key == "" && test.existingCSR != nil {
-				key, err = controllerpkg.KeyFunc(test.existingCSR)
-				if err != nil {
-					t.Fatal(err)
+			if key == (types.NamespacedName{}) && test.existingCSR != nil {
+				key = types.NamespacedName{
+					Name:      test.existingCSR.Name,
+					Namespace: test.existingCSR.Namespace,
 				}
 			}
 

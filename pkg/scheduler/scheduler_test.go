@@ -99,7 +99,7 @@ func TestAdd(t *testing.T) {
 			waitSubtest := make(chan struct{})
 			return func(t *testing.T) {
 				startTime := after.currentTime
-				queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
+				queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj string) {
 					defer wg.Done()
 					durationEarly := test.duration - after.currentTime.Sub(startTime)
 
@@ -111,7 +111,7 @@ func TestAdd(t *testing.T) {
 					}
 					waitSubtest <- struct{}{}
 				})
-				queue.(*scheduledWorkQueue).afterFunc = after.AfterFunc
+				queue.(*scheduledWorkQueue[string]).afterFunc = after.AfterFunc
 				queue.Add(test.obj, test.duration)
 				after.warp(test.duration + time.Millisecond)
 				<-waitSubtest
@@ -140,10 +140,10 @@ func TestForget(t *testing.T) {
 		t.Run(test.obj, func(test testT) func(*testing.T) {
 			return func(t *testing.T) {
 				defer wg.Done()
-				queue := NewScheduledWorkQueue(clock.RealClock{}, func(_ interface{}) {
+				queue := NewScheduledWorkQueue(clock.RealClock{}, func(_ string) {
 					t.Errorf("scheduled function should never be called")
 				})
-				queue.(*scheduledWorkQueue).afterFunc = after.AfterFunc
+				queue.(*scheduledWorkQueue[string]).afterFunc = after.AfterFunc
 				queue.Add(test.obj, test.duration)
 				queue.Forget(test.obj)
 				after.warp(test.duration * 2)
@@ -160,10 +160,10 @@ func TestConcurrentAdd(t *testing.T) {
 	after := newMockAfter()
 
 	var wg sync.WaitGroup
-	queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
+	queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj int) {
 		t.Fatalf("should not be called, but was called with %v", obj)
 	})
-	queue.(*scheduledWorkQueue).afterFunc = after.AfterFunc
+	queue.(*scheduledWorkQueue[int]).afterFunc = after.AfterFunc
 
 	for i := 0; i < 1000; i++ {
 		wg.Add(1)

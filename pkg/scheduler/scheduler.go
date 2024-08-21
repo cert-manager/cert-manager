@@ -54,24 +54,25 @@ func afterFunc(c clock.Clock, d time.Duration, f func()) (cancel func()) {
 }
 
 // ProcessFunc is a function to process an item in the work queue.
-type ProcessFunc func(interface{})
+type ProcessFunc[T comparable] func(T)
 
 // ScheduledWorkQueue is an interface to describe a queue that will execute the
 // given ProcessFunc with the object given to Add once the time.Duration is up,
 // since the time of calling Add.
-type ScheduledWorkQueue interface {
+type ScheduledWorkQueue[T comparable] interface {
 	// Add will add an item to this queue, executing the ProcessFunc after the
 	// Duration has come (since the time Add was called). If an existing Timer
 	// for obj already exists, the previous timer will be cancelled.
-	Add(interface{}, time.Duration)
+	Add(T, time.Duration)
+
 	// Forget will cancel the timer for the given object, if the timer exists.
-	Forget(interface{})
+	Forget(T)
 }
 
-type scheduledWorkQueue struct {
-	processFunc ProcessFunc
+type scheduledWorkQueue[T comparable] struct {
+	processFunc ProcessFunc[T]
 	clock       clock.Clock
-	work        map[interface{}]func()
+	work        map[T]func()
 	workLock    sync.Mutex
 
 	// Testing purposes.
@@ -79,11 +80,11 @@ type scheduledWorkQueue struct {
 }
 
 // NewScheduledWorkQueue will create a new workqueue with the given processFunc
-func NewScheduledWorkQueue(clock clock.Clock, processFunc ProcessFunc) ScheduledWorkQueue {
-	return &scheduledWorkQueue{
+func NewScheduledWorkQueue[T comparable](clock clock.Clock, processFunc ProcessFunc[T]) ScheduledWorkQueue[T] {
+	return &scheduledWorkQueue[T]{
 		processFunc: processFunc,
 		clock:       clock,
-		work:        make(map[interface{}]func()),
+		work:        make(map[T]func()),
 		workLock:    sync.Mutex{},
 
 		afterFunc: afterFunc,
@@ -93,7 +94,7 @@ func NewScheduledWorkQueue(clock clock.Clock, processFunc ProcessFunc) Scheduled
 // Add will add an item to this queue, executing the ProcessFunc after the
 // Duration has come (since the time Add was called). If an existing Timer for
 // obj already exists, the previous timer will be cancelled.
-func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
+func (s *scheduledWorkQueue[T]) Add(obj T, duration time.Duration) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
 
@@ -109,7 +110,7 @@ func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
 }
 
 // Forget will cancel the timer for the given object, if the timer exists.
-func (s *scheduledWorkQueue) Forget(obj interface{}) {
+func (s *scheduledWorkQueue[T]) Forget(obj T) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
 

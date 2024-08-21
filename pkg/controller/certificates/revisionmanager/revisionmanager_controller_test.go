@@ -29,7 +29,6 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -52,7 +51,7 @@ func TestProcessItem(t *testing.T) {
 		// key that should be passed to ProcessItem.
 		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
 		// if neither is set, the key will be ""
-		key string
+		key types.NamespacedName
 
 		// Certificate to be synced for the test.
 		// if not set, the 'key' will be passed to ProcessItem instead.
@@ -68,10 +67,16 @@ func TestProcessItem(t *testing.T) {
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
-			key: "abc/def/ghi",
+			key: types.NamespacedName{
+				Namespace: "abc",
+				Name:      "def/ghi",
+			},
 		},
 		"do nothing if a key references a Certificate that does not exist": {
-			key: "namespace/name",
+			key: types.NamespacedName{
+				Namespace: "namespace",
+				Name:      "name",
+			},
 		},
 		"do nothing if Certificate is not in a Ready=True state": {
 			certificate: gen.CertificateFrom(baseCrt,
@@ -239,10 +244,10 @@ func TestProcessItem(t *testing.T) {
 			defer builder.Stop()
 
 			key := test.key
-			if key == "" && test.certificate != nil {
-				key, err = controllerpkg.KeyFunc(test.certificate)
-				if err != nil {
-					t.Fatal(err)
+			if key == (types.NamespacedName{}) && test.certificate != nil {
+				key = types.NamespacedName{
+					Name:      test.certificate.Name,
+					Namespace: test.certificate.Namespace,
 				}
 			}
 
