@@ -87,6 +87,13 @@ For example:
 imagePullSecrets:
   - name: "image-pull-secret"
 ```
+#### **global.imageRegistry** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+Global image registry
 #### **global.commonLabels** ~ `object`
 > Default value:
 > ```yaml
@@ -252,13 +259,17 @@ A comma-separated list of feature gates that should be enabled on the controller
 
 The maximum number of challenges that can be scheduled as 'processing' at once.
 #### **image.registry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
 
 The container registry to pull the manager image from.
 
 #### **image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-controller
+> jetstack/cert-manager-controller
 > ```
 
 The container image for the cert-manager controller.
@@ -1149,13 +1160,17 @@ Optionally set the IP family policy for the controller Service to configure dual
 
 Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
 
 The container registry to pull the webhook image from.
 
 #### **webhook.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-webhook
+> jetstack/cert-manager-webhook
 > ```
 
 The container image for the cert-manager webhook
@@ -1539,13 +1554,17 @@ Optional additional labels to add to the CA Injector Pods.
 
 Optional additional labels to add to the CA Injector metrics Service.
 #### **cainjector.image.registry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
 
 The container registry to pull the cainjector image from.
 
 #### **cainjector.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-cainjector
+> jetstack/cert-manager-cainjector
 > ```
 
 The container image for the cert-manager cainjector
@@ -1620,13 +1639,17 @@ enableServiceLinks indicates whether information about services should be inject
 ### ACME Solver
 
 #### **acmesolver.image.registry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
 
 The container registry to pull the acmesolver image from.
 
 #### **acmesolver.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-acmesolver
+> jetstack/cert-manager-acmesolver
 > ```
 
 The container image for the cert-manager acmesolver.
@@ -1789,13 +1812,17 @@ tolerations:
 
 Optional additional labels to add to the startupapicheck Pods.
 #### **startupapicheck.image.registry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
 
 The container registry to pull the startupapicheck image from.
 
 #### **startupapicheck.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-startupapicheck
+> jetstack/cert-manager-startupapicheck
 > ```
 
 The container image for the cert-manager startupapicheck.

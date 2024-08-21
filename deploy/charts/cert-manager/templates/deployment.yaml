@@ -77,7 +77,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-controller
-          image: "{{ template "image" (tuple .Values.image $.Chart.AppVersion) }}"
+          image: "{{ template "image" (dict "image" .Values.image "appVersion" $.Chart.AppVersion "global" .Values.global) }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
           {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}

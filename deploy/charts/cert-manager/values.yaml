@@ -12,6 +12,9 @@ global:
   #    - name: "image-pull-secret"
   imagePullSecrets: []
 
+  # Global image registry
+  imageRegistry: "" 
+
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
@@ -138,11 +141,11 @@ maxConcurrentChallenges: 60
 image:
   # The container registry to pull the manager image from.
   # +docs:property
-  # registry: quay.io
+  registry: quay.io
 
   # The container image for the cert-manager controller.
   # +docs:property
-  repository: quay.io/jetstack/cert-manager-controller
+  repository: jetstack/cert-manager-controller
 
   # Override the image tag to deploy by setting this variable.
   # If no value is set, the chart's appVersion is used.
@@ -850,11 +853,11 @@ webhook:
   image:
     # The container registry to pull the webhook image from.
     # +docs:property
-    # registry: quay.io
+    registry: quay.io
 
     # The container image for the cert-manager webhook
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-webhook
+    repository: jetstack/cert-manager-webhook
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion will be used.
@@ -1150,11 +1153,11 @@ cainjector:
   image:
     # The container registry to pull the cainjector image from.
     # +docs:property
-    # registry: quay.io
+    registry: quay.io
 
     # The container image for the cert-manager cainjector
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-cainjector
+    repository: jetstack/cert-manager-cainjector
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion will be used.
@@ -1209,11 +1212,11 @@ acmesolver:
   image:
     # The container registry to pull the acmesolver image from.
     # +docs:property
-    # registry: quay.io
+    registry: quay.io
 
     # The container image for the cert-manager acmesolver.
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-acmesolver
+    repository: jetstack/cert-manager-acmesolver
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion is used.
@@ -1335,11 +1338,11 @@ startupapicheck:
   image:
     # The container registry to pull the startupapicheck image from.
     # +docs:property
-    # registry: quay.io
+    registry: quay.io
 
     # The container image for the cert-manager startupapicheck.
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-startupapicheck
+    repository: jetstack/cert-manager-startupapicheck
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion is used.

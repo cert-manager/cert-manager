@@ -211,11 +211,12 @@
       "type": "string"
     },
     "helm-values.acmesolver.image.registry": {
+      "default": "quay.io",
       "description": "The container registry to pull the acmesolver image from.",
       "type": "string"
     },
     "helm-values.acmesolver.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-acmesolver",
+      "default": "jetstack/cert-manager-acmesolver",
       "description": "The container image for the cert-manager acmesolver.",
       "type": "string"
     },
@@ -405,11 +406,12 @@
       "type": "string"
     },
     "helm-values.cainjector.image.registry": {
+      "default": "quay.io",
       "description": "The container registry to pull the cainjector image from.",
       "type": "string"
     },
     "helm-values.cainjector.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-cainjector",
+      "default": "jetstack/cert-manager-cainjector",
       "description": "The container image for the cert-manager cainjector",
       "type": "string"
     },
@@ -678,6 +680,9 @@
         "imagePullSecrets": {
           "$ref": "#/$defs/helm-values.global.imagePullSecrets"
         },
+        "imageRegistry": {
+          "$ref": "#/$defs/helm-values.global.imageRegistry"
+        },
         "leaderElection": {
           "$ref": "#/$defs/helm-values.global.leaderElection"
         },
@@ -709,6 +714,11 @@
       "description": "Reference to one or more secrets to be used when pulling images. For more information, see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).\n\nFor example:\nimagePullSecrets:\n  - name: \"image-pull-secret\"",
       "items": {},
       "type": "array"
+    },
+    "helm-values.global.imageRegistry": {
+      "default": "",
+      "description": "Global image registry",
+      "type": "string"
     },
     "helm-values.global.leaderElection": {
       "additionalProperties": false,
@@ -848,11 +858,12 @@
       "type": "string"
     },
     "helm-values.image.registry": {
+      "default": "quay.io",
       "description": "The container registry to pull the manager image from.",
       "type": "string"
     },
     "helm-values.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-controller",
+      "default": "jetstack/cert-manager-controller",
       "description": "The container image for the cert-manager controller.",
       "type": "string"
     },
@@ -1394,11 +1405,12 @@
       "type": "string"
     },
     "helm-values.startupapicheck.image.registry": {
+      "default": "quay.io",
       "description": "The container registry to pull the startupapicheck image from.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-startupapicheck",
+      "default": "jetstack/cert-manager-startupapicheck",
       "description": "The container image for the cert-manager startupapicheck.",
       "type": "string"
     },
@@ -1770,11 +1782,12 @@
       "type": "string"
     },
     "helm-values.webhook.image.registry": {
+      "default": "quay.io",
       "description": "The container registry to pull the webhook image from.",
       "type": "string"
     },
     "helm-values.webhook.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-webhook",
+      "default": "jetstack/cert-manager-webhook",
       "description": "The container image for the cert-manager webhook",
       "type": "string"
     },
