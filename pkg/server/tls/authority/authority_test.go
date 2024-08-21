@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -53,7 +54,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 		CADuration:      365 * 24 * time.Hour,
 		LeafDuration:    7 * 24 * time.Hour,
 
-		newClient: func() (kubernetes.Interface, error) {
+		newClient: func(_ *rest.Config) (kubernetes.Interface, error) {
 			return cs, nil
 		},
 	}
@@ -290,7 +291,7 @@ func Test__caRequiresRegeneration(t *testing.T) {
 				),
 			},
 			expect:       true,
-			expectReason: "Root CA certificate is nearing expiry.",
+			expectReason: "CA certificate is nearing expiry.",
 		},
 		{
 			name: "Root CA certificate is ALMOST nearing expiry",
@@ -315,7 +316,7 @@ func Test__caRequiresRegeneration(t *testing.T) {
 				),
 			},
 			expect:       true,
-			expectReason: "Root CA certificate is nearing expiry.",
+			expectReason: "CA certificate is nearing expiry.",
 		},
 		{
 			name: "Ok",
