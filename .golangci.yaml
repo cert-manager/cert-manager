@@ -3,7 +3,6 @@ issues:
     - linters:
         - govet
         - usestdlibvars
-        - misspell
         - dogsled
         - promlinter
         - errname
