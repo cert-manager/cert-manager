@@ -184,7 +184,7 @@ type mockWorkqueue struct {
 	callsToAdd []interface{}
 }
 
-var _ workqueue.Interface = &mockWorkqueue{}
+var _ workqueue.TypedInterface[any] = &mockWorkqueue{}
 
 func (m *mockWorkqueue) Add(arg0 interface{}) {
 	m.callsToAdd = append(m.callsToAdd, arg0)

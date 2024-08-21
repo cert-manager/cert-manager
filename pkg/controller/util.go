@@ -40,14 +40,14 @@ var KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 // DefaultItemBasedRateLimiter returns a new rate limiter with base delay of 5
 // seconds, max delay of 5 minutes.
-func DefaultItemBasedRateLimiter() workqueue.RateLimiter {
-	return workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*5)
+func DefaultItemBasedRateLimiter() workqueue.TypedRateLimiter[any] {
+	return workqueue.NewTypedItemExponentialFailureRateLimiter[any](time.Second*5, time.Minute*5)
 }
 
 // HandleOwnedResourceNamespacedFunc returns a function thataccepts a
 // Kubernetes object and adds its owner references to the workqueue.
 // https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
-func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimitingInterface, ownerGVK schema.GroupVersionKind, get func(namespace, name string) (interface{}, error)) func(obj interface{}) {
+func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.TypedRateLimitingInterface[any], ownerGVK schema.GroupVersionKind, get func(namespace, name string) (interface{}, error)) func(obj interface{}) {
 	return func(obj interface{}) {
 		log := log.WithName("handleOwnedResource")
 
@@ -101,7 +101,7 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 // QueuingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply queues objects that are added/updated/deleted.
 type QueuingEventHandler struct {
-	Queue workqueue.RateLimitingInterface
+	Queue workqueue.TypedRateLimitingInterface[any]
 }
 
 // Enqueue adds a key for an object to the workqueue.

@@ -134,7 +134,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 
 			builder.Start()
 
-			queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+			queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[any]())
 			handleSecretReferenceWorkFunc(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, queue)(test.secret)
 			require.Equal(t, len(test.expectedQueue), queue.Len())
 			var actualQueue []string

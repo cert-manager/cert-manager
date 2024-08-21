@@ -68,7 +68,7 @@ type controller struct {
 
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[any]
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -82,12 +82,12 @@ type controller struct {
 	objectUpdater
 }
 
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
 	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
+	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewTypedItemExponentialFailureRateLimiter[any](time.Second*5, time.Minute*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
 	challengeInformer := ctx.SharedInformerFactory.Acme().V1().Challenges()

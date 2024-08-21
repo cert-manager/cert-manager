@@ -41,7 +41,7 @@ import (
 func handleSecretReferenceWorkFunc(log logr.Logger,
 	lister clientv1.CertificateRequestLister,
 	helper issuer.Helper,
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[any],
 ) func(obj any) {
 	return func(obj any) {
 		log := log.WithName("handleSecretReference")

@@ -42,7 +42,7 @@ type controller struct {
 	sync          shimhelper.SyncFn
 }
 
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	cmShared := ctx.SharedInformerFactory
 
 	ingressInformer := ctx.KubeSharedInformerFactory.Ingresses()
@@ -124,7 +124,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 //	    name: ingress-1
 //	    blockOwnerDeletion: true
 //	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interface{}) {
+func certificateHandler(queue workqueue.TypedRateLimitingInterface[any]) func(obj interface{}) {
 	return func(obj interface{}) {
 		cert, ok := obj.(*cmapi.Certificate)
 		if !ok {

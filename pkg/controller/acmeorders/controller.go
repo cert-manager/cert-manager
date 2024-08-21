@@ -67,7 +67,7 @@ type controller struct {
 
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[any]
 
 	// scheduledWorkQueue holds items to be re-queued after a period of time.
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
@@ -78,12 +78,14 @@ func NewController(
 	log logr.Logger,
 	ctx *controllerpkg.Context,
 	isNamespaced bool,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+) (*controller, workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 
 	// Create a queue used to queue up Orders to be processed.
-	queue := workqueue.NewNamedRateLimitingQueue(
-		workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30),
-		ControllerName,
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(
+		workqueue.NewTypedItemExponentialFailureRateLimiter[any](time.Second*5, time.Minute*30),
+		workqueue.TypedRateLimitingQueueConfig[any]{
+			Name: ControllerName,
+		},
 	)
 
 	// Create a scheduledWorkQueue to schedule Orders for re-processing.
@@ -204,7 +206,7 @@ type controllerWrapper struct {
 // Register registers a controller, created using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	// Construct a new named logger to be reused throughout the controller.
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 

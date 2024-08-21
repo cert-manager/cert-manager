@@ -54,7 +54,7 @@ type SignerConstructor func(*controllerpkg.Context) Signer
 // informers not covered in the main shared controller implementation.
 // The returned set of InformerSyncs will be waited on when the controller
 // starts.
-type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.RateLimitingInterface) ([]cache.InformerSynced, error)
+type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.TypedRateLimitingInterface[any]) ([]cache.InformerSynced, error)
 
 // Controller is a base Kubernetes CertificateSigningRequest controller. It is
 // responsible for orchestrating and performing shared operations that all
@@ -72,7 +72,7 @@ type Controller struct {
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
 
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[any]
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -113,7 +113,7 @@ func New(signerType string, signerConstructor SignerConstructor, registerExtraIn
 	}
 }
 
-func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	componentName := "certificatesigningrequests-" + c.signerType
 
 	// construct a new named logger to be reused throughout the controller

@@ -86,9 +86,9 @@ func NewController(
 	log logr.Logger,
 	ctx *controllerpkg.Context,
 	shouldReissue policies.Func,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+) (*controller, workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	// create a queue used to queue up items to be processed
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
+	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewTypedItemExponentialFailureRateLimiter[any](time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
 	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
@@ -355,7 +355,7 @@ type controllerWrapper struct {
 	*controller
 }
 
-func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 

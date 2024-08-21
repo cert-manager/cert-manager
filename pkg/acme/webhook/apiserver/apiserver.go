@@ -162,7 +162,7 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		}
 		s.GenericAPIServer.AddPostStartHookOrDie(postStartName,
 			func(context genericapiserver.PostStartHookContext) error {
-				return solver.Initialize(c.restConfig, context.StopCh)
+				return solver.Initialize(c.restConfig, context.Done())
 			},
 		)
 	}

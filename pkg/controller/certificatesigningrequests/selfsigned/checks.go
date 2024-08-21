@@ -43,7 +43,7 @@ import (
 func handleSecretReferenceWorkFunc(log logr.Logger,
 	lister clientv1.CertificateSigningRequestLister,
 	helper issuer.Helper,
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[any],
 	issuerOptions controllerpkg.IssuerOptions,
 ) func(obj any) {
 	return func(obj any) {

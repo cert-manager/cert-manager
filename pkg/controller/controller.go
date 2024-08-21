@@ -40,7 +40,7 @@ type runDurationFunc struct {
 }
 
 type queueingController interface {
-	Register(*Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error)
+	Register(*Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error)
 	ProcessItem(ctx context.Context, key string) error
 }
 
@@ -50,7 +50,7 @@ func NewController(
 	syncFunc func(ctx context.Context, key string) error,
 	mustSync []cache.InformerSynced,
 	runDurationFuncs []runDurationFunc,
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[any],
 ) Interface {
 	return &controller{
 		name:             name,
@@ -82,7 +82,7 @@ type controller struct {
 
 	// queue is a reference to the queue used to enqueue resources
 	// to be processed
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[any]
 
 	// metrics is used to expose Prometheus, shared by all controllers
 	metrics *metrics.Metrics

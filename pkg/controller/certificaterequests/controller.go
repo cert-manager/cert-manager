@@ -54,7 +54,7 @@ type IssuerConstructor func(*controllerpkg.Context) Issuer
 // covered in the main shared controller implementation.
 // The returned set of InformerSyncs will be waited on when the controller
 // starts.
-type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.RateLimitingInterface) ([]cache.InformerSynced, error)
+type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.TypedRateLimitingInterface[any]) ([]cache.InformerSynced, error)
 
 // Controller is an implementation of the queueingController for
 // certificate requests.
@@ -74,7 +74,7 @@ type Controller struct {
 	// more details at https://github.com/cert-manager/cert-manager/issues/5216
 	secretLister internalinformers.SecretLister
 
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[any]
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -123,7 +123,7 @@ func New(issuerType string, issuerConstructor IssuerConstructor, registerExtraIn
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	componentName := "certificaterequests-issuer-" + c.issuerType
 
 	// construct a new named logger to be reused throughout the controller

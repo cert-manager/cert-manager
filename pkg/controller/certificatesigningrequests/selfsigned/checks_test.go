@@ -128,7 +128,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 
 			builder.Start()
 
-			queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+			queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[any](), workqueue.TypedRateLimitingQueueConfig[any]{})
 			handleSecretReferenceWorkFunc(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, queue,
 				controllerpkg.IssuerOptions{ClusterResourceNamespace: "test-namespace"},
 			)(test.secret)

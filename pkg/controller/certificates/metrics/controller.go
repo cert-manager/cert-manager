@@ -50,9 +50,9 @@ type controller struct {
 	metrics *metrics.Metrics
 }
 
-func NewController(ctx *controllerpkg.Context) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func NewController(ctx *controllerpkg.Context) (*controller, workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	// create a queue used to queue up items to be processed
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
+	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewTypedItemExponentialFailureRateLimiter[any](time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
 	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
@@ -99,7 +99,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[any], []cache.InformerSynced, error) {
 	ctrl, queue, mustSync, err := NewController(ctx)
 	c.controller = ctrl
 	return queue, mustSync, err

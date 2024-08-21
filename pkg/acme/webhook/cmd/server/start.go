@@ -142,5 +142,5 @@ func (o WebhookServerOptions) RunWebhookServer(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return server.GenericAPIServer.PrepareRun().Run(ctx.Done())
+	return server.GenericAPIServer.PrepareRun().RunWithContext(ctx)
 }

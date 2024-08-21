@@ -79,7 +79,7 @@ func init() {
 
 				// Handle informed Secrets which may be referenced by the
 				// "experimental.cert-manager.io/private-key-secret-name" annotation.
-				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.TypedRateLimitingInterface[any]) ([]cache.InformerSynced, error) {
 					secretInformer := ctx.KubeSharedInformerFactory.Secrets().Informer()
 					certificateSigningRequestLister := ctx.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 					helper := issuer.NewHelper(

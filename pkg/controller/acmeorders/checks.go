@@ -29,7 +29,7 @@ import (
 )
 
 func handleGenericIssuerFunc(
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[any],
 	orderLister cmacmelisters.OrderLister,
 ) func(interface{}) {
 	return func(obj interface{}) {
