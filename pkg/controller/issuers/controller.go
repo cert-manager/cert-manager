@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -40,7 +41,7 @@ type controller struct {
 
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -62,12 +63,17 @@ type controller struct {
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
 	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+	c.queue = workqueue.NewTypedRateLimitingQueueWithConfig(
+		controllerpkg.DefaultItemBasedRateLimiter(),
+		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+			Name: ControllerName,
+		},
+	)
 
 	// obtain references to all the informers used by this controller
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
@@ -116,22 +122,16 @@ func (c *controller) secretDeleted(obj interface{}) {
 		return
 	}
 	for _, iss := range issuers {
-		key, err := keyFunc(iss)
-		if err != nil {
-			log.Error(err, "error computing key for resource")
-			continue
-		}
-		c.queue.AddRateLimited(key)
+		c.queue.AddRateLimited(types.NamespacedName{
+			Name:      iss.Name,
+			Namespace: iss.Namespace,
+		})
 	}
 }
 
-func (c *controller) ProcessItem(ctx context.Context, key string) error {
+func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx)
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		log.Error(err, "invalid resource key")
-		return nil
-	}
+	namespace, name := key.Namespace, key.Name
 
 	issuer, err := c.issuerLister.Issuers(namespace).Get(name)
 	if err != nil {
@@ -146,8 +146,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	ctx = logf.NewContext(ctx, logf.WithResource(log, issuer))
 	return c.Sync(ctx, issuer)
 }
-
-var keyFunc = controllerpkg.KeyFunc
 
 const (
 	ControllerName = "issuers"

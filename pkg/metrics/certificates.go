@@ -18,7 +18,7 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/types"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -99,12 +99,8 @@ func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current c
 
 // RemoveCertificate will delete the Certificate metrics from continuing to be
 // exposed.
-func (m *Metrics) RemoveCertificate(key string) {
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		m.log.Error(err, "failed to get namespace and name from key")
-		return
-	}
+func (m *Metrics) RemoveCertificate(key types.NamespacedName) {
+	namespace, name := key.Namespace, key.Name
 
 	m.certificateExpiryTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 	m.certificateRenewalTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})

@@ -25,6 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -74,7 +75,7 @@ func init() {
 			For(certificaterequests.New(
 				apiutil.IssuerACME,
 				NewACME,
-				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) ([]cache.InformerSynced, error) {
 					orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
 
@@ -82,7 +83,7 @@ func init() {
 						WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
 							log, queue,
 							cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind),
-							func(namespace, name string) (interface{}, error) {
+							func(namespace, name string) (*cmapi.CertificateRequest, error) {
 								return certificateRequestLister.CertificateRequests(namespace).Get(name)
 							},
 						),

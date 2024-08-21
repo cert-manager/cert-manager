@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -41,13 +42,10 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 		return
 	}
 	for _, cr := range crs {
-		log := logf.WithRelatedResource(log, cr)
-		key, err := keyFunc(cr)
-		if err != nil {
-			log.Error(err, "error computing key for resource")
-			continue
-		}
-		c.queue.Add(key)
+		c.queue.Add(types.NamespacedName{
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+		})
 	}
 }
 

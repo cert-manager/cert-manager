@@ -24,6 +24,7 @@ import (
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -31,7 +32,6 @@ import (
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -195,13 +195,10 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		log.Error(err, "propagation check failed")
 		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
-		key, err := controllerpkg.KeyFunc(ch)
-		// This is an unexpected edge case and should never occur
-		if err != nil {
-			return err
-		}
-
-		c.queue.AddAfter(key, c.DNS01CheckRetryPeriod)
+		c.queue.AddAfter(types.NamespacedName{
+			Namespace: ch.Namespace,
+			Name:      ch.Name,
+		}, c.DNS01CheckRetryPeriod)
 
 		return nil
 	}

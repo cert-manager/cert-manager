@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2/ktesting"
 
@@ -37,7 +38,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 		secret          runtime.Object
 		existingCRs     []runtime.Object
 		existingIssuers []runtime.Object
-		expectedQueue   []string
+		expectedQueue   []types.NamespacedName
 	}{
 		"if given object is not secret, expect empty queue": {
 			secret: gen.Certificate("not-a-secret"),
@@ -68,7 +69,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 				),
 			},
-			expectedQueue: []string{},
+			expectedQueue: []types.NamespacedName{},
 		},
 		"if no requests then expect empty queue": {
 			secret:      gen.Secret("test-secret", gen.SetSecretNamespace("test-namespace")),
@@ -82,7 +83,7 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 				),
 			},
-			expectedQueue: []string{},
+			expectedQueue: []types.NamespacedName{},
 		},
 		"referenced requests should be added to the queue": {
 			secret: gen.Secret("test-secret", gen.SetSecretNamespace("test-namespace")),
@@ -113,7 +114,16 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 				),
 			},
-			expectedQueue: []string{"test-namespace/a", "test-namespace/b"},
+			expectedQueue: []types.NamespacedName{
+				{
+					Namespace: "test-namespace",
+					Name:      "a",
+				},
+				{
+					Namespace: "test-namespace",
+					Name:      "b",
+				},
+			},
 		},
 	}
 
@@ -134,13 +144,13 @@ func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 
 			builder.Start()
 
-			queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+			queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[types.NamespacedName]())
 			handleSecretReferenceWorkFunc(ktesting.NewLogger(t, ktesting.NewConfig()), lister, helper, queue)(test.secret)
 			require.Equal(t, len(test.expectedQueue), queue.Len())
-			var actualQueue []string
+			var actualQueue []types.NamespacedName
 			for range test.expectedQueue {
 				i, _ := queue.Get()
-				actualQueue = append(actualQueue, i.(string))
+				actualQueue = append(actualQueue, i)
 			}
 			assert.ElementsMatch(t, test.expectedQueue, actualQueue)
 		})

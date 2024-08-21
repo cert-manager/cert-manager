@@ -27,13 +27,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -52,7 +52,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		// key that should be passed to ProcessItem. If not set, the
 		// 'namespace/name' of the 'Certificate' field will be used. If neither
 		// is set, the key will be "".
-		key string
+		key types.NamespacedName
 
 		// Certificate to be synced for the test. If not set, the 'key' will be
 		// passed to ProcessItem instead.
@@ -84,10 +84,16 @@ func Test_controller_ProcessItem(t *testing.T) {
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
-			key: "abc/def/ghi",
+			key: types.NamespacedName{
+				Namespace: "abc",
+				Name:      "def/ghi",
+			},
 		},
 		"do nothing if a key references a Certificate that does not exist": {
-			key: "namespace/name",
+			key: types.NamespacedName{
+				Namespace: "namespace",
+				Name:      "name",
+			},
 		},
 		"should do nothing if Certificate already has 'Issuing' condition": {
 			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
@@ -440,10 +446,10 @@ func Test_controller_ProcessItem(t *testing.T) {
 			defer builder.Stop()
 
 			key := test.key
-			if key == "" && test.existingCertificate != nil {
-				key, err = controllerpkg.KeyFunc(test.existingCertificate)
-				if err != nil {
-					t.Fatal(err)
+			if key == (types.NamespacedName{}) && test.existingCertificate != nil {
+				key = types.NamespacedName{
+					Name:      test.existingCertificate.Name,
+					Namespace: test.existingCertificate.Namespace,
 				}
 			}
 

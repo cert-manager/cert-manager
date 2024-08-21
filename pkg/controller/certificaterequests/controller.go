@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -36,8 +37,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
-
-var keyFunc = controllerpkg.KeyFunc
 
 // Issuer implements the functionality to sign a certificate request for a
 // particular issuer type.
@@ -54,7 +53,7 @@ type IssuerConstructor func(*controllerpkg.Context) Issuer
 // covered in the main shared controller implementation.
 // The returned set of InformerSyncs will be waited on when the controller
 // starts.
-type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.RateLimitingInterface) ([]cache.InformerSynced, error)
+type RegisterExtraInformerFn func(*controllerpkg.Context, logr.Logger, workqueue.TypedRateLimitingInterface[types.NamespacedName]) ([]cache.InformerSynced, error)
 
 // Controller is an implementation of the queueingController for
 // certificate requests.
@@ -74,7 +73,7 @@ type Controller struct {
 	// more details at https://github.com/cert-manager/cert-manager/issues/5216
 	secretLister internalinformers.SecretLister
 
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -123,14 +122,19 @@ func New(issuerType string, issuerConstructor IssuerConstructor, registerExtraIn
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	componentName := "certificaterequests-issuer-" + c.issuerType
 
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, componentName)
 
 	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), componentName)
+	c.queue = workqueue.NewTypedRateLimitingQueueWithConfig(
+		controllerpkg.DefaultItemBasedRateLimiter(),
+		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+			Name: componentName,
+		},
+	)
 
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
@@ -202,15 +206,11 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 // ProcessItem is the worker function that will be called with a new key from
 // the workqueue. A key corresponds to a certificate request object.
-func (c *Controller) ProcessItem(ctx context.Context, key string) error {
+func (c *Controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		log.Error(err, "invalid resource key")
-		return nil
-	}
+	namespace, name := key.Namespace, key.Name
 
 	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 	if err != nil {

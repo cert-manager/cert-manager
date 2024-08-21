@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -41,7 +42,7 @@ import (
 func handleSecretReferenceWorkFunc(log logr.Logger,
 	lister clientv1.CertificateRequestLister,
 	helper issuer.Helper,
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 ) func(obj any) {
 	return func(obj any) {
 		log := log.WithName("handleSecretReference")
@@ -57,13 +58,10 @@ func handleSecretReferenceWorkFunc(log logr.Logger,
 			return
 		}
 		for _, request := range requests {
-			log := logf.WithRelatedResource(log, request)
-			key, err := controllerpkg.KeyFunc(request)
-			if err != nil {
-				log.Error(err, "error computing key for resource")
-				continue
-			}
-			queue.Add(key)
+			queue.Add(types.NamespacedName{
+				Name:      request.Name,
+				Namespace: request.Namespace,
+			})
 		}
 	}
 }

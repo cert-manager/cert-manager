@@ -22,6 +22,7 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -42,10 +43,10 @@ type controller struct {
 	sync          shimhelper.SyncFn
 
 	// For testing purposes.
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	c.gatewayLister = ctx.GWShared.Gateway().V1().Gateways().Lister()
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
@@ -83,12 +84,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	return c.queue, mustSync, nil
 }
 
-func (c *controller) ProcessItem(ctx context.Context, key string) error {
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
-	}
+func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
+	namespace, name := key.Namespace, key.Name
 
 	gateway, err := c.gatewayLister.Gateways(namespace).Get(name)
 
@@ -119,7 +116,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 //	    name: gateway-1
 //	    blockOwnerDeletion: true
 //	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interface{}) {
+func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj interface{}) {
 	return func(obj interface{}) {
 		crt, ok := obj.(*cmapi.Certificate)
 		if !ok {
@@ -141,14 +138,22 @@ func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interfac
 			return
 		}
 
-		queue.Add(crt.Namespace + "/" + ref.Name)
+		queue.Add(types.NamespacedName{
+			Namespace: crt.Namespace,
+			Name:      ref.Name,
+		})
 	}
 }
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, ControllerName).
-			For(&controller{queue: workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)}).
+			For(&controller{queue: workqueue.NewTypedRateLimitingQueueWithConfig(
+				controllerpkg.DefaultItemBasedRateLimiter(),
+				workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+					Name: ControllerName,
+				},
+			)}).
 			Complete()
 	})
 }

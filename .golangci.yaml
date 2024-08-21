@@ -1,7 +1,6 @@
 issues:
   exclude-rules:
     - linters:
-        - staticcheck
         - govet
         - usestdlibvars
         - misspell

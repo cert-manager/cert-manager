@@ -30,9 +30,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalorders "github.com/cert-manager/cert-manager/internal/controller/orders"
@@ -226,18 +226,13 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		// This is probably not needed as at this point the Order's status
 		// should already be Pending, but set it anyway to be explicit.
 		c.setOrderState(&o.Status, string(cmacme.Pending))
-		key, err := cache.MetaNamespaceKeyFunc(o)
-		if err != nil {
-			log.Error(err, "failed to construct key for pending Order")
-			// We should never end up here as this error would have been
-			// encountered in informers callback already. This probably cannot
-			// be fixed by re-queueing. If we do start encountering this
-			// scenario, we should consider whether the Order should be marked
-			// as failed here.
-			return nil
-		}
+
 		// Re-queue the Order to be processed again after 5 seconds.
-		c.scheduledWorkQueue.Add(key, RequeuePeriod)
+		c.scheduledWorkQueue.Add(types.NamespacedName{
+			Name:      o.Name,
+			Namespace: o.Namespace,
+		}, RequeuePeriod)
+
 		return nil
 
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):

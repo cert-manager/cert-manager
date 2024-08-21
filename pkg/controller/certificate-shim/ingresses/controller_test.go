@@ -26,6 +26,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	kclient "k8s.io/client-go/kubernetes"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -41,7 +42,7 @@ func Test_controller_Register(t *testing.T) {
 		existingKObjects  []runtime.Object
 		existingCMObjects []runtime.Object
 		givenCall         func(*testing.T, cmclient.Interface, kclient.Interface)
-		expectRequeueKey  string
+		expectRequeueKey  types.NamespacedName
 	}{
 		{
 			name: "ingress is re-queued when an 'Added' event is received for this ingress",
@@ -51,7 +52,10 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "namespace-1/ingress-1",
+			expectRequeueKey: types.NamespacedName{
+				Namespace: "namespace-1",
+				Name:      "ingress-1",
+			},
 		},
 		{
 			name: "ingress is re-queued when an 'Updated' event is received for this ingress",
@@ -64,7 +68,10 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "namespace-1/ingress-1",
+			expectRequeueKey: types.NamespacedName{
+				Namespace: "namespace-1",
+				Name:      "ingress-1",
+			},
 		},
 		{
 			name: "ingress is re-queued when a 'Deleted' event is received for this ingress",
@@ -75,7 +82,10 @@ func Test_controller_Register(t *testing.T) {
 				err := c.NetworkingV1().Ingresses("namespace-1").Delete(context.Background(), "ingress-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "namespace-1/ingress-1",
+			expectRequeueKey: types.NamespacedName{
+				Namespace: "namespace-1",
+				Name:      "ingress-1",
+			},
 		},
 		{
 			name: "ingress is re-queued when an 'Added' event is received for its child Certificate",
@@ -88,7 +98,10 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "namespace-1/ingress-2",
+			expectRequeueKey: types.NamespacedName{
+				Namespace: "namespace-1",
+				Name:      "ingress-2",
+			},
 		},
 		{
 			name: "ingress is re-queued when an 'Updated' event is received for its child Certificate",
@@ -107,7 +120,10 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "namespace-1/ingress-2",
+			expectRequeueKey: types.NamespacedName{
+				Namespace: "namespace-1",
+				Name:      "ingress-2",
+			},
 		},
 		{
 			name: "ingress is re-queued when a 'Deleted' event is received for its child Certificate",
@@ -121,7 +137,10 @@ func Test_controller_Register(t *testing.T) {
 				err := c.CertmanagerV1().Certificates("namespace-1").Delete(context.Background(), "cert-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "namespace-1/ingress-2",
+			expectRequeueKey: types.NamespacedName{
+				Namespace: "namespace-1",
+				Name:      "ingress-2",
+			},
 		},
 	}
 
@@ -149,7 +168,7 @@ func Test_controller_Register(t *testing.T) {
 			// to be nil.
 			time.AfterFunc(50*time.Millisecond, queue.ShutDown)
 
-			var gotKeys []string
+			var gotKeys []types.NamespacedName
 			for {
 				// Get blocks until either (1) a key is returned, or (2) the
 				// queue is shut down.
@@ -157,13 +176,13 @@ func Test_controller_Register(t *testing.T) {
 				if done {
 					break
 				}
-				gotKeys = append(gotKeys, gotKey.(string))
+				gotKeys = append(gotKeys, gotKey)
 			}
 			assert.Equal(t, 0, queue.Len(), "queue should be empty")
 
 			// We only expect 0 or 1 keys received in the queue.
-			if test.expectRequeueKey != "" {
-				assert.Equal(t, []string{test.expectRequeueKey}, gotKeys)
+			if test.expectRequeueKey != (types.NamespacedName{}) {
+				assert.Equal(t, []types.NamespacedName{test.expectRequeueKey}, gotKeys)
 			} else {
 				assert.Nil(t, gotKeys)
 			}

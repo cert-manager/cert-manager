@@ -21,6 +21,7 @@ import (
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -44,13 +45,10 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 		return
 	}
 	for _, cr := range crs {
-		log := logf.WithRelatedResource(log, cr)
-		key, err := keyFunc(cr)
-		if err != nil {
-			log.Error(err, "error computing key for resource")
-			continue
-		}
-		c.queue.Add(key)
+		c.queue.Add(types.NamespacedName{
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+		})
 	}
 }
 

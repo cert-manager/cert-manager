@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/util/workqueue"
 
@@ -29,7 +30,7 @@ import (
 )
 
 func handleGenericIssuerFunc(
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	orderLister cmacmelisters.OrderLister,
 ) func(interface{}) {
 	return func(obj interface{}) {
@@ -45,12 +46,10 @@ func handleGenericIssuerFunc(
 			return
 		}
 		for _, crt := range certs {
-			key, err := keyFunc(crt)
-			if err != nil {
-				runtime.HandleError(err)
-				continue
-			}
-			queue.Add(key)
+			queue.Add(types.NamespacedName{
+				Namespace: crt.Namespace,
+				Name:      crt.Name,
+			})
 		}
 	}
 }
