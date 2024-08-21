@@ -217,10 +217,10 @@ func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
 func (b *Builder) CheckAndFinish(args ...interface{}) {
 	defer b.Stop()
 	if err := b.AllActionsExecuted(); err != nil {
-		b.T.Errorf(err.Error())
+		b.T.Error(err)
 	}
 	if err := b.AllEventsCalled(); err != nil {
-		b.T.Errorf(err.Error())
+		b.T.Error(err)
 	}
 
 	// resync listers before running checks

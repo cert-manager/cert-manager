@@ -76,7 +76,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
+			_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
