@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net/http"
 	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
@@ -531,7 +532,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// finalized in an earlier reconcile, but the reconciler failed
 	// to update the status of the Order CR.
 	// https://datatracker.ietf.org/doc/html/rfc8555#:~:text=A%20request%20to%20finalize%20an%20order%20will%20result%20in%20error,will%20indicate%20what%20action%20the%20client%20should%20take%20(see%20below).
-	if ok && acmeErr.StatusCode == 403 {
+	if ok && acmeErr.StatusCode == http.StatusForbidden {
 
 		acmeOrder, getOrderErr := getACMEOrder(ctx, cl, o)
 		acmeGetOrderErr, ok := getOrderErr.(*acmeapi.Error)

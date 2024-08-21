@@ -2,7 +2,6 @@ issues:
   exclude-rules:
     - linters:
         - govet
-        - usestdlibvars
         - dogsled
         - promlinter
         - errname
