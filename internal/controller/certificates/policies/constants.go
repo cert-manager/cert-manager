@@ -16,60 +16,117 @@ limitations under the License.
 
 package policies
 
+type Reason interface {
+	Reason() string
+}
+
+type InvalidInputReason string
+
+var _ Reason = InvalidInputReason("")
+
+func (r InvalidInputReason) Reason() string {
+	return string(r)
+}
+
 const (
 	// DoesNotExist is a policy violation reason for a scenario where
 	// Certificate's spec.secretName secret does not exist.
-	DoesNotExist string = "DoesNotExist"
+	DoesNotExist InvalidInputReason = "DoesNotExist"
 	// MissingData is a policy violation reason for a scenario where
 	// Certificate's spec.secretName secret has missing data.
-	MissingData string = "MissingData"
+	MissingData InvalidInputReason = "MissingData"
 	// InvalidKeyPair is a policy violation reason for a scenario where public
 	// key of certificate does not match private key.
-	InvalidKeyPair string = "InvalidKeyPair"
+	InvalidKeyPair InvalidInputReason = "InvalidKeyPair"
+	// InvalidManagedFields is a policy violation reason for a scenario where
+	// managed fields on the Secret are invalid.
+	InvalidManagedFields InvalidInputReason = "InvalidManagedFields"
+	// InvalidPrivateKey is a policy violation reason for a scenario where the
+	// private key in the Input Secret could not be parsed or decoded.
+	InvalidPrivateKey InvalidInputReason = "InvalidPrivateKey"
 	// InvalidCertificate is a policy violation whereby the signed certificate in
 	// the Input Secret could not be parsed or decoded.
-	InvalidCertificate string = "InvalidCertificate"
+	InvalidCertificate InvalidInputReason = "InvalidCertificate"
 	// InvalidCertificateRequest is a policy violation whereby the CSR in
 	// the Input CertificateRequest could not be parsed or decoded.
-	InvalidCertificateRequest string = "InvalidCertificateRequest"
+	InvalidCertificateRequest InvalidInputReason = "InvalidCertificateRequest"
+)
 
-	// SecretMismatch is a policy violation reason for a scenario where Secret's
-	// private key does not match spec.
-	SecretMismatch string = "SecretMismatch"
+type IssuanceReason string
+
+var _ Reason = IssuanceReason("")
+
+func (r IssuanceReason) Reason() string {
+	return string(r)
+}
+
+const (
 	// IncorrectIssuer is a policy violation reason for a scenario where
 	// Certificate has been issued by incorrect Issuer.
-	IncorrectIssuer string = "IncorrectIssuer"
+	IncorrectIssuer IssuanceReason = "IncorrectIssuer"
 	// IncorrectCertificate is a policy violation reason for a scenario where
 	// the Secret referred to by this Certificate's spec.secretName,
 	// already has a `cert-manager.io/certificate-name` annotation
 	// with the name of another Certificate.
-	IncorrectCertificate string = "IncorrectCertificate"
+	IncorrectCertificate IssuanceReason = "IncorrectCertificate"
+
+	// SecretMismatch is a policy violation reason for a scenario where Secret's
+	// private key does not match spec.
+	SecretMismatch IssuanceReason = "SecretMismatch"
 	// RequestChanged is a policy violation reason for a scenario where
 	// CertificateRequest not valid for Certificate's spec.
-	RequestChanged string = "RequestChanged"
+	RequestChanged IssuanceReason = "RequestChanged"
+
 	// Renewing is a policy violation reason for a scenario where
 	// Certificate's renewal time is now or in past.
-	Renewing string = "Renewing"
+	Renewing IssuanceReason = "Renewing"
 	// Expired is a policy violation reason for a scenario where Certificate has
 	// expired.
-	Expired string = "Expired"
-	// SecretTemplateMisMatch is a policy violation whereby the Certificate's
-	// SecretTemplate is not reflected on the target Secret, either by having
-	// extra, missing, or wrong Annotations or Labels.
-	SecretTemplateMismatch string = "SecretTemplateMismatch"
-	// SecretManagedMetadataMismatch is a policy violation whereby the Secret is
-	// missing labels that should have been added by cert-manager
-	SecretManagedMetadataMismatch string = "SecretManagedMetadataMismatch"
+	Expired IssuanceReason = "Expired"
+)
 
+type PostIssuanceReason string
+
+var _ Reason = PostIssuanceReason("")
+
+func (r PostIssuanceReason) Reason() string {
+	return string(r)
+}
+
+const (
+	// SecretMetadataMismatch is a policy violation whereby the Secret has
+	// extra, missing, or wrong Annotations or Labels. The expected set of labels
+	// and annotations are based on the Certificate's SecretTemplate and the
+	// labels and annotations managed by cert-manager.
+	SecretMetadataMismatch PostIssuanceReason = "SecretMetadataMismatch"
 	// AdditionalOutputFormatsMismatch is a policy violation whereby the
 	// Certificate's AdditionalOutputFormats is not reflected on the target
 	// Secret, either by having extra, missing, or wrong values.
-	AdditionalOutputFormatsMismatch string = "AdditionalOutputFormatsMismatch"
-	// ManagedFieldsParseError is a policy violation whereby cert-manager was
-	// unable to decode the managed fields on a resource.
-	ManagedFieldsParseError string = "ManagedFieldsParseError"
+	AdditionalOutputFormatsMismatch PostIssuanceReason = "AdditionalOutputFormatsMismatch"
 	// SecretOwnerRefMismatch is a policy violation whereby the Secret either has
 	// a missing owner reference to the Certificate, or has an owner reference it
 	// shouldn't have.
-	SecretOwnerRefMismatch string = "SecretOwnerRefMismatch"
+	SecretOwnerRefMismatch PostIssuanceReason = "SecretOwnerRefMismatch"
+	// SecretKeystoreMismatch is a policy violation whereby the Secret does not have
+	// the requested keystore formats.
+	SecretKeystoreMismatch PostIssuanceReason = "SecretKeystoreMismatch"
 )
+
+type MaybeReason[T Reason] struct {
+	invalidInput InvalidInputReason
+	validInput   T
+}
+
+var _ Reason = MaybeReason[IssuanceReason]{}
+var _ Reason = MaybeReason[PostIssuanceReason]{}
+
+func (r MaybeReason[T]) Reason() string {
+	if r.invalidInput != "" {
+		return r.invalidInput.Reason()
+	}
+	return r.validInput.Reason()
+}
+
+func (r MaybeReason[T]) String() string {
+	return r.Reason()
+}

@@ -84,7 +84,7 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 
 	if isViolation {
 		switch reason {
-		case policies.InvalidCertificate, policies.ManagedFieldsParseError:
+		case policies.InvalidCertificate.Reason(), policies.InvalidManagedFields.Reason():
 			// An error here indicates that the managed fields are malformed and the
 			// decoder doesn't understand the managed fields on the Secret, or the
 			// signed certificate data could not be decoded. There is nothing more the
