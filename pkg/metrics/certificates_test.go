@@ -363,16 +363,10 @@ func TestCertificateCache(t *testing.T) {
 		Namespace: "default-unit-test-ns",
 		Name:      "crt3",
 	})
-	if err := testutil.CollectAndCompare(m.certificateReadyStatus,
-		strings.NewReader(readyMetadata),
-		"certmanager_certificate_ready_status",
-	); err != nil {
-		t.Errorf("unexpected collecting result:\n%s", err)
+	if testutil.CollectAndCount(m.certificateReadyStatus, "certmanager_certificate_ready_status") != 0 {
+		t.Errorf("unexpected collecting result")
 	}
-	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
-		strings.NewReader(expiryMetadata),
-		"certmanager_certificate_expiration_timestamp_seconds",
-	); err != nil {
-		t.Errorf("unexpected collecting result:\n%s", err)
+	if testutil.CollectAndCount(m.certificateExpiryTimeSeconds, "certmanager_certificate_expiration_timestamp_seconds") != 0 {
+		t.Errorf("unexpected collecting result")
 	}
 }
