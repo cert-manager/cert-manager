@@ -43,6 +43,7 @@ func Test_ensureSecretData(t *testing.T) {
 	block, _ := pem.Decode(pk)
 	pkDER := block.Bytes
 	combinedPEM := append(append(pk, '\n'), cert...)
+	hashValue := "[UNUSED HASH VALUE]"
 
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -89,8 +90,10 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-				Data:       map[string][]byte{},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+				},
+				Data: map[string][]byte{},
 			},
 			expectedAction: false,
 		},
@@ -103,7 +106,8 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue}},
 				Data: map[string][]byte{
 					"tls.key": pk,
 				},
@@ -119,7 +123,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+				},
 				Data: map[string][]byte{
 					"tls.cert": cert,
 				},
@@ -138,7 +144,8 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue}},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -172,7 +179,11 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+					Annotations: map[string]string{
+						"foo":                              "bar",
+						cmapi.CertificateHashAnnotationKey: hashValue,
+					},
+					Labels: map[string]string{"abc": "123"},
 				},
 				Data: map[string][]byte{
 					"tls.crt": cert,
@@ -195,25 +206,29 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+					Annotations: map[string]string{
+						"foo":                              "bar",
+						cmapi.CertificateHashAnnotationKey: hashValue,
+					},
+					Labels: map[string]string{"abc": "123"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names": {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {},
-								"f:foo": {},
-								"f:another-annotation": {}
-							},
-							"f:labels": {
-								"f:controller.cert-manager.io/fao": {},
-								"f:abc": {},
-								"f:another-label": {}
-							}
-						}}`),
+									"f:annotations": {
+										"f:cert-manager.io/common-name": {},
+										"f:cert-manager.io/alt-names": {},
+										"f:cert-manager.io/ip-sans": {},
+										"f:cert-manager.io/uri-sans": {},
+										"f:foo": {},
+										"f:another-annotation": {}
+									},
+									"f:labels": {
+										"f:controller.cert-manager.io/fao": {},
+										"f:abc": {},
+										"f:another-label": {}
+									}
+								}}`),
 						},
 					}},
 				},
@@ -238,23 +253,27 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+					Annotations: map[string]string{
+						"foo":                              "bar",
+						cmapi.CertificateHashAnnotationKey: hashValue,
+					},
+					Labels: map[string]string{"abc": "123"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: "not-cert-manager",
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names": {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {},
-								"f:foo": {}
-							},
-							"f:labels": {
-								"f:controller.cert-manager.io/fao": {},
-								"f:abc": {}
-							}
-						}}`),
+									"f:annotations": {
+										"f:cert-manager.io/common-name": {},
+										"f:cert-manager.io/alt-names": {},
+										"f:cert-manager.io/ip-sans": {},
+										"f:cert-manager.io/uri-sans": {},
+										"f:foo": {}
+									},
+									"f:labels": {
+										"f:controller.cert-manager.io/fao": {},
+										"f:abc": {}
+									}
+								}}`),
 						}},
 					},
 				},
@@ -280,24 +299,27 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"},
-					Labels:      map[string]string{"abc": "123", cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					Annotations: map[string]string{
+						"foo":                              "bar",
+						cmapi.CertificateHashAnnotationKey: hashValue,
+					},
+					Labels: map[string]string{"abc": "123", cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`{"f:metadata": {
-							"f:annotations": {
-								"f:cert-manager.io/common-name": {},
-								"f:cert-manager.io/alt-names": {},
-								"f:cert-manager.io/ip-sans": {},
-								"f:cert-manager.io/uri-sans": {},
-								"f:foo": {}
-							},
-							"f:labels": {
-								"f:controller.cert-manager.io/fao": {},
-								"f:abc": {}
-							}
-						}}`),
+									"f:annotations": {
+										"f:cert-manager.io/common-name": {},
+										"f:cert-manager.io/alt-names": {},
+										"f:cert-manager.io/ip-sans": {},
+										"f:cert-manager.io/uri-sans": {},
+										"f:foo": {}
+									},
+									"f:labels": {
+										"f:controller.cert-manager.io/fao": {},
+										"f:abc": {}
+									}
+								}}`),
 						}},
 					},
 				},
@@ -324,7 +346,8 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -348,7 +371,8 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{"foo": "bar"}},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{"foo": "bar"}},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -371,7 +395,10 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+				},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -391,7 +418,8 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -411,7 +439,8 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -432,7 +461,8 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -453,31 +483,32 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{
-								"f:metadata": {
-									"f:labels": {
-										"f:controller.cert-manager.io/fao": {}
+								{
+									"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
 									},
-									"f:annotations": {
-										"f:cert-manager.io/common-name": {},
-										"f:cert-manager.io/alt-names": {},
-										"f:cert-manager.io/ip-sans": {},
-										"f:cert-manager.io/uri-sans": {}
-									},
-									"f:ownerReferences": {
-										"k:{\"uid\":\"uid-123\"}": {}
+									"f:data": {
+										"f:tls-combined.pem": {},
+										"f:key.der": {}
 									}
-								},
-								"f:data": {
-									"f:tls-combined.pem": {},
-									"f:key.der": {}
-								}
-							}`),
+								}`),
 						},
 					}},
 				},
@@ -500,31 +531,32 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
 						FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{
-								"f:metadata": {
-									"f:labels": {
-										"f:controller.cert-manager.io/fao": {}
-									},
-									"f:annotations": {
-										"f:cert-manager.io/common-name": {},
-										"f:cert-manager.io/alt-names": {},
-										"f:cert-manager.io/ip-sans": {},
-										"f:cert-manager.io/uri-sans": {}
-									},
-									"f:ownerReferences": {
-										"k:{\"uid\":\"uid-123\"}": {}
-									}
-								},
-								"f:data": {
-									"f:tls-combined.pem": {},
-									"f:key.der": {}
-								}
-							}`),
+									{
+										"f:metadata": {
+											"f:labels": {
+												"f:controller.cert-manager.io/fao": {}
+											},
+											"f:annotations": {
+												"f:cert-manager.io/common-name": {},
+												"f:cert-manager.io/alt-names": {},
+												"f:cert-manager.io/ip-sans": {},
+												"f:cert-manager.io/uri-sans": {}
+											},
+											"f:ownerReferences": {
+												"k:{\"uid\":\"uid-123\"}": {}
+											}
+										},
+										"f:data": {
+											"f:tls-combined.pem": {},
+											"f:key.der": {}
+										}
+									}`),
 						},
 					}},
 				},
@@ -546,24 +578,25 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -579,27 +612,28 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
-					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					Annotations: map[string]string{cmapi.CertificateHashAnnotationKey: hashValue},
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
 						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -623,9 +657,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-secret", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -634,20 +669,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -682,9 +717,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -693,20 +729,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -740,9 +776,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -751,20 +788,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -797,9 +834,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -808,20 +846,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -856,9 +894,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -867,20 +906,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -914,9 +953,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -925,20 +965,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -972,9 +1012,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -983,20 +1024,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -1029,9 +1070,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -1040,20 +1082,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+									{"f:metadata": {
+										"f:labels": {
+											"f:controller.cert-manager.io/fao": {}
+										},
+										"f:annotations": {
+											"f:cert-manager.io/common-name": {},
+											"f:cert-manager.io/alt-names": {},
+											"f:cert-manager.io/ip-sans": {},
+											"f:cert-manager.io/uri-sans": {}
+										},
+										"f:ownerReferences": {
+											"k:{\"uid\":\"uid-123\"}": {}
+										}
+									}}`),
 						}},
 					},
 				},
@@ -1088,9 +1130,10 @@ func Test_ensureSecretData(t *testing.T) {
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something", Namespace: "test-namespace",
 					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+						cmapi.IssuerNameAnnotationKey:      "testissuer",
+						cmapi.IssuerKindAnnotationKey:      "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey:     "group.example.com",
+						cmapi.CertificateHashAnnotationKey: hashValue,
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
@@ -1099,20 +1142,20 @@ func Test_ensureSecretData(t *testing.T) {
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 							Raw: []byte(`
-							{"f:metadata": {
-								"f:labels": {
-									"f:controller.cert-manager.io/fao": {}
-								},
-								"f:annotations": {
-									"f:cert-manager.io/common-name": {},
-									"f:cert-manager.io/alt-names": {},
-									"f:cert-manager.io/ip-sans": {},
-									"f:cert-manager.io/uri-sans": {}
-								},
-								"f:ownerReferences": {
-									"k:{\"uid\":\"uid-123\"}": {}
-								}
-							}}`),
+								{"f:metadata": {
+									"f:labels": {
+										"f:controller.cert-manager.io/fao": {}
+									},
+									"f:annotations": {
+										"f:cert-manager.io/common-name": {},
+										"f:cert-manager.io/alt-names": {},
+										"f:cert-manager.io/ip-sans": {},
+										"f:cert-manager.io/uri-sans": {}
+									},
+									"f:ownerReferences": {
+										"k:{\"uid\":\"uid-123\"}": {}
+									}
+								}}`),
 						}},
 					},
 				},

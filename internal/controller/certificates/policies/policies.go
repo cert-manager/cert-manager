@@ -65,45 +65,79 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 
 // NewTriggerPolicyChain includes trigger policy checks, which if return true,
 // should cause a Certificate to be marked for issuance.
+//
+// If this chain returns true, a new certificate will be issued.
+// This chain should include all checks that are in the readiness chain, as well
+// as additional checks that proactively trigger re-issuance before the
+// certificate is marked as not ready.
 func NewTriggerPolicyChain(c clock.Clock) Chain {
 	return Chain{
-		SecretDoesNotExist,     // Make sure the Secret exists
-		SecretIsMissingData,    // Make sure the Secret has the required keys set
-		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretDoesNotExist,             // Make sure the Secret exists
+		SecretIsMissingData,            // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer,         // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretPrivateKeyMismatchesSpec, // Make sure the PrivateKey Type and Size match the Certificate spec
 
-		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
-		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
+		SecretCertificateHashAnnotationMismatch(
+			// BACKWARDS COMPATIBILITY: The following checks are only performed in case no
+			// CertificateRequest hash annotation is present on the Secret. This is to
+			// ensure that existing users of cert-manager do not have all their existing
+			// Certificates marked as not ready.
+			Chain{
+				SecretIssuerAnnotationsMismatch,                     // Make sure the Secret's IssuerRef annotations match the Certificate spec
+				SecretCertificateNameAnnotationsMismatch,            // Make sure the Secret's CertificateName annotation matches the Certificate's name
+				SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
+				CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
+			},
+		),
 
-		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
-		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
-		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
-		CurrentCertificateNearingExpiry(c),                  // Make sure the Certificate in the Secret is not nearing expiry
+		CurrentCertificateNearingExpiry(c), // Make sure the Certificate in the Secret is not nearing expiry
 	}
 }
 
 // NewReadinessPolicyChain includes readiness policy checks, which if return
 // true, would cause a Certificate to be marked as not ready.
+//
+// If this chain returns true, the status of the Certificate resource will show
+// NotReady.
 func NewReadinessPolicyChain(c clock.Clock) Chain {
 	return Chain{
-		SecretDoesNotExist,     // Make sure the Secret exists
-		SecretIsMissingData,    // Make sure the Secret has the required keys set
-		SecretPublicKeysDiffer, // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretDoesNotExist,             // Make sure the Secret exists
+		SecretIsMissingData,            // Make sure the Secret has the required keys set
+		SecretPublicKeysDiffer,         // Make sure the PrivateKey and PublicKey match in the Secret
+		SecretPrivateKeyMismatchesSpec, // Make sure the PrivateKey Type and Size match the Certificate spec
 
-		SecretIssuerAnnotationsMismatch,          // Make sure the Secret's IssuerRef annotations match the Certificate spec
-		SecretCertificateNameAnnotationsMismatch, // Make sure the Secret's CertificateName annotation matches the Certificate's name
+		SecretCertificateHashAnnotationMismatch(
+			// BACKWARDS COMPATIBILITY: The following checks are only performed in case no
+			// CertificateRequest hash annotation is present on the Secret. This is to
+			// ensure that existing users of cert-manager do not have all their existing
+			// Certificates marked as not ready.
+			Chain{
+				SecretIssuerAnnotationsMismatch,                     // Make sure the Secret's IssuerRef annotations match the Certificate spec
+				SecretCertificateNameAnnotationsMismatch,            // Make sure the Secret's CertificateName annotation matches the Certificate's name
+				SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
+				CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
+			},
+		),
 
-		SecretPrivateKeyMismatchesSpec,                      // Make sure the PrivateKey Type and Size match the Certificate spec
-		SecretPublicKeyDiffersFromCurrentCertificateRequest, // Make sure the Secret's PublicKey matches the current CertificateRequest
-		CurrentCertificateRequestMismatchesSpec,             // Make sure the current CertificateRequest matches the Certificate spec
-		CurrentCertificateHasExpired(c),                     // Make sure the Certificate in the Secret has not expired
+		CurrentCertificateHasExpired(c), // Make sure the Certificate in the Secret has not expired
 	}
 }
 
 // NewSecretPostIssuancePolicyChain includes policy checks that are to be
 // performed _after_ issuance has been successful, testing for the presence and
 // correctness of metadata and output formats of Certificate's Secrets.
+//
+// If this chain returns true, the Secret will be updated without having to
+// re-issue the certificate.
 func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string) Chain {
 	return Chain{
+		// Make sure the Secret has the Certificate hash annotation, if not, we will
+		// calculate a hash from the Certificate and add it to the Secret based on the
+		// Certificate's ready condition.
+		// We do this to ensure that all Secrets have the Certificate hash annotation and
+		// we can remove the fallback chain in a future release.
+		SecretCertificateHashAnnotationMissingAndStable,
+
 		SecretBaseLabelsMismatch,                                             // Make sure the managed labels have the correct values
 		SecretCertificateDetailsAnnotationsMismatch,                          // Make sure the managed certificate details annotations have the correct values
 		SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager), // Make sure the only the expected managed labels and annotations exist
