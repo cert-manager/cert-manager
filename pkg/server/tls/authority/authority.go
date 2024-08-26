@@ -86,6 +86,8 @@ type DynamicAuthority struct {
 	// watchMutex gates access to the slice of watch channels
 	watchMutex sync.Mutex
 	watches    []chan<- struct{}
+
+	newClient func(c *rest.Config) (kubernetes.Interface, error) // for testing
 }
 
 type SignFunc func(template *x509.Certificate) (*x509.Certificate, error)
@@ -107,7 +109,13 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 		d.LeafDuration = time.Hour * 24 * 7 // 7d
 	}
 
-	cl, err := kubernetes.NewForConfig(d.RESTConfig)
+	if d.newClient == nil {
+		d.newClient = func(c *rest.Config) (kubernetes.Interface, error) {
+			return kubernetes.NewForConfig(c)
+		}
+	}
+
+	cl, err := d.newClient(d.RESTConfig)
 	if err != nil {
 		return err
 	}
@@ -133,7 +141,13 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 
 	// start the informers and wait for the cache to sync
 	factory.Start(ctx.Done())
+	defer factory.Shutdown()
+
 	if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
+		if ctx.Err() != nil { // context was cancelled, we are shutting down; so, don't return an error because the informer caches were not yet synced
+			return nil
+		}
+
 		return fmt.Errorf("failed waiting for informer caches to sync")
 	}
 
@@ -157,8 +171,6 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 		return err
 	}
 
-	factory.Shutdown()
-
 	return nil
 }
 
@@ -168,6 +180,10 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, error) {
 	d.signMutex.Lock()
 	defer d.signMutex.Unlock()
+
+	if d.currentCertData == nil || d.currentPrivateKeyData == nil {
+		return nil, fmt.Errorf("no tls.Certificate available yet, try again later")
+	}
 
 	// tls.X509KeyPair performs a number of verification checks against the
 	// keypair, so we run it to verify the certificate and private key are
@@ -244,12 +260,14 @@ func (d *DynamicAuthority) ensureCA(ctx context.Context) error {
 
 	s, err := d.lister.Get(d.SecretName)
 	if apierrors.IsNotFound(err) {
+		d.log.V(logf.InfoLevel).Info("Will regenerate CA", "reason", "CA secret not found")
 		return d.regenerateCA(ctx, nil)
 	}
 	if err != nil {
 		return err
 	}
-	if d.caRequiresRegeneration(s) {
+	if required, reason := caRequiresRegeneration(s); required {
+		d.log.V(logf.InfoLevel).Info("Will regenerate CA", "reason", reason)
 		return d.regenerateCA(ctx, s.DeepCopy())
 	}
 	d.notifyWatches(s.Data[corev1.TLSCertKey], s.Data[corev1.TLSPrivateKeyKey])
@@ -262,7 +280,14 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 		return
 	}
 
-	d.log.V(logf.DebugLevel).Info("Detected change in CA secret data, notifying watchers...")
+	d.log.V(logf.InfoLevel).Info("Detected change in CA secret data, update current CA data and notify watches")
+
+	func() {
+		d.signMutex.Lock()
+		defer d.signMutex.Unlock()
+		d.currentCertData = newCertData
+		d.currentPrivateKeyData = newPrivateKeyData
+	}()
 
 	func() {
 		d.watchMutex.Lock()
@@ -276,53 +301,42 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 			}
 		}
 	}()
-
-	func() {
-		d.signMutex.Lock()
-		defer d.signMutex.Unlock()
-		d.currentCertData = newCertData
-		d.currentPrivateKeyData = newPrivateKeyData
-	}()
 }
 
 // caRequiresRegeneration will check data in a Secret resource and return true
 // if the CA needs to be regenerated for any reason.
-func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
+func caRequiresRegeneration(s *corev1.Secret) (bool, string) {
 	if s.Data == nil {
-		return true
+		return true, "Missing data in CA secret."
 	}
 	caData := s.Data[cmmeta.TLSCAKey]
 	pkData := s.Data[corev1.TLSPrivateKeyKey]
 	certData := s.Data[corev1.TLSCertKey]
 	if len(caData) == 0 || len(pkData) == 0 || len(certData) == 0 {
-		d.log.V(logf.InfoLevel).Info("Missing data in CA secret. Regenerating")
-		return true
+		return true, "Missing data in CA secret."
 	}
 	// ensure that the ca.crt and tls.crt keys are equal
 	if !bytes.Equal(caData, certData) {
-		return true
+		return true, "Different data in ca.crt and tls.crt."
 	}
 	cert, err := tls.X509KeyPair(certData, pkData)
 	if err != nil {
-		d.log.Error(err, "Failed to parse data in CA secret. Regenerating")
-		return true
+		return true, "Failed to parse data in CA secret."
 	}
 
 	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		d.log.Error(err, "internal error parsing x509 certificate")
-		return true
+		return true, "Internal error parsing x509 certificate."
 	}
 	if !x509Cert.IsCA {
-		d.log.V(logf.InfoLevel).Info("Stored certificate is not marked as a CA. Regenerating...")
-		return true
+		return true, "Stored certificate is not marked as a CA."
 	}
 	// renew the root CA when the current one is 2/3 of the way through its life
 	if time.Until(x509Cert.NotAfter) < (x509Cert.NotAfter.Sub(x509Cert.NotBefore) / 3) {
-		d.log.V(logf.InfoLevel).Info("Root CA certificate is nearing expiry. Regenerating...")
-		return true
+		return true, "CA certificate is nearing expiry."
 	}
-	return false
+
+	return false, ""
 }
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
@@ -331,7 +345,6 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 // If the provided Secret is nil, a new secret resource will be Created.
 // Otherwise, the provided resource will be modified and Updated.
 func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) error {
-	d.log.V(logf.DebugLevel).Info("Generating new root CA")
 	pk, err := pki.GenerateECPrivateKey(384)
 	if err != nil {
 		return err
@@ -383,6 +396,13 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 				cmmeta.TLSCAKey:         certBytes,
 			},
 		}, metav1.CreateOptions{})
+		if err != nil && apierrors.IsAlreadyExists(err) {
+			// another controller has created the secret, we expect a watch event
+			// to trigger another call to ensureCA
+			d.log.V(logf.DebugLevel).Info("Failed to create new root CA Secret, another controller has created it, waiting for watch event")
+			return nil
+		}
+		d.log.V(logf.InfoLevel).Info("Created new root CA Secret")
 		return err
 	}
 
@@ -395,7 +415,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 	if _, err := d.client.Update(ctx, s, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
-	d.log.V(logf.DebugLevel).Info("Generated new root CA")
+	d.log.V(logf.InfoLevel).Info("Updated existing root CA Secret")
 	return nil
 }
 

@@ -37,6 +37,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
+// Integration tests for the DynamicSource can be found in `test/integration/webhook/dynamic_source_test.go`.
+
 func signUsingTempCA(t *testing.T, template *x509.Certificate) *x509.Certificate {
 	// generate random ca private key
 	caPrivateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
