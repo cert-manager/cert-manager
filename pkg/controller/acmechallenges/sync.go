@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
@@ -267,7 +268,12 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	}()
 
 	if !ch.Status.Processing {
-		return nil
+		if ch.Status.State == "expired" {
+			// When a challenge is "expired", no more work can be done and it should be cleaned up and deleted
+			ch.DeletionTimestamp = &metav1.Time{}
+		} else {
+			return nil
+		}
 	}
 
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
