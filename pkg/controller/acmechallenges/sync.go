@@ -270,7 +270,8 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	if !ch.Status.Processing {
 		if ch.Status.State == "expired" {
 			// When a challenge is "expired", no more work can be done and it should be cleaned up and deleted
-			ch.DeletionTimestamp = &metav1.Time{}
+			expiredDeleteTimestamp := metav1.Now()
+			ch.SetDeletionTimestamp(&expiredDeleteTimestamp)
 		} else {
 			return nil
 		}
