@@ -36,7 +36,7 @@ for_each_kv = $(foreach item,$2,$(eval $(call $1,$(word 1,$(subst =, ,$(item))),
 # $(bin_dir)/tools, and the actual binaries are in $(bin_dir)/downloaded. When bumping
 # the version of the tools, this symlink gets updated.
 
-# Let's have $(bin_dir)/tools in front of the PATH so that we don't inavertedly
+# Let's have $(bin_dir)/tools in front of the PATH so that we don't inadvertently
 # pick up the wrong binary somewhere. Watch out, $(shell echo $$PATH) will
 # still print the original PATH, since GNU make does not honor exported
 # variables: https://stackoverflow.com/questions/54726457
@@ -181,7 +181,7 @@ CURL := curl --silent --show-error --fail --location --retry 10 --retry-connrefu
 
 # LN is expected to be an atomic action, meaning that two Make processes
 # can run the "link $(DOWNLOAD_DIR)/tools/xxx@$(XXX_VERSION)_$(HOST_OS)_$(HOST_ARCH)
-# to $(bin_dir)/tools/xxx" operation simulatiously without issues (both
+# to $(bin_dir)/tools/xxx" operation simultaneously without issues (both
 # will perform the action and the second time the link will be overwritten).
 LN := ln -fs
 
@@ -579,7 +579,7 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 preflight_linux_amd64_SHA256SUM=97750df31f31200f073e3b2844628a0a3681a403648c76d12319f83c80666104
 preflight_linux_arm64_SHA256SUM=e12b2afe063c07ee75f69f285f8cc56be99b85e2abac99cbef5fb22b91ef0cb7
 
-# Currently there are no offical releases for darwin, you cannot submit results
+# Currently there are no official releases for darwin, you cannot submit results
 # on non-official binaries, but we can still run tests.
 #
 # Once https://github.com/redhat-openshift-ecosystem/openshift-preflight/pull/942 is merged

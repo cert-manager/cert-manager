@@ -30,7 +30,7 @@
 ##################################
 
 # Some modules build their dependencies from variables, we want these to be 
-# evalutated at the last possible moment. For this we use second expansion to 
+# evaluated at the last possible moment. For this we use second expansion to 
 # re-evaluate the generate and verify targets a second time.
 #
 # See https://www.gnu.org/software/make/manual/html_node/Secondary-Expansion.html
