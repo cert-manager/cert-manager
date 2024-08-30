@@ -16,7 +16,7 @@
 ## Generate all generate targets.
 ## @category [shared] Generate/ Verify
 generate: $$(shared_generate_targets)
-	@echo "The following targets cannot be run simultaniously with each other or other generate scripts:"
+	@echo "The following targets cannot be run simultaneously with each other or other generate scripts:"
 	$(foreach TARGET,$(shared_generate_targets_dirty), $(MAKE) $(TARGET))
 
 verify_script := $(dir $(lastword $(MAKEFILE_LIST)))/util/verify.sh
