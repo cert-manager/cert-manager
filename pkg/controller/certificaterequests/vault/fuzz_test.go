@@ -113,7 +113,7 @@ func FuzzVaultSync(f *testing.F) {
 				Type:               condition,
 				Status:             cmmeta.ConditionTrue,
 				Reason:             "cert-manager.io",
-				Message:            "Certificate request has been approved by cert-manager.io",
+				Message:            "[test-message]",
 				LastTransitionTime: &metaFixedClockStart,
 			}),
 		)
@@ -181,6 +181,6 @@ func FuzzVaultSync(f *testing.F) {
 			panic(err)
 		}
 		builder.Start()
-		controller.Sync(context.Background(), baseCR)
+		_ = controller.Sync(context.Background(), baseCR)
 	})
 }
