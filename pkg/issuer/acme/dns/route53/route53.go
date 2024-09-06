@@ -112,7 +112,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			RoleSessionName: aws.String("cert-manager"),
 		})
 		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role: %s", err)
+			return aws.Config{}, fmt.Errorf("unable to assume role: %s", removeReqID(err))
 		}
 
 		cfg.Credentials = credentials.NewStaticCredentialsProvider(
@@ -132,7 +132,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			WebIdentityToken: aws.String(d.WebIdentityToken),
 		})
 		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %s", err)
+			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %s", removeReqID(err))
 		}
 
 		cfg.Credentials = credentials.NewStaticCredentialsProvider(
