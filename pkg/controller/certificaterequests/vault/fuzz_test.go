@@ -52,6 +52,12 @@ func init() {
 	}
 }
 
+/*
+	FuzzVaultSync is a fuzz test that can be run by way of
+
+go test -fuzz=FuzzVaultSync. It tests for panics, OOMs
+and stackoverflow-related bugs in the Vault reconciliation.
+*/
 func FuzzVaultSync(f *testing.F) {
 	f.Fuzz(func(t *testing.T,
 		secretTokenData,
