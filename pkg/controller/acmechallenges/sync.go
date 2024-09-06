@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
@@ -181,9 +182,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	if !ch.Status.Presented {
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
-			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
-			ch.Status.Reason = err.Error()
-			return err
+			return c.handlePresentError(ch, err)
 		}
 
 		ch.Status.Presented = true
@@ -244,6 +243,23 @@ func handleError(ch *cmacme.Challenge, err error) error {
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 		return nil
+	}
+
+	return err
+}
+
+// handlePresentError manages the errors returned by the Present method.
+// there are cases where the zone attempted to expend a challenge does not match the issuer configuration, and this
+// should be not only rejected, but removed from the challenges queue, in order to avoid challenges to pile up in it.
+func (c *controller) handlePresentError(ch *cmacme.Challenge, err error) error {
+	// We record the reason and the event anyways
+	c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
+	ch.Status.Reason = err.Error()
+
+	// We ensure that if this is the error that we are trying to validate, the Challenge gets updated accordingly.
+	if strings.Contains(err.Error(), "InvalidChangeBatch") && strings.Contains(err.Error(), "is not permitted in zone") {
+		ch.Status.State = cmacme.Invalid
+		ch.Status.Processing = false
 	}
 
 	return err

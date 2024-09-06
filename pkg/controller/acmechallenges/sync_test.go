@@ -579,6 +579,140 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
+		"sets the challenge in invalid and not processing if there is an InvalidChangeBatch with invalid zone": {
+			expectErr: true,
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(false),
+			),
+			httpSolver: &fakeSolver{
+				fakePresent: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return errors.New("failed to change Route 53 record set: InvalidChangeBatch: [RRSet with DNS name subdomains.example.io. is not permitted in zone another-zone.io.]")
+				},
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(false),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(false),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(cmacme.Invalid),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(false),
+							gen.SetChallengeReason("failed to change Route 53 record set: InvalidChangeBatch: [RRSet with DNS name subdomains.example.io. is not permitted in zone another-zone.io.]"),
+						))),
+				},
+				ExpectedEvents: []string{
+					"Warning PresentError Error presenting challenge: failed to change Route 53 record set: InvalidChangeBatch: [RRSet with DNS name subdomains.example.io. is not permitted in zone another-zone.io.]",
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					// return something other than invalid here so we can verify that
+					// the challenge.status.state is set to the *authorizations*
+					// status and not the challenges
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, &acmeapi.AuthorizationError{
+						URI:        "http://testerroruri",
+						Identifier: "example.com",
+						Errors: []error{
+							&acmeapi.Error{
+								StatusCode:  400,
+								ProblemType: "fakeerror",
+								Detail:      "this is a very detailed error",
+							},
+						},
+					}
+				},
+			},
+		},
+		"sets the error in the challenge and sends an event with no invalidChangeBatch error": {
+			expectErr: true,
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(false),
+			),
+			httpSolver: &fakeSolver{
+				fakePresent: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return errors.New("other present error")
+				},
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(false),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(cmacme.Pending),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(false),
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeReason("other present error"),
+						))),
+				},
+				ExpectedEvents: []string{
+					"Warning PresentError Error presenting challenge: other present error",
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					// return something other than invalid here so we can verify that
+					// the challenge.status.state is set to the *authorizations*
+					// status and not the challenges
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, &acmeapi.AuthorizationError{
+						URI:        "http://testerroruri",
+						Identifier: "example.com",
+						Errors: []error{
+							&acmeapi.Error{
+								StatusCode:  400,
+								ProblemType: "fakeerror",
+								Detail:      "this is a very detailed error",
+							},
+						},
+					}
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
