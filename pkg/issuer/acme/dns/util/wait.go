@@ -283,7 +283,8 @@ func ValidateCAA(ctx context.Context, domain string, issuerID []string, iswildca
 	var caas []*dns.CAA
 	for {
 		// follow at most 8 cnames per label
-		queryDomain := fqdn
+		// CAA discovery must be performed on the final domain of the CNAME chain
+		// https://cabforum.org/2017/09/27/ballot-214-caa-discovery-cname-errata/
 		var msg *dns.Msg
 		var err error
 		for i := 0; i < 8; i++ {
@@ -291,14 +292,14 @@ func ValidateCAA(ctx context.Context, domain string, issuerID []string, iswildca
 			// nameserver for CAA records, but some setups will return SERVFAIL
 			// on unknown types like CAA. Instead, ask the authoritative server
 			var authNS []string
-			authNS, err = lookupNameservers(ctx, queryDomain, nameservers)
+			authNS, err = lookupNameservers(ctx, fqdn, nameservers)
 			if err != nil {
 				return fmt.Errorf("Could not validate CAA record: %s", err)
 			}
 			for i, ans := range authNS {
 				authNS[i] = net.JoinHostPort(ans, "53")
 			}
-			msg, err = DNSQuery(ctx, queryDomain, dns.TypeCAA, authNS, false)
+			msg, err = DNSQuery(ctx, fqdn, dns.TypeCAA, authNS, false)
 			if err != nil {
 				return fmt.Errorf("Could not validate CAA record: %s", err)
 			}
@@ -311,12 +312,12 @@ func ValidateCAA(ctx context.Context, domain string, issuerID []string, iswildca
 				return fmt.Errorf("Could not validate CAA: Unexpected response code '%s' for %s",
 					dns.RcodeToString[msg.Rcode], domain)
 			}
-			oldQuery := queryDomain
-			queryDomain, err := followCNAMEs(ctx, queryDomain, nameservers)
+			oldQuery := fqdn
+			fqdn, err = followCNAMEs(ctx, fqdn, nameservers)
 			if err != nil {
-				return fmt.Errorf("while trying to follow CNAMEs for domain %s using nameservers %v: %w", queryDomain, nameservers, err)
+				return fmt.Errorf("while trying to follow CNAMEs for domain %s using nameservers %v: %w", fqdn, nameservers, err)
 			}
-			if queryDomain == oldQuery {
+			if fqdn == oldQuery {
 				break
 			}
 		}
