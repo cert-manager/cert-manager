@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/ptr"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	acmeinstall "github.com/cert-manager/cert-manager/internal/apis/acme/install"
@@ -72,8 +73,8 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 
 	s := &server.Server{
 		ResourceScheme:           scheme,
-		ListenAddr:               opts.SecurePort,
-		HealthzAddr:              &opts.HealthzPort,
+		ListenAddr:               int(opts.SecurePort),
+		HealthzAddr:              ptr.To(int(opts.HealthzPort)),
 		EnablePprof:              opts.EnablePprof,
 		PprofAddress:             opts.PprofAddress,
 		CertificateSource:        buildCertificateSource(log, opts.TLSConfig, restcfg),

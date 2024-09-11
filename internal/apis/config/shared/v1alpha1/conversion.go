@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	conversion "k8s.io/apimachinery/pkg/conversion"
@@ -74,7 +76,11 @@ func Convert_Pointer_int32_To_int(in **int32, out *int, s conversion.Scope) erro
 }
 
 func Convert_int_To_Pointer_int32(in *int, out **int32, s conversion.Scope) error {
-	temp := int32(*in)
+	tempIn := *in
+	if tempIn > math.MaxInt32 || tempIn < math.MinInt32 {
+		return fmt.Errorf("value %d is out of range for int32 (must be between %d and %d)", tempIn, math.MinInt32, math.MaxInt32)
+	}
+	temp := int32(tempIn)
 	*out = &temp
 	return nil
 }
