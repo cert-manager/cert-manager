@@ -43,9 +43,6 @@ func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 	// don't retry more than 6 times, if we get 6 nonce mismatches something is quite wrong
 	if n > maxRetries {
 		return -1
-	} else if n < 1 {
-		// n is used for the backoff time below
-		n = 1
 	}
 
 	var jitter time.Duration
@@ -53,7 +50,15 @@ func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 		jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
 	}
 
-	d := time.Duration(1<<uint(n-1))*time.Second + jitter
+	// the exponent is calculated slightly contrived to allow the gosec:G115
+	// linter to recognise the safe type conversion.
+	// simple formula: exponent = max(0, n-1)
+	exponent := uint(0)
+	if temp := n - 1; temp >= 0 {
+		exponent = uint(temp)
+	}
+
+	d := time.Duration(1<<exponent)*time.Second + jitter
 	if d > maxDelay {
 		return maxDelay
 	}
