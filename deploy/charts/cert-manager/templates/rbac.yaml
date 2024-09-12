@@ -39,8 +39,7 @@ roleRef:
   kind: Role
   name: {{ template "cert-manager.fullname" . }}:leaderelection
 subjects:
-  - apiGroup: ""
-    kind: ServiceAccount
+  - kind: ServiceAccount
     name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
 
@@ -83,8 +82,7 @@ roleRef:
   kind: Role
   name: {{ template "cert-manager.serviceAccountName" . }}-tokenrequest
 subjects:
-  - apiGroup: ""
-    kind: ServiceAccount
+  - kind: ServiceAccount
     name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
 {{- end }}
