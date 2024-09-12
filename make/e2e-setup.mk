@@ -30,7 +30,7 @@ IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.10.1@sha
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:127def0e41f49fea6e260abf7b1662fe7bdfb9f33e8f9047fb74d0162a5697bb
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d388cd67b38fb4f55eb5e38107dbbce9e06208b8e3839f0b63f8631f286181be
 IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
-IMAGE_bind_amd64 := docker.io/ubuntu/bind9:9.18-22.04_beta@sha256:90c2db1d60d4964a6c82598345e663c813d7169b031a007d3b4020fb29a15efb
+IMAGE_bind_amd64 := docker.io/ubuntu/bind9:9.18-22.04_beta@sha256:69b27585043985948fb7be88a49c44364f1cb8cfbc2626b2cfedfa2e68db50ee
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
 IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:bb7af851ac5832c315e0863d12ed583cee54c495d58a206f1d0897647505ed70
 
@@ -268,14 +268,14 @@ feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # When testing an published chart the repo can be configured using
-# E2E_CERT_MANAGER_REPO 
+# E2E_CERT_MANAGER_REPO
 E2E_CERT_MANAGER_REPO ?= https://charts.jetstack.io
 # When testing an published chart the chart name can be configured using
-# E2E_CERT_MANAGER_CHART. This can also be set to a local path to test a 
+# E2E_CERT_MANAGER_CHART. This can also be set to a local path to test a
 # downloaded chart
 E2E_CERT_MANAGER_CHART ?= cert-manager
 # When testing an published chart, default to the latest release
-E2E_CERT_MANAGER_VERSION ?= 
+E2E_CERT_MANAGER_VERSION ?=
 
 # Example running E2E tests against a downloaded chart:
 # 	E2E_EXISTING_CHART=true E2E_CERT_MANAGER_CHART=./cert-manager-v1.14.2.tgz make e2e-setup
