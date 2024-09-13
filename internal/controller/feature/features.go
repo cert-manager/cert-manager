@@ -16,7 +16,7 @@ limitations under the License.
 
 // feature contains controller's feature gate setup functionality. Do not import
 // this package into any code that's shared with other components to prevent
-// overwriting other component's featue gates, see i.e
+// overwriting other component's feature gates, see i.e
 // https://github.com/cert-manager/cert-manager/issues/6011
 package feature
 
