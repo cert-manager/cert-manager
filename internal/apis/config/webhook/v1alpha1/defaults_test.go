@@ -51,7 +51,7 @@ func TestWebhookConfigurationDefaults(t *testing.T) {
 				if err := os.WriteFile(tt.jsonFilePath, defaultData, 0644); err != nil {
 					t.Fatal(err)
 				}
-				t.Log("cainjector config api defaults updated")
+				t.Log("webhook config api defaults updated")
 			}
 
 			expectedData, err := os.ReadFile(tt.jsonFilePath)
