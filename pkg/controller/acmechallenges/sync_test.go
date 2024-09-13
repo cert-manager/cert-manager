@@ -71,7 +71,7 @@ type testT struct {
 	acmeClient *acmecl.FakeACME
 }
 
-func TestSyncHappyPath(t *testing.T) {
+func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string) {
 	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		Solvers: []cmacme.ACMEChallengeSolver{
 			{
@@ -85,7 +85,7 @@ func TestSyncHappyPath(t *testing.T) {
 		gen.SetChallengeIssuer(cmmeta.ObjectReference{
 			Name: "testissuer",
 		}),
-		gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
+		gen.SetChallengeFinalizers([]string{finalizer}),
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
@@ -188,7 +188,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.DefaultTestNamespace,
 							gen.ChallengeFrom(baseChallenge,
 								gen.SetChallengeProcessing(true),
-								gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer})))),
+								gen.SetChallengeFinalizers([]string{cmacme.ACMELegacyFinalizer})))),
 				},
 			},
 			expectErr: false,
@@ -586,6 +586,14 @@ func TestSyncHappyPath(t *testing.T) {
 			runTest(t, test)
 		})
 	}
+}
+
+func TestSyncHappyPathFinalizer1(t *testing.T) {
+	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer)
+}
+
+func TestSyncHappyPathFinalizer2(t *testing.T) {
+	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer)
 }
 
 func runTest(t *testing.T, test testT) {

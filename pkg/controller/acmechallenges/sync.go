@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
@@ -92,8 +93,14 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
+	//
+	// API Transition
+	// -- We are adding cmacme.ACMELegacyFinalizer today.
+	// -- In a future version we intend to add cmacme.ACMEDomainQualifiedFinalizer instead.
+	//
+	// -- We only need to add a finalizer label if no supported finalizer label is present.
 	if finalizerRequired(ch) {
-		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEFinalizer)
+		ch.Finalizers = append(ch.Finalizers, cmacme.ACMELegacyFinalizer)
 		return nil
 	}
 
@@ -256,14 +263,16 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	if len(ch.Finalizers) == 0 {
 		return nil
 	}
-	if ch.Finalizers[0] != cmacme.ACMEFinalizer {
+	if otherFinalizerPresent(ch) {
 		log.V(logf.DebugLevel).Info("waiting to run challenge finalization...")
 		return nil
 	}
 
 	defer func() {
 		// call Update to remove the metadata.finalizers entry
-		ch.Finalizers = ch.Finalizers[1:]
+		ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+			return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
+		})
 	}()
 
 	if !ch.Status.Processing {
