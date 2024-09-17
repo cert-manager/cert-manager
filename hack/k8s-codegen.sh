@@ -32,14 +32,8 @@ module_name="github.com/cert-manager/cert-manager"
 
 # Generate deepcopy functions for all internal and external APIs
 deepcopy_inputs=(
-  internal/apis/certmanager/v1alpha2 \
-  internal/apis/certmanager/v1alpha3 \
-  internal/apis/certmanager/v1beta1 \
   pkg/apis/certmanager/v1 \
   internal/apis/certmanager \
-  internal/apis/acme/v1alpha2 \
-  internal/apis/acme/v1alpha3 \
-  internal/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
   internal/apis/acme \
   pkg/apis/config/cainjector/v1alpha1 \
@@ -65,13 +59,7 @@ client_inputs=(
 
 # Generate defaulting functions to be used by the mutating webhook
 defaulter_inputs=(
-  internal/apis/certmanager/v1alpha2 \
-  internal/apis/certmanager/v1alpha3 \
-  internal/apis/certmanager/v1beta1 \
   internal/apis/certmanager/v1 \
-  internal/apis/acme/v1alpha2 \
-  internal/apis/acme/v1alpha3 \
-  internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
   internal/apis/config/shared/v1alpha1 \
   internal/apis/config/cainjector/v1alpha1 \
@@ -82,13 +70,7 @@ defaulter_inputs=(
 
 # Generate conversion functions to be used by the conversion webhook
 conversion_inputs=(
-  internal/apis/certmanager/v1alpha2 \
-  internal/apis/certmanager/v1alpha3 \
-  internal/apis/certmanager/v1beta1 \
   internal/apis/certmanager/v1 \
-  internal/apis/acme/v1alpha2 \
-  internal/apis/acme/v1alpha3 \
-  internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
   internal/apis/config/shared/v1alpha1 \
   internal/apis/config/cainjector/v1alpha1 \
