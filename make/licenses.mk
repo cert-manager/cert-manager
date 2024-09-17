@@ -15,7 +15,8 @@
 # LICENSE_YEAR is the value which will be substituted into licenses when they're generated
 # It would be possible to make this more dynamic, but there's seemingly no need:
 # https://stackoverflow.com/a/2391555/1615417
-# As such, this is hardcoded to avoid needless complexity
+# As such, this is hardcoded to avoid needless complexity. There's generally no need to update
+# this and create regular diffs which do nothing but update the license year.
 LICENSE_YEAR=2022
 
 # Creates the boilerplate header for YAML files from the template in hack/
