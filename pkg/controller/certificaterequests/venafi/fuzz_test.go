@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vault
+package venafi
 
 import (
 	"context"
@@ -26,9 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
-	internalvault "github.com/cert-manager/cert-manager/internal/vault"
-	fakevault "github.com/cert-manager/cert-manager/internal/vault/fake"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -53,12 +50,12 @@ func init() {
 }
 
 /*
-	FuzzVaultCRController is a fuzz test that can be run by way of
+	FuzzVenafiCRController is a fuzz test that can be run by way of
 
-go test -fuzz=FuzzVaultCRController. It tests for panics, OOMs
-and stackoverflow-related bugs in the Vault reconciliation.
+go test -fuzz=FuzzVenafiCRController. It tests for panics, OOMs
+and stackoverflow-related bugs in the Venafi reconciliation.
 */
-func FuzzVaultCRController(f *testing.F) {
+func FuzzVenafiCRController(f *testing.F) {
 	f.Fuzz(func(t *testing.T,
 		secretTokenData,
 		customCsrPEM,
@@ -83,10 +80,9 @@ func FuzzVaultCRController(f *testing.F) {
 
 		fixedClockStart = time.Now()
 		metaFixedClockStart := metav1.NewTime(fixedClockStart)
-		baseIssuer := gen.Issuer("vault-issuer",
-			gen.SetIssuerVault(cmapi.VaultIssuer{
-				Server: "https://example.vault.com",
-			}),
+
+		baseIssuer := gen.Issuer("fuzz-issuer",
+			gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
 			gen.AddIssuerCondition(cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
@@ -141,17 +137,9 @@ func FuzzVaultCRController(f *testing.F) {
 			}
 			kubeObjects = append(kubeObjects, tokenSecret)
 			certManagerObjects = append(certManagerObjects, gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(cmapi.VaultIssuer{
-					Auth: cmapi.VaultAuth{
-						TokenSecretRef: &cmmeta.SecretKeySelector{
-							Key: "my-token-key",
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "token-secret",
-							},
-						},
-					},
-				}),
+				gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
 			))
+
 		} else {
 			certManagerObjects = append(certManagerObjects, baseIssuer.DeepCopy())
 		}
@@ -161,32 +149,18 @@ func FuzzVaultCRController(f *testing.F) {
 			KubeObjects:        kubeObjects,
 			CertManagerObjects: certManagerObjects,
 		}
-		builder.Init()
 		defer builder.Stop()
-		vault := NewVault(builder.Context).(*Vault)
-
-		if !addCustomCsrPEM {
-			rsaPEMCert, err := generateSelfSignedCertFromCR(baseCR, rsaSKFuzz)
-			if err != nil {
-				return
-			}
-
-			fakeVault := fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil)
-			vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
-				iss cmapi.GenericIssuer) (internalvault.Interface, error) {
-				return fakeVault.New(ns, sl, iss)
-			}
-		}
-
+		builder.InitWithRESTConfig()
+		v := NewVenafi(builder.Context).(*Venafi)
 		controller := certificaterequests.New(
-			apiutil.IssuerVault,
-			func(*controllerpkg.Context) certificaterequests.Issuer { return vault },
+			apiutil.IssuerVenafi,
+			func(*controllerpkg.Context) certificaterequests.Issuer { return v },
 		)
 		if _, _, err := controller.Register(builder.Context); err != nil {
 			// Make it explicit if this fails
 			panic(err)
 		}
-		builder.Start()
 		_ = controller.Sync(context.Background(), baseCR)
+
 	})
 }
