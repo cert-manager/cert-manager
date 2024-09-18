@@ -82,7 +82,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	log := logf.WithResource(logf.FromContext(ctx, "Present"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logf.NewContext(ctx, log)
 
-	webhookSolver, req, err := s.prepareChallengeRequest(ctx, issuer, ch)
+	webhookSolver, req, err := s.prepareChallengeRequest(ctx, ch)
 	if err != nil && err != errNotFound {
 		return err
 	}
@@ -91,7 +91,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 		return webhookSolver.Present(req)
 	}
 
-	slv, providerConfig, err := s.solverForChallenge(ctx, issuer, ch)
+	slv, providerConfig, err := s.solverForChallenge(ctx, ch)
 	if err != nil {
 		return err
 	}
@@ -136,11 +136,11 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 // CleanUp removes DNS records which are no longer needed after
 // certificate issuance.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) CleanUp(ctx context.Context, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "CleanUp"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logf.NewContext(ctx, log)
 
-	webhookSolver, req, err := s.prepareChallengeRequest(ctx, issuer, ch)
+	webhookSolver, req, err := s.prepareChallengeRequest(ctx, ch)
 	if err != nil && err != errNotFound {
 		return err
 	}
@@ -149,7 +149,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 		return webhookSolver.CleanUp(req)
 	}
 
-	slv, providerConfig, err := s.solverForChallenge(ctx, issuer, ch)
+	slv, providerConfig, err := s.solverForChallenge(ctx, ch)
 	if err != nil {
 		return err
 	}
@@ -177,12 +177,12 @@ func extractChallengeSolverConfig(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSo
 // solverForChallenge returns a Solver for the given providerName.
 // The providerName is the name of an ACME DNS-01 challenge provider as
 // specified on the Issuer resource for the Solver.
-func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) (solver, *cmacme.ACMEChallengeSolverDNS01, error) {
+func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (solver, *cmacme.ACMEChallengeSolverDNS01, error) {
 	log := logf.FromContext(ctx, "solverForChallenge")
 	dbg := log.V(logf.DebugLevel)
 
-	resourceNamespace := s.ResourceNamespace(issuer)
-	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
+	resourceNamespace := s.ResourceNamespaceFromRef(ch.Spec.IssuerRef, ch.Namespace)
+	canUseAmbientCredentials := s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef)
 
 	providerConfig, err := extractChallengeSolverConfig(ch)
 	if err != nil {
@@ -238,7 +238,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		}
 
 		// attempt to construct the cloud dns provider
-		impl, err = s.dnsProviderConstructors.cloudDNS(ctx, providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer), providerConfig.CloudDNS.HostedZoneName)
+		impl, err = s.dnsProviderConstructors.cloudDNS(ctx, providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef), providerConfig.CloudDNS.HostedZoneName)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
@@ -439,7 +439,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 	return impl, providerConfig, nil
 }
 
-func (s *Solver) prepareChallengeRequest(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
+func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
 	dns01Config, err := extractChallengeSolverConfig(ch)
 	if err != nil {
 		return nil, nil, err
@@ -460,8 +460,8 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, issuer v1.GenericI
 		return nil, nil, err
 	}
 
-	resourceNamespace := s.ResourceNamespace(issuer)
-	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
+	resourceNamespace := s.ResourceNamespaceFromRef(ch.Spec.IssuerRef, ch.Namespace)
+	canUseAmbientCredentials := s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef)
 
 	// construct a ChallengeRequest which can be passed to DNS solvers.
 	// The provided config will be encoded to JSON in order to avoid a coupling

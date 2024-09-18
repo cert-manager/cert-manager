@@ -18,6 +18,7 @@ package controller
 
 import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // ResourceNamespace returns the Kubernetes namespace where resources
@@ -30,6 +31,13 @@ func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
 	return ns
 }
 
+func (o IssuerOptions) ResourceNamespaceFromRef(ref cmmeta.ObjectReference, ns string) string {
+	if ns != "" {
+		return ns
+	}
+	return o.ClusterResourceNamespace
+}
+
 // CanUseAmbientCredentials returns whether `iss` will attempt to configure itself
 // from ambient credentials (e.g. from a cloud metadata service).
 func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
@@ -37,6 +45,16 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 	case *cmapi.ClusterIssuer:
 		return o.ClusterIssuerAmbientCredentials
 	case *cmapi.Issuer:
+		return o.IssuerAmbientCredentials
+	}
+	return false
+}
+
+func (o IssuerOptions) CanUseAmbientCredentialsFromRef(ref cmmeta.ObjectReference) bool {
+	switch ref.Kind {
+	case cmapi.ClusterIssuerKind:
+		return o.ClusterIssuerAmbientCredentials
+	case "", cmapi.IssuerKind:
 		return o.IssuerAmbientCredentials
 	}
 	return false
