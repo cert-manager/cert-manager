@@ -99,6 +99,9 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	webhookConfig.SecurePort = 0
 	webhookConfig.HealthzPort = 0
 
+	// Disable the metrics server
+	webhookConfig.MetricsListenAddress = "0"
+
 	errCh := make(chan error)
 	srv, err := webhook.NewCertManagerWebhookServer(log, *webhookConfig, argumentsForNewServerWithOptions...)
 	if err != nil {
