@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/v5/pkg/certificate"
+	"github.com/Venafi/vcert/v5/pkg/util"
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
@@ -186,6 +187,7 @@ func newVRequest(cert *x509.Certificate, duration time.Duration) *certificate.Re
 	req := certificate.NewRequest(cert)
 
 	req.ValidityDuration = &duration
+	req.IssuerHint = util.IssuerHintAllIssuers
 	req.ChainOption = certificate.ChainOptionRootLast
 
 	// overwrite entire Subject block
