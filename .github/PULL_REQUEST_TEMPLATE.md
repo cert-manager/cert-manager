@@ -19,8 +19,13 @@ Thanks for opening a pull request! Here are some tips to get everything merged s
 ### Kind
 
 <!--
+The kind(s) listed after "kind" after this comment will be used by a bot to add labels when the PR is opened.
+If omitted at PR creation, someone will need to make a new comment with them later (editing the description after the fact will not trigger the bot).
+-->
+/kind
+<!--
 
-Pick a kind which best describes your PR from the following list:
+Pick the kind(s) which best describe your PR from the following list:
 
 	<cleanup | bug | feature | documentation | design | flake>
 
