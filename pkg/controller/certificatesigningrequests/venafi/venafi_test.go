@@ -391,7 +391,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RequestCertificateFn: func(_ []byte, _ []venafiapi.CustomField) (string, error) {
+					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "", venaficlient.ErrCustomFieldsType{Type: "test-type"}
 					},
 				}, nil
@@ -462,7 +462,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RequestCertificateFn: func(_ []byte, _ []venafiapi.CustomField) (string, error) {
+					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "", errors.New("generic error")
 					},
 				}, nil
@@ -533,7 +533,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RequestCertificateFn: func(_ []byte, _ []venafiapi.CustomField) (string, error) {
+					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "test-pickup-id", nil
 					},
 				}, nil
@@ -595,7 +595,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, endpoint.ErrCertificatePending{}
 					},
 				}, nil
@@ -646,7 +646,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, endpoint.ErrRetrieveCertificateTimeout{}
 					},
 				}, nil
@@ -697,7 +697,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, errors.New("generic error")
 					},
 				}, nil
@@ -748,7 +748,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return []byte("garbage"), nil
 					},
 				}, nil
@@ -821,7 +821,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return []byte(fmt.Sprintf("%s%s", certBundle.ChainPEM, certBundle.CAPEM)), nil
 					},
 				}, nil

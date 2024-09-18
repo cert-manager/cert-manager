@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/v5/pkg/certificate"
+	"github.com/Venafi/vcert/v5/pkg/util"
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
@@ -45,8 +46,8 @@ var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi i
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
 // It will return a pickup ID which can be used with RetrieveCertificate to get the certificate
-func (v *Venafi) RequestCertificate(csrPEM []byte, customFields []api.CustomField) (string, error) {
-	vreq, err := v.buildVReq(csrPEM, customFields)
+func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
+	vreq, err := v.buildVReq(csrPEM, duration, customFields)
 	if err != nil {
 		return "", err
 	}
@@ -81,8 +82,8 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, customFields []api.CustomFiel
 	return v.vcertClient.RequestCertificate(vreq)
 }
 
-func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, customFields []api.CustomField) ([]byte, error) {
-	vreq, err := v.buildVReq(csrPEM, customFields)
+func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
+	vreq, err := v.buildVReq(csrPEM, duration, customFields)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +104,7 @@ func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, customField
 	return []byte(chain), nil
 }
 
-func (v *Venafi) buildVReq(csrPEM []byte, customFields []api.CustomField) (*certificate.Request, error) {
+func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (*certificate.Request, error) {
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
@@ -122,7 +123,7 @@ func (v *Venafi) buildVReq(csrPEM []byte, customFields []api.CustomField) (*cert
 	}
 
 	// Create a vcert Request structure
-	vreq := newVRequest(tmpl)
+	vreq := newVRequest(tmpl, duration)
 
 	// Convert over custom fields from our struct type to venafi's
 	vfields, err := convertCustomFieldsToVcert(customFields)
@@ -182,8 +183,11 @@ func convertCustomFieldsToVcert(customFields []api.CustomField) ([]certificate.C
 	return out, nil
 }
 
-func newVRequest(cert *x509.Certificate) *certificate.Request {
+func newVRequest(cert *x509.Certificate, duration time.Duration) *certificate.Request {
 	req := certificate.NewRequest(cert)
+
+	req.ValidityDuration = &duration
+	req.IssuerHint = util.IssuerHintAllIssuers
 	req.ChainOption = certificate.ChainOptionRootLast
 
 	// overwrite entire Subject block
