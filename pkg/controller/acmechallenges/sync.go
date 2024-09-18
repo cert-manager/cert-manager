@@ -95,12 +95,18 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// challenge.
 	//
 	// API Transition
-	// -- We are adding cmacme.ACMELegacyFinalizer today.
-	// -- In a future version we intend to add cmacme.ACMEDomainQualifiedFinalizer instead.
+	// -- Until UseDomainQualifiedFinalizer is active, we add cmacme.ACMELegacyFinalizer.
+	// -- When it is active we add cmacme.ACMEDomainQualifiedFinalizer instead.
+	//
+	// -- Both finalizers are supported, the flag just controls the one we add.
 	//
 	// -- We only need to add a finalizer label if no supported finalizer label is present.
 	if finalizerRequired(ch) {
-		ch.Finalizers = append(ch.Finalizers, cmacme.ACMELegacyFinalizer)
+		finalizer := cmacme.ACMELegacyFinalizer
+		if utilfeature.DefaultFeatureGate.Enabled(feature.UseDomainQualifiedFinalizer) {
+			finalizer = cmacme.ACMEDomainQualifiedFinalizer
+		}
+		ch.Finalizers = append(ch.Finalizers, finalizer)
 		return nil
 	}
 
