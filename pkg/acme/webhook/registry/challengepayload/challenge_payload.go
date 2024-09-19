@@ -33,7 +33,7 @@ type REST struct {
 	hookFn webhook.Solver
 }
 
-var _ rest.Creater = &REST{}
+var _ rest.Creater = &REST{} // nolint:misspell
 var _ rest.Scoper = &REST{}
 var _ rest.GroupVersionKindProvider = &REST{}
 var _ rest.SingularNameProvider = &REST{}

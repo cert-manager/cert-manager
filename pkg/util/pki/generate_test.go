@@ -219,7 +219,7 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 
 					curve, err := ecCurveForKeySize(test.keySize)
 					if err != nil {
-						t.Errorf(err.Error())
+						t.Error(err)
 						return
 					}
 
