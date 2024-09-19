@@ -1039,19 +1039,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("cloudflare", "email"), ""),
 			},
 		},
-		"missing route53 region": {
+		"empty route53 field should be valid because ambient credentials and region may be used instead": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("route53", "region"), ""),
-			},
-		},
-		"missing route53 accessKeyID and accessKeyIDSecretRef should be valid because ambient credentials may be used instead": {
-			cfg: &cmacme.ACMEChallengeSolverDNS01{
-				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-					Region: "valid",
-				},
 			},
 			errs: []*field.Error{},
 		},
