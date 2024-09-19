@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns"
@@ -31,11 +30,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
-)
-
-const (
-	defaultTestIssuerName = "test-issuer"
 )
 
 type solverFixture struct {
@@ -43,8 +37,6 @@ type solverFixture struct {
 	Solver *Solver
 	*test.Builder
 
-	// Issuer to be passed to functions on the Solver (a default will be used if nil)
-	Issuer v1.GenericIssuer
 	// Challenge resource to use during tests
 	Challenge *cmacme.Challenge
 
@@ -67,9 +59,6 @@ type solverFixture struct {
 }
 
 func (s *solverFixture) Setup(t *testing.T) {
-	if s.Issuer == nil {
-		s.Issuer = gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{}))
-	}
 	if s.testResources == nil {
 		s.testResources = map[string]interface{}{}
 	}

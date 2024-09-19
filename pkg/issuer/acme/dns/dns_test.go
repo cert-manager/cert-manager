@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -35,20 +34,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
-
-func newIssuer() *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				ACME: &cmacme.ACMEIssuer{},
-			},
-		},
-	}
-}
 
 func newSecret(name string, data map[string][]byte) *corev1.Secret {
 	return &corev1.Secret{
@@ -76,8 +61,10 @@ func TestSolverFor(t *testing.T) {
 						}),
 					},
 				},
-				Issuer: newIssuer(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -107,8 +94,10 @@ func TestSolverFor(t *testing.T) {
 						}),
 					},
 				},
-				Issuer: newIssuer(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -131,9 +120,11 @@ func TestSolverFor(t *testing.T) {
 		},
 		"fails to load a cloudflare provider with a missing secret": {
 			solverFixture: &solverFixture{
-				Issuer: newIssuer(),
 				// don't include any secrets in the lister
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -156,9 +147,11 @@ func TestSolverFor(t *testing.T) {
 		},
 		"fails to load a cloudflare provider when key and token are provided": {
 			solverFixture: &solverFixture{
-				Issuer: newIssuer(),
 				// don't include any secrets in the lister
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -194,8 +187,10 @@ func TestSolverFor(t *testing.T) {
 						}),
 					},
 				},
-				Issuer: newIssuer(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -225,8 +220,10 @@ func TestSolverFor(t *testing.T) {
 						}),
 					},
 				},
-				Issuer: newIssuer(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -256,8 +253,10 @@ func TestSolverFor(t *testing.T) {
 						}),
 					},
 				},
-				Issuer: newIssuer(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -284,7 +283,7 @@ func TestSolverFor(t *testing.T) {
 			test.Setup(t)
 			defer test.Finish(t)
 			s := test.Solver
-			dnsSolver, _, err := s.solverForChallenge(context.Background(), test.Issuer, test.Challenge)
+			dnsSolver, _, err := s.solverForChallenge(context.Background(), test.Challenge)
 			if err != nil && !test.expectErr {
 				t.Errorf("expected solverFor to not error, but got: %s", err.Error())
 				return
@@ -310,8 +309,10 @@ func TestSolveForDigitalOcean(t *testing.T) {
 				}),
 			},
 		},
-		Issuer: newIssuer(),
 		Challenge: &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+			},
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -334,7 +335,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -361,8 +362,10 @@ func TestRoute53TrimCreds(t *testing.T) {
 				}),
 			},
 		},
-		Issuer: newIssuer(),
 		Challenge: &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+			},
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -387,7 +390,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -414,8 +417,10 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 				}),
 			},
 		},
-		Issuer: newIssuer(),
 		Challenge: &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+			},
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -445,7 +450,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -484,9 +489,11 @@ func TestRoute53AmbientCreds(t *testing.T) {
 						},
 					},
 				},
-				Issuer:       newIssuer(),
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -517,9 +524,11 @@ func TestRoute53AmbientCreds(t *testing.T) {
 						},
 					},
 				},
-				Issuer:       newIssuer(),
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -545,7 +554,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 		f.Setup(t)
 		defer f.Finish(t)
 		s := f.Solver
-		_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
+		_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
 		if tt.out.expectedErr != err {
 			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 		}
@@ -580,9 +589,11 @@ func TestRoute53AssumeRole(t *testing.T) {
 						},
 					},
 				},
-				Issuer:       newIssuer(),
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -614,9 +625,11 @@ func TestRoute53AssumeRole(t *testing.T) {
 						},
 					},
 				},
-				Issuer:       newIssuer(),
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -643,7 +656,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 		f.Setup(t)
 		defer f.Finish(t)
 		s := f.Solver
-		_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
+		_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
 		if tt.out.expectedErr != err {
 			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 		}
