@@ -29,7 +29,7 @@ import (
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
-// Apply will make a Apply API call with the given client to the certificates
+// Apply will make an Apply API call with the given client to the certificates
 // resource endpoint. All data in the given Certificate's status field is
 // dropped.
 // The given fieldManager is will be used as the FieldManager in the Apply

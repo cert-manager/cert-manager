@@ -96,7 +96,7 @@ $kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 # 2. BUILD AND UPGRADE TO HELM CHART FROM THE CURRENT MASTER
 
-# e2e-setup-certamanager both builds and deploys the latest available chart based on the current checkout
+# e2e-setup-certmanager both builds and deploys the latest available chart based on the current checkout
 make e2e-setup-certmanager
 
 # Wait for the cert-manager api to be available

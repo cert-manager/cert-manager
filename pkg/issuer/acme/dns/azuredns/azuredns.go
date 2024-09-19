@@ -271,7 +271,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 // is the same to avoid spurious challenge updates.
 //
 // The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from a azure-sdk func that makes API calls.
+// we have a non-nil error coming from an azure-sdk func that makes API calls.
 func stabilizeError(err error) error {
 	if err == nil {
 		return nil

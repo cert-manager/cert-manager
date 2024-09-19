@@ -283,7 +283,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			nil,
 		},
 		{
-			"with inalid acme dns recursive nameserver missing port",
+			"with invalid acme dns recursive nameserver missing port",
 			&config.ControllerConfiguration{
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
@@ -307,7 +307,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			},
 		},
 		{
-			"with inalid acme dns recursive nameserver invalid url",
+			"with invalid acme dns recursive nameserver invalid url",
 			&config.ControllerConfiguration{
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",

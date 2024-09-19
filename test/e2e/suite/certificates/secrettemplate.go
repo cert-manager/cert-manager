@@ -343,10 +343,10 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 				})
 			}
 
-			for _, expectedAnnoation := range []string{"an-annotation", "another-annotation"} {
+			for _, expectedAnnotation := range []string{"an-annotation", "another-annotation"} {
 				var found bool
 				for _, managedAnnotation := range managedAnnotations {
-					if expectedAnnoation == managedAnnotation {
+					if expectedAnnotation == managedAnnotation {
 						found = true
 						break
 					}

@@ -81,7 +81,7 @@ func (c *FakeIssuers) Watch(ctx context.Context, opts metav1.ListOptions) (watch
 
 }
 
-// Create takes the representation of a issuer and creates it.  Returns the server's representation of the issuer, and an error, if there is any.
+// Create takes the representation of an issuer and creates it.  Returns the server's representation of the issuer, and an error, if there is any.
 func (c *FakeIssuers) Create(ctx context.Context, issuer *v1.Issuer, opts metav1.CreateOptions) (result *v1.Issuer, err error) {
 	emptyResult := &v1.Issuer{}
 	obj, err := c.Fake.
@@ -93,7 +93,7 @@ func (c *FakeIssuers) Create(ctx context.Context, issuer *v1.Issuer, opts metav1
 	return obj.(*v1.Issuer), err
 }
 
-// Update takes the representation of a issuer and updates it. Returns the server's representation of the issuer, and an error, if there is any.
+// Update takes the representation of an issuer and updates it. Returns the server's representation of the issuer, and an error, if there is any.
 func (c *FakeIssuers) Update(ctx context.Context, issuer *v1.Issuer, opts metav1.UpdateOptions) (result *v1.Issuer, err error) {
 	emptyResult := &v1.Issuer{}
 	obj, err := c.Fake.

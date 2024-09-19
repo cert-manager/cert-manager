@@ -37,13 +37,13 @@ import (
 )
 
 // This file contains logic to create reconcilers. By default a
-// reconciler is created for each of the injectables- CustomResourceDefinition,
+// reconciler is created for each of the injectables - CustomResourceDefinition,
 // Validating/MutatingWebhookConfiguration, APIService and gets triggered for
 // events on those resources as well as on Secrets and Certificates.
 
 // reconciler syncs CA data from source to injectable.
 type reconciler struct {
-	// newInjectableTarget knows how to create a new injectable targt for
+	// newInjectableTarget knows how to create a new injectable target for
 	// the injectable being reconciled.
 	newInjectableTarget NewInjectableTarget
 	// sources is a list of available 'data sources' that can be used to extract

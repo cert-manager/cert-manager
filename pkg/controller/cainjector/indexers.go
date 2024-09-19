@@ -128,7 +128,7 @@ func certToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config se
 
 // secretForInjectableMapFuncBuilder returns a handler.MapFunc that, for a
 // config for particular injectable type (i.e CRD, APIService) and a Secret,
-// returns all injectables that have the inject-ca-from-secret annotion with the
+// returns all injectables that have the inject-ca-from-secret annotation with the
 // given secret name. This will be used in an event handler to ensure that
 // changes to a Secret triggers a reconcile loop for the relevant injectable.
 func secretForInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {

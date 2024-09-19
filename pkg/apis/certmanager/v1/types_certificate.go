@@ -22,7 +22,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
-// NOTE: Be mindful of adding OpenAPI validation- see https://github.com/cert-manager/cert-manager/issues/3644
+// NOTE: Be mindful of adding OpenAPI validation - see https://github.com/cert-manager/cert-manager/issues/3644
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -316,7 +316,7 @@ type CertificatePrivateKey struct {
 	// re-issuance is being processed.
 	//
 	// If set to `Never`, a private key will only be generated if one does not
-	// already exist in the target `spec.secretName`. If one does exists but it
+	// already exist in the target `spec.secretName`. If one does exist but it
 	// does not have the correct algorithm or size, a warning will be raised
 	// to await user intervention.
 	// If set to `Always`, a private key matching the specified requirements
@@ -365,7 +365,7 @@ type PrivateKeyRotationPolicy string
 var (
 	// RotationPolicyNever means a private key will only be generated if one
 	// does not already exist in the target `spec.secretName`.
-	// If one does exists but it does not have the correct algorithm or size,
+	// If one does exist but it does not have the correct algorithm or size,
 	// a warning will be raised to await user intervention.
 	RotationPolicyNever PrivateKeyRotationPolicy = "Never"
 
@@ -536,7 +536,7 @@ type CertificateStatus struct {
 	// +optional
 	Conditions []CertificateCondition `json:"conditions,omitempty"`
 
-	// LastFailureTime is set only if the lastest issuance for this
+	// LastFailureTime is set only if the latest issuance for this
 	// Certificate failed and contains the time of the failure. If an
 	// issuance has failed, the delay till the next issuance will be
 	// calculated using formula time.Hour * 2 ^ (failedIssuanceAttempts -
@@ -595,7 +595,7 @@ type CertificateStatus struct {
 	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
 }
 
-// CertificateCondition contains condition information for an Certificate.
+// CertificateCondition contains condition information for a Certificate.
 type CertificateCondition struct {
 	// Type of the condition, known values are (`Ready`, `Issuing`).
 	Type CertificateConditionType `json:"type"`
@@ -627,7 +627,7 @@ type CertificateCondition struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// CertificateConditionType represents an Certificate condition value.
+// CertificateConditionType represents a Certificate condition value.
 type CertificateConditionType string
 
 const (

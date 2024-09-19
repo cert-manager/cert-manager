@@ -64,7 +64,7 @@ type Interface interface {
 	VerifyCredentials() error
 }
 
-// Venafi is a implementation of vcert library to manager certificates from TPP or Venafi Cloud
+// Venafi is an implementation of vcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -85,7 +85,7 @@ type connector interface {
 	ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error)
 	RequestCertificate(req *certificate.Request) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
-	// TODO: (irbekrm) this method is never used- can it be removed?
+	// TODO: (irbekrm) this method is never used - can it be removed?
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 

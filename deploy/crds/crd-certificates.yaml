@@ -428,7 +428,7 @@ spec:
                         re-issuance is being processed.
 
                         If set to `Never`, a private key will only be generated if one does not
-                        already exist in the target `spec.secretName`. If one does exists but it
+                        already exist in the target `spec.secretName`. If one does exist but it
                         does not have the correct algorithm or size, a warning will be raised
                         to await user intervention.
                         If set to `Always`, a private key matching the specified requirements
@@ -654,7 +654,7 @@ spec:
                     Known condition types are `Ready` and `Issuing`.
                   type: array
                   items:
-                    description: CertificateCondition contains condition information for an Certificate.
+                    description: CertificateCondition contains condition information for a Certificate.
                     type: object
                     required:
                       - status
@@ -708,7 +708,7 @@ spec:
                   type: integer
                 lastFailureTime:
                   description: |-
-                    LastFailureTime is set only if the lastest issuance for this
+                    LastFailureTime is set only if the latest issuance for this
                     Certificate failed and contains the time of the failure. If an
                     issuance has failed, the delay till the next issuance will be
                     calculated using formula time.Hour * 2 ^ (failedIssuanceAttempts -

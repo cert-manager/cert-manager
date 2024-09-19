@@ -45,7 +45,7 @@ type ControllerConfiguration struct {
 
 	// If set, this limits the scope of cert-manager to a single namespace and
 	// ClusterIssuers are disabled. If not specified, all namespaces will be
-	// watched"
+	// watched
 	Namespace string `json:"namespace,omitempty"`
 
 	// Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in.
@@ -90,7 +90,7 @@ type ControllerConfiguration struct {
 	// CertificateRequest and Order, as well as from CertificateSigningRequest to
 	// Order, by passing a list of annotation key prefixes. A prefix starting with
 	// a dash(-) specifies an annotation that shouldn't be copied. Example:
-	// '*,-kubectl.kuberenetes.io/'- all annotations will be copied apart from the
+	// '*,-kubectl.kubernetes.io/'- all annotations will be copied apart from the
 	// ones where the key is prefixed with 'kubectl.kubernetes.io/'.
 	CopiedAnnotationPrefixes []string `json:"copiedAnnotationPrefixes,omitempty"`
 
@@ -159,7 +159,7 @@ type IngressShimConfig struct {
 	// not specified on the ingress resource.
 	DefaultIssuerGroup string `json:"defaultIssuerGroup,omitempty"`
 
-	// The annotation consumed by the ingress-shim controller to indicate a ingress
+	// The annotation consumed by the ingress-shim controller to indicate an ingress
 	// is requesting a certificate
 	DefaultAutoCertificateAnnotations []string `json:"defaultAutoCertificateAnnotations,omitempty"`
 }

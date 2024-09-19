@@ -96,9 +96,9 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	}
 	if namespace != "" && certName.Namespace != namespace {
 		err := fmt.Errorf("cannot read CA data from Certificate in namespace %s, cainjector is scoped to namespace %s", certName.Namespace, namespace)
-		forbidenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
-		log.Error(forbidenErr, "cannot read data source")
-		return nil, forbidenErr
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	var cert cmapi.Certificate
@@ -172,9 +172,9 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 
 	if namespace != "" && secretName.Namespace != namespace {
 		err := fmt.Errorf("cannot read CA data from Secret in namespace %s, cainjector is scoped to namespace %s", secretName.Namespace, namespace)
-		forbidenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
-		log.Error(forbidenErr, "cannot read data source")
-		return nil, forbidenErr
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	// grab the associated secret

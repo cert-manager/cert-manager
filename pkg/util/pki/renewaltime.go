@@ -45,7 +45,7 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	// where it is truncated to the nearest second. We use the renewal time
 	// from Certificate's status to determine when the Certificate will be
 	// added to the queue to be renewed, but then re-calculate whether it
-	// needs to be renewed _now_ using this function- so returning a
+	// needs to be renewed _now_ using this function, so returning a
 	// non-truncated value here would potentially cause Certificates to be
 	// re-queued for renewal earlier than the calculated renewal time thus
 	// causing Certificates to not be automatically renewed. See

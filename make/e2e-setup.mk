@@ -356,7 +356,7 @@ e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
-# defined. When configuring solver block for ACME HTTTP01 challenge on an
+# defined. When configuring solver block for ACME HTTP01 challenge on an
 # ACME issuer, cert-manager users can currently specify either an Ingress
 # name or a class. We also e2e test these two ways of creating Ingresses
 # with ingress-shim. For the ingress controller to watch our Ingresses that

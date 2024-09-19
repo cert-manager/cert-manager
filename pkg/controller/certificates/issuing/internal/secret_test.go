@@ -807,7 +807,7 @@ func Test_getCertificateSecret(t *testing.T) {
 				Type:       corev1.SecretTypeTLS,
 			},
 		},
-		"if secret exists, expect onlt basic metadata to be retuned, but the Type set to tls": {
+		"if secret exists, expect only basic metadata to be retuned, but the Type set to tls": {
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",

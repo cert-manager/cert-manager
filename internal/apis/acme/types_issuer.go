@@ -279,7 +279,7 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 }
 
 type ACMEChallengeSolverHTTP01IngressPodObjectMeta struct {
-	// Annotations that should be added to the create ACME HTTP01 solver pods.
+	// Annotations that should be added to the created ACME HTTP01 solver pods.
 	Annotations map[string]string
 
 	// Labels that should be added to the created ACME HTTP01 solver pods.
@@ -531,7 +531,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
 	Role string
 
-	// If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
+	// If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
 	HostedZoneID string
 
 	// Always set the region when using AccessKeyID and SecretAccessKey

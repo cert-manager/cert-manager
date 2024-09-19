@@ -132,7 +132,7 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	}
 
 	// It is safe to mutate top-level fields in `spec` as it is not a pointer
-	// meaning changes will not effect the caller.
+	// meaning changes will not affect the caller.
 	if spec.Subject == nil {
 		spec.Subject = &cmapi.X509Subject{}
 	}

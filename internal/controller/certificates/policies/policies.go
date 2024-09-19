@@ -63,7 +63,7 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-// NewTriggerPolicyChain includes trigger policy checks, which if return true,
+// NewTriggerPolicyChain includes trigger policy checks, which if returns true,
 // should cause a Certificate to be marked for issuance.
 func NewTriggerPolicyChain(c clock.Clock) Chain {
 	return Chain{
@@ -81,7 +81,7 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 	}
 }
 
-// NewReadinessPolicyChain includes readiness policy checks, which if return
+// NewReadinessPolicyChain includes readiness policy checks, which if returns
 // true, would cause a Certificate to be marked as not ready.
 func NewReadinessPolicyChain(c clock.Clock) Chain {
 	return Chain{
@@ -106,9 +106,9 @@ func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string)
 	return Chain{
 		SecretBaseLabelsMismatch,                                             // Make sure the managed labels have the correct values
 		SecretCertificateDetailsAnnotationsMismatch,                          // Make sure the managed certificate details annotations have the correct values
-		SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager), // Make sure the only the expected managed labels and annotations exist
+		SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager), // Make sure only the expected managed labels and annotations exist
 		SecretSecretTemplateMismatch,                                         // Make sure the template label and annotation values match the secret
-		SecretSecretTemplateManagedFieldsMismatch(fieldManager),              // Make sure the only the expected template labels and annotations exist
+		SecretSecretTemplateManagedFieldsMismatch(fieldManager),              // Make sure only the expected template labels and annotations exist
 		SecretAdditionalOutputFormatsMismatch,
 		SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager),
 		SecretOwnerReferenceMismatch(ownerRefEnabled),

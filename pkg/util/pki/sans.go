@@ -199,7 +199,7 @@ func forEachSAN(extension []byte, callback func(v asn1.RawValue) error) error {
 }
 
 // adapted from https://cs.opensource.google/go/go/+/master:src/crypto/x509/x509.go;l=1059-1103;drc=e2d9574b14b3db044331da0c6fadeb62315c644a
-// MarshalSANs marshals a list of addresses into a the contents of an X.509
+// MarshalSANs marshals a list of addresses into the contents of an X.509
 // SubjectAlternativeName extension.
 func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 	var rawValues []asn1.RawValue

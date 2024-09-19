@@ -75,7 +75,7 @@ type CAInjectorConfiguration struct {
 }
 
 type EnableDataSourceConfig struct {
-	// Certificates detemines whether cainjector's control loops will watch
+	// Certificates determines whether cainjector's control loops will watch
 	// cert-manager Certificate resources as potential sources of CA data.
 	// If not set, defaults to true.
 	Certificates *bool `json:"certificates"`

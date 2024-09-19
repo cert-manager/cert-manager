@@ -46,7 +46,7 @@ func (f *fakeSolver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *c
 }
 
 // Check should return Error only if propagation check cannot be performed.
-// It MUST return `false, nil` if can contact all relevant services and all is
+// It MUST return `false, nil` if it can contact all relevant services and all it is
 // doing is waiting for propagation
 func (f *fakeSolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakeCheck(ctx, issuer, ch)

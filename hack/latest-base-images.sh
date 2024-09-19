@@ -19,7 +19,7 @@ set -eu -o pipefail
 # This script fetches the latest sha256 digest of each base image for each architecture we support on servers
 # and writes those hashes to Makefile-formatted variables for use in Makefiles.
 
-# This in turn allows us to easily update all base images to their latest versions, while mantaining the use
+# This in turn allows us to easily update all base images to their latest versions, while maintaining the use
 # of digests rather than tags when we refer to these base images.
 
 CRANE=crane

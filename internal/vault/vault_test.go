@@ -805,7 +805,7 @@ func TestSetToken(t *testing.T) {
 				}
 			},
 			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
-				// Vault exhanges the Kubernetes token with a Vault token.
+				// Vault exchanges the Kubernetes token with a Vault token.
 				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
 				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
 				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
@@ -842,7 +842,7 @@ func TestSetToken(t *testing.T) {
 				}
 			},
 			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
-				// Vault exhanges the Kubernetes token with a Vault token.
+				// Vault exchanges the Kubernetes token with a Vault token.
 				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
 				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
 				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
@@ -884,7 +884,7 @@ func TestSetToken(t *testing.T) {
 				}
 			},
 			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
-				// Vault exhanges the Kubernetes token with a Vault token.
+				// Vault exchanges the Kubernetes token with a Vault token.
 				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
 				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
 				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
@@ -926,7 +926,7 @@ func TestSetToken(t *testing.T) {
 				}
 			},
 			fakeClient: vaultfake.NewFakeClient().WithRawRequestFn(func(t *testing.T, req *vault.Request) (*vault.Response, error) {
-				// Vault exhanges the Kubernetes token with a Vault token.
+				// Vault exchanges the Kubernetes token with a Vault token.
 				assert.Equal(t, "kube-sa-token", req.Obj.(map[string]string)["jwt"])
 				assert.Equal(t, "kube-vault-role", req.Obj.(map[string]string)["role"])
 				return &vault.Response{Response: &http.Response{Body: io.NopCloser(strings.NewReader(
@@ -1632,7 +1632,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 				})
 			require.NoError(t, err)
 			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vault.Client).Namespace(),
-				"The vault client should have the namespace provided in the Issuer recource")
+				"The vault client should have the namespace provided in the Issuer resource")
 			assert.Equal(t, "", c.(*Vault).clientSys.(*vault.Client).Namespace(),
 				"The vault sys client should never have a namespace")
 		})

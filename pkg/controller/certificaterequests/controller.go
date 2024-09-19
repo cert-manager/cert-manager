@@ -44,7 +44,7 @@ type Issuer interface {
 	Sign(context.Context, *v1.CertificateRequest, v1.GenericIssuer) (*issuer.IssueResponse, error)
 }
 
-// Issuer Contractor builds a Issuer instance using the given controller
+// Issuer Contractor builds an Issuer instance using the given controller
 // context.
 type IssuerConstructor func(*controllerpkg.Context) Issuer
 
@@ -103,7 +103,7 @@ type Controller struct {
 
 // New will construct a new certificaterequest controller using the given
 // Issuer implementation.
-// Note: the registerExtraInfromers passed here will be 'waited' for when
+// Note: the registerExtraInformers passed here will be 'waited' for when
 // starting to ensure their corresponding listers have synced.
 // The caller is responsible for ensuring the informer work functions are setup
 // correctly on any informer.

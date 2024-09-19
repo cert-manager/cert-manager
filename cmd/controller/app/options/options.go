@@ -108,7 +108,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
 
 	// HTTP-01 solver pod configuration via flags is a now deprecated
-	// mechanism- please use pod template instead when adding any new
+	// mechanism - please use pod template instead when adding any new
 	// configuration options
 	// https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 	// These flags however will not be deprecated for backwards compatibility purposes.
@@ -142,7 +142,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
 
 	fs.StringSliceVar(&c.IngressShimConfig.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", c.IngressShimConfig.DefaultAutoCertificateAnnotations, ""+
-		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
+		"The annotation consumed by the ingress-shim controller to indicate an ingress is requesting a certificate")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerName, "default-issuer-name", c.IngressShimConfig.DefaultIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerKind, "default-issuer-kind", c.IngressShimConfig.DefaultIssuerKind, ""+

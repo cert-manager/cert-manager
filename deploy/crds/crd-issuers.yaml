@@ -635,7 +635,7 @@ spec:
                                                 description: Name of the ServiceAccount used to request a token.
                                                 type: string
                                   hostedZoneID:
-                                    description: If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
+                                    description: If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
                                     type: string
                                   region:
                                     description: Always set the region when using AccessKeyID and SecretAccessKey
@@ -891,7 +891,7 @@ spec:
                                         type: object
                                         properties:
                                           annotations:
-                                            description: Annotations that should be added to the create ACME HTTP01 solver pods.
+                                            description: Annotations that should be added to the created ACME HTTP01 solver pods.
                                             type: object
                                             additionalProperties:
                                               type: string
@@ -2070,7 +2070,7 @@ spec:
                                         type: object
                                         properties:
                                           annotations:
-                                            description: Annotations that should be added to the create ACME HTTP01 solver pods.
+                                            description: Annotations that should be added to the created ACME HTTP01 solver pods.
                                             type: object
                                             additionalProperties:
                                               type: string

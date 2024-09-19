@@ -251,7 +251,7 @@ type CertificatePrivateKey struct {
 	// RotationPolicy controls how private keys should be regenerated when a
 	// re-issuance is being processed.
 	// If set to Never, a private key will only be generated if one does not
-	// already exist in the target `spec.secretName`. If one does exists but it
+	// already exist in the target `spec.secretName`. If one does exist but it
 	// does not have the correct algorithm or size, a warning will be raised
 	// to await user intervention.
 	// If set to Always, a private key matching the specified requirements
@@ -283,7 +283,7 @@ type CertificatePrivateKey struct {
 	// and will default to `256` if not specified.
 	// No other values are allowed.
 	// +optional
-	Size int `json:"size,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation- see https://github.com/cert-manager/cert-manager/issues/3644 .
+	Size int `json:"size,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation - see https://github.com/cert-manager/cert-manager/issues/3644 .
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
@@ -293,7 +293,7 @@ type PrivateKeyRotationPolicy string
 var (
 	// RotationPolicyNever means a private key will only be generated if one
 	// does not already exist in the target `spec.secretName`.
-	// If one does exists but it does not have the correct algorithm or size,
+	// If one does exist but it does not have the correct algorithm or size,
 	// a warning will be raised to await user intervention.
 	RotationPolicyNever PrivateKeyRotationPolicy = "Never"
 
@@ -473,7 +473,7 @@ type CertificateStatus struct {
 	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
 }
 
-// CertificateCondition contains condition information for an Certificate.
+// CertificateCondition contains condition information for a Certificate.
 type CertificateCondition struct {
 	// Type of the condition, known values are (`Ready`, `Issuing`).
 	Type CertificateConditionType `json:"type"`
@@ -505,7 +505,7 @@ type CertificateCondition struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// CertificateConditionType represents an Certificate condition value.
+// CertificateConditionType represents a Certificate condition value.
 type CertificateConditionType string
 
 const (

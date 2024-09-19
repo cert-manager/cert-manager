@@ -472,7 +472,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 // Test_IssuingController_SecretTemplate performs a basic check to ensure that
 // values in a Certificate's SecretTemplate will be copied to the target
-// Secret- when they are both added and deleted.
+// Secret - when they are both added and deleted.
 func Test_IssuingController_SecretTemplate(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
@@ -706,8 +706,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 }
 
 // Test_IssuingController_AdditionalOutputFormats performs a basic check to
-// ensure that values in a Certificate's AddiationOutputFormats will be copied
-// to the target Secret- when they are both added and deleted.
+// ensure that values in a Certificate's AdditionalOutputFormats will be copied
+// to the target Secret - when they are both added and deleted.
 func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
@@ -934,7 +934,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 // is removed again when disabled.
 // Also ensures that changes to the Secret which modify the owner reference,
 // are reverted or corrected if needed by the issuing controller.
-func Test_IssuingController_OwnerRefernece(t *testing.T) {
+func Test_IssuingController_OwnerReference(t *testing.T) {
 	const (
 		fieldManager = "cert-manager-issuing-test"
 	)

@@ -656,7 +656,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 			// Kubernetes auth config for both testing the "secretRef" Kubernetes
 			// auth and the "serviceAccountRef" Kubernetes auth because the former
 			// relies on static tokens for which "iss" is
-			// "kubernetes/serviceaccount", and the later relies on bound tokens for
+			// "kubernetes/serviceaccount", and the latter relies on bound tokens for
 			// which "iss" is "https://kubernetes.default.svc.cluster.local".
 			// https://www.vaultproject.io/docs/auth/kubernetes#kubernetes-1-21
 			DisableIssValidation: true,
@@ -670,7 +670,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 	return nil
 }
 
-// CreateKubernetesrole creates a service account and ClusterRoleBinding for
+// CreateKubernetesRole creates a service account and ClusterRoleBinding for
 // Kubernetes auth delegation. The name "boundSA" refers to the Vault param
 // "bound_service_account_names".
 func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kubernetes.Interface, boundNS, boundSA string) error {

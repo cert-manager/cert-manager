@@ -91,7 +91,7 @@ This proposal suggests a mechanism how to avoid caching cert-manager unrelated `
 - use the same mechanism to improve memory consumption by cainjector. This proposal focuses on controller only as it is the more complex part however we need to fix this problem in cainjector too and it would be nice to be consistent
 
   > 📖 Update: In [#7161: Reduce memory usage by only caching the metadata of Secret resources](https://github.com/cert-manager/cert-manager/pull/716199)
-  > we addressed the high startup memory usage of cainjector with metatdata-only caching features of controller-runtime.
+  > we addressed the high startup memory usage of cainjector with metadata-only caching features of controller-runtime.
   > We did not use the split cache design that was implemented for the
   > controller, and this contradicts the goal above: "use the same mechanism to
   > improve memory consumption by cainjector ... to be consistent".
@@ -140,7 +140,7 @@ cert-manager needs to watch all `Secret`s in the cluster because some user creat
 
 - in some cases a missing `Secret` does not cause issuer reconcile ([such as a missing ACME EAB key where we explicitly rely on `Secret` events to retry issuer setup](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/issuer/acme/setup.go#L228)). In this case, it is more efficient as well as a better user experience to reconcile on `Secret` creation event as that way we avoid wasting CPU cycles whilst waiting for the user to create the `Secret` and when the `Secret` does get created, the issuer will be reconciled immediately.
 
-The caching mechanim is required for ensuring quick issuance and not taking too much of kube apiserver's resources. `Secret`s with the issued X.509 certificates and with temporary private keys get retrieved a number of times during issuance and all the control loops involved in issuance need full `Secret` data. Currently the `Secret`s are retrieved from informers cache. Retrieving them from kube apiserver would mean a large number of additional calls to kube apiserver, which is undesirable. The default cert-manager installation uses a rate-limited client (20QPS with a burst of 50). There is also server-side [API Priority and Fairness system](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) that prevents rogue clients from overwhelming kube apiserver. Both these mechanisms mean that the result of a large number of additional calls will be slower issuance as cert-manager will get rate limited (either client-side or server-side). The rate limiting can be modified to allow higher throughput for cert-manager, but this would have an impact of kube apiserver's availability for other tenants - so in either case additional API calls would have a cost for the user.
+The caching mechanism is required for ensuring quick issuance and not taking too much of kube apiserver's resources. `Secret`s with the issued X.509 certificates and with temporary private keys get retrieved a number of times during issuance and all the control loops involved in issuance need full `Secret` data. Currently the `Secret`s are retrieved from informers cache. Retrieving them from kube apiserver would mean a large number of additional calls to kube apiserver, which is undesirable. The default cert-manager installation uses a rate-limited client (20QPS with a burst of 50). There is also server-side [API Priority and Fairness system](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) that prevents rogue clients from overwhelming kube apiserver. Both these mechanisms mean that the result of a large number of additional calls will be slower issuance as cert-manager will get rate limited (either client-side or server-side). The rate limiting can be modified to allow higher throughput for cert-manager, but this would have an impact of kube apiserver's availability for other tenants, so in either case additional API calls would have a cost for the user.
 
 ### User Stories
 
@@ -242,9 +242,9 @@ func (f *filteredSecretsInformer) Lister() corelisters.SecretLister {
 }
 
 func newFilteredSecretsInformer(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	secretLabelSeclector, _ := knownCertManagerSecretLabelSelector()
+	secretLabelSelector, _ := knownCertManagerSecretLabelSelector()
 	return coreinformers.NewFilteredSecretInformer(client, "", resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, func(listOptions *metav1.ListOptions) {
-		listOptions.LabelSelector = secretLabelSeclector
+		listOptions.LabelSelector = secretLabelSelector
 	})
 }
 
@@ -315,7 +315,7 @@ The tests were run on a kind cluster.
 
 #### Cluster with large cert-manager unrelated secrets
 
-Test the memory spike caused by the inital LIST-ing of `Secret`s, the size of cache after the inital LIST has been processed and a spike caused by changes to `Secret` resources.
+Test the memory spike caused by the initial LIST-ing of `Secret`s, the size of cache after the initial LIST has been processed and a spike caused by changes to `Secret` resources.
 
 ##### cert-manager v1.11
 
@@ -327,11 +327,11 @@ Install cert-manager from [latest master with client-go metrics enabled](https:/
 
 Wait for cert-manager to start and populate the caches.
 
-Apply a label to all `Secret`s to initate cache resync:
+Apply a label to all `Secret`s to initiate cache resync:
 
 ![alt text](/design/images/20221205-memory-management/labelsecret.png)
 
-Observe that memory consumption spikes on controller startup when all `Secret`s are initally listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
+Observe that memory consumption spikes on controller startup when all `Secret`s are initially listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
 
 ![alt text](/design/images/20221205-memory-management/latestmastersecrets.png)
 
@@ -345,7 +345,7 @@ Deploy cert-manager from [partial metadata prototype](https://github.com/irbekrm
 
 Wait for cert-manager to start and populate the caches.
 
-Apply a label to all `Secret`s to initate cache resync:
+Apply a label to all `Secret`s to initiate cache resync:
 
 ![alt text](/design/images/20221205-memory-management/labelsecret.png)
 
@@ -530,7 +530,7 @@ There are a number of existing upstream mechanisms how to limit what gets stored
 
 Filtering which objects get watched using [label or field selectors](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L328-L332). These selectors allow to filter what resources are retrieved during the initial list call and watch calls to kube apiserver by informer's `ListerWatcher` component (and therefore will end up in the cache). client-go informer factory allows configuring individual informers with [list options](https://github.com/kubernetes/client-go/blob/v12.0.0/informers/factory.go#L78-L84) that will be used [for list and watch calls](https://github.com/kubernetes/client-go/blob/v12.0.0/informers/core/v1/secret.go#L59-L72).
 This mechanism is used by other projects that use client-go controllers, for example [istio](https://github.com/istio/istio/blob/1.16.0/pilot/pkg/status/distribution/state.go#L100-L103).
-The same filtering mechanism is [also available for cert-manager.io resources](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/client/informers/externalversions/factory.go#L63-L69). We shouldn't need to filter what cert-manager.io resoruces we watch though.
+The same filtering mechanism is [also available for cert-manager.io resources](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/client/informers/externalversions/factory.go#L63-L69). We shouldn't need to filter what cert-manager.io resources we watch though.
 This mechanism seems the most straightforward to use, but currently we don't have a way to identify all resources (secrets) we need to watch using a label or field selector, see [###Secrets].
 
 ##### Partial object metadata
@@ -616,15 +616,15 @@ This would need to start as an alpha feature and would require alpha/beta testin
 
 [Here](https://github.com/irbekrm/cert-manager/tree/experimental_transform_funcs) is a prototype of this solution.
 In the prototype [`Secrets Transformer` function](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L219-L238)
-is the tranform that gets applied to all `Secret`s before they are cached. If a `Secret` does not have any known cert-manager labels or annotations it removes `data`, `metada.managedFields` and `metadata.Annotations` and applies a `cert-manager.io/metadata-only` label.
-[`SecretGetter`](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L241-L261) is used by any control loop that needs to GET a `Secret`. It retrieves it from kube apiserver or cache dependign on whether `cert-manager.io/metadata-only` label was found.
+is the transform that gets applied to all `Secret`s before they are cached. If a `Secret` does not have any known cert-manager labels or annotations it removes `data`, `metadata.managedFields` and `metadata.Annotations` and applies a `cert-manager.io/metadata-only` label.
+[`SecretGetter`](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L241-L261) is used by any control loop that needs to GET a `Secret`. It retrieves it from kube apiserver or cache depending on whether `cert-manager.io/metadata-only` label was found.
 
 #### Drawbacks
 
 - All cluster `Secret`s are still listed
 
 - The transform functions only get run before the object is placed into informer's cache. The full object will be in controller's memory for a period of time before that (in DeltaFIFO store (?)). So the users will still see memory spikes when events related to cert-manager unrelated cluster `Secret`s occur.
-See performance of the protototype:
+See performance of the prototype:
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
@@ -636,7 +636,7 @@ Wait for cert-manager caches to sync, then run a command to label all `Secret`s 
 
 ![alt text](/design/images/20221205-memory-management/labelsecret.png)
 
-Observe that altough altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
+Observe that although altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
 
 ![alt text](/design/images/20221205-memory-management/transformfunctionsgrafana.png)
 
@@ -672,17 +672,17 @@ LIST calls to kube apiserver can be [paginated](https://kubernetes.io/docs/refer
 Perhaps not getting all objects at once on the initial LIST would limit the spike in memory when cert-manager controller starts up.
 
 However, currently it is not possible to paginate the initial LISTs made by client-go informers.
-Although it is possible to set [page limit](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L371-L387) when creating a client-go informer factory or an individual informer, this will in practice not be used for the inital LIST.
+Although it is possible to set [page limit](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L371-L387) when creating a client-go informer factory or an individual informer, this will in practice not be used for the initial LIST.
 LIST requests can be served either from etcd or [kube apiserver watch cache](https://github.com/kubernetes/apiserver/tree/v0.26.0/pkg/storage/cacher).
 Watch cache does not support pagination, so if a request is forwarded to the cache, the response will contain a full list.
-Client-go makes the inital LIST request [with resource version 0](https://github.com/kubernetes/client-go/blob/v0.26.0/tools/cache/reflector.go#L592-L596) for performance reasons (to ensure that watch cache is used) and this results in [the response being served from kube apiserver watch cache](https://github.com/kubernetes/apiserver/blob/v0.26.0/pkg/storage/cacher/cacher.go#L621-L635).
+Client-go makes the initial LIST request [with resource version 0](https://github.com/kubernetes/client-go/blob/v0.26.0/tools/cache/reflector.go#L592-L596) for performance reasons (to ensure that watch cache is used) and this results in [the response being served from kube apiserver watch cache](https://github.com/kubernetes/apiserver/blob/v0.26.0/pkg/storage/cacher/cacher.go#L621-L635).
 
 There is currently an open PR to implement pagination from watch cache https://github.com/kubernetes/kubernetes/pull/108392.
 
 ### Filter the Secrets to watch with a label
 
 Only watch `Secret`s with known `cert-manager.io` labels. Ensure that label gets applied to all `Secret`s we manage (such as `spec.secretName` `Secret` for `Certificate`).
-We already ensure that all `spec.secretName` `Secret`s get annotated when synced- we can use the same mechanism to apply a label.
+We already ensure that all `spec.secretName` `Secret`s get annotated when synced - we can use the same mechanism to apply a label.
 Users will have to ensure that `Secret`s they create are labelled.
 We can help them to discover which `Secret`s that are currently deployed to cluster and need labelling with a `cmctl` command.
 In terms of resource consumption and calls to apiserver, this would be the most efficient solution (only relevant `Secret`s are being listed/watched/cached and all relevant `Secret`s are cached in full).
@@ -705,7 +705,7 @@ It might work well for cases where 'known' selectors need to be passed that we c
 
 #### Drawbacks
 
-- bad user experience- no straightforward way to tell if the selector actually does what was expected and an easy footgun especially when users attempt to specify which `Secret`s _should_ (rather than _shouldn't_) be watched
+- bad user experience - no straightforward way to tell if the selector actually does what was expected and an easy footgun especially when users attempt to specify which `Secret`s _should_ (rather than _shouldn't_) be watched
 
 - users should aim to use 'negative' selectors, but that be complicated if there is a large number of random `Secret`s in cluster that don't have a unifying selector
 

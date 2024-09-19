@@ -67,7 +67,7 @@ func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater
 // the UpdateStatus method.
 // Both updates will be attempted, even if one fails, except in the case where
 // one of the updates fails with a Not Found error.
-// If the any of the API operations results in a Not Found error, updateObject
+// If any of the API operations results in a Not Found error, updateObject
 // will exit without error and the remaining operations will be skipped.
 // Only the Finalizers and Status fields may be modified. If there are any
 // modifications to new object, outside of the Finalizers and Status fields,

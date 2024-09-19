@@ -22,7 +22,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 )
 
-// Addon is an interface that defines a e2e addon.
+// Addon is an interface that defines an e2e addon.
 type Addon interface {
 	// For non-global addons, this function is called on all ginkgo processes without
 	// any arguments. For global addons, this function is called on ginkgo process #1

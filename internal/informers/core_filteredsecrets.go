@@ -104,7 +104,7 @@ func (bf *filteredSecretsFactory) WaitForCacheSync(stopCh <-chan struct{}) map[s
 	partialMetaCaches := bf.metadataInformerFactory.WaitForCacheSync(stopCh)
 	// We have to cast the keys into string type. It is not possible to
 	// create a generic type here as neither of the types returned by
-	// WaitForCacheSync are valid map key arguments in generics- they aren't
+	// WaitForCacheSync are valid map key arguments in generics - they aren't
 	// comparable types.
 	for key, val := range typedCaches {
 		caches[key.String()] = val
@@ -159,7 +159,7 @@ func (f *filteredSecretInformer) Informer() Informer {
 
 	metadataInformer := f.metadataInformerFactory.ForResource(secretsGVR).Informer()
 	if err := metadataInformer.SetTransform(partialMetadataRemoveAll); err != nil {
-		panic(fmt.Sprintf("internal error: error setting transfomer on the metadata informer: %v", err))
+		panic(fmt.Sprintf("internal error: error setting transformer on the metadata informer: %v", err))
 	}
 	return &informer{
 		typedInformer:    typedInformer,
@@ -307,7 +307,7 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 		// here in case we do it sometime in the future at which point
 		// we can see whether the metadata functionality is performant
 		// enough.
-		log.V(logf.InfoLevel).Info("unexpected behaviour: secrets LISTed from metadata cache. Please open an isue")
+		log.V(logf.InfoLevel).Info("unexpected behaviour: secrets LISTed from metadata cache. Please open an issue")
 	}
 	// In practice this section will never be used. The only place
 	// where we LIST Secrets is in keymanager controller where we list

@@ -141,7 +141,7 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 				case <-timerChannel:
 					// Continue to the next select to try to send a message on renewalChan
 				case renewMoment = <-nextRenewCh:
-					// We recevieved a renew moment, next loop iteration will update the timer
+					// We received a renew moment, next loop iteration will update the timer
 					return false
 				}
 

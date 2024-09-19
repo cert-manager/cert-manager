@@ -339,7 +339,7 @@ func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	// TODO: set field mananager before calling each of those- is that what we do in actual code?
+	// TODO: set field manager before calling each of those - is that what we do in actual code?
 	revCtrl, revQueue, revMustSync, err := revisionmanager.NewController(log, &controllerContext)
 	if err != nil {
 		t.Fatal(err)
