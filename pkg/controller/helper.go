@@ -18,6 +18,7 @@ package controller
 
 import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // ResourceNamespace returns the Kubernetes namespace where resources
@@ -37,6 +38,21 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 	case *cmapi.ClusterIssuer:
 		return o.ClusterIssuerAmbientCredentials
 	case *cmapi.Issuer:
+		return o.IssuerAmbientCredentials
+	}
+	return false
+}
+
+// CanUseAmbientCredentialsFromRef returns whether the referenced issuer will attempt
+// to configure itself from ambient credentials (e.g. from a cloud metadata service).
+// This function is identical to CanUseAmbientCredentials, but takes a reference to
+// the issuer instead of the issuer itself (which means we don't need to fetch the
+// issuer from the API server).
+func (o IssuerOptions) CanUseAmbientCredentialsFromRef(ref cmmeta.ObjectReference) bool {
+	switch ref.Kind {
+	case cmapi.ClusterIssuerKind:
+		return o.ClusterIssuerAmbientCredentials
+	case "", cmapi.IssuerKind:
 		return o.IssuerAmbientCredentials
 	}
 	return false

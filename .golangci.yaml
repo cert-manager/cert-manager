@@ -2,8 +2,6 @@ issues:
   exclude-rules:
     - linters:
         - govet
-        - usestdlibvars
-        - misspell
         - dogsled
         - promlinter
         - errname
@@ -18,9 +16,6 @@ issues:
     - linters:
         - gosec
       text: "G(101|107|204|306|402)"
-    - linters:
-        - staticcheck
-      text: "SA(1002|1006|4000|4006)"
     - linters:
         - staticcheck
       text: "(NewCertManagerBasicCertificateRequest)"

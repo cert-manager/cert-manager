@@ -82,7 +82,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		By("Should error when attempting to update UserInfo fields")
 		cr.Spec.Username = "abc"
 		cr.Spec.UID = "123"
-		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Update(context.TODO(), cr, metav1.UpdateOptions{})
+		_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Update(context.TODO(), cr, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
 

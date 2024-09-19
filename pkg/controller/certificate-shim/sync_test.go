@@ -3253,7 +3253,7 @@ func TestSync(t *testing.T) {
 				t.Error(err)
 			}
 			if err := b.AllActionsExecuted(); err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 		}
 	}
