@@ -19,8 +19,10 @@ package policies
 import (
 	"bytes"
 	"cmp"
+	"crypto"
 	"crypto/x509"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -40,60 +42,120 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-func SecretDoesNotExist(input Input) (string, string, bool) {
-	if input.Secret == nil {
-		return DoesNotExist, "Issuing certificate as Secret does not exist", true
+// TODO: add some kind of caching to the helper functions to avoid re-parsing
+// the same data multiple times in the same policy chain.
+type helper struct{}
+
+func (helper) PrivateKey(input Input) (crypto.Signer, *Violation[InvalidInputReason]) {
+	pkBytes := input.Secret.Data[corev1.TLSPrivateKeyKey]
+	pk, err := pki.DecodePrivateKeyBytes(pkBytes)
+	if err != nil {
+		return nil, NewInvalidInputViolation(InvalidPrivateKey, fmt.Sprintf("Secret contains invalid private key data: %v", err))
 	}
-	return "", "", false
+
+	return pk, nil
 }
 
-func SecretIsMissingData(input Input) (string, string, bool) {
+func (helper) X509Certificate(input Input) (*x509.Certificate, *Violation[InvalidInputReason]) {
+	certBytes := input.Secret.Data[corev1.TLSCertKey]
+	x509Cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	if err != nil {
+		return nil, NewInvalidInputViolation(InvalidCertificate, fmt.Sprintf("Secret contains an invalid certificate: %v", err))
+	}
+
+	return x509Cert, nil
+}
+
+func (helper) ManagedFields(input Input, fieldManager string) (fieldpath.Set, *Violation[InvalidInputReason]) {
+	var fieldset fieldpath.Set
+
+	for _, managedField := range input.Secret.ManagedFields {
+		// If the managed field isn't owned by the cert-manager controller, ignore.
+		if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+			continue
+		}
+
+		// Decode the managed field.
+		var set fieldpath.Set
+		if err := set.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+			return fieldset, NewInvalidInputViolation(InvalidManagedFields, fmt.Sprintf("failed to decode managed fields of Secret: %v", err))
+		}
+
+		fieldset = *fieldset.Union(&set)
+	}
+
+	return fieldset, nil
+}
+
+func SecretDoesNotExist(input Input) *Violation[InvalidInputReason] {
+	if input.Secret == nil {
+		return NewInvalidInputViolation(DoesNotExist, "Secret does not exist")
+	}
+	return nil
+}
+
+func SecretIsMissingData(input Input) *Violation[InvalidInputReason] {
 	if input.Secret.Data == nil {
-		return MissingData, "Issuing certificate as Secret does not contain any data", true
+		return NewInvalidInputViolation(MissingData, "Secret does not contain any data")
 	}
 	pkData := input.Secret.Data[corev1.TLSPrivateKeyKey]
 	certData := input.Secret.Data[corev1.TLSCertKey]
 	if len(pkData) == 0 {
-		return MissingData, "Issuing certificate as Secret does not contain a private key", true
+		return NewInvalidInputViolation(MissingData, "Secret does not contain a private key")
 	}
 	if len(certData) == 0 {
-		return MissingData, "Issuing certificate as Secret does not contain a certificate", true
+		return NewInvalidInputViolation(MissingData, "Secret does not contain a certificate")
 	}
-	return "", "", false
+	return nil
 }
 
-func SecretPublicKeysDiffer(input Input) (string, string, bool) {
-	pk, err := pki.DecodePrivateKeyBytes(input.Secret.Data[corev1.TLSPrivateKeyKey])
-	if err != nil {
-		return InvalidKeyPair, fmt.Sprintf("Issuing certificate as Secret contains invalid private key data: %v", err), true
+func SecretContainsInvalidData(input Input) *Violation[InvalidInputReason] {
+	_, violation := helper{}.PrivateKey(input)
+	if violation != nil {
+		return violation
 	}
-	x509Cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-	if err != nil {
-		return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
+
+	_, violation = helper{}.X509Certificate(input)
+	if violation != nil {
+		return violation
+	}
+
+	return nil
+}
+
+func SecretPublicPrivateKeysNotMatching(input Input) *Violation[InvalidInputReason] {
+	pk, violation := helper{}.PrivateKey(input)
+	if violation != nil {
+		return violation
+	}
+
+	x509Cert, violation := helper{}.X509Certificate(input)
+	if violation != nil {
+		return violation
 	}
 
 	equal, err := pki.PublicKeysEqual(x509Cert.PublicKey, pk.Public())
 	if err != nil {
-		return InvalidKeyPair, fmt.Sprintf("Secret contains an invalid key-pair: %v", err), true
+		return NewInvalidInputViolation(InvalidCertificate, fmt.Sprintf("Secret contains an invalid certificate: %v", err))
 	}
 	if !equal {
-		return InvalidKeyPair, "Issuing certificate as Secret contains a private key that does not match the certificate", true
+		return NewInvalidInputViolation(InvalidKeyPair, "Secret contains a private key that does not match the certificate")
 	}
 
-	return "", "", false
+	return nil
 }
 
-func SecretPrivateKeyMismatchesSpec(input Input) (string, string, bool) {
-	pk, err := pki.DecodePrivateKeyBytes(input.Secret.Data[corev1.TLSPrivateKeyKey])
-	if err != nil {
-		return InvalidKeyPair, fmt.Sprintf("Issuing certificate as Secret contains invalid private key data: %v", err), true
+func SecretPrivateKeyMismatchesSpec(input Input) *Violation[MaybeReason[IssuanceReason]] {
+	pk, violation := helper{}.PrivateKey(input)
+	if violation != nil {
+		return MaybeValidation[IssuanceReason](violation)
 	}
 
 	violations := pki.PrivateKeyMatchesSpec(pk, input.Certificate.Spec)
 	if len(violations) > 0 {
-		return SecretMismatch, fmt.Sprintf("Existing private key is not up to date for spec: %v", violations), true
+		return NewIssuanceViolation(SecretMismatch, fmt.Sprintf("Secret contains a private key that is not up to date with Certificate spec: %v", violations))
 	}
-	return "", "", false
+	return nil
 }
 
 // SecretKeystoreFormatMismatch - When the keystore is not defined, the keystore
@@ -102,7 +164,7 @@ func SecretPrivateKeyMismatchesSpec(input Input) (string, string, bool) {
 // corresponding secrets are generated.
 // If the private key rotation is set to "Never", the key store related values are re-encoded
 // as per the certificate specification
-func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
+func SecretKeystoreFormatMismatch(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
 	_, issuerProvidesCA := input.Secret.Data[cmmeta.TLSCAKey]
 
 	if input.Certificate.Spec.Keystores == nil {
@@ -110,27 +172,27 @@ func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
 			len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 ||
 			len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
 			len(input.Secret.Data[cmapi.JKSTruststoreKey]) != 0 {
-			return SecretMismatch, "Keystore is not defined", true
+			return NewPostIssuanceViolation(SecretKeystoreMismatch, "Keystore is not defined")
 		}
-		return "", "", false
+		return nil
 	}
 
 	if input.Certificate.Spec.Keystores.JKS != nil {
 		if input.Certificate.Spec.Keystores.JKS.Create {
 			if len(input.Secret.Data[cmapi.JKSSecretKey]) == 0 ||
 				(len(input.Secret.Data[cmapi.JKSTruststoreKey]) == 0 && issuerProvidesCA) {
-				return SecretMismatch, "JKS Keystore key does not contain data", true
+				return NewPostIssuanceViolation(SecretKeystoreMismatch, "JKS Keystore key does not contain data")
 			}
 		} else {
 			if len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
 				len(input.Secret.Data[cmapi.JKSTruststoreKey]) != 0 {
-				return SecretMismatch, "JKS Keystore create disabled", true
+				return NewPostIssuanceViolation(SecretKeystoreMismatch, "JKS Keystore create disabled")
 			}
 		}
 	} else {
 		if len(input.Secret.Data[cmapi.JKSSecretKey]) != 0 ||
 			len(input.Secret.Data[cmapi.JKSTruststoreKey]) != 0 {
-			return SecretMismatch, "JKS Keystore not defined", true
+			return NewPostIssuanceViolation(SecretKeystoreMismatch, "JKS Keystore not defined")
 		}
 	}
 
@@ -138,27 +200,27 @@ func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
 		if input.Certificate.Spec.Keystores.PKCS12.Create {
 			if len(input.Secret.Data[cmapi.PKCS12SecretKey]) == 0 ||
 				(len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) == 0 && issuerProvidesCA) {
-				return SecretMismatch, "PKCS12 Keystore key does not contain data", true
+				return NewPostIssuanceViolation(SecretKeystoreMismatch, "PKCS12 Keystore key does not contain data")
 			}
 		} else {
 			if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
 				len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 {
-				return SecretMismatch, "PKCS12 Keystore create disabled", true
+				return NewPostIssuanceViolation(SecretKeystoreMismatch, "PKCS12 Keystore create disabled")
 			}
 		}
 	} else {
 		if len(input.Secret.Data[cmapi.PKCS12SecretKey]) != 0 ||
 			len(input.Secret.Data[cmapi.PKCS12TruststoreKey]) != 0 {
-			return SecretMismatch, "PKCS12 Keystore not defined", true
+			return NewPostIssuanceViolation(SecretKeystoreMismatch, "PKCS12 Keystore not defined")
 		}
 	}
 
-	return "", "", false
+	return nil
 }
 
 // SecretIssuerAnnotationsMismatch - When the issuer annotations are defined,
 // it must match the issuer ref.
-func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
+func SecretIssuerAnnotationsMismatch(input Input) *Violation[MaybeReason[IssuanceReason]] {
 	name, ok1 := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
 	kind, ok2 := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
 	group, ok3 := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
@@ -166,52 +228,53 @@ func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 		name != input.Certificate.Spec.IssuerRef.Name ||
 		!issuerKindsEqual(kind, input.Certificate.Spec.IssuerRef.Kind) ||
 		!issuerGroupsEqual(group, input.Certificate.Spec.IssuerRef.Group) {
-		return IncorrectIssuer, fmt.Sprintf("Issuing certificate as Secret was previously issued by %q", formatIssuerRef(name, kind, group)), true
+		return NewIssuanceViolation(IncorrectIssuer, fmt.Sprintf("Secret was previously issued by %q", formatIssuerRef(name, kind, group)))
 	}
-	return "", "", false
+	return nil
 }
 
 // SecretCertificateNameAnnotationsMismatch - When the CertificateName annotation is defined,
 // it must match the name of the Certificate.
-func SecretCertificateNameAnnotationsMismatch(input Input) (string, string, bool) {
+func SecretCertificateNameAnnotationsMismatch(input Input) *Violation[MaybeReason[IssuanceReason]] {
 	name, ok := input.Secret.Annotations[cmapi.CertificateNameKey]
 	if (ok) && // only check if an annotation is present
 		name != input.Certificate.Name {
-		return IncorrectCertificate, fmt.Sprintf("Secret was issued for %q. If this message is not transient, you might have two conflicting Certificates pointing to the same secret.", name), true
+		return NewIssuanceViolation(IncorrectCertificate, fmt.Sprintf("Secret was issued for %q. If this message is not transient, you might have two conflicting Certificates pointing to the same secret.", name))
 	}
-	return "", "", false
+	return nil
 }
 
 // SecretPublicKeyDiffersFromCurrentCertificateRequest checks that the current CertificateRequest
 // contains a CSR that is signed by the key stored in the Secret. A failure is often caused by the
 // Secret being changed outside of the control of cert-manager, causing the current CertificateRequest
 // to no longer match what is stored in the Secret.
-func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) (string, string, bool) {
+func SecretPublicKeyDiffersFromCurrentCertificateRequest(input Input) *Violation[InvalidInputReason] {
 	if input.CurrentRevisionRequest == nil {
-		return "", "", false
+		return nil
 	}
-	pk, err := pki.DecodePrivateKeyBytes(input.Secret.Data[corev1.TLSPrivateKeyKey])
-	if err != nil {
-		return InvalidKeyPair, fmt.Sprintf("Issuing certificate as Secret contains invalid private key data: %v", err), true
+
+	pk, violation := helper{}.PrivateKey(input)
+	if violation != nil {
+		return violation
 	}
 
 	csr, err := pki.DecodeX509CertificateRequestBytes(input.CurrentRevisionRequest.Spec.Request)
 	if err != nil {
-		return InvalidCertificateRequest, fmt.Sprintf("Failed to decode current CertificateRequest: %v", err), true
+		return NewInvalidInputViolation(InvalidCertificateRequest, fmt.Sprintf("the current CertificateRequest failed to decode: %v", err))
 	}
 
 	equal, err := pki.PublicKeysEqual(csr.PublicKey, pk.Public())
 	if err != nil {
-		return InvalidCertificateRequest, fmt.Sprintf("CertificateRequest's public key is invalid: %v", err), true
+		return NewInvalidInputViolation(InvalidCertificateRequest, fmt.Sprintf("the public key of the CertificateRequest is invalid: %v", err))
 	}
 	if !equal {
-		return SecretMismatch, "Secret contains a private key that does not match the current CertificateRequest", true
+		return NewInvalidInputViolation(InvalidCertificateRequest, "Secret contains a private key that does not match the current CertificateRequest")
 	}
 
-	return "", "", false
+	return nil
 }
 
-func CurrentCertificateRequestMismatchesSpec(input Input) (string, string, bool) {
+func CurrentCertificateRequestMismatchesSpec(input Input) *Violation[MaybeReason[IssuanceReason]] {
 	if input.CurrentRevisionRequest == nil {
 		// Fallback to comparing the Certificate spec with the issued certificate.
 		// This case is encountered if the CertificateRequest that issued the current
@@ -226,40 +289,41 @@ func CurrentCertificateRequestMismatchesSpec(input Input) (string, string, bool)
 	if err != nil {
 		// If parsing the request fails, we don't immediately trigger a re-issuance as
 		// the existing certificate stored in the Secret may still be valid/up to date.
-		return "", "", false
+		return nil
 	}
 	if len(violations) > 0 {
-		return RequestChanged, fmt.Sprintf("Fields on existing CertificateRequest resource not up to date: %v", violations), true
+		return NewIssuanceViolation(RequestChanged, fmt.Sprintf("fields on existing CertificateRequest resource are not up to date: %v", violations))
 	}
 
-	return "", "", false
+	return nil
 }
 
 // currentSecretValidForSpec is not actually registered as part of the policy chain
 // and is instead called by currentCertificateRequestValidForSpec if no there
 // is no existing CertificateRequest resource.
-func currentSecretValidForSpec(input Input) (string, string, bool) {
-	x509Cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-	if err != nil {
-		return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
+func currentSecretValidForSpec(input Input) *Violation[MaybeReason[IssuanceReason]] {
+	x509Cert, violation := helper{}.X509Certificate(input)
+	if violation != nil {
+		return MaybeValidation[IssuanceReason](violation)
 	}
+
 	// nolint: staticcheck // FuzzyX509AltNamesMatchSpec is used here for backwards compatibility
 	violations := pki.FuzzyX509AltNamesMatchSpec(x509Cert, input.Certificate.Spec)
 	if len(violations) > 0 {
-		return SecretMismatch, fmt.Sprintf("Issuing certificate as Existing issued Secret is not up to date for spec: %v", violations), true
+		return NewIssuanceViolation(SecretMismatch, fmt.Sprintf("existing issued Secret is not up to date for spec: %v", violations))
 	}
 
-	return "", "", false
+	return nil
 }
 
 // CurrentCertificateNearingExpiry returns a policy function that can be used to
 // check whether an X.509 cert currently issued for a Certificate should be
 // renewed.
-func CurrentCertificateNearingExpiry(c clock.Clock) Func {
-	return func(input Input) (string, string, bool) {
-		x509Cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-		if err != nil {
-			return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
+func CurrentCertificateNearingExpiry(c clock.Clock) Policy[*Violation[MaybeReason[IssuanceReason]]] {
+	return func(input Input) *Violation[MaybeReason[IssuanceReason]] {
+		x509Cert, violation := helper{}.X509Certificate(input)
+		if violation != nil {
+			return MaybeValidation[IssuanceReason](violation)
 		}
 
 		// Determine if the certificate is nearing expiry solely by looking at
@@ -275,26 +339,26 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		renewIn := renewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {
 			// renewal time is in future, no need to renew
-			return "", "", false
+			return nil
 		}
 
-		return Renewing, fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime), true
+		return NewIssuanceViolation(Renewing, fmt.Sprintf("renewal was scheduled at %s", input.Certificate.Status.RenewalTime))
 	}
 }
 
 // CurrentCertificateHasExpired is used exclusively to check if the current
 // issued certificate has actually expired rather than just nearing expiry.
-func CurrentCertificateHasExpired(c clock.Clock) Func {
-	return func(input Input) (string, string, bool) {
-		x509Cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-		if err != nil {
-			return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
+func CurrentCertificateHasExpired(c clock.Clock) Policy[*Violation[MaybeReason[IssuanceReason]]] {
+	return func(input Input) *Violation[MaybeReason[IssuanceReason]] {
+		x509Cert, violation := helper{}.X509Certificate(input)
+		if violation != nil {
+			return MaybeValidation[IssuanceReason](violation)
 		}
 
 		if c.Now().After(x509Cert.NotAfter) {
-			return Expired, fmt.Sprintf("Certificate expired on %s", x509Cert.NotAfter.Format(time.RFC1123)), true
+			return NewIssuanceViolation(Expired, fmt.Sprintf("certificate expired on %s", x509Cert.NotAfter.Format(time.RFC1123)))
 		}
-		return "", "", false
+		return nil
 	}
 }
 
@@ -338,197 +402,74 @@ func issuerGroupsEqual(l, r string) bool {
 // exist both in the Certificate's SecretTemplate and the Secret. Missing and
 // extra annotations or labels are detected by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch
 // and SecretSecretTemplateManagedFieldsMismatch functions instead.
-func SecretSecretTemplateMismatch(input Input) (string, string, bool) {
+func SecretSecretTemplateMismatch(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
 	if input.Certificate.Spec.SecretTemplate == nil {
-		return "", "", false
+		return nil
 	}
 
-	if match, _ := mapsHaveMatchingValues(input.Certificate.Spec.SecretTemplate.Annotations, input.Secret.Annotations); !match {
-		return SecretTemplateMismatch, "Certificate's SecretTemplate Annotations missing or incorrect value on Secret", true
+	if match, key := mapsHaveMatchingValues(input.Certificate.Spec.SecretTemplate.Annotations, input.Secret.Annotations); !match {
+		return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret annotation %q has value %q, expected %q", key, input.Secret.Annotations[key], input.Certificate.Spec.SecretTemplate.Annotations[key]))
 	}
 
-	if match, _ := mapsHaveMatchingValues(input.Certificate.Spec.SecretTemplate.Labels, input.Secret.Labels); !match {
-		return SecretTemplateMismatch, "Certificate's SecretTemplate Labels missing or incorrect value on Secret", true
+	if match, key := mapsHaveMatchingValues(input.Certificate.Spec.SecretTemplate.Labels, input.Secret.Labels); !match {
+		return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret label %q has value %q, expected %q", key, input.Secret.Labels[key], input.Certificate.Spec.SecretTemplate.Labels[key]))
 	}
 
-	return "", "", false
+	return nil
 }
 
-func certificateDataAnnotationsForSecret(secret *corev1.Secret) (annotations map[string]string, err error) {
-	var certificate *x509.Certificate
-	if len(secret.Data[corev1.TLSCertKey]) > 0 {
-		certificate, err = pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+// SecretLabelsAndAnnotationsManagedFieldsMismatch will inspect the given Secret's
+// managed fields for its Annotations and Labels, and compare this against the expected
+// Labels and Annotations which are a combination of the Certificate's SecretTemplate
+// and the Annotations and Labels that are managed by cert-manager.
+func SecretLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string) Policy[*Violation[MaybeReason[PostIssuanceReason]]] {
+	return func(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
+		x509Cert, violation := helper{}.X509Certificate(input)
+		if violation != nil {
+			// Ignore invalid certificate errors, these will be caught by the Readiness chain.
+			// Instead, set the x509Cert to nil so we can continue checking the Secret.
+			x509Cert = nil
+		}
+
+		fieldset, violation := helper{}.ManagedFields(input, fieldManager)
+		if violation != nil {
+			return MaybeValidation[PostIssuanceReason](violation)
+		}
+
+		managedLabels, managedAnnotations := sets.New[string](), sets.New[string]()
+		fieldset.
+			WithPrefix(fieldpath.PathElement{FieldName: ptr.To("metadata")}).
+			WithPrefix(fieldpath.PathElement{FieldName: ptr.To("labels")}).
+			Iterate(func(path fieldpath.Path) {
+				managedLabels.Insert(strings.TrimPrefix(path.String(), "."))
+			})
+		fieldset.
+			WithPrefix(fieldpath.PathElement{FieldName: ptr.To("metadata")}).
+			WithPrefix(fieldpath.PathElement{FieldName: ptr.To("annotations")}).
+			Iterate(func(path fieldpath.Path) {
+				managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
+			})
+
+		// Remove the annotations that can not be set on the Secret without re-issuing the certificate.
+		managedAnnotations.Delete(cmapi.IssuerNameAnnotationKey)
+		managedAnnotations.Delete(cmapi.IssuerKindAnnotationKey)
+		managedAnnotations.Delete(cmapi.IssuerGroupAnnotationKey)
+		managedAnnotations.Delete(cmapi.CertificateNameKey)
+
+		expCertificateDataAnnotations, err := internalcertificates.AnnotationsForCertificate(x509Cert)
 		if err != nil {
-			return nil, err
-		}
-	}
-
-	certificateAnnotations, err := internalcertificates.AnnotationsForCertificate(certificate)
-	if err != nil {
-		return nil, err
-	}
-
-	return certificateAnnotations, nil
-}
-
-func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager string) (labels, annotations sets.Set[string], err error) {
-	managedLabels, managedAnnotations := sets.New[string](), sets.New[string]()
-
-	for _, managedField := range secret.ManagedFields {
-		// If the managed field isn't owned by the cert-manager controller, ignore.
-		if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
-			continue
+			return MaybeValidation[PostIssuanceReason](NewInvalidInputViolation(InvalidCertificate, fmt.Sprintf("failed computing secret annotations: %v", err)))
 		}
 
-		// Decode the managed field.
-		var fieldset fieldpath.Set
-		if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
-			return nil, nil, err
-		}
-
-		// Extract the labels and annotations of the managed fields.
-		metadata := fieldset.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("metadata"),
-		})
-		labels := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("labels"),
-		})
-		annotations := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("annotations"),
-		})
-
-		// Gather the annotations and labels on the managed fields. Remove the '.'
-		// prefix which appears on managed field keys.
-		labels.Iterate(func(path fieldpath.Path) {
-			managedLabels.Insert(strings.TrimPrefix(path.String(), "."))
-		})
-		annotations.Iterate(func(path fieldpath.Path) {
-			managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
-		})
-	}
-
-	return managedLabels, managedAnnotations, nil
-}
-
-// SecretManagedLabelsAndAnnotationsManagedFieldsMismatch will inspect the given Secret's
-// managed fields for its Annotations and Labels, and compare this against the
-// Labels and Annotations that are managed by cert-manager. Returns false if Annotations and
-// Labels match on both the Certificate's SecretTemplate and the Secret's
-// managed fields, true otherwise.
-// Also returns true if the managed fields or signed certificate were not able
-// to be decoded.
-func SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(fieldManager string) Func {
-	return func(input Input) (string, string, bool) {
-		managedLabels, managedAnnotations, err := secretLabelsAndAnnotationsManagedFields(input.Secret, fieldManager)
-		if err != nil {
-			return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
-		}
-
-		// Remove the non cert-manager annotations from the managed Annotations so we can compare
-		// 1 to 1 all the cert-manager annotations.
-		for k := range managedAnnotations {
-			if strings.HasPrefix(k, "cert-manager.io/") ||
-				strings.HasPrefix(k, "controller.cert-manager.io/") {
-				continue
-			}
-
-			delete(managedAnnotations, k)
-		}
-
-		// Ignore the CertificateName and IssuerRef annotations as these cannot be set by the postIssuance controller.
-		managedAnnotations.Delete(
-			cmapi.CertificateNameKey,       // SecretCertificateNameAnnotationMismatch checks the value
-			cmapi.IssuerNameAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
-			cmapi.IssuerKindAnnotationKey,  // SecretIssuerAnnotationsMismatch checks the value
-			cmapi.IssuerGroupAnnotationKey, // SecretIssuerAnnotationsMismatch checks the value
-		)
-
-		// Remove the non cert-manager labels from the managed labels so we can compare
-		// 1 to 1 all the cert-manager labels.
-		for k := range managedLabels {
-			if strings.HasPrefix(k, "cert-manager.io/") ||
-				strings.HasPrefix(k, "controller.cert-manager.io/") {
-				continue
-			}
-
-			delete(managedLabels, k)
-		}
-
-		expCertificateDataAnnotations, err := certificateDataAnnotationsForSecret(input.Secret)
-		if err != nil {
-			return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
-		}
-
-		expLabels := sets.New[string](
+		// Add the labels and annotations that are always managed by cert-manager to the expected set.
+		expLabels := sets.New(
 			cmapi.PartOfCertManagerControllerLabelKey, // SecretBaseLabelsMismatch checks the value
 		)
-		expAnnotations := sets.New[string]()
-		for k := range expCertificateDataAnnotations { // SecretCertificateDetailsAnnotationsMismatch checks the value
-			expAnnotations.Insert(k)
-		}
+		expAnnotations := sets.New(
+			maps.Keys(expCertificateDataAnnotations)..., // SecretCertificateDetailsAnnotationsMismatch checks the value
+		)
 
-		if !managedLabels.Equal(expLabels) {
-			missingLabels := expLabels.Difference(managedLabels)
-			if len(missingLabels) > 0 {
-				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Labels: %v", sets.List(missingLabels)), true
-			}
-
-			extraLabels := managedLabels.Difference(expLabels)
-			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Labels: %v", sets.List(extraLabels)), true
-		}
-
-		if !managedAnnotations.Equal(expAnnotations) {
-			missingAnnotations := expAnnotations.Difference(managedAnnotations)
-			if len(missingAnnotations) > 0 {
-				return SecretManagedMetadataMismatch, fmt.Sprintf("Secret is missing these Managed Annotations: %v", sets.List(missingAnnotations)), true
-			}
-
-			extraAnnotations := managedAnnotations.Difference(expAnnotations)
-			return SecretManagedMetadataMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", sets.List(extraAnnotations)), true
-		}
-
-		return "", "", false
-	}
-}
-
-// SecretSecretTemplateManagedFieldsMismatch will inspect the given Secret's
-// managed fields for its Annotations and Labels, and compare this against the
-// SecretTemplate on the given Certificate. Returns false if Annotations and
-// Labels match on both the Certificate's SecretTemplate and the Secret's
-// managed fields, true otherwise.
-// Also returns true if the managed fields or signed certificate were not able
-// to be decoded.
-func SecretSecretTemplateManagedFieldsMismatch(fieldManager string) Func {
-	return func(input Input) (string, string, bool) {
-		managedLabels, managedAnnotations, err := secretLabelsAndAnnotationsManagedFields(input.Secret, fieldManager)
-		if err != nil {
-			return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
-		}
-
-		// Remove the cert-manager annotations from the managed Annotations so we can compare
-		// 1 to 1 against the SecretTemplate.
-		for k := range managedAnnotations {
-			if !strings.HasPrefix(k, "cert-manager.io/") &&
-				!strings.HasPrefix(k, "controller.cert-manager.io/") {
-				continue
-			}
-
-			delete(managedAnnotations, k)
-		}
-
-		// Remove the cert-manager labels from the managed Labels so we can
-		// compare 1 to 1 against the SecretTemplate
-		for k := range managedLabels {
-			if !strings.HasPrefix(k, "cert-manager.io/") &&
-				!strings.HasPrefix(k, "controller.cert-manager.io/") {
-				continue
-			}
-
-			delete(managedLabels, k)
-		}
-
-		expLabels := sets.New[string]()
-		expAnnotations := sets.New[string]()
+		// Add the labels and annotations that are set on the Certificate's SecretTemplate to the expected set.
 		if input.Certificate.Spec.SecretTemplate != nil {
 			for k := range input.Certificate.Spec.SecretTemplate.Labels {
 				expLabels.Insert(k)
@@ -541,41 +482,41 @@ func SecretSecretTemplateManagedFieldsMismatch(fieldManager string) Func {
 		if !managedLabels.Equal(expLabels) {
 			missingLabels := expLabels.Difference(managedLabels)
 			if len(missingLabels) > 0 {
-				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Labels: %v", sets.List(missingLabels)), true
+				return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret is missing these labels: %v", sets.List(missingLabels)))
 			}
 
 			extraLabels := managedLabels.Difference(expLabels)
-			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Labels: %v", sets.List(extraLabels)), true
+			return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret has these extra labels: %v", sets.List(extraLabels)))
 		}
 
 		if !managedAnnotations.Equal(expAnnotations) {
 			missingAnnotations := expAnnotations.Difference(managedAnnotations)
 			if len(missingAnnotations) > 0 {
-				return SecretTemplateMismatch, fmt.Sprintf("Secret is missing these Template Annotations: %v", sets.List(missingAnnotations)), true
+				return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret is missing these annotations: %v", sets.List(missingAnnotations)))
 			}
 
 			extraAnnotations := managedAnnotations.Difference(expAnnotations)
-			return SecretTemplateMismatch, fmt.Sprintf("Secret has these extra Annotations: %v", sets.List(extraAnnotations)), true
+			return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret has these extra annotations: %v", sets.List(extraAnnotations)))
 		}
 
-		return "", "", false
+		return nil
 	}
 }
 
 // NOTE: The presence of the controller.cert-manager.io/fao label is checked
 // by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch function.
-func SecretBaseLabelsMismatch(input Input) (string, string, bool) {
+func SecretBaseLabelsMismatch(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
 	// check if Secret has the base labels. Currently there is only one base label
 	if input.Secret.Labels == nil {
-		return "", "", false
+		return nil
 	}
 
 	value, ok := input.Secret.Labels[cmapi.PartOfCertManagerControllerLabelKey]
 	if !ok || value == "true" {
-		return "", "", false
+		return nil
 	}
 
-	return SecretManagedMetadataMismatch, fmt.Sprintf("wrong base label %s value %q, expected \"true\"", cmapi.PartOfCertManagerControllerLabelKey, value), true
+	return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret label %q has value %q, expected \"true\"", cmapi.PartOfCertManagerControllerLabelKey, value))
 }
 
 // SecretCertificateDetailsAnnotationsMismatch returns a validation violation when
@@ -584,47 +525,52 @@ func SecretBaseLabelsMismatch(input Input) (string, string, bool) {
 // already exist on the Secret and are also present in the certificate metadata.
 // NOTE: Missing and extra annotations are detected by the SecretManagedLabelsAndAnnotationsManagedFieldsMismatch
 // function instead.
-func SecretCertificateDetailsAnnotationsMismatch(input Input) (string, string, bool) {
-	dataAnnotations, err := certificateDataAnnotationsForSecret(input.Secret)
+func SecretCertificateDetailsAnnotationsMismatch(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
+	x509Cert, violation := helper{}.X509Certificate(input)
+	if violation != nil {
+		return MaybeValidation[PostIssuanceReason](violation)
+	}
+
+	dataAnnotations, err := internalcertificates.AnnotationsForCertificate(x509Cert)
 	if err != nil {
-		return InvalidCertificate, fmt.Sprintf("Failed getting secret annotations: %v", err), true
+		return MaybeValidation[PostIssuanceReason](NewInvalidInputViolation(InvalidCertificate, fmt.Sprintf("failed computing secret annotations: %v", err)))
 	}
 
 	if match, key := mapsHaveMatchingValues(dataAnnotations, input.Secret.Annotations); !match {
-		return SecretTemplateMismatch, fmt.Sprintf("Secret metadata %s does not match certificate metadata %s", input.Secret.Annotations[key], dataAnnotations[key]), true
+		return NewPostIssuanceViolation(SecretMetadataMismatch, fmt.Sprintf("Secret annotation %q has value %q, expected %q", key, input.Secret.Annotations[key], dataAnnotations[key]))
 	}
 
-	return "", "", false
+	return nil
 }
 
 // SecretAdditionalOutputFormatsMismatch validates that the Secret has the
 // expected Certificate AdditionalOutputFormats.
-// Returns true (violation) if AdditionalOutputFormat(s) are present and any of
-// the following:
-//   - Secret key is missing
-//   - Secret value is incorrect
-func SecretAdditionalOutputFormatsMismatch(input Input) (string, string, bool) {
+// Returns true (violation) if AdditionalOutputFormat(s) are present and the
+// Secret value is incorrect
+// NOTE: The presence of the correct AdditionalOutputFormats fields in the Secret
+// is checked by the SecretAdditionalOutputFormatsManagedFieldsMismatch function.
+func SecretAdditionalOutputFormatsMismatch(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
 	const message = "Certificate's AdditionalOutputFormats doesn't match Secret Data"
 	for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
 		switch format.Type {
 		case cmapi.CertificateOutputFormatCombinedPEM:
 			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey]
-			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatCombinedPEM(
+			if ok && !bytes.Equal(v, internalcertificates.OutputFormatCombinedPEM(
 				input.Secret.Data[corev1.TLSPrivateKeyKey],
 				input.Secret.Data[corev1.TLSCertKey],
 			)) {
-				return AdditionalOutputFormatsMismatch, message, true
+				return NewPostIssuanceViolation(AdditionalOutputFormatsMismatch, message)
 			}
 
 		case cmapi.CertificateOutputFormatDER:
 			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatDERKey]
-			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatDER(input.Secret.Data[corev1.TLSPrivateKeyKey])) {
-				return AdditionalOutputFormatsMismatch, message, true
+			if ok && !bytes.Equal(v, internalcertificates.OutputFormatDER(input.Secret.Data[corev1.TLSPrivateKeyKey])) {
+				return NewPostIssuanceViolation(AdditionalOutputFormatsMismatch, message)
 			}
 		}
 	}
 
-	return "", "", false
+	return nil
 }
 
 // SecretAdditionalOutputFormatsManagedFieldsMismatch validates that the field manager
@@ -633,11 +579,15 @@ func SecretAdditionalOutputFormatsMismatch(input Input) (string, string, bool) {
 //   - missing AdditionalOutputFormat key owned by the field manager
 //   - AdditionalOutputFormat key owned by the field manager shouldn't exist
 //
-// A violation with the reason `ManagedFieldsParseError` should be considered a
+// A violation with the reason `InvalidManagedFields` should be considered a
 // non re-triable error.
-func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Func {
-	const message = "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields"
-	return func(input Input) (string, string, bool) {
+func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Policy[*Violation[MaybeReason[PostIssuanceReason]]] {
+	return func(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
+		fieldset, violation := helper{}.ManagedFields(input, fieldManager)
+		if violation != nil {
+			return MaybeValidation[PostIssuanceReason](violation)
+		}
+
 		var (
 			crtHasCombinedPEM, crtHasDER       bool
 			secretHasCombinedPEM, secretHasDER bool
@@ -656,38 +606,26 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 
 		// Determine whether an output format key exists on the Secret which is
 		// owned my the field manager.
-		for _, managedField := range input.Secret.ManagedFields {
-			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
-				continue
-			}
-
-			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
-				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
-			}
-
-			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("data")},
-				{FieldName: ptr.To(cmapi.CertificateOutputFormatCombinedPEMKey)},
-			}) {
-				secretHasCombinedPEM = true
-			}
-
-			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("data")},
-				{FieldName: ptr.To(cmapi.CertificateOutputFormatDERKey)},
-			}) {
-				secretHasDER = true
-			}
+		if fieldset.Has(fieldpath.Path{
+			{FieldName: ptr.To("data")},
+			{FieldName: ptr.To(cmapi.CertificateOutputFormatCombinedPEMKey)},
+		}) {
+			secretHasCombinedPEM = true
+		}
+		if fieldset.Has(fieldpath.Path{
+			{FieldName: ptr.To("data")},
+			{FieldName: ptr.To(cmapi.CertificateOutputFormatDERKey)},
+		}) {
+			secretHasDER = true
 		}
 
 		// Format present or missing on the Certificate should be reflected on the
 		// Secret.
 		if crtHasCombinedPEM != secretHasCombinedPEM || crtHasDER != secretHasDER {
-			return AdditionalOutputFormatsMismatch, message, true
+			return NewPostIssuanceViolation(AdditionalOutputFormatsMismatch, "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields")
 		}
 
-		return "", "", false
+		return nil
 	}
 }
 
@@ -695,52 +633,44 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 // owner reference to the Certificate if enabled. Returns true (violation) if:
 // * the Secret doesn't have an owner reference and is expecting one
 // * has an owner reference but is not expecting one
-// A violation with the reason `ManagedFieldsParseError` should be considered a
+// A violation with the reason `InvalidManagedFields` should be considered a
 // non re-triable error.
-func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager string) Func {
-	return func(input Input) (string, string, bool) {
-		var hasOwnerRefManagedField bool
-		// Determine whether the Secret has the Certificate as an owner reference
-		// which is owned by the field manager.
-		for _, managedField := range input.Secret.ManagedFields {
-			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
-				continue
-			}
+func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager string) Policy[*Violation[MaybeReason[PostIssuanceReason]]] {
+	return func(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
+		fieldset, violation := helper{}.ManagedFields(input, fieldManager)
+		if violation != nil {
+			return MaybeValidation[PostIssuanceReason](violation)
+		}
 
-			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
-				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
-			}
-			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("metadata")},
-				{FieldName: ptr.To("ownerReferences")},
-				{Key: &value.FieldList{{Name: "uid", Value: value.NewValueInterface(string(input.Certificate.UID))}}},
-			}) {
-				hasOwnerRefManagedField = true
-				break
-			}
+		var hasOwnerRefManagedField bool
+		if fieldset.Has(fieldpath.Path{
+			{FieldName: ptr.To("metadata")},
+			{FieldName: ptr.To("ownerReferences")},
+			{Key: &value.FieldList{{Name: "uid", Value: value.NewValueInterface(string(input.Certificate.UID))}}},
+		}) {
+			hasOwnerRefManagedField = true
 		}
 
 		// The presence of the Certificate owner reference should match owner
 		// reference being enabled.
 		if ownerRefEnabled != hasOwnerRefManagedField {
-			return SecretOwnerRefMismatch,
-				fmt.Sprintf("unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+			return NewPostIssuanceViolation(SecretOwnerRefMismatch,
+				fmt.Sprintf("unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled))
 		}
 
-		return "", "", false
+		return nil
 	}
 }
 
 // SecretOwnerReferenceMismatch validates that the Secret has the expected
 // owner reference if it is enabled. Returns true (violation) if:
 // * owner reference is enabled, but the reference has an incorrect value
-func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
-	return func(input Input) (string, string, bool) {
+func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Policy[*Violation[MaybeReason[PostIssuanceReason]]] {
+	return func(input Input) *Violation[MaybeReason[PostIssuanceReason]] {
 		// If the Owner Reference is not enabled, we don't need to check the value
 		// and can exit early.
 		if !ownerRefEnabled {
-			return "", "", false
+			return nil
 		}
 
 		var (
@@ -763,11 +693,10 @@ func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
 		// Owner reference is enabled at this point. If the Owner Reference value
 		// doesn't match the expected value, return violation.
 		if !hasOwnerRefMatchingCertificate {
-			return SecretOwnerRefMismatch,
-				fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+			return NewPostIssuanceViolation(SecretOwnerRefMismatch, fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled))
 		}
 
-		return "", "", false
+		return nil
 	}
 }
 
