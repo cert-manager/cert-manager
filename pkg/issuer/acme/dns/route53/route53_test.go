@@ -146,6 +146,7 @@ func TestAssumeRole(t *testing.T) {
 		role             string
 		webIdentityToken string
 		expErr           bool
+		expErrMessage    string
 		expCreds         *ststypes.Credentials
 		expRegion        string
 		key              string
@@ -153,6 +154,51 @@ func TestAssumeRole(t *testing.T) {
 		region           string
 		mockSTS          *mockSTS
 	}{
+		{
+			name:          "should remove request ID for assumeRole",
+			role:          "my-role",
+			ambient:       true,
+			expErr:        true,
+			expErrMessage: "unable to assume role: https response error StatusCode: 0, RequestID: <REDACTED>, foo",
+			expCreds:      creds,
+			expRegion:     "",
+			mockSTS: &mockSTS{
+				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+					return nil, &awshttp.ResponseError{
+						RequestID: "fake-request-id",
+						ResponseError: &smithyhttp.ResponseError{
+							Err: errors.New("foo"),
+							Response: &smithyhttp.Response{
+								Response: &http.Response{},
+							},
+						},
+					}
+				},
+			},
+		},
+		{
+			name:             "should remove request ID for assumeRoleWithWebIdentity",
+			role:             "my-role",
+			webIdentityToken: jwt,
+			ambient:          true,
+			expErr:           true,
+			expErrMessage:    "unable to assume role with web identity: https response error StatusCode: 0, RequestID: <REDACTED>, foo",
+			expCreds:         creds,
+			expRegion:        "",
+			mockSTS: &mockSTS{
+				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+					return nil, &awshttp.ResponseError{
+						RequestID: "fake-request-id",
+						ResponseError: &smithyhttp.ResponseError{
+							Err: errors.New("foo"),
+							Response: &smithyhttp.Response{
+								Response: &http.Response{},
+							},
+						},
+					}
+				},
+			},
+		},
 		{
 			name:      "should assume role w/ ambient creds",
 			role:      "my-role",
@@ -260,6 +306,9 @@ func TestAssumeRole(t *testing.T) {
 			cfg, err := provider.GetSession(context.TODO())
 			if c.expErr {
 				assert.NotNil(t, err)
+				if c.expErrMessage != "" {
+					assert.EqualError(t, err, c.expErrMessage)
+				}
 			} else {
 				assert.Nil(t, err)
 				sessCreds, _ := cfg.Credentials.Retrieve(context.TODO())

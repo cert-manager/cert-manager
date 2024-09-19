@@ -105,10 +105,10 @@ func (r *DNSProvider) CleanUp(_, fqdn, zone, value string) error {
 	return r.changeRecord("REMOVE", fqdn, zone, value, 60)
 }
 
-func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) error {
+func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl uint32) error {
 	// Create RR
 	rr := new(dns.TXT)
-	rr.Hdr = dns.RR_Header{Name: fqdn, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: uint32(ttl)}
+	rr.Hdr = dns.RR_Header{Name: fqdn, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: ttl}
 	rr.Txt = []string{value}
 	rrs := []dns.RR{rr}
 

@@ -58,6 +58,6 @@ if ! diff \
 then
     echo
     echo "Project '${projectdir}' is out of date."
-    echo "Please run '${*}'"
+    echo "Please run '${*}' or apply the above diffs"
     exit 1
 fi

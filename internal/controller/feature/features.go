@@ -16,7 +16,7 @@ limitations under the License.
 
 // feature contains controller's feature gate setup functionality. Do not import
 // this package into any code that's shared with other components to prevent
-// overwriting other component's featue gates, see i.e
+// overwriting other component's feature gates, see i.e
 // https://github.com/cert-manager/cert-manager/issues/6011
 package feature
 
@@ -137,6 +137,14 @@ const (
 	// Certificate resources.
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/6393
 	OtherNames featuregate.Feature = "OtherNames"
+
+	// Owner: @jsoref
+	// Alpha: v1.16
+	//
+	// UseDomainQualifiedFinalizer changes the finalizer added to cert-manager created
+	// resources to acme.cert-manager.io/finalizer instead of finalizer.acme.cert-manager.io.
+	// GitHub Issue: https://github.com/cert-manager/cert-manager/issues/7266
+	UseDomainQualifiedFinalizer featuregate.Feature = "UseDomainQualifiedFinalizer"
 )
 
 func init() {
@@ -160,4 +168,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
+	UseDomainQualifiedFinalizer:                      {Default: false, PreRelease: featuregate.Alpha},
 }

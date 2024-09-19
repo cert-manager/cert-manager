@@ -123,7 +123,7 @@ tools += cmctl=v2.1.0
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 tools += cmrel=e4c3a4dc07df5c7c0379d334c5bb00e172462551
 # https://github.com/golangci/golangci-lint/releases
-tools += golangci-lint=v1.60.1
+tools += golangci-lint=v1.61.0
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 tools += govulncheck=v1.1.3
 # https://pkg.go.dev/github.com/operator-framework/operator-sdk/cmd/operator-sdk?tab=versions

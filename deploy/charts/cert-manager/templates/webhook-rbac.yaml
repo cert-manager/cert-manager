@@ -47,8 +47,7 @@ roleRef:
   kind: Role
   name: {{ template "webhook.fullname" . }}:dynamic-serving
 subjects:
-- apiGroup: ""
-  kind: ServiceAccount
+- kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ include "cert-manager.namespace" . }}
 
@@ -85,8 +84,7 @@ roleRef:
   kind: ClusterRole
   name: {{ template "webhook.fullname" . }}:subjectaccessreviews
 subjects:
-- apiGroup: ""
-  kind: ServiceAccount
+- kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ include "cert-manager.namespace" . }}
 {{- end }}
