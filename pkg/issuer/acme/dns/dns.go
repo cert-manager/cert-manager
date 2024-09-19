@@ -181,7 +181,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 	log := logf.FromContext(ctx, "solverForChallenge")
 	dbg := log.V(logf.DebugLevel)
 
-	resourceNamespace := s.ResourceNamespaceFromRef(ch.Spec.IssuerRef, ch.Namespace)
+	resourceNamespace := ch.Namespace
 	canUseAmbientCredentials := s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef)
 
 	providerConfig, err := extractChallengeSolverConfig(ch)
@@ -460,7 +460,7 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challen
 		return nil, nil, err
 	}
 
-	resourceNamespace := s.ResourceNamespaceFromRef(ch.Spec.IssuerRef, ch.Namespace)
+	resourceNamespace := ch.Namespace
 	canUseAmbientCredentials := s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef)
 
 	// construct a ChallengeRequest which can be passed to DNS solvers.
