@@ -565,8 +565,6 @@ spec:
                               route53:
                                 description: Use the AWS Route53 API to manage DNS01 challenge records.
                                 type: object
-                                required:
-                                  - region
                                 properties:
                                   accessKeyID:
                                     description: |-

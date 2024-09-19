@@ -600,7 +600,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
-	Region string `json:"region"`
+	Region string `json:"region,omitempty"`
 }
 
 // Route53Auth is configuration used to authenticate with a Route53.
