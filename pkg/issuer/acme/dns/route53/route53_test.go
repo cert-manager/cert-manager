@@ -388,7 +388,7 @@ func Test_removeReqID(t *testing.T) {
 			wantErr: &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()},
 		},
 		{
-			name:    "should replace the request id even in a %w wrapped error",
+			name:    "should replace the request id in a %w wrapped error",
 			err:     fmt.Errorf("failed to refresh cached credentials, %w", &awshttp.ResponseError{RequestID: "SOMEREQUESTID", ResponseError: newResponseError()}),
 			wantErr: fmt.Errorf("failed to refresh cached credentials, %w", &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()}),
 		},
