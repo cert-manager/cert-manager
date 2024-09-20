@@ -33,7 +33,7 @@ type CAInjectorConfiguration struct {
 
 	// If set, this limits the scope of cert-manager to a single namespace and
 	// ClusterIssuers are disabled. If not specified, all namespaces will be
-	// watched"
+	// watched
 	Namespace string
 
 	// LeaderElectionConfig configures the behaviour of the leader election
@@ -72,7 +72,7 @@ type CAInjectorConfiguration struct {
 }
 
 type EnableDataSourceConfig struct {
-	// Certificates detemines whether cainjector's control loops will watch
+	// Certificates determines whether cainjector's control loops will watch
 	// cert-manager Certificate resources as potential sources of CA data.
 	Certificates bool
 }

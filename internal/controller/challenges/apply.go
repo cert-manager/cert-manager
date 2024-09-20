@@ -29,7 +29,7 @@ import (
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
-// Apply will make a Apply API call with the given client to the challenges
+// Apply will make an Apply API call with the given client to the challenges
 // endpoint. All data in the given Challenges object is dropped; expect for the
 // name, namespace, and spec object. The given fieldManager is will be used as
 // the FieldManager in the Apply call.  Always sets Force Apply to true.
@@ -45,7 +45,7 @@ func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, chal
 	)
 }
 
-// ApplyStatus will make a Apply API call with the given client to the
+// ApplyStatus will make an Apply API call with the given client to the
 // challenges status sub-resource endpoint. All data in the given Challenges
 // object is dropped; expect for the name, namespace, and status object. The
 // given fieldManager is will be used as the FieldManager in the Apply call.

@@ -52,7 +52,7 @@ func DefaultACMERateLimiter() workqueue.TypedRateLimiter[types.NamespacedName] {
 	return workqueue.NewTypedItemExponentialFailureRateLimiter[types.NamespacedName](time.Second*5, time.Minute*30)
 }
 
-// HandleOwnedResourceNamespacedFunc returns a function thataccepts a
+// HandleOwnedResourceNamespacedFunc returns a function that accepts a
 // Kubernetes object and adds its owner references to the workqueue.
 // https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
 func HandleOwnedResourceNamespacedFunc[T metav1.Object](

@@ -122,13 +122,13 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 		t.Fatal(err)
 	}
 
-	// installing the validating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
+	// installing the validating webhooks, not using WebhookInstallOptions as it patches the CA to be its own
 	err = cl.Create(ctx, getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// installing the mutating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
+	// installing the mutating webhooks, not using WebhookInstallOptions as it patches the CA to be its own
 	err = cl.Create(ctx, getMutatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
 	if err != nil {
 		t.Fatal(err)

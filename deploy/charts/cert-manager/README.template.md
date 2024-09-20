@@ -298,7 +298,7 @@ Override the "cert-manager.fullname" value. This value is used as part of most o
 
 #### **nameOverride** ~ `string`
 
-Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsitencies in the Helm chart when it comes to these annotations (some resources use eg. "cainjector.name" which resolves to the value "cainjector").
+Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use eg. "cainjector.name" which resolves to the value "cainjector").
 
 #### **serviceAccount.create** ~ `bool`
 > Default value:
@@ -421,7 +421,7 @@ ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
 
 Additional command line flags to pass to cert-manager controller binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.  
   
-Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificiateRequests approver.  
+Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificateRequests approver.  
   
 For example:
 
@@ -662,7 +662,7 @@ enableServiceLinks indicates whether information about services should be inject
 
 Enable Prometheus monitoring for the cert-manager controller and webhook. If you use the Prometheus Operator, set prometheus.podmonitor.enabled or prometheus.servicemonitor.enabled, to create a PodMonitor or a  
 ServiceMonitor resource.  
-Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in a error.
+Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
 #### **prometheus.servicemonitor.enabled** ~ `bool`
 > Default value:
 > ```yaml

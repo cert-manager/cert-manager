@@ -229,7 +229,7 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 	return cert, nil
 }
 
-// WatchRotation will returns a channel that fires notifications if the CA
+// WatchRotation will return a channel that fires notifications if the CA
 // certificate is rotated/updated.
 // This can be used to automatically trigger rotation of leaf certificates
 // when the root CA changes.

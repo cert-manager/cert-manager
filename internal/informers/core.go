@@ -27,7 +27,7 @@ import (
 // This file contains common informers functionality such as shared interfaces
 // The interfaces defined here are mostly a subset of similar interfaces upstream.
 // Defining our own instead of reusing the upstream ones allows us to:
-// - create smaller interfaces that don't have methods that our control loops don't need (thus avoiding to define unnecessary methods in implementations)
+// - create smaller interfaces that don't have methods that our control loops don't need (thus avoid defining unnecessary methods in implementations)
 // - swap embedded upstream interfaces for our own ones
 
 var secretsGVR = corev1.SchemeGroupVersion.WithResource("secrets")
@@ -67,7 +67,7 @@ type SecretLister interface {
 
 // Informer is a subset of client-go SharedIndexInformer https://github.com/kubernetes/client-go/blob/release-1.26/tools/cache/shared_informer.go#L35-L211
 type Informer interface {
-	// AddEventHadler allows reconcile loop to register an event handler so
+	// AddEventHandler allows the reconcile loop to register an event handler so
 	// it gets triggered when the informer has a new event
 	AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error)
 	// HasSynced returns true if the informer's cache has synced (at least

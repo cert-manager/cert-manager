@@ -62,7 +62,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	)
 
 	// isNotFoundError returns true if an error from the cert-manager admission
-	// webhook contains a is not found error.
+	// webhook contains an is not found error.
 	isNotFoundError := func(issuerRef cmmeta.ObjectReference, err error) bool {
 		if err == nil {
 			return false

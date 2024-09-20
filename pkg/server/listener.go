@@ -74,7 +74,7 @@ func WithCertificateSource(certificateSource servertls.CertificateSource) Listen
 	}
 }
 
-// WithTLSCipherSuites specifies the allowed ciper suites, when an empty/nil array is passed
+// WithTLSCipherSuites specifies the allowed cipher suites, when an empty/nil array is passed
 // the go defaults are used
 func WithTLSCipherSuites(suites []string) ListenerOption {
 	return func(config *ListenerConfig) error {

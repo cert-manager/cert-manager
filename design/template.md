@@ -80,7 +80,7 @@ This is where we get down to the specifics of what the proposal actually is.
 What is the desired outcome and how do we measure success?
 This should have enough detail that reviewers can understand exactly what
 you're proposing, but should not include things like API designs or
-implementation- those should go into "Design Details" below.
+implementation - those should go into "Design Details" below.
 -->
 
 ### User Stories (Optional)

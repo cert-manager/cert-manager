@@ -104,7 +104,7 @@ to renew certificates at an appropriate time before expiry.`,
 			}
 
 			// ValidateControllerConfiguration should already have validated the
-			// logging flags, the logging API does not have a Apply-only function
+			// logging flags, the logging API does not have an Apply-only function
 			// so we validate again here. This should not catch any validation errors
 			// anymore.
 			if err := logf.ValidateAndApply(&controllerConfig.Logging); err != nil {

@@ -201,7 +201,7 @@ func (h *Helper) waitForIssuerCondition(ctx context.Context, client clientset.Is
 }
 
 // WaitIssuerReady waits for the Issuer resource to be in a Ready=True state
-// The Ready=True condition will be checked against the provided issuer to make sure its ready.
+// The Ready=True condition will be checked against the provided issuer to make sure it's ready.
 func (h *Helper) WaitIssuerReady(ctx context.Context, issuer *cmapi.Issuer, timeout time.Duration) (*cmapi.Issuer, error) {
 	ready_true_condition := cmapi.IssuerCondition{
 		Type:   cmapi.IssuerConditionReady,
@@ -248,7 +248,7 @@ func (h *Helper) waitForClusterIssuerCondition(ctx context.Context, client clien
 }
 
 // WaitClusterIssuerReady waits for the Cluster Issuer resource to be in a Ready=True state
-// The Ready=True condition will be checked against the provided issuer to make sure its ready.
+// The Ready=True condition will be checked against the provided issuer to make sure it's ready.
 func (h *Helper) WaitClusterIssuerReady(ctx context.Context, issuer *cmapi.ClusterIssuer, timeout time.Duration) (*cmapi.ClusterIssuer, error) {
 	ready_true_condition := cmapi.IssuerCondition{
 		Type:   cmapi.IssuerConditionReady,

@@ -217,7 +217,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 // A, which is why the argument order for the two input chains does not
 // matter.
 //
-// Gluability: We say that the chains A and B are glueable when either the
+// Gluability: We say that the chains A and B are gluable when either the
 // leaf certificate of A can be verified using the root certificate of B,
 // or that the leaf certificate of B can be verified using the root certificate
 // of A.

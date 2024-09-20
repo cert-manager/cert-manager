@@ -96,7 +96,7 @@ type Controller struct {
 
 // New will construct a new certificatesigningrequest controller using the
 // given Signer implementation.
-// Note: the registerExtraInfromers passed here will be 'waited' for when
+// Note: the registerExtraInformers passed here will be 'waited' for when
 // starting to ensure their corresponding listers have synced.
 // The caller is responsible for ensuring the informer work functions are setup
 // correctly on any informer.

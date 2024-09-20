@@ -52,7 +52,7 @@ BINDIR=${BINDIR:-$_default_bindir}
 #  | 40    | 26m 26s         | 26       | 29m 29s        | 3m 3s    (hot) | [6][] |
 #  | 50    | interrupted (*) |          |                |          (hot) | [7][] |
 #
-# The startup time is calculated by substracting the "started time" visible
+# The startup time is calculated by subtracting the "started time" visible
 # on the Prow UI with the first line that has a timestamp. This time
 # depends on whether this Kubernetes node already has a cache or not.
 #

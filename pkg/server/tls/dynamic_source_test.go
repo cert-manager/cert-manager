@@ -240,7 +240,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				template.NotAfter = template.NotBefore.Add(150 * time.Millisecond)
 
 				signedCert := signUsingTempCA(t, template)
-				// Reset the NotBefor and NotAfter so we have high precision values here
+				// Reset the NotBefore and NotAfter so we have high precision values here
 				signedCert.NotBefore = time.Now()
 				signedCert.NotAfter = signedCert.NotBefore.Add(150 * time.Millisecond)
 

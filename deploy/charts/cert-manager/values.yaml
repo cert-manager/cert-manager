@@ -173,7 +173,7 @@ namespace: ""
 
 # Override the "cert-manager.name" value, which is used to annotate some of
 # the resources that are created by this Chart (using "app.kubernetes.io/name").
-# NOTE: There are some inconsitencies in the Helm chart when it comes to
+# NOTE: There are some inconsistencies in the Helm chart when it comes to
 # these annotations (some resources use eg. "cainjector.name" which resolves
 # to the value "cainjector").
 # +docs:property
@@ -276,7 +276,7 @@ approveSignerNames:
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.
 #
-# Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificiateRequests approver.
+# Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificateRequests approver.
 #
 # For example:
 #  extraArgs:
@@ -489,7 +489,7 @@ prometheus:
   # Otherwise, 'prometheus.io' annotations are added to the cert-manager and
   # cert-manager-webhook Deployments.
   # Note that you can not enable both PodMonitor and ServiceMonitor as they are
-  # mutually exclusive. Enabling both will result in a error.
+  # mutually exclusive. Enabling both will result in an error.
   enabled: true
 
   servicemonitor:
@@ -542,7 +542,7 @@ prometheus:
     # +docs:property
     endpointAdditionalProperties: {}
 
-  # Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in a error.
+  # Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
     enabled: false

@@ -53,7 +53,7 @@ certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 )
 
-// TestMetricscontoller performs a basic test to ensure that Certificates
+// TestMetricsController performs a basic test to ensure that Certificates
 // metrics are exposed when a Certificate is created, updated, and removed when
 // it is deleted.
 func TestMetricsController(t *testing.T) {

@@ -48,7 +48,7 @@ func testRecordBodyDataExist() *dns.RecordBody {
 	}
 }
 
-// OpenEdggrid DNS Stub
+// OpenEdgegrid DNS Stub
 type StubOpenDNSConfig struct {
 	FuncOutput map[string]interface{}
 	FuncErrors map[string]error
@@ -74,7 +74,7 @@ func TestNewDNSProvider(t *testing.T) {
 
 	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
 	assert.NoError(t, err)
-	// samplee couple important fields
+	// sample couple important fields
 	assert.Equal(t, akamai.serviceConsumerDomain, "akamai.example.com")
 	assert.Equal(t, fmt.Sprintf("%T", akamai.dnsclient), "*akamai.OpenDNSConfig")
 
@@ -316,7 +316,7 @@ func (o StubOpenDNSConfig) GetRecord(zone string, name string, recordType string
 			return nil, fmt.Errorf("GetRecord: Unexpected nil")
 		}
 		rec = exp.(*dns.RecordBody)
-		// comare passed with expected
+		// compare passed with expected
 		if name != rec.Name {
 			return nil, fmt.Errorf("GetRecord: expected/actual Name don't match")
 		}
@@ -333,7 +333,7 @@ func (o StubOpenDNSConfig) RecordSave(rec *dns.RecordBody, zone string) error {
 
 	exp, ok := o.FuncOutput["RecordSave"]
 	if ok {
-		// comare passed with expected
+		// compare passed with expected
 		if rec.Name != exp.(*dns.RecordBody).Name {
 			return fmt.Errorf("RecordSave: expected/actual Name don't match")
 		}
@@ -360,7 +360,7 @@ func (o StubOpenDNSConfig) RecordUpdate(rec *dns.RecordBody, zone string) error 
 
 	exp, ok := o.FuncOutput["RecordUpdate"]
 	if ok {
-		// comare passed with expected
+		// compare passed with expected
 		if rec.Name != exp.(*dns.RecordBody).Name {
 			return fmt.Errorf("RecordUpdate: expected/actual Name don't match")
 		}
@@ -386,7 +386,7 @@ func (o StubOpenDNSConfig) RecordDelete(rec *dns.RecordBody, zone string) error 
 
 	exp, ok := o.FuncOutput["RecordDelete"]
 	if ok {
-		// comare passed with expected
+		// compare passed with expected
 		if rec.Name != exp.(*dns.RecordBody).Name {
 			return fmt.Errorf("RecordDelete: expected/actual Name don't match")
 		}

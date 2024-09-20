@@ -69,7 +69,7 @@ func (s *Suite) Define() {
 		type testCase struct {
 			name    string // ginkgo v2 does not support using map[string] to store the test names (#5345)
 			keyAlgo x509.PublicKeyAlgorithm
-			// csrModifers define the shape of the X.509 CSR which is used in the
+			// csrModifiers define the shape of the X.509 CSR which is used in the
 			// test case. We use a function to allow access to variables that are
 			// initialized at test runtime by complete().
 			csrModifiers             []gen.CSRModifier

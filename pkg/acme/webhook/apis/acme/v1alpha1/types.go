@@ -112,7 +112,7 @@ type ChallengeRequest struct {
 }
 
 // ChallengeAction represents an action associated with a challenge such as
-// 'present' or cleanup'.
+// 'present' or 'cleanup'.
 type ChallengeAction string
 
 const (

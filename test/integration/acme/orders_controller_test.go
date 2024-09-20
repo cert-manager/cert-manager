@@ -244,7 +244,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	// valid.
 	// https://github.com/cert-manager/cert-manager/issues/2868
 
-	// Set the Challenge state to valid- the status of the ACME order remains 'pending'.
+	// Set the Challenge state to valid, the status of the ACME order remains 'pending'.
 	chal = chal.DeepCopy()
 	chal.Status.State = cmacme.Valid
 	_, err = cmCl.AcmeV1().Challenges(testName).UpdateStatus(ctx, chal, metav1.UpdateOptions{})

@@ -397,7 +397,7 @@ func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *
 					privateKey := secret.Data[corev1.TLSPrivateKeyKey]
 					block, _ := pem.Decode(privateKey)
 					if !bytes.Equal(derKey, block.Bytes) {
-						return fmt.Errorf("expected additional output Format DER %s to contain the binary formated private Key", cmapi.CertificateOutputFormatDERKey)
+						return fmt.Errorf("expected additional output Format DER %s to contain the binary formatted private Key", cmapi.CertificateOutputFormatDERKey)
 					}
 				} else {
 					return fmt.Errorf("expected additional output format DER key %s to be present in secret", cmapi.CertificateOutputFormatDERKey)

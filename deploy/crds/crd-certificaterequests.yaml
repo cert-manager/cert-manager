@@ -44,7 +44,7 @@ spec:
           name: Issuer
           type: string
         - jsonPath: .spec.username
-          name: Requestor
+          name: Requester
           type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].message
           name: Status

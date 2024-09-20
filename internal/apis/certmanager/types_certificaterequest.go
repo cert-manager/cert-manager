@@ -196,7 +196,7 @@ type CertificateRequestCondition struct {
 	Message string
 }
 
-// CertificateRequestConditionType represents an Certificate condition value.
+// CertificateRequestConditionType represents a Certificate condition value.
 type CertificateRequestConditionType string
 
 const (

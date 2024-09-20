@@ -436,7 +436,7 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 		// TODO: write test cases where bad CA is passed.
 		// above TODO can be ignored if the checks are added to issuer validations per below link
 		// https://github.com/cert-manager/cert-manager/blob/v1.14.4/internal/apis/certmanager/validation/issuer.go#L354
-		// eventhough we are not prevalidating, vcert http.Client would anyway fail when using invalid CA
+		// even though we are not prevalidating, vcert http.Client would anyway fail when using invalid CA
 		// 2 scenarios with bad CAs:
 		// "if TPP and caBundle is specified, a bad bundle from CABundle should error"
 		// "if TPP and caBundleSecretRef is specified, a bad bundle from a CABundleSecretRef should error"

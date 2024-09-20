@@ -46,7 +46,7 @@ func TestEnabledControllers(t *testing.T) {
 			controllers: []string{"*"},
 			expEnabled:  sets.New(defaults.DefaultEnabledControllers...),
 		},
-		"if all controllers enabled, some diabled, return all controllers with disabled": {
+		"if all controllers enabled, some disabled, return all controllers with disabled": {
 			controllers: []string{"*", "-clusterissuers", "-issuers"},
 			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
 		},

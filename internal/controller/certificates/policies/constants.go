@@ -48,7 +48,7 @@ const (
 	// CertificateRequest not valid for Certificate's spec.
 	RequestChanged string = "RequestChanged"
 	// Renewing is a policy violation reason for a scenario where
-	// Certificate's renewal time is now or in past.
+	// Certificate's renewal time is now or in the past.
 	Renewing string = "Renewing"
 	// Expired is a policy violation reason for a scenario where Certificate has
 	// expired.

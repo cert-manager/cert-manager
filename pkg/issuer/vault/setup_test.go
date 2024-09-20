@@ -472,7 +472,7 @@ func TestVault_Setup(t *testing.T) {
 			// was the controller-side validation (i.e., the validation that we
 			// do in setup.go). To prevent the breakage of existing Issuer or
 			// ClusterIssuers resources due to the webhook-side validation
-			// suddently becoming stricter than the controller-side validation,
+			// suddenly becoming stricter than the controller-side validation,
 			// we perform the webhook validation too and check that it passes.
 			converted := internalapi.IssuerConfig{}
 			err = internalv1.Convert_v1_IssuerConfig_To_certmanager_IssuerConfig(&tt.givenIssuer, &converted, nil)

@@ -167,7 +167,7 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 // Note: this function builds pod spec using defaults and any configuration
 // options passed via flags to cert-manager controller.
 // Solver pod configuration via flags is a now deprecated
-// mechanism- please use pod template instead when adding any new
+// mechanism - please use pod template instead when adding any new
 // configuration options
 // https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {

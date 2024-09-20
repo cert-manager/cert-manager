@@ -222,7 +222,7 @@ func TestProcessItem(t *testing.T) {
 					Message: "ready message",
 				})),
 		},
-		"update status for a Certificate that has a Ready condition and the policy evaluates to True- should remain True": {
+		"update status for a Certificate that has a Ready condition and the policy evaluates to True - should remain True": {
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
 				Status:             cmmeta.ConditionTrue,
@@ -291,7 +291,7 @@ func TestProcessItem(t *testing.T) {
 				c := gen.CertificateFrom(test.cert,
 					gen.SetCertificateStatusCondition(test.condition))
 
-				// gen package functions don't accept pointers- we need to test setting these values to nil in some scenarios.
+				// gen package functions don't accept pointers - we need to test setting these values to nil in some scenarios.
 				c.Status.NotAfter = test.notAfter
 				c.Status.NotBefore = test.notBefore
 				c.Status.RenewalTime = test.renewalTime

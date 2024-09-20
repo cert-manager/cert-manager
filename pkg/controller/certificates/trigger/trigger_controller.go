@@ -170,7 +170,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// It is possible for multiple Certificates to reference the same Secret. In that case, without this check,
 	// the duplicate Certificates would each be issued and store their version of the X.509 certificate in the
-	// target Secret, triggering the re-issuance of the other Certificate resources who's spec no longer matches
+	// target Secret, triggering the re-issuance of the other Certificate resources whose spec no longer matches
 	// what is in the Secret. This would cause a flood of re-issuance attempts and overloads the Kubernetes API
 	// and the API server of the issuing CA.
 	isOwner, duplicates, err := internalcertificates.CertificateOwnsSecret(ctx, c.certificateLister, c.secretLister, crt)

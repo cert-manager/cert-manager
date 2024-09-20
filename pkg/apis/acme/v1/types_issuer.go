@@ -309,7 +309,7 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 }
 
 type ACMEChallengeSolverHTTP01IngressPodObjectMeta struct {
-	// Annotations that should be added to the create ACME HTTP01 solver pods.
+	// Annotations that should be added to the created ACME HTTP01 solver pods.
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 
@@ -595,7 +595,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// +optional
 	Role string `json:"role,omitempty"`
 
-	// If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
+	// If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
 	// +optional
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
 

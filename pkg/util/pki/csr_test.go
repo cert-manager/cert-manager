@@ -663,7 +663,7 @@ func TestGenerateCSR(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Generate CSR from certficate with literal subject honouring the exact order",
+			name: "Generate CSR from certificate with literal subject honouring the exact order",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: exampleLiteralSubject}},
 			want: &x509.CertificateRequest{
 				Version:            0,
@@ -681,7 +681,7 @@ func TestGenerateCSR(t *testing.T) {
 			literalCertificateSubjectFeatureEnabled: true,
 		},
 		{
-			name: "Generate CSR from certficate with literal multi value subject honouring the exact order",
+			name: "Generate CSR from certificate with literal multi value subject honouring the exact order",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: exampleMultiValueRDNLiteralSubject}},
 			want: &x509.CertificateRequest{
 				Version:            0,

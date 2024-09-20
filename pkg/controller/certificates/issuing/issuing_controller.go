@@ -282,7 +282,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// issuance will be retried with a delay (the logic for that lives in
 	// certificates-trigger controller). Final states are: Denied condition
 	// with status True => fail issuance InvalidRequest  condition with
-	// status True => fail issuance Ready conidtion with reason Failed =>
+	// status True => fail issuance Ready condition with reason Failed =>
 	// fail issuance Ready condition with reason Issued => finalize issuance
 	// as succeeded.
 

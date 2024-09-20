@@ -94,7 +94,7 @@ servers and webhook servers.`,
 			}
 
 			// ValidateCAInjectorConfiguration should already have validated the
-			// logging flags, the logging API does not have a Apply-only function
+			// logging flags, the logging API does not have an Apply-only function
 			// so we validate again here. This should not catch any validation errors
 			// anymore.
 			if err := logf.ValidateAndApply(&cainjectorConfig.Logging); err != nil {

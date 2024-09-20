@@ -235,7 +235,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 
 	log.V(logf.InfoLevel).Info("certificate issued")
 
-	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
+	// Order valid, return cert. The calling controller will update with ready if it's happy with the cert.
 	return &issuerpkg.IssueResponse{
 		Certificate: order.Status.Certificate,
 	}, nil

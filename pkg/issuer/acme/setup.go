@@ -258,7 +258,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	account, err := a.registerAccount(ctx, cl, eabAccount)
 	if err != nil {
 		// TODO: this error could be from an account registration or an attempt
-		// to retrieve an existing account- perhaps we should log different
+		// to retrieve an existing account - perhaps we should log different
 		// messages in those two scenarios.
 		reason = errorAccountRegistrationFailed
 		msg = messageAccountRegistrationFailed + err.Error()
