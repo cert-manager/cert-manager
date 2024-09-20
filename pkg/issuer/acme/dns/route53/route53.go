@@ -325,8 +325,8 @@ func newTXTRecordSet(fqdn, value string, ttl int) *route53types.ResourceRecordSe
 // want our error messages to be the same when the cause is the same to
 // avoid spurious challenge updates.
 //
-// The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from an aws-sdk-go func.
+// This function must be called everywhere we have an error coming from
+// an aws-sdk-go func. The passed error is modified in place.
 func removeReqID(err error) error {
 	var responseError *awshttp.ResponseError
 	if errors.As(err, &responseError) {

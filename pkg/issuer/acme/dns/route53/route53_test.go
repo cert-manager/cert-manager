@@ -402,6 +402,11 @@ func Test_removeReqID(t *testing.T) {
 			err:     errors.New("foo"),
 			wantErr: errors.New("foo"),
 		},
+		{
+			name:    "should ignore nil errors",
+			err:     nil,
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
