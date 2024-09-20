@@ -388,6 +388,11 @@ func Test_removeReqID(t *testing.T) {
 			wantErr: &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()},
 		},
 		{
+			name:    "should replace the request id in a %w wrapped error",
+			err:     fmt.Errorf("failed to refresh cached credentials, %w", &awshttp.ResponseError{RequestID: "SOMEREQUESTID", ResponseError: newResponseError()}),
+			wantErr: fmt.Errorf("failed to refresh cached credentials, %w", &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()}),
+		},
+		{
 			name:    "should do nothing if no request id is set",
 			err:     newResponseError(),
 			wantErr: newResponseError(),
@@ -396,6 +401,11 @@ func Test_removeReqID(t *testing.T) {
 			name:    "should do nothing if the error is not an aws error",
 			err:     errors.New("foo"),
 			wantErr: errors.New("foo"),
+		},
+		{
+			name:    "should ignore nil errors",
+			err:     nil,
+			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {

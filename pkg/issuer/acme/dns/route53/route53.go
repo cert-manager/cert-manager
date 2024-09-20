@@ -325,16 +325,16 @@ func newTXTRecordSet(fqdn, value string, ttl int) *route53types.ResourceRecordSe
 // want our error messages to be the same when the cause is the same to
 // avoid spurious challenge updates.
 //
-// The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from an aws-sdk-go func. The passed error
-// is modified in place. This function does not work in case the full error
-// message is pre-generated at construction time (instead of when Error() is
-// called), which is the case for eg. fmt.Errorf("error message: %w", err).
+// This function must be called everywhere we have an error coming from
+// an aws-sdk-go func. The passed error is modified in place.
 func removeReqID(err error) error {
 	var responseError *awshttp.ResponseError
 	if errors.As(err, &responseError) {
+		before := responseError.Error()
 		// remove the request id from the error message
 		responseError.RequestID = "<REDACTED>"
+		after := responseError.Error()
+		return errors.New(strings.Replace(err.Error(), before, after, 1))
 	}
 	return err
 }
