@@ -64,6 +64,9 @@ type StsClient interface {
 	AssumeRoleWithWebIdentity(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error)
 }
 
+// We use this to disable IMDS region lookups in unit-tests
+var enableEC2IMDSRegionLookup = true
+
 func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	switch {
 	case d.Role == "" && d.WebIdentityToken != "":
@@ -91,7 +94,9 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		})),
 		config.WithClientLogMode(aws.LogDeprecatedUsage | aws.LogRequest),
 		config.WithLogConfigurationWarnings(true),
-		config.WithEC2IMDSRegion(),
+	}
+	if enableEC2IMDSRegionLookup {
+		optFns = append(optFns, config.WithEC2IMDSRegion())
 	}
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":

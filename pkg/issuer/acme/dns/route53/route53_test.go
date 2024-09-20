@@ -32,6 +32,11 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+func init() {
+	// Disable IMDS region lookups in unit-tests
+	enableEC2IMDSRegionLookup = false
+}
+
 const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9uYXdzLmNvbSIsImV4cCI6MTc0MTg4NzYwOCwiaWF0IjoxNzEwMzUxNjM4LCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.SfuV3SW-vEdV-tLFIr2PK2DnN6QYmozygav5OeoH36Q"
 
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
