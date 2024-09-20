@@ -528,10 +528,6 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
-			// region is the only required field for route53 as ambient credentials can be used instead
-			if len(p.Route53.Region) == 0 {
-				el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
-			}
 			// We don't include a validation here asserting that either the
 			// AccessKeyID or SecretAccessKeyID must be specified, because it is
 			// valid to use neither when using ambient credentials.

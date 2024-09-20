@@ -599,8 +599,34 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// +optional
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
 
-	// Always set the region when using AccessKeyID and SecretAccessKey
-	Region string `json:"region"`
+	// Override the AWS region.
+	//
+	// Route53 is a global service and does not have regional endpoints but the
+	// region specified here (or via environment variables) is used as a hint to
+	// help compute the correct AWS credential scope and partition when it
+	// connects to Route53. See:
+	// - [Amazon Route 53 endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/r53.html)
+	// - [Global services](https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/global-services.html)
+	//
+	// Region is not needed if you use [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
+	// [Amazon EKS Pod Identity Webhook](https://github.com/aws/amazon-eks-pod-identity-webhook),
+	//
+	// Region is not needed if you use [EKS Pod Identities](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
+	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
+	// [Amazon EKS Pod Identity Agent](https://github.com/aws/eks-pod-identity-agent),
+	//
+	// Region is not used for computing STS regional endpoints.
+	// If you configure the `role` field, cert-manager will always use the
+	// global STS endpoint to make AssumeRole and AssumeRoleWithWebIdentity
+	// requests.
+	//
+	// Region is used unconditionally if ambient credentials mode is disabled, by
+	// `--cluster-issuer-ambient-credentials` or `--isssuer-ambient-credentials`
+	// controller flags.
+	//
+	// +optional
+	Region string `json:"region,omitempty"`
 }
 
 // Route53Auth is configuration used to authenticate with a Route53.
