@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/go-logr/logr"
 
@@ -78,7 +79,19 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 
 	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityToken == ""
 
-	var optFns []func(*config.LoadOptions) error
+	log := logf.FromContext(ctx)
+	optFns := []func(*config.LoadOptions) error{
+		// Print AWS API requests but only at cert-manager debug level
+		config.WithLogger(logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
+			log := log.WithValues("aws-classification", classification)
+			if classification == logging.Debug {
+				log = log.V(logf.DebugLevel)
+			}
+			log.Info(fmt.Sprintf(format, v...))
+		})),
+		config.WithClientLogMode(aws.LogDeprecatedUsage | aws.LogRequest),
+		config.WithLogConfigurationWarnings(true),
+	}
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":
 		d.log.V(logf.DebugLevel).Info("using assume role with web identity")
