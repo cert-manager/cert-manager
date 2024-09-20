@@ -386,6 +386,9 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      d.SecretName,
 				Namespace: d.SecretNamespace,
+				Labels: map[string]string{
+					"app.kubernetes.io/managed-by": "cert-manager",
+				},
 				Annotations: map[string]string{
 					cmapi.AllowsInjectionFromSecretAnnotation: "true",
 				},
