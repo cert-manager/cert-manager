@@ -910,7 +910,7 @@
       "type": "number"
     },
     "helm-values.nameOverride": {
-      "description": "Override the \"cert-manager.name\" value, which is used to annotate some of the resources that are created by this Chart (using \"app.kubernetes.io/name\"). NOTE: There are some inconsitencies in the Helm chart when it comes to these annotations (some resources use eg. \"cainjector.name\" which resolves to the value \"cainjector\").",
+      "description": "Override the \"cert-manager.name\" value, which is used to annotate some of the resources that are created by this Chart (using \"app.kubernetes.io/name\"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use eg. \"cainjector.name\" which resolves to the value \"cainjector\").",
       "type": "string"
     },
     "helm-values.namespace": {
