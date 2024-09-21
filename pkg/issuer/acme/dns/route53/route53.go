@@ -91,6 +91,14 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		})),
 		config.WithClientLogMode(aws.LogDeprecatedUsage | aws.LogRequest),
 		config.WithLogConfigurationWarnings(true),
+		// Append cert-manager user-agent string to all AWS API requests
+		config.WithAPIOptions(
+			[]func(*middleware.Stack) error{
+				func(stack *middleware.Stack) error {
+					return awsmiddleware.AddUserAgentKeyValue("cert-manager", d.userAgent)(stack)
+				},
+			},
+		),
 	}
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":
@@ -162,10 +170,6 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	if d.Region != "" || !useAmbientCredentials {
 		cfg.Region = d.Region
 	}
-
-	cfg.APIOptions = append(cfg.APIOptions, func(stack *middleware.Stack) error {
-		return awsmiddleware.AddUserAgentKeyValue("cert-manager", d.userAgent)(stack)
-	})
 
 	return cfg, nil
 }
