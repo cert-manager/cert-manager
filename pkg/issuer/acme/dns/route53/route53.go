@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
-	"github.com/go-logr/logr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -42,9 +41,7 @@ type DNSProvider struct {
 	dns01Nameservers []string
 	client           *route53.Client
 	hostedZoneID     string
-	log              logr.Logger
-
-	userAgent string
+	userAgent        string
 }
 
 type sessionProvider struct {
@@ -55,7 +52,6 @@ type sessionProvider struct {
 	Role             string
 	WebIdentityToken string
 	StsProvider      func(aws.Config) StsClient
-	log              logr.Logger
 	userAgent        string
 }
 
@@ -94,14 +90,14 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	}
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":
-		d.log.V(logf.DebugLevel).Info("using assume role with web identity")
+		log.V(logf.DebugLevel).Info("using assume role with web identity")
 	case useAmbientCredentials:
-		d.log.V(logf.DebugLevel).Info("using ambient credentials")
+		log.V(logf.DebugLevel).Info("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	default:
-		d.log.V(logf.DebugLevel).Info("not using ambient credentials")
+		log.V(logf.DebugLevel).Info("not using ambient credentials")
 		optFns = append(optFns, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(d.AccessKeyID, d.SecretAccessKey, "")))
 	}
 
@@ -118,7 +114,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	stsCfg.Region = "aws-global"
 
 	if d.Role != "" && d.WebIdentityToken == "" {
-		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
+		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
 		stsSvc := d.StsProvider(stsCfg)
 		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
@@ -136,7 +132,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	}
 
 	if d.Role != "" && d.WebIdentityToken != "" {
-		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
+		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
 
 		stsSvc := d.StsProvider(stsCfg)
 		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
@@ -179,7 +175,6 @@ func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webId
 		Role:             role,
 		WebIdentityToken: webIdentityToken,
 		StsProvider:      defaultSTSProvider,
-		log:              logf.Log.WithName("route53-session-provider"),
 		userAgent:        userAgent,
 	}
 }
@@ -211,7 +206,6 @@ func NewDNSProvider(
 		client:           client,
 		hostedZoneID:     hostedZoneID,
 		dns01Nameservers: dns01Nameservers,
-		log:              logf.Log.WithName("route53"),
 		userAgent:        userAgent,
 	}, nil
 }
@@ -229,6 +223,7 @@ func (r *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 }
 
 func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.ChangeAction, fqdn, value string, ttl int) error {
+	log := logf.FromContext(ctx)
 	hostedZoneID, err := r.getHostedZoneID(ctx, fqdn)
 	if err != nil {
 		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %v", err)
@@ -251,7 +246,7 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 	resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
 	if err != nil {
 		if errors.Is(err, &route53types.InvalidChangeBatch{}) && action == route53types.ChangeActionDelete {
-			r.log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
+			log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
 			// If we try to delete something and get a 'InvalidChangeBatch' that
 			// means it's already deleted, no need to consider it an error.
 			return nil

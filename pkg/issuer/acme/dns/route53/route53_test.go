@@ -27,9 +27,9 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/klog/v2/ktesting"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9uYXdzLmNvbSIsImV4cCI6MTc0MTg4NzYwOCwiaWF0IjoxNzEwMzUxNjM4LCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.SfuV3SW-vEdV-tLFIr2PK2DnN6QYmozygav5OeoH36Q"
@@ -57,10 +57,11 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	_, ctx := ktesting.NewTestContext(t)
+	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
-	_, err = provider.client.Options().Credentials.Retrieve(context.TODO())
+	_, err = provider.client.Options().Credentials.Retrieve(ctx)
 	assert.NoError(t, err, "Expected credentials to be set from environment")
 
 	assert.Equal(t, provider.client.Options().Region, "us-east-1")
@@ -71,14 +72,16 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	_, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, ctx := ktesting.NewTestContext(t)
+	_, err := NewDNSProvider(ctx, "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
 func TestAmbientRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider(context.TODO(), "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	_, ctx := ktesting.NewTestContext(t)
+	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", provider.client.Options().Region, "Expected Region to be set from environment")
@@ -87,13 +90,15 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 func TestNoRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	provider, err := NewDNSProvider(context.TODO(), "marx", "swordfish", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, ctx := ktesting.NewTestContext(t)
+	provider, err := NewDNSProvider(ctx, "marx", "swordfish", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", provider.client.Options().Region, "Expected Region to not be set from environment")
 }
 
 func TestRoute53Present(t *testing.T) {
+	_, ctx := ktesting.NewTestContext(t)
 	mockResponses := MockResponseMap{
 		"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
 		"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
@@ -111,25 +116,25 @@ func TestRoute53Present(t *testing.T) {
 	domain := "example.com"
 	keyAuth := "123456d=="
 
-	err = provider.Present(context.TODO(), domain, "_acme-challenge."+domain+".", keyAuth)
+	err = provider.Present(ctx, domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	subDomain := "foo.example.com"
-	err = provider.Present(context.TODO(), subDomain, "_acme-challenge."+subDomain+".", keyAuth)
+	err = provider.Present(ctx, subDomain, "_acme-challenge."+subDomain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	nonExistentSubDomain := "bar.foo.example.com"
-	err = provider.Present(context.TODO(), nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
+	err = provider.Present(ctx, nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	nonExistentDomain := "baz.com"
-	err = provider.Present(context.TODO(), nonExistentDomain, nonExistentDomain+".", keyAuth)
+	err = provider.Present(ctx, nonExistentDomain, nonExistentDomain+".", keyAuth)
 	assert.Error(t, err, "Expected Present to return an error")
 
 	// This test case makes sure that the request id has been properly
 	// stripped off. It has to be stripped because it changes on every
 	// request which causes spurious challenge updates.
-	err = provider.Present(context.TODO(), "bar.example.com", "bar.example.com.", keyAuth)
+	err = provider.Present(ctx, "bar.example.com", "bar.example.com.", keyAuth)
 	require.Error(t, err, "Expected Present to return an error")
 	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
@@ -303,7 +308,8 @@ func TestAssumeRole(t *testing.T) {
 				assert.Equal(t, "aws-global", cfg.Region) // verify that the global sts endpoint is used
 				return c.mockSTS
 			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
-			cfg, err := provider.GetSession(context.TODO())
+			_, ctx := ktesting.NewTestContext(t)
+			cfg, err := provider.GetSession(ctx)
 			if c.expErr {
 				assert.NotNil(t, err)
 				if c.expErrMessage != "" {
@@ -311,7 +317,7 @@ func TestAssumeRole(t *testing.T) {
 				}
 			} else {
 				assert.Nil(t, err)
-				sessCreds, _ := cfg.Credentials.Retrieve(context.TODO())
+				sessCreds, _ := cfg.Credentials.Retrieve(ctx)
 				assert.Equal(t, c.mockSTS.assumedRole, c.role)
 				assert.Equal(t, *c.expCreds.SecretAccessKey, sessCreds.SecretAccessKey)
 				assert.Equal(t, *c.expCreds.AccessKeyId, sessCreds.AccessKeyID)
@@ -358,7 +364,6 @@ func makeMockSessionProvider(
 		Role:             role,
 		WebIdentityToken: webIdentityToken,
 		StsProvider:      defaultSTSProvider,
-		log:              logf.Log.WithName("route53-session"),
 	}
 }
 
