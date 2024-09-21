@@ -91,6 +91,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		})),
 		config.WithClientLogMode(aws.LogDeprecatedUsage | aws.LogRequest),
 		config.WithLogConfigurationWarnings(true),
+		config.WithEC2IMDSRegion(),
 	}
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":
