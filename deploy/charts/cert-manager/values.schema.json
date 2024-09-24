@@ -138,6 +138,9 @@
         "serviceAnnotations": {
           "$ref": "#/$defs/helm-values.serviceAnnotations"
         },
+        "serviceAppProtocol": {
+          "$ref": "#/$defs/helm-values.serviceAppProtocol"
+        },
         "serviceIPFamilies": {
           "$ref": "#/$defs/helm-values.serviceIPFamilies"
         },
@@ -1254,6 +1257,10 @@
     "helm-values.serviceAnnotations": {
       "description": "Optional annotations to add to the controller Service.",
       "type": "object"
+    },
+    "helm-values.serviceAppProtocol": {
+      "description": "Optionally set the application protocol to use for the controller Service.",
+      "type": "string"
     },
     "helm-values.serviceIPFamilies": {
       "description": "Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.",
