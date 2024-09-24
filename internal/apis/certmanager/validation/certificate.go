@@ -38,6 +38,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/hashicorp/cronexpr"
 )
 
 // Validation functions for cert-manager Certificate types
@@ -162,8 +163,11 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 	}
 
-	if crt.Duration != nil || crt.RenewBefore != nil {
+	if crt.Duration != nil || crt.RenewBefore != nil || crt.RenewTimeWindow != "" {
 		el = append(el, ValidateDuration(crt, fldPath)...)
+	}
+	if crt.RenewTimeWindow != "" {
+		el = append(el, validateTimeWindow(crt, fldPath)...)
 	}
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
@@ -351,6 +355,14 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 		}
 	}
 
+	return el
+}
+
+func validateTimeWindow(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if _, err := cronexpr.Parse(crt.RenewTimeWindow); err != nil {
+		el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
+	}
 	return el
 }
 

@@ -72,4 +72,7 @@ const (
 	// a missing owner reference to the Certificate, or has an owner reference it
 	// shouldn't have.
 	SecretOwnerRefMismatch string = "SecretOwnerRefMismatch"
+	// InvalidRenewTimeWindow is a policy violation where there is no valid renewal
+	// time between the renewBefore/renewBeforePercentage and the notAfter time.
+	InvalidRenewTimeWindow string = "InvalidRenewTimeWindow"
 )

@@ -38,6 +38,7 @@ import (
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/hashicorp/cronexpr"
 )
 
 func SecretDoesNotExist(input Input) (string, string, bool) {
@@ -271,6 +272,12 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		notAfter := metav1.NewTime(x509Cert.NotAfter)
 		crt := input.Certificate
 		renewalTime := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		if crt.Spec.RenewTimeWindow != "" {
+			renewalTime = cronexpr.MustParse(crt.Spec.RenewTimeWindow).Next(renewalTime)
+			if renewalTime.After(x509Cert.NotAfter) {
+				return InvalidCertificate, fmt.Sprintf("next matching renewal time %s matching the window %s is after the certificate's expiration %s", renewalTime, crt.Spec.RenewTimeWindow, x509Cert.NotAfter), true
+			}
+		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {

@@ -154,6 +154,12 @@ type CertificateSpec struct {
 	// +optional
 	RenewBefore *metav1.Duration
 
+	// The window in which certificate renewals are done.
+	// If set to a valid cron expression the RenewalTime will be set to the next date matching the expression,
+	// following RenewBefore, respective RenewBeforePercentage.
+	// +optional
+	RenewTimeWindow string `json:"renewTimeWindow,omitempty"`
+
 	// `renewBeforePercentage` is like `renewBefore`, except it is a relative percentage
 	// rather than an absolute duration. For example, if a certificate is valid for 60
 	// minutes, and  `renewBeforePercentage=25`, cert-manager will begin to attempt to
