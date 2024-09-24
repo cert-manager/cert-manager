@@ -1109,11 +1109,17 @@
         "prometheusInstance": {
           "$ref": "#/$defs/helm-values.prometheus.servicemonitor.prometheusInstance"
         },
+        "scheme": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.scheme"
+        },
         "scrapeTimeout": {
           "$ref": "#/$defs/helm-values.prometheus.servicemonitor.scrapeTimeout"
         },
         "targetPort": {
           "$ref": "#/$defs/helm-values.prometheus.servicemonitor.targetPort"
+        },
+        "tlsConfig": {
+          "$ref": "#/$defs/helm-values.prometheus.servicemonitor.tlsConfig"
         }
       },
       "type": "object"
@@ -1162,6 +1168,11 @@
       "description": "Specifies the `prometheus` label on the created ServiceMonitor. This is used when different Prometheus instances have label selectors matching different ServiceMonitors.",
       "type": "string"
     },
+    "helm-values.prometheus.servicemonitor.scheme": {
+      "default": "",
+      "description": "The explicit scheme for metrics scraping.",
+      "type": "string"
+    },
     "helm-values.prometheus.servicemonitor.scrapeTimeout": {
       "default": "30s",
       "description": "The timeout before a metrics scrape fails.",
@@ -1171,6 +1182,11 @@
       "default": 9402,
       "description": "The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.",
       "type": "number"
+    },
+    "helm-values.prometheus.servicemonitor.tlsConfig": {
+      "default": {},
+      "description": "TLS configuration for metrics scraping.",
+      "type": "object"
     },
     "helm-values.replicaCount": {
       "default": 1,
