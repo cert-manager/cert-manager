@@ -146,16 +146,9 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
-	// For backwards compatibility with cert-manager <= 1.14, where we used the aws-sdk-go v1
-	// library, we configure the SDK here to use the global sts endpoint. This was the default
-	// behaviour of the SDK v1 library, but has to be explicitly set in the v2 library. For the
-	// route53 calls, we use the region provided by the user (see below).
-	stsCfg := cfg.Copy()
-	stsCfg.Region = "aws-global"
-
 	if d.Role != "" && d.WebIdentityToken == "" {
 		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
-		stsSvc := d.StsProvider(stsCfg)
+		stsSvc := d.StsProvider(cfg)
 		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
 			RoleSessionName: aws.String("cert-manager"),
@@ -174,7 +167,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	if d.Role != "" && d.WebIdentityToken != "" {
 		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
 
-		stsSvc := d.StsProvider(stsCfg)
+		stsSvc := d.StsProvider(cfg)
 		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(d.Role),
 			RoleSessionName:  aws.String("cert-manager"),

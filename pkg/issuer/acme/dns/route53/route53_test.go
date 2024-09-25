@@ -451,7 +451,6 @@ func TestAssumeRole(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			provider := makeMockSessionProvider(func(cfg aws.Config) StsClient {
-				assert.Equal(t, "aws-global", cfg.Region) // verify that the global sts endpoint is used
 				return c.mockSTS
 			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
 			_, ctx := ktesting.NewTestContext(t)
