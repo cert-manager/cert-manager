@@ -38,7 +38,7 @@ IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.10.1@sha
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:c076a1ba9e0fb33d8eca3e7499caddfa3bb4f5e52e9dee589d8476ae1688cd34
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d8d750012ed4bb46fd41d8892e92af6fb9fd212317bc23e68a2a47199646b04a
 IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
-IMAGE_bind_arm64 := docker.io/ubuntu/bind9:9.18-22.04_beta@sha256:7e1130aaf236de3bc1bbaca5c76f4ca8a47856f0a25f712d0d80b313b22f4c3d
+IMAGE_bind_arm64 := docker.io/ubuntu/bind9:9.18-22.04_beta@sha256:912dbb6c360e3ffecbf9b0248a856d670121db5a655173b2781c0c650a979330
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:dbfec77951e123bf383a09412a51df218b716aaf3fe7b2778bb2f208ac495dc5
 

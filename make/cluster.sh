@@ -25,7 +25,7 @@ set -e
 source ./make/kind_images.sh
 
 mode=kind
-k8s_version=1.30
+k8s_version=1.31
 name=kind
 
 help() {
@@ -111,6 +111,7 @@ case "$k8s_version" in
 1.28*) image=$KIND_IMAGE_K8S_128 ;;
 1.29*) image=$KIND_IMAGE_K8S_129 ;;
 1.30*) image=$KIND_IMAGE_K8S_130 ;;
+1.31*) image=$KIND_IMAGE_K8S_131 ;;
 v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
