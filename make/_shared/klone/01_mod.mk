@@ -18,7 +18,14 @@
 generate-klone: | $(NEEDS_KLONE)
 	$(KLONE) sync
 
-shared_generate_targets += generate-klone
+# MANUALLY CHANGED: shared_generate_targets below!
+
+# This change prevents `make generate` from overwriting other manual
+# changes made to the vendored makefile modules on this release branch.
+# This was the agreed initial approach to handle updating tool versions
+# without updating _all_ tool versions.
+
+#shared_generate_targets += generate-klone
 
 .PHONY: upgrade-klone
 ## Upgrade klone Makefile modules to latest version
