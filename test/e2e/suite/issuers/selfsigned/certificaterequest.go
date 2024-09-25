@@ -167,7 +167,6 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			},
 		}
 		for _, v := range cases {
-			v := v // capture range variable
 			It("should generate a signed certificate valid for "+v.label, func() {
 				crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 

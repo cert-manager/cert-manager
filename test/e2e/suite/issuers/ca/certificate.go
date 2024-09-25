@@ -210,7 +210,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			},
 		}
 		for _, v := range cases {
-			v := v
 			It("should generate a signed keypair valid for "+v.label, func() {
 				certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 

@@ -934,7 +934,6 @@ func TestValidateDuration(t *testing.T) {
 		},
 	}
 	for n, s := range scenarios {
-		s := s // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateDuration(&s.cfg.Spec, fldPath)
 			assert.ElementsMatch(t, errs, s.errs)

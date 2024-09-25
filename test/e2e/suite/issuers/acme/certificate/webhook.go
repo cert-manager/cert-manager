@@ -183,7 +183,6 @@ func listOwnedChallenges(ctx context.Context, cl versioned.Interface, owner *cma
 
 	var owned []*cmacme.Challenge
 	for _, ch := range l.Items {
-		ch := ch // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		if !metav1.IsControlledBy(&ch, owner) {
 			continue
 		}
@@ -201,7 +200,6 @@ func listOwnedOrders(ctx context.Context, cl versioned.Interface, owner *v1.Cert
 
 	var owned []*cmacme.Order
 	for _, o := range l.Items {
-		o := o // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		v, ok := o.Annotations[v1.CertificateNameKey]
 		if !ok || v != owner.Name {
 			continue

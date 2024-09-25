@@ -215,7 +215,6 @@ func runVaultClientCertAuthTest(issuerKind string, testWithRoot bool, unsupporte
 	}
 
 	for _, v := range cases {
-		v := v
 		It("should generate a new certificate "+v.label, func() {
 			By("Creating an Issuer")
 
