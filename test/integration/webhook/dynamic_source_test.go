@@ -236,7 +236,6 @@ func TestDynamicSource_leaderelection(t *testing.T) {
 	group, gctx := errgroup.WithContext(gctx)
 
 	for i := 0; i < nrManagers; i++ {
-		i := i
 		group.Go(func() error {
 			mgr, err := manager.New(env.Config, manager.Options{
 				Metrics:     server.Options{BindAddress: "0"},

@@ -420,7 +420,6 @@ func TestVault_Setup(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(tt.name, func(t *testing.T) {
 			givenIssuer := &v1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{

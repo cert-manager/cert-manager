@@ -52,7 +52,6 @@ func Test_RestConfigWithUserAgent(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		test := test // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(name, func(t *testing.T) {
 			gotRestConfig := RestConfigWithUserAgent(new(rest.Config), test.component...)
 			assert.Equal(t, &test.expRestConfig, gotRestConfig)

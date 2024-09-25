@@ -143,7 +143,6 @@ func pruneXML(logger *log.Logger, suites *JUnitTestSuites, maxBytes int) {
 		filteredTestCases := []*JUnitTestCase{}
 		fuzzTestCases := map[string]*JUnitTestCase{}
 		for _, testcase := range suite.TestCases {
-			testcase := testcase
 			matches := fuzzNameRegex.FindStringSubmatch(testcase.Name)
 			if len(matches) > 1 {
 				if ftc, ok := fuzzTestCases[matches[1]]; ok {

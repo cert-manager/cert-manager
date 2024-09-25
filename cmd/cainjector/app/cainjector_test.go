@@ -180,7 +180,6 @@ logging:
 	}
 
 	for i, tc := range tests {
-		tc := tc
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			tempDir := t.TempDir()
 
