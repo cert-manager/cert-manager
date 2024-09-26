@@ -935,7 +935,7 @@ func TestValidateDuration(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateDuration(&s.cfg.Spec, fldPath)
+			errs := ValidateDuration(&s.cfg.Spec, fldPath, time.Now())
 			assert.ElementsMatch(t, errs, s.errs)
 		})
 	}

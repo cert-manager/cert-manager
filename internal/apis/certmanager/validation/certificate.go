@@ -43,7 +43,7 @@ import (
 
 // Validation functions for cert-manager Certificate types
 
-func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.Path, notAfter time.Time) field.ErrorList {
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
@@ -164,10 +164,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	}
 
 	if crt.Duration != nil || crt.RenewBefore != nil || crt.RenewTimeWindow != "" {
-		el = append(el, ValidateDuration(crt, fldPath)...)
-	}
-	if crt.RenewTimeWindow != "" {
-		el = append(el, validateTimeWindow(crt, fldPath)...)
+		el = append(el, ValidateDuration(crt, fldPath, notAfter)...)
 	}
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
@@ -206,13 +203,20 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	notAfter := time.Now()
+	if crt.Spec.Duration == nil {
+		notAfter = notAfter.Add(cmapi.DefaultCertificateDuration)
+	} else {
+		notAfter = notAfter.Add(crt.Spec.Duration.Duration)
+	}
+	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), notAfter)
 	return allErrs, nil
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	// TODO: determine if changes require re-issuance, which means a new notAfter
+	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), crt.Status.NotAfter.Time)
 	return allErrs, nil
 }
 
@@ -320,7 +324,7 @@ func validateSecretTemplateAnnotations(crt *internalcmapi.CertificateSpec, fldPa
 	return el
 }
 
-func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path, notAfter time.Time) field.ErrorList {
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
@@ -342,11 +346,16 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	if crt.RenewBefore != nil && crt.RenewBefore.Duration >= duration {
 		el = append(el, field.Invalid(fldPath.Child("renewBefore"), crt.RenewBefore.Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, crt.RenewBefore.Duration)))
 	}
+	var renewBefore time.Duration
+	if crt.RenewBefore != nil {
+		renewBefore = crt.RenewBefore.Duration
+	}
 
 	// If spec.renewBeforePercentage is set, check that it's within the allowed
 	// range.
+
 	if crt.RenewBeforePercentage != nil {
-		renewBefore := duration * time.Duration(100-*crt.RenewBeforePercentage) / 100
+		renewBefore = duration * time.Duration(100-*crt.RenewBeforePercentage) / 100
 		if renewBefore < cmapi.MinimumRenewBefore {
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore)))
 		}
@@ -354,15 +363,16 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "certificate renewBeforePercentage must result in a renewBefore less than duration"))
 		}
 	}
-
-	return el
-}
-
-func validateTimeWindow(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-	if _, err := cronexpr.Parse(crt.RenewTimeWindow); err != nil {
-		el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
+	if crt.RenewTimeWindow != "" {
+		expr, err := cronexpr.Parse(crt.RenewTimeWindow)
+		if err != nil {
+			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
+		}
+		if expr.Next(notAfter.Add(-renewBefore)).After(notAfter) {
+			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("calculated renewTime %s does not fit into window %s", renewBefore, crt.RenewTimeWindow)))
+		}
 	}
+
 	return el
 }
 
