@@ -27,6 +27,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/ktesting"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -77,24 +78,169 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
-func TestAmbientRegionFromEnv(t *testing.T) {
-	t.Setenv("AWS_REGION", "us-east-1")
+type bitmask byte
 
-	_, ctx := ktesting.NewTestContext(t)
-	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
-	assert.NoError(t, err, "Expected no error constructing DNSProvider")
-
-	assert.Equal(t, "us-east-1", provider.client.Options().Region, "Expected Region to be set from environment")
+func (haystack bitmask) Has(needle bitmask) bool {
+	return haystack&needle != 0
 }
 
-func TestNoRegionFromEnv(t *testing.T) {
-	t.Setenv("AWS_REGION", "us-east-1")
+// TestSessionProviderGetSessionRegion calls sessionProvider.GetSession with all
+// permutations of those inputs that influence how it selects an AWS region.
+// The desired region selection properties are documented alongside each
+// assertion.
+func TestSessionProviderGetSessionRegion(t *testing.T) {
+	const (
+		fakeAmbientRegion = "ambient-region-1"
+		fakeIssuerRegion  = "issuer-region-1"
+	)
 
-	_, ctx := ktesting.NewTestContext(t)
-	provider, err := NewDNSProvider(ctx, "marx", "swordfish", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
-	assert.NoError(t, err, "Expected no error constructing DNSProvider")
+	testFunc := func(t *testing.T, allowAmbientCredentials, setAmbientRegion, supplyAccessKey, supplyWebIdentity, supplyIssuerRegion bool) {
+		t.Log(
+			"ambient-credentials-allowed", allowAmbientCredentials,
+			"ambient-region-set", setAmbientRegion,
+			"access-key-supplied", supplyAccessKey,
+			"web-identity-supplied", supplyWebIdentity,
+			"issuer-region-supplied", supplyIssuerRegion,
+		)
+		var (
+			accessKeyID      string
+			secretAccessKey  string
+			region           string
+			role             string
+			webIdentityToken string
+			userAgent        string
+		)
+		if supplyAccessKey {
+			accessKeyID = "fake-access-key-id"
+			secretAccessKey = "fake-secret-access-key"
+		}
+		if supplyWebIdentity {
+			webIdentityToken = "fake-web-identity-token"
+			role = "fake-web-identity-role"
+		}
+		if setAmbientRegion {
+			t.Setenv("AWS_REGION", fakeAmbientRegion)
+		}
+		if supplyIssuerRegion {
+			region = fakeIssuerRegion
+		}
 
-	assert.Equal(t, "", provider.client.Options().Region, "Expected Region to not be set from environment")
+		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, allowAmbientCredentials, userAgent)
+		p.StsProvider = func(cfg aws.Config) StsClient {
+			return &mockSTS{
+				AssumeRoleWithWebIdentityFn: func(
+					ctx context.Context,
+					params *sts.AssumeRoleWithWebIdentityInput,
+					optFns ...func(*sts.Options),
+				) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+					return &sts.AssumeRoleWithWebIdentityOutput{
+						Credentials: &ststypes.Credentials{
+							AccessKeyId:     aws.String("fake-sts-access-key-id"),
+							SecretAccessKey: aws.String("fake-sts-secret-access-key"),
+							SessionToken:    aws.String("fake-sts-session-token"),
+						},
+					}, nil
+				},
+			}
+		}
+
+		logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.BufferLogs(true)))
+		ctx := klog.NewContext(context.Background(), logger)
+
+		cfg, err := p.GetSession(ctx)
+
+		testingLogger, ok := logger.GetSink().(ktesting.Underlier)
+		require.True(t, ok)
+		logMessages := testingLogger.GetBuffer().String()
+
+		if !supplyAccessKey && !supplyWebIdentity && !allowAmbientCredentials {
+			assert.EqualError(t, err, "unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
+			return
+		} else {
+			require.NoError(t, err)
+		}
+
+		// IRSA and Pod Identity are the most widely used "ambient credential"
+		// mechanisms and both use webhooks to inject the AWS_REGION environment
+		// variable into the cert-manager Pod.
+		// When ambient credentials are in use and an environment region is detected,
+		// cert-manager will use the environment region and ignore any Issuer region.
+		// This if for backwards compatibility with cert-manager < 1.16 where
+		// the Issuer region was a required field, but ignored.
+		if !supplyAccessKey && !supplyWebIdentity && setAmbientRegion {
+			assert.Equal(t, fakeAmbientRegion, cfg.Region,
+				"If using ambient credentials, and there is a region in the environment, "+
+					"use the region from the environment. Ignore the region in the Issuer region.")
+		}
+
+		// If the Issuer region has been ignored (see above), log an info
+		// message to alert the user that the Issuer region is no longer a
+		// required field and can be omitted in this situation.
+		if !supplyAccessKey && !supplyWebIdentity && setAmbientRegion && supplyIssuerRegion {
+			assert.Contains(t, logMessages, "Ignoring Issuer region",
+				"If using ambient credentials, and there is a region in the environment and in the Issuer resource, "+
+					"log a warning to say the Issuer region will be ignored.")
+		}
+
+		// In the case of ambient credentials from EC2 instance metadata service
+		// (IMDS), the AWS_REGION environment variable is not necessarily set
+		// and the Issuer region **should** be used.
+		if !supplyAccessKey && !supplyWebIdentity && !setAmbientRegion && supplyIssuerRegion {
+			assert.Equal(t, fakeIssuerRegion, cfg.Region,
+				"If using ambient credentials but no environment region, "+
+					"use the Issuer region.")
+		}
+
+		// In the general case, the environment region should always be used
+		// if it is set and if the Issuer region is omitted.
+		if setAmbientRegion && !supplyIssuerRegion {
+			assert.Equal(t, fakeAmbientRegion, cfg.Region,
+				"If there is a region in the environment and not in the Issuer resource, "+
+					"the region in the environment should always be used.")
+		}
+
+		// In the general case, the Issuer region should always be used if it is set.
+		// and if the environment region is not detected.
+		if !setAmbientRegion && supplyIssuerRegion {
+			assert.Equal(t, fakeIssuerRegion, cfg.Region,
+				"If there is an Issuer region but no environment region, "+
+					"the Issuer region in the environment should always be used.")
+		}
+
+		// And if no region is detected, log an info message to alert the user
+		// to the mis-configuration
+		if !setAmbientRegion && !supplyIssuerRegion {
+			assert.Contains(t, logMessages, "Region not found",
+				"If no region was detected, "+
+					"log a warning to explain how to set the region.")
+		}
+	}
+
+	const (
+		allowAmbientCredentials bitmask = 1 << iota
+		setAmbientRegion
+		supplyAccessKey
+		supplyWebIdentity
+		supplyIssuerRegion
+	)
+	allFalse := bitmask(0)
+	allTrue := allowAmbientCredentials | setAmbientRegion | supplyAccessKey | supplyWebIdentity | supplyIssuerRegion
+
+	for input := allFalse; input <= allTrue; input++ {
+		t.Run(
+			fmt.Sprintf("%v", input),
+			func(t *testing.T) {
+				testFunc(
+					t,
+					input.Has(allowAmbientCredentials),
+					input.Has(setAmbientRegion),
+					input.Has(supplyAccessKey),
+					input.Has(supplyWebIdentity),
+					input.Has(supplyIssuerRegion),
+				)
+			},
+		)
+	}
 }
 
 func TestRoute53Present(t *testing.T) {
@@ -305,7 +451,6 @@ func TestAssumeRole(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			provider := makeMockSessionProvider(func(cfg aws.Config) StsClient {
-				assert.Equal(t, "aws-global", cfg.Region) // verify that the global sts endpoint is used
 				return c.mockSTS
 			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
 			_, ctx := ktesting.NewTestContext(t)

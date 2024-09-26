@@ -539,22 +539,19 @@ spec:
                                 - [Amazon Route 53 endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/r53.html)
                                 - [Global services](https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/global-services.html)
 
-                                Region is not needed if you use [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
-                                Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
-                                [Amazon EKS Pod Identity Webhook](https://github.com/aws/amazon-eks-pod-identity-webhook),
+                                If you omit this region field, cert-manager will use the region from
+                                AWS_REGION and AWS_DEFAULT_REGION environment variables, if they are set
+                                in the cert-manager controller Pod.
 
-                                Region is not needed if you use [EKS Pod Identities](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
+                                The `region` field is not needed if you use [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+                                Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
+                                [Amazon EKS Pod Identity Webhook](https://github.com/aws/amazon-eks-pod-identity-webhook).
+                                In this case this `region` field value is ignored.
+
+                                The `region` field is not needed if you use [EKS Pod Identities](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
                                 Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
                                 [Amazon EKS Pod Identity Agent](https://github.com/aws/eks-pod-identity-agent),
-
-                                Region is not used for computing STS regional endpoints.
-                                If you configure the `role` field, cert-manager will always use the
-                                global STS endpoint to make AssumeRole and AssumeRoleWithWebIdentity
-                                requests.
-
-                                Region is used unconditionally if ambient credentials mode is disabled, by
-                                `--cluster-issuer-ambient-credentials` or `--isssuer-ambient-credentials`
-                                controller flags.
+                                In this case this `region` field value is ignored.
                               type: string
                             role:
                               description: |-

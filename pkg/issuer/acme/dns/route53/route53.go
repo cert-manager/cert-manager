@@ -96,6 +96,38 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			},
 		),
 	}
+
+	var envRegionFound bool
+	{
+		envConfig, err := config.NewEnvConfig()
+		if err != nil {
+			return aws.Config{}, err
+		}
+		envRegionFound = envConfig.Region != ""
+	}
+
+	if !envRegionFound && d.Region == "" {
+		log.Info(
+			"Region not found",
+			"reason", "The AWS_REGION or AWS_DEFAULT_REGION environment variables were not set and the Issuer region field was empty",
+		)
+	}
+
+	if d.Region != "" {
+		if envRegionFound && useAmbientCredentials {
+			log.Info(
+				"Ignoring Issuer region",
+				"reason", "Issuer is configured to use ambient credentials and AWS_REGION or AWS_DEFAULT_REGION environment variables were found",
+				"suggestion", "Since cert-manager 1.16, the Issuer region field is optional and can be removed from your Issuer or ClusterIssuer",
+				"issuer-region", d.Region,
+			)
+		} else {
+			optFns = append(optFns,
+				config.WithRegion(d.Region),
+			)
+		}
+	}
+
 	switch {
 	case d.Role != "" && d.WebIdentityToken != "":
 		log.V(logf.DebugLevel).Info("using assume role with web identity")
@@ -114,16 +146,9 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %s", err)
 	}
 
-	// For backwards compatibility with cert-manager <= 1.14, where we used the aws-sdk-go v1
-	// library, we configure the SDK here to use the global sts endpoint. This was the default
-	// behaviour of the SDK v1 library, but has to be explicitly set in the v2 library. For the
-	// route53 calls, we use the region provided by the user (see below).
-	stsCfg := cfg.Copy()
-	stsCfg.Region = "aws-global"
-
 	if d.Role != "" && d.WebIdentityToken == "" {
 		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
-		stsSvc := d.StsProvider(stsCfg)
+		stsSvc := d.StsProvider(cfg)
 		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
 			RoleSessionName: aws.String("cert-manager"),
@@ -142,7 +167,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	if d.Role != "" && d.WebIdentityToken != "" {
 		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
 
-		stsSvc := d.StsProvider(stsCfg)
+		stsSvc := d.StsProvider(cfg)
 		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(d.Role),
 			RoleSessionName:  aws.String("cert-manager"),
@@ -159,13 +184,21 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		)
 	}
 
-	// If ambient credentials aren't permitted, always set the region, even if to
-	// empty string, to avoid it falling back on the environment.
-	// This has to be set after session is constructed, as a different region (aws-global)
-	// is used for the STS service.
-	if d.Region != "" || !useAmbientCredentials {
-		cfg.Region = d.Region
-	}
+	// Log some key values of the loaded configuration, so that users can
+	// self-diagnose problems in the field. If users shared logs in their bug
+	// reports, we can know whether the region was detected and whether an
+	// alternative defaults mode has been configured.
+	//
+	// TODO(wallrj): Loop through the cfg.ConfigSources and log which config
+	// source was used to load the region and credentials, so that it is clearer
+	// to the user where environment variables or config files or IMDS metadata
+	// are being used.
+	log.V(logf.DebugLevel).Info(
+		"loaded-config",
+		"defaults-mode", cfg.DefaultsMode,
+		"region", cfg.Region,
+		"runtime-environment", cfg.RuntimeEnvironment,
+	)
 
 	return cfg, nil
 }
