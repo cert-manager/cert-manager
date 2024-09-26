@@ -22,7 +22,7 @@ steps:
   - |
     set -eu -o pipefail
     make vendor-go
-    make CMREL_KEY="${_KMS_KEY}" RELEASE_TARGET_BUCKET="${_RELEASE_TARGET_BUCKET}" -j16 upload-release
+    make CMREL_KEY="${_KMS_KEY}" RELEASE_TARGET_BUCKET="${_RELEASE_TARGET_BUCKET}" -j8 upload-release
     echo "Wrote to ${_RELEASE_TARGET_BUCKET}"
 
 tags:
