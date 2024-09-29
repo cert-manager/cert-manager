@@ -32,6 +32,7 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -217,11 +218,16 @@ func (f *DynamicSource) Healthy() bool {
 
 func (f *DynamicSource) tryRegenerateCertificate(ctx context.Context, nextRenewCh chan<- time.Time) error {
 	return wait.PollUntilContextCancel(ctx, f.RetryInterval, true, func(ctx context.Context) (done bool, err error) {
+		f.log.Info("try to generate a serving certificate")
 		if err := f.regenerateCertificate(ctx, nextRenewCh); err != nil {
-			f.log.Error(err, "Failed to generate serving certificate, retrying...", "interval", f.RetryInterval)
+			if errors.Is(err, authority.ErrCertificateNotAvailable) {
+				f.log.Info("Certificate is not yet created, retrying...", "interval", f.RetryInterval)
+			} else {
+				f.log.Error(err, "Failed to generate serving certificate, retrying...", "interval", f.RetryInterval)
+			}
 			return false, nil
 		}
-
+		f.log.Info("Serving certificate generated successfully")
 		return true, nil
 	})
 }
