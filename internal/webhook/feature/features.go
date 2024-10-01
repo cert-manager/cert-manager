@@ -21,9 +21,7 @@ limitations under the License.
 package feature
 
 import (
-	"k8s.io/apimachinery/pkg/util/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientfeatures "k8s.io/client-go/features"
 	"k8s.io/component-base/featuregate"
 
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -86,16 +84,6 @@ const (
 
 func init() {
 	utilruntime.Must(utilfeature.DefaultMutableFeatureGate.Add(webhookFeatureGates))
-
-	// Register all client-go features with cert-manager's feature gate instance
-	// and make all client-go feature checks use cert-manager's instance. The
-	// effect is that client-go features are wired to the existing
-	// --feature-gates flag just as all other features are. Further, client-go
-	// features automatically support the existing mechanisms for feature
-	// enablement metrics and test overrides.
-	ca := utilfeature.NewClientGoAdapter(utilfeature.DefaultMutableFeatureGate)
-	runtime.Must(clientfeatures.AddFeaturesToExistingFeatureGates(ca))
-	clientfeatures.ReplaceFeatureGates(ca)
 }
 
 // webhookFeatureGates defines all feature gates for the webhook component.
