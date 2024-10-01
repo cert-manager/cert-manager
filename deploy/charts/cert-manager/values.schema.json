@@ -268,6 +268,9 @@
         "extraArgs": {
           "$ref": "#/$defs/helm-values.cainjector.extraArgs"
         },
+        "extraEnv": {
+          "$ref": "#/$defs/helm-values.cainjector.extraEnv"
+        },
         "featureGates": {
           "$ref": "#/$defs/helm-values.cainjector.featureGates"
         },
@@ -366,6 +369,12 @@
     "helm-values.cainjector.extraArgs": {
       "default": [],
       "description": "Additional command line flags to pass to cert-manager cainjector binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-cainjector:<version> --help`.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.extraEnv": {
+      "default": [],
+      "description": "Additional environment variables to pass to cert-manager cainjector binary.\nFor example:\nextraEnv:\n- name: SOME_VAR\n  value: 'some value'",
       "items": {},
       "type": "array"
     },
@@ -649,7 +658,7 @@
     },
     "helm-values.extraEnv": {
       "default": [],
-      "description": "Additional environment variables to pass to cert-manager controller binary.",
+      "description": "Additional environment variables to pass to cert-manager controller binary.\nFor example:\nextraEnv:\n- name: SOME_VAR\n  value: 'some value'",
       "items": {},
       "type": "array"
     },
@@ -1276,6 +1285,9 @@
         "extraArgs": {
           "$ref": "#/$defs/helm-values.startupapicheck.extraArgs"
         },
+        "extraEnv": {
+          "$ref": "#/$defs/helm-values.startupapicheck.extraEnv"
+        },
         "image": {
           "$ref": "#/$defs/helm-values.startupapicheck.image"
         },
@@ -1360,6 +1372,12 @@
         "-v"
       ],
       "description": "Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-startupapicheck:<version> --help`.\n\nVerbose logging is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.startupapicheck.extraEnv": {
+      "default": [],
+      "description": "Additional environment variables to pass to cert-manager startupapicheck binary.\nFor example:\nextraEnv:\n- name: SOME_VAR\n  value: 'some value'",
       "items": {},
       "type": "array"
     },
@@ -1588,6 +1606,9 @@
         "extraArgs": {
           "$ref": "#/$defs/helm-values.webhook.extraArgs"
         },
+        "extraEnv": {
+          "$ref": "#/$defs/helm-values.webhook.extraEnv"
+        },
         "featureGates": {
           "$ref": "#/$defs/helm-values.webhook.featureGates"
         },
@@ -1726,6 +1747,12 @@
     "helm-values.webhook.extraArgs": {
       "default": [],
       "description": "Additional command line flags to pass to cert-manager webhook binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-webhook:<version> --help`.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.webhook.extraEnv": {
+      "default": [],
+      "description": "Additional environment variables to pass to cert-manager webhook binary.\nFor example:\nextraEnv:\n- name: SOME_VAR\n  value: 'some value'",
       "items": {},
       "type": "array"
     },

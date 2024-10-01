@@ -435,7 +435,14 @@ extraArgs:
 > []
 > ```
 
-Additional environment variables to pass to cert-manager controller binary.
+Additional environment variables to pass to cert-manager controller binary.  
+For example:
+
+```yaml
+extraEnv:
+- name: SOME_VAR
+  value: 'some value'
+```
 #### **resources** ~ `object`
 > Default value:
 > ```yaml
@@ -1002,6 +1009,20 @@ Configure spec.namespaceSelector for mutating webhooks.
 > ```
 
 Additional command line flags to pass to cert-manager webhook binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-webhook:<version> --help`.
+#### **webhook.extraEnv** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Additional environment variables to pass to cert-manager webhook binary.  
+For example:
+
+```yaml
+extraEnv:
+- name: SOME_VAR
+  value: 'some value'
+```
 #### **webhook.featureGates** ~ `string`
 > Default value:
 > ```yaml
@@ -1432,6 +1453,20 @@ Optional additional annotations to add to the cainjector metrics Service.
 > ```
 
 Additional command line flags to pass to cert-manager cainjector binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-cainjector:<version> --help`.
+#### **cainjector.extraEnv** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Additional environment variables to pass to cert-manager cainjector binary.  
+For example:
+
+```yaml
+extraEnv:
+- name: SOME_VAR
+  value: 'some value'
+```
 #### **cainjector.featureGates** ~ `string`
 > Default value:
 > ```yaml
@@ -1717,6 +1752,20 @@ Additional command line flags to pass to startupapicheck binary. To see all avai
   
 Verbose logging is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.
 
+#### **startupapicheck.extraEnv** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Additional environment variables to pass to cert-manager startupapicheck binary.  
+For example:
+
+```yaml
+extraEnv:
+- name: SOME_VAR
+  value: 'some value'
+```
 #### **startupapicheck.resources** ~ `object`
 > Default value:
 > ```yaml
