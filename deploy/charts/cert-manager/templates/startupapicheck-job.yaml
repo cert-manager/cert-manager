@@ -60,6 +60,14 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          {{- with .Values.startupapicheck.extraEnv }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
           {{- with .Values.startupapicheck.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
