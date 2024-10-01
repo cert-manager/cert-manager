@@ -284,9 +284,11 @@ approveSignerNames:
 extraArgs: []
 
 # Additional environment variables to pass to cert-manager controller binary.
+# For example:
+#  extraEnv:
+#  - name: SOME_VAR
+#    value: 'some value'
 extraEnv: []
-# - name: SOME_VAR
-#   value: 'some value'
 
 # Resources to provide to the cert-manager controller pod.
 #
@@ -752,6 +754,13 @@ webhook:
   # Path to a file containing a WebhookConfiguration object used to configure the webhook.
   # - --config=<path-to-config-file>
 
+  # Additional environment variables to pass to cert-manager webhook binary.
+  # For example:
+  #  extraEnv:
+  #  - name: SOME_VAR
+  #    value: 'some value'
+  extraEnv: []
+
   # Comma separated list of feature gates that should be enabled on the
   # webhook pod.
   featureGates: ""
@@ -1079,6 +1088,13 @@ cainjector:
   # Enable profiling for cainjector.
   # - --enable-profiling=true
 
+  # Additional environment variables to pass to cert-manager cainjector binary.
+  # For example:
+  #  extraEnv:
+  #  - name: SOME_VAR
+  #    value: 'some value'
+  extraEnv: []
+
   # Comma separated list of feature gates that should be enabled on the
   # cainjector pod.
   featureGates: ""
@@ -1284,6 +1300,13 @@ startupapicheck:
   # +docs:property
   extraArgs:
   - -v
+
+  # Additional environment variables to pass to cert-manager startupapicheck binary.
+  # For example:
+  #  extraEnv:
+  #  - name: SOME_VAR
+  #    value: 'some value'
+  extraEnv: []
 
   # Resources to provide to the cert-manager controller pod.
   #
