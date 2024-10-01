@@ -165,6 +165,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{- with .Values.webhook.extraEnv }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
           {{- with .Values.webhook.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
