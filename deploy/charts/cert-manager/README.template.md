@@ -521,6 +521,10 @@ Optionally set the IP family policy for the controller Service to configure dual
 
 Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 
+#### **serviceAppProtocol** ~ `string`
+
+Optionally set the application protocol to use for the controller Service.
+
 #### **podDnsPolicy** ~ `string`
 
 Pod DNS policy.  
@@ -751,6 +755,20 @@ endpointAdditionalProperties:
 
 
 
+#### **prometheus.servicemonitor.scheme** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+The explicit scheme for metrics scraping.
+#### **prometheus.servicemonitor.tlsConfig** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+TLS configuration for metrics scraping.
 #### **prometheus.podmonitor.enabled** ~ `bool`
 > Default value:
 > ```yaml
