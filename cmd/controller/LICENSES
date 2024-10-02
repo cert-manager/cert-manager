@@ -11,8 +11,8 @@ github.com/Khan/genqlient/graphql,https://github.com/Khan/genqlient/blob/v0.7.0/
 github.com/Venafi/vcert/v5,https://github.com/Venafi/vcert/blob/v5.7.1/LICENSE,Apache-2.0
 github.com/akamai/AkamaiOPEN-edgegrid-golang,https://github.com/akamai/AkamaiOPEN-edgegrid-golang/blob/v1.2.2/LICENSE,Apache-2.0
 github.com/aws/aws-sdk-go-v2,https://github.com/aws/aws-sdk-go-v2/blob/v1.31.0/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/config,https://github.com/aws/aws-sdk-go-v2/blob/config/v1.27.36/config/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/credentials,https://github.com/aws/aws-sdk-go-v2/blob/credentials/v1.17.34/credentials/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/config,https://github.com/aws/aws-sdk-go-v2/blob/config/v1.27.39/config/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/credentials,https://github.com/aws/aws-sdk-go-v2/blob/credentials/v1.17.37/credentials/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds,https://github.com/aws/aws-sdk-go-v2/blob/feature/ec2/imds/v1.16.14/feature/ec2/imds/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/configsources,https://github.com/aws/aws-sdk-go-v2/blob/internal/configsources/v1.3.18/internal/configsources/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2,https://github.com/aws/aws-sdk-go-v2/blob/internal/endpoints/v2.6.18/internal/endpoints/v2/LICENSE.txt,Apache-2.0
@@ -20,10 +20,10 @@ github.com/aws/aws-sdk-go-v2/internal/ini,https://github.com/aws/aws-sdk-go-v2/b
 github.com/aws/aws-sdk-go-v2/internal/sync/singleflight,https://github.com/aws/aws-sdk-go-v2/blob/v1.31.0/internal/sync/singleflight/LICENSE,BSD-3-Clause
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding,https://github.com/aws/aws-sdk-go-v2/blob/service/internal/accept-encoding/v1.11.5/service/internal/accept-encoding/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url,https://github.com/aws/aws-sdk-go-v2/blob/service/internal/presigned-url/v1.11.20/service/internal/presigned-url/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/service/route53,https://github.com/aws/aws-sdk-go-v2/blob/service/route53/v1.44.0/service/route53/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/service/sso,https://github.com/aws/aws-sdk-go-v2/blob/service/sso/v1.23.0/service/sso/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/service/ssooidc,https://github.com/aws/aws-sdk-go-v2/blob/service/ssooidc/v1.27.0/service/ssooidc/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/service/sts,https://github.com/aws/aws-sdk-go-v2/blob/service/sts/v1.31.0/service/sts/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/service/route53,https://github.com/aws/aws-sdk-go-v2/blob/service/route53/v1.44.3/service/route53/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/service/sso,https://github.com/aws/aws-sdk-go-v2/blob/service/sso/v1.23.3/service/sso/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/service/ssooidc,https://github.com/aws/aws-sdk-go-v2/blob/service/ssooidc/v1.27.3/service/ssooidc/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/service/sts,https://github.com/aws/aws-sdk-go-v2/blob/service/sts/v1.31.3/service/sts/LICENSE.txt,Apache-2.0
 github.com/aws/smithy-go,https://github.com/aws/smithy-go/blob/v1.21.0/LICENSE,Apache-2.0
 github.com/aws/smithy-go/internal/sync/singleflight,https://github.com/aws/smithy-go/blob/v1.21.0/internal/sync/singleflight/LICENSE,BSD-3-Clause
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
