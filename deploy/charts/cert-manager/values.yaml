@@ -120,12 +120,14 @@ podDisruptionBudget:
   # an integer (e.g. 1) or a percentage value (e.g. 25%).
   # It cannot be used if `maxUnavailable` is set.
   # +docs:property
+  # +docs:type=unknown
   # minAvailable: 1
 
   # This configures the maximum unavailable pods for disruptions. It can either be set to
   # an integer (e.g. 1) or a percentage value (e.g. 25%).
   # it cannot be used if `minAvailable` is set.
   # +docs:property
+  # +docs:type=unknown
   # maxUnavailable: 1
 
 # A comma-separated list of feature gates that should be enabled on the
@@ -697,12 +699,14 @@ webhook:
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # It cannot be used if `maxUnavailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # minAvailable: 1
 
     # This property configures the maximum unavailable pods for disruptions. Can either be set to
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # It cannot be used if `minAvailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # maxUnavailable: 1
 
   # Optional additional annotations to add to the webhook Deployment.
@@ -1062,12 +1066,14 @@ cainjector:
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # Cannot be used if `maxUnavailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # minAvailable: 1
 
     # `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # Cannot be used if `minAvailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # maxUnavailable: 1
 
   # Optional additional annotations to add to the cainjector Deployment.
