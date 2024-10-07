@@ -676,7 +676,6 @@
       "type": "string"
     },
     "helm-values.global": {
-      "additionalProperties": false,
       "description": "Global values shared across all (sub)charts",
       "properties": {
         "commonLabels": {
@@ -718,7 +717,6 @@
       "type": "array"
     },
     "helm-values.global.leaderElection": {
-      "additionalProperties": false,
       "properties": {
         "leaseDuration": {
           "$ref": "#/$defs/helm-values.global.leaderElection.leaseDuration"
@@ -758,7 +756,6 @@
       "type": "number"
     },
     "helm-values.global.podSecurityPolicy": {
-      "additionalProperties": false,
       "properties": {
         "enabled": {
           "$ref": "#/$defs/helm-values.global.podSecurityPolicy.enabled"
@@ -785,7 +782,6 @@
       "type": "string"
     },
     "helm-values.global.rbac": {
-      "additionalProperties": false,
       "properties": {
         "aggregateClusterRoles": {
           "$ref": "#/$defs/helm-values.global.rbac.aggregateClusterRoles"
