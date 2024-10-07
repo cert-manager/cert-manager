@@ -228,14 +228,16 @@ Enable or disable the PodDisruptionBudget resource.
   
 This prevents downtime during voluntary disruptions such as during a Node upgrade. For example, the PodDisruptionBudget will block `kubectl drain` if it is used on the Node where the only remaining cert-manager  
 Pod is currently running.
-#### **podDisruptionBudget.minAvailable** ~ `number`
+#### **podDisruptionBudget.minAvailable** ~ `unknown`
 
 This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
 It cannot be used if `maxUnavailable` is set.
 
-#### **podDisruptionBudget.maxUnavailable** ~ `number`
+
+#### **podDisruptionBudget.maxUnavailable** ~ `unknown`
 
 This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set.
+
 
 #### **featureGates** ~ `string`
 > Default value:
@@ -952,15 +954,17 @@ Enable or disable the PodDisruptionBudget resource.
   
 This prevents downtime during voluntary disruptions such as during a Node upgrade. For example, the PodDisruptionBudget will block `kubectl drain` if it is used on the Node where the only remaining cert-manager  
 Pod is currently running.
-#### **webhook.podDisruptionBudget.minAvailable** ~ `number`
+#### **webhook.podDisruptionBudget.minAvailable** ~ `unknown`
 
 This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
 It cannot be used if `maxUnavailable` is set.
 
-#### **webhook.podDisruptionBudget.maxUnavailable** ~ `number`
+
+#### **webhook.podDisruptionBudget.maxUnavailable** ~ `unknown`
 
 This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
 It cannot be used if `minAvailable` is set.
+
 
 #### **webhook.deploymentAnnotations** ~ `object`
 
@@ -1422,17 +1426,19 @@ Enable or disable the PodDisruptionBudget resource.
   
 This prevents downtime during voluntary disruptions such as during a Node upgrade. For example, the PodDisruptionBudget will block `kubectl drain` if it is used on the Node where the only remaining cert-manager  
 Pod is currently running.
-#### **cainjector.podDisruptionBudget.minAvailable** ~ `number`
+#### **cainjector.podDisruptionBudget.minAvailable** ~ `unknown`
 
 `minAvailable` configures the minimum available pods for disruptions. It can either be set to  
 an integer (e.g. 1) or a percentage value (e.g. 25%).  
 Cannot be used if `maxUnavailable` is set.
 
-#### **cainjector.podDisruptionBudget.maxUnavailable** ~ `number`
+
+#### **cainjector.podDisruptionBudget.maxUnavailable** ~ `unknown`
 
 `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
 an integer (e.g. 1) or a percentage value (e.g. 25%).  
 Cannot be used if `minAvailable` is set.
+
 
 #### **cainjector.deploymentAnnotations** ~ `object`
 
