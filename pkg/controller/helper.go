@@ -31,6 +31,21 @@ func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
 	return ns
 }
 
+// ResourceNamespaceRef returns the Kubernetes namespace where resources
+// created or read by the referenced issuer are located.
+// This function is identical to CanUseAmbientCredentials, but takes a reference to
+// the issuer instead of the issuer itself (which means we don't need to fetch the
+// issuer from the API server).
+func (o IssuerOptions) ResourceNamespaceRef(ref cmmeta.ObjectReference, challengeNamespace string) string {
+	switch ref.Kind {
+	case cmapi.ClusterIssuerKind:
+		return o.ClusterResourceNamespace
+	case "", cmapi.IssuerKind:
+		return challengeNamespace
+	}
+	return challengeNamespace // Should not be reached
+}
+
 // CanUseAmbientCredentials returns whether `iss` will attempt to configure itself
 // from ambient credentials (e.g. from a cloud metadata service).
 func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
