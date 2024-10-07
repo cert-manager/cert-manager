@@ -114,9 +114,10 @@ const informerResyncPeriod = time.Second
 // for any unset fields.
 func (b *Builder) Init() {
 	if b.Context == nil {
-		b.Context = &controller.Context{
-			RootContext: context.Background(),
-		}
+		b.Context = &controller.Context{}
+	}
+	if b.Context.RootContext == nil {
+		b.Context.RootContext = context.Background()
 	}
 	if b.StringGenerator == nil {
 		b.StringGenerator = rand.String
