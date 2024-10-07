@@ -35,15 +35,79 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
-func newSecret(name string, data map[string][]byte) *corev1.Secret {
+const (
+	fakeIssuerNamespace                = "fake-issuer-namespace"
+	fakeClusterIssuerResourceNamespace = "fake-cluster-resource-namespace"
+)
+
+func newSecret(name string, data map[string][]byte, namespace string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: namespace,
 		},
 		Data: data,
 	}
 }
+
+func TestClusterIssuerNamespace(t *testing.T) {
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret(
+					"route53",
+					map[string][]byte{
+						"secret": []byte("AKIENDINNEWLINE \n"),
+					},
+					fakeClusterIssuerResourceNamespace, // since this is a ClusterIssuer, the secret should be in the clusterResourceNamespace
+				),
+			},
+			Context: &controller.Context{
+				ContextOptions: controller.ContextOptions{
+					IssuerOptions: controller.IssuerOptions{
+						ClusterResourceNamespace: fakeClusterIssuerResourceNamespace,
+					},
+				},
+			},
+		},
+		Challenge: &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "random-certificate-namespace", // Random namespace in which the Certificate and Challenge live
+			},
+			Spec: cmacme.ChallengeSpec{
+				Solver: cmacme.ACMEChallengeSolver{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+							AccessKeyID: "  test_with_spaces  ",
+							Region:      "us-west-2",
+							SecretAccessKey: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "route53",
+								},
+								Key: "secret",
+							},
+						},
+					},
+				},
+				IssuerRef: cmmeta.ObjectReference{
+					Name: "test-issuer",
+					Kind: "ClusterIssuer", // ClusterIssuer reference, so should use the clusterResourceNamespace
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+}
+
 func TestSolverFor(t *testing.T) {
 	type testT struct {
 		*solverFixture
@@ -58,12 +122,12 @@ func TestSolverFor(t *testing.T) {
 					KubeObjects: []runtime.Object{
 						newSecret("cloudflare-key", map[string][]byte{
 							"api-key": []byte("a-cloudflare-api-key"),
-						}),
+						}, fakeIssuerNamespace),
 					},
 				},
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -78,6 +142,9 @@ func TestSolverFor(t *testing.T) {
 									},
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -91,12 +158,12 @@ func TestSolverFor(t *testing.T) {
 					KubeObjects: []runtime.Object{
 						newSecret("cloudflare-token", map[string][]byte{
 							"api-token": []byte("a-cloudflare-api-token"),
-						}),
+						}, fakeIssuerNamespace),
 					},
 				},
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -111,6 +178,9 @@ func TestSolverFor(t *testing.T) {
 									},
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -123,7 +193,7 @@ func TestSolverFor(t *testing.T) {
 				// don't include any secrets in the lister
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -139,6 +209,9 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
+						},
 					},
 				},
 			},
@@ -150,7 +223,7 @@ func TestSolverFor(t *testing.T) {
 				// don't include any secrets in the lister
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -171,6 +244,9 @@ func TestSolverFor(t *testing.T) {
 									},
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -184,12 +260,12 @@ func TestSolverFor(t *testing.T) {
 					KubeObjects: []runtime.Object{
 						newSecret("cloudflare-key", map[string][]byte{
 							"api-key-oops": []byte("a-cloudflare-api-key"),
-						}),
+						}, fakeIssuerNamespace),
 					},
 				},
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -205,6 +281,9 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
+						},
 					},
 				},
 			},
@@ -217,12 +296,12 @@ func TestSolverFor(t *testing.T) {
 					KubeObjects: []runtime.Object{
 						newSecret("cloudflare-token", map[string][]byte{
 							"api-key-oops": []byte("a-cloudflare-api-token"),
-						}),
+						}, fakeIssuerNamespace),
 					},
 				},
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -238,6 +317,9 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
+						},
 					},
 				},
 			},
@@ -250,12 +332,12 @@ func TestSolverFor(t *testing.T) {
 					KubeObjects: []runtime.Object{
 						newSecret("acmedns-key", map[string][]byte{
 							"acmedns.json": []byte("{}"),
-						}),
+						}, fakeIssuerNamespace),
 					},
 				},
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -270,6 +352,9 @@ func TestSolverFor(t *testing.T) {
 									},
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -306,12 +391,12 @@ func TestSolveForDigitalOcean(t *testing.T) {
 			KubeObjects: []runtime.Object{
 				newSecret("digitalocean", map[string][]byte{
 					"token": []byte("FAKE-TOKEN"),
-				}),
+				}, fakeIssuerNamespace),
 			},
 		},
 		Challenge: &cmacme.Challenge{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
+				Namespace: fakeIssuerNamespace,
 			},
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
@@ -325,6 +410,9 @@ func TestSolveForDigitalOcean(t *testing.T) {
 							},
 						},
 					},
+				},
+				IssuerRef: cmmeta.ObjectReference{
+					Name: "test-issuer",
 				},
 			},
 		},
@@ -359,12 +447,12 @@ func TestRoute53TrimCreds(t *testing.T) {
 			KubeObjects: []runtime.Object{
 				newSecret("route53", map[string][]byte{
 					"secret": []byte("AKIENDINNEWLINE \n"),
-				}),
+				}, fakeIssuerNamespace),
 			},
 		},
 		Challenge: &cmacme.Challenge{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
+				Namespace: fakeIssuerNamespace,
 			},
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
@@ -380,6 +468,9 @@ func TestRoute53TrimCreds(t *testing.T) {
 							},
 						},
 					},
+				},
+				IssuerRef: cmmeta.ObjectReference{
+					Name: "test-issuer",
 				},
 			},
 		},
@@ -414,12 +505,12 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 				newSecret("route53", map[string][]byte{
 					"accessKeyID":     []byte("AWSACCESSKEYID"),
 					"secretAccessKey": []byte("AKIENDINNEWLINE \n"),
-				}),
+				}, fakeIssuerNamespace),
 			},
 		},
 		Challenge: &cmacme.Challenge{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
+				Namespace: fakeIssuerNamespace,
 			},
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
@@ -440,6 +531,9 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 							},
 						},
 					},
+				},
+				IssuerRef: cmmeta.ObjectReference{
+					Name: "test-issuer",
 				},
 			},
 		},
@@ -492,7 +586,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -501,6 +595,9 @@ func TestRoute53AmbientCreds(t *testing.T) {
 									Region: "us-west-2",
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -527,7 +624,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -536,6 +633,9 @@ func TestRoute53AmbientCreds(t *testing.T) {
 									Region: "us-west-2",
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -592,7 +692,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -602,6 +702,9 @@ func TestRoute53AssumeRole(t *testing.T) {
 									Role:   "my-role",
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
@@ -628,7 +731,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: fakeIssuerNamespace,
 					},
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
@@ -638,6 +741,9 @@ func TestRoute53AssumeRole(t *testing.T) {
 									Role:   "my-other-role",
 								},
 							},
+						},
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "test-issuer",
 						},
 					},
 				},
