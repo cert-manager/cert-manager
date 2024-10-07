@@ -458,12 +458,10 @@
       "type": "boolean"
     },
     "helm-values.cainjector.podDisruptionBudget.maxUnavailable": {
-      "description": "`maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `minAvailable` is set.",
-      "type": "number"
+      "description": "`maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `minAvailable` is set."
     },
     "helm-values.cainjector.podDisruptionBudget.minAvailable": {
-      "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `maxUnavailable` is set.",
-      "type": "number"
+      "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `maxUnavailable` is set."
     },
     "helm-values.cainjector.podLabels": {
       "default": {},
@@ -963,12 +961,10 @@
       "type": "boolean"
     },
     "helm-values.podDisruptionBudget.maxUnavailable": {
-      "description": "This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set.",
-      "type": "number"
+      "description": "This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set."
     },
     "helm-values.podDisruptionBudget.minAvailable": {
-      "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set.",
-      "type": "number"
+      "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set."
     },
     "helm-values.podDnsConfig": {
       "description": "Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to \"None\", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).",
@@ -1948,12 +1944,10 @@
       "type": "boolean"
     },
     "helm-values.webhook.podDisruptionBudget.maxUnavailable": {
-      "description": "This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `minAvailable` is set.",
-      "type": "number"
+      "description": "This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `minAvailable` is set."
     },
     "helm-values.webhook.podDisruptionBudget.minAvailable": {
-      "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set.",
-      "type": "number"
+      "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set."
     },
     "helm-values.webhook.podLabels": {
       "default": {},
