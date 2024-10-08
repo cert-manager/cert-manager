@@ -51,6 +51,9 @@
         "enableServiceLinks": {
           "$ref": "#/$defs/helm-values.enableServiceLinks"
         },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.enabled"
+        },
         "extraArgs": {
           "$ref": "#/$defs/helm-values.extraArgs"
         },
@@ -646,6 +649,11 @@
     "helm-values.enableServiceLinks": {
       "default": false,
       "description": "enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.",
+      "type": "boolean"
+    },
+    "helm-values.enabled": {
+      "default": true,
+      "description": "Field that can be used as a condition when cert-manager is a dependency. This definition is only here as a placeholder such that it is included in the json schema. See https://helm.sh/docs/chart_best_practices/dependencies/#conditions-and-tags for more info.",
       "type": "boolean"
     },
     "helm-values.extraArgs": {
