@@ -510,7 +510,7 @@
       "type": "object"
     },
     "helm-values.cainjector.serviceAccount.annotations": {
-      "description": "Optional additional annotations to add to the controller's Service Account.",
+      "description": "Optional additional annotations to add to the cainjector's Service Account.",
       "type": "object"
     },
     "helm-values.cainjector.serviceAccount.automountServiceAccountToken": {
@@ -2008,7 +2008,7 @@
       "type": "object"
     },
     "helm-values.webhook.serviceAccount.annotations": {
-      "description": "Optional additional annotations to add to the controller's Service Account.",
+      "description": "Optional additional annotations to add to the webhook's Service Account.",
       "type": "object"
     },
     "helm-values.webhook.serviceAccount.automountServiceAccountToken": {
