@@ -890,7 +890,7 @@ webhook:
     # +docs:property
     # name: ""
 
-    # Optional additional annotations to add to the controller's Service Account.
+    # Optional additional annotations to add to the webhook's Service Account.
     # +docs:property
     # annotations: {}
 
@@ -1199,7 +1199,7 @@ cainjector:
     # +docs:property
     # name: ""
 
-    # Optional additional annotations to add to the controller's Service Account.
+    # Optional additional annotations to add to the cainjector's Service Account.
     # +docs:property
     # annotations: {}
 
