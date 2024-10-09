@@ -1214,7 +1214,7 @@ If not set and create is true, a name is generated using the fullname template.
 
 #### **webhook.serviceAccount.annotations** ~ `object`
 
-Optional additional annotations to add to the controller's Service Account.
+Optional additional annotations to add to the webhook's Service Account.
 
 #### **webhook.serviceAccount.labels** ~ `object`
 
@@ -1620,7 +1620,7 @@ If not set and create is true, a name is generated using the fullname template
 
 #### **cainjector.serviceAccount.annotations** ~ `object`
 
-Optional additional annotations to add to the controller's Service Account.
+Optional additional annotations to add to the cainjector's Service Account.
 
 #### **cainjector.serviceAccount.labels** ~ `object`
 
