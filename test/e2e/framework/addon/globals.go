@@ -19,6 +19,7 @@ package addon
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -178,8 +179,7 @@ func DeprovisionGlobals(ctx context.Context, cfg *config.Config) error {
 	}
 	var errs []error
 	// deprovision addons in the reverse order to that of provisioning
-	for i := len(provisioned) - 1; i >= 0; i-- {
-		a := provisioned[i]
+	for _, a := range slices.Backward(provisioned) {
 		errs = append(errs, a.Deprovision(ctx))
 	}
 	return utilerrors.NewAggregate(errs)

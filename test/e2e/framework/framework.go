@@ -18,6 +18,7 @@ package framework
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -169,8 +170,7 @@ func (f *Framework) AfterEach(ctx context.Context) {
 		return
 	}
 
-	for i := len(f.requiredAddons) - 1; i >= 0; i-- {
-		a := f.requiredAddons[i]
+	for _, a := range slices.Backward(f.requiredAddons) {
 		By("De-provisioning test-scoped addon")
 		err := a.Deprovision(ctx)
 		Expect(err).NotTo(HaveOccurred())
