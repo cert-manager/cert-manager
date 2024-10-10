@@ -125,6 +125,10 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-com-tls",
 						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
+						},
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
@@ -178,6 +182,10 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -229,6 +237,10 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -279,6 +291,10 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
 						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
@@ -332,7 +348,9 @@ func TestSync(t *testing.T) {
 							"my-test-label": "should be copied",
 						},
 						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey:     "issuer-name",
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+							cmacme.IngressEditInPlaceAnnotationKey:          "true",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
 						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
@@ -385,8 +403,10 @@ func TestSync(t *testing.T) {
 							"my-test-label": "should be copied",
 						},
 						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey:     "issuer-name",
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
+							cmacme.IngressEditInPlaceAnnotationKey:          "true",
 						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
@@ -428,8 +448,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -471,8 +494,12 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IngressClassAnnotationKey:             "nginx-ing",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -519,7 +546,10 @@ func TestSync(t *testing.T) {
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 						Annotations: map[string]string{
-							cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
+							cmapi.IngressClusterIssuerNameAnnotationKey:            "issuer-name",
+							cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "cert-ing",
+							cmacme.ACMECertificateHTTP01IngressClassOverride:       "cert-ing",
+							cmapi.IngressClassAnnotationKey:                        "nginx-ing",
 						},
 					},
 					Spec: cmapi.CertificateSpec{
@@ -561,8 +591,12 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IngressSecretTemplate:                 `{ "annotations": { "example-annotation" : "dummy-value" }, "labels": { "example-label" : "dummy-value" } }`,
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -661,8 +695,13 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IngressClassAnnotationKey:             "nginx-ing",
+							cmacme.IngressEditInPlaceAnnotationKey:      "false",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -703,8 +742,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -748,8 +790,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							"kubernetes.io/tls-acme": "true",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -797,8 +842,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -846,8 +894,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -945,6 +996,9 @@ func TestSync(t *testing.T) {
 				buildCertificate("existing-crt",
 					gen.DefaultTestNamespace,
 					buildIngressOwnerReferences("ingress-name"),
+					map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+					},
 				),
 			},
 			DefaultIssuerKind: "Issuer",
@@ -952,8 +1006,11 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "existing-crt",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1002,6 +1059,9 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"a-different-value": "should be removed",
 						},
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1023,6 +1083,9 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
@@ -1068,6 +1131,10 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:    "issuer-name",
+							cmapi.RevisionHistoryLimitAnnotationKey: "1",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1088,6 +1155,10 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:    "issuer-name",
+							cmapi.RevisionHistoryLimitAnnotationKey: "1",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1130,8 +1201,13 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "cert-secret-name",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "cert-secret-name",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey: "RSA",
+							cmapi.PrivateKeySizeAnnotationKey:      "4096",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1153,8 +1229,13 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "cert-secret-name",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "cert-secret-name",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey: "RSA",
+							cmapi.PrivateKeySizeAnnotationKey:      "4096",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1204,6 +1285,11 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey: "ECDSA",
+							cmapi.PrivateKeySizeAnnotationKey:      "384",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1227,6 +1313,11 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey: "ECDSA",
+							cmapi.PrivateKeySizeAnnotationKey:      "384",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1276,6 +1367,12 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey: "ECDSA",
+							cmapi.PrivateKeyEncodingAnnotationKey:  "PKCS8",
+							cmapi.PrivateKeySizeAnnotationKey:      "384",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1299,6 +1396,12 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey: "ECDSA",
+							cmapi.PrivateKeyEncodingAnnotationKey:  "PKCS8",
+							cmapi.PrivateKeySizeAnnotationKey:      "384",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1350,6 +1453,13 @@ func TestSync(t *testing.T) {
 						Name:            "cert-secret-name",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:        "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey:      "ECDSA",
+							cmapi.PrivateKeyEncodingAnnotationKey:       "PKCS1",
+							cmapi.PrivateKeySizeAnnotationKey:           "384",
+							cmapi.PrivateKeyRotationPolicyAnnotationKey: "Always",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1370,8 +1480,15 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "cert-secret-name",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "cert-secret-name",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey:        "issuer-name",
+							cmapi.PrivateKeyAlgorithmAnnotationKey:      "ECDSA",
+							cmapi.PrivateKeyEncodingAnnotationKey:       "PKCS1",
+							cmapi.PrivateKeySizeAnnotationKey:           "384",
+							cmapi.PrivateKeyRotationPolicyAnnotationKey: "Always",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1496,6 +1613,9 @@ func TestSync(t *testing.T) {
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1515,6 +1635,9 @@ func TestSync(t *testing.T) {
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1554,8 +1677,13 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IssuerKindAnnotationKey:        "Issuer",
+							cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1575,8 +1703,13 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IssuerKindAnnotationKey:        "Issuer",
+							cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1691,6 +1824,11 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
+							"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1746,6 +1884,11 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
+							cmapi.SubjectStreetAddressesAnnotationKey:   `"1725 Slough Avenue, Suite 200, Scranton Business Park"`,
+						},
 						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -1772,6 +1915,60 @@ func TestSync(t *testing.T) {
 			DefaultIssuerGroup:  "cert-manager.io",
 			ClusterIssuerLister: []runtime.Object{clusterIssuer},
 			IngressLike:         buildIngressInDeletion(buildIngress("", "", map[string]string{cmapi.IngressIssuerNameAnnotationKey: ""}), &metav1.Time{}, []string{metav1.FinalizerDeleteDependents}),
+		},
+		{
+			Name:                "should create certificate with Venafi annotations",
+			Issuer:              clusterIssuer,
+			DefaultIssuerName:   "issuer-name",
+			DefaultIssuerKind:   "ClusterIssuer",
+			DefaultIssuerGroup:  "cert-manager.io",
+			ClusterIssuerLister: []runtime.Object{clusterIssuer},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						"should-be-copied":                          "true",
+						cmapi.VenafiCustomFieldsAnnotationKey:       `[ {"name": "field-name", "value": "field value"}]`,
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							"should-be-copied":                          "true",
+							cmapi.VenafiCustomFieldsAnnotationKey:       `[ {"name": "field-name", "value": "field value"}]`,
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name:  "issuer-name",
+							Kind:  "ClusterIssuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
 		},
 	}
 
@@ -1822,6 +2019,10 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -1884,6 +2085,10 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -1948,6 +2153,8 @@ func TestSync(t *testing.T) {
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "gateway-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
+							cmapi.IngressClusterIssuerNameAnnotationKey:     "issuer-name",
+							cmacme.IngressEditInPlaceAnnotationKey:          "true",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -2009,6 +2216,8 @@ func TestSync(t *testing.T) {
 							"my-test-label": "should be copied",
 						},
 						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey:     "issuer-name",
+							cmacme.IngressEditInPlaceAnnotationKey:          "true",
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "gateway-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
 						},
@@ -2062,8 +2271,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2115,8 +2327,12 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IngressClassAnnotationKey:             "nginx-ing",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2173,7 +2389,10 @@ func TestSync(t *testing.T) {
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 						Annotations: map[string]string{
-							cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
+							cmacme.ACMECertificateHTTP01IngressClassOverride:       "cert-ing",
+							cmapi.IngressClusterIssuerNameAnnotationKey:            "issuer-name",
+							cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "cert-ing",
+							cmapi.IngressClassAnnotationKey:                        "nginx-ing",
 						},
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2226,8 +2445,13 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IngressClassAnnotationKey:             "nginx-ing",
+							cmacme.IngressEditInPlaceAnnotationKey:      "false",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2278,8 +2502,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2383,8 +2610,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2446,8 +2676,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2565,6 +2798,9 @@ func TestSync(t *testing.T) {
 				buildCertificate("existing-crt",
 					gen.DefaultTestNamespace,
 					buildGatewayOwnerReferences("gateway-name"),
+					map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+					},
 				),
 			},
 			DefaultIssuerKind: "Issuer",
@@ -2572,8 +2808,11 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "existing-crt",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2966,8 +3205,13 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IssuerKindAnnotationKey:        "Issuer",
+							cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3038,8 +3282,13 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "foo-example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "foo-example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IssuerKindAnnotationKey:        "Issuer",
+							cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3055,8 +3304,13 @@ func TestSync(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "bar-example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "bar-example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+							cmapi.IssuerKindAnnotationKey:        "Issuer",
+							cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3153,6 +3407,11 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+							cmapi.CommonNameAnnotationKey:               "my-cn",
+							"cert-manager.io/usages":                    "signing,digital signature,content commitment",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -3359,11 +3618,12 @@ func TestIssuerForIngress(t *testing.T) {
 	}
 }
 
-func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerReference) *cmapi.Certificate {
+func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerReference, annotations map[string]string) *cmapi.Certificate {
 	return &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
+			Annotations:     annotations,
 			OwnerReferences: ownerReferences,
 		},
 		Spec: cmapi.CertificateSpec{
