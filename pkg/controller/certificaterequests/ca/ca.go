@@ -50,18 +50,13 @@ type CA struct {
 
 	reporter *crutil.Reporter
 
-	// Used for testing to get reproducible resulting certificates
+	// templateGenerator is used to generate templates to pass to the Go stdlib for signing.
+	// It's a member of the struct so it can be mocked for testing.
 	templateGenerator templateGenerator
-	signingFn         signingFn
-}
 
-func init() {
-	// create certificate request controller for ca issuer
-	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
-		return controllerpkg.NewBuilder(ctx, CRControllerName).
-			For(certificaterequests.New(apiutil.IssuerCA, NewCA)).
-			Complete()
-	})
+	// signingFn is the function called to actually sign certificates.
+	// It's a member of the struct so it can be mocked for testing.
+	signingFn signingFn
 }
 
 func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
@@ -136,4 +131,13 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		Certificate: bundle.ChainPEM,
 		CA:          bundle.CAPEM,
 	}, nil
+}
+
+func init() {
+	// create certificate request controller for ca issuer
+	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
+		return controllerpkg.NewBuilder(ctx, CRControllerName).
+			For(certificaterequests.New(apiutil.IssuerCA, NewCA)).
+			Complete()
+	})
 }
