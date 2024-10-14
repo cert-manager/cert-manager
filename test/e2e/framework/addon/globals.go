@@ -142,10 +142,10 @@ func ProvisionGlobals(ctx context.Context, cfg *config.Config) error {
 }
 
 type loggableAddon interface {
-	Logs() (map[string]string, error)
+	Logs(ctx context.Context) (map[string]string, error)
 }
 
-func GlobalLogs() (map[string]string, error) {
+func GlobalLogs(ctx context.Context) (map[string]string, error) {
 	out := make(map[string]string)
 	for _, p := range provisioned {
 		p, ok := p.(loggableAddon)
@@ -153,7 +153,7 @@ func GlobalLogs() (map[string]string, error) {
 			continue
 		}
 
-		l, err := p.Logs()
+		l, err := p.Logs(ctx)
 		if err != nil {
 			return nil, err
 		}
