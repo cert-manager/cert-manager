@@ -147,6 +147,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return err
 	}
 
+	// If the Certificate object is being deleted, we don't want to create any
+	// new CertificateRequests objects
+	if crt.DeletionTimestamp != nil {
+		return nil
+	}
+
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,

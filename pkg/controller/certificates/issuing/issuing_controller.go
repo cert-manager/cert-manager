@@ -180,6 +180,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return err
 	}
 
+	// If the Certificate object is being deleted, we don't want to create any
+	// new Secret objects
+	if crt.DeletionTimestamp != nil {
+		return nil
+	}
+
 	log = logf.WithResource(log, crt)
 	ctx = logf.NewContext(ctx, log)
 
