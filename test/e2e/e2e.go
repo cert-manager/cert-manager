@@ -88,7 +88,7 @@ var _ = ginkgo.SynchronizedAfterSuite(func(ctx context.Context) {
 	isGinkgoProcessNumberOne = false
 }, func(ctx context.Context) {
 	ginkgo.By("Retrieving logs for global addons")
-	globalLogs, err := addon.GlobalLogs()
+	globalLogs, err := addon.GlobalLogs(ctx)
 	if err != nil {
 		log.Logf("Failed to retrieve global addon logs: " + err.Error())
 	}
