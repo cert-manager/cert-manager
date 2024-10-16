@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -143,7 +144,8 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			err = f.Helper().ValidateCertificate(cert)
 			Expect(err).NotTo(HaveOccurred())
 
-			f.CertificateDurationValid(ctx, cert, v.expectedDuration, 0)
+			err = f.Helper().ValidateCertificate(cert, certificates.ExpectDuration(v.expectedDuration, 0))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 
