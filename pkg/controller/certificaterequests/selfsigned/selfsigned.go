@@ -58,7 +58,7 @@ type SelfSigned struct {
 	reporter *crutil.Reporter
 	recorder record.EventRecorder
 
-	// Used for testing to get reproducible resulting certificates
+	// signingFn is the function called to actually sign certificates. It's a member of the struct so it can be mocked for testing.
 	signingFn signingFn
 }
 

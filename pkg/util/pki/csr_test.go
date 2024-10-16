@@ -19,6 +19,11 @@ package pki
 import (
 	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -1075,6 +1080,130 @@ func TestEncodeX509Chain(t *testing.T) {
 			if !reflect.DeepEqual(chainOut, test.expChain) {
 				t.Errorf("unexpected output from EncodeX509Chain, exp=%+s got=%+s",
 					test.expChain, chainOut)
+			}
+		})
+	}
+}
+
+func rsaKey(t *testing.T, size int) crypto.Signer {
+	t.Helper()
+
+	key, err := rsa.GenerateKey(rand.Reader, size)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key with size %d: %s", size, err)
+	}
+
+	return key
+}
+
+func ecdsaKey(t *testing.T, curve elliptic.Curve) crypto.Signer {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate ECDSA key with curve %s: %s", curve, err)
+	}
+
+	return key
+}
+
+func ed25519Key(t *testing.T) crypto.Signer {
+	t.Helper()
+
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate ed25519 key: %s", err)
+	}
+
+	return priv
+}
+
+func Test_SignCertificate_Signatures(t *testing.T) {
+	specs := map[string]struct {
+		SignerKey                  crypto.Signer
+		ExpectedSignatureAlgorithm x509.SignatureAlgorithm
+		ExpectErr                  bool
+	}{
+		"RSA 2048": {
+			SignerKey:                  rsaKey(t, 2048),
+			ExpectedSignatureAlgorithm: x509.SHA256WithRSA,
+		},
+		"RSA 3072": {
+			SignerKey:                  rsaKey(t, 3072),
+			ExpectedSignatureAlgorithm: x509.SHA384WithRSA,
+		},
+		"RSA 4096": {
+			SignerKey:                  rsaKey(t, 4096),
+			ExpectedSignatureAlgorithm: x509.SHA512WithRSA,
+		},
+		"RSA 8192": {
+			SignerKey:                  rsaKey(t, 8192),
+			ExpectedSignatureAlgorithm: x509.SHA512WithRSA,
+		},
+		"RSA 1024 should error": {
+			SignerKey:                  rsaKey(t, 1024),
+			ExpectedSignatureAlgorithm: x509.UnknownSignatureAlgorithm,
+			ExpectErr:                  true,
+		},
+		"ECDSA P-224 should error": {
+			SignerKey:                  ecdsaKey(t, elliptic.P224()),
+			ExpectedSignatureAlgorithm: x509.UnknownSignatureAlgorithm,
+			ExpectErr:                  true,
+		},
+		"ECDSA P-256": {
+			SignerKey:                  ecdsaKey(t, elliptic.P256()),
+			ExpectedSignatureAlgorithm: x509.ECDSAWithSHA256,
+		},
+		"ECDSA P-384": {
+			SignerKey:                  ecdsaKey(t, elliptic.P384()),
+			ExpectedSignatureAlgorithm: x509.ECDSAWithSHA384,
+		},
+		"ECDSA P-521": {
+			SignerKey:                  ecdsaKey(t, elliptic.P521()),
+			ExpectedSignatureAlgorithm: x509.ECDSAWithSHA512,
+		},
+		"Ed25519": {
+			SignerKey:                  ed25519Key(t),
+			ExpectedSignatureAlgorithm: x509.PureEd25519,
+		},
+	}
+
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			signerKey := spec.SignerKey
+			pub := signerKey.Public()
+
+			serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+			if err != nil {
+				t.Fatalf("failed to generate serial number for certificate: %s", err)
+			}
+
+			tmpl := &x509.Certificate{
+				SerialNumber: serialNumber,
+
+				PublicKey: pub,
+				Subject:   pkix.Name{CommonName: "abc123"},
+
+				DNSNames: []string{"example.com"},
+			}
+
+			leafPriv := ed25519Key(t)
+			leafPub := leafPriv.Public()
+
+			_, cert, err := SignCertificate(tmpl, tmpl, leafPub, signerKey)
+			if (err != nil) != spec.ExpectErr {
+				t.Errorf("failed to SignCertificate: %s", err)
+			}
+
+			if spec.ExpectErr {
+				return
+			}
+
+			if cert.SignatureAlgorithm != spec.ExpectedSignatureAlgorithm {
+				t.Errorf("wanted sigalg=%v but got %v", spec.ExpectedSignatureAlgorithm, cert.SignatureAlgorithm)
+				return
 			}
 		})
 	}
