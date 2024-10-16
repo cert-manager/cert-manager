@@ -153,7 +153,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.StringSliceVar(&c.ACMEDNS01Config.RecursiveNameservers, "dns01-recursive-nameservers",
 		c.ACMEDNS01Config.RecursiveNameservers, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+
 			"This should be a list containing entries of the following formats: `<ip address>:<port>` or `https://<DoH RFC 8484 server address>`. "+
-			"For example: `8.8.8.8:53,8.8.4.4:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
+			"For example: `8.8.8.8:53,8.8.4.4:53,[2001:4860:4860::8888]:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
 			"To make sure ALL DNS requests happen through DoH, `dns01-recursive-nameservers-only` should also be set to true.")
 	fs.BoolVar(&c.ACMEDNS01Config.RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		c.ACMEDNS01Config.RecursiveNameserversOnly,
