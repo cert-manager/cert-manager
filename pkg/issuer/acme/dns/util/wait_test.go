@@ -308,6 +308,11 @@ func TestValidateCAA(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected err, got %s", err)
 		}
+		// ask for a CNAME where the CAA record is set on a parent label of the target
+		err = ValidateCAA(context.TODO(), "mercure-demo.dunglas.dev", []string{"letsencrypt.org"}, false, nameservers)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
 	}
 }
 
