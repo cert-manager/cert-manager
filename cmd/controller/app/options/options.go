@@ -365,7 +365,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
 		[]string{}, "A list of comma separated dns server endpoints used for "+
 			"DNS01 check requests. This should be a list containing host and "+
-			"port, for example 8.8.8.8:53,8.8.4.4:53")
+			"port, for example 8.8.8.8:53,8.8.4.4:53,[2001:4860:4860::8888]:53")
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		defaultDNS01RecursiveNameserversOnly,
 		"When true, cert-manager will only ever query the configured DNS resolvers "+
