@@ -1274,6 +1274,37 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
+
+		"invalid azuredns managedIdentity tenantID used without managedIdentity clientID ": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						TenantID: "some-tenant-id",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns managedIdentity tenantID used with resourceID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					SubscriptionID:    "test",
+					ResourceGroupName: "test",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ResourceID: "test",
+						TenantID:   "some-tenant-id",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityTenantID and managedIdentityResourceID cannot both be specified"),
+				field.Required(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"),
+			},
+		},
 		"invalid azuredns clientSecret used with managedIdentity": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{

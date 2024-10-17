@@ -466,8 +466,16 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				if p.AzureDNS.ManagedIdentity != nil {
 					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"))
 				}
-			} else if p.AzureDNS.ManagedIdentity != nil && len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
+			} else if p.AzureDNS.ManagedIdentity != nil {
+				if len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
+				}
+				if len(p.AzureDNS.ManagedIdentity.TenantID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityTenantID and managedIdentityResourceID cannot both be specified"))
+				}
+				if len(p.AzureDNS.ManagedIdentity.TenantID) > 0 && len(p.AzureDNS.ManagedIdentity.ClientID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"))
+				}
 			}
 
 			// SubscriptionID must always be defined
