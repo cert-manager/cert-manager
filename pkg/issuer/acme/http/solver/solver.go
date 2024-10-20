@@ -55,9 +55,20 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		"listen_port", h.ListenPort,
 	)
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h.Server = http.Server{
+		Addr:              fmt.Sprintf(":%d", h.ListenPort),
+		Handler:           h.challengeHandler(log),
+		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
+	}
+
+	return h.Server.ListenAndServe()
+}
+
+func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// extract vars from the request
-		host := strings.Split(r.Host, ":")[0]
+
+		host := strings.TrimSuffix(r.Host, fmt.Sprintf(":%d", h.ListenPort))
 		basePath := path.Dir(r.URL.EscapedPath())
 		token := path.Base(r.URL.EscapedPath())
 
@@ -100,13 +111,5 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, h.Key)
-	})
-
-	h.Server = http.Server{
-		Addr:              fmt.Sprintf(":%d", h.ListenPort),
-		Handler:           handler,
-		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
-
-	return h.Server.ListenAndServe()
 }
