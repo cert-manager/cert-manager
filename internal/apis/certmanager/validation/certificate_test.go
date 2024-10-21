@@ -362,7 +362,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "size"), 1024, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+				field.Invalid(fldPath.Child("privateKey", "size"), 1024, "must be between 2048 and 8192 for rsa keyAlgorithm"),
 			},
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 8196": {
@@ -379,7 +379,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "size"), 8196, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+				field.Invalid(fldPath.Child("privateKey", "size"), 8196, "must be between 2048 and 8192 for rsa keyAlgorithm"),
 			},
 		},
 		"certificate with ecdsa keyAlgorithm specified and invalid keysize": {

@@ -19,7 +19,6 @@ package vault
 import (
 	"context"
 	cryptorand "crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -37,9 +36,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
+	k8srand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const vaultToken = "vault-root-token"
@@ -70,7 +71,7 @@ func NewVaultInitializerClientCertificate(
 	details Details,
 	configureWithRoot bool,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -94,7 +95,7 @@ func NewVaultInitializerAppRole(
 	details Details,
 	configureWithRoot bool,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -119,7 +120,7 @@ func NewVaultInitializerKubernetes(
 	configureWithRoot bool,
 	apiServerURL string,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -145,7 +146,7 @@ func NewVaultInitializerAllAuth(
 	configureWithRoot bool,
 	apiServerURL string,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -828,7 +829,7 @@ func (v *VaultInitializer) setupClientCertAuth(ctx context.Context) error {
 }
 
 func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte, cert []byte, _ error) {
-	privateKey, err := rsa.GenerateKey(cryptorand.Reader, 2048)
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		return nil, nil, err
 	}
