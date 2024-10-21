@@ -110,6 +110,9 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 			if managedIdentity.ClientID != "" {
 				wcOpt.ClientID = managedIdentity.ClientID
 			}
+			if managedIdentity.TenantID != "" {
+				wcOpt.TenantID = managedIdentity.TenantID
+			}
 		}
 
 		return azidentity.NewWorkloadIdentityCredential(wcOpt)
