@@ -180,9 +180,10 @@ Any changes to this function should also be made in cert-manager, trust-manager,
 See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linked PRs.
 */}}
 {{- define "image" -}}
-{{- $defaultTag := index . 1 -}}
-{{- with index . 0 -}}
-{{- if .registry -}}{{ printf "%s/%s" .registry .repository }}{{- else -}}{{- .repository -}}{{- end -}}
+{{- $defaultTag := .appVersion -}}
+{{- $registry := default .image.registry .global.imageRegistry -}}
+{{- with .image -}}
+{{ printf "%s/%s" $registry .repository }}
 {{- if .digest -}}{{ printf "@%s" .digest }}{{- else -}}{{ printf ":%s" (default $defaultTag .tag) }}{{- end -}}
 {{- end }}
 {{- end }}
