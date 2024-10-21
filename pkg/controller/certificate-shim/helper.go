@@ -31,6 +31,7 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var (
@@ -244,7 +245,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 		switch algorithm {
 		case cmapi.RSAKeyAlgorithm:
-			if size < 2048 || size > 8192 {
+			if size < pki.MinRSAKeySize || size > pki.MaxRSAKeySize {
 				return fmt.Errorf("%w %q: invalid private key size for RSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
 			}
 		case cmapi.ECDSAKeyAlgorithm:

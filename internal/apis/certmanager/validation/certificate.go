@@ -148,8 +148,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if crt.PrivateKey != nil {
 		switch crt.PrivateKey.Algorithm {
 		case "", internalcmapi.RSAKeyAlgorithm:
-			if crt.PrivateKey.Size > 0 && (crt.PrivateKey.Size < 2048 || crt.PrivateKey.Size > 8192) {
-				el = append(el, field.Invalid(fldPath.Child("privateKey", "size"), crt.PrivateKey.Size, "must be between 2048 & 8192 for rsa keyAlgorithm"))
+			if crt.PrivateKey.Size > 0 && (crt.PrivateKey.Size < pki.MinRSAKeySize || crt.PrivateKey.Size > pki.MaxRSAKeySize) {
+				el = append(el, field.Invalid(fldPath.Child("privateKey", "size"), crt.PrivateKey.Size, fmt.Sprintf("must be between %d and %d for rsa keyAlgorithm", pki.MinRSAKeySize, pki.MaxRSAKeySize)))
 			}
 		case internalcmapi.ECDSAKeyAlgorithm:
 			if crt.PrivateKey.Size > 0 && crt.PrivateKey.Size != 256 && crt.PrivateKey.Size != 384 && crt.PrivateKey.Size != 521 {
