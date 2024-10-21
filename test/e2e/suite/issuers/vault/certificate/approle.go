@@ -27,6 +27,7 @@ import (
 	vaultaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -266,7 +267,8 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 			Expect(err).NotTo(HaveOccurred())
 
 			// Vault subtract 30 seconds to the NotBefore date.
-			f.CertificateDurationValid(ctx, cert, v.expectedDuration, time.Second*30)
+			err = f.Helper().ValidateCertificate(cert, certificates.ExpectDuration(v.expectedDuration, time.Second*30))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }
