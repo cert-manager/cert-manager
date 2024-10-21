@@ -79,6 +79,9 @@ spec:
           {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
+          {{- if .Values.global.logFormat }}
+          - --logging-format={{ .Values.global.logFormat }}
+          {{- end }}
           {{- if .Values.webhook.config }}
           - --config=/var/cert-manager/config/config.yaml
           {{- end }}

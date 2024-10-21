@@ -45,6 +45,9 @@ global:
   # Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.
   logLevel: 2
 
+  # Set the log format of cert-manager. Log formats are text, json.
+  logFormat: text
+
   leaderElection:
     # Override the namespace used for the leader election lease.
     namespace: "kube-system"
