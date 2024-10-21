@@ -18,7 +18,6 @@ package pki_test
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
 	"reflect"
@@ -27,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -443,7 +443,7 @@ func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) *x509.Certifi
 	}
 
 	// Marshal and unmarshal to ensure all fields are set correctly
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, pk.Public(), pk)
+	certDER, err := x509.CreateCertificate(cmrand.Reader, template, template, pk.Public(), pk)
 	if err != nil {
 		t.Fatal(err)
 	}

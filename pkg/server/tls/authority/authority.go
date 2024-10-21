@@ -20,13 +20,11 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
-	"math/big"
 	"sync"
 	"time"
 
@@ -45,6 +43,7 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -203,15 +202,17 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 		return nil, fmt.Errorf("failed decoding CA private key: %v", err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	serialNumber, err := cmrand.SerialNumber()
 	if err != nil {
 		return nil, err
 	}
+
 	template.Version = 3
 	template.SerialNumber = serialNumber
 	template.BasicConstraintsValid = true
 	template.NotBefore = time.Now()
 	template.NotAfter = template.NotBefore.Add(d.LeafDuration)
+
 	// explicitly handle the case of the root CA certificate being expired
 	if caCert.NotAfter.Before(template.NotBefore) {
 		return nil, fmt.Errorf("internal error: CA certificate has expired, try again later")
@@ -339,8 +340,6 @@ func caRequiresRegeneration(s *corev1.Secret) (bool, string) {
 	return false, ""
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
 // regenerateCA will regenerate and store a new CA.
 // If the provided Secret is nil, a new secret resource will be Created.
 // Otherwise, the provided resource will be modified and Updated.
@@ -354,10 +353,11 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	serialNumber, err := cmrand.SerialNumber()
 	if err != nil {
 		return err
 	}
+
 	cert := &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,

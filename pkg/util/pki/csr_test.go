@@ -20,9 +20,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/ed25519"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -38,6 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
@@ -1088,7 +1087,17 @@ func TestEncodeX509Chain(t *testing.T) {
 func rsaKey(t *testing.T, size int) crypto.Signer {
 	t.Helper()
 
-	key, err := rsa.GenerateKey(rand.Reader, size)
+	var key crypto.Signer
+	var err error
+
+	if size < MinRSAKeySize {
+		// Special case; GenerateRSAPrivateKey doesn't support insecure keys but we want one for
+		// testing in this case.
+		key, err = rsa.GenerateKey(cmrand.Reader, size)
+	} else {
+		key, err = GenerateRSAPrivateKey(size)
+	}
+
 	if err != nil {
 		t.Fatalf("failed to generate RSA key with size %d: %s", size, err)
 	}
@@ -1096,12 +1105,23 @@ func rsaKey(t *testing.T, size int) crypto.Signer {
 	return key
 }
 
-func ecdsaKey(t *testing.T, curve elliptic.Curve) crypto.Signer {
+func ecdsaKey(t *testing.T, size int) crypto.Signer {
 	t.Helper()
 
-	key, err := ecdsa.GenerateKey(curve, rand.Reader)
+	var key crypto.Signer
+	var err error
+
+	if size == 224 {
+		// Special case; we don't support P224 in our keygen (because it's not widely used in
+		// web PKI).
+		// So we have to manually generate a curve here with different logic
+		key, err = ecdsa.GenerateKey(elliptic.P224(), cmrand.Reader)
+	} else {
+		key, err = GenerateECPrivateKey(size)
+	}
+
 	if err != nil {
-		t.Fatalf("failed to generate ECDSA key with curve %s: %s", curve, err)
+		t.Fatalf("failed to generate ECDSA key with curve %d: %s", size, err)
 	}
 
 	return key
@@ -1110,7 +1130,7 @@ func ecdsaKey(t *testing.T, curve elliptic.Curve) crypto.Signer {
 func ed25519Key(t *testing.T) crypto.Signer {
 	t.Helper()
 
-	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	priv, err := GenerateEd25519PrivateKey()
 	if err != nil {
 		t.Fatalf("failed to generate ed25519 key: %s", err)
 	}
@@ -1146,20 +1166,20 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 			ExpectErr:                  true,
 		},
 		"ECDSA P-224 should error": {
-			SignerKey:                  ecdsaKey(t, elliptic.P224()),
+			SignerKey:                  ecdsaKey(t, 224),
 			ExpectedSignatureAlgorithm: x509.UnknownSignatureAlgorithm,
 			ExpectErr:                  true,
 		},
 		"ECDSA P-256": {
-			SignerKey:                  ecdsaKey(t, elliptic.P256()),
+			SignerKey:                  ecdsaKey(t, 256),
 			ExpectedSignatureAlgorithm: x509.ECDSAWithSHA256,
 		},
 		"ECDSA P-384": {
-			SignerKey:                  ecdsaKey(t, elliptic.P384()),
+			SignerKey:                  ecdsaKey(t, 384),
 			ExpectedSignatureAlgorithm: x509.ECDSAWithSHA384,
 		},
 		"ECDSA P-521": {
-			SignerKey:                  ecdsaKey(t, elliptic.P521()),
+			SignerKey:                  ecdsaKey(t, 521),
 			ExpectedSignatureAlgorithm: x509.ECDSAWithSHA512,
 		},
 		"Ed25519": {
@@ -1175,7 +1195,7 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 			signerKey := spec.SignerKey
 			pub := signerKey.Public()
 
-			serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+			serialNumber, err := cmrand.SerialNumber()
 			if err != nil {
 				t.Fatalf("failed to generate serial number for certificate: %s", err)
 			}
