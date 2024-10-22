@@ -37,6 +37,7 @@ jobs:
           GOEXPERIMENT: boringcrypto
           HOST_ARCH: amd64
           TAG: ${{ github.event.inputs.tag }}
+          RELEASE_VERSION: ${{ github.event.inputs.tag }}
         run: make RELEASE_VERSION=${TAG} GOLDFLAGS='-linkmode "external" -extldflags "-static"' _bin/release/cert-manager-server-linux-amd64.tar.gz
       - name: Build and push vanilla images
         if: ${{ !contains(github.event.inputs.tag,'fips') }}
