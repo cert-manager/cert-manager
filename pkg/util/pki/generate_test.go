@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -32,6 +31,7 @@ import (
 	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 )
 
 func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) *v1.Certificate {
@@ -249,7 +249,7 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 func signTestCert(key crypto.Signer) *x509.Certificate {
 	commonName := "testingcert"
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	serialNumber, err := cmrand.SerialNumber()
 	if err != nil {
 		panic(fmt.Errorf("failed to generate serial number: %s", err.Error()))
 	}
@@ -325,11 +325,11 @@ func TestPublicKeyMatchesCertificateRequest(t *testing.T) {
 		},
 	}
 
-	csr1, err := x509.CreateCertificateRequest(rand.Reader, template, privKey1)
+	csr1, err := x509.CreateCertificateRequest(cmrand.Reader, template, privKey1)
 	if err != nil {
 		t.Errorf("error generating csr1: %v", err)
 	}
-	csr2, err := x509.CreateCertificateRequest(rand.Reader, template, privKey2)
+	csr2, err := x509.CreateCertificateRequest(cmrand.Reader, template, privKey2)
 	if err != nil {
 		t.Errorf("error generating csr2: %v", err)
 	}
@@ -477,13 +477,13 @@ O7WnDn8nuLFdW+NzzbIrTw==
 }
 
 func TestPublicKeysEqualECDSA(t *testing.T) {
-	key1, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	key1, err := ecdsa.GenerateKey(elliptic.P256(), cmrand.Reader)
 	if err != nil {
 		t.Fatalf("couldn't generate P256 key: %v", err)
 	}
 
 	// note the different curve type
-	key2, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	key2, err := ecdsa.GenerateKey(elliptic.P521(), cmrand.Reader)
 	if err != nil {
 		t.Fatalf("couldn't generate P521 key: %v", err)
 	}
