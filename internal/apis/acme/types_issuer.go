@@ -594,6 +594,8 @@ type AzureManagedIdentity struct {
 	ClientID string
 
 	ResourceID string
+
+	TenantID string
 }
 
 type AzureDNSEnvironment string
