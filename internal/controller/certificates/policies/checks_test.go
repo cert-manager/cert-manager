@@ -41,7 +41,7 @@ import (
 // to ensure we do not break behaviour when introducing a new policy or
 // modifying existing code.
 func Test_NewTriggerPolicyChain(t *testing.T) {
-	clock := &fakeclock.FakeClock{}
+	clock := fakeclock.NewFakeClock(time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
 	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
@@ -436,7 +436,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0001-01-01 00:00:00 +0000 UTC",
+			message: "Renewing certificate as renewal was scheduled at 1970-01-01 00:00:00 +0000 UTC",
 			reissue: true,
 		},
 		"trigger renewal if renewalTime is in the past": {
@@ -473,7 +473,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
+			message: "Renewing certificate as renewal was scheduled at 1969-12-31 23:59:00 +0000 UTC",
 			reissue: true,
 		},
 		"does not trigger renewal if the x509 cert has been re-issued, but Certificate's renewal time has not been updated yet": {
