@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"reflect"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -38,6 +39,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/cronexpr"
 )
 
@@ -213,10 +215,51 @@ func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (f
 	return allErrs, nil
 }
 
+func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) bool {
+	// primitive compares
+	if oldSpec.CommonName != newSpec.CommonName || oldSpec.LiteralSubject != newSpec.LiteralSubject || oldSpec.IsCA != newSpec.IsCA || oldSpec.IssuerRef != newSpec.IssuerRef ||
+		oldSpec.RenewTimeWindow != newSpec.RenewTimeWindow || oldSpec.RenewBeforePercentage != newSpec.RenewBeforePercentage {
+		return true
+	}
+	if (oldSpec.Duration != nil && newSpec.Duration != nil && oldSpec.Duration.Duration != newSpec.Duration.Duration) ||
+		(oldSpec.Duration == nil && newSpec.Duration != nil) ||
+		(oldSpec.Duration != nil && newSpec.Duration == nil) {
+		return true
+	}
+	if (oldSpec.RenewBefore != nil && newSpec.RenewBefore != nil && oldSpec.RenewBefore.Duration != newSpec.RenewBefore.Duration) ||
+		(oldSpec.RenewBefore == nil && newSpec.RenewBefore != nil) ||
+		(oldSpec.RenewBefore != nil && newSpec.RenewBefore == nil) {
+		return true
+	}
+	if !reflect.DeepEqual(oldSpec.DNSNames, newSpec.DNSNames) || !reflect.DeepEqual(oldSpec.EmailAddresses, newSpec.EmailAddresses) || !reflect.DeepEqual(oldSpec.IPAddresses, newSpec.IPAddresses) ||
+		!reflect.DeepEqual(oldSpec.OtherNames, newSpec.OtherNames) || !reflect.DeepEqual(oldSpec.URIs, newSpec.URIs) || !reflect.DeepEqual(oldSpec.NameConstraints, newSpec.NameConstraints) ||
+		!reflect.DeepEqual(oldSpec.Subject, newSpec.Subject) || !reflect.DeepEqual(oldSpec.Usages, newSpec.Usages) {
+		return true
+	}
+
+	return false
+}
+
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	oldCrt := oldObj.(*internalcmapi.Certificate)
 	crt := obj.(*internalcmapi.Certificate)
+	notAfter := time.Now()
+	if !reflect.DeepEqual(oldObj, obj) {
+		fmt.Println("objects differ")
+		if specChangeRequiresReIssue(&oldCrt.Spec, &crt.Spec) {
+			fmt.Println("spec change requires re-issue")
+		} else {
+			// TODO: maybe the last applied configuration needs to be checked as the change apparently already happened, why?
+			fmt.Println("this should not happen")
+			fmt.Println(cmp.Diff(oldCrt, crt))
+		}
+	} else {
+		if crt.Status.NotAfter != nil {
+			notAfter = crt.Status.NotAfter.Time
+		}
+	}
 	// TODO: determine if changes require re-issuance, which means a new notAfter
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), crt.Status.NotAfter.Time)
+	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), notAfter)
 	return allErrs, nil
 }
 

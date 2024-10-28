@@ -195,7 +195,7 @@ type CertificateSpec struct {
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 
-	// Requested IP address subject alternative names	.
+	// Requested IP address subject alternative names.
 	// +optional
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 

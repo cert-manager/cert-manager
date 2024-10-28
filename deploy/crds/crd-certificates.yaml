@@ -484,6 +484,12 @@ spec:
                     Cannot be set if the `renewBefore` field is set.
                   type: integer
                   format: int32
+                renewTimeWindow:
+                  description: |-
+                    The window in which certificate renewals are done.
+                    If set to a valid cron expression the RenewalTime will be set to the next date matching the expression,
+                    following RenewBefore, respective RenewBeforePercentage.
+                  type: string
                 revisionHistoryLimit:
                   description: |-
                     The maximum number of CertificateRequest revisions that are maintained in

@@ -41,6 +41,7 @@ import (
 // to ensure we do not break behaviour when introducing a new policy or
 // modifying existing code.
 func Test_NewTriggerPolicyChain(t *testing.T) {
+	// cronexpr doesn't work with dates before 1970, so this needs to be initialised
 	clock := fakeclock.NewFakeClock(time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
 	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
