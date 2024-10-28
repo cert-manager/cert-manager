@@ -24,7 +24,7 @@ import (
 )
 
 // RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
-type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, cronexpr.Expression) *metav1.Time
+type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, string) *metav1.Time
 
 // RenewalTime calculates renewal time for a certificate.
 // If renewBefore is non-nil and less than the certificate's lifetime, renewal
@@ -33,7 +33,7 @@ type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, cronex
 // will be the computed period before expiry based on the renewBeforePercentage
 // value and certificate lifetime.
 // Default renewal time is 2/3 through certificate's lifetime.
-func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewTimeWindow cronexpr.Expression) *metav1.Time {
+func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewTimeWindow string) *metav1.Time {
 	// 1. Calculate how long before expiry a cert should be renewed
 	actualDuration := notAfter.Sub(notBefore)
 
@@ -51,7 +51,11 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	// re-queued for renewal earlier than the calculated renewal time thus
 	// causing Certificates to not be automatically renewed. See
 	// https://github.com/cert-manager/cert-manager/pull/4399.
-	rt := metav1.NewTime(renewTimeWindow.Next(metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Truncate(time.Second)).Time))
+	if renewTimeWindow == "" {
+		renewTimeWindow = "* * * * * * *"
+	}
+	expr := *cronexpr.MustParse(renewTimeWindow)
+	rt := metav1.NewTime(expr.Next(metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Truncate(time.Second)).Time))
 	return &rt
 }
 
