@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: example-gateway
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/renew-before: "24h"
+    temporary-cert: "true"
+spec:
+  selector:
+    istio: ingressgateway # use Istio's default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "example.com"
+    tls:
+      credentialName: example-com-tls
+      mode: SIMPLE
