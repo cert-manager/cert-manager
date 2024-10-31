@@ -21,9 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 
-	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -39,7 +39,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/cronexpr"
 )
 
