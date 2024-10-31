@@ -56,7 +56,8 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	}
 	// This should never panic as it has been passed by the validation function
 	expr := *cronexpr.MustParse(renewTimeWindow)
-	rt := metav1.NewTime(expr.Next(metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Truncate(time.Second)).Time))
+	// remove one second as cronexpr otherwise will only use the next second after it
+	rt := metav1.NewTime(expr.Next(metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Add(-1 * time.Second).Truncate(time.Second)).Time))
 	return &rt
 }
 
