@@ -936,11 +936,11 @@ func TestValidateDuration(t *testing.T) {
 		"invalid renewWindow": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					Duration:              usefulDurations["one day"],
-					RenewBefore: usefulDurations["one hour"],
-					CommonName:            "testcn",
-					SecretName:            "abc",
-					IssuerRef:             validIssuerRef,
+					Duration:        usefulDurations["one day"],
+					RenewBefore:     usefulDurations["one hour"],
+					CommonName:      "testcn",
+					SecretName:      "abc",
+					IssuerRef:       validIssuerRef,
 					RenewTimeWindow: "not a cron expression",
 				},
 			},
@@ -949,29 +949,29 @@ func TestValidateDuration(t *testing.T) {
 		"renewWindow only from 06:00-06:59, works": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					Duration:              usefulDurations["one day"],
-					RenewBefore: usefulDurations["one hour"],
-					CommonName:            "testcn",
-					SecretName:            "abc",
-					IssuerRef:             validIssuerRef,
+					Duration:        usefulDurations["one day"],
+					RenewBefore:     usefulDurations["one hour"],
+					CommonName:      "testcn",
+					SecretName:      "abc",
+					IssuerRef:       validIssuerRef,
 					RenewTimeWindow: "* 6 * * *",
 				},
 			},
-			notAfter: time.Date(2025,01,01,7,0,0,0,time.UTC),
+			notAfter: time.Date(2025, 01, 01, 7, 0, 0, 0, time.UTC),
 		},
 		"renewWindow only from 06:00-06:59, does not work": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					Duration:              usefulDurations["one day"],
-					RenewBefore: usefulDurations["one hour"],
-					CommonName:            "testcn",
-					SecretName:            "abc",
-					IssuerRef:             validIssuerRef,
+					Duration:        usefulDurations["one day"],
+					RenewBefore:     usefulDurations["one hour"],
+					CommonName:      "testcn",
+					SecretName:      "abc",
+					IssuerRef:       validIssuerRef,
 					RenewTimeWindow: "* 6 * * *",
 				},
 			},
-			notAfter: time.Date(2025,01,01,8,0,0,0,time.UTC),
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewTimeWindow"), "* 6 * * *", "next renewTime 2025-01-02 06:00:00 +0000 UTC that fits window * 6 * * * and renewBefore 1h0m0s is after 2025-01-01 08:00:00 +0000 UTC")},
+			notAfter: time.Date(2025, 01, 01, 8, 0, 0, 0, time.UTC),
+			errs:     []*field.Error{field.Invalid(fldPath.Child("renewTimeWindow"), "* 6 * * *", "certificate would expire before next renewTimeWindow, calculated renewTime is 2025-01-02 06:00:00 +0000 UTC")},
 		},
 	}
 	for n, s := range scenarios {

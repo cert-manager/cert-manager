@@ -404,7 +404,7 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path, n
 		}
 		renewTime := expr.Next(notAfter.Add(-renewBefore))
 		if renewTime.After(notAfter) {
-			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("next renewTime %s that fits window %s and renewBefore %s is after %s", renewTime, crt.RenewTimeWindow, renewBefore, notAfter)))
+			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("certificate would expire (%s) before next renewTimeWindow, calculated renewTime is %s", notAfter, renewTime)))
 		}
 	}
 
