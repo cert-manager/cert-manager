@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 
+	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -89,6 +91,10 @@ func (h *validator) Handle(ctx context.Context, req admission.Request) admission
 		}
 		if oldObj, err = h.decoder.DecodeRaw(req.OldObject, gvk); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if !reflect.DeepEqual(oldObj, obj) {
+			fmt.Println("objects differ in handle function")
+			fmt.Println(cmp.Diff(oldObj, obj))
 		}
 
 		warnings, err = h.validationWebhook.Validate(ctx, req.AdmissionRequest, oldObj, obj)
