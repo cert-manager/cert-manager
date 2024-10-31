@@ -92,10 +92,6 @@ func (h *validator) Handle(ctx context.Context, req admission.Request) admission
 		if oldObj, err = h.decoder.DecodeRaw(req.OldObject, gvk); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if !reflect.DeepEqual(oldObj, obj) {
-			fmt.Println("objects differ in handle function")
-			fmt.Println(cmp.Diff(oldObj, obj))
-		}
 
 		warnings, err = h.validationWebhook.Validate(ctx, req.AdmissionRequest, oldObj, obj)
 	case admissionv1.Delete:

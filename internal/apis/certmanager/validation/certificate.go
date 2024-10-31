@@ -243,22 +243,14 @@ func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
 	oldCrt := oldObj.(*internalcmapi.Certificate)
 	crt := obj.(*internalcmapi.Certificate)
-	notAfter := time.Now()
-	if !reflect.DeepEqual(oldObj, obj) {
-		fmt.Println("objects differ")
-		if specChangeRequiresReIssue(&oldCrt.Spec, &crt.Spec) {
-			fmt.Println("spec change requires re-issue")
-		} else {
-			// TODO: maybe the last applied configuration needs to be checked as the change apparently already happened, why?
-			fmt.Println("this should not happen")
-			fmt.Println(cmp.Diff(oldCrt, crt))
-		}
+	notAfter := time.Time{}
+	if specChangeRequiresReIssue(&oldCrt.Spec, &crt.Spec) {
+		notAfter = time.Now()
 	} else {
 		if crt.Status.NotAfter != nil {
 			notAfter = crt.Status.NotAfter.Time
 		}
 	}
-	// TODO: determine if changes require re-issuance, which means a new notAfter
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), notAfter)
 	return allErrs, nil
 }
