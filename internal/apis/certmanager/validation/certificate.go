@@ -216,25 +216,34 @@ func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (f
 
 func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) bool {
 	// primitive compares
-	if oldSpec.CommonName != newSpec.CommonName || oldSpec.LiteralSubject != newSpec.LiteralSubject || oldSpec.IsCA != newSpec.IsCA || oldSpec.IssuerRef != newSpec.IssuerRef ||
-		oldSpec.RenewTimeWindow != newSpec.RenewTimeWindow || oldSpec.RenewBeforePercentage != newSpec.RenewBeforePercentage {
+	if oldSpec.CommonName != newSpec.CommonName ||
+		oldSpec.LiteralSubject != newSpec.LiteralSubject ||
+		oldSpec.IsCA != newSpec.IsCA ||
+		oldSpec.IssuerRef != newSpec.IssuerRef ||
+		oldSpec.RenewTimeWindow != newSpec.RenewTimeWindow ||
+		oldSpec.RenewBeforePercentage != newSpec.RenewBeforePercentage ||
+		!reflect.DeepEqual(oldSpec.DNSNames, newSpec.DNSNames) ||
+		!reflect.DeepEqual(oldSpec.EmailAddresses, newSpec.EmailAddresses) ||
+		!reflect.DeepEqual(oldSpec.IPAddresses, newSpec.IPAddresses) ||
+		!reflect.DeepEqual(oldSpec.OtherNames, newSpec.OtherNames) ||
+		!reflect.DeepEqual(oldSpec.URIs, newSpec.URIs) ||
+		!reflect.DeepEqual(oldSpec.NameConstraints, newSpec.NameConstraints) ||
+		!reflect.DeepEqual(oldSpec.Subject, newSpec.Subject) ||
+		!reflect.DeepEqual(oldSpec.Usages, newSpec.Usages) ||
+		!reflect.DeepEqual(oldSpec.Duration, newSpec.Duration) ||
+		!reflect.DeepEqual(oldSpec.RenewBefore, newSpec.RenewBefore) {
 		return true
 	}
-	if (oldSpec.Duration != nil && newSpec.Duration != nil && oldSpec.Duration.Duration != newSpec.Duration.Duration) ||
-		(oldSpec.Duration == nil && newSpec.Duration != nil) ||
-		(oldSpec.Duration != nil && newSpec.Duration == nil) {
-		return true
-	}
-	if (oldSpec.RenewBefore != nil && newSpec.RenewBefore != nil && oldSpec.RenewBefore.Duration != newSpec.RenewBefore.Duration) ||
-		(oldSpec.RenewBefore == nil && newSpec.RenewBefore != nil) ||
-		(oldSpec.RenewBefore != nil && newSpec.RenewBefore == nil) {
-		return true
-	}
-	if !reflect.DeepEqual(oldSpec.DNSNames, newSpec.DNSNames) || !reflect.DeepEqual(oldSpec.EmailAddresses, newSpec.EmailAddresses) || !reflect.DeepEqual(oldSpec.IPAddresses, newSpec.IPAddresses) ||
-		!reflect.DeepEqual(oldSpec.OtherNames, newSpec.OtherNames) || !reflect.DeepEqual(oldSpec.URIs, newSpec.URIs) || !reflect.DeepEqual(oldSpec.NameConstraints, newSpec.NameConstraints) ||
-		!reflect.DeepEqual(oldSpec.Subject, newSpec.Subject) || !reflect.DeepEqual(oldSpec.Usages, newSpec.Usages) {
-		return true
-	}
+	// if (oldSpec.Duration != nil && newSpec.Duration != nil && oldSpec.Duration.Duration != newSpec.Duration.Duration) ||
+	// 	(oldSpec.Duration == nil && newSpec.Duration != nil) ||
+	// 	(oldSpec.Duration != nil && newSpec.Duration == nil) {
+	// 	return true
+	// }
+	// if (oldSpec.RenewBefore != nil && newSpec.RenewBefore != nil && oldSpec.RenewBefore.Duration != newSpec.RenewBefore.Duration) ||
+	// 	(oldSpec.RenewBefore == nil && newSpec.RenewBefore != nil) ||
+	// 	(oldSpec.RenewBefore != nil && newSpec.RenewBefore == nil) {
+	// 	return true
+	// }
 
 	return false
 }
@@ -398,13 +407,25 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path, n
 		}
 	}
 	if crt.RenewTimeWindow != "" {
-		expr, err := cronexpr.Parse(crt.RenewTimeWindow)
+		_, err := cronexpr.Parse(crt.RenewTimeWindow)
 		if err != nil {
 			return append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
 		}
-		renewTime := expr.Next(notAfter.Add(-renewBefore))
+		renewTime := pki.RenewalTime(notAfter.Add(-1*duration), notAfter, crt.RenewBefore, crt.RenewBeforePercentage, crt.RenewTimeWindow)
 		if renewTime.After(notAfter) {
-			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("certificate would expire (%s) before next renewTimeWindow, calculated renewTime is %s", notAfter, renewTime)))
+			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow, calculated renewTime is %s", renewTime)))
+		} else {
+			// calculate if there are conflicts with the renewalWindow and the other parameters for the next year
+			oneYearLater := notAfter.Add(time.Hour * 24 * 365)
+			for renewTime.Time.Before(oneYearLater) {
+				notBefore := renewTime.Time
+				notAfter = notBefore.Add(duration)
+				renewTime = pki.RenewalTime(notBefore, notAfter, crt.RenewBefore, crt.RenewBeforePercentage, crt.RenewTimeWindow)
+				if renewTime.After(notAfter) {
+					el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow in subsequent renewal, calculated renewTime is %s, notBefore %s, notAfter %s", renewTime, notBefore, notAfter)))
+					break // one fail is enough
+				}
+			}
 		}
 	}
 
