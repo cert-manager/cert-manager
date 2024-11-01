@@ -25,12 +25,12 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
@@ -423,11 +423,16 @@ O7WnDn8nuLFdW+NzzbIrTw==
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			block, _ := pem.Decode(privateKeyBytes)
+			block, _, err := pem.SafeDecodePrivateKey(privateKeyBytes)
+			if err != nil {
+				t.Fatalf("expected no PEM decode err but got %s", err)
+			}
+
 			decodedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			encodedKey, err := EncodePrivateKey(decodedKey, test.keyEncoding)
 			if test.expectErr {
 				if err == nil {
@@ -449,7 +454,10 @@ O7WnDn8nuLFdW+NzzbIrTw==
 
 				expectedEncoding := test.keyEncoding
 				actualEncoding := v1.PrivateKeyEncoding("")
-				block, _ := pem.Decode(encodedKey)
+				block, _, err := pem.SafeDecodePrivateKey(encodedKey)
+				if err != nil {
+					t.Fatalf("expected no PEM decode err but got %s", err)
+				}
 
 				switch block.Type {
 				case "PRIVATE KEY":
