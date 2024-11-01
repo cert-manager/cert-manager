@@ -37,6 +37,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalorders "github.com/cert-manager/cert-manager/internal/controller/orders"
+	safepem "github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -511,13 +512,17 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// only supported DER encoded CSRs and not PEM encoded as they are intended
 	// to be as part of our API.
 	// To work around this, we first attempt to decode the Request into DER bytes
-	// by running pem.Decode. If the PEM block is empty, we assume that the Request
+	// by running pem.SafeDecodeCSR. If the PEM block is empty, we assume that the Request
 	// is DER encoded and continue to call FinalizeOrder.
 	var derBytes []byte
-	block, _ := pem.Decode(o.Spec.Request)
-	if block == nil {
-		log.V(logf.WarnLevel).Info("failed to parse Request as PEM data, attempting to treat Request as DER encoded for compatibility reasons")
-		derBytes = o.Spec.Request
+	block, _, err := safepem.SafeDecodeCSR(o.Spec.Request)
+	if err != nil {
+		if err == safepem.ErrNoPEMData {
+			log.V(logf.WarnLevel).Info("failed to parse Request as PEM data, attempting to treat Request as DER encoded for compatibility reasons")
+			derBytes = o.Spec.Request
+		} else {
+			return err
+		}
 	} else {
 		derBytes = block.Bytes
 	}

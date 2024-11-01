@@ -90,7 +90,7 @@ func joinPEM(first []byte, rest ...[]byte) []byte {
 	return first
 }
 
-func TestParseSingleCertificateChain(t *testing.T) {
+func TestParseSingleCertificateChainPEM(t *testing.T) {
 	root := mustCreateBundle(t, nil, "root")
 	intA1 := mustCreateBundle(t, root, "intA-1")
 	intA2 := mustCreateBundle(t, intA1, "intA-2")
@@ -100,20 +100,20 @@ func TestParseSingleCertificateChain(t *testing.T) {
 	leafInterCN := mustCreateBundle(t, intA2, intA2.cert.Subject.CommonName)
 	random := mustCreateBundle(t, nil, "random")
 
-	var thousandCertBundle PEMBundle
+	var bigCertBundle PEMBundle
 	{
 		root := mustCreateBundle(t, nil, "root")
-		thousandCertBundle.CAPEM = root.pem
+		bigCertBundle.CAPEM = root.pem
 
 		cert := root
 		var pems [][]byte
-		for i := 0; i < 999; i++ {
+		for i := 0; i < 100; i++ {
 			cert = mustCreateBundle(t, cert, fmt.Sprintf("int-%d", i))
 			pems = append(pems, cert.pem)
 		}
 
 		for _, pem := range slices.Backward(pems) {
-			thousandCertBundle.ChainPEM = joinPEM(thousandCertBundle.ChainPEM, pem)
+			bigCertBundle.ChainPEM = joinPEM(bigCertBundle.ChainPEM, pem)
 		}
 	}
 
@@ -212,18 +212,18 @@ func TestParseSingleCertificateChain(t *testing.T) {
 			expPEMBundle: PEMBundle{ChainPEM: joinPEM(root.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
-		"if long chain is passed (<= 1000 certs), a result should be returned quickly": {
-			inputBundle:  joinPEM(thousandCertBundle.ChainPEM, thousandCertBundle.CAPEM),
-			expPEMBundle: thousandCertBundle,
+		"if acceptable long chain is passed, a result should be returned quickly": {
+			inputBundle:  joinPEM(bigCertBundle.ChainPEM, bigCertBundle.CAPEM),
+			expPEMBundle: bigCertBundle,
 			expErr:       false,
 		},
-		"if very long chain is passed (> 1000 certs), should error without DoS (1)": {
+		"if unacceptably long chain is passed, should error without DoS": {
 			inputBundle: func() []byte {
 				root := mustCreateBundle(t, nil, "root")
 
 				cert := root
 				var chain []byte
-				for i := 0; i < 1001; i++ {
+				for i := 0; i < 501; i++ {
 					cert = mustCreateBundle(t, cert, fmt.Sprintf("int-%d", i))
 					chain = joinPEM(chain, cert.pem)
 				}
@@ -232,24 +232,7 @@ func TestParseSingleCertificateChain(t *testing.T) {
 			}(),
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
-			expErrString: "certificate chain is too long, must be less than 1000 certificates",
-		},
-		"if very long chain is passed (> 1000 certs), should error without DoS (2)": {
-			inputBundle: func() []byte {
-				root := mustCreateBundle(t, nil, "root")
-
-				cert := root
-				var chain []byte
-				for i := 0; i < 10000; i++ {
-					cert = mustCreateBundle(t, cert, fmt.Sprintf("int-%d", i))
-					chain = joinPEM(chain, cert.pem)
-				}
-
-				return chain
-			}(),
-			expPEMBundle: PEMBundle{},
-			expErr:       true,
-			expErrString: "certificate chain is too long, must be less than 1000 certificates",
+			expErrString: "provided PEM data was larger than the maximum 65000B",
 		},
 	}
 
@@ -276,5 +259,27 @@ func TestParseSingleCertificateChain(t *testing.T) {
 					test.expPEMBundle, bundle)
 			}
 		})
+	}
+}
+
+func TestParseSingleCertificateChain(t *testing.T) {
+	// ParseSingleCertificateChain is mostly tested in TestParseSingleCertificateChainPEM;
+	// this test checks that passing in too many small certs is correctly rejected
+	var inputBundle []*x509.Certificate
+
+	for i := 0; i < 1001; i++ {
+		cert := mustCreateBundle(t, nil, fmt.Sprintf("cert-%d", i))
+		inputBundle = append(inputBundle, cert.cert)
+	}
+
+	_, err := ParseSingleCertificateChain(inputBundle)
+	if err == nil {
+		t.Fatalf("expected error but got none from ParseSingleCertificateChain")
+	}
+
+	expErr := "certificate chain is too long, must be less than 1000 certificates"
+
+	if err.Error() != expErr {
+		t.Fatalf("expected err to be %s but it was %s", expErr, err.Error())
 	}
 }

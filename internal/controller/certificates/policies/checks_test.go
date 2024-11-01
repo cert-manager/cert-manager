@@ -17,7 +17,6 @@ limitations under the License.
 package policies
 
 import (
-	"encoding/pem"
 	"testing"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -1125,7 +1125,11 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 func Test_SecretAdditionalOutputFormatsMismatch(t *testing.T) {
 	cert := []byte("a")
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
-	block, _ := pem.Decode(pk)
+	block, _, err := pem.SafeDecodePrivateKey(pk)
+	if err != nil {
+		t.Fatalf("got unexpected error decoding PEM: %s", err)
+	}
+
 	pkDER := block.Bytes
 	combinedPEM := append(append(pk, '\n'), cert...)
 
