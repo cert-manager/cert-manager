@@ -72,6 +72,14 @@ func TestSolver(t *testing.T) {
 			requestTarget:        "http://192.168.1.1:8080" + HTTPChallengePath + "/secret",
 			expectedResponseCode: http.StatusOK,
 		},
+		"return ok with ipv4 when request goes through proxy": {
+			solverPort:           8080,
+			solverDomain:         "192.168.1.1",
+			solverToken:          "secret",
+			solverKey:            "test-key",
+			requestTarget:        "http://192.168.1.1:80" + HTTPChallengePath + "/secret",
+			expectedResponseCode: http.StatusOK,
+		},
 		"return ok with ipv4 without specified port in the request": {
 			solverPort:           80,
 			solverDomain:         "192.168.1.1",
@@ -85,7 +93,7 @@ func TestSolver(t *testing.T) {
 			solverDomain:         "2001:db8:3333:4444:5555:6666:7777:8888",
 			solverToken:          "secret",
 			solverKey:            "test-key",
-			requestTarget:        "http://2001:db8:3333:4444:5555:6666:7777:8888:1234" + HTTPChallengePath + "/secret",
+			requestTarget:        "http://[2001:db8:3333:4444:5555:6666:7777:8888]:1234" + HTTPChallengePath + "/secret",
 			expectedResponseCode: http.StatusOK,
 		},
 		"return ok with ipv6 - 2": {
@@ -93,7 +101,7 @@ func TestSolver(t *testing.T) {
 			solverDomain:         "2a00:8a00:4000:435::13a",
 			solverToken:          "secret",
 			solverKey:            "test-key",
-			requestTarget:        "http://2a00:8a00:4000:435::13a:1234" + HTTPChallengePath + "/secret",
+			requestTarget:        "http://[2a00:8a00:4000:435::13a]:1234" + HTTPChallengePath + "/secret",
 			expectedResponseCode: http.StatusOK,
 		},
 		"return ok with ipv6 without specified port in the request": {

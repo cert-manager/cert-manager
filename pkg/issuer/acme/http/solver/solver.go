@@ -19,6 +19,7 @@ package solver
 import (
 	"fmt"
 	"net/http"
+	"net/netip"
 	"path"
 	"strings"
 	"time"
@@ -67,8 +68,7 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// extract vars from the request
-
-		host := strings.TrimSuffix(r.Host, fmt.Sprintf(":%d", h.ListenPort))
+		host := parseHost(r.Host)
 		basePath := path.Dir(r.URL.EscapedPath())
 		token := path.Base(r.URL.EscapedPath())
 
@@ -77,7 +77,9 @@ func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
 			"path", r.URL.EscapedPath(),
 			"base_path", basePath,
 			"token", token,
+			"headers", r.Header,
 		)
+
 		if r.URL.EscapedPath() == "/" || r.URL.EscapedPath() == "/healthz" {
 			log.Info("responding OK to health check")
 			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -112,4 +114,21 @@ func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, h.Key)
 	}
+}
+
+func parseHost(s string) string {
+	// ip v4/v6 with port
+	addrPort, err := netip.ParseAddrPort(s)
+	if err == nil {
+		return addrPort.Addr().String()
+	}
+
+	// ip v4/v6 without port
+	addr, err := netip.ParseAddr(s)
+	if err == nil {
+		return addr.String()
+	}
+
+	host := strings.Split(s, ":")
+	return host[0]
 }
