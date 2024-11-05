@@ -20,8 +20,9 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/pem"
+	stdpem "encoding/pem"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/util/errors"
 )
 
@@ -29,8 +30,8 @@ import (
 // It supports ECDSA, RSA and EdDSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
+	block, _, err := pem.SafeDecodePrivateKey(keyBytes)
+	if err != nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
 
@@ -72,8 +73,8 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 // DecodePKCS1PrivateKeyBytes will decode a PEM encoded RSA private key.
 func DecodePKCS1PrivateKeyBytes(keyBytes []byte) (*rsa.PrivateKey, error) {
 	// decode the private key pem
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
+	block, _, err := pem.SafeDecodePrivateKey(keyBytes)
+	if err != nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
 	// parse the private key
@@ -97,13 +98,17 @@ func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, err
 func DecodeX509CertificateSetBytes(certBytes []byte) ([]*x509.Certificate, error) {
 	certs := []*x509.Certificate{}
 
-	var block *pem.Block
+	var block *stdpem.Block
+	var err error
 
 	for {
-		// decode the tls certificate pem
-		block, certBytes = pem.Decode(certBytes)
-		if block == nil {
-			break
+		block, certBytes, err = pem.SafeDecodeMultipleCertificates(certBytes)
+		if err != nil {
+			if err == pem.ErrNoPEMData {
+				break
+			}
+
+			return nil, err
 		}
 
 		// parse the tls certificate
@@ -133,8 +138,8 @@ func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
 
 // DecodeX509CertificateRequestBytes will decode a PEM encoded x509 Certificate Request.
 func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateRequest, error) {
-	block, _ := pem.Decode(csrBytes)
-	if block == nil {
+	block, _, err := pem.SafeDecodeCSR(csrBytes)
+	if err != nil {
 		return nil, errors.NewInvalidData("error decoding certificate request PEM block")
 	}
 
