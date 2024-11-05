@@ -56,6 +56,8 @@ const (
 	reasonDeleteCertificate = "DeleteCertificate"
 )
 
+const applysetLabel = "applyset.kubernetes.io/part-of"
+
 var ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
 var gatewayGVK = gwapi.SchemeGroupVersion.WithKind("Gateway")
 
@@ -369,11 +371,29 @@ func buildCertificates(
 			}
 		}
 
+		labels := ingLike.GetLabels()
+
+		// Remove applyset labels, as they cause certificates to be
+		// incorrectly pruned.
+		//
+		// See https://github.com/cert-manager/cert-manager/issues/7306
+		//
+		// TODO: Use a more generic annotation on ingress-like resources
+		// to exclude labels. Something like:
+		//
+		//	cert-manager.io/exclude-labels: "applyset.kubernetes.io/*,abc.com/efg"
+		//
+		// Or, something like:
+		//
+		//	cert-manager.io/propagate-labels: "false"
+		//
+		delete(labels, applysetLabel)
+
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
-				Labels:          ingLike.GetLabels(),
+				Labels:          labels,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{

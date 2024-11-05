@@ -1773,6 +1773,59 @@ func TestSync(t *testing.T) {
 			ClusterIssuerLister: []runtime.Object{clusterIssuer},
 			IngressLike:         buildIngressInDeletion(buildIngress("", "", map[string]string{cmapi.IngressIssuerNameAnnotationKey: ""}), &metav1.Time{}, []string{metav1.FinalizerDeleteDependents}),
 		},
+
+		{
+			Name:   "should not propagate the applyset label",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+						applysetLabel:   "should not be propagated",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+							// note that the applyset label should not be here
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 	}
 
 	testGatewayShim := []testT{
@@ -3181,6 +3234,70 @@ func TestSync(t *testing.T) {
 			DefaultIssuerGroup:  "cert-manager.io",
 			ClusterIssuerLister: []runtime.Object{clusterIssuer},
 			IngressLike:         buildGatewayInDeletion(buildGateway("", "", map[string]string{cmapi.IngressIssuerNameAnnotationKey: ""}), &metav1.Time{}, []string{metav1.FinalizerDeleteDependents}),
+		},
+		{
+			Name:   "return a single Certificate for a Gateway with a single valid TLS entry and common-name annotation (HTTPS)",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+						applysetLabel:   "should not be propagated",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.GatewayTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+							// note that the applyset label should not be here
+						},
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
 		},
 	}
 
