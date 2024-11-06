@@ -27,6 +27,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metavalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -406,29 +407,35 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path, n
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "certificate renewBeforePercentage must result in a renewBefore less than duration"))
 		}
 	}
-	if crt.RenewTimeWindow != "" {
-		_, err := cronexpr.Parse(crt.RenewTimeWindow)
+	el = append(el, validateRenewTimeWindow(fldPath, crt.RenewTimeWindow, duration, notAfter, crt.RenewBefore, crt.RenewBeforePercentage)...)
+
+	return el
+}
+
+func validateRenewTimeWindow(fldPath *field.Path, renewTimeWindow string, duration time.Duration, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32) field.ErrorList {
+	el := field.ErrorList{}
+	if renewTimeWindow != "" {
+		_, err := cronexpr.Parse(renewTimeWindow)
 		if err != nil {
-			return append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
+			return append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
 		}
-		renewTime := pki.RenewalTime(notAfter.Add(-1*duration), notAfter, crt.RenewBefore, crt.RenewBeforePercentage, crt.RenewTimeWindow)
+		renewTime := pki.RenewalTime(notAfter.Add(-1*duration), notAfter, renewBefore, renewBeforePercentage, renewTimeWindow)
 		if renewTime.After(notAfter) {
-			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow, calculated renewTime is %s", renewTime)))
+			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow, calculated renewTime is %s", renewTime)))
 		} else {
 			// calculate if there are conflicts with the renewalWindow and the other parameters for the next year
 			oneYearLater := notAfter.Add(time.Hour * 24 * 365)
 			for renewTime.Time.Before(oneYearLater) {
 				notBefore := renewTime.Time
 				notAfter = notBefore.Add(duration)
-				renewTime = pki.RenewalTime(notBefore, notAfter, crt.RenewBefore, crt.RenewBeforePercentage, crt.RenewTimeWindow)
+				renewTime = pki.RenewalTime(notBefore, notAfter, renewBefore, renewBeforePercentage, renewTimeWindow)
 				if renewTime.After(notAfter) {
-					el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), crt.RenewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow in subsequent renewal, calculated renewTime is %s, notBefore %s, notAfter %s", renewTime, notBefore, notAfter)))
+					el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow in subsequent renewal, calculated renewTime is %s, notBefore %s, notAfter %s", renewTime, notBefore, notAfter)))
 					break // one fail is enough
 				}
 			}
 		}
 	}
-
 	return el
 }
 
