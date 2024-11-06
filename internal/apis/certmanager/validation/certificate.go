@@ -217,13 +217,10 @@ func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (f
 }
 
 func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) bool {
-	// primitive compares
 	if oldSpec.CommonName != newSpec.CommonName ||
 		oldSpec.LiteralSubject != newSpec.LiteralSubject ||
 		oldSpec.IsCA != newSpec.IsCA ||
 		oldSpec.IssuerRef != newSpec.IssuerRef ||
-		oldSpec.RenewTimeWindow != newSpec.RenewTimeWindow ||
-		oldSpec.RenewBeforePercentage != newSpec.RenewBeforePercentage ||
 		!reflect.DeepEqual(oldSpec.DNSNames, newSpec.DNSNames) ||
 		!reflect.DeepEqual(oldSpec.EmailAddresses, newSpec.EmailAddresses) ||
 		!reflect.DeepEqual(oldSpec.IPAddresses, newSpec.IPAddresses) ||
@@ -232,20 +229,9 @@ func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) 
 		!reflect.DeepEqual(oldSpec.NameConstraints, newSpec.NameConstraints) ||
 		!reflect.DeepEqual(oldSpec.Subject, newSpec.Subject) ||
 		!reflect.DeepEqual(oldSpec.Usages, newSpec.Usages) ||
-		!reflect.DeepEqual(oldSpec.Duration, newSpec.Duration) ||
-		!reflect.DeepEqual(oldSpec.RenewBefore, newSpec.RenewBefore) {
+		!reflect.DeepEqual(oldSpec.Duration, newSpec.Duration) {
 		return true
 	}
-	// if (oldSpec.Duration != nil && newSpec.Duration != nil && oldSpec.Duration.Duration != newSpec.Duration.Duration) ||
-	// 	(oldSpec.Duration == nil && newSpec.Duration != nil) ||
-	// 	(oldSpec.Duration != nil && newSpec.Duration == nil) {
-	// 	return true
-	// }
-	// if (oldSpec.RenewBefore != nil && newSpec.RenewBefore != nil && oldSpec.RenewBefore.Duration != newSpec.RenewBefore.Duration) ||
-	// 	(oldSpec.RenewBefore == nil && newSpec.RenewBefore != nil) ||
-	// 	(oldSpec.RenewBefore != nil && newSpec.RenewBefore == nil) {
-	// 	return true
-	// }
 
 	return false
 }
