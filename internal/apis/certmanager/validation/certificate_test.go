@@ -1023,7 +1023,11 @@ func TestValidateDuration(t *testing.T) {
 			if !s.notAfter.IsZero() {
 				notAfter = s.notAfter
 			} else {
-				notAfter = notBefore.Add(s.cfg.Spec.Duration.Duration)
+				if s.cfg.Spec.Duration != nil {
+					notAfter = notBefore.Add(s.cfg.Spec.Duration.Duration)
+				} else {
+					notAfter = notBefore.Add(cmapi.DefaultCertificateDuration)
+				}
 			}
 			errs := ValidateDuration(&s.cfg.Spec, fldPath, notBefore, notAfter)
 			assert.ElementsMatch(t, errs, s.errs)
