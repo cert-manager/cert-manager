@@ -26,12 +26,13 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
-	"github.com/cert-manager/cert-manager/internal/apis/meta"
 	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
 // FuzzValidate tests the approval validation with
-// random CRs.
+// random CRs. It can be run with `go test -fuzz=FuzzValidate`.
+// It tests for panics, OOMs and stackoverflow-related bugs in
+// the authorizer validation.
 func FuzzValidate(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte, verb, allowedName string, decision uint8) {
 		fdp := gfh.NewConsumer(data)
@@ -47,6 +48,11 @@ func FuzzValidate(f *testing.F) {
 		// Add random values to the CR
 		cr := &certmanager.CertificateRequest{}
 		err = fdp.GenerateStruct(cr)
+		if err != nil {
+			return
+		}
+		approvedCR := &certmanager.CertificateRequest{}
+		err = fdp.GenerateStruct(approvedCR)
 		if err != nil {
 			return
 		}
@@ -67,17 +73,6 @@ func FuzzValidate(f *testing.F) {
 			verb:        verb,
 			allowedName: allowedName,
 			decision:    authorizer.DecisionAllow,
-		}
-		approvedCR := cr.DeepCopy()
-		approvedCR.Status = certmanager.CertificateRequestStatus{
-			Conditions: []certmanager.CertificateRequestCondition{
-				{
-					Type:    certmanager.CertificateRequestConditionApproved,
-					Status:  meta.ConditionTrue,
-					Reason:  "cert-manager.io",
-					Message: "",
-				},
-			},
 		}
 		// Add a discovery client that returns the Group List
 		// and Resource List we created above.
