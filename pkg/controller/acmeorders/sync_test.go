@@ -18,7 +18,6 @@ package acmeorders
 
 import (
 	"context"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"testing"
@@ -31,6 +30,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -244,10 +244,11 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	decodeAll := func(pemBytes []byte) [][]byte {
 		var blocks [][]byte
 		for {
-			block, rest := pem.Decode(pemBytes)
+			block, rest, _ := pem.SafeDecodeMultipleCertificates(pemBytes)
 			if block == nil {
 				break
 			}
+
 			blocks = append(blocks, block.Bytes)
 			pemBytes = rest
 		}

@@ -18,7 +18,6 @@ package internal
 
 import (
 	"context"
-	"encoding/pem"
 	"errors"
 	"strings"
 	"testing"
@@ -34,6 +33,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -87,7 +87,7 @@ func Test_SecretsManager(t *testing.T) {
 			cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 		),
 	)
-	block, _ := pem.Decode(baseCertBundle.PrivateKeyBytes)
+	block, _, _ := pem.SafeDecodePrivateKey(baseCertBundle.PrivateKeyBytes)
 	tlsDerContent := block.Bytes
 
 	tests := map[string]struct {
