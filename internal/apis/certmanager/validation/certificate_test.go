@@ -1018,11 +1018,14 @@ func TestValidateDuration(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			notAfter := time.Now()
+			notBefore := time.Now()
+			notAfter := time.Time{}
 			if !s.notAfter.IsZero() {
 				notAfter = s.notAfter
+			} else {
+				notAfter = notBefore.Add(s.cfg.Spec.Duration.Duration)
 			}
-			errs := ValidateDuration(&s.cfg.Spec, fldPath, notAfter)
+			errs := ValidateDuration(&s.cfg.Spec, fldPath, notBefore, notAfter)
 			assert.ElementsMatch(t, errs, s.errs)
 		})
 	}
