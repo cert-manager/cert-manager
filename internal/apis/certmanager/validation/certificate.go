@@ -252,9 +252,13 @@ func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
 	oldCrt := oldObj.(*internalcmapi.Certificate)
 	crt := obj.(*internalcmapi.Certificate)
-	notAfter := time.Time{}
+	notAfter := time.Now()
 	if specChangeRequiresReIssue(&oldCrt.Spec, &crt.Spec) {
-		notAfter = time.Now()
+		if crt.Spec.Duration == nil {
+			notAfter = notAfter.Add(cmapi.DefaultCertificateDuration)
+		} else {
+			notAfter = notAfter.Add(crt.Spec.Duration.Duration)
+		}
 	} else {
 		if crt.Status.NotAfter != nil {
 			notAfter = crt.Status.NotAfter.Time
