@@ -93,8 +93,7 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	}
 
 	// To prevent a malicious input from causing a DoS, we limit the number of unique
-	// certificates to 1000. This helps us avoid issues with O(n^2) time complexity
-	// in the algorithm below.
+	// certificates. This helps us avoid issues with O(n^2) time complexity in the algorithm below.
 	if len(certs) > 1000 {
 		return PEMBundle{}, errors.NewInvalidData("certificate chain is too long, must be less than 1000 certificates")
 	}
