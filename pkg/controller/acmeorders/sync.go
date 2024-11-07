@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
-	"encoding/pem"
+	stdpem "encoding/pem"
 	"fmt"
 	"time"
 
@@ -36,6 +36,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalorders "github.com/cert-manager/cert-manager/internal/controller/orders"
+	"github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -515,13 +516,18 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// only supported DER encoded CSRs and not PEM encoded as they are intended
 	// to be as part of our API.
 	// To work around this, we first attempt to decode the Request into DER bytes
-	// by running pem.Decode. If the PEM block is empty, we assume that the Request
+	// by running pem.SafeDecodeCSR. If the PEM block is empty, we assume that the Request
 	// is DER encoded and continue to call FinalizeOrder.
 	var derBytes []byte
-	block, _ := pem.Decode(o.Spec.Request)
-	if block == nil {
-		log.V(logf.WarnLevel).Info("failed to parse Request as PEM data, attempting to treat Request as DER encoded for compatibility reasons")
-		derBytes = o.Spec.Request
+	block, _, err := pem.SafeDecodeCSR(o.Spec.Request)
+
+	if err != nil {
+		if err == pem.ErrNoPEMData {
+			log.V(logf.WarnLevel).Info("failed to parse Request as PEM data, attempting to treat Request as DER encoded for compatibility reasons")
+			derBytes = o.Spec.Request
+		} else {
+			return err
+		}
 	} else {
 		derBytes = block.Bytes
 	}
@@ -606,7 +612,7 @@ func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmacme.Ord
 	// encode the retrieved certificates (including the chain)
 	certBuffer := bytes.NewBuffer([]byte{})
 	for _, cert := range certs {
-		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
+		err := stdpem.Encode(certBuffer, &stdpem.Block{Type: "CERTIFICATE", Bytes: cert})
 		if err != nil {
 			log.Error(err, "invalid certificate data returned by ACME server")
 			c.setOrderState(&o.Status, string(cmacme.Errored))

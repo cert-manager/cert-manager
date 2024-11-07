@@ -19,9 +19,9 @@ package certificates
 import (
 	"bytes"
 	"crypto/x509"
-	"encoding/pem"
 	"strings"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmutil "github.com/cert-manager/cert-manager/pkg/util"
@@ -96,7 +96,13 @@ func AnnotationsForCertificateSecret(crt *cmapi.Certificate, certificate *x509.C
 // OutputFormatDER returns the byte slice of the private key in DER format. To
 // be used for Certificate's Additional Output Format DER.
 func OutputFormatDER(privateKey []byte) []byte {
-	block, _ := pem.Decode(privateKey)
+	// NOTE: This call to pem.SafeDecodePrivateKey ignores errors.
+	// This is acceptable here since we're calling this function only on PEM data which we created
+	// by encoding the private key. As such, we can be fairly confident that:
+	// 1) The PEM is valid
+	// 2) The PEM isn't attacker-controlled (and as such unsafe to decode)
+
+	block, _, _ := pem.SafeDecodePrivateKey(privateKey)
 	return block.Bytes
 }
 

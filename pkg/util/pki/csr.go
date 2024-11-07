@@ -22,7 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
+	stdpem "encoding/pem"
 	"errors"
 	"fmt"
 	"math/big"
@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/pem"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -380,8 +381,8 @@ func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool
 }
 
 func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration, isCA bool, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
-	block, _ := pem.Decode(csrPEM)
-	if block == nil {
+	block, _, err := pem.SafeDecodeCSR(csrPEM)
+	if err != nil {
 		return nil, errors.New("failed to decode csr")
 	}
 
@@ -443,7 +444,7 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	}
 
 	pemBytes := bytes.NewBuffer([]byte{})
-	err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	err = stdpem.Encode(pemBytes, &stdpem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
 		return nil, nil, fmt.Errorf("error encoding certificate PEM: %s", err.Error())
 	}
@@ -489,7 +490,7 @@ func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, er
 // EncodeX509 will encode a single *x509.Certificate into PEM format.
 func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 	caPem := bytes.NewBuffer([]byte{})
-	err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+	err := stdpem.Encode(caPem, &stdpem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 	if err != nil {
 		return nil, err
 	}
@@ -515,7 +516,7 @@ func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
 			continue
 		}
 
-		err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+		err := stdpem.Encode(caPem, &stdpem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 		if err != nil {
 			return nil, err
 		}
