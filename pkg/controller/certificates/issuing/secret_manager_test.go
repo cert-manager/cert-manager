@@ -18,7 +18,6 @@ package issuing
 
 import (
 	"context"
-	"encoding/pem"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
@@ -40,7 +40,9 @@ func Test_ensureSecretData(t *testing.T) {
 
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
 	cert := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "test"}})
-	block, _ := pem.Decode(pk)
+
+	block, _, _ := pem.SafeDecodePrivateKey(pk)
+
 	pkDER := block.Bytes
 	combinedPEM := append(append(pk, '\n'), cert...)
 
