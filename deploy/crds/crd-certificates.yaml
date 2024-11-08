@@ -193,7 +193,6 @@ spec:
                       type: object
                       required:
                         - create
-                        - passwordSecretRef
                       properties:
                         alias:
                           description: |-
@@ -205,7 +204,7 @@ spec:
                             Create enables JKS keystore creation for the Certificate.
                             If true, a file named `keystore.jks` will be created in the target
                             Secret resource, encrypted using the password stored in
-                            `passwordSecretRef`.
+                            `passwordSecretRef` or `changeit` if not provided.
                             The keystore file will be updated immediately.
                             If the issuer provided a CA certificate, a file named `truststore.jks`
                             will also be created in the target Secret resource, encrypted using the
@@ -238,14 +237,13 @@ spec:
                       type: object
                       required:
                         - create
-                        - passwordSecretRef
                       properties:
                         create:
                           description: |-
                             Create enables PKCS12 keystore creation for the Certificate.
                             If true, a file named `keystore.p12` will be created in the target
                             Secret resource, encrypted using the password stored in
-                            `passwordSecretRef`.
+                            `passwordSecretRef` or `changeit` if not provided.
                             The keystore file will be updated immediately.
                             If the issuer provided a CA certificate, a file named `truststore.p12` will
                             also be created in the target Secret resource, encrypted using the

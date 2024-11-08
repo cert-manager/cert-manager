@@ -69,6 +69,11 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
 				AdditionalOutputFormats: aof,
+				Keystores: &cmapi.CertificateKeystores{
+					PKCS12: &cmapi.PKCS12Keystore{
+						Create: true,
+					},
+				},
 			},
 		}
 
@@ -126,6 +131,7 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 			"ca.crt":           Not(BeEmpty()),
 			"tls.crt":          Not(BeEmpty()),
 			"tls.key":          Not(BeEmpty()),
+			"keystore.p12":     Not(BeEmpty()),
 			"random-1":         Equal([]byte("data-1")),
 			"random-2":         Equal([]byte("data-2")),
 			"tls-combined.pem": Equal([]byte("data-3")),
