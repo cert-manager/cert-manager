@@ -47,7 +47,7 @@ const (
 
 	// How long to wait for an authorization response from the ACME server in acceptChallenge()
 	// before giving up
-	authorizationTimeout = 20 * time.Second
+	authorizationDefaultTimeout = 20 * time.Second
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -216,7 +216,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
-	err = c.acceptChallenge(ctx, cl, ch)
+	err = c.acceptChallenge(ctx, cl, ch, genericIssuer.GetSpec().ACME.AuthorizationTimeout)
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 // It will update the challenge's status to reflect the final state of the
 // challenge if it failed, or the final state of the challenge's authorization
 // if accepting the challenge succeeds.
-func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge) error {
+func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge, atoOriginal string) error {
 	log := logf.FromContext(ctx, "acceptChallenge")
 
 	log.V(logf.DebugLevel).Info("accepting challenge with ACME server")
@@ -396,7 +396,17 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	// blocking the challenge's processing. Here, we defensively add a timeout for this exchange
 	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
 	// in the err variable.
-	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, authorizationTimeout)
+	var ato time.Duration
+	if atoOriginal != "" {
+		ato, err = time.ParseDuration(atoOriginal)
+		if err != nil {
+			log.Error(err, "invalid authorizationTimeout in (Cluster)Issuer")
+			return handleError(ch, err)
+		}
+	} else {
+		ato = authorizationDefaultTimeout
+	}
+	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, ato)
 	defer cancelAuthorization()
 	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
 	if err != nil {

@@ -369,6 +369,25 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 		"valid acme issuer": {
 			spec: &validACMEIssuer,
 		},
+		"valid acme issuer with Timeout": {
+			spec: &cmacme.ACMEIssuer{
+				Email:                "valid-email",
+				Server:               "valid-server",
+				PrivateKey:           validSecretKeyRef,
+				AuthorizationTimeout: "1m30s",
+			},
+		},
+		"acme issuer with invalid authTimeout": {
+			spec: &cmacme.ACMEIssuer{
+				Email:                "valid-email",
+				Server:               "valid-server",
+				PrivateKey:           validSecretKeyRef,
+				AuthorizationTimeout: "invalidvalue",
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("AuthorizationTimeout"), "invalidvalue", "time: invalid duration \"invalidvalue\""),
+			},
+		},
 		"acme issuer with missing fields": {
 			spec: &cmacme.ACMEIssuer{},
 			errs: []*field.Error{

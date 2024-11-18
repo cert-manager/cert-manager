@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"strings"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -139,6 +140,13 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		// nolint:staticcheck // SA1019 accessing the deprecated eab.KeyAlgorithm field is intentional here.
 		if len(eab.KeyAlgorithm) != 0 {
 			warnings = append(warnings, deprecatedACMEEABKeyAlgorithmField)
+		}
+	}
+
+	if ato := iss.AuthorizationTimeout; ato != "" {
+		_, err := time.ParseDuration(ato)
+		if err != nil {
+			el = append(el, field.Invalid(fldPath.Child("AuthorizationTimeout"), iss.AuthorizationTimeout, err.Error()))
 		}
 	}
 

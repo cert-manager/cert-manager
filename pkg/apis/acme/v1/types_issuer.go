@@ -114,6 +114,13 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	// +optional
 	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
+
+	// Sets the overall timeout for creating certificates in seconds. For most
+	// Issuers the default should be sufficient, however e.g. letsencrypt
+	// staging sometimes takes longer, especially on slow local environments.
+	// Defaults to 20s
+	// +optional
+	AuthorizationTimeout string `json:"authorizationTimeout,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
