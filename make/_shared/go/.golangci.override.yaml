@@ -59,6 +59,11 @@ linters:
     - usestdlibvars
     - wastedassign
 linters-settings:
+  govet:
+    enable: ["shadow"]
+    settings:
+      shadow:
+        strict: true
   gci:
     sections:
       - standard # Standard section: captures all standard packages.
