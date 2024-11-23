@@ -30,6 +30,8 @@ const (
 	// See https://github.com/cert-manager/cert-manager/blob/master/design/20221205-memory-management.md#risks-and-mitigations
 	PartOfCertManagerControllerLabelKey = "controller.cert-manager.io/fao"
 
+	AccountPrivateKeyLabelKey = "controller.cert-manager.io/account-private-key"
+
 	// Common annotation keys added to resources
 
 	// Annotation key for DNS subjectAltNames.
