@@ -80,6 +80,13 @@ spec:
                     - privateKeySecretRef
                     - server
                   properties:
+                    authorizationTimeout:
+                      description: |-
+                        Sets the overall timeout for creating certificates in seconds. For most
+                        Issuers the default should be sufficient, however e.g. letsencrypt
+                        staging sometimes takes longer, especially on slow local environments.
+                        Defaults to 20s
+                      type: string
                     caBundle:
                       description: |-
                         Base64-encoded bundle of PEM CAs which can be used to validate the certificate
