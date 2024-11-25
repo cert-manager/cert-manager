@@ -68,7 +68,7 @@ func RenewBefore(actualDuration time.Duration, renewBefore *metav1.Duration, ren
 	if renewBefore != nil && renewBefore.Duration > 0 && renewBefore.Duration < actualDuration {
 		return renewBefore.Duration
 	} else if renewBeforePercentage != nil && *renewBeforePercentage > 0 && *renewBeforePercentage < 100 {
-		return actualDuration * time.Duration(100-*renewBeforePercentage) / 100
+		return actualDuration * time.Duration(*renewBeforePercentage) / 100
 	}
 
 	// Otherwise, default to renewing 2/3 through certificate's lifetime.
