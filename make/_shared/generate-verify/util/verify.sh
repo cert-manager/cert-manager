@@ -44,7 +44,8 @@ cleanup() {
 }
 trap "cleanup" EXIT SIGINT
 
-rsync -aEq "${projectdir}/." "${tmp}" --exclude "_bin/"
+cp -a "${projectdir}/." "${tmp}"
+rm -rf "${tmp}/_bin" # clear all cached files
 pushd "${tmp}" >/dev/null
 
 "$@"
