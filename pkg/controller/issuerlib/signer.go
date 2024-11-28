@@ -22,11 +22,12 @@ import (
 
 	"github.com/cert-manager/issuer-lib/api/v1alpha1"
 	"github.com/cert-manager/issuer-lib/controllers"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/globals"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
@@ -42,7 +43,7 @@ type Signer struct {
 	issuerFactory issuer.Factory
 }
 
-func (s Signer) SetupWithManager(ctx context.Context, cctx *controller.Context, mgr ctrl.Manager) error {
+func (s Signer) SetupWithManager(ctx context.Context, cctx *controllerpkg.Context, mgr ctrl.Manager) error {
 	// instantiate additional helpers used by this controller
 	s.issuerFactory = issuer.NewFactory(cctx)
 
@@ -51,7 +52,12 @@ func (s Signer) SetupWithManager(ctx context.Context, cctx *controller.Context, 
 
 	clock := clock.RealClock{}
 
-	for _, issuerType := range []v1alpha1.Issuer{&v1.Issuer{}, &v1.ClusterIssuer{}} {
+	secretListener := &ct{
+		kubeSharedInformerFactory: cctx.KubeSharedInformerFactory,
+		issuerLister:              cctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
+	}
+
+	for _, issuerType := range []v1alpha1.Issuer{&cmapi.Issuer{}, &cmapi.ClusterIssuer{}} {
 		if err := (&controllers.IssuerReconciler[struct{}]{
 			ForObject:   issuerType,
 			EventSource: controllers.NewEventStore(),
@@ -63,6 +69,16 @@ func (s Signer) SetupWithManager(ctx context.Context, cctx *controller.Context, 
 			Check:         s.Check,
 			EventRecorder: eventRecorder,
 			Clock:         clock,
+
+			PostSetupWithManager: func(ctx context.Context, gvk schema.GroupVersionKind, manager ctrl.Manager, controller controller.Controller) error {
+				switch gvk {
+				case cmapi.SchemeGroupVersion.WithKind("Issuer"):
+					return controller.Watch(secretListener)
+				case cmapi.SchemeGroupVersion.WithKind("ClusterIssuer"):
+					return controller.Watch(secretListener)
+				}
+				return fmt.Errorf("GVK %v unexpected", gvk)
+			},
 		}).SetupWithManager(ctx, mgr); err != nil {
 			return fmt.Errorf("%T: %w", issuerType, err)
 		}
@@ -75,7 +91,7 @@ func (c Signer) Setup(ctx context.Context, issuerObject v1alpha1.Issuer) (struct
 	ctx, cancel := context.WithTimeout(ctx, globals.DefaultControllerContextTimeout)
 	defer cancel()
 
-	genericIssuer := issuerObject.(v1.GenericIssuer)
+	genericIssuer := issuerObject.(cmapi.GenericIssuer)
 
 	i, err := c.issuerFactory.IssuerFor(genericIssuer)
 	if err != nil {
