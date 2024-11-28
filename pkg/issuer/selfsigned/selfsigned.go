@@ -28,7 +28,6 @@ import (
 // For more info see: https://cert-manager.io/docs/configuration/selfsigned/
 type SelfSigned struct {
 	*controller.Context
-	issuer v1.GenericIssuer
 
 	secretsLister internalinformers.SecretLister
 }
@@ -38,7 +37,6 @@ func NewSelfSigned(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Int
 
 	return &SelfSigned{
 		Context:       ctx,
-		issuer:        issuer,
 		secretsLister: secretsLister,
 	}, nil
 }

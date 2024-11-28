@@ -33,6 +33,7 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -46,7 +47,7 @@ var _ Interface = &Vault{}
 
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
-type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer) (Interface, error)
+type ClientBuilder func(ctx context.Context, namespacedName types.NamespacedName, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ *v1.IssuerSpec) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -70,10 +71,11 @@ type CreateToken func(ctx context.Context, saName string, req *authv1.TokenReque
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
 // Vault client.
 type Vault struct {
-	createToken   CreateToken // Uses the same namespace as below.
-	secretsLister internalinformers.SecretLister
-	issuer        v1.GenericIssuer
-	namespace     string
+	createToken    CreateToken // Uses the same namespace as below.
+	secretsLister  internalinformers.SecretLister
+	issuerSpec     *v1.IssuerSpec
+	namespacedName types.NamespacedName
+	namespace      string
 
 	// The pattern below, of namespaced and non-namespaced Vault clients, is copied from Hashicorp Nomad:
 	// https://github.com/hashicorp/nomad/blob/6e4410a9b13ce167bc7ef53da97c621b5c9dcd12/nomad/vault.go#L180-L190
@@ -97,12 +99,13 @@ type Vault struct {
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
+func New(ctx context.Context, namespacedName types.NamespacedName, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuerSpec *v1.IssuerSpec) (Interface, error) {
 	v := &Vault{
-		createToken:   createTokenFn(namespace),
-		secretsLister: secretsLister,
-		namespace:     namespace,
-		issuer:        issuer,
+		createToken:    createTokenFn(namespace),
+		secretsLister:  secretsLister,
+		namespacedName: namespacedName,
+		namespace:      namespace,
+		issuerSpec:     issuerSpec,
 	}
 
 	cfg, err := v.newConfig()
@@ -117,7 +120,7 @@ func New(ctx context.Context, namespace string, createTokenFn func(ns string) Cr
 
 	// Set the Vault namespace.
 	// An empty namespace string will cause the client to not send the namespace related HTTP headers to Vault.
-	clientNS := client.WithNamespace(issuer.GetSpec().Vault.Namespace)
+	clientNS := client.WithNamespace(issuerSpec.Vault.Namespace)
 
 	// Use the (maybe) namespaced client to authenticate.
 	// If a Vault namespace is configured, then the authentication endpoints are
@@ -157,7 +160,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		"exclude_cn_from_sans": "true",
 	}
 
-	vaultIssuer := v.issuer.GetSpec().Vault
+	vaultIssuer := v.issuerSpec.Vault
 	url := path.Join("/v1", vaultIssuer.Path)
 
 	request := v.client.NewRequest("POST", url)
@@ -190,7 +193,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 	// In terms of implementation, we will use the first authentication method.
 	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes
 
-	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
+	tokenRef := v.issuerSpec.Vault.Auth.TokenSecretRef
 	if tokenRef != nil {
 		token, err := v.tokenRef(tokenRef.Name, v.namespace, tokenRef.Key)
 		if err != nil {
@@ -201,7 +204,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	appRole := v.issuer.GetSpec().Vault.Auth.AppRole
+	appRole := v.issuerSpec.Vault.Auth.AppRole
 	if appRole != nil {
 		token, err := v.requestTokenWithAppRoleRef(client, appRole)
 		if err != nil {
@@ -212,7 +215,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	clientCert := v.issuer.GetSpec().Vault.Auth.ClientCertificate
+	clientCert := v.issuerSpec.Vault.Auth.ClientCertificate
 	if clientCert != nil {
 		token, err := v.requestTokenWithClientCertificate(client, clientCert)
 		if err != nil {
@@ -223,7 +226,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	kubernetesAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
+	kubernetesAuth := v.issuerSpec.Vault.Auth.Kubernetes
 	if kubernetesAuth != nil {
 		token, err := v.requestTokenWithKubernetesAuth(ctx, client, kubernetesAuth)
 		if err != nil {
@@ -238,7 +241,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 
 func (v *Vault) newConfig() (*vault.Config, error) {
 	cfg := vault.DefaultConfig()
-	cfg.Address = v.issuer.GetSpec().Vault.Server
+	cfg.Address = v.issuerSpec.Vault.Server
 
 	caBundle, err := v.caBundle()
 	if err != nil {
@@ -274,11 +277,11 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 // If the `key` of the Secret CA bundle is not defined, its value defaults to
 // `ca.crt`.
 func (v *Vault) caBundle() ([]byte, error) {
-	if len(v.issuer.GetSpec().Vault.CABundle) > 0 {
-		return v.issuer.GetSpec().Vault.CABundle, nil
+	if len(v.issuerSpec.Vault.CABundle) > 0 {
+		return v.issuerSpec.Vault.CABundle, nil
 	}
 
-	ref := v.issuer.GetSpec().Vault.CABundleSecretRef
+	ref := v.issuerSpec.Vault.CABundleSecretRef
 	if ref == nil {
 		return nil, nil
 	}
@@ -306,8 +309,8 @@ func (v *Vault) caBundle() ([]byte, error) {
 // clientCertificate returns the Client Certificate for the Vault server.
 // Can be used in Vault client configs when the server requires mTLS.
 func (v *Vault) clientCertificate() (*tls.Certificate, error) {
-	refCert := v.issuer.GetSpec().Vault.ClientCertSecretRef
-	refPrivateKey := v.issuer.GetSpec().Vault.ClientKeySecretRef
+	refCert := v.issuerSpec.Vault.ClientCertSecretRef
+	refPrivateKey := v.issuerSpec.Vault.ClientKeySecretRef
 	if refCert == nil || refPrivateKey == nil {
 		return nil, nil
 	}
@@ -538,10 +541,10 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 
 	case kubernetesAuth.ServiceAccountRef != nil:
 		defaultAudience := "vault://"
-		if v.issuer.GetNamespace() != "" {
-			defaultAudience += v.issuer.GetNamespace() + "/"
+		if v.namespacedName.Namespace != "" {
+			defaultAudience += v.namespacedName.Namespace + "/"
 		}
-		defaultAudience += v.issuer.GetName()
+		defaultAudience += v.namespacedName.Name
 
 		audiences := append([]string(nil), kubernetesAuth.ServiceAccountRef.TokenAudiences...)
 		audiences = append(audiences, defaultAudience)
@@ -571,7 +574,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
-			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), kubernetesAuth.ServiceAccountRef.Name, err.Error())
+			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.namespace, kubernetesAuth.ServiceAccountRef.Name, err.Error())
 		}
 
 		jwt = tokenrequest.Status.Token

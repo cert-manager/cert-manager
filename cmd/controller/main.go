@@ -20,6 +20,8 @@ import (
 	"context"
 	"flag"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/cert-manager/cert-manager/controller-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -31,6 +33,7 @@ func main() {
 
 	logf.InitLogs()
 	defer logf.FlushLogs()
+	ctrl.SetLogger(logf.Log)
 	ctx = logf.NewContext(ctx, logf.Log, "controller")
 
 	cmd := app.NewServerCommand(ctx)

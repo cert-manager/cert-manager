@@ -29,7 +29,6 @@ import (
 // used to sign certificates.
 type CA struct {
 	*controller.Context
-	issuer        v1.GenericIssuer
 	secretsLister internalinformers.SecretLister
 
 	// Namespace in which to read resources related to this Issuer from.
@@ -43,7 +42,6 @@ func NewCA(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, 
 
 	return &CA{
 		Context:           ctx,
-		issuer:            issuer,
 		secretsLister:     secretsLister,
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
 	}, nil

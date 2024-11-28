@@ -20,6 +20,7 @@ import (
 	"context"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 )
 
@@ -33,7 +34,7 @@ var _ issuer.Interface = &Issuer{}
 // Setup initialises the issuer. This may include registering accounts with
 // a service, creating a CA and storing it somewhere, or verifying
 // credentials and authorization with a remote server.
-func (i *Issuer) Setup(ctx context.Context) error {
+func (i *Issuer) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	return i.SetupFunc(ctx)
 }
 

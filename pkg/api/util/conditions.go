@@ -33,11 +33,11 @@ var Clock clock.Clock = clock.RealClock{}
 // Only the Type and Status field will be used in the comparison, meaning that
 // this function will return 'true' even if the Reason, Message and
 // LastTransitionTime fields do not match.
-func IssuerHasCondition(i cmapi.GenericIssuer, c cmapi.IssuerCondition) bool {
+func IssuerHasCondition(i *cmapi.IssuerStatus, c cmapi.IssuerCondition) bool {
 	if i == nil {
 		return false
 	}
-	existingConditions := i.GetStatus().Conditions
+	existingConditions := i.Conditions
 	for _, cond := range existingConditions {
 		if c.Type == cond.Type && c.Status == cond.Status {
 			return true

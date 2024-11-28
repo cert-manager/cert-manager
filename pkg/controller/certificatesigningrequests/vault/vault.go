@@ -23,6 +23,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	"k8s.io/client-go/tools/record"
@@ -89,7 +90,10 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
 	createTokenFn := func(ns string) internalvault.CreateToken { return v.kclient.CoreV1().ServiceAccounts(ns).CreateToken }
-	client, err := v.clientBuilder(ctx, resourceNamespace, createTokenFn, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(ctx, types.NamespacedName{
+		Namespace: issuerObj.GetObjectMeta().GetNamespace(),
+		Name:      issuerObj.GetObjectMeta().GetName(),
+	}, resourceNamespace, createTokenFn, v.secretsLister, issuerObj.GetSpec())
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		log.Error(err, message)

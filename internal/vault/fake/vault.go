@@ -26,7 +26,7 @@ import (
 
 // Vault is a mock implementation of the Vault interface
 type Vault struct {
-	NewFn                           func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*Vault, error)
+	NewFn                           func(string, internalinformers.SecretLister, *cmapi.IssuerSpec) (*Vault, error)
 	SignFn                          func([]byte, time.Duration) ([]byte, []byte, error)
 	IsVaultInitializedAndUnsealedFn func() error
 }
@@ -42,7 +42,7 @@ func New() *Vault {
 		},
 	}
 
-	v.NewFn = func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*Vault, error) {
+	v.NewFn = func(string, internalinformers.SecretLister, *cmapi.IssuerSpec) (*Vault, error) {
 		return v, nil
 	}
 
@@ -63,13 +63,13 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 }
 
 // WithNew sets the fake Vault's New function.
-func (v *Vault) WithNew(f func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*Vault, error)) *Vault {
+func (v *Vault) WithNew(f func(string, internalinformers.SecretLister, *cmapi.IssuerSpec) (*Vault, error)) *Vault {
 	v.NewFn = f
 	return v
 }
 
 // New call NewFn and returns a pointer to the fake Vault.
-func (v *Vault) New(ns string, sl internalinformers.SecretLister, iss cmapi.GenericIssuer) (*Vault, error) {
+func (v *Vault) New(ns string, sl internalinformers.SecretLister, iss *cmapi.IssuerSpec) (*Vault, error) {
 	_, err := v.NewFn(ns, sl, iss)
 	if err != nil {
 		return nil, err

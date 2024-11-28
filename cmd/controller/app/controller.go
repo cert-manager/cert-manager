@@ -43,7 +43,6 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
 	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -227,10 +226,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		}
 
 		// don't run clusterissuers controller if scoped to a single namespace
-		if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-			log.V(logf.InfoLevel).Info("not starting controller as cert-manager has been scoped to a single namespace")
-			continue
-		}
+		// TODO: fix the case described here
+		// if ctx.Namespace != "" && n == clusterissuers.ControllerName {
+		// 	log.V(logf.InfoLevel).Info("not starting controller as cert-manager has been scoped to a single namespace")
+		// 	continue
+		// }
 
 		iface, err := fn(ctxFactory)
 		if err != nil {

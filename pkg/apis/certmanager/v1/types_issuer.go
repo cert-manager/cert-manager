@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/cert-manager/issuer-lib/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -44,6 +45,26 @@ type ClusterIssuer struct {
 	// Status of the ClusterIssuer. This is set and managed automatically.
 	// +optional
 	Status IssuerStatus `json:"status"`
+}
+
+var _ v1alpha1.Issuer = &ClusterIssuer{}
+
+func (i *ClusterIssuer) GetConditions() []metav1.Condition {
+	conditions := make([]metav1.Condition, 0, len(i.Status.Conditions))
+	for _, condition := range i.Status.Conditions {
+		var lastTransitionTime metav1.Time
+		if condition.LastTransitionTime != nil {
+			lastTransitionTime = *condition.LastTransitionTime
+		}
+		conditions = append(conditions, metav1.Condition{
+			Type:               string(condition.Type),
+			Status:             metav1.ConditionStatus(condition.Status),
+			LastTransitionTime: lastTransitionTime,
+			Reason:             condition.Reason,
+			Message:            condition.Message,
+		})
+	}
+	return conditions
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -75,6 +96,26 @@ type Issuer struct {
 	// Status of the Issuer. This is set and managed automatically.
 	// +optional
 	Status IssuerStatus `json:"status"`
+}
+
+var _ v1alpha1.Issuer = &Issuer{}
+
+func (i *Issuer) GetConditions() []metav1.Condition {
+	conditions := make([]metav1.Condition, 0, len(i.Status.Conditions))
+	for _, condition := range i.Status.Conditions {
+		var lastTransitionTime metav1.Time
+		if condition.LastTransitionTime != nil {
+			lastTransitionTime = *condition.LastTransitionTime
+		}
+		conditions = append(conditions, metav1.Condition{
+			Type:               string(condition.Type),
+			Status:             metav1.ConditionStatus(condition.Status),
+			LastTransitionTime: lastTransitionTime,
+			Reason:             condition.Reason,
+			Message:            condition.Message,
+		})
+	}
+	return conditions
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -374,7 +415,7 @@ type CAIssuer struct {
 
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
-	// List of status conditions to indicate the status of a CertificateRequest.
+	// List of status conditions to indicate the status of an Issuer.
 	// Known condition types are `Ready`.
 	// +listType=map
 	// +listMapKey=type

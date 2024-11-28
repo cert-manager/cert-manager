@@ -21,18 +21,18 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"fmt"
-	"net/http"
-	"net/url"
 	"reflect"
-	"slices"
 	"testing"
 	"time"
 
+	issuerapi "github.com/cert-manager/issuer-lib/api/v1alpha1"
+	"github.com/stretchr/testify/assert"
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	fakeregistry "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
@@ -57,12 +57,9 @@ func TestAcme_Setup(t *testing.T) {
 		baseIssuer = gen.Issuer("test-issuer",
 			gen.SetIssuerACMEURL(acmev2Prod))
 		// base issuer's conditions
-		readyFalseCondition = gen.IssuerCondition(cmapi.IssuerConditionReady,
-			gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
-			gen.SetIssuerConditionLastTransitionTime(&nowMetaTime))
 		readyTrueCondition = gen.IssuerCondition(cmapi.IssuerConditionReady,
 			gen.SetIssuerConditionStatus(cmmeta.ConditionTrue),
-			gen.SetIssuerConditionReason(successAccountRegistered),
+			gen.SetIssuerConditionReason(issuerapi.IssuerConditionReasonChecked),
 			gen.SetIssuerConditionMessage(messageAccountRegistered),
 			gen.SetIssuerConditionLastTransitionTime(&nowMetaTime))
 		issuerSecretKeyName = "test"
@@ -76,11 +73,6 @@ func TestAcme_Setup(t *testing.T) {
 		invalidURL     = "%"
 		acmeErr450     = &acmeapi.Error{StatusCode: 450}
 		acmeErr500     = &acmeapi.Error{StatusCode: 500}
-		//TODO: we should probably mock calls to net/url instead of doing this.
-		invalidURLErr = parseURLErr(invalidURL)
-
-		invalidURLMessage        = fmt.Sprintf(messageTemplateFailedToParseURL, invalidURL, invalidURLErr)
-		invalidAccountURLMessage = fmt.Sprintf(messageTemplateFailedToParseAccountURL, invalidURL, invalidURLErr)
 
 		someEmail    = "test@test.com"
 		someEmailURL = fmt.Sprintf("mailto:%s", someEmail)
@@ -135,118 +127,63 @@ func TestAcme_Setup(t *testing.T) {
 
 		// expected ACME account passed to cl.Register
 		expectedRegisteredAcc *acmeapi.Account
-		// expected issuer conditions after Setup has been called.
-		expectedConditions []cmapi.IssuerCondition
-		expectedEvents     []string
-		wantsErr           bool
+		// expected issuer error after Setup has been called.
+		expectErr string
 	}{
 		"LetsEncrypt ACME v1 prod URL specified, return early": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEURL(acmev1Prod)),
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorInvalidConfig),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateUpdateToV2, acmev1Prod, acmev2Prod))),
-			},
+			expectErr: "your ACME server URL is set to a v1 endpoint (https://acme-v01.api.letsencrypt.org/directory). You should update the spec.acme.server field to \"https://acme-v02.api.letsencrypt.org/directory\"",
 		},
 		"LetsEncrypt ACME v1 staging URL with trailing slash specified, return early": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEURL(fmt.Sprintf("%s/", acmev1Staging))),
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorInvalidConfig),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateUpdateToV2, fmt.Sprintf("%s/", acmev1Staging), acmev2Staging))),
-			},
+			expectErr: "your ACME server URL is set to a v1 endpoint (https://acme-staging.api.letsencrypt.org/directory/). You should update the spec.acme.server field to \"https://acme-staging-v02.api.letsencrypt.org/directory\"",
 		},
 		"ACME private key secret does not exist, account key generation not disabled, key secret creation fails": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
 			kfsErr:                     notFoundErr,
 			acmePrivKeySecretCreateErr: someErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+someErr.Error())),
-			},
-			wantsErr: true,
+			expectErr:                  "failed to create ACME account key: test",
 		},
 		"ACME private key secret does not exist, account key generation is disabled": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEDisableAccountKeyGeneration(true),
 			),
-			kfsErr: notFoundErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(messageAccountVerificationFailed+messageNoSecretKeyGenerationDisabled+notFoundErr.Error())),
-			},
-			wantsErr: true,
+			kfsErr:    notFoundErr,
+			expectErr: "failed to verify ACME account: the ACME issuer config has 'disableAccountKeyGeneration' set to true, but the secret was not found: test \"test\" not found",
 		},
 		"ACME private key secret does not exist, account key generation is enabled, key creation succeeds": {
-			issuer:      gen.IssuerFrom(baseIssuer),
-			kfsErr:      notFoundErr,
-			acmePrivKey: rsaPrivKey.(*rsa.PrivateKey),
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition)},
+			issuer:                     gen.IssuerFrom(baseIssuer),
+			kfsErr:                     notFoundErr,
+			acmePrivKey:                rsaPrivKey.(*rsa.PrivateKey),
 			removeClientShouldBeCalled: true,
 			addClientShouldBeCalled:    true,
 			expectedRegisteredAcc:      &acmeapi.Account{},
 		},
 		"ACME private key secret exists, but contains invalid private key": {
-			issuer: gen.IssuerFrom(baseIssuer),
-			kfsErr: invalidDataErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%v", messageInvalidPrivateKey, invalidDataErr))),
-			},
+			issuer:    gen.IssuerFrom(baseIssuer),
+			kfsErr:    invalidDataErr,
+			expectErr: "account private key is invalid: test",
 		},
 		"Checking ACME private key secret fails with an unknown error": {
-			issuer: gen.IssuerFrom(baseIssuer),
-			kfsErr: someErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(messageAccountVerificationFailed+someErr.Error())),
-			},
-			wantsErr: true,
+			issuer:    gen.IssuerFrom(baseIssuer),
+			kfsErr:    someErr,
+			expectErr: "failed to verify ACME account: test",
 		},
 		"ACME account's key is not an RSA key": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
-			kfsKey: ecdsaPrivKey,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotRSA, issuerSecretKeyName))),
-			},
+			kfsKey:    ecdsaPrivKey,
+			expectErr: "ACME private key in \"test\" is not of type RSA",
 		},
 		"ACME server URL is an invalid URL": {
 			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerACMEURL(invalidURL)),
 			kfsKey:                     rsaPrivKey,
 			removeClientShouldBeCalled: true,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorInvalidURL),
-					gen.SetIssuerConditionMessage(invalidURLMessage)),
-			},
-			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorInvalidURL, invalidURLMessage)},
-		},
-		"ACME account URL is an invalid URL": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerACMEAccountURL(invalidURL)),
-			kfsKey:                     rsaPrivKey,
-			removeClientShouldBeCalled: true,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorInvalidURL),
-					gen.SetIssuerConditionMessage(invalidAccountURLMessage)),
-			},
-			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorInvalidURL, invalidAccountURLMessage),
-			},
+			expectErr:                  "failed to parse ACME server URL: parse \"%\": invalid URL escape \"%\"",
 		},
 		"ACME Issuer is ready, URL and email are matching": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -257,13 +194,10 @@ func TestAcme_Setup(t *testing.T) {
 				gen.AddIssuerCondition(
 					*gen.IssuerConditionFrom(readyTrueCondition,
 						gen.SetIssuerConditionStatus(cmmeta.ConditionTrue)))),
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionTrue),
-					gen.SetIssuerConditionMessage(messageAccountRegistered),
-					gen.SetIssuerConditionReason(successAccountRegistered)),
+			kfsKey: rsaPrivKey,
+			expectedRegisteredAcc: &acmeapi.Account{
+				Contact: []string{someEmailURL},
 			},
-			kfsKey:                     rsaPrivKey,
 			removeClientShouldBeCalled: true,
 			addClientShouldBeCalled:    true,
 		},
@@ -273,14 +207,7 @@ func TestAcme_Setup(t *testing.T) {
 			kfsKey:                     rsaPrivKey,
 			removeClientShouldBeCalled: true,
 			eabSecretGetErr:            notFoundErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+notFoundErr.Error())),
-			},
-			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountRegistrationFailed, messageAccountRegistrationFailed+notFoundErr.Error()),
-			},
+			expectErr:                  "failed to register ACME account: invalid/ missing EAB key: test \"test\" not found",
 		},
 		"EAB for issuer specified, attempting to retrieve secret fails with unknown error": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -288,12 +215,7 @@ func TestAcme_Setup(t *testing.T) {
 			kfsKey:                     rsaPrivKey,
 			removeClientShouldBeCalled: true,
 			eabSecretGetErr:            someErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+fmt.Sprintf(messageTemplateFailedToGetEABKey, someErr))),
-			},
-			wantsErr: true,
+			expectErr:                  "failed to register ACME account: failed to load EAB key: failed to get External Account Binding key from secret: test",
 		},
 		"Attempt to register ACME account returns unknown error": {
 			issuer:                     gen.IssuerFrom(baseIssuer),
@@ -301,12 +223,7 @@ func TestAcme_Setup(t *testing.T) {
 			removeClientShouldBeCalled: true,
 			registerErr:                someErr,
 			expectedRegisteredAcc:      &acmeapi.Account{},
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+someErr.Error())),
-			},
-			wantsErr: true,
+			expectErr:                  "failed to register ACME account: ACME Register operation failed: test",
 		},
 		"Attempt to register ACME account returns an ACME error in range [400,500)": {
 			issuer:                     gen.IssuerFrom(baseIssuer),
@@ -314,11 +231,7 @@ func TestAcme_Setup(t *testing.T) {
 			removeClientShouldBeCalled: true,
 			expectedRegisteredAcc:      &acmeapi.Account{},
 			registerErr:                acmeErr450,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+acmeErr450.Error())),
-			},
+			expectErr:                  "failed to register ACME account: ACME Register operation failed: 450 : ",
 		},
 		"Attempt to register ACME account returns an ACME error outside of range [400,500)": {
 			issuer:                     gen.IssuerFrom(baseIssuer),
@@ -326,12 +239,7 @@ func TestAcme_Setup(t *testing.T) {
 			removeClientShouldBeCalled: true,
 			expectedRegisteredAcc:      &acmeapi.Account{},
 			registerErr:                acmeErr500,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+acmeErr500.Error())),
-			},
-			wantsErr: true,
+			expectErr:                  "failed to register ACME account: ACME Register operation failed: 500 : ",
 		},
 		"ACME account already exists, attempting to retrieve it fails with unknown error": {
 			issuer:                     gen.IssuerFrom(baseIssuer),
@@ -340,12 +248,7 @@ func TestAcme_Setup(t *testing.T) {
 			expectedRegisteredAcc:      &acmeapi.Account{},
 			registerErr:                acmeapi.ErrAccountAlreadyExists,
 			getRegErr:                  someErr,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+someErr.Error())),
-			},
-			wantsErr: true,
+			expectErr:                  "failed to register ACME account: ACME GetReg operation failed: test",
 		},
 		"ACME account with EAB registered successfully": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -358,12 +261,6 @@ func TestAcme_Setup(t *testing.T) {
 				KID: someString,
 				Key: []byte(eabKey),
 			}},
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionTrue),
-					gen.SetIssuerConditionReason(successAccountRegistered),
-					gen.SetIssuerConditionMessage(messageAccountRegistered)),
-			},
 		},
 		"ACME account with legacy EAB key algorithm set and with an email is registered successfully": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -378,12 +275,6 @@ func TestAcme_Setup(t *testing.T) {
 				Key: []byte(eabKey),
 			},
 				Contact: []string{someEmailURL},
-			},
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionTrue),
-					gen.SetIssuerConditionReason(successAccountRegistered),
-					gen.SetIssuerConditionMessage(messageAccountRegistered)),
 			},
 		},
 		"ACME account with legacy EAB key algorithm set, spec email different from registered email and registered successfully": {
@@ -407,12 +298,6 @@ func TestAcme_Setup(t *testing.T) {
 			},
 				Contact: []string{someEmailURL},
 			},
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionTrue),
-					gen.SetIssuerConditionReason(successAccountRegistered),
-					gen.SetIssuerConditionMessage(messageAccountRegistered)),
-			},
 		},
 		"ACME account with legacy EAB key algorithm set, spec email different from registered email and registered failed": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -435,15 +320,7 @@ func TestAcme_Setup(t *testing.T) {
 				Contact: []string{someEmailURL},
 			},
 			updateRegError: someErr,
-			wantsErr:       true,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
-					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, someString))),
-			},
-			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, someString))},
+			expectErr:      "failed to register ACME account: ACME UpdateReg operation failed: test",
 		},
 		"ACME account with legacy EAB key algorithm set, spec email different from registered email and registered failed with non-retryable ACME Error": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -466,15 +343,7 @@ func TestAcme_Setup(t *testing.T) {
 				Contact: []string{someEmailURL},
 			},
 			updateRegError: acmeErr450,
-			wantsErr:       false,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
-					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr450.Error()))),
-			},
-			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr450.Error()))},
+			expectErr:      "failed to register ACME account: ACME UpdateReg operation failed: 450 : ",
 		},
 		"ACME account with legacy EAB key algorithm set, spec email different from registered email and registered failed with retryable ACME Error": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -497,15 +366,7 @@ func TestAcme_Setup(t *testing.T) {
 				Contact: []string{someEmailURL},
 			},
 			updateRegError: acmeErr500,
-			wantsErr:       true,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyTrueCondition,
-					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
-					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr500.Error()))),
-			},
-			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr500.Error()))},
+			expectErr:      "failed to register ACME account: ACME UpdateReg operation failed: 500 : ",
 		},
 	}
 	for name, test := range tests {
@@ -530,18 +391,8 @@ func TestAcme_Setup(t *testing.T) {
 			kfs := keyFromSecretMockBuilder(&(kfsWasCalled), test.kfsKey, test.kfsErr)
 
 			// Mock ACME accounts registry.
-			removeClientWasCalled := false
-			addClientWasCalled := false
 			ar := &fakeregistry.FakeRegistry{
-				RemoveClientFunc: func(string) {
-					removeClientWasCalled = true
-				},
-				AddClientFunc: func(string, cmacme.ACMEIssuer, *rsa.PrivateKey, string) {
-					addClientWasCalled = true
-				},
-				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
-					return true
-				},
+				AddClientFunc: func(uid string, options accounts.RegistryItem, newClient accounts.NewClientFunc) {},
 			}
 
 			// Mock ACME client.
@@ -562,12 +413,19 @@ func TestAcme_Setup(t *testing.T) {
 			// Mock events recorder.
 			recorder := new(controllertest.FakeRecorder)
 			a := Acme{
-				issuer:          test.issuer,
 				secretsClient:   secretsClient,
 				accountRegistry: ar,
 				keyFromSecret:   kfs,
 				clientBuilder:   clientBuilderMock(&cl),
 				recorder:        recorder,
+
+				applyACMEStatus: func(
+					ctx context.Context,
+					ctrlclient client.Client, fieldManager string,
+					issuer cmapi.GenericIssuer, acmeStatus *cmacme.ACMEIssuerStatus,
+				) error {
+					return nil
+				},
 			}
 
 			// Stub the clock to get consistent last transition times on conditions.
@@ -575,23 +433,11 @@ func TestAcme_Setup(t *testing.T) {
 			apiutil.Clock = fakeclock
 
 			// Verify that an error is/is not returned as expected.
-			gotErr := a.Setup(context.Background())
-			if gotErr == nil && test.wantsErr {
-				t.Errorf("Expected error %v, got %v", test.wantsErr, gotErr)
-			}
-
-			// Verify that a client was removed from cache if expected.
-			if removeClientWasCalled != test.removeClientShouldBeCalled {
-				t.Errorf("Expected Acme.accountsRegistry.RemoveClient to be called: %v, was called: %v",
-					test.removeClientShouldBeCalled,
-					removeClientWasCalled)
-			}
-
-			// Verify that a new client was added to cache if expected.
-			if addClientWasCalled != test.addClientShouldBeCalled {
-				t.Errorf("Expected Acme.accountsRegistry.AddClient to be called: %v, was called: %v",
-					test.addClientShouldBeCalled,
-					addClientWasCalled)
+			gotErr := a.Setup(context.Background(), test.issuer)
+			if test.expectErr != "" {
+				assert.EqualError(t, gotErr, test.expectErr)
+			} else {
+				assert.NoError(t, gotErr)
 			}
 
 			// Verify that the expected account value was passed when the
@@ -601,20 +447,9 @@ func TestAcme_Setup(t *testing.T) {
 					test.expectedRegisteredAcc, gotAcc)
 			}
 
-			// Verify issuer's state after Setup was called.
-			gotConditions := a.issuer.GetStatus().Conditions
-			// Issuer can only have a single condition, so no need to sort the
-			// conditions.
-			if !reflect.DeepEqual(gotConditions, test.expectedConditions) {
-				t.Errorf("Expected issuer's conditions: %#+v\ngot: %#+v",
-					test.expectedConditions, gotConditions)
-			}
-
 			// Verify that the expected events were recorded.
-			if !slices.Equal(test.expectedEvents, recorder.Events) {
-				t.Errorf("Expected events:\n%+#v\ngot:%+#v",
-					test.expectedEvents,
-					recorder.Events)
+			if len(recorder.Events) > 0 {
+				t.Errorf("got unexpected events, got='%s'", recorder.Events)
 			}
 		})
 	}
@@ -629,14 +464,9 @@ func keyFromSecretMockBuilder(wasCalled *bool, key crypto.Signer, err error) key
 }
 
 func clientBuilderMock(cl acmecl.Interface) accounts.NewClientFunc {
-	return func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface {
+	return func(accounts.NewClientOptions) acmecl.Interface {
 		return cl
 	}
-}
-
-func parseURLErr(s string) error {
-	_, err := url.Parse(s)
-	return err
 }
 
 func mustGenerateEDCSAKey(t *testing.T) crypto.Signer {

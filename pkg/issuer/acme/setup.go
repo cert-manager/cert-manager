@@ -19,13 +19,11 @@ package acme
 import (
 	"context"
 	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/url"
-	"strings"
 
+	"github.com/cert-manager/issuer-lib/controllers/signer"
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,8 +31,8 @@ import (
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
-	"github.com/cert-manager/cert-manager/pkg/acme/client"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -43,15 +41,6 @@ import (
 )
 
 const (
-	errorAccountRegistrationFailed = "ErrRegisterACMEAccount"
-	errorAccountVerificationFailed = "ErrVerifyACMEAccount"
-	errorAccountUpdateFailed       = "ErrUpdateACMEAccount"
-	errorInvalidConfig             = "InvalidConfig"
-	errorInvalidURL                = "InvalidURL"
-
-	successAccountRegistered = "ACMEAccountRegistered"
-	successAccountVerified   = "ACMEAccountVerified"
-
 	messageAccountRegistrationFailed     = "Failed to register ACME account: "
 	messageAccountVerificationFailed     = "Failed to verify ACME account: "
 	messageAccountUpdateFailed           = "Failed to update ACME account:"
@@ -69,182 +58,138 @@ const (
 
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
-func (a *Acme) Setup(ctx context.Context) error {
+func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	log := logf.FromContext(ctx)
 
-	// Correct reason and message for issuer's Ready condition must be always set
-	// before returning from this function. Status must be set if not false.
-	status := cmmeta.ConditionFalse
-	var reason, msg string
-	defer func() {
-		apiutil.SetIssuerCondition(a.issuer,
-			a.issuer.GetGeneration(),
-			v1.IssuerConditionReady,
-			status,
-			reason,
-			msg)
-	}()
-
 	// check if user has specified a v1 account URL, and set a status condition if so.
-	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
-		reason = errorInvalidConfig
-		msg = fmt.Sprintf(messageTemplateUpdateToV2, a.issuer.GetSpec().ACME.Server, newURL)
-		// Return nil, because we do not want to re-queue an Issuer with an invalid spec.
-		return nil
+	if newURL, ok := acmev1ToV2Mappings[issuer.GetSpec().ACME.Server]; ok {
+		// We do not want to re-queue an Issuer with an invalid spec.
+		return signer.PermanentError{
+			Err: fmt.Errorf("your ACME server URL is set to a v1 endpoint (%s). You should update the spec.acme.server field to %q", issuer.GetSpec().ACME.Server, newURL),
+		}
+	}
+
+	// Make sure the provided ACME Server URL is a valid URL.
+	if _, err := url.Parse(issuer.GetSpec().ACME.Server); err != nil {
+		return signer.PermanentError{
+			Err: fmt.Errorf("failed to parse ACME server URL: %v", err),
+		}
 	}
 
 	// if the namespace field is not set, we are working on a ClusterIssuer resource
 	// therefore we should check for the ACME private key in the 'cluster resource namespace'.
-	ns := a.issuer.GetObjectMeta().Namespace
-	if ns == "" {
-		ns = a.clusterResourceNamespace
+	resourceNamespace := issuer.GetNamespace()
+	if resourceNamespace == "" {
+		resourceNamespace = a.clusterResourceNamespace
 	}
 
-	log = logf.WithRelatedResourceName(log, a.issuer.GetSpec().ACME.PrivateKey.Name, ns, "Secret")
+	log = logf.WithRelatedResourceName(log, issuer.GetSpec().ACME.PrivateKey.Name, resourceNamespace, "Secret")
 
 	// attempt to obtain the existing private key from the apiserver.
 	// if it does not exist then we generate one
 	// if it contains invalid data, warn the user and return without error.
 	// if any other error occurs, return it and retry.
-	privateKeySelector := acme.PrivateKeySelector(a.issuer.GetSpec().ACME.PrivateKey)
-	pk, err := a.keyFromSecret(ctx, ns, privateKeySelector.Name, privateKeySelector.Key)
-	switch {
-	case !a.issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
-		log.V(logf.InfoLevel).Info("generating acme account private key")
-		pk, err = a.createAccountPrivateKey(ctx, privateKeySelector, ns)
-		if err != nil {
-			msg = messageAccountRegistrationFailed + err.Error()
-			reason = errorAccountRegistrationFailed
-			return fmt.Errorf("%s", msg)
+	var rsaPk *rsa.PrivateKey
+	{
+		privateKeySelector := acme.PrivateKeySelector(issuer.GetSpec().ACME.PrivateKey)
+		pk, err := a.keyFromSecret(ctx, resourceNamespace, privateKeySelector.Name, privateKeySelector.Key)
+		switch {
+		case !issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
+			log.V(logf.InfoLevel).Info("generating acme account private key")
+			pk, err = a.createAccountPrivateKey(ctx, privateKeySelector, resourceNamespace)
+			if err != nil {
+				return fmt.Errorf("failed to create ACME account key: %w", err)
+			}
+
+		case issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
+			// TODO: only re-reconcile when the secret is created.
+			return fmt.Errorf("failed to verify ACME account: the ACME issuer config has 'disableAccountKeyGeneration' set to true, but the secret was not found: %w", err)
+
+		case errors.IsInvalidData(err):
+			// TODO: only re-reconcile when the secret is updated.
+			return fmt.Errorf("account private key is invalid: %w", err)
+
+		case err != nil:
+			// TODO: only re-reconcile when the secret is updated.
+			return fmt.Errorf("failed to verify ACME account: %s", err.Error())
 		}
-		// We clear the ACME account URI as we have generated a new private key
-		a.issuer.GetStatus().ACMEStatus().URI = ""
 
-	case a.issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
-		wrapErr := fmt.Errorf("%s%s%v", messageAccountVerificationFailed,
-			messageNoSecretKeyGenerationDisabled,
-			err)
-		reason = errorAccountVerificationFailed
-		msg = wrapErr.Error()
-		// TODO: we should not re-queue the Issuer here as a resync will happen
-		// when the user adds the Secret or changes Issuer's spec. Should be
-		// fixed by https://github.com/cert-manager/cert-manager/issues/4004
-		return wrapErr
+		castKey, ok := pk.(*rsa.PrivateKey)
+		if !ok {
+			// TODO: only re-reconcile when the secret is updated.
+			return fmt.Errorf("ACME private key in %q is not of type RSA", issuer.GetSpec().ACME.PrivateKey.Name)
+		}
 
-	case errors.IsInvalidData(err):
-		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf("%s%v", messageInvalidPrivateKey, err)
-		return nil
-
-	case err != nil:
-		reason = errorAccountVerificationFailed
-		msg = messageAccountVerificationFailed + err.Error()
-		return fmt.Errorf("%s", msg)
-	}
-	rsaPk, ok := pk.(*rsa.PrivateKey)
-	if !ok {
-		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf(messageTemplateNotRSA,
-			a.issuer.GetSpec().ACME.PrivateKey.Name)
-		return nil
+		rsaPk = castKey
 	}
 
-	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(a.issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, rsaPk)
+	acmeClientOptions := accounts.RegistryItem{
+		NewClientOptions: accounts.NewClientOptions{
+			SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
+			CABundle:      issuer.GetSpec().ACME.CABundle,
+			Server:        issuer.GetSpec().ACME.Server,
+			PrivateKey:    rsaPk,
+		},
 
-	// TODO: don't always clear the client cache.
-	//  In future we should intelligently manage items in the account cache
-	//  and remove them when the corresponding issuer is updated/deleted.
-	// TODO: if we fail earlier, the issuer is considered not ready and we
-	// probably don't want other controllers to use its client from the cache.
-	// We could therefore move the removing of the client up to the start of
-	// this function.
-	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
-
-	httpClient := accounts.BuildHTTPClientWithCABundle(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify, a.issuer.GetSpec().ACME.CABundle)
-
-	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
-
-	// TODO: perform a complex check to determine whether we need to verify
-	// the existing registration with the ACME server.
-	// This should take into account the ACME server URL, as well as a checksum
-	// of the private key's contents.
-	// Alternatively, we could add 'observed generation' fields here, tracking
-	// the most recent copy of the Issuer and Secret resource we have checked
-	// already.
-
-	rawServerURL := a.issuer.GetSpec().ACME.Server
-	parsedServerURL, err := url.Parse(rawServerURL)
-	if err != nil {
-		reason = errorInvalidURL
-		msg = fmt.Sprintf(messageTemplateFailedToParseURL, rawServerURL, err)
-		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorInvalidURL, msg)
-		// absorb errors as retrying will not help resolve this error
-		return nil
+		Email: issuer.GetSpec().ACME.Email,
 	}
 
-	rawAccountURL := a.issuer.GetStatus().ACMEStatus().URI
-	parsedAccountURL, err := url.Parse(rawAccountURL)
-	if err != nil {
-		reason = errorInvalidURL
-		msg = fmt.Sprintf(messageTemplateFailedToParseAccountURL, rawAccountURL, err)
-		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorInvalidURL, msg)
-		// absorb errors as retrying will not help resolve this error
-		return nil
-	}
-	hasReadyCondition := apiutil.IssuerHasCondition(a.issuer, v1.IssuerCondition{
+	// ensure the cached client in the account registry is up to date
+	a.accountRegistry.AddClient(string(issuer.GetUID()), acmeClientOptions, a.clientBuilder)
+
+	if issuerIsReady := apiutil.IssuerHasCondition(issuer.GetStatus(), v1.IssuerCondition{
 		Type:   v1.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
-	})
-
-	// If the Host components of the server URL and the account URL match,
-	// and the cached email matches the registered email, then
-	// we skip re-checking the account status to save excess calls to the
-	// ACME api.
-	if hasReadyCondition &&
-		a.issuer.GetStatus().ACMEStatus().URI != "" &&
-		parsedAccountURL.Host == parsedServerURL.Host &&
-		a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail == a.issuer.GetSpec().ACME.Email &&
-		isPKChecksumSame {
-		log.V(logf.InfoLevel).Info("skipping re-verifying ACME account as cached registration " +
-			"details look sufficient")
-
-		// Updating issuer's Ready condition here will ensure that observed
-		// generation gets bumped correctly if this re-sync was triggered by a
-		// spec change. Last transition time on the condition will not be modified.
-		// TODO: perhaps we should retrieve the existing message and reason.
-		reason = successAccountRegistered
-		msg = messageAccountRegistered
-		status = cmmeta.ConditionTrue
-
-		// ensure the cached client in the account registry is up to date
-		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
-		return nil
+	}); issuerIsReady {
+		// The issuer is in the Ready state, we will confirm that the ACME account
+		// described in the Spec was registred by comparing its options with the spec
+		// of the issuer.
+		if acmeClientOptions.IsRegistered(issuer.GetStatus().ACME) {
+			log.V(logf.InfoLevel).Info("skipping re-verifying ACME account as cached registration details look sufficient")
+			return nil
+		}
 	}
 
-	if parsedAccountURL.Host != parsedServerURL.Host {
-		log.V(logf.InfoLevel).Info("ACME server URL host and ACME private key registration " +
-			"host differ. Re-checking ACME account registration")
-		a.issuer.GetStatus().ACMEStatus().URI = ""
+	if err := a.registerACME(ctx, resourceNamespace, issuer, acmeClientOptions); err != nil {
+		return fmt.Errorf("failed to register ACME account: %w", err)
 	}
 
+	return nil
+}
+
+func (a *Acme) registerACME(
+	ctx context.Context,
+	resourceNamespace string,
+	issuer v1.GenericIssuer,
+	acmeClientOptions accounts.RegistryItem,
+) error {
+	log := logf.FromContext(ctx)
+
+	// Reset status of issuer
+	var statusPatch *cmacme.ACMEIssuerStatus
+	{
+		if err := a.applyACMEStatus(ctx, a.ctrlclient, a.registrationFieldManager, issuer, statusPatch); err != nil {
+			return fmt.Errorf("failed to reset the ACME registration in the status of the issuer: %w", err)
+		}
+	}
+	defer func() {
+		if err := a.applyACMEStatus(ctx, a.ctrlclient, a.registrationFieldManager, issuer, statusPatch); err != nil {
+			log.Error(err, "Failed to save ACME registration in the status of the issuer")
+		}
+	}()
+
+	// defer update status of issuer
 	var eabAccount *acmeapi.ExternalAccountBinding
-	if eabObj := a.issuer.GetSpec().ACME.ExternalAccountBinding; eabObj != nil {
-		eabKey, err := a.getEABKey(ctx, ns)
+	if eabObj := issuer.GetSpec().ACME.ExternalAccountBinding; eabObj != nil {
+		eabKey, err := a.getEABKey(ctx, eabObj.Key, resourceNamespace)
 		switch {
 		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
 		case apierrors.IsNotFound(err), errors.IsInvalidData(err):
-			log.Error(err, "failed to verify ACME account")
-			reason = errorAccountRegistrationFailed
-			msg = messageAccountRegistrationFailed + err.Error()
-			a.recorder.Event(a.issuer, corev1.EventTypeWarning,
-				errorAccountRegistrationFailed,
-				msg)
-			return nil
+			// TODO: only re-reconcile if the secret is created or updated.
+			return fmt.Errorf("invalid/ missing EAB key: %w", err)
 
 		case err != nil:
-			reason = errorAccountRegistrationFailed
-			msg = messageAccountRegistrationFailed + err.Error()
-			return fmt.Errorf("%s", msg)
+			return fmt.Errorf("failed to load EAB key: %w", err)
 		}
 
 		// set the external account binding
@@ -255,57 +200,18 @@ func (a *Acme) Setup(ctx context.Context) error {
 	}
 
 	// register an ACME account or retrieve it if it already exists.
-	account, err := a.registerAccount(ctx, cl, eabAccount)
+	newACMEStatus, err := acmeClientOptions.Register(ctx, a.clientBuilder, eabAccount)
 	if err != nil {
-		// TODO: this error could be from an account registration or an attempt
-		// to retrieve an existing account - perhaps we should log different
-		// messages in those two scenarios.
-		reason = errorAccountRegistrationFailed
-		msg = messageAccountRegistrationFailed + err.Error()
-		log.Error(err, "failed to register an ACME account")
-
-		acmeErr, ok := err.(*acmeapi.Error)
-		// If this is not an ACME error, we will simply return it and retry later
-		if !ok {
-			return err
-		}
-
 		// If the status code is 400 (BadRequest), we will *not* retry this registration
 		// as it implies that something about the request (i.e. email address or private key)
 		// is invalid.
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.Error(acmeErr, "skipping retrying account registration as a "+
-				"BadRequest response was returned from the ACME server")
-			return nil
-		}
-
-		// Otherwise if we receive anything other than a 400, we will retry.
-		return err
-	}
-
-	// if we got an account successfully, we must check if the registered
-	// email is the same as in the issuer spec
-	specEmail := a.issuer.GetSpec().ACME.Email
-	account, registeredEmail, err := ensureEmailUpToDate(ctx, cl, account, specEmail)
-	if err != nil {
-		reason = errorAccountUpdateFailed
-		msg = messageAccountUpdateFailed + err.Error()
-		log.Error(err, "failed to update ACME account")
-		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountUpdateFailed, msg)
-
 		acmeErr, ok := err.(*acmeapi.Error)
-		// If this is not an ACME error, we will simply return it and retry later
-		if !ok {
-			return err
-		}
+		if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			log.Error(acmeErr, "skipping retrying account registration as a BadRequest response was returned from the ACME server")
 
-		// If the status code is 400 (BadRequest), we will *not* retry this registration
-		// as it implies that something about the request (i.e. email address or private key)
-		// is invalid.
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.Error(acmeErr, "skipping updating account email as a "+
-				"BadRequest response was returned from the ACME server")
-			return nil
+			return signer.PermanentError{
+				Err: err,
+			}
 		}
 
 		// Otherwise if we receive anything other than a 400, we will retry.
@@ -313,86 +219,16 @@ func (a *Acme) Setup(ctx context.Context) error {
 	}
 
 	log.V(logf.InfoLevel).Info("verified existing registration with ACME server")
-	status = cmmeta.ConditionTrue
-	reason = successAccountRegistered
-	msg = messageAccountRegistered
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(rsaPk)
-	checksum := sha256.Sum256(privateKeyBytes)
-	checksumString := base64.StdEncoding.EncodeToString(checksum[:])
-	a.issuer.GetStatus().ACMEStatus().URI = account.URI
-	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
-	a.issuer.GetStatus().ACMEStatus().LastPrivateKeyHash = checksumString
-	// ensure the cached client in the account registry is up to date
-	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	statusPatch = newACMEStatus
 
 	return nil
 }
 
-func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {
-	log := logf.FromContext(ctx)
-
-	// if no email was specified, then registeredEmail will remain empty
-	registeredEmail := ""
-	if len(acc.Contact) > 0 {
-		registeredEmail = strings.Replace(acc.Contact[0], "mailto:", "", 1)
-	}
-
-	// if they are different, we update the account
-	if registeredEmail != specEmail {
-		log.V(logf.DebugLevel).Info("updating ACME account email address", "email", specEmail)
-		emailurl := []string(nil)
-		if specEmail != "" {
-			emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(specEmail))}
-		}
-		acc.Contact = emailurl
-
-		var err error
-		acc, err = cl.UpdateReg(ctx, acc)
-		if err != nil {
-			return nil, "", err
-		}
-
-		// update the registeredEmail var so it is updated properly in the status below
-		registeredEmail = specEmail
-	}
-
-	return acc, registeredEmail, nil
-}
-
-// registerAccount will register a new ACME account with the server. If an
-// account with the clients private key already exists, it will attempt to look
-// up and verify the corresponding account, and will return that. If this fails
-// due to a not found error it will register a new account with the given key.
-func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAccount *acmeapi.ExternalAccountBinding) (*acmeapi.Account, error) {
-	emailurl := []string(nil)
-	if a.issuer.GetSpec().ACME.Email != "" {
-		emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))}
-	}
-
-	acc := &acmeapi.Account{
-		Contact:                emailurl,
-		ExternalAccountBinding: eabAccount,
-	}
-
-	// private key, server URL and HTTP options are stored in the ACME client (cl).
-	acc, err := cl.Register(ctx, acc, acmeapi.AcceptTOS)
-	// If the account already exists, fetch the Account object and return.
-	if err == acmeapi.ErrAccountAlreadyExists {
-		return cl.GetReg(ctx, "")
-	}
-	if err != nil {
-		return nil, err
-	}
-	// TODO: re-enable this check once this field is set by Pebble
-	// if acc.Status != acme.StatusValid {
-	// 	return nil, fmt.Errorf("acme account is not valid")
-	// }
-
-	return acc, nil
-}
-
-func (a *Acme) getEABKey(ctx context.Context, ns string) ([]byte, error) {
-	eab := a.issuer.GetSpec().ACME.ExternalAccountBinding.Key
+func (a *Acme) getEABKey(
+	ctx context.Context,
+	eab cmmeta.SecretKeySelector,
+	ns string,
+) ([]byte, error) {
 	sec, err := a.secretsClient.Secrets(ns).Get(ctx, eab.Name, metav1.GetOptions{})
 	// Surface IsNotFound API error to not cause re-sync
 	if apierrors.IsNotFound(err) {
@@ -429,7 +265,7 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 		return nil, err
 	}
 
-	_, err = a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
+	if _, err := a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
@@ -437,9 +273,7 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
 		},
-	}, metav1.CreateOptions{})
-
-	if err != nil {
+	}, metav1.CreateOptions{}); err != nil {
 		return nil, err
 	}
 

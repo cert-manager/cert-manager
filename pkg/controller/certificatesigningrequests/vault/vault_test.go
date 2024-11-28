@@ -131,7 +131,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ context.Context, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ cmapi.GenericIssuer) (internalvault.Interface, error) {
+			clientBuilder: func(_ context.Context, _ types.NamespacedName, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ *cmapi.IssuerSpec) (internalvault.Interface, error) {
 				return nil, apierrors.NewNotFound(schema.GroupResource{}, "test-secret")
 			},
 			builder: &testpkg.Builder{
@@ -192,7 +192,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ context.Context, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ cmapi.GenericIssuer) (internalvault.Interface, error) {
+			clientBuilder: func(_ context.Context, _ types.NamespacedName, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ *cmapi.IssuerSpec) (internalvault.Interface, error) {
 				return nil, errors.New("generic error")
 			},
 			expectedErr: true,
@@ -236,7 +236,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ context.Context, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ cmapi.GenericIssuer) (internalvault.Interface, error) {
+			clientBuilder: func(_ context.Context, _ types.NamespacedName, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ *cmapi.IssuerSpec) (internalvault.Interface, error) {
 				return fakevault.New(), nil
 			},
 			builder: &testpkg.Builder{
@@ -298,7 +298,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ context.Context, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ cmapi.GenericIssuer) (internalvault.Interface, error) {
+			clientBuilder: func(_ context.Context, _ types.NamespacedName, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ *cmapi.IssuerSpec) (internalvault.Interface, error) {
 				return fakevault.New().WithSign(nil, nil, errors.New("sign error")), nil
 			},
 			builder: &testpkg.Builder{
@@ -359,7 +359,7 @@ func TestProcessItem(t *testing.T) {
 					Status: corev1.ConditionTrue,
 				}),
 			),
-			clientBuilder: func(_ context.Context, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ cmapi.GenericIssuer) (internalvault.Interface, error) {
+			clientBuilder: func(_ context.Context, _ types.NamespacedName, _ string, _ func(ns string) internalvault.CreateToken, _ internalinformers.SecretLister, _ *cmapi.IssuerSpec) (internalvault.Interface, error) {
 				return fakevault.New().WithSign([]byte("signed-cert"), []byte("signing-ca"), nil), nil
 			},
 			builder: &testpkg.Builder{

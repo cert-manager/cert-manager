@@ -14,29 +14,81 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package clusterissuers
+package issuerlib
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssuer, error) {
-	issuers, err := c.clusterIssuerLister.List(labels.NewSelector())
+type ct struct {
+	issuerLister              cmlisters.IssuerLister
+	kubeSharedInformerFactory internalinformers.KubeInformerFactory
+}
+
+var _ source.TypedSource[reconcile.Request] = &ct{}
+
+func (c *ct) Start(ctx context.Context, wq workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
+	log := logf.FromContext(ctx)
+	secretInformer := c.kubeSharedInformerFactory.Secrets()
+
+	// register handler functions
+	if _, err := secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: func(obj interface{}) {
+		log := log.WithName("secretEvent")
+		secret, ok := controllerpkg.ToSecret(obj)
+		if !ok {
+			log.Error(nil, "object is not a secret", "object", obj)
+			return
+		}
+
+		log = logf.WithResource(log, secret)
+		issuers, err := c.issuersForSecret(secret)
+		if err != nil {
+			log.Error(err, "error looking up issuers observing secret")
+			return
+		}
+		for _, iss := range issuers {
+			wq.Add(reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      iss.Name,
+					Namespace: iss.Namespace,
+				},
+			})
+		}
+	}}); err != nil {
+		return fmt.Errorf("error setting up event handler: %v", err)
+	}
+
+	return nil
+}
+
+func (c *ct) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, error) {
+	issuers, err := c.issuerLister.List(labels.NewSelector())
 
 	if err != nil {
 		return nil, fmt.Errorf("error listing issuers: %s", err.Error())
 	}
 
-	var affected []*v1.ClusterIssuer
+	var affected []*v1.Issuer
 	for _, iss := range issuers {
-		if secret.Namespace != c.clusterResourceNamespace {
+		// only applicable for Issuer resources
+		if iss.Namespace != secret.Namespace {
 			continue
 		}
+
 		switch {
 		case iss.Spec.ACME != nil:
 			if iss.Spec.ACME.PrivateKey.Name == secret.Name {

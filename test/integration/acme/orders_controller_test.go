@@ -113,7 +113,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Create a fake ACME registry with a GetClientFunc that returns the
 	// acmeClient with the stubbed methods.
 	accountRegistry := &accountstest.FakeRegistry{
-		GetClientFunc: func(_ string) (acmecl.Interface, error) {
+		GetClientFunc: func(_ string, _ *cmacme.ACMEIssuer, _ *cmacme.ACMEIssuerStatus) (acmecl.Interface, error) {
 			return acmeClient, nil
 		},
 	}

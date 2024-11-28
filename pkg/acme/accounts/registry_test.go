@@ -17,27 +17,55 @@ limitations under the License.
 package accounts
 
 import (
-	"crypto/sha256"
-	"crypto/x509"
-	"encoding/base64"
-	"net/http"
 	"testing"
 
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/acme/client"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-func TestRegistry_AddClient(t *testing.T) {
-	r := NewDefaultRegistry()
+var nilClientContructor = func(options NewClientOptions) client.Interface {
+	return &client.FakeACME{}
+}
+
+func testSetup(t *testing.T) (RegistryItem, *v1.ACMEIssuer, *v1.ACMEIssuerStatus) {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Register a new client
-	r.AddClient(http.DefaultClient, "abc", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	ri := RegistryItem{
+		NewClientOptions: NewClientOptions{
+			Server:        "https://test.cert-manager.io/server/url",
+			CABundle:      []byte("[ca bundle]"),
+			SkipTLSVerify: true,
 
-	c, err := r.GetClient("abc")
+			PrivateKey: pk,
+		},
+		Email: "[email]",
+	}
+
+	return ri, &v1.ACMEIssuer{
+			Server:        "https://test.cert-manager.io/server/url",
+			Email:         "[email]",
+			CABundle:      []byte("[ca bundle]"),
+			SkipTLSVerify: true,
+		}, &v1.ACMEIssuerStatus{
+			URI:                 "https://test.cert-manager.io/account/url",
+			LastRegisteredEmail: "[email]",
+			LastPrivateKeyHash:  ri.privateKeyHash(),
+		}
+}
+
+func TestRegistry_AddClient(t *testing.T) {
+	r := NewDefaultRegistry()
+
+	ri, spec, status := testSetup(t)
+
+	// Register a new client
+	r.AddClient("abc", ri, nilClientContructor)
+
+	c, err := r.GetClient("abc", spec, status)
 	if err != nil {
 		t.Errorf("unexpected error getting client: %v", err)
 	}
@@ -48,15 +76,13 @@ func TestRegistry_AddClient(t *testing.T) {
 
 func TestRegistry_RemoveClient(t *testing.T) {
 	r := NewDefaultRegistry()
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	ri, spec, status := testSetup(t)
 
 	// Register a new client
-	r.AddClient(http.DefaultClient, "abc", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	r.AddClient("abc", ri, nilClientContructor)
 
-	c, err := r.GetClient("abc")
+	c, err := r.GetClient("abc", spec, status)
 	if err != nil {
 		t.Errorf("unexpected error getting client: %v", err)
 	}
@@ -65,7 +91,7 @@ func TestRegistry_RemoveClient(t *testing.T) {
 	}
 
 	r.RemoveClient("abc")
-	c, err = r.GetClient("abc")
+	c, err = r.GetClient("abc", spec, status)
 	if err != ErrNotFound {
 		t.Errorf("expected ErrNotFound but got: %v", err)
 	}
@@ -77,7 +103,7 @@ func TestRegistry_RemoveClient(t *testing.T) {
 func TestRegistry_RemoveClient_EmptyRegistry(t *testing.T) {
 	r := NewDefaultRegistry()
 	r.RemoveClient("abc")
-	c, err := r.GetClient("abc")
+	c, err := r.GetClient("abc", nil, nil)
 	if err != ErrNotFound {
 		t.Errorf("expected ErrNotFound but got: %v", err)
 	}
@@ -88,20 +114,16 @@ func TestRegistry_RemoveClient_EmptyRegistry(t *testing.T) {
 
 func TestRegistry_ListClients(t *testing.T) {
 	r := NewDefaultRegistry()
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Register a new client
-	r.AddClient(http.DefaultClient, "abc", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	r.AddClient("abc", RegistryItem{}, nilClientContructor)
 	l := r.ListClients()
 	if len(l) != 1 {
 		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
 	}
 
 	// Register a second client
-	r.AddClient(http.DefaultClient, "abc2", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	r.AddClient("abc2", RegistryItem{}, nilClientContructor)
 	l = r.ListClients()
 	if len(l) != 2 {
 		t.Errorf("expected ListClients to have 2 items but it has %d", len(l))
@@ -109,14 +131,18 @@ func TestRegistry_ListClients(t *testing.T) {
 
 	// Register a third client with the same options as the second, meaning
 	// it should be de-duplicated
-	r.AddClient(http.DefaultClient, "abc2", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	r.AddClient("abc2", RegistryItem{}, nilClientContructor)
 	l = r.ListClients()
 	if len(l) != 2 {
 		t.Errorf("expected ListClients to have 2 items but it has %d", len(l))
 	}
 
 	// Update the second client with a new server URL
-	r.AddClient(http.DefaultClient, "abc2", cmacme.ACMEIssuer{Server: "abc.com"}, pk, "cert-manager-test")
+	r.AddClient("abc2", RegistryItem{
+		NewClientOptions: NewClientOptions{
+			Server: "abc.com",
+		},
+	}, nilClientContructor)
 	l = r.ListClients()
 	if len(l) != 2 {
 		t.Errorf("expected ListClients to have 2 items but it has %d", len(l))
@@ -125,24 +151,16 @@ func TestRegistry_ListClients(t *testing.T) {
 
 func TestRegistry_AddClient_UpdatesExistingWhenPrivateKeyChanges(t *testing.T) {
 	r := NewDefaultRegistry()
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pk2, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Register a new client
-	r.AddClient(http.DefaultClient, "abc", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	r.AddClient("abc", RegistryItem{}, nilClientContructor)
 	l := r.ListClients()
 	if len(l) != 1 {
 		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
 	}
 
 	// Update the client with a new private key
-	r.AddClient(http.DefaultClient, "abc", cmacme.ACMEIssuer{}, pk2, "cert-manager-test")
+	r.AddClient("abc", RegistryItem{}, nilClientContructor)
 	l = r.ListClients()
 	if len(l) != 1 {
 		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
@@ -151,33 +169,22 @@ func TestRegistry_AddClient_UpdatesExistingWhenPrivateKeyChanges(t *testing.T) {
 
 func TestRegistry_AddClient_UpdatesClientPKChecksum(t *testing.T) {
 	r := NewDefaultRegistry()
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pk2, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	pkBytes := x509.MarshalPKCS1PrivateKey(pk)
-	pkChecksum := sha256.Sum256(pkBytes)
-	pkChecksumString := base64.StdEncoding.EncodeToString(pkChecksum[:])
+	ri1, spec1, status1 := testSetup(t)
 
 	// Register a new client
-	r.AddClient(http.DefaultClient, "abc", cmacme.ACMEIssuer{}, pk, "cert-manager-test")
+	r.AddClient("abc", ri1, nilClientContructor)
 	l := r.ListClients()
 	if len(l) != 1 {
 		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
 	}
 
-	isCached := r.IsKeyCheckSumCached(pkChecksumString, pk)
-	if isCached == false {
+	if _, err := r.GetClient("abc", spec1, status1); err != nil {
 		t.Fatal("checksum failed for same key")
 	}
 
-	isCached = r.IsKeyCheckSumCached(pkChecksumString, pk2)
-	if isCached == true {
+	status1.LastPrivateKeyHash = "other value"
+
+	if _, err := r.GetClient("abc", spec1, status1); err == nil {
 		t.Fatal("checksum reported same for different keys")
 	}
 }

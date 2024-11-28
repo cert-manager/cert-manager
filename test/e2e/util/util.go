@@ -83,7 +83,7 @@ func WaitForIssuerCondition(ctx context.Context, client clientset.IssuerInterfac
 			return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
 		}
 
-		return apiutil.IssuerHasCondition(issuer, condition), nil
+		return apiutil.IssuerHasCondition(issuer.GetStatus(), condition), nil
 	})
 	return wrapErrorWithIssuerStatusCondition(ctx, client, pollErr, name, condition.Type)
 }
@@ -121,7 +121,7 @@ func WaitForClusterIssuerCondition(ctx context.Context, client clientset.Cluster
 			return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
 		}
 
-		return apiutil.IssuerHasCondition(issuer, condition), nil
+		return apiutil.IssuerHasCondition(issuer.GetStatus(), condition), nil
 	})
 	return wrapErrorWithClusterIssuerStatusCondition(ctx, client, pollErr, name, condition.Type)
 }

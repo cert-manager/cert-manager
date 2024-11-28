@@ -149,7 +149,7 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 	}
 
 	// check ready condition
-	if !apiutil.IssuerHasCondition(issuerObj, cmapi.IssuerCondition{
+	if !apiutil.IssuerHasCondition(issuerObj.GetStatus(), cmapi.IssuerCondition{
 		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}) {

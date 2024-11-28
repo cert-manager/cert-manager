@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2023 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package selfsigned
+package ssaclient
 
 import (
-	"context"
-
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (c *SelfSigned) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
-	return nil
+type applyPatch struct {
+	patch []byte
+}
+
+var _ client.Patch = applyPatch{}
+
+func (p applyPatch) Data(_ client.Object) ([]byte, error) {
+	return p.patch, nil
+}
+
+func (p applyPatch) Type() types.PatchType {
+	return types.ApplyPatchType
+}
+
+func (p applyPatch) String() string {
+	return string(p.patch)
 }

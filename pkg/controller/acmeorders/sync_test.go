@@ -929,7 +929,7 @@ func runTest(t *testing.T, test testT) {
 
 	// Set some fields on the embedded controller.
 	cw.accountRegistry = &accountstest.FakeRegistry{
-		GetClientFunc: func(_ string) (acmecl.Interface, error) {
+		GetClientFunc: func(_ string, _ *cmacme.ACMEIssuer, _ *cmacme.ACMEIssuerStatus) (acmecl.Interface, error) {
 			return test.acmeClient, nil
 		},
 	}
