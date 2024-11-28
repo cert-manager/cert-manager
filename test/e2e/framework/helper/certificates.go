@@ -211,7 +211,7 @@ func (h *Helper) WaitIssuerReady(ctx context.Context, issuer *cmapi.Issuer, time
 	logf, done := log.LogBackoff()
 	defer done()
 	return h.waitForIssuerCondition(ctx, h.CMClient.CertmanagerV1().Issuers(issuer.Namespace), issuer.Name, func(issuer *v1.Issuer) bool {
-		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
+		if !apiutil.IssuerHasCondition(issuer.GetStatus(), ready_true_condition) {
 			logf(
 				"Expected Issuer %v condition %v=%v but it has: %v",
 				issuer.Name,
@@ -257,7 +257,7 @@ func (h *Helper) WaitClusterIssuerReady(ctx context.Context, issuer *cmapi.Clust
 	logf, done := log.LogBackoff()
 	defer done()
 	return h.waitForClusterIssuerCondition(ctx, h.CMClient.CertmanagerV1().ClusterIssuers(), issuer.Name, func(issuer *v1.ClusterIssuer) bool {
-		if !apiutil.IssuerHasCondition(issuer, ready_true_condition) {
+		if !apiutil.IssuerHasCondition(issuer.GetStatus(), ready_true_condition) {
 			logf(
 				"Expected Cluster Issuer %v condition %v=%v but it has: %v",
 				issuer.Name,

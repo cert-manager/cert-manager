@@ -20,6 +20,7 @@ import (
 	"context"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	vaultinternal "github.com/cert-manager/cert-manager/internal/vault"
@@ -79,7 +80,10 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.vaultClientBuilder(ctx, resourceNamespace, v.createTokenFn, v.secretsLister, issuerObj)
+	client, err := v.vaultClientBuilder(ctx, types.NamespacedName{
+		Namespace: issuerObj.GetObjectMeta().GetNamespace(),
+		Name:      issuerObj.GetObjectMeta().GetName(),
+	}, resourceNamespace, v.createTokenFn, v.secretsLister, issuerObj.GetSpec())
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 

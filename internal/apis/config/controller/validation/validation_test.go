@@ -341,7 +341,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
-				Controllers:        []string{"issuers", "clusterissuers"},
+				Controllers:        []string{"certificates-trigger", "certificates-key-manager"},
 			},
 			nil,
 		},

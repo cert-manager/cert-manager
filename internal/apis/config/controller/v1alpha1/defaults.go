@@ -48,8 +48,7 @@ import (
 	csrselfsignedcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/selfsigned"
 	csrvaultcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/vault"
 	csrvenaficontroller "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/venafi"
-	clusterissuerscontroller "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
-	issuerscontroller "github.com/cert-manager/cert-manager/pkg/controller/issuers"
+	issuerlibcontroller "github.com/cert-manager/cert-manager/pkg/controller/issuerlib"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
@@ -101,8 +100,7 @@ var (
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
 	AllControllers = []string{
-		issuerscontroller.ControllerName,
-		clusterissuerscontroller.ControllerName,
+		issuerlibcontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
 		shimingresscontroller.ControllerName,
 		shimgatewaycontroller.ControllerName,
@@ -124,8 +122,7 @@ var (
 	}
 
 	DefaultEnabledControllers = []string{
-		issuerscontroller.ControllerName,
-		clusterissuerscontroller.ControllerName,
+		issuerlibcontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
 		shimingresscontroller.ControllerName,
 		orderscontroller.ControllerName,

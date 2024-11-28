@@ -20,10 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -87,62 +87,29 @@ func TestSetup(t *testing.T) {
 	tests := map[string]testSetupT{
 		"if client builder fails then should error": {
 			clientBuilder: failingClientBuilder,
-			expectedErr:   true,
 			iss:           baseIssuer.DeepCopy(),
-			expectedCondition: &cmapi.IssuerCondition{
-				Reason:  "ErrorSetup",
-				Message: "Failed to setup Venafi issuer: error building client: this is an error",
-				Status:  "False",
-			},
+			expectErr:     "error building Venafi client: this is an error",
 		},
 
 		"if ping fails then should error": {
 			clientBuilder: failingPingClient,
 			iss:           baseIssuer.DeepCopy(),
-			expectedErr:   true,
-			expectedCondition: &cmapi.IssuerCondition{
-				Reason:  "ErrorSetup",
-				Message: "Failed to setup Venafi issuer: error pinging Venafi API: this is a ping error",
-				Status:  "False",
-			},
+			expectErr:     "error pinging Venafi API: this is a ping error",
 		},
 
 		"if ready then should set condition": {
 			clientBuilder: pingClient,
 			iss:           baseIssuer.DeepCopy(),
-			expectedErr:   false,
-			expectedCondition: &cmapi.IssuerCondition{
-				Message: "Venafi issuer started",
-				Reason:  "Venafi issuer started",
-				Status:  "True",
-			},
-			expectedEvents: []string{
-				"Normal Ready Verified issuer with Venafi server",
-			},
 		},
 		"verifyCredentials happy path": {
 			clientBuilder: verifyCredentialsClient,
 			iss:           baseIssuer.DeepCopy(),
-			expectedErr:   false,
-			expectedCondition: &cmapi.IssuerCondition{
-				Message: "Venafi issuer started",
-				Reason:  "Venafi issuer started",
-				Status:  "True",
-			},
-			expectedEvents: []string{
-				"Normal Ready Verified issuer with Venafi server",
-			},
 		},
 
 		"if verifyCredentials returns an error we should set condition to False": {
 			clientBuilder: failingVerifyCredentialsClient,
 			iss:           baseIssuer.DeepCopy(),
-			expectedErr:   true,
-			expectedCondition: &cmapi.IssuerCondition{
-				Reason:  "ErrorSetup",
-				Message: "Failed to setup Venafi issuer: client.VerifyCredentials: 401 Unauthorized",
-				Status:  "False",
-			},
+			expectErr:     "error verifying Venafi credentials: 401 Unauthorized",
 		},
 	}
 
@@ -157,9 +124,7 @@ type testSetupT struct {
 	clientBuilder client.VenafiClientBuilder
 	iss           cmapi.GenericIssuer
 
-	expectedErr       bool
-	expectedEvents    []string
-	expectedCondition *cmapi.IssuerCondition
+	expectErr string
 }
 
 func (s *testSetupT) runTest(t *testing.T) {
@@ -170,50 +135,18 @@ func (s *testSetupT) runTest(t *testing.T) {
 		Context: &controllerpkg.Context{
 			Recorder: rec,
 		},
-		issuer:        s.iss,
 		clientBuilder: s.clientBuilder,
 		log:           logf.Log.WithName("venafi"),
 	}
 
-	err := v.Setup(context.TODO())
-	if err != nil && !s.expectedErr {
-		t.Errorf("expected to not get an error, but got: %v", err)
+	err := v.Setup(context.TODO(), s.iss)
+	if s.expectErr != "" {
+		assert.EqualError(t, err, s.expectErr)
+		return
 	}
-	if err == nil && s.expectedErr {
-		t.Errorf("expected to get an error but did not get one")
-	}
+	assert.NoError(t, err)
 
-	if !slices.Equal(s.expectedEvents, rec.Events) {
-		t.Errorf("got unexpected events, exp='%s' got='%s'",
-			s.expectedEvents, rec.Events)
-	}
-
-	conditions := s.iss.GetStatus().Conditions
-	if s.expectedCondition == nil &&
-		len(conditions) > 0 {
-		t.Errorf("expected no conditions but got=%+v",
-			conditions)
-	}
-
-	if s.expectedCondition != nil {
-		if len(conditions) != 1 {
-			t.Error("expected conditions but got none")
-			t.FailNow()
-		}
-
-		c := conditions[0]
-
-		if s.expectedCondition.Message != c.Message {
-			t.Errorf("unexpected condition message, exp=%s got=%s",
-				s.expectedCondition.Message, c.Message)
-		}
-		if s.expectedCondition.Reason != c.Reason {
-			t.Errorf("unexpected condition reason, exp=%s got=%s",
-				s.expectedCondition.Reason, c.Reason)
-		}
-		if s.expectedCondition.Status != c.Status {
-			t.Errorf("unexpected condition status, exp=%s got=%s",
-				s.expectedCondition.Status, c.Status)
-		}
+	if len(rec.Events) > 0 {
+		t.Errorf("got unexpected events, got='%s'", rec.Events)
 	}
 }

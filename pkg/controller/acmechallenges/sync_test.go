@@ -625,7 +625,7 @@ func runTest(t *testing.T, test testT) {
 		test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
 	)
 	c.accountRegistry = &accountstest.FakeRegistry{
-		GetClientFunc: func(_ string) (acmecl.Interface, error) {
+		GetClientFunc: func(_ string, _ *cmacme.ACMEIssuer, _ *cmacme.ACMEIssuerStatus) (acmecl.Interface, error) {
 			return test.acmeClient, nil
 		},
 	}

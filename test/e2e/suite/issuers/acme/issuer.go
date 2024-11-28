@@ -338,7 +338,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			if err != nil {
 				return false, err
 			}
-			if !apiutil.IssuerHasCondition(iss, v1.IssuerCondition{
+			if !apiutil.IssuerHasCondition(iss.GetStatus(), v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
 			}) {

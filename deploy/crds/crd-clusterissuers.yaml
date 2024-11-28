@@ -3673,7 +3673,7 @@ spec:
                       type: string
                 conditions:
                   description: |-
-                    List of status conditions to indicate the status of a CertificateRequest.
+                    List of status conditions to indicate the status of an Issuer.
                     Known condition types are `Ready`.
                   type: array
                   items:

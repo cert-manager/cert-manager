@@ -28,7 +28,6 @@ import (
 // Vault Issuer for the certificate authority of Vault
 type Vault struct {
 	*controller.Context
-	issuer v1.GenericIssuer
 
 	secretsLister internalinformers.SecretLister
 
@@ -47,7 +46,6 @@ func NewVault(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interfac
 
 	return &Vault{
 		Context:           ctx,
-		issuer:            issuer,
 		secretsLister:     secretsLister,
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
 		createTokenFn:     func(ns string) vaultinternal.CreateToken { return ctx.Client.CoreV1().ServiceAccounts(ns).CreateToken },

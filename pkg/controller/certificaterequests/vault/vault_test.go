@@ -31,6 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -365,7 +366,7 @@ func TestSign(t *testing.T) {
 					)),
 				},
 			},
-			fakeVault: fakevault.New().WithNew(func(string, internalinformers.SecretLister, cmapi.GenericIssuer) (*fakevault.Vault, error) {
+			fakeVault: fakevault.New().WithNew(func(string, internalinformers.SecretLister, *cmapi.IssuerSpec) (*fakevault.Vault, error) {
 				return nil, errors.New("failed to create vault client, temporary auth failure")
 			}),
 			expectedErr: true,
@@ -562,8 +563,8 @@ func runTest(t *testing.T, test testT) {
 	vault := NewVault(test.builder.Context).(*Vault)
 
 	if test.fakeVault != nil {
-		vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
-			iss cmapi.GenericIssuer) (internalvault.Interface, error) {
+		vault.vaultClientBuilder = func(_ context.Context, _ types.NamespacedName, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
+			iss *cmapi.IssuerSpec) (internalvault.Interface, error) {
 			return test.fakeVault.New(ns, sl, iss)
 		}
 	}

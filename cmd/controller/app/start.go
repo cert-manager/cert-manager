@@ -38,8 +38,6 @@ import (
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/ingresses"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
-	_ "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
-	_ "github.com/cert-manager/cert-manager/pkg/controller/issuers"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/acme"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/ca"
 	_ "github.com/cert-manager/cert-manager/pkg/issuer/selfsigned"

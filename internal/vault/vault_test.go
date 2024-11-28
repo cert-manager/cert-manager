@@ -39,6 +39,7 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
@@ -277,7 +278,10 @@ func TestSign(t *testing.T) {
 
 	tests := map[string]testSignT{
 		"a garbage csr should return err": {
-			csrPEM:       []byte("a bad csr"),
+			csrPEM: []byte("a bad csr"),
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{}),
+			),
 			expectedErr:  errors.New("failed to decode CSR for signing: error decoding certificate request PEM block"),
 			expectedCert: "",
 			expectedCA:   "",
@@ -341,8 +345,12 @@ func TestSign(t *testing.T) {
 		v := &Vault{
 			namespace:     "test-namespace",
 			secretsLister: test.fakeLister,
-			issuer:        test.issuer,
-			client:        test.fakeClient,
+			issuerSpec:    test.issuer.GetSpec(),
+			namespacedName: types.NamespacedName{
+				Namespace: test.issuer.GetNamespace(),
+				Name:      test.issuer.GetName(),
+			},
+			client: test.fakeClient,
 		}
 
 		cert, ca, err := v.Sign(test.csrPEM, time.Minute)
@@ -954,7 +962,11 @@ func TestSetToken(t *testing.T) {
 				namespace:     "test-namespace",
 				secretsLister: test.fakeLister,
 				createToken:   mockCreateToken,
-				issuer:        test.issuer,
+				issuerSpec:    test.issuer.GetSpec(),
+				namespacedName: types.NamespacedName{
+					Namespace: test.issuer.GetNamespace(),
+					Name:      test.issuer.GetName(),
+				},
 			}
 
 			err := v.setToken(context.TODO(), test.fakeClient)
@@ -1052,9 +1064,10 @@ func TestAppRoleRef(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			v := &Vault{
-				namespace:     "test-namespace",
-				secretsLister: test.fakeLister,
-				issuer:        nil,
+				namespace:      "test-namespace",
+				secretsLister:  test.fakeLister,
+				issuerSpec:     nil,
+				namespacedName: types.NamespacedName{},
 			}
 
 			roleID, secretID, err := v.appRoleRef(test.appRole)
@@ -1150,9 +1163,10 @@ func TestTokenRef(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			v := &Vault{
-				namespace:     "test-namespace",
-				secretsLister: test.fakeLister,
-				issuer:        nil,
+				namespace:      "test-namespace",
+				secretsLister:  test.fakeLister,
+				issuerSpec:     nil,
+				namespacedName: types.NamespacedName{},
 			}
 
 			token, err := v.tokenRef("test-name", "test-namespace", test.key)
@@ -1429,7 +1443,11 @@ func TestNewConfig(t *testing.T) {
 			v := &Vault{
 				namespace:     "test-namespace",
 				secretsLister: test.fakeLister,
-				issuer:        test.issuer,
+				issuerSpec:    test.issuer.GetSpec(),
+				namespacedName: types.NamespacedName{
+					Namespace: test.issuer.GetNamespace(),
+					Name:      test.issuer.GetName(),
+				},
 			}
 
 			cfg, err := v.newConfig()
@@ -1552,9 +1570,11 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			v := &Vault{
 				namespace:     "test-namespace",
 				secretsLister: test.fakeLister,
-				issuer: gen.Issuer("vault-issuer",
-					gen.SetIssuerNamespace("namespace"),
-				),
+				issuerSpec:    nil,
+				namespacedName: types.NamespacedName{
+					Namespace: "namespace",
+					Name:      "vault-issuer",
+				},
 			}
 
 			token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)
@@ -1597,6 +1617,10 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := New(
 				context.TODO(),
+				types.NamespacedName{
+					Name:      "issuer1",
+					Namespace: "k8s-ns1",
+				},
 				"k8s-ns1",
 				func(ns string) CreateToken { return nil },
 				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1607,23 +1631,17 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 							},
 						}, nil),
 				),
-				&cmapi.Issuer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "issuer1",
-						Namespace: "k8s-ns1",
-					},
-					Spec: v1.IssuerSpec{
-						IssuerConfig: v1.IssuerConfig{
-							Vault: &v1.VaultIssuer{
-								Server:    "https://vault.example.com",
-								Namespace: tc.vaultNS,
-								Auth: cmapi.VaultAuth{
-									TokenSecretRef: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "secret1",
-										},
-										Key: "key1",
+				&v1.IssuerSpec{
+					IssuerConfig: v1.IssuerConfig{
+						Vault: &v1.VaultIssuer{
+							Server:    "https://vault.example.com",
+							Namespace: tc.vaultNS,
+							Auth: cmapi.VaultAuth{
+								TokenSecretRef: &cmmeta.SecretKeySelector{
+									LocalObjectReference: cmmeta.LocalObjectReference{
+										Name: "secret1",
 									},
+									Key: "key1",
 								},
 							},
 						},
@@ -1654,6 +1672,10 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 
 	v, err := New(
 		context.TODO(),
+		types.NamespacedName{
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
+		},
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1664,23 +1686,17 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 					},
 				}, nil),
 		),
-		&cmapi.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
-			Spec: v1.IssuerSpec{
-				IssuerConfig: v1.IssuerConfig{
-					Vault: &v1.VaultIssuer{
-						Server:    server.URL,
-						Namespace: "ns1",
-						Auth: cmapi.VaultAuth{
-							TokenSecretRef: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "secret1",
-								},
-								Key: "key1",
+		&v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Server:    server.URL,
+					Namespace: "ns1",
+					Auth: cmapi.VaultAuth{
+						TokenSecretRef: &cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
+								Name: "secret1",
 							},
+							Key: "key1",
 						},
 					},
 				},
@@ -1720,6 +1736,10 @@ func TestSignIntegration(t *testing.T) {
 
 	v, err := New(
 		context.TODO(),
+		types.NamespacedName{
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
+		},
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1730,24 +1750,18 @@ func TestSignIntegration(t *testing.T) {
 					},
 				}, nil),
 		),
-		&cmapi.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
-			Spec: v1.IssuerSpec{
-				IssuerConfig: v1.IssuerConfig{
-					Vault: &v1.VaultIssuer{
-						Server:    server.URL,
-						Path:      vaultPath,
-						Namespace: vaultNamespace,
-						Auth: cmapi.VaultAuth{
-							TokenSecretRef: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "secret1",
-								},
-								Key: "key1",
+		&v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Server:    server.URL,
+					Path:      vaultPath,
+					Namespace: vaultNamespace,
+					Auth: cmapi.VaultAuth{
+						TokenSecretRef: &cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
+								Name: "secret1",
 							},
+							Key: "key1",
 						},
 					},
 				},

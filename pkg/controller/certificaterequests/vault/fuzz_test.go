@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	internalvault "github.com/cert-manager/cert-manager/internal/vault"
@@ -172,8 +173,8 @@ func FuzzVaultCRController(f *testing.F) {
 			}
 
 			fakeVault := fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil)
-			vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
-				iss cmapi.GenericIssuer) (internalvault.Interface, error) {
+			vault.vaultClientBuilder = func(_ context.Context, _ types.NamespacedName, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
+				iss *cmapi.IssuerSpec) (internalvault.Interface, error) {
 				return fakeVault.New(ns, sl, iss)
 			}
 		}

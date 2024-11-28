@@ -11,22 +11,24 @@ replace github.com/go-asn1-ber/asn1-ber => github.com/go-asn1-ber/asn1-ber v1.5.
 
 replace github.com/cert-manager/cert-manager => ../../
 
+replace github.com/cert-manager/issuer-lib => github.com/inteon/issuer-lib v0.0.0-20241128100423-743b0adc1300
+
 require (
-	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
+	github.com/cert-manager/cert-manager v1.16.2
 	github.com/cloudflare/cloudflare-go v0.102.0
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/kr/pretty v0.3.1
 	github.com/onsi/ginkgo/v2 v2.20.0
 	github.com/onsi/gomega v1.34.1
 	github.com/spf13/pflag v1.0.5
-	k8s.io/api v0.31.1
-	k8s.io/apiextensions-apiserver v0.31.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
-	k8s.io/component-base v0.31.1
+	k8s.io/api v0.31.3
+	k8s.io/apiextensions-apiserver v0.31.3
+	k8s.io/apimachinery v0.31.3
+	k8s.io/client-go v0.31.3
+	k8s.io/component-base v0.31.3
 	k8s.io/kube-aggregator v0.31.1
-	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
-	sigs.k8s.io/controller-runtime v0.19.0
+	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
+	sigs.k8s.io/controller-runtime v0.19.2
 	sigs.k8s.io/gateway-api v1.1.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
@@ -35,6 +37,7 @@ require (
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/cert-manager/issuer-lib v0.8.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect

@@ -18,13 +18,11 @@ package vault
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +55,6 @@ func TestVault_Setup(t *testing.T) {
 	tests := []struct {
 		name             string
 		givenIssuer      v1.IssuerConfig
-		expectCond       string
 		expectErr        string
 		webhookReject    bool
 		mockGetSecret    *corev1.Secret
@@ -68,7 +65,7 @@ func TestVault_Setup(t *testing.T) {
 			givenIssuer: v1.IssuerConfig{
 				Vault: nil,
 			},
-			expectCond:    "Ready False: VaultError: Vault config cannot be empty",
+			expectErr:     "Vault config cannot be empty",
 			webhookReject: true,
 		},
 		{
@@ -78,7 +75,7 @@ func TestVault_Setup(t *testing.T) {
 					Server: "https://vault.example.com",
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault server and path are required fields",
+			expectErr:     "Vault server and path are required fields",
 			webhookReject: true,
 		},
 		{
@@ -88,7 +85,7 @@ func TestVault_Setup(t *testing.T) {
 					Path: "pki_int",
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault server and path are required fields",
+			expectErr:     "Vault server and path are required fields",
 			webhookReject: true,
 		},
 		{
@@ -124,7 +121,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond:    "Ready False: VaultError: Multiple auth methods cannot be set on the same Vault issuer",
+			expectErr:     "multiple auth methods cannot be set on the same Vault issuer",
 			webhookReject: true,
 		},
 		{
@@ -147,7 +144,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
 			name: "invalid auth.appRole: secretRef.key can be omitted",
@@ -168,7 +164,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready False: VaultError: Vault AppRole auth requires secretRef.key",
+			expectErr: "Vault AppRole auth requires secretRef.key",
 		},
 		{
 			name: "invalid auth.appRole: roleId is missing",
@@ -187,7 +183,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault AppRole auth requires both roleId and tokenSecretRef.name",
+			expectErr:     "Vault AppRole auth requires both roleId and tokenSecretRef.name",
 			webhookReject: true,
 		},
 		{
@@ -203,7 +199,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault AppRole auth requires both roleId and tokenSecretRef.name",
+			expectErr:     "Vault AppRole auth requires both roleId and tokenSecretRef.name",
 			webhookReject: true,
 		},
 		{
@@ -225,7 +221,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
 			name: "invalid auth.kubernetes.secretRef: name is missing",
@@ -240,7 +235,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault Kubernetes auth requires either secretRef.name or serviceAccountRef.name to be set",
+			expectErr:     "Vault Kubernetes auth requires either secretRef.name or serviceAccountRef.name to be set",
 			webhookReject: true,
 		},
 		{
@@ -263,7 +258,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
 			name: "invalid auth.kubernetes: role is missing",
@@ -285,7 +279,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault Kubernetes auth requires a role to be set",
+			expectErr:     "Vault Kubernetes auth requires a role to be set",
 			webhookReject: true,
 		},
 		{
@@ -304,7 +298,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
 			name: "invalid auth.kubernetes: serviceAccountRef and secretRef are both set",
@@ -327,7 +320,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond:    "Ready False: VaultError: Vault Kubernetes auth cannot be used with both secretRef.name and serviceAccountRef.name",
+			expectErr:     "Vault Kubernetes auth cannot be used with both secretRef.name and serviceAccountRef.name",
 			webhookReject: true,
 		},
 		{
@@ -346,7 +339,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
 			// The default value for auth.tokenSecretRef.key is 'token'. This
@@ -367,7 +359,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 		{
 			name: "server with invalid url should fail to setup",
@@ -385,7 +376,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectErr: "Get \"https:///vault.example.com/v1/sys/health\": http: no Host in request URL",
+			expectErr: "failed to verify Vault is initialized and unsealed: Get \"https:///vault.example.com/v1/sys/health\": http: no Host in request URL",
 		},
 		{
 			name: "server with leading whitespace should fail to parse",
@@ -403,7 +394,7 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectErr: "error initializing Vault client: parse \" https://vault.example.com\": first path segment in URL cannot contain colon",
+			expectErr: "failed to initialize Vault client: error initializing Vault client: parse \" https://vault.example.com\": first path segment in URL cannot contain colon",
 		},
 		{
 			name: "valid auth.clientCertificate: All fields can be omitted",
@@ -416,7 +407,6 @@ func TestVault_Setup(t *testing.T) {
 					},
 				},
 			},
-			expectCond: "Ready True: VaultVerified: Vault verified",
 		},
 	}
 	for _, tt := range tests {
@@ -433,7 +423,6 @@ func TestVault_Setup(t *testing.T) {
 			cmclient := cmfake.NewSimpleClientset(givenIssuer)
 
 			v := &Vault{
-				issuer:            givenIssuer,
 				Context:           &controller.Context{CMClient: cmclient},
 				resourceNamespace: "test-namespace",
 				createTokenFn: func(ns string) vaultinternal.CreateToken {
@@ -459,7 +448,7 @@ func TestVault_Setup(t *testing.T) {
 				},
 			}
 
-			err := v.Setup(context.Background())
+			err := v.Setup(context.Background(), givenIssuer)
 			if tt.expectErr != "" {
 				assert.EqualError(t, err, tt.expectErr)
 				return
@@ -481,13 +470,6 @@ func TestVault_Setup(t *testing.T) {
 				assert.Error(t, errlist.ToAggregate())
 			} else {
 				assert.NoError(t, errlist.ToAggregate())
-			}
-
-			if tt.expectCond != "" {
-				require.Len(t, givenIssuer.Status.Conditions, 1)
-				assert.Equal(t, tt.expectCond, fmt.Sprintf("%s %s: %s: %s", givenIssuer.Status.Conditions[0].Type, givenIssuer.Status.Conditions[0].Status, givenIssuer.Status.Conditions[0].Reason, givenIssuer.Status.Conditions[0].Message))
-			} else {
-				require.Len(t, givenIssuer.Status.Conditions, 0)
 			}
 		})
 	}
