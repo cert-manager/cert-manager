@@ -51,30 +51,30 @@ const (
 )
 
 // Setup creates a new Vault client and attempts to authenticate with the Vault instance and sets the issuer's conditions to reflect the success of the setup.
-func (v *Vault) Setup(ctx context.Context) error {
-	if v.issuer.GetSpec().Vault == nil {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultConfigRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageVaultConfigRequired)
+func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
+	if issuer.GetSpec().Vault == nil {
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultConfigRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageVaultConfigRequired)
 		return nil
 	}
 
 	// check if Vault server info is specified.
-	if v.issuer.GetSpec().Vault.Server == "" ||
-		v.issuer.GetSpec().Vault.Path == "" {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageServerAndPathRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageServerAndPathRequired)
+	if issuer.GetSpec().Vault.Server == "" ||
+		issuer.GetSpec().Vault.Path == "" {
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageServerAndPathRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageServerAndPathRequired)
 		return nil
 	}
 
-	tokenAuth := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
-	appRoleAuth := v.issuer.GetSpec().Vault.Auth.AppRole
-	clientCertificateAuth := v.issuer.GetSpec().Vault.Auth.ClientCertificate
-	kubeAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
+	tokenAuth := issuer.GetSpec().Vault.Auth.TokenSecretRef
+	appRoleAuth := issuer.GetSpec().Vault.Auth.AppRole
+	clientCertificateAuth := issuer.GetSpec().Vault.Auth.ClientCertificate
+	kubeAuth := issuer.GetSpec().Vault.Auth.Kubernetes
 
 	// check if at least one auth method is specified.
 	if tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth == nil {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAuthFieldsRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldsRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAuthFieldsRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldsRequired)
 		return nil
 	}
 
@@ -83,67 +83,67 @@ func (v *Vault) Setup(ctx context.Context) error {
 		(tokenAuth == nil && appRoleAuth != nil && clientCertificateAuth == nil && kubeAuth == nil) ||
 		(tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth != nil && kubeAuth == nil) ||
 		(tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth != nil)) {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageMultipleAuthFieldsSet, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageMultipleAuthFieldsSet)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageMultipleAuthFieldsSet, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageMultipleAuthFieldsSet)
 		return nil
 	}
 
 	// check if all mandatory Vault Token fields are set.
 	if tokenAuth != nil && len(tokenAuth.Name) == 0 {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageTokenAuthNameRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageTokenAuthNameRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageTokenAuthNameRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageTokenAuthNameRequired)
 		return nil
 	}
 
 	// check if all mandatory Vault appRole fields are set.
 	if appRoleAuth != nil && (len(appRoleAuth.RoleId) == 0 || len(appRoleAuth.SecretRef.Name) == 0) {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAppRoleAuthFieldsRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthFieldsRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAppRoleAuthFieldsRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthFieldsRequired)
 		return nil
 	}
 	if appRoleAuth != nil && len(appRoleAuth.SecretRef.Key) == 0 {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAppRoleAuthKeyRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthKeyRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAppRoleAuthKeyRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthKeyRequired)
 		return nil
 	}
 
 	// When using the Kubernetes auth, giving a role is mandatory.
 	if kubeAuth != nil && len(kubeAuth.Role) == 0 {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthRoleRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthRoleRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthRoleRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthRoleRequired)
 		return nil
 	}
 
 	// When using the Kubernetes auth, you must either set secretRef or
 	// serviceAccountRef.
 	if kubeAuth != nil && (kubeAuth.SecretRef.Name == "" && kubeAuth.ServiceAccountRef == nil) {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthEitherRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthEitherRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthEitherRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthEitherRequired)
 		return nil
 	}
 
 	// When using the Kubernetes auth, you can't use secretRef and
 	// serviceAccountRef simultaneously.
 	if kubeAuth != nil && (kubeAuth.SecretRef.Name != "" && kubeAuth.ServiceAccountRef != nil) {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthSingleRequired, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthSingleRequired)
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthSingleRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthSingleRequired)
 		return nil
 	}
 
-	client, err := vaultinternal.New(ctx, v.resourceNamespace, v.createTokenFn, v.secretsLister, v.issuer)
+	client, err := vaultinternal.New(ctx, v.ResourceNamespace(issuer), v.createTokenFn, v.secretsLister, issuer)
 	if err != nil {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultClientInitFailed, "err", err, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultClientInitFailed, err.Error()))
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultClientInitFailed, "err", err, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultClientInitFailed, err.Error()))
 		return err
 	}
 
 	if err := client.IsVaultInitializedAndUnsealed(); err != nil {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultInitializedAndUnsealedFailed, "err", err, "issuer", klog.KObj(v.issuer))
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultInitializedAndUnsealedFailed, err.Error()))
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultInitializedAndUnsealedFailed, "err", err, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultInitializedAndUnsealedFailed, err.Error()))
 		return err
 	}
 
-	logf.FromContext(ctx).V(logf.DebugLevel).Info(messageVaultVerified, "issuer", klog.KObj(v.issuer))
-	apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successVaultVerified, messageVaultVerified)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info(messageVaultVerified, "issuer", klog.KObj(issuer))
+	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successVaultVerified, messageVaultVerified)
 	return nil
 }

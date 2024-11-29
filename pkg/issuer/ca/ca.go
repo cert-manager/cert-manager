@@ -19,7 +19,6 @@ package ca
 import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 )
@@ -29,23 +28,15 @@ import (
 // used to sign certificates.
 type CA struct {
 	*controller.Context
-	issuer        v1.GenericIssuer
 	secretsLister internalinformers.SecretLister
-
-	// Namespace in which to read resources related to this Issuer from.
-	// For Issuers, this will be the namespace of the Issuer.
-	// For ClusterIssuers, this will be the cluster resource namespace.
-	resourceNamespace string
 }
 
-func NewCA(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, error) {
+func NewCA(ctx *controller.Context) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Secrets().Lister()
 
 	return &CA{
-		Context:           ctx,
-		issuer:            issuer,
-		secretsLister:     secretsLister,
-		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
+		Context:       ctx,
+		secretsLister: secretsLister,
 	}, nil
 }
 

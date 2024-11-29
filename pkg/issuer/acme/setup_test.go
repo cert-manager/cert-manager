@@ -562,7 +562,9 @@ func TestAcme_Setup(t *testing.T) {
 			// Mock events recorder.
 			recorder := new(controllertest.FakeRecorder)
 			a := Acme{
-				issuer:          test.issuer,
+				resourceNamespace: func(iss cmapi.GenericIssuer) string {
+					return iss.GetNamespace()
+				},
 				secretsClient:   secretsClient,
 				accountRegistry: ar,
 				keyFromSecret:   kfs,
@@ -575,7 +577,7 @@ func TestAcme_Setup(t *testing.T) {
 			apiutil.Clock = fakeclock
 
 			// Verify that an error is/is not returned as expected.
-			gotErr := a.Setup(t.Context())
+			gotErr := a.Setup(t.Context(), test.issuer)
 			if gotErr == nil && test.wantsErr {
 				t.Errorf("Expected error %v, got %v", test.wantsErr, gotErr)
 			}
@@ -602,7 +604,7 @@ func TestAcme_Setup(t *testing.T) {
 			}
 
 			// Verify issuer's state after Setup was called.
-			gotConditions := a.issuer.GetStatus().Conditions
+			gotConditions := test.issuer.GetStatus().Conditions
 			// Issuer can only have a single condition, so no need to sort the
 			// conditions.
 			if !reflect.DeepEqual(gotConditions, test.expectedConditions) {

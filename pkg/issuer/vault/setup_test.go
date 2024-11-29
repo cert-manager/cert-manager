@@ -433,9 +433,7 @@ func TestVault_Setup(t *testing.T) {
 			cmclient := cmfake.NewSimpleClientset(givenIssuer)
 
 			v := &Vault{
-				issuer:            givenIssuer,
-				Context:           &controller.Context{CMClient: cmclient},
-				resourceNamespace: "test-namespace",
+				Context: &controller.Context{CMClient: cmclient},
 				createTokenFn: func(ns string) vaultinternal.CreateToken {
 					return func(ctx context.Context, saName string, req *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error) {
 						return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
@@ -459,7 +457,7 @@ func TestVault_Setup(t *testing.T) {
 				},
 			}
 
-			err := v.Setup(t.Context())
+			err := v.Setup(t.Context(), givenIssuer)
 			if tt.expectErr != "" {
 				assert.EqualError(t, err, tt.expectErr)
 				return
