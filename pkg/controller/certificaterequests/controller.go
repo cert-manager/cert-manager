@@ -208,18 +208,16 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 // the workqueue. A key corresponds to a certificate request object.
 func (c *Controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx)
-	dbg := log.V(logf.DebugLevel)
 
 	namespace, name := key.Namespace, key.Name
 
 	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			dbg.Info(fmt.Sprintf("certificate request in work queue no longer exists: %s", err))
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if cr == nil || cr.DeletionTimestamp != nil {
+		// If the CertificateRequest object was/ is being deleted, we don't want to start signing.
+		return nil
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, cr))
