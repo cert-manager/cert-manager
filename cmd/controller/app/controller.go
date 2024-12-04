@@ -266,6 +266,14 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 	log.V(logf.InfoLevel).Info("control loops exited")
 
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
+		ctx.GWShared.Shutdown()
+	}
+
+	ctx.HTTP01ResourceMetadataInformersFactory.Shutdown()
+	ctx.KubeSharedInformerFactory.Shutdown()
+	ctx.SharedInformerFactory.Shutdown()
+
 	return nil
 }
 
