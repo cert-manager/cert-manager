@@ -161,7 +161,7 @@ ADDITIONAL_TOOLS ?=
 tools += $(ADDITIONAL_TOOLS)
 
 # https://go.dev/dl/
-VENDORED_GO_VERSION := 1.23.3
+VENDORED_GO_VERSION := 1.23.4
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -380,10 +380,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=a0afb9744c00648bafb1b90b4aba5bdb86f424f02f9275399ce0c20b93a2c3a8
-go_linux_arm64_SHA256SUM=1f7cbd7f668ea32a107ecd41b6488aaee1f5d77a66efd885b175494439d4e1ce
-go_darwin_amd64_SHA256SUM=c7e024d5c0bc81845070f23598caf02f05b8ae88fd4ad2cd3e236ddbea833ad2
-go_darwin_arm64_SHA256SUM=31e119fe9bde6e105407a32558d5b5fa6ca11e2bd17f8b7b2f8a06aba16a0632
+go_linux_amd64_SHA256SUM=6924efde5de86fe277676e929dc9917d466efa02fb934197bc2eba35d5680971
+go_linux_arm64_SHA256SUM=16e5017863a7f6071363782b1b8042eb12c6ca4f4cd71528b2123f0a1275b13e
+go_darwin_amd64_SHA256SUM=6700067389a53a1607d30aa8d6e01d198230397029faa0b109e89bc871ab5a0e
+go_darwin_arm64_SHA256SUM=87d2bb0ad4fe24d2a0685a55df321e0efe4296419a9b3de03369dbe60b8acd3a
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
