@@ -44,6 +44,7 @@ const pleaseOpenIssue = "Please report this by opening an issue with this error 
 type KubeInformerFactory interface {
 	Start(<-chan struct{})
 	WaitForCacheSync(<-chan struct{}) map[string]bool
+	Shutdown()
 	Ingresses() networkingv1informers.IngressInformer
 	Secrets() SecretInformer
 	CertificateSigningRequests() certificatesv1.CertificateSigningRequestInformer
