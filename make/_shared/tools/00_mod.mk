@@ -116,28 +116,30 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.1.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser?tab=versions
 tools += goreleaser=v1.26.2
-# https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
+# https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions. We are still
+# using an old version (0.100.0, Jan 2024) because all of the latest versions
+# use a replace statement, and thus cannot be installed using `go build`.
 tools += syft=v0.100.0
 # https://github.com/cert-manager/helm-tool
 tools += helm-tool=v0.5.3
 # https://github.com/cert-manager/cmctl
-tools += cmctl=v2.1.0
+tools += cmctl=v2.1.1
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
-tools += cmrel=e4c3a4dc07df5c7c0379d334c5bb00e172462551
+tools += cmrel=e3cbe5171488deda000145003e22567bdce622ea
 # https://github.com/golangci/golangci-lint/releases
-tools += golangci-lint=v1.61.0
+tools += golangci-lint=v1.62.2
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 tools += govulncheck=v1.1.3
 # https://pkg.go.dev/github.com/operator-framework/operator-sdk/cmd/operator-sdk?tab=versions
-tools += operator-sdk=v1.36.1
+tools += operator-sdk=v1.38.0
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
-tools += gh=v2.54.0
+tools += gh=v2.63.1
 # https:///github.com/redhat-openshift-ecosystem/openshift-preflight/releases
-tools += preflight=1.10.0
+tools += preflight=1.10.2
 # https://github.com/daixiang0/gci/releases
-tools += gci=v0.13.4
+tools += gci=v0.13.5
 # https://github.com/google/yamlfmt/releases
-tools += yamlfmt=v0.13.0
+tools += yamlfmt=v0.14.0
 
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 K8S_CODEGEN_VERSION := v0.31.0
@@ -598,8 +600,8 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=97750df31f31200f073e3b2844628a0a3681a403648c76d12319f83c80666104
-preflight_linux_arm64_SHA256SUM=e12b2afe063c07ee75f69f285f8cc56be99b85e2abac99cbef5fb22b91ef0cb7
+preflight_linux_amd64_SHA256SUM=776d04669304d3185c40522bed9a6dc1aa9cd80014a203fe01552b98bfa9554b
+preflight_linux_arm64_SHA256SUM=dd7b0a144892ce6fc47d1bc44e344130fa9ff997bf2c39de3016873d8bd3fac5
 
 # Currently there are no official releases for darwin, you cannot submit results
 # on non-official binaries, but we can still run tests.
