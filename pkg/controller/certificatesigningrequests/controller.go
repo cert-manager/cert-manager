@@ -22,7 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	authzclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
@@ -194,18 +194,16 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 func (c *Controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx)
-	dbg := log.V(logf.DebugLevel)
 
 	name := key.Name
 
 	csr, err := c.csrLister.Get(name)
-	if apierrors.IsNotFound(err) {
-		dbg.Info("certificate signing request in work queue no longer exists", "error", err.Error())
-		return nil
-	}
-
-	if err != nil {
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if csr == nil || csr.DeletionTimestamp != nil {
+		// If the CertificateSigningRequest object was/ is being deleted, we don't want to start signing.
+		return nil
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, csr))
