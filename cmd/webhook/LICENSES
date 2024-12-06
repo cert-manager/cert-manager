@@ -31,6 +31,7 @@ github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.6.0/LICENS
 github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/google/uuid,https://github.com/google/uuid/blob/v1.6.0/LICENSE,BSD-3-Clause
 github.com/grpc-ecosystem/grpc-gateway/v2,https://github.com/grpc-ecosystem/grpc-gateway/blob/v2.20.0/LICENSE,BSD-3-Clause
+github.com/hashicorp/cronexpr,https://github.com/hashicorp/cronexpr/blob/v1.1.2/LICENSE,Apache-2.0
 github.com/imdario/mergo,https://github.com/imdario/mergo/blob/v0.3.16/LICENSE,BSD-3-Clause
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
