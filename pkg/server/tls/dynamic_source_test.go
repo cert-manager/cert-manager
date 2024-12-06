@@ -19,9 +19,6 @@ package tls
 import (
 	"context"
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -41,7 +38,7 @@ import (
 
 func signUsingTempCA(t *testing.T, template *x509.Certificate) *x509.Certificate {
 	// generate random ca private key
-	caPrivateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	caPrivateKey, err := pki.GenerateECPrivateKey(521)
 	if err != nil {
 		t.Fatal(err)
 	}
