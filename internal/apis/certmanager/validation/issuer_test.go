@@ -19,10 +19,12 @@ package validation
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
@@ -374,18 +376,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Email:                "valid-email",
 				Server:               "valid-server",
 				PrivateKey:           validSecretKeyRef,
-				AuthorizationTimeout: "1m30s",
-			},
-		},
-		"acme issuer with invalid authTimeout": {
-			spec: &cmacme.ACMEIssuer{
-				Email:                "valid-email",
-				Server:               "valid-server",
-				PrivateKey:           validSecretKeyRef,
-				AuthorizationTimeout: "invalidvalue",
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("AuthorizationTimeout"), "invalidvalue", "time: invalid duration \"invalidvalue\""),
+				AuthorizationTimeout: &metav1.Duration{Duration: time.Second * 90},
 			},
 		},
 		"acme issuer with missing fields": {

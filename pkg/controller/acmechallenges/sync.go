@@ -25,6 +25,7 @@ import (
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -369,7 +370,7 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 // It will update the challenge's status to reflect the final state of the
 // challenge if it failed, or the final state of the challenge's authorization
 // if accepting the challenge succeeds.
-func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge, atoOriginal string) error {
+func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge, atoOriginal *metav1.Duration) error {
 	log := logf.FromContext(ctx, "acceptChallenge")
 
 	log.V(logf.DebugLevel).Info("accepting challenge with ACME server")
@@ -397,12 +398,8 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
 	// in the err variable.
 	var ato time.Duration
-	if atoOriginal != "" {
-		ato, err = time.ParseDuration(atoOriginal)
-		if err != nil {
-			log.Error(err, "invalid authorizationTimeout in (Cluster)Issuer")
-			return handleError(ch, err)
-		}
+	if atoOriginal.Size() > 0 {
+		ato = atoOriginal.Duration
 	} else {
 		ato = authorizationDefaultTimeout
 	}

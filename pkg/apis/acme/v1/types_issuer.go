@@ -19,6 +19,7 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -120,7 +121,9 @@ type ACMEIssuer struct {
 	// staging sometimes takes longer, especially on slow local environments.
 	// Defaults to 20s
 	// +optional
-	AuthorizationTimeout string `json:"authorizationTimeout,omitempty"`
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Format=duration
+	AuthorizationTimeout *metav1.Duration `json:"authorizationTimeout,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
