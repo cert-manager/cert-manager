@@ -91,7 +91,7 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 		if !ok || cn.Hdr.Name != fqdn {
 			continue
 		}
-		logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("Updating FQDN", "fqdn", fqdn, "cname", cn.Target)
 		// Check if we were here before to prevent loops in the chain of CNAME records.
 		for _, fqdnInChain := range fqdnChain {
 			if cn.Target != fqdnInChain {
@@ -142,7 +142,7 @@ func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers 
 			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
-		logf.V(logf.DebugLevel).Infof("Looking up TXT records for %q", fqdn)
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("Looking up TXT records", "fqdn", fqdn)
 		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
@@ -157,7 +157,7 @@ func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers 
 			return false, nil
 		}
 	}
-	logf.V(logf.DebugLevel).Infof("Selfchecking using the DNS Lookup method was successful")
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("Selfchecking using the DNS Lookup method was successful")
 	return true, nil
 }
 
@@ -199,7 +199,7 @@ func DNSQuery(ctx context.Context, fqdn string, rtype uint16, nameservers []stri
 			// Try TCP if UDP fails
 			if (in != nil && in.Truncated) ||
 				(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
-				logf.V(logf.DebugLevel).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
+				logf.FromContext(ctx).V(logf.DebugLevel).Info("UDP dns lookup failed, retrying with TCP", "err", err)
 				// If the TCP request succeeds, the err will reset to nil
 				in, _, err = tcp.ExchangeContext(ctx, m, ns)
 			}
@@ -376,7 +376,7 @@ func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool 
 func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
-	logf.V(logf.DebugLevel).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("Searching fqdn", "fqdn", fqdn, "seedNameservers", nameservers)
 	zone, err := FindZoneByFqdn(ctx, fqdn, nameservers)
 	if err != nil {
 		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
@@ -394,7 +394,7 @@ func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) (
 	}
 
 	if len(authoritativeNss) > 0 {
-		logf.V(logf.DebugLevel).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning authoritative nameservers", "authoritativeNameservers", authoritativeNss)
 		return authoritativeNss, nil
 	}
 	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
@@ -407,7 +407,7 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
 		fqdnToZoneLock.RUnlock()
-		logf.V(logf.DebugLevel).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached zone record", "zoneRecord", zone, "fqdn", fqdn)
 		return zone, nil
 	}
 	fqdnToZoneLock.RUnlock()
@@ -461,7 +461,7 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 
 				zone := soa.Hdr.Name
 				fqdnToZone[fqdn] = zone
-				logf.V(logf.DebugLevel).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
+				logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning discovered zone record", "zoneRecord", zone, "fqdn", fqdn)
 				return zone, nil
 			}
 		}

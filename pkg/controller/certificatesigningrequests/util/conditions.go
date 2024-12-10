@@ -69,8 +69,11 @@ func CertificateSigningRequestSetFailed(csr *certificatesv1.CertificateSigningRe
 		LastUpdateTime:     nowTime,
 	})
 
-	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for CertificateSigningRequest %s/%s condition Failed to %v",
-		csr.Namespace, csr.Name, nowTime.Time)
+	logf.Log.V(logf.InfoLevel).Info("Setting lastTransitionTime for CertificateSigningRequest condition",
+		"namespace", csr.Namespace,
+		"name", csr.Name,
+		"condition", "Failed",
+		"lastTransitionTime", nowTime.Time)
 }
 
 func certificateSigningRequestGetCondition(csr *certificatesv1.CertificateSigningRequest, condType certificatesv1.RequestConditionType) *certificatesv1.CertificateSigningRequestCondition {
