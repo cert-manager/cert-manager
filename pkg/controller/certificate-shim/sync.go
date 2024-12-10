@@ -99,8 +99,8 @@ func SyncFnFor(
 		}
 
 		if !hasShimAnnotation(ingLike, autoAnnotations) {
-			log.V(logf.DebugLevel).Info("not syncing ingress resource", "reason", fmt.Sprintf("it does not contain a %q or %q annotation",
-				cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey))
+			log.V(logf.DebugLevel).Info("not syncing ingress resource",
+				"reason", fmt.Sprintf("it does not contain a %q or %q annotation", cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey))
 			return nil
 		}
 
