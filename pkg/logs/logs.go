@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
@@ -167,17 +166,6 @@ func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Con
 		l = l.WithName(n)
 	}
 	return logr.NewContext(ctx, l)
-}
-
-func V(level int) klog.Verbose {
-	switch {
-	case level < math.MinInt32:
-		return klog.V(klog.Level(math.MinInt32))
-	case level > math.MaxInt32:
-		return klog.V(klog.Level(math.MaxInt32))
-	default:
-		return klog.V(klog.Level(level))
-	}
 }
 
 // LogWithFormat is a wrapper for logger that adds Infof method to log messages

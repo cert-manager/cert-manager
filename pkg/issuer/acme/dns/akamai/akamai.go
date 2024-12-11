@@ -97,20 +97,20 @@ func findHostedDomainByFqdn(ctx context.Context, fqdn string, ns []string) (stri
 
 // Present creates/updates a TXT record to fulfill the dns-01 challenge.
 func (a *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
-	logf.V(logf.DebugLevel).Infof("entering Present. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("entering Present", "domain", domain, "fqdn", fqdn, "value", value)
 
 	hostedDomain, err := a.findHostedDomainByFqdn(ctx, fqdn, a.dns01Nameservers)
 	if err != nil {
 		return fmt.Errorf("edgedns: failed to determine hosted domain for %q: %w", fqdn, err)
 	}
 	hostedDomain = util.UnFqdn(hostedDomain)
-	logf.V(logf.DebugLevel).Infof("hostedDomain: %s", hostedDomain)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("calculated hosted domain", "hostedDomain", hostedDomain)
 
 	recordName, err := makeTxtRecordName(fqdn, hostedDomain)
 	if err != nil {
 		return fmt.Errorf("edgedns: failed to create TXT record name: %w", err)
 	}
-	logf.V(logf.DebugLevel).Infof("recordName: %s", recordName)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("calculated TXT record name", "recordName", recordName)
 
 	record, err := a.dnsclient.GetRecord(hostedDomain, recordName, "TXT")
 	if err != nil && !a.isNotFound(err) {
@@ -122,7 +122,7 @@ func (a *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 	}
 
 	if record != nil {
-		logf.V(logf.InfoLevel).Infof("edgedns: TXT record already exists. Updating target")
+		logf.FromContext(ctx).V(logf.InfoLevel).Info("edgedns: TXT record already exists. Updating target")
 
 		if containsValue(record.Target, value) {
 			// have a record and have entry already
@@ -157,20 +157,20 @@ func (a *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 
 // CleanUp removes/updates the TXT record matching the specified parameters.
 func (a *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
-	logf.V(logf.DebugLevel).Infof("entering CleanUp. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("entering CleanUp", "domain", domain, "fqdn", fqdn, "value", value)
 
 	hostedDomain, err := a.findHostedDomainByFqdn(ctx, fqdn, a.dns01Nameservers)
 	if err != nil {
 		return fmt.Errorf("edgedns: failed to determine hosted domain for %q: %w", fqdn, err)
 	}
 	hostedDomain = util.UnFqdn(hostedDomain)
-	logf.V(logf.DebugLevel).Infof("hostedDomain: %s", hostedDomain)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("calculated hosted domain", "hostedDomain", hostedDomain)
 
 	recordName, err := makeTxtRecordName(fqdn, hostedDomain)
 	if err != nil {
 		return fmt.Errorf("edgedns: failed to create TXT record name: %w", err)
 	}
-	logf.V(logf.DebugLevel).Infof("recordName: %s", recordName)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("calculated TXT record name", "recordName", recordName)
 
 	existingRec, err := a.dnsclient.GetRecord(hostedDomain, recordName, "TXT")
 	if err != nil {
@@ -203,7 +203,7 @@ func (a *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 
 	if len(newRData) > 0 {
 		existingRec.Target = newRData
-		logf.V(logf.DebugLevel).Infof("updating Akamai TXT record: %s, data: %s", existingRec.Name, newRData)
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("updating Akamai TXT record", "recordName", existingRec.Name, "data", newRData)
 		err = a.dnsclient.RecordUpdate(existingRec, hostedDomain)
 		if err != nil {
 			return fmt.Errorf("edgedns: TXT record update failed: %w", err)
@@ -212,7 +212,7 @@ func (a *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 		return nil
 	}
 
-	logf.V(logf.DebugLevel).Infof("deleting Akamai TXT record %s", existingRec.Name)
+	logf.FromContext(ctx).V(logf.DebugLevel).Info("deleting Akamai TXT record", "recordName", existingRec.Name)
 	err = a.dnsclient.RecordDelete(existingRec, hostedDomain)
 	if err != nil {
 		return fmt.Errorf("edgedns: TXT record delete failed: %w", err)
