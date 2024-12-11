@@ -244,7 +244,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	decodeAll := func(pemBytes []byte) [][]byte {
 		var blocks [][]byte
 		for {
-			block, rest, _ := pem.SafeDecodeMultipleCertificates(pemBytes)
+			block, rest, _ := pem.SafeDecodeCertificateBundle(pemBytes)
 			if block == nil {
 				break
 			}
