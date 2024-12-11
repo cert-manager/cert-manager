@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -38,7 +39,6 @@ import (
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
@@ -258,7 +258,7 @@ type ContextFactory struct {
 // corresponding QPS and Burst buckets.
 func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactory, error) {
 	// Load the users Kubernetes config
-	restConfig, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
+	restConfig, err := kube.BuildClientConfig(opts.APIServerHost, opts.Kubeconfig)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rest config: %w", err)
 	}
