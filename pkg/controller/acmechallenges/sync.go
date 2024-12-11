@@ -80,12 +80,24 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 	}()
 
-	if !ch.DeletionTimestamp.IsZero() {
-		return c.handleFinalizer(ctx, ch)
+	// If the challenge has been deleted or is in a finished state then attempt
+	// to cleanup any presented resources, remove the finalizer and reset the
+	// processing and presented status fields.
+	// Once the challenge reaches this final state, we always return here.
+	challengeFinished := !ch.DeletionTimestamp.IsZero() || acme.IsFinalState(ch.Status.State)
+	if challengeFinished {
+		if err := c.handleFinalizer(ctx, ch); err != nil {
+			return err
+		}
+
+		ch.Status.Presented = false
+		ch.Status.Processing = false
+
+		return nil
 	}
 
 	// bail out early on if processing=false, as this challenge has not been
-	// scheduled yet.
+	// scheduled yet or has finished.
 	if !ch.Status.Processing {
 		return nil
 	}
@@ -101,7 +113,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// -- Both finalizers are supported, the flag just controls the one we add.
 	//
 	// -- We only need to add a finalizer label if no supported finalizer label is present.
-	if finalizerRequired(ch) {
+	if !hasFinalizer(ch) {
 		finalizer := cmacme.ACMELegacyFinalizer
 		if utilfeature.DefaultFeatureGate.Enabled(feature.UseDomainQualifiedFinalizer) {
 			finalizer = cmacme.ACMEDomainQualifiedFinalizer
@@ -113,32 +125,6 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
-	}
-
-	// if a challenge is in a final state, we bail out early as there is nothing
-	// left for us to do here.
-	if acme.IsFinalState(ch.Status.State) {
-		if ch.Status.Presented {
-			solver, err := c.solverFor(ch.Spec.Type)
-			if err != nil {
-				log.Error(err, "error getting solver for challenge")
-				return err
-			}
-
-			err = solver.CleanUp(ctx, ch)
-			if err != nil {
-				c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
-				ch.Status.Reason = err.Error()
-				log.Error(err, "error cleaning up challenge")
-				return err
-			}
-
-			ch.Status.Presented = false
-		}
-
-		ch.Status.Processing = false
-
-		return nil
 	}
 
 	cl, err := c.accountRegistry.GetClient(string(genericIssuer.GetUID()))
@@ -266,38 +252,28 @@ func handleError(ch *cmacme.Challenge, err error) error {
 // CleanUp if the resource is in a 'processing' state.
 func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) (err error) {
 	log := logf.FromContext(ctx, "finalizer")
-	if len(ch.Finalizers) == 0 {
-		return nil
-	}
-	if otherFinalizerPresent(ch) {
-		log.V(logf.DebugLevel).Info("waiting to run challenge finalization...")
-		return nil
-	}
-
-	defer func() {
-		// call Update to remove the metadata.finalizers entry
-		ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-			return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
-		})
-	}()
-
-	if !ch.Status.Processing {
-		return nil
+	if !hasFinalizer(ch) {
+		return nil // nothing to do
 	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
 		log.Error(err, "error getting solver for challenge")
-		return nil
+		return err
 	}
 
-	err = solver.CleanUp(ctx, ch)
-	if err != nil {
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
-		ch.Status.Reason = err.Error()
+	if err := solver.CleanUp(ctx, ch); err != nil {
 		log.Error(err, "error cleaning up challenge")
-		return nil
+		err := fmt.Errorf("Error cleaning up challenge: %v", err)
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
+		ch.Status.Reason = err.Error()
+		return err
 	}
+
+	// call Update to remove the metadata.finalizers entry
+	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+		return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
+	})
 
 	return nil
 }
