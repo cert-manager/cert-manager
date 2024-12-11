@@ -415,7 +415,7 @@ type JKSKeystore struct {
 	// Create enables JKS keystore creation for the Certificate.
 	// If true, a file named `keystore.jks` will be created in the target
 	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef`.
+	// `passwordSecretRef` or `changeit` if not provided.
 	// The keystore file will be updated immediately.
 	// If the issuer provided a CA certificate, a file named `truststore.jks`
 	// will also be created in the target Secret resource, encrypted using the
@@ -425,7 +425,8 @@ type JKSKeystore struct {
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the JKS keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector
+	// +optional
+	PasswordSecretRef *cmmeta.SecretKeySelector
 
 	// Alias specifies the alias of the key in the keystore, required by the JKS format.
 	// If not provided, the default alias `certificate` will be used.
@@ -439,7 +440,7 @@ type PKCS12Keystore struct {
 	// Create enables PKCS12 keystore creation for the Certificate.
 	// If true, a file named `keystore.p12` will be created in the target
 	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef`.
+	// `passwordSecretRef` or `changeit` if not provided.
 	// The keystore file will be updated immediately.
 	// If the issuer provided a CA certificate, a file named `truststore.p12` will
 	// also be created in the target Secret resource, encrypted using the
@@ -449,7 +450,8 @@ type PKCS12Keystore struct {
 
 	// PasswordSecretRef is a reference to a key in a Secret resource
 	// containing the password used to encrypt the PKCS12 keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector
+	// +optional
+	PasswordSecretRef *cmmeta.SecretKeySelector
 
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
