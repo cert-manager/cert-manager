@@ -99,13 +99,13 @@ func SyncFnFor(
 		}
 
 		if !hasShimAnnotation(ingLike, autoAnnotations) {
-			logf.V(logf.DebugLevel).Infof("not syncing ingress resource as it does not contain a %q or %q annotation",
-				cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey)
+			log.V(logf.DebugLevel).Info("not syncing ingress resource",
+				"reason", fmt.Sprintf("it does not contain a %q or %q annotation", cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey))
 			return nil
 		}
 
 		if isDeletedInForeground(ingLike) {
-			logf.V(logf.DebugLevel).Infof("not syncing ingress resource as it is being deleted via foreground cascading")
+			log.V(logf.DebugLevel).Info("not syncing ingress resource", "reason", "it is being deleted via foreground cascading")
 			return nil
 		}
 
