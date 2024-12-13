@@ -265,7 +265,7 @@ comma = ,
 # for "--set featureGates". That's why we have "\$(comma)".
 feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ValidateCAA=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
-feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # When testing an published chart the repo can be configured using
 # E2E_CERT_MANAGER_REPO

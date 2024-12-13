@@ -33,9 +33,11 @@ import (
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
+	"github.com/cert-manager/cert-manager/internal/cainjector/feature"
 	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -161,6 +163,11 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				}
 				injectable, cert := generalSetup(test.makeInjectable("changed"))
 
+				By("grabbing the original secret")
+				var oldSecret corev1.Secret
+				secretName := types.NamespacedName{Name: cert.Spec.SecretName, Namespace: f.Namespace.Name}
+				Expect(f.CRClient.Get(context.Background(), secretName, &oldSecret)).To(Succeed())
+
 				By("changing the name of the corresponding secret in the cert")
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}, cert)
@@ -182,17 +189,24 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")
-				var secret corev1.Secret
-				secretName := types.NamespacedName{Name: cert.Spec.SecretName, Namespace: f.Namespace.Name}
-				Expect(f.CRClient.Get(context.Background(), secretName, &secret)).To(Succeed())
+				var newSecret corev1.Secret
+				Expect(f.CRClient.Get(context.Background(), secretName, &newSecret)).To(Succeed())
 
 				By("verifying that the hooks have the new data")
-				caData := secret.Data["ca.crt"]
 				expectedLen := len(test.getCAs(injectable))
 				expectedCAs := make([][]byte, expectedLen)
-				for i := range expectedCAs {
-					expectedCAs[i] = caData
+				if utilfeature.DefaultFeatureGate.Enabled(feature.CAInjectorMerging) {
+					caData := append(oldSecret.Data["ca.crt"], newSecret.Data["ca.crt"]...)
+					for i := range expectedCAs {
+						expectedCAs[i] = caData
+					}
+				} else {
+					caData := newSecret.Data["ca.crt"]
+					for i := range expectedCAs {
+						expectedCAs[i] = caData
+					}
 				}
+
 				Eventually(func() ([][]byte, error) {
 					newInjectable := injectable.DeepCopyObject().(client.Object)
 					if err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: injectable.(metav1.Object).GetName()}, newInjectable); err != nil {
