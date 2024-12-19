@@ -1,4 +1,18 @@
-// +skip_license_check
+/*
+Copyright 2020 The cert-manager Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 /*
 This file contains portions of code directly taken from the 'xenolf/lego' project.
@@ -14,14 +28,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -32,8 +47,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
-
-const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9uYXdzLmNvbSIsImV4cCI6MTc0MTg4NzYwOCwiaWF0IjoxNzEwMzUxNjM4LCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.SfuV3SW-vEdV-tLFIr2PK2DnN6QYmozygav5OeoH36Q"
 
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg, err := config.LoadDefaultConfig(
@@ -59,7 +72,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, ctx := ktesting.NewTestContext(t)
-	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(ctx, "", "", "", "", "", nil, true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(ctx)
@@ -74,7 +87,7 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, ctx := ktesting.NewTestContext(t)
-	_, err := NewDNSProvider(ctx, "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, err := NewDNSProvider(ctx, "", "", "", "", "", nil, false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
@@ -82,6 +95,12 @@ type bitmask byte
 
 func (haystack bitmask) Has(needle bitmask) bool {
 	return haystack&needle != 0
+}
+
+type fakeIdentityTokenRetriever struct{}
+
+func (o *fakeIdentityTokenRetriever) GetIdentityToken() ([]byte, error) {
+	return []byte("fake-web-identity-token"), nil
 }
 
 // TestSessionProviderGetSessionRegion calls sessionProvider.GetSession with all
@@ -103,19 +122,19 @@ func TestSessionProviderGetSessionRegion(t *testing.T) {
 			"issuer-region-supplied", supplyIssuerRegion,
 		)
 		var (
-			accessKeyID      string
-			secretAccessKey  string
-			region           string
-			role             string
-			webIdentityToken string
-			userAgent        string
+			accessKeyID               string
+			secretAccessKey           string
+			region                    string
+			role                      string
+			webIdentityTokenRetriever stscreds.IdentityTokenRetriever
+			userAgent                 string
 		)
 		if supplyAccessKey {
 			accessKeyID = "fake-access-key-id"
 			secretAccessKey = "fake-secret-access-key"
 		}
 		if supplyWebIdentity {
-			webIdentityToken = "fake-web-identity-token"
+			webIdentityTokenRetriever = &fakeIdentityTokenRetriever{}
 			role = "fake-web-identity-role"
 		}
 		if setAmbientRegion {
@@ -125,24 +144,7 @@ func TestSessionProviderGetSessionRegion(t *testing.T) {
 			region = fakeIssuerRegion
 		}
 
-		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, allowAmbientCredentials, userAgent)
-		p.StsProvider = func(cfg aws.Config) StsClient {
-			return &mockSTS{
-				AssumeRoleWithWebIdentityFn: func(
-					ctx context.Context,
-					params *sts.AssumeRoleWithWebIdentityInput,
-					optFns ...func(*sts.Options),
-				) (*sts.AssumeRoleWithWebIdentityOutput, error) {
-					return &sts.AssumeRoleWithWebIdentityOutput{
-						Credentials: &ststypes.Credentials{
-							AccessKeyId:     aws.String("fake-sts-access-key-id"),
-							SecretAccessKey: aws.String("fake-sts-secret-access-key"),
-							SessionToken:    aws.String("fake-sts-session-token"),
-						},
-					}, nil
-				},
-			}
-		}
+		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityTokenRetriever, allowAmbientCredentials, userAgent)
 
 		logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.BufferLogs(true)))
 		ctx := klog.NewContext(context.Background(), logger)
@@ -286,104 +288,65 @@ func TestRoute53Present(t *testing.T) {
 }
 
 func TestAssumeRole(t *testing.T) {
-	creds := &ststypes.Credentials{
-		AccessKeyId:     aws.String("foo"),
-		SecretAccessKey: aws.String("bar"),
-		SessionToken:    aws.String("my-token"),
-	}
 	cases := []struct {
-		name             string
-		ambient          bool
-		role             string
-		webIdentityToken string
-		expErr           bool
-		expErrMessage    string
-		expCreds         *ststypes.Credentials
-		expRegion        string
-		key              string
-		secret           string
-		region           string
-		mockSTS          *mockSTS
+		name                      string
+		ambient                   bool
+		role                      string
+		webIdentityTokenRetriever stscreds.IdentityTokenRetriever
+		expErr                    bool
+		expErrMessage             string
+		expCreds                  *ststypes.Credentials
+		key                       string
+		secret                    string
+		region                    string
+		mockAPIResponse           *MockResponse
 	}{
 		{
-			name:          "should remove request ID for assumeRole",
-			role:          "my-role",
-			ambient:       true,
-			expErr:        true,
-			expErrMessage: "unable to assume role: https response error StatusCode: 0, RequestID: <REDACTED>, foo",
-			expCreds:      creds,
-			expRegion:     "",
-			mockSTS: &mockSTS{
-				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return nil, &awshttp.ResponseError{
-						RequestID: "fake-request-id",
-						ResponseError: &smithyhttp.ResponseError{
-							Err: errors.New("foo"),
-							Response: &smithyhttp.Response{
-								Response: &http.Response{},
-							},
-						},
-					}
-				},
-			},
+			name:            "should remove request ID for assumeRole",
+			role:            "arn:aws:sts::123456789012:assumed-role/demo/TestAR",
+			key:             "key",
+			secret:          "secret",
+			region:          "eu-central-1",
+			ambient:         true,
+			expErr:          true,
+			expErrMessage:   "failed to refresh cached credentials, operation error STS: AssumeRole, https response error StatusCode: 403, RequestID: <REDACTED>, api error InvalidClientTokenId: The security token included in the request is invalid.",
+			mockAPIResponse: &MockResponse{StatusCode: 403, Body: AssumeRole403Response},
 		},
 		{
-			name:             "should remove request ID for assumeRoleWithWebIdentity",
-			role:             "my-role",
-			webIdentityToken: jwt,
-			ambient:          true,
-			expErr:           true,
-			expErrMessage:    "unable to assume role with web identity: https response error StatusCode: 0, RequestID: <REDACTED>, foo",
-			expCreds:         creds,
-			expRegion:        "",
-			mockSTS: &mockSTS{
-				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
-					return nil, &awshttp.ResponseError{
-						RequestID: "fake-request-id",
-						ResponseError: &smithyhttp.ResponseError{
-							Err: errors.New("foo"),
-							Response: &smithyhttp.Response{
-								Response: &http.Response{},
-							},
-						},
-					}
-				},
-			},
+			name:                      "should remove request ID for assumeRoleWithWebIdentity",
+			role:                      "arn:aws:sts::123456789012:assumed-role/FederatedWebIdentityRole/app1",
+			webIdentityTokenRetriever: &fakeIdentityTokenRetriever{},
+			region:                    "eu-central-1",
+			ambient:                   true,
+			expErr:                    true,
+			expErrMessage:             "failed to refresh cached credentials, failed to retrieve credentials, operation error STS: AssumeRoleWithWebIdentity, https response error StatusCode: 400, RequestID: <REDACTED>, api error ValidationError: Request ARN is invalid",
+			mockAPIResponse:           &MockResponse{StatusCode: 400, Body: AssumeRoleWithWebIdentity400Response},
 		},
 		{
-			name:      "should assume role w/ ambient creds",
-			role:      "my-role",
-			key:       "key",
-			secret:    "secret",
-			region:    "",
-			ambient:   true,
-			expErr:    false,
-			expCreds:  creds,
-			expRegion: "",
-			mockSTS: &mockSTS{
-				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return &sts.AssumeRoleOutput{
-						Credentials: creds,
-					}, nil
-				},
+			name:    "should assume role with ambient creds",
+			role:    "arn:aws:sts::123456789012:assumed-role/demo/TestAR",
+			region:  "eu-central-1",
+			ambient: true,
+			expErr:  false,
+			expCreds: &ststypes.Credentials{
+				AccessKeyId:     aws.String("ASIAIOSFODNN7EXAMPLE"),
+				SecretAccessKey: aws.String("wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY"),
 			},
+			mockAPIResponse: &MockResponse{StatusCode: 200, Body: AssumeRoleResponse},
 		},
 		{
-			name:     "should assume role w/o ambient",
-			ambient:  false,
-			role:     "my-role",
-			key:      "key",
-			secret:   "secret",
-			region:   "eu-central-1",
-			expErr:   false,
-			expCreds: creds,
-			mockSTS: &mockSTS{
-				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return &sts.AssumeRoleOutput{
-						Credentials: creds,
-					}, nil
-				},
+			name:    "should assume role without ambient creds",
+			ambient: false,
+			role:    "arn:aws:sts::123456789012:assumed-role/demo/TestAR",
+			key:     "key",
+			secret:  "secret",
+			region:  "eu-central-1",
+			expErr:  false,
+			expCreds: &ststypes.Credentials{
+				AccessKeyId:     aws.String("ASIAIOSFODNN7EXAMPLE"),
+				SecretAccessKey: aws.String("wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY"),
 			},
+			mockAPIResponse: &MockResponse{StatusCode: 200, Body: AssumeRoleResponse},
 		},
 		{
 			name:    "no role set: do NOT assume role and use provided credentials",
@@ -397,118 +360,109 @@ func TestAssumeRole(t *testing.T) {
 				AccessKeyId:     aws.String("my-explicit-key"),    // from <key> above
 				SecretAccessKey: aws.String("my-explicit-secret"), // from <secret> above
 			},
-			mockSTS: &mockSTS{
-				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return &sts.AssumeRoleOutput{
-						Credentials: creds,
-					}, nil
-				},
-			},
 		},
 		{
 			// AssumeRole() error should be forwarded by provider
-			name:     "error assuming role w/ ambient",
-			ambient:  true,
-			role:     "my-role",
-			key:      "key",
-			secret:   "secret",
-			region:   "eu-central-1",
-			expErr:   true,
-			expCreds: nil,
-			mockSTS: &mockSTS{
-				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return nil, fmt.Errorf("error assuming mock role")
-				},
-			},
+			name:            "error assuming role with ambient",
+			ambient:         true,
+			role:            "arn:aws:sts::123456789012:assumed-role/demo/TestAR",
+			key:             "key",
+			secret:          "secret",
+			region:          "eu-central-1",
+			expErr:          true,
+			expErrMessage:   "failed to refresh cached credentials, operation error STS: AssumeRole, https response error StatusCode: 403, RequestID: <REDACTED>, api error InvalidClientTokenId: The security token included in the request is invalid.",
+			expCreds:        nil,
+			mockAPIResponse: &MockResponse{StatusCode: 403, Body: AssumeRole403Response},
 		},
 		{
-			name:             "should assume role with web identity",
-			role:             "my-role",
-			webIdentityToken: jwt,
-			expErr:           false,
-			expCreds:         creds,
-			mockSTS: &mockSTS{
-				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
-					return &sts.AssumeRoleWithWebIdentityOutput{
-						Credentials: creds,
-					}, nil
-				},
+			name:                      "should assume role with web identity",
+			role:                      "arn:aws:sts::123456789012:assumed-role/FederatedWebIdentityRole/app1",
+			webIdentityTokenRetriever: &fakeIdentityTokenRetriever{},
+			region:                    "eu-central-1",
+			expErr:                    false,
+			expCreds: &ststypes.Credentials{
+				AccessKeyId:     aws.String("ASgeIAIOSFODNN7EXAMPLE"),
+				SecretAccessKey: aws.String("wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY"),
 			},
+			mockAPIResponse: &MockResponse{StatusCode: 200, Body: AssumeRoleWithWebIdentityResponse},
 		},
 		{
-			name:             "require role when using assume role with web identity",
-			webIdentityToken: jwt,
-			expErr:           true,
-			expCreds:         nil,
-			mockSTS: &mockSTS{
-				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
-					return nil, fmt.Errorf("error assuming mock role with web identity")
-				},
-			},
+			name:                      "require role when using assume role with web identity",
+			webIdentityTokenRetriever: &fakeIdentityTokenRetriever{},
+			region:                    "eu-central-1",
+			expErr:                    true,
+			expErrMessage:             "unable to construct route53 provider: role must be set when web identity token is set",
+			expCreds:                  nil,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			provider := makeMockSessionProvider(func(cfg aws.Config) StsClient {
-				return c.mockSTS
-			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
-			_, ctx := ktesting.NewTestContext(t)
-			cfg, err := provider.GetSession(ctx)
-			if c.expErr {
-				assert.NotNil(t, err)
-				if c.expErrMessage != "" {
-					assert.EqualError(t, err, c.expErrMessage)
+			// The following environment variables are standard in all AWS SDKs:
+			// https://docs.aws.amazon.com/sdkref/latest/guide/settings-reference.html#EVarSettings
+
+			// Provide "ambient" credentials for those tests that expect them
+			t.Setenv("AWS_ACCESS_KEY_ID", "key")
+			t.Setenv("AWS_SECRET_ACCESS_KEY", "secret")
+			// Disable AWS metadata service connections
+			t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+			// Prevent looking in the users `.aws/config` and `aws/credentials`
+			t.Setenv("AWS_SHARED_CREDENTIALS_FILE", "/dev/null")
+			// Avoid slow retries in tests
+			t.Setenv("AWS_MAX_ATTEMPTS", "1")
+
+			// Simulate the AWS STS server using a local HTTP server.
+			// But allow tests to be run against real AWS endpoints
+			// to help judge the accuracy of our fake responses.
+			// Only error tests will succeed in this case.
+			if os.Getenv("USE_REAL_AWS") != "true" {
+				mockResponses := MockResponseMap{}
+				if c.mockAPIResponse != nil {
+					mockResponses["/"] = *c.mockAPIResponse
 				}
+				s := newMockServer(t, mockResponses)
+				t.Setenv("AWS_ENDPOINT_URL", s.URL)
+			}
+
+			_, ctx := ktesting.NewTestContext(t)
+			provider := makeMockSessionProvider(c.key, c.secret, c.region, c.role, c.webIdentityTokenRetriever, c.ambient)
+			cfg, err := provider.GetSession(ctx)
+
+			var sessCreds aws.Credentials
+			if err == nil {
+				assert.Equal(t, c.region, cfg.Region)
+				sessCreds, err = cfg.Credentials.Retrieve(ctx)
+			}
+
+			if c.expErr {
+				assert.Error(t, err)
 			} else {
-				assert.Nil(t, err)
-				sessCreds, _ := cfg.Credentials.Retrieve(ctx)
-				assert.Equal(t, c.mockSTS.assumedRole, c.role)
+				assert.NoError(t, err)
+			}
+
+			if c.expErrMessage != "" {
+				assert.EqualError(t, err, c.expErrMessage)
+			}
+			if c.expCreds != nil {
 				assert.Equal(t, *c.expCreds.SecretAccessKey, sessCreds.SecretAccessKey)
 				assert.Equal(t, *c.expCreds.AccessKeyId, sessCreds.AccessKeyID)
-				assert.Equal(t, c.region, cfg.Region)
 			}
 		})
 	}
 }
 
-type mockSTS struct {
-	AssumeRoleFn                func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
-	AssumeRoleWithWebIdentityFn func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error)
-	assumedRole                 string
-}
-
-func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-	if m.AssumeRoleFn != nil {
-		m.assumedRole = *params.RoleArn
-		return m.AssumeRoleFn(ctx, params, optFns...)
-	}
-
-	return nil, nil
-}
-
-func (m *mockSTS) AssumeRoleWithWebIdentity(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
-	if m.AssumeRoleWithWebIdentityFn != nil {
-		m.assumedRole = *params.RoleArn
-		return m.AssumeRoleWithWebIdentityFn(ctx, params, optFns...)
-	}
-
-	return nil, nil
-}
-
 func makeMockSessionProvider(
-	defaultSTSProvider func(aws.Config) StsClient,
-	accessKeyID, secretAccessKey, region, role, webIdentityToken string,
+	accessKeyID, secretAccessKey, region, role string, webIdentityTokenRetriever stscreds.IdentityTokenRetriever,
 	ambient bool,
 ) *sessionProvider {
 	return &sessionProvider{
-		AccessKeyID:      accessKeyID,
-		SecretAccessKey:  secretAccessKey,
-		Ambient:          ambient,
-		Region:           region,
-		Role:             role,
-		WebIdentityToken: webIdentityToken,
-		StsProvider:      defaultSTSProvider,
+		AccessKeyID:               accessKeyID,
+		SecretAccessKey:           secretAccessKey,
+		Ambient:                   ambient,
+		Region:                    region,
+		Role:                      role,
+		webIdentityTokenRetriever: webIdentityTokenRetriever,
+		userAgent:                 "fake-user-agent-for-tests",
 	}
 }
 
