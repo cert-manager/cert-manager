@@ -69,13 +69,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	}
 }
 
-// DecodeX509CertificateChainBytes will decode a PEM encoded x509 Certificate chain.
-func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, error) {
-	return DecodeX509CertificateSetBytes(certBytes)
-}
-
-// DecodeX509CertificateSetBytes will decode a concatenated set of PEM encoded x509 Certificates.
-func DecodeX509CertificateSetBytes(certBytes []byte) ([]*x509.Certificate, error) {
+func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block, []byte, error)) ([]*x509.Certificate, error) {
 	certs := []*x509.Certificate{}
 
 	var block *stdpem.Block
@@ -84,7 +78,7 @@ func DecodeX509CertificateSetBytes(certBytes []byte) ([]*x509.Certificate, error
 		var err error
 
 		// decode the tls certificate pem
-		block, certBytes, err = pem.SafeDecodeMultipleCertificates(certBytes)
+		block, certBytes, err = decodeFn(certBytes)
 		if err != nil {
 			if err == pem.ErrNoPEMData {
 				break
@@ -106,6 +100,20 @@ func DecodeX509CertificateSetBytes(certBytes []byte) ([]*x509.Certificate, error
 	}
 
 	return certs, nil
+}
+
+// DecodeX509CertificateChainBytes will decode a PEM encoded x509 Certificate chain with a tight
+// size limit to reduce the risk of DoS attacks. If you need to decode many certificates, use
+// DecodeX509CertificateSetBytes instead.
+func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, error) {
+	return decodeMultipleCerts(certBytes, pem.SafeDecodeCertificateChain)
+}
+
+// DecodeX509CertificateSetBytes will decode a concatenated set of PEM encoded x509 Certificates,
+// with generous size limits to enable parsing of TLS trust bundles.
+// If you need to decode a single certificate chain, use DecodeX509CertificateChainBytes instead.
+func DecodeX509CertificateSetBytes(certBytes []byte) ([]*x509.Certificate, error) {
+	return decodeMultipleCerts(certBytes, pem.SafeDecodeCertificateBundle)
 }
 
 // DecodeX509CertificateBytes will decode a PEM encoded x509 Certificate.
