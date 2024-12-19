@@ -27,7 +27,7 @@ import (
 
 // IssuerConstructor constructs an issuer given an Issuer resource and a Context.
 // An error will be returned if the appropriate issuer is not registered.
-type IssuerConstructor func(*controller.Context, v1.GenericIssuer) (Interface, error)
+type IssuerConstructor func(*controller.Context) (Interface, error)
 
 var (
 	constructors     = make(map[string]IssuerConstructor)
@@ -77,7 +77,7 @@ func (f *factory) IssuerFor(issuer v1.GenericIssuer) (Interface, error) {
 	constructorsLock.RLock()
 	defer constructorsLock.RUnlock()
 	if constructor, ok := constructors[issuerType]; ok {
-		return constructor(f.ctx, issuer)
+		return constructor(f.ctx)
 	}
 
 	return nil, fmt.Errorf("issuer '%s' not registered", issuerType)
