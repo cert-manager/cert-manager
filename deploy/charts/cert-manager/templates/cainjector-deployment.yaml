@@ -53,6 +53,12 @@ spec:
         prometheus.io/port: '9402'
       {{- end }}
     spec:
+      {{- if not .Values.cainjector.serviceAccount.create }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
       serviceAccountName: {{ template "cainjector.serviceAccountName" . }}
       {{- if hasKey .Values.cainjector "automountServiceAccountToken" }}
       automountServiceAccountToken: {{ .Values.cainjector.automountServiceAccountToken }}
