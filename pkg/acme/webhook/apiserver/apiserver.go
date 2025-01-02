@@ -28,8 +28,8 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/openapi"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	utilversion "k8s.io/apiserver/pkg/util/version"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/component-base/version"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
@@ -93,7 +93,7 @@ type CompletedConfig struct {
 
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
 func (c *Config) Complete() CompletedConfig {
-	c.GenericConfig.EffectiveVersion = utilversion.NewEffectiveVersion("1.1")
+	c.GenericConfig.EffectiveVersion = version.NewEffectiveVersion("1.1")
 	c.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
 	c.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
 
