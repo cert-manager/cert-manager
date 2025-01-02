@@ -44,9 +44,10 @@ const (
 	tppUsernameKey    = "username"
 	tppPasswordKey    = "password"
 	tppAccessTokenKey = "access-token"
-	// Setting ClientId & Scope statically for simplicity
-	tppClientId = "cert-manager.io"
-	tppScopes   = "certificate:manage"
+	tppClientIdKey    = "client-id"
+	tppClientId       = "cert-manager.io"
+	// Setting Scope statically for simplicity
+	tppScopes = "certificate:manage,revoke"
 
 	defaultAPIKeyKey = "api-key"
 )
@@ -167,6 +168,11 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
+		clientId := string(tppSecret.Data[tppClientIdKey])
+		// fallback to default client-id if not provided
+		if clientId == "" {
+			clientId = tppClientId
+		}
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
 
 		return &vcert.Config{
@@ -187,6 +193,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				User:        username,
 				Password:    password,
 				AccessToken: accessToken,
+				ClientId:    clientId,
 			},
 			Client: httpClientForVcert(&httpClientForVcertOptions{
 				UserAgent:               ptr.To(userAgent),
@@ -430,7 +437,7 @@ func (v *Venafi) VerifyCredentials() error {
 			resp, err := v.tppClient.GetRefreshToken(&endpoint.Authentication{
 				User:     v.config.Credentials.User,
 				Password: v.config.Credentials.Password,
-				ClientId: tppClientId,
+				ClientId: v.config.Credentials.ClientId,
 				Scope:    tppScopes,
 			})
 
