@@ -17,7 +17,6 @@ limitations under the License.
 package pki
 
 import (
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -31,6 +30,7 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 )
 
 type CertificateTemplateValidatorMutator func(*x509.CertificateRequest, *x509.Certificate) error
@@ -144,7 +144,7 @@ func (k printKeyUsage) String() string {
 // CertificateTemplateFromCSR will create a x509.Certificate for the
 // given *x509.CertificateRequest.
 func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators ...CertificateTemplateValidatorMutator) (*x509.Certificate, error) {
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	serialNumber, err := cmrand.SerialNumber()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
