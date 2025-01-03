@@ -23,10 +23,8 @@ import (
 	"strings"
 	"time"
 
-	authv1 "k8s.io/api/authentication/v1"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
@@ -61,7 +59,7 @@ type solver interface {
 type dnsProviderConstructors struct {
 	cloudDNS     func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error)
-	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
+	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role string, webIdentityTokenRetriever stscreds.IdentityTokenRetriever, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
@@ -346,7 +344,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			secretAccessKey = string(secretAccessKeyBytes)
 		}
 
-		webIdentityToken := ""
+		var webIdentityTokenRetriever stscreds.IdentityTokenRetriever
 		if providerConfig.Route53.Auth != nil && providerConfig.Route53.Auth.Kubernetes != nil && providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef != nil {
 			if providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.Name == "" {
 				return nil, nil, fmt.Errorf("service account name is required for Kubernetes auth")
@@ -357,12 +355,12 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 				audiences = providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.TokenAudiences
 			}
 
-			jwt, err := s.createToken(ctx, resourceNamespace, providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.Name, audiences)
-			if err != nil {
-				return nil, nil, fmt.Errorf("error getting service account token: %w", err)
+			webIdentityTokenRetriever = &route53.KubernetesServiceAccountTokenRetriever{
+				ServiceAccountName: providerConfig.Route53.Auth.Kubernetes.ServiceAccountRef.Name,
+				Audiences:          audiences,
+				Namespace:          resourceNamespace,
+				Client:             s.Client.CoreV1().ServiceAccounts(resourceNamespace),
 			}
-
-			webIdentityToken = jwt
 		}
 
 		impl, err = s.dnsProviderConstructors.route53(
@@ -372,7 +370,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
 			providerConfig.Route53.Role,
-			webIdentityToken,
+			webIdentityTokenRetriever,
 			canUseAmbientCredentials,
 			s.DNS01Nameservers,
 			s.RESTConfig.UserAgent,
@@ -558,18 +556,4 @@ func (s *Solver) loadSecretData(selector *cmmeta.SecretKeySelector, ns string) (
 	}
 
 	return nil, fmt.Errorf("no key %q in secret %q", selector.Key, ns+"/"+selector.Name)
-}
-
-func (s *Solver) createToken(ctx context.Context, ns, serviceAccount string, audiences []string) (string, error) {
-	tokenrequest, err := s.Client.CoreV1().ServiceAccounts(ns).CreateToken(ctx, serviceAccount, &authv1.TokenRequest{
-		Spec: authv1.TokenRequestSpec{
-			Audiences:         audiences,
-			ExpirationSeconds: ptr.To(int64(600)),
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		return "", fmt.Errorf("failed to request token for %s/%s: %w", ns, serviceAccount, err)
-	}
-
-	return tokenrequest.Status.Token, nil
 }
