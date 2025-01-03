@@ -30,7 +30,7 @@ gain an understanding of the problem.-->
 
 **Anything else we need to know?**:
 
-**Environment details:**:
+**Environment details**:
 - Kubernetes version:
 - Cloud-provider/provisioner:
 - cert-manager version: 
