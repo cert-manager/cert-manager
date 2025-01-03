@@ -168,5 +168,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: false, PreRelease: featuregate.Alpha},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
-	UseDomainQualifiedFinalizer:                      {Default: false, PreRelease: featuregate.Alpha},
+	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.Beta},
 }
