@@ -261,5 +261,9 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
 	}
 
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
+		logf.Log.Info("the ValidateCAA feature flag is scheduled for removal in v1.18 and will become a no-op")
+	}
+
 	return enabled
 }
