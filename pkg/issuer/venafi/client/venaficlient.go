@@ -41,13 +41,13 @@ import (
 )
 
 const (
-	tppUsernameKey    = "username"
-	tppPasswordKey    = "password"
-	tppAccessTokenKey = "access-token"
-	tppClientIdKey    = "client-id"
-	tppClientId       = "cert-manager.io"
+	tppUsernameKey     = "username"
+	tppPasswordKey     = "password"
+	tppAccessTokenKey  = "access-token"
+	tppClientIdKey     = "client-id"
+	defaultTppClientId = "cert-manager.io"
 	// Setting Scope statically for simplicity
-	tppScopes = "certificate:manage,revoke"
+	tppScopes = "certificate:manage"
 
 	defaultAPIKeyKey = "api-key"
 )
@@ -171,7 +171,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		clientId := string(tppSecret.Data[tppClientIdKey])
 		// fallback to default client-id if not provided
 		if clientId == "" {
-			clientId = tppClientId
+			clientId = defaultTppClientId
 		}
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
 
