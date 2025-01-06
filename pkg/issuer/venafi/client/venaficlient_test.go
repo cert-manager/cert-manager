@@ -35,7 +35,7 @@ const (
 	zone                = "test-zone"
 	username            = "test-username"
 	password            = "test-password"
-	clientId            = "cert-manager"
+	defaultClientId     = "cert-manager.io"
 	accessToken         = "KT2EEVTIjWM/37L78dqJAg=="
 	apiKey              = "test-api-key"
 	customKey           = "test-custom-key"
@@ -237,6 +237,9 @@ func TestConfigForIssuerT(t *testing.T) {
 				}
 				if pass := cnf.Credentials.Password; pass != password {
 					t.Errorf("got unexpected password: %s", pass)
+				}
+				if cId := cnf.Credentials.ClientId; cId != defaultClientId {
+					t.Errorf("got unexpected clientId: %s", cId)
 				}
 				checkZone(t, zone, cnf)
 			},
