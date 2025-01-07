@@ -190,7 +190,10 @@ serviceAccount:
   # +docs:property
   # name: ""
 
-  # Optional additional annotations to add to the controller's Service Account.
+  # Optional additional annotations to add to the controller's Service Account. Templates are allowed for both keys and values.
+  # Example using templating:
+  # annotations:
+  #   "{{ .Chart.Name }}-helm-chart/version": "{{ .Chart.Version }}"
   # +docs:property
   # annotations: {}
 
