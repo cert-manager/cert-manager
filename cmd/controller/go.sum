@@ -20,8 +20,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2/go.mod h1:wP83
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Khan/genqlient v0.7.0 h1:GZ1meyRnzcDTK48EjqB8t3bcfYvHArCUUvgOwpz1D4w=
 github.com/Khan/genqlient v0.7.0/go.mod h1:HNyy3wZvuYwmW3Y7mkoQLZsa/R5n5yIRajS1kPBvSFM=
-github.com/Venafi/vcert/v5 v5.7.1 h1:gUDbSuP6NE4yAslWp+D+ZoJlYOSRWhQora48oExuEN4=
-github.com/Venafi/vcert/v5 v5.7.1/go.mod h1:UGI1A6IdZ7Sc4E3DQU70Qzaanot6fiY0ObIupcU2O94=
+github.com/Venafi/vcert/v5 v5.8.0 h1:M+bJFlQF031uI65ZqdrDiF4Zy05V5iRIhAUtL/dnoFQ=
+github.com/Venafi/vcert/v5 v5.8.0/go.mod h1:m6SvhAmCq/j9/4RKa6uD70Wcbjdsg2kcBKjx7TsZuiM=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2 h1:F1j7z+/DKEsYqZNoxC6wvfmaiDneLsQOFQmuq9NADSY=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2/go.mod h1:QlXr/TrICfQ/ANa76sLeQyhAJyNR9sEcfNuZBkY9jgY=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa h1:LHTHcTQiSGT7VVbI0o4wBRNQIgn917usHWOd6VAffYI=
