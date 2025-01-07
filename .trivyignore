@@ -23,3 +23,16 @@ CVE-2024-24557
 # the version detection is wrongly looking at apiserver packages with versions < 1 - but all apiserver packages have
 # a major version of 0. In any case this is a vuln in Kubernetes clusters, not in our code.
 CVE-2020-8559
+
+# DLA-3972-1 refers to an out-of-date timezone database in Debian 11 (bullseye).
+# The Debian 11 tzdata package has been updated to address the issue,
+# but cert-manager uses github.com/GoogleContainerTools/distroless base images,
+# where Debian 11 is no longer supported.
+# So we have no easy way to address this vulnerability without switching to Debian 12,
+# which would be too big of a change for a cert-manager 1.12.x patch release.
+# cert-manager 1.12 will be out of support in May 2025 so we have decided to
+# simply suppress this trivy warning until then.
+#
+# https://security-tracker.debian.org/tracker/DLA-3972-1
+# https://lists.debian.org/debian-lts-announce/2024/11/msg00030.html
+DLA-3972-1
