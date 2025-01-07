@@ -42,15 +42,13 @@ func init() {
 		panic(fmt.Errorf("failed to read fuzz file %q: %s", fuzzFilename, err))
 	}
 
-	maxChainSize := maxCertificatePEMSize * maxChainSize
-
-	// Assert that SafeDecodeMultipleCertificates has the largest max size so we're definitely
+	// Assert that SafeDecodeCertificateBundle has the largest max size so we're definitely
 	// testing the worst case with pathologicalFuzzFile
-	if maxChainSize < maxPrivateKeyPEMSize {
-		panic(fmt.Errorf("invalid test: expected max cert chain size %d to be larger than maxPrivateKeyPEMSize %d", maxChainSize, maxPrivateKeyPEMSize))
+	if maxBundleSize < maxPrivateKeyPEMSize || maxBundleSize < maxChainSize {
+		panic(fmt.Errorf("invalid test: expected max cert bundle size %d to be larger than maxPrivateKeyPEMSize %d", maxChainSize, maxPrivateKeyPEMSize))
 	}
 
-	pathologicalFuzzFile = fuzzFile[:maxChainSize-1]
+	pathologicalFuzzFile = fuzzFile[:maxBundleSize-1]
 }
 
 func TestFuzzData(t *testing.T) {
@@ -68,7 +66,8 @@ func TestFuzzData(t *testing.T) {
 	expPrivateKeyError := ErrPEMDataTooLarge(maxPrivateKeyPEMSize)
 	expCSRError := ErrPEMDataTooLarge(maxCertificatePEMSize)
 	expSingleCertError := ErrPEMDataTooLarge(maxCertificatePEMSize)
-	expMultiCertError := ErrPEMDataTooLarge(maxCertificatePEMSize * maxChainSize)
+	expCertChainError := ErrPEMDataTooLarge(maxCertificatePEMSize * maxChainSize)
+	expCertBundleError := ErrPEMDataTooLarge(maxBundleSize)
 
 	block, rest, err = SafeDecodePrivateKey(fuzzFile)
 	if err != expPrivateKeyError {
@@ -109,22 +108,35 @@ func TestFuzzData(t *testing.T) {
 		t.Errorf("SafeDecodeSingleCertificate: expected rest to equal input")
 	}
 
-	block, rest, err = SafeDecodeMultipleCertificates(fuzzFile)
-	if err != expMultiCertError {
-		t.Errorf("SafeDecodeMultipleCertificates: wanted %s but got %v", expMultiCertError, err)
+	block, rest, err = SafeDecodeCertificateChain(fuzzFile)
+	if err != expCertChainError {
+		t.Errorf("SafeDecodeCertificateChain: wanted %s but got %v", expCertChainError, err)
 	}
 
 	if block != nil {
-		t.Errorf("SafeDecodeSingleCertificate: expected block to be nil")
+		t.Errorf("SafeDecodeCertificateChain: expected block to be nil")
 	}
 
 	if !slices.Equal(rest, fuzzFile) {
-		t.Errorf("SafeDecodeMultipleCertificates: expected rest to equal input")
+		t.Errorf("SafeDecodeCertificateChain: expected rest to equal input")
+	}
+
+	block, rest, err = SafeDecodeCertificateBundle(fuzzFile)
+	if err != expCertBundleError {
+		t.Errorf("SafeDecodeCertificateBundle: wanted %s but got %v", expCertBundleError, err)
+	}
+
+	if block != nil {
+		t.Errorf("SafeDecodeCertificateBundle: expected block to be nil")
+	}
+
+	if !slices.Equal(rest, fuzzFile) {
+		t.Errorf("SafeDecodeCertificateBundle: expected rest to equal input")
 	}
 }
 
 func testPathologicalInternal(t testing.TB) {
-	block, rest, err := SafeDecodeMultipleCertificates(pathologicalFuzzFile)
+	block, rest, err := SafeDecodeCertificateBundle(pathologicalFuzzFile)
 
 	if err != ErrNoPEMData {
 		t.Errorf("pathological input: expected err %s but got %v", ErrNoPEMData, err)
