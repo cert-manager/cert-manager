@@ -98,6 +98,6 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 
 	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
 	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
-	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
+	NameConstraints:                    {Default: false, PreRelease: featuregate.Beta},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
 }
