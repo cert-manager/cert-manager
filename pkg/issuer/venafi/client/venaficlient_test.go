@@ -35,6 +35,7 @@ const (
 	zone                = "test-zone"
 	username            = "test-username"
 	password            = "test-password"
+	defaultClientId     = "cert-manager.io"
 	accessToken         = "KT2EEVTIjWM/37L78dqJAg=="
 	apiKey              = "test-api-key"
 	customKey           = "test-custom-key"
@@ -130,6 +131,7 @@ func TestConfigForIssuerT(t *testing.T) {
 	zone := "test-zone"
 	username := "test-username"
 	password := "test-password"
+	clientId := "test-client-id"
 	accessToken := "KT2EEVTIjWM/37L78dqJAg=="
 	apiKey := "test-api-key"
 	customKey := "test-custom-key"
@@ -235,6 +237,32 @@ func TestConfigForIssuerT(t *testing.T) {
 				}
 				if pass := cnf.Credentials.Password; pass != password {
 					t.Errorf("got unexpected password: %s", pass)
+				}
+				if cId := cnf.Credentials.ClientId; cId != defaultClientId {
+					t.Errorf("got unexpected clientId: %s", cId)
+				}
+				checkZone(t, zone, cnf)
+			},
+			expectedErr: false,
+		},
+		"if TPP and secret returns user/pass/clientId, should return config with those credentials": {
+			iss: tppIssuer,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					tppUsernameKey: []byte(username),
+					tppPasswordKey: []byte(password),
+					tppClientIdKey: []byte(clientId),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				if user := cnf.Credentials.User; user != username {
+					t.Errorf("got unexpected username: %s", user)
+				}
+				if pass := cnf.Credentials.Password; pass != password {
+					t.Errorf("got unexpected password: %s", pass)
+				}
+				if cId := cnf.Credentials.ClientId; cId != clientId {
+					t.Errorf("got unexpected clientId: %s", cId)
 				}
 				checkZone(t, zone, cnf)
 			},
