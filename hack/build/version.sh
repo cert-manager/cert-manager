@@ -157,7 +157,7 @@ kube::version::last_published_release() {
     local git=(git --work-tree "${REPO_ROOT}")
 
     # Find the last git tag which is not alpha or beta tag
-    local latest=$("${git[@]}" tag --list 'v*' | grep -v 'alpha\|beta' | tail -n1)
+    local latest=$("${git[@]}" tag --list 'v*' | sort -V | grep -v 'alpha\|beta' | tail -n1)
 
 
     if [[ "${latest}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-].*)?([+].*)?$ ]]; then
