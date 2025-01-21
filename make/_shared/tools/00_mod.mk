@@ -232,8 +232,6 @@ endef
 
 $(foreach tool,$(tools),$(eval $(call tool_defs,$(word 1,$(subst =, ,$(tool))),$(word 2,$(subst =, ,$(tool))))))
 
-tools_paths := $(tool_names:%=$(bin_dir)/tools/%)
-
 ######
 # Go #
 ######
@@ -365,7 +363,10 @@ $(call for_each_kv,go_tags_init,$(go_dependencies))
 go_tags_defs = go_tags_$1 += $2
 $(call for_each_kv,go_tags_defs,$(go_tags))
 
+go_tool_names :=
+
 define go_dependency
+go_tool_names += $1
 $$(DOWNLOAD_DIR)/tools/$1@$($(call uc,$1)_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $$(NEEDS_GO) $$(DOWNLOAD_DIR)/tools
 	@source $$(lock_script) $$@; \
 		mkdir -p $$(outfile).dir; \
@@ -642,7 +643,22 @@ ifneq ($(missing),)
 $(error Missing required tools: $(missing))
 endif
 
+non_go_tool_names := $(filter-out $(go_tool_names),$(tool_names))
+
+.PHONY: non-go-tools
+## Download and setup all Go tools
+## @category [shared] Tools
+non-go-tools: $(non_go_tool_names:%=$(bin_dir)/tools/%)
+
+.PHONY: go-tools
+## Download and setup all Non-Go tools
+## NOTE: this target is also used to learn the shas of
+## these tools (see scripts/learn_tools_shas.sh in the
+## Makefile modules repo)
+## @category [shared] Tools
+go-tools: $(go_tool_names:%=$(bin_dir)/tools/%)
+
 .PHONY: tools
 ## Download and setup all tools
 ## @category [shared] Tools
-tools: $(tools_paths)
+tools: non-go-tools go-tools
