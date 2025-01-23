@@ -487,6 +487,11 @@ func (in *ACMEIssuer) DeepCopyInto(out *ACMEIssuer) {
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(metav1.SecretKeySelector)
+		**out = **in
+	}
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
 		*out = new(ACMEExternalAccountBinding)
