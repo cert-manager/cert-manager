@@ -114,10 +114,24 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		el = append(el, field.Invalid(fldPath.Child("skipTLSVerify"), iss.SkipTLSVerify, "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"))
 	}
 
+	if iss.CABundleSecretRef != nil && iss.SkipTLSVerify {
+		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), "", "caBundleSecretRef and skipTLSVerify are mutually exclusive and cannot both be set"))
+		el = append(el, field.Invalid(fldPath.Child("skipTLSVerify"), iss.SkipTLSVerify, "caBundleSecretRef and skipTLSVerify are mutually exclusive and cannot both be set"))
+	}
+
+	if len(iss.CABundle) > 0 && iss.CABundleSecretRef != nil {
+		el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "caBundle and caBundleSecretRef are mutually exclusive and cannot both be set"))
+		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), "", "caBundle and caBundleSecretRef are mutually exclusive and cannot both be set"))
+	}
+
 	if len(iss.CABundle) > 0 {
 		if err := validateCABundleNotEmpty(iss.CABundle); err != nil {
 			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", err.Error()))
 		}
+	}
+
+	if iss.CABundleSecretRef != nil {
+		el = append(el, ValidateSecretKeySelector(iss.CABundleSecretRef, fldPath.Child("caBundleSecretRef"))...)
 	}
 
 	if len(iss.PrivateKey.Name) == 0 {
