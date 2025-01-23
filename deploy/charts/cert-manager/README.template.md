@@ -316,7 +316,13 @@ If not set and create is true, a name is generated using the fullname template.
 
 #### **serviceAccount.annotations** ~ `object`
 
-Optional additional annotations to add to the controller's Service Account.
+Optional additional annotations to add to the controller's Service Account. Templates are allowed for both keys and values.  
+Example using templating:
+
+```yaml
+annotations:
+  "{{ .Chart.Name }}-helm-chart/version": "{{ .Chart.Version }}"
+```
 
 #### **serviceAccount.labels** ~ `object`
 

@@ -1223,7 +1223,7 @@
       "type": "object"
     },
     "helm-values.serviceAccount.annotations": {
-      "description": "Optional additional annotations to add to the controller's Service Account.",
+      "description": "Optional additional annotations to add to the controller's Service Account. Templates are allowed for both keys and values.\nExample using templating:\nannotations:\n  \"{{ .Chart.Name }}-helm-chart/version\": \"{{ .Chart.Version }}\"",
       "type": "object"
     },
     "helm-values.serviceAccount.automountServiceAccountToken": {
