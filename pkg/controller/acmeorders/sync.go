@@ -285,6 +285,11 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	if o.Spec.Duration != nil {
 		options = append(options, acmeapi.WithOrderNotAfter(c.clock.Now().Add(o.Spec.Duration.Duration)))
 	}
+
+	if o.Spec.Profile != "" {
+		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
+	}
+
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
