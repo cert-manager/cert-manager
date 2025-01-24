@@ -22,7 +22,17 @@ data:
         "externalAccountMACKeys": {
           "kid-1": "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"
         },
-        "domainBlocklist": ["google.com"]
+        "domainBlocklist": ["google.com"],
+        "profiles": {
+          "default": {
+            "description": "The profile you know and love",
+            "validityPeriod": 7776000
+          },
+          "shortlived": {
+            "description": "A short-lived cert profile, without actual enforcement",
+            "validityPeriod": 518400
+          }
+        }
       }
     }
   cert.pem: |
