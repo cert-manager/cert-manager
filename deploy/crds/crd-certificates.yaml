@@ -193,7 +193,6 @@ spec:
                       type: object
                       required:
                         - create
-                        - passwordSecretRef
                       properties:
                         alias:
                           description: |-
@@ -212,6 +211,9 @@ spec:
                             password stored in `passwordSecretRef`
                             containing the issuing Certificate Authority
                           type: boolean
+                        password:
+                          description: Password literal used to encrypt the JKS keystore.
+                          type: string
                         passwordSecretRef:
                           description: |-
                             PasswordSecretRef is a reference to a key in a Secret resource
@@ -238,7 +240,6 @@ spec:
                       type: object
                       required:
                         - create
-                        - passwordSecretRef
                       properties:
                         create:
                           description: |-
@@ -252,6 +253,9 @@ spec:
                             password stored in `passwordSecretRef` containing the issuing Certificate
                             Authority
                           type: boolean
+                        password:
+                          description: Password litteral used to encrypt the PKCS12 keystore.
+                          type: string
                         passwordSecretRef:
                           description: |-
                             PasswordSecretRef is a reference to a key in a Secret resource

@@ -472,14 +472,19 @@ type JKSKeystore struct {
 	// containing the issuing Certificate Authority
 	Create bool `json:"create"`
 
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the JKS keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
-
 	// Alias specifies the alias of the key in the keystore, required by the JKS format.
 	// If not provided, the default alias `certificate` will be used.
 	// +optional
 	Alias *string `json:"alias,omitempty"`
+
+	// PasswordSecretRef is a reference to a key in a Secret resource
+	// containing the password used to encrypt the JKS keystore.
+	// +optional
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+
+	// Password literal used to encrypt the JKS keystore.
+	// +optional
+	Password string `json:"password,omitempty"`
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the
@@ -496,10 +501,6 @@ type PKCS12Keystore struct {
 	// Authority
 	Create bool `json:"create"`
 
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the PKCS12 keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
-
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	//
@@ -511,6 +512,15 @@ type PKCS12Keystore struct {
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	// +optional
 	Profile PKCS12Profile `json:"profile,omitempty"`
+
+	// PasswordSecretRef is a reference to a key in a Secret resource
+	// containing the password used to encrypt the PKCS12 keystore.
+	// +optional
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+
+	// Password litteral used to encrypt the PKCS12 keystore.
+	// +optional
+	Password string `json:"password,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023
