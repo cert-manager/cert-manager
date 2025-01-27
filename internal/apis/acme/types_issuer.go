@@ -57,6 +57,13 @@ type ACMEIssuer struct {
 	// the container is used to validate the TLS connection.
 	CABundle []byte
 
+	// Reference to a Secret containing a base64-encoded bundle of PEM CAs
+	// which will be used to validate the certificate chain presented by the TPP server.
+	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
+	// If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
+	// the cert-manager controller container is used to validate the TLS connection.
+	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
+
 	// INSECURE: Enables or disables validation of the ACME server TLS certificate.
 	// If true, requests to the ACME server will not have the TLS certificate chain
 	// validated.
