@@ -380,7 +380,7 @@ config:
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
     LiteralCertificateSubject: true # BETA - default=true
-    NameConstraints: false # ALPHA - default=false
+    NameConstraints: true # BETA - default=true
     OtherNames: false # ALPHA - default=false
     SecretsFilteredCaching: true # BETA - default=true
     ServerSideApply: false # ALPHA - default=false

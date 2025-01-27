@@ -124,6 +124,7 @@ const (
 
 	// Owner: @tanujd11
 	// Alpha: v1.14
+	// Beta: v1.17
 	//
 	// NameConstraints adds support for Name Constraints in Certificate resources
 	// with IsCA=true.
@@ -167,7 +168,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
-	NameConstraints:                                  {Default: false, PreRelease: featuregate.Beta},
+	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.Beta},
 }
