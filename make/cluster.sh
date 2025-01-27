@@ -105,13 +105,10 @@ if printenv K8S_VERSION >/dev/null && [ -n "$K8S_VERSION" ]; then
 fi
 
 case "$k8s_version" in
-1.25*) image=$KIND_IMAGE_K8S_125 ;;
-1.26*) image=$KIND_IMAGE_K8S_126 ;;
-1.27*) image=$KIND_IMAGE_K8S_127 ;;
-1.28*) image=$KIND_IMAGE_K8S_128 ;;
 1.29*) image=$KIND_IMAGE_K8S_129 ;;
 1.30*) image=$KIND_IMAGE_K8S_130 ;;
 1.31*) image=$KIND_IMAGE_K8S_131 ;;
+1.32*) image=$KIND_IMAGE_K8S_132 ;;
 v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac
