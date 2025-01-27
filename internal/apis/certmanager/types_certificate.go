@@ -409,32 +409,42 @@ type CertificateKeystores struct {
 	PKCS12 *PKCS12Keystore
 }
 
-// JKS configures options for storing a JKS keystore in the `spec.secretName`
-// Secret resource.
+// JKS configures options for storing a JKS keystore in the target secret.
+// Either PasswordSecretRef or Password must be provided.
 type JKSKeystore struct {
 	// Create enables JKS keystore creation for the Certificate.
 	// If true, a file named `keystore.jks` will be created in the target
 	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef`.
+	// `passwordSecretRef` or `password`.
 	// The keystore file will be updated immediately.
 	// If the issuer provided a CA certificate, a file named `truststore.jks`
 	// will also be created in the target Secret resource, encrypted using the
-	// password stored in `passwordSecretRef`
+	// password stored in `passwordSecretRef` or `password`
 	// containing the issuing Certificate Authority
 	Create bool
-
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the JKS keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector
 
 	// Alias specifies the alias of the key in the keystore, required by the JKS format.
 	// If not provided, the default alias `certificate` will be used.
 	// +optional
 	Alias *string `json:"alias,omitempty"`
+
+	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
+	// containing the password used to encrypt the JKS keystore.
+	// Mutually exclusive with password.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	PasswordSecretRef cmmeta.SecretKeySelector
+
+	// Password provides a literal password used to encrypt the JKS keystore.
+	// Mutually exclusive with passwordSecretRef.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	Password *string
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the
 // `spec.secretName` Secret resource.
+// Either PasswordSecretRef or Password must be provided.
 type PKCS12Keystore struct {
 	// Create enables PKCS12 keystore creation for the Certificate.
 	// If true, a file named `keystore.p12` will be created in the target
@@ -447,10 +457,6 @@ type PKCS12Keystore struct {
 	// Authority
 	Create bool
 
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the PKCS12 keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector
-
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	//
@@ -461,6 +467,18 @@ type PKCS12Keystore struct {
 	// (eg. because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	Profile PKCS12Profile
+
+	// containing the password used to encrypt the PKCS#12 keystore.
+	// Mutually exclusive with password.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	PasswordSecretRef cmmeta.SecretKeySelector
+
+	// Password provides a literal password used to encrypt the PKCS#12 keystore.
+	// Mutually exclusive with passwordSecretRef.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	Password *string
 }
 
 type PKCS12Profile string
