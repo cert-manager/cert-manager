@@ -22,16 +22,22 @@ SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${REPO_ROOT}/hack/build/version.sh"
 
-kube::version::last_published_release
+# This script is copied from k8s and modified.
+# It helps to determine the latest published release with the given prefix
+# (if INITIAL_RELEASE is not explicitly set) and also provides the latest git
+# commit hash
+kube::version::last_published_release ${INITIAL_RELEASE_PREFIX:-"v*"}
 
-LATEST_RELEASE="${KUBE_LAST_RELEASE}"
+if [[ -z "${INITIAL_RELEASE:-}" ]]; then
+	INITIAL_RELEASE="${KUBE_LAST_RELEASE}"
+fi
 
 usage_and_exit() {
-	echo "usage: $0 <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl>" >&2
+	echo "usage: $0 <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl> <host-architecture>" >&2
 	exit 1
 }
 
-if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ||-z "${4:-}" || -z "${5:-}" ]]; then
+if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ||-z "${4:-}" || -z "${5:-}" || -z "${6:-}" ]]; then
 	usage_and_exit
 fi
 
@@ -40,6 +46,8 @@ kind=$(realpath "$2")
 ytt=$(realpath "$3")
 kubectl=$(realpath "$4")
 cmctl=$(realpath "$5")
+
+HOST_ARCH=$6
 
 # Set up a fresh kind cluster
 
@@ -61,15 +69,15 @@ HELM_URL="https://charts.jetstack.io"
 # cert-manager Helm chart location
 HELM_CHART="cmupgradetest/cert-manager"
 
-echo "+++ Testing upgrading from ${LATEST_RELEASE} to commit ${KUBE_GIT_COMMIT} with Helm"
+echo "+++ Testing upgrading from ${INITIAL_RELEASE} to commit ${KUBE_GIT_COMMIT} with Helm"
 
 # This will target the host's helm repository cache
 $helm repo add cmupgradetest $HELM_URL
 $helm repo update
 
-# 1. INSTALL THE LATEST PUBLISHED HELM CHART
+# 1. INSTALL THE INITIAL RELEASE'S PUBLISHED HELM CHART
 
-echo "+++ Installing cert-manager ${LATEST_RELEASE} Helm chart into the cluster..."
+echo "+++ Installing cert-manager ${INITIAL_RELEASE} Helm chart into the cluster..."
 
 # Upgrade or install latest published cert-manager Helm release
 # We use the deprecated installCRDs=true value, to make the install work for older versions of cert-manager
@@ -79,7 +87,7 @@ $helm upgrade \
     --namespace "${NAMESPACE}" \
     --set installCRDs=true \
     --create-namespace \
-    --version "${LATEST_RELEASE}" \
+    --version "${INITIAL_RELEASE}" \
     "$RELEASE_NAME" \
     "$HELM_CHART"
 
@@ -125,18 +133,19 @@ $helm uninstall \
 
 $kubectl delete "namespace/${NAMESPACE}" --wait
 
+
 ############################################################
 # VERIFY INSTALL, UPGRADE, UNINSTALL WITH STATIC MANIFESTS #
 ############################################################
 
-# 1. INSTALL THE LATEST PUBLISHED RELEASE WITH STATIC MANIFESTS
+# 1. INSTALL THE INITIAL RELEASE'S STATIC MANIFESTS
 
-echo "+++ Testing cert-manager upgrade from ${LATEST_RELEASE} to commit ${KUBE_GIT_COMMIT} using static manifests"
+echo "+++ Testing cert-manager upgrade from ${INITIAL_RELEASE} to commit ${KUBE_GIT_COMMIT} using static manifests"
 
-echo "+++ Installing cert-manager ${LATEST_RELEASE} using static manifests"
+echo "+++ Installing cert-manager ${INITIAL_RELEASE} using static manifests"
 
 $kubectl apply \
-	-f "https://github.com/cert-manager/cert-manager/releases/download/${LATEST_RELEASE}/cert-manager.yaml" \
+	-f "https://github.com/cert-manager/cert-manager/releases/download/${INITIAL_RELEASE}/cert-manager.yaml" \
 	--wait
 
 $kubectl wait \
@@ -153,7 +162,7 @@ $kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --sel
 # Ensure cert becomes ready
 $kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
-# 2. VERIFY UPGRADE TO THE LATEST BUILD FROM MASTER
+# 2. VERIFY UPGRADE TO MASTER FROM THE INITIAL RELEASE
 
 MANIFEST_LOCATION=${REPO_ROOT}/_bin/yaml/cert-manager.yaml
 
@@ -171,6 +180,7 @@ $ytt -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/controller-ops.yaml" \
      -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/values.yaml" \
      -f $MANIFEST_LOCATION \
      --data-value app_version="${RELEASE_VERSION}" \
+     --data-value arch="${HOST_ARCH}" \
      --ignore-unknown-comments | kubectl apply -f -
 
 rollout_cmd="$kubectl rollout status deployment/cert-manager-webhook --namespace ${NAMESPACE}"
@@ -205,3 +215,5 @@ $kubectl wait --for=condition=Ready cert/test2 --timeout=180s
 echo "+++ Uninstalling cert-manager"
 
 $kubectl delete -f $MANIFEST_LOCATION --wait
+
+echo "+++ Upgrade test for $INITIAL_RELEASE complete"
