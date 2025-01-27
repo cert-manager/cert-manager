@@ -363,6 +363,10 @@ podLabels: {}
 # +docs:property
 # serviceIPFamilies: []
 
+# Optionally set the application protocol to use for the controller Service.
+# +docs:property
+# serviceAppProtocol: ""
+
 # Optional DNS settings. These are useful if you have a public and private DNS zone for
 # the same domain on Route 53. The following is an example of ensuring
 # cert-manager can access an ingress or DNS TXT records at all times.
@@ -555,6 +559,12 @@ prometheus:
     #
     # +docs:property
     endpointAdditionalProperties: {}
+
+    # The explicit scheme for metrics scraping.
+    scheme: ""
+
+    # TLS configuration for metrics scraping.
+    tlsConfig: {}
 
   # Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
   podmonitor:
