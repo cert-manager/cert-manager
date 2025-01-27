@@ -197,6 +197,10 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
 
+	if crt.Keystores != nil {
+		el = append(el, validateKeystores(crt, fldPath)...)
+	}
+
 	return el
 }
 
@@ -374,5 +378,20 @@ func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath
 		aofSet.Insert(string(val.Type))
 	}
 
+	return el
+}
+
+func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+	if crt.Keystores.JKS != nil {
+		if crt.Keystores.JKS.Password != nil && crt.Keystores.JKS.PasswordSecretRef != nil {
+			el = append(el, field.Invalid(fldPath.Child("keystores", "jks", "password"), crt.Keystores.JKS.Password, "When providing a `PasswordSecretRef` no `Password` properties may be provided."))
+		}
+	}
+	if crt.Keystores.PKCS12 != nil {
+		if crt.Keystores.PKCS12.Password != nil && crt.Keystores.PKCS12.PasswordSecretRef != nil {
+			el = append(el, field.Invalid(fldPath.Child("keystores", "pkcs12", "password"), crt.Keystores.PKCS12.Password, "When providing a `PasswordSecretRef` no `Password` properties may be provided."))
+		}
+	}
 	return el
 }
