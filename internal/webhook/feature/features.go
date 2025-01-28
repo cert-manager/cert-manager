@@ -67,6 +67,7 @@ const (
 
 	// Owner: @tanujd11
 	// Alpha: v1.14
+	// Beta: v1.17
 	//
 	// NameConstraints adds support for Name Constraints in Certificate resources
 	// with IsCA=true.
@@ -98,6 +99,6 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 
 	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
 	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
-	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
+	NameConstraints:                    {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
 }
