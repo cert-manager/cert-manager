@@ -291,3 +291,9 @@ func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.Certifi
 		crt.Spec.AdditionalOutputFormats = additionalOutputFormats
 	}
 }
+
+func SetCertificateKeystore(keystores *v1.CertificateKeystores) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.Keystores = keystores
+	}
+}

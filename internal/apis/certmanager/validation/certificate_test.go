@@ -1188,3 +1188,154 @@ func Test_validateLiteralSubject(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateKeystores(t *testing.T) {
+	emptyString := ""
+	keystorePassword := "changeit"
+
+	fldPath := field.NewPath("spec")
+	tests := map[string]struct {
+		cfg  *internalcmapi.Certificate
+		a    *admissionv1.AdmissionRequest
+		errs []*field.Error
+	}{
+		"JKS PasswordSecretRef and Password are mutually exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS one of PasswordSecretRef / Password is required (nil password)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresPasswordRequiredFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS one of PasswordSecretRef / Password is required (empty strings)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "",
+								},
+							},
+							Password: &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 PasswordSecretRef and Password are mutually exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 one of PasswordSecretRef / Password is required (nil password)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 one of PasswordSecretRef / Password is required (empty strings)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "",
+								},
+							},
+							Password: &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			errs, warnings := ValidateCertificate(test.a, test.cfg)
+			assert.ElementsMatch(t, errs, test.errs)
+			assert.ElementsMatch(t, warnings, []string{})
+		})
+	}
+}
