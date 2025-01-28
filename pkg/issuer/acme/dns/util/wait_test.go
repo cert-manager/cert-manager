@@ -1,3 +1,5 @@
+//go:build !livedns_test
+
 // +skip_license_check
 
 /*
@@ -55,25 +57,6 @@ var findZoneByFqdnTests = []struct {
 	{"foo.google.com.", "google.com."},              // domain is a non-existent subdomain
 	{"example.com.ac.", "ac."},                      // domain is a eTLD
 	{"cross-zone-example.assets.sh.", "assets.sh."}, // domain is a cross-zone CNAME
-}
-
-var checkAuthoritativeNssTests = []struct {
-	fqdn, value string
-	ns          []string
-	ok          bool
-}{
-	// TXT RR w/ expected value
-	{"8.8.8.8.asn.routeviews.org.", "151698.8.8.024", []string{"asnums.routeviews.org.:53"},
-		true,
-	},
-	// No TXT RR
-	{"ns1.google.com.", "", []string{"ns2.google.com.:53"},
-		false,
-	},
-	// TXT RR /w unexpected value
-	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"asnums.routeviews.org.:53"},
-		false,
-	},
 }
 
 var checkAuthoritativeNssTestsErr = []struct {
@@ -172,36 +155,6 @@ func TestMatchCAA(t *testing.T) {
 	}
 }
 
-func TestPreCheckDNSOverHTTPSNoAuthoritative(t *testing.T) {
-	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"https://1.1.1.1/dns-query"}, false)
-	if err != nil || !ok {
-		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
-	}
-}
-
-func TestPreCheckDNSOverHTTPS(t *testing.T) {
-	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"https://8.8.8.8/dns-query"}, true)
-	if err != nil || !ok {
-		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
-	}
-}
-
-func TestPreCheckDNS(t *testing.T) {
-	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true)
-	if err != nil || !ok {
-		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
-	}
-}
-
-func TestPreCheckDNSNonAuthoritative(t *testing.T) {
-	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS(context.TODO(), "google.com.", "v=spf1 include:_spf.google.com ~all", []string{"1.1.1.1:53"}, false)
-	if err != nil || !ok {
-		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
-	}
-}
-
 func TestLookupNameserversOK(t *testing.T) {
 	for _, tt := range lookupNameserversTestsOK {
 		nss, err := lookupNameservers(context.TODO(), tt.fqdn, RecursiveNameservers)
@@ -244,15 +197,6 @@ func TestFindZoneByFqdn(t *testing.T) {
 	}
 }
 
-func TestCheckAuthoritativeNss(t *testing.T) {
-	for _, tt := range checkAuthoritativeNssTests {
-		ok, _ := checkAuthoritativeNss(context.TODO(), tt.fqdn, tt.value, tt.ns)
-		if ok != tt.ok {
-			t.Errorf("%s: got %t; want %t", tt.fqdn, ok, tt.ok)
-		}
-	}
-}
-
 func TestCheckAuthoritativeNssErr(t *testing.T) {
 	for _, tt := range checkAuthoritativeNssTestsErr {
 		_, err := checkAuthoritativeNss(context.TODO(), tt.fqdn, tt.value, tt.ns)
@@ -274,39 +218,6 @@ func TestResolveConfServers(t *testing.T) {
 		sort.Strings(tt.expected)
 		if !reflect.DeepEqual(result, tt.expected) {
 			t.Errorf("#%s: expected %q; got %q", tt.fixture, tt.expected, result)
-		}
-	}
-}
-
-// TODO: find a website which uses issuewild?
-func TestValidateCAA(t *testing.T) {
-
-	for _, nameservers := range [][]string{RecursiveNameservers, {"https://1.1.1.1/dns-query"}, {"https://8.8.8.8/dns-query"}} {
-
-		// google installs a CAA record at google.com
-		// ask for the www.google.com record to test that
-		// we recurse up the labels
-		err := ValidateCAA(context.TODO(), "www.google.com", []string{"letsencrypt", "pki.goog"}, false, nameservers)
-		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
-		// now ask, expecting a CA that won't match
-		err = ValidateCAA(context.TODO(), "www.google.com", []string{"daniel.homebrew.ca"}, false, nameservers)
-		if err == nil {
-			t.Fatalf("expected err, got success")
-		}
-		// if the CAA record allows non-wildcards then it has an `issue` tag,
-		// and it is known that it has no issuewild tags, then wildcard certificates
-		// will also be allowed
-		err = ValidateCAA(context.TODO(), "www.google.com", []string{"pki.goog"}, true, nameservers)
-		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
-		// ask for a domain you know does not have CAA records.
-		// it should succeed
-		err = ValidateCAA(context.TODO(), "www.example.org", []string{"daniel.homebrew.ca"}, false, nameservers)
-		if err != nil {
-			t.Fatalf("expected err, got %s", err)
 		}
 	}
 }
