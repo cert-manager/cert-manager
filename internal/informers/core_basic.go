@@ -64,6 +64,10 @@ func (bf *baseFactory) WaitForCacheSync(stopCh <-chan struct{}) map[string]bool 
 	return ret
 }
 
+func (bf *baseFactory) Shutdown() {
+	bf.f.Shutdown()
+}
+
 func (bf *baseFactory) Ingresses() networkingv1informers.IngressInformer {
 	return bf.f.Networking().V1().Ingresses()
 }

@@ -115,6 +115,11 @@ func (bf *filteredSecretsFactory) WaitForCacheSync(stopCh <-chan struct{}) map[s
 	return caches
 }
 
+func (bf *filteredSecretsFactory) Shutdown() {
+	bf.typedInformerFactory.Shutdown()
+	bf.metadataInformerFactory.Shutdown()
+}
+
 func (bf *filteredSecretsFactory) Ingresses() networkingv1informers.IngressInformer {
 	return bf.typedInformerFactory.Networking().V1().Ingresses()
 }

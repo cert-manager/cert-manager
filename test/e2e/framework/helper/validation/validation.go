@@ -18,6 +18,7 @@ package validation
 
 import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
 )
@@ -57,6 +58,12 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 		certificatesigningrequests.ExpectConditionApproved,
 		certificatesigningrequests.ExpectConditiotNotDenied,
 		certificatesigningrequests.ExpectConditionNotFailed,
+	}
+}
+
+func DefaultCertificateRequestSet() []certificaterequests.ValidationFunc {
+	return []certificaterequests.ValidationFunc{
+		// TODO: add validation functions
 	}
 }
 

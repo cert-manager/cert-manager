@@ -66,11 +66,11 @@ func TestRenewalTime(t *testing.T) {
 			renewBefore:         &metav1.Duration{Duration: time.Hour * 25},
 			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
 		},
-		"long lived cert, spec.renewBeforePercentage is set to renew 50% of the way": {
+		"long lived cert, spec.renewBeforePercentage is set to renew 30% before expiry": {
 			notBefore:           now,
 			notAfter:            now.Add(time.Hour * 730), // 1 month
-			renewBeforePct:      ptr.To(int32(50)),
-			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 365)},
+			renewBeforePct:      ptr.To(int32(30)),
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 511)}, // 70% of 1 month
 		},
 		// This test case is here to show the scenario where users set
 		// renewBefore to very slightly less than actual duration. This
@@ -115,7 +115,7 @@ func TestRenewBefore(t *testing.T) {
 		},
 		"spec.renewBeforePercentage is valid": {
 			renewBeforePct:      ptr.To(int32(25)),
-			expectedRenewBefore: 135 * time.Minute,
+			expectedRenewBefore: 45 * time.Minute,
 		},
 		"spec.renewBeforePercentage is too large so default is used": {
 			renewBeforePct:      ptr.To(int32(100)),
