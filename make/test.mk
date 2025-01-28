@@ -58,6 +58,7 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 	cd cmd/controller && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-controller.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd cmd/webhook    && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-webhook.xml    $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd test/integration && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-integration.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-livedns.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ./hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- --tags=livedns_test ./pkg/issuer/acme/dns/util/...
 
 .PHONY: unit-test
 ## Same as `test` but only runs the unit tests. By "unit tests", we mean tests
@@ -104,6 +105,14 @@ setup-integration-tests: templated-crds
 ## @category Development
 integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	cd test/integration && $(GOTESTSUM) ./...
+
+.PHONY: livedns-test
+## "Live DNS" tests rely on external DNS records and are separated from other tests
+## for various reasons detailed in the files tested by this target.
+##
+## @category Development
+livedns-test: | $(NEEDS_GOTESTSUM) $(NEEDS_GO)
+	$(GOTESTSUM) -- --tags=livedns_test ./pkg/issuer/acme/dns/util/...
 
 ## (optional) Set this to true to run the E2E tests against an OpenShift cluster.
 ## When set to true, the Hashicorp Vault Helm chart will be installed with
