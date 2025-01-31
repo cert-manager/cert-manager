@@ -191,7 +191,12 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 		return err
 	}
 
-	_, err = c.makeRequest(ctx, "DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", record.ZoneID, record.ID), nil)
+	zoneID, err := c.getHostedZoneID(ctx, fqdn)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.makeRequest(ctx, "DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", zoneID, record.ID), nil)
 	if err != nil {
 		return err
 	}
@@ -310,7 +315,6 @@ type cloudFlareRecord struct {
 	Content string `json:"content"`
 	ID      string `json:"id,omitempty"`
 	TTL     int    `json:"ttl,omitempty"`
-	ZoneID  string `json:"zone_id,omitempty"`
 }
 
 // following functions are copy-pasted from go's internal
