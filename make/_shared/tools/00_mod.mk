@@ -66,7 +66,7 @@ tools += kyverno=v1.12.5
 # https://github.com/mikefarah/yq/releases
 tools += yq=v4.44.3
 # https://github.com/ko-build/ko/releases
-tools += ko=0.16.0
+tools += ko=0.17.1
 # https://github.com/protocolbuffers/protobuf/releases
 tools += protoc=27.3
 # https://github.com/aquasecurity/trivy/releases
@@ -503,10 +503,10 @@ $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR
 		$(checkhash_script) $(outfile) $(yq_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-ko_linux_amd64_SHA256SUM=aee2caeced511e60c6889a4cfaf9ebe28ec35acb49531b7a90b09e0a963bcff7
-ko_linux_arm64_SHA256SUM=45b6ba20084b2199c63dcc738c54f7f6c37ea4e9c7f79eefc286d9947b11d0d1
-ko_darwin_amd64_SHA256SUM=5c98d0229fd2a82cc69510705b74a7196fc184641693930b0f9282b6d1f79d95
-ko_darwin_arm64_SHA256SUM=9c75b97f26ba98c62a86f3b39e2c74ced6c97092f301cd73fe4e5b3e16261698
+ko_linux_amd64_SHA256SUM=4f0b979b59880b3232f47d79c940f2279165aaad15a11d7614e8a2c9e5c78c29
+ko_linux_arm64_SHA256SUM=9421ebe2a611bac846844bd34fed5c75fba7b36c8cb1d113ad8680c48f6106df
+ko_darwin_amd64_SHA256SUM=888656c3f0028d4211654a9df57b003fe26f874b092776c83acace7aca8a73a4
+ko_darwin_arm64_SHA256SUM=d0b6bcc4f86c8d775688d1c21d416985ee557a85ad557c4a7d0e2d82b7cdbd92
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
