@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 
@@ -282,11 +283,14 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 
 	resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
 	if err != nil {
-		if errors.Is(err, &route53types.InvalidChangeBatch{}) && action == route53types.ChangeActionDelete {
-			log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
-			// If we try to delete something and get a 'InvalidChangeBatch' that
-			// means it's already deleted, no need to consider it an error.
-			return nil
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {
+			if apiErr.ErrorCode() == "InvalidChangeBatch" && action == route53types.ChangeActionDelete {
+				log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
+				// If we try to delete something and get a 'InvalidChangeBatch' that
+				// means it's already deleted, no need to consider it an error.
+				return nil
+			}
 		}
 		return fmt.Errorf("failed to change Route 53 record set: %v", removeReqID(err))
 
