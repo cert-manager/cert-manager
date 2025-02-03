@@ -233,6 +233,7 @@ func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn, content string) (
 
 	for _, rec := range records {
 		if rec.Name == util.UnFqdn(fqdn) && rec.Content == content {
+			rec.ZoneID = zoneID
 			return &rec, nil
 		}
 	}
