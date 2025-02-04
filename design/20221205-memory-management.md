@@ -367,7 +367,7 @@ Run a script to set up 10 CA issuers, create 500 certificates and observe the ti
 ![screenshot of "Script started running at 11:18:15/start: 1673263095 end: 1673263512/runtime is 417 seconds](/design/images/20221205-memory-management/masterissuanceterminal.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
-![alt text](/design/images/20221205-memory-management/mastercertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (up to 1.8s)/Total reconciles across all control loops](/design/images/20221205-memory-management/mastercertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
 ![alt text](/design/images/20221205-memory-management/masterkubeapiserver.png)
@@ -661,7 +661,7 @@ Run a script to set up 10 CA issuers, create 500 certificates and observe that t
 ![screenshot of "Script started running at 16:39:04/start: 1673368744 end: 1673369829/runtime is 1085 seconds"](/design/images/20221205-memory-management/partialonly.png)
 
 Observe high request latency for cert-manager:
-![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apisever/Rate limiting per call to kube apiserver (up to 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialonlycertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (up to 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialonlycertmanager.png)
 
 Observe a large number of additional requests to kube apiserver:
 ![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (peaking above 25)](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
