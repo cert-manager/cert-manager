@@ -310,7 +310,7 @@ Use the new `Secret`s getter in all control loops that need to get any `Secret`:
 
 ### Metrics
 
-The following metrics are based on [a prototype implementation of this design](https://github.com/irbekrm/cert-manager/tree/partial_metadata).
+The following metrics are based on [a prototype implementation of this design](https://github.com/cert-manager/cert-manager/tree/ffe820d310ff2d8bf8efb36ab43b8acd2100be18).
 The tests were run on a kind cluster.
 
 #### Cluster with large cert-manager unrelated secrets
@@ -341,7 +341,7 @@ Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
 ![alt text](/design/images/20221205-memory-management/createsecrets.png)
 
-Deploy cert-manager from [partial metadata prototype](https://github.com/irbekrm/cert-manager/tree/partial_metadata).
+Deploy cert-manager from [partial metadata prototype](https://github.com/cert-manager/cert-manager/tree/ffe820d310ff2d8bf8efb36ab43b8acd2100be18).
 
 Wait for cert-manager to start and populate the caches.
 
