@@ -333,7 +333,7 @@ Apply a label to all `Secret`s to initiate cache resync:
 
 Observe that memory consumption spikes on controller startup when all `Secret`s are initially listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
 
-![alt text](/design/images/20221205-memory-management/latestmastersecrets.png)
+![screenshot of Grafana graph of prometheus metrics for Memory consumption (spikes to 1.15 GB, declines, spikes to 800 MB and then steadies out at 700 MB -- which is high)](/design/images/20221205-memory-management/latestmastersecrets.png)
 
 ##### partial metadata prototype
 
