@@ -658,7 +658,7 @@ The following metrics are approximate as the prototype could probably be optimiz
 Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/a01db22e8148318e9a16ad3acea1506c0d1a3ccc
 
 Run a script to set up 10 CA issuers, create 500 certificates and observe that the time taken is significantly greater than for latest version of cert-manager:
-![alt text](/design/images/20221205-memory-management/partialonly.png)
+![screenshot of "Script started running at 16:39:04/start: 1673368744 end: 1673369829/runtime is 1085 seconds"](/design/images/20221205-memory-management/partialonly.png)
 
 Observe high request latency for cert-manager:
 ![alt text](/design/images/20221205-memory-management/partialonlycertmanager.png)
