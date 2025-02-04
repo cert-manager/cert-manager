@@ -702,16 +702,16 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 // If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used.
 // Otherwise, we fall-back to using Azure Managed Service Identity.
 type AzureManagedIdentity struct {
-	// client ID of the managed identity, can not be used at the same time as resourceID
+	// client ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
 	ClientID string `json:"clientID,omitempty"`
 
-	// resource ID of the managed identity, can not be used at the same time as clientID
+	// resource ID of the managed identity, cannot be used at the same time as clientID
 	// Cannot be used for Azure Managed Service Identity
 	// +optional
 	ResourceID string `json:"resourceID,omitempty"`
 
-	// tenant ID of the managed identity, can not be used at the same time as resourceID
+	// tenant ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
 	TenantID string `json:"tenantID,omitempty"`
 }

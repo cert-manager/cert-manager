@@ -1252,7 +1252,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
 				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
-				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"),
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
@@ -1269,7 +1269,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
 				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
-				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"),
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
@@ -1322,7 +1322,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
 				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
-				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"),
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},

@@ -33,7 +33,7 @@ const (
 func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 
 	// According to the spec badNonce is urn:ietf:params:acme:error:badNonce.
-	// However, we can not use the request body in here as it is closed already.
+	// However, we cannot use the request body in here as it is closed already.
 	// So we're using its status code instead: 400
 	if resp.StatusCode != http.StatusBadRequest {
 		return -1

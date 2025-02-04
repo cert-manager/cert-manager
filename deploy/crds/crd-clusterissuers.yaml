@@ -387,15 +387,15 @@ spec:
                                     type: object
                                     properties:
                                       clientID:
-                                        description: client ID of the managed identity, can not be used at the same time as resourceID
+                                        description: client ID of the managed identity, cannot be used at the same time as resourceID
                                         type: string
                                       resourceID:
                                         description: |-
-                                          resource ID of the managed identity, can not be used at the same time as clientID
+                                          resource ID of the managed identity, cannot be used at the same time as clientID
                                           Cannot be used for Azure Managed Service Identity
                                         type: string
                                       tenantID:
-                                        description: tenant ID of the managed identity, can not be used at the same time as resourceID
+                                        description: tenant ID of the managed identity, cannot be used at the same time as resourceID
                                         type: string
                                   resourceGroupName:
                                     description: resource group the DNS zone is located in

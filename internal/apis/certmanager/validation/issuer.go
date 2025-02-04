@@ -464,7 +464,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 					el = append(el, field.Required(fldPath.Child("azureDNS", "tenantID"), ""))
 				}
 				if p.AzureDNS.ManagedIdentity != nil {
-					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"))
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"))
 				}
 			} else if p.AzureDNS.ManagedIdentity != nil {
 				if len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
