@@ -151,7 +151,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string, userAgent string) (*vcert.Config, error) {
-	venCfg := iss.GetSpec().Venafi
+	venaCfg := iss.GetSpec().Venafi
 
 	switch {
 	case venCfg.TPP != nil:
