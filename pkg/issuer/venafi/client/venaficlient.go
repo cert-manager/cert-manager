@@ -128,7 +128,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		}
 	}
 
-	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
+	instrumentedVCertClient := newInstrumentedConnector(vcertClient, metrics, logger)
 
 	v := &Venafi{
 		namespace:     namespace,
