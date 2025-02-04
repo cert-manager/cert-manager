@@ -648,7 +648,7 @@ directly from kube apiserver.
 
 #### Drawbacks
 
-Large number of additional requests to kube apiserver. For a default cert-manager installation this would mean slow issuance as client-go rate limiting would kick in. The limits can be modified via cert-manager controller flags, however this would then mean less availability of kube apisever to other cluster tenants.
+Large number of additional requests to kube apiserver. For a default cert-manager installation this would mean slow issuance as client-go rate limiting would kick in. The limits can be modified via cert-manager controller flags, however this would then mean less availability of kube apiserver to other cluster tenants.
 Additionally, the `Secret`s that we actually need to cache are not likely going to be large in size, so there would be less value from memory savings perspective.
 
 Here is a branch that implements a very experimental version of using partial metadata only https://github.com/irbekrm/cert-manager/tree/just_partial.
