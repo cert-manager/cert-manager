@@ -86,7 +86,7 @@ type OrderSpec struct {
 	// CommonName is the common name as specified on the DER encoded CSR.
 	// If CommonName is not specified, the first DNSName specified will be used
 	// as the CommonName.
-	// At least on of CommonName or a DNSName must be set.
+	// At least one of CommonName or a DNSName must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
 	CommonName string `json:"commonName,omitempty"`
 
@@ -94,7 +94,7 @@ type OrderSpec struct {
 	// validation process.
 	// If CommonName is not specified, the first DNSName specified will be used
 	// as the CommonName.
-	// At least on of CommonName or a DNSName must be set.
+	// At least one of CommonName or a DNSName must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
 	DNSNames []string `json:"dnsNames,omitempty"`
 
