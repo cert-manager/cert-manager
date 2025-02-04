@@ -724,7 +724,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 			},
 			errs: []*field.Error{field.Required(fldPath.Child("ca", "secretName"), "")},
 		},
-		"valid self signed issuer": {
+		"valid self-signed issuer": {
 			spec: &cmapi.IssuerSpec{
 				IssuerConfig: cmapi.IssuerConfig{
 					SelfSigned: &cmapi.SelfSignedIssuer{},

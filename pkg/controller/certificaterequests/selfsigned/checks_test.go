@@ -205,7 +205,7 @@ func Test_certificatesRequestsForSecret(t *testing.T) {
 			existingIssuers:  []runtime.Object{},
 			expectedAffected: []*cmapi.CertificateRequest{},
 		},
-		"if issuers are not self signed then don't return requests": {
+		"if issuers are not self-signed then don't return requests": {
 			existingCRs: []runtime.Object{
 				gen.CertificateRequest("a",
 					gen.SetCertificateRequestNamespace("test-namespace"),

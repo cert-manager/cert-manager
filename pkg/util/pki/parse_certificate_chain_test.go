@@ -66,7 +66,7 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 	)
 
 	if issuer == nil {
-		// No issuer implies the cert should be self signed
+		// No issuer implies the cert should be self-signed
 		issuerKey = pk
 		issuerCert = template
 	} else {
