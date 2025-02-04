@@ -370,7 +370,7 @@ Observe resource consumption, request rate and latency for cert-manager controll
 ![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (up to 1.8s)/Total reconciles across all control loops](/design/images/20221205-memory-management/mastercertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
-![alt text](/design/images/20221205-memory-management/masterkubeapiserver.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (rising to 25)](/design/images/20221205-memory-management/masterkubeapiserver.png)
 
 ##### partial metadata
 
