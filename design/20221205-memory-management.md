@@ -329,7 +329,7 @@ Wait for cert-manager to start and populate the caches.
 
 Apply a label to all `Secret`s to initiate cache resync:
 
-![alt text](/design/images/20221205-memory-management/labelsecret.png)
+![screenshot of `kubectl label secret --all foo=bar`](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that memory consumption spikes on controller startup when all `Secret`s are initially listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
 
@@ -347,7 +347,7 @@ Wait for cert-manager to start and populate the caches.
 
 Apply a label to all `Secret`s to initiate cache resync:
 
-![alt text](/design/images/20221205-memory-management/labelsecret.png)
+![screenshot of `kubectl label secret --all foo=bar`](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that the memory consumption is significantly lower:
 
@@ -634,7 +634,7 @@ Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/d44d4
 
 Wait for cert-manager caches to sync, then run a command to label all `Secret`s to make caches resync:
 
-![alt text](/design/images/20221205-memory-management/labelsecret.png)
+![screenshot of `kubectl label secret --all foo=bar`](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that although altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
 
