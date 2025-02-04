@@ -323,7 +323,7 @@ Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
 ![alt text](/design/images/20221205-memory-management/createsecrets.png)
 
-Install cert-manager from [latest master with client-go metrics enabled](https://github.com/irbekrm/cert-manager/tree/client_go_metrics).
+Install cert-manager from [latest master with client-go metrics enabled](https://github.com/cert-manager/cert-manager/tree/24af3abab8a43d51e29897a3c57a531a35599db6).
 
 Wait for cert-manager to start and populate the caches.
 
@@ -362,7 +362,7 @@ Here is a script that sets up the issuers, creates the `Certificate`s, waits for
 
 ##### latest cert-manager
 
-This test was run against a version of cert-manager that corresponds to v1.11.0-alpha.2 with some added client-go metrics https://github.com/irbekrm/cert-manager/tree/client_go_metrics.
+This test was run against a version of cert-manager that corresponds to v1.11.0-alpha.2 with some added client-go metrics https://github.com/cert-manager/cert-manager/tree/24af3abab8a43d51e29897a3c57a531a35599db6.
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
 ![alt text](/design/images/20221205-memory-management/masterissuanceterminal.png)
 
