@@ -614,10 +614,10 @@ In practice:
 
 This would need to start as an alpha feature and would require alpha/beta testing by actual users for us to be able to measure the gain in memory reduction in concrete cluster setup.
 
-[Here](https://github.com/irbekrm/cert-manager/tree/experimental_transform_funcs) is a prototype of this solution.
-In the prototype [`Secrets Transformer` function](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L219-L238)
+[Here](https://github.com/cert-manager/cert-manager/tree/d44d4ed2e27fb9b7695a74ae254113f3166aadb4) is a prototype of this solution.
+In the prototype [`Secrets Transformer` function](https://github.com/cert-manager/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L219-L238)
 is the transform that gets applied to all `Secret`s before they are cached. If a `Secret` does not have any known cert-manager labels or annotations it removes `data`, `metadata.managedFields` and `metadata.Annotations` and applies a `cert-manager.io/metadata-only` label.
-[`SecretGetter`](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L241-L261) is used by any control loop that needs to GET a `Secret`. It retrieves it from kube apiserver or cache depending on whether `cert-manager.io/metadata-only` label was found.
+[`SecretGetter`](https://github.com/cert-manager/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L241-L261) is used by any control loop that needs to GET a `Secret`. It retrieves it from kube apiserver or cache depending on whether `cert-manager.io/metadata-only` label was found.
 
 #### Drawbacks
 
@@ -630,7 +630,7 @@ Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
 ![alt text](/design/images/20221205-memory-management/createsecrets.png)
 
-Deploy cert-manager from https://github.com/irbekrm/cert-manager/tree/experimental_transform_funcs
+Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/d44d4ed2e27fb9b7695a74ae254113f3166aadb4
 
 Wait for cert-manager caches to sync, then run a command to label all `Secret`s to make caches resync:
 
