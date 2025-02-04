@@ -321,7 +321,7 @@ Test the memory spike caused by the initial LIST-ing of `Secret`s, the size of c
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](/design/images/20221205-memory-management/createsecrets.png)
+![screenshot of a terminal using dd to create generic kubernetes secrets `foo-{0..300}`](/design/images/20221205-memory-management/createsecrets.png)
 
 Install cert-manager from [latest master with client-go metrics enabled](https://github.com/cert-manager/cert-manager/tree/24af3abab8a43d51e29897a3c57a531a35599db6).
 
@@ -339,7 +339,7 @@ Observe that memory consumption spikes on controller startup when all `Secret`s 
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](/design/images/20221205-memory-management/createsecrets.png)
+![screenshot of a terminal using dd to create generic kubernetes secrets `foo-{0..300}`](/design/images/20221205-memory-management/createsecrets.png)
 
 Deploy cert-manager from [partial metadata prototype](https://github.com/cert-manager/cert-manager/tree/ffe820d310ff2d8bf8efb36ab43b8acd2100be18).
 
