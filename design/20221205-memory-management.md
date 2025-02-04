@@ -664,7 +664,7 @@ Observe high request latency for cert-manager:
 ![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apisever/Rate limiting per call to kube apiserver (up to 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialonlycertmanager.png)
 
 Observe a large number of additional requests to kube apiserver:
-![alt text](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (peaking above 25)](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
 
 ### Use paging to limit the memory spike when controller starts up
 
