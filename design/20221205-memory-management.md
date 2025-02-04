@@ -387,7 +387,7 @@ The issuance is slightly slowed down because on each issuance cert-manager needs
 Users could mitigate this by adding cert-manager labels to the CA `Secret`s.
 Run a modified version of the same script, but [with CA `Secret`s labelled](https://gist.github.com/irbekrm/bc56a917a164b1a3a097bda483def0b8#file-measure-issuance-time-sh-L31-L34):
 
-![alt text](/design/images/20221205-memory-management/partiallabels.png)
+![screenshot of "Script started running at 12:20:48/start: 1673266848 end: 1673267347/runtime is 499 seconds](/design/images/20221205-memory-management/partiallabels.png)
 
 For CA issuers, normally a `Secret` will be retrieved once per issuer reconcile and once per certificate request signing. In some cases, two `Secret`s might be retrieved during certificate request signing see [secrets for issuers](#secrets-for-clusterissuers). We could look into improving this, by initializing a client with credentials and sharing with certificate request controllers, similarly to how it's currently done with [ACME clients](https://github.com/cert-manager/cert-manager/blob/v1.11.0/pkg/controller/context.go#L188-L190).
 
