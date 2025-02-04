@@ -381,7 +381,7 @@ Observe resource consumption, request rate and latency for cert-manager controll
 ![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (dropping from 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
-![alt text](/design/images/20221205-memory-management/partialnolabelskubeapiserver.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (peaking below 25)](/design/images/20221205-memory-management/partialnolabelskubeapiserver.png)
 
 The issuance is slightly slowed down because on each issuance cert-manager needs to get the unlabelled CA `Secret` directly from kube apiserver.
 Users could mitigate this by adding cert-manager labels to the CA `Secret`s.
