@@ -86,7 +86,7 @@ func certificateSigningRequestsForSecret(log logr.Logger,
 		return nil, fmt.Errorf("failed to list certificate requests: %w", err)
 	}
 
-	dbg.Info("checking if self signed certificate signing requests reference secret")
+	dbg.Info("checking if self-signed certificate signing requests reference secret")
 	var affected []*certificatesv1.CertificateSigningRequest
 	for _, request := range requests {
 		ref, ok := util.SignerIssuerRefFromSignerName(request.Spec.SignerName)

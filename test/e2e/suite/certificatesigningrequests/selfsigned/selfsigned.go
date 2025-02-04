@@ -89,7 +89,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
@@ -158,7 +158,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
@@ -216,7 +216,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
@@ -285,7 +285,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
