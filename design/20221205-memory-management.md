@@ -661,7 +661,7 @@ Run a script to set up 10 CA issuers, create 500 certificates and observe that t
 ![screenshot of "Script started running at 16:39:04/start: 1673368744 end: 1673369829/runtime is 1085 seconds"](/design/images/20221205-memory-management/partialonly.png)
 
 Observe high request latency for cert-manager:
-![alt text](/design/images/20221205-memory-management/partialonlycertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apisever/Rate limiting per call to kube apiserver (up to 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialonlycertmanager.png)
 
 Observe a large number of additional requests to kube apiserver:
 ![alt text](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
