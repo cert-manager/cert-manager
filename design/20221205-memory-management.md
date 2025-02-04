@@ -628,7 +628,7 @@ See performance of the prototype:
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](/design/images/20221205-memory-management/createsecrets.png)
+![screenshot of a terminal using dd to create generic kubernetes secrets `foo-{0..300}`](/design/images/20221205-memory-management/createsecrets.png)
 
 Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/d44d4ed2e27fb9b7695a74ae254113f3166aadb4
 
