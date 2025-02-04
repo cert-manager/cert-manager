@@ -638,7 +638,7 @@ Wait for cert-manager caches to sync, then run a command to label all `Secret`s 
 
 Observe that although altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
 
-![alt text](/design/images/20221205-memory-management/transformfunctionsgrafana.png)
+![screenshot of Grafana showing prometheus memory consumption graph with memory usage spiking at 900 MB](/design/images/20221205-memory-management/transformfunctionsgrafana.png)
 
 ### Use PartialMetadata only
 
