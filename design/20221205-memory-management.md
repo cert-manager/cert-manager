@@ -351,7 +351,7 @@ Apply a label to all `Secret`s to initiate cache resync:
 
 Observe that the memory consumption is significantly lower:
 
-![alt text](/design/images/20221205-memory-management/partialmetadatasecrets.png)
+![screenshot of Grafana graph of prometheus metrics for Memory consumption ending around 27.5 MB](/design/images/20221205-memory-management/partialmetadatasecrets.png)
 
 #### Issuance of a large number of `Certificate`s
 
