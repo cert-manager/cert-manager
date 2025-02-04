@@ -54,7 +54,7 @@ var findZoneByFqdnTests = []struct {
 	zone string
 }{
 	{"mail.google.com.", "google.com."},             // domain is a CNAME
-	{"foo.google.com.", "google.com."},              // domain is a non-existent subdomain
+	{"foo.google.com.", "google.com."},              // domain is a nonexistent subdomain
 	{"example.com.ac.", "ac."},                      // domain is a eTLD
 	{"cross-zone-example.assets.sh.", "assets.sh."}, // domain is a cross-zone CNAME
 }
