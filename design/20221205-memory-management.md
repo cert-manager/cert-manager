@@ -172,7 +172,7 @@ See issue description here https://github.com/cert-manager/cert-manager/issues/4
 
 Ensure that `certificate.Spec.SecretName` `Secret` as well as the `Secret` with temporary private key are labelled with a `controller.cert-manager.io/fao: true` [^2] label.
 The temporary private key `Secret` is short lived so it should be okay to only label it on creation.
-The `certificate.Spec.SecretName` `Secret` should be checked for the label value on every reconcile of the owning `Certificate`, same as with the secret template labels and annotations, see [here](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/controller/certificates/issuing/issuing_controller.go#L187-L191).
+The `certificate.Spec.SecretName` `Secret` should be checked for the label value on every reconcile of the owning `Certificate`, same as with the secret template labels and annotations, see [`c.ensureSecretData`](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/controller/certificates/issuing/issuing_controller.go#L187-L191).
 
 Add a partial metadata informers factory, set up with [a client-go client that knows how to make GET/LIST/WATCH requests for `PartialMetadata`](https://github.com/kubernetes/client-go/blob/v0.26.0/metadata/metadata.go#L50-L58).
 Add a filter to ensure that any informers for this factory will list _only_ resources that are _not_ labelled with a known 'cert-manager' label.
