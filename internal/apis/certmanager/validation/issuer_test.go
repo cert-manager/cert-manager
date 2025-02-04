@@ -1360,7 +1360,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
-		"invalid azuredns managedIdentity with both cliendID and resourceID": {
+		"invalid azuredns managedIdentity with both clientID and resourceID": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					SubscriptionID:    "test",
