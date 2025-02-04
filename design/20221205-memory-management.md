@@ -375,7 +375,7 @@ Observe resource consumption and rate of requests for `Secret` resources for kub
 ##### partial metadata
 
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
-![alt text](/design/images/20221205-memory-management/partialnolabels.png)
+![screenshot of "Script started running at 11:35:05/start: 1673264105 end: 1673264701/runtime is 596 seconds"](/design/images/20221205-memory-management/partialnolabels.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
 ![alt text](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
