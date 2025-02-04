@@ -364,7 +364,7 @@ Here is a script that sets up the issuers, creates the `Certificate`s, waits for
 
 This test was run against a version of cert-manager that corresponds to v1.11.0-alpha.2 with some added client-go metrics https://github.com/cert-manager/cert-manager/tree/24af3abab8a43d51e29897a3c57a531a35599db6.
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
-![alt text](/design/images/20221205-memory-management/masterissuanceterminal.png)
+![screenshot of "Script started running at 11:18:15/start: 1673263095 end: 1673263512/runtime is 417 seconds](/design/images/20221205-memory-management/masterissuanceterminal.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
 ![alt text](/design/images/20221205-memory-management/mastercertmanager.png)
