@@ -502,7 +502,7 @@ prometheus:
   # ServiceMonitor resource.
   # Otherwise, 'prometheus.io' annotations are added to the cert-manager and
   # cert-manager-webhook Deployments.
-  # Note that you can not enable both PodMonitor and ServiceMonitor as they are
+  # Note that you cannot enable both PodMonitor and ServiceMonitor as they are
   # mutually exclusive. Enabling both will result in an error.
   enabled: true
 
@@ -556,7 +556,7 @@ prometheus:
     # +docs:property
     endpointAdditionalProperties: {}
 
-  # Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
+  # Note that you cannot enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
     enabled: false
