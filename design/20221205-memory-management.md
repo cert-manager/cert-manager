@@ -651,11 +651,11 @@ directly from kube apiserver.
 Large number of additional requests to kube apiserver. For a default cert-manager installation this would mean slow issuance as client-go rate limiting would kick in. The limits can be modified via cert-manager controller flags, however this would then mean less availability of kube apiserver to other cluster tenants.
 Additionally, the `Secret`s that we actually need to cache are not likely going to be large in size, so there would be less value from memory savings perspective.
 
-Here is a branch that implements a very experimental version of using partial metadata only https://github.com/irbekrm/cert-manager/tree/just_partial.
+Here is a branch that implements a very experimental version of using partial metadata only https://github.com/cert-manager/cert-manager/tree/a01db22e8148318e9a16ad3acea1506c0d1a3ccc
 
 The following metrics are approximate as the prototype could probably be optimized. Compare with [metrics section of this proposal](#issuance-of-a-large-number-of-certificates) for an approximate idea of the increase in kube apiserver calls during issuance.
 
-Deploy cert-manager from https://github.com/irbekrm/cert-manager/tree/just_partial
+Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/a01db22e8148318e9a16ad3acea1506c0d1a3ccc
 
 Run a script to set up 10 CA issuers, create 500 certificates and observe that the time taken is significantly higher than for latest version of cert-manager:
 ![alt text](/design/images/20221205-memory-management/partialonly.png)
