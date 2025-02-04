@@ -378,7 +378,7 @@ Run a script to set up 10 CA issuers, create 500 certificates and observe the ti
 ![screenshot of "Script started running at 11:35:05/start: 1673264105 end: 1673264701/runtime is 596 seconds"](/design/images/20221205-memory-management/partialnolabels.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
-![alt text](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (dropping from 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
 ![alt text](/design/images/20221205-memory-management/partialnolabelskubeapiserver.png)
