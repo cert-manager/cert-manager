@@ -643,7 +643,7 @@ Observe that although altogether memory consumption remains quite low, there is 
 ### Use PartialMetadata only
 
 We could cache PartialMetadata only for `Secret` objects. This would mean having
-just one, metadata, informer for `Secret`s and always GETting the `Secret`s
+just one, metadata, informer for `Secret`s and always `GET` the `Secret`s
 directly from kube apiserver.
 
 #### Drawbacks
