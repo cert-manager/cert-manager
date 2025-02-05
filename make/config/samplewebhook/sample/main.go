@@ -123,7 +123,7 @@ func (c *customDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 }
 
 // Initialize will be called when the webhook first starts.
-// This method can be used to instantiate the webhook, i.e. initialising
+// This method can be used to instantiate the webhook, i.e. initializing
 // connections or warming up caches.
 // Typically, the kubeClientConfig parameter is used to build a Kubernetes
 // client that can be used to fetch resources from the Kubernetes API, e.g.
