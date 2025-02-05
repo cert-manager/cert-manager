@@ -37,11 +37,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = framework.CertManagerDescribe("othername san processing", func() {
+var _ = framework.CertManagerDescribe("other name san processing", func() {
 
 	const (
-		testName   = "test-othername-san-processing"
-		issuerName = "certificate-othername-san-processing"
+		testName   = "test-other-name-san-processing"
+		issuerName = "certificate-other-name-san-processing"
 		secretName = testName
 	)
 
@@ -49,7 +49,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 		emailAddresses = []string{"email@domain.test"}
 	)
 
-	f := framework.NewDefaultFramework("certificate-othername-san-processing")
+	f := framework.NewDefaultFramework("certificate-other-name-san-processing")
 	ctx := context.TODO()
 
 	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
