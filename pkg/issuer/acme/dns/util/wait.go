@@ -42,9 +42,6 @@ var (
 
 const defaultResolvConf = "/etc/resolv.conf"
 
-const issueTag = "issue"
-const issuewildTag = "issuewild"
-
 var defaultNameservers = []string{
 	"8.8.8.8:53",
 	"8.8.4.4:53",
@@ -268,108 +265,6 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 	}
 
 	return r, rtt, nil
-}
-
-func ValidateCAA(ctx context.Context, domain string, issuerID []string, iswildcard bool, nameservers []string) error {
-	// see https://tools.ietf.org/html/rfc6844#section-4
-	// for more information about how CAA lookup is performed
-	fqdn := ToFqdn(domain)
-
-	issuerSet := make(map[string]bool)
-	for _, s := range issuerID {
-		issuerSet[s] = true
-	}
-
-	var caas []*dns.CAA
-	for {
-		// follow at most 8 cnames per label
-		queryDomain := fqdn
-		var msg *dns.Msg
-		var err error
-		for i := 0; i < 8; i++ {
-			// usually, we should be able to just ask the local recursive
-			// nameserver for CAA records, but some setups will return SERVFAIL
-			// on unknown types like CAA. Instead, ask the authoritative server
-			var authNS []string
-			authNS, err = lookupNameservers(ctx, queryDomain, nameservers)
-			if err != nil {
-				return fmt.Errorf("Could not validate CAA record: %s", err)
-			}
-			for i, ans := range authNS {
-				authNS[i] = net.JoinHostPort(ans, "53")
-			}
-			msg, err = DNSQuery(ctx, queryDomain, dns.TypeCAA, authNS, false)
-			if err != nil {
-				return fmt.Errorf("Could not validate CAA record: %s", err)
-			}
-			// domain may not exist, which is fine. It will fail HTTP01 checks
-			// but DNS01 checks will create a proper domain
-			if msg.Rcode == dns.RcodeNameError {
-				break
-			}
-			if msg.Rcode != dns.RcodeSuccess {
-				return fmt.Errorf("Could not validate CAA: Unexpected response code '%s' for %s",
-					dns.RcodeToString[msg.Rcode], domain)
-			}
-			oldQuery := queryDomain
-			queryDomain, err := followCNAMEs(ctx, queryDomain, nameservers)
-			if err != nil {
-				return fmt.Errorf("while trying to follow CNAMEs for domain %s using nameservers %v: %w", queryDomain, nameservers, err)
-			}
-			if queryDomain == oldQuery {
-				break
-			}
-		}
-		// we have a response that's not a CNAME. It might be empty.
-		// if it is, go up a label and ask again
-		for _, rr := range msg.Answer {
-			caa, ok := rr.(*dns.CAA)
-			if !ok {
-				continue
-			}
-			caas = append(caas, caa)
-		}
-		// once we've found any CAA records, we use these CAAs
-		if len(caas) != 0 {
-			break
-		}
-
-		index := strings.Index(fqdn, ".")
-		if index == -1 {
-			panic("should never happen")
-		}
-		fqdn = fqdn[index+1:]
-		if len(fqdn) == 0 {
-			// we reached the root with no CAA, don't bother asking
-			return nil
-		}
-	}
-
-	if !matchCAA(caas, issuerSet, iswildcard) {
-		// TODO(dmo): better error message
-		return fmt.Errorf("CAA record does not match issuer")
-	}
-	return nil
-}
-
-func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool {
-	matches := false
-	for _, caa := range caas {
-		// if we require a wildcard certificate, we must prioritize any issuewild
-		// tags - only if it matches (regardless of any other entries) can we
-		// issue a wildcard certificate
-		if iswildcard && caa.Tag == issuewildTag {
-			return issuerIDs[caa.Value]
-		}
-
-		// issue tags allow any certificate, we perform a check which will only
-		// be returned if we do not need a wildcard certificate, or if we need
-		// a wildcard certificate and no issuewild entries are present
-		if caa.Tag == issueTag {
-			matches = matches || issuerIDs[caa.Value]
-		}
-	}
-	return matches
 }
 
 // lookupNameservers returns the authoritative nameservers for the given fqdn.

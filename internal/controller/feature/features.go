@@ -42,12 +42,6 @@ const (
 	// =========================== END TEMPLATE ===========================
 
 	// Owner: N/A
-	// Alpha: v0.7.2
-	//
-	// ValidateCAA enables CAA checking when issuing certificates
-	ValidateCAA featuregate.Feature = "ValidateCAA"
-
-	// Owner: N/A
 	// Alpha: v1.4
 	//
 	// ExperimentalCertificateSigningRequestControllers enables all CertificateSigningRequest
@@ -147,6 +141,19 @@ const (
 	// resources to acme.cert-manager.io/finalizer instead of finalizer.acme.cert-manager.io.
 	// GitHub Issue: https://github.com/cert-manager/cert-manager/issues/7266
 	UseDomainQualifiedFinalizer featuregate.Feature = "UseDomainQualifiedFinalizer"
+
+	// Owner: N/A
+	// Alpha: v0.7.2
+	// Deprecated: v1.17
+	// Removed: v1.18
+	//
+	// ValidateCAA is a now-removed feature gate which enabled CAA checking when issuing certificates
+	// This was never widely adopted, and without an owner to sponsor it we decided to deprecate
+	// this feature gate and then remove it.
+	// The feature gate is still defined here so that users who specify the feature gate aren't
+	// hit with "unknown feature gate" errors which crash the controller, but this is a no-op
+	// and only prints a log line if added.
+	ValidateCAA featuregate.Feature = "ValidateCAA"
 )
 
 func init() {
@@ -161,7 +168,6 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	StableCertificateRequestName:       {Default: true, PreRelease: featuregate.Beta},
 	SecretsFilteredCaching:             {Default: true, PreRelease: featuregate.Beta},
 
-	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.Beta},
@@ -171,4 +177,17 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.Beta},
+
+	// NB: Deprecated + removed feature gates are kept here.
+	// `featuregate.Deprecated` exists, but will cause the featuregate library
+	// to emit its own warning when the gate is set:
+	// > W...] Setting deprecated feature gate ValidateCAA=true. It will be removed in a future release.
+	// So we have to set to Alpha to avoid that. `PreAlpha` also exists, but
+	// adds versioning logic we don't want to deal with.
+
+	// If we simply remove the gate from here, then anyone still setting it will
+	// see an error and the controller will enter CrashLoopBackOff:
+	// > E...] "error executing command" err="failed to set feature gates from initial flags-based config: unrecognized feature gate: ValidateCAA" logger="cert-manager"
+	// So we leave it here, set to alpha.
+	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 }
