@@ -409,7 +409,7 @@ creating resources in order to solve http01 challenges).
 * keeping the `status` field up to date with details of the challenge so that
 the Order controller can make decisions based on the state of challenges.
 
-One area to highlight, is the behaviour of the Challenge controller wrt. challenges
+One area to highlight, is the behaviour of the Challenge controller w.r.t. challenges
 vs authorizations.
 
 Whilst this controller works with a single ACME *Challenge* only, in order to
@@ -438,7 +438,7 @@ to review.
 
 ## Risks & mitigations
 
-#### Introducing new resource types creates more cognitive overhead for users, and a steeper 'on-boarding' curve wrt debugging issues.
+#### Introducing new resource types creates more cognitive overhead for users, and a steeper 'on-boarding' curve w.r.t. debugging issues.
 
 This is mitigated by:
 
