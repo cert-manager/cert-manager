@@ -181,8 +181,26 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
 */}}
 {{- define "image" -}}
 {{- $defaultTag := index . 1 -}}
+{{- $global := index . 2 -}}
 {{- with index . 0 -}}
-{{- if .registry -}}{{ printf "%s/%s" .registry .repository }}{{- else -}}{{- .repository -}}{{- end -}}
+{{- if .repository -}}
+    {{- if .registry -}}
+        {{- printf "%s/%s" .registry .repository -}}
+    {{- else -}}
+        {{- .repository -}}
+    {{- end -}}
+{{- else -}}
+    {{- if .registry -}}
+        {{- .registry -}}
+    {{- else -}}
+        {{- if $global.imageRepository -}}
+            {{- $global.imageRepository -}}
+        {{- else -}}
+            quay.io/jetstack
+        {{- end -}}
+        /{{- .name -}}
+    {{- end -}}
+{{- end -}}
 {{- if .digest -}}{{ printf "@%s" .digest }}{{- else -}}{{ printf ":%s" (default $defaultTag .tag) }}{{- end -}}
 {{- end }}
 {{- end }}
