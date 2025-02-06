@@ -30,7 +30,7 @@ type Issuer struct {
 
 var _ issuer.Interface = &Issuer{}
 
-// Setup initialises the issuer. This may include registering accounts with
+// Setup initializes the issuer. This may include registering accounts with
 // a service, creating a CA and storing it somewhere, or verifying
 // credentials and authorization with a remote server.
 func (i *Issuer) Setup(ctx context.Context) error {

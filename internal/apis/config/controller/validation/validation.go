@@ -37,7 +37,7 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 	allErrors = append(allErrors, sharedvalidation.ValidateTLSConfig(&cfg.MetricsTLSConfig, fldPath.Child("metricsTLSConfig"))...)
 
 	if cfg.LeaderElectionConfig.Enabled && cfg.LeaderElectionConfig.HealthzTimeout <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("leaderElectionConfig").Child("healthzTimeout"), cfg.LeaderElectionConfig.HealthzTimeout, "must be higher than 0"))
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("leaderElectionConfig").Child("healthzTimeout"), cfg.LeaderElectionConfig.HealthzTimeout, "must be greater than 0"))
 	}
 	allErrors = append(allErrors, sharedvalidation.ValidateLeaderElectionConfig(&cfg.LeaderElectionConfig.LeaderElectionConfig, fldPath.Child("leaderElectionConfig"))...)
 
@@ -46,11 +46,11 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 	}
 
 	if cfg.KubernetesAPIBurst <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be higher than 0"))
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be greater than 0"))
 	}
 
 	if cfg.KubernetesAPIQPS <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be higher than 0"))
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be greater than 0"))
 	}
 
 	if float32(cfg.KubernetesAPIBurst) < cfg.KubernetesAPIQPS {

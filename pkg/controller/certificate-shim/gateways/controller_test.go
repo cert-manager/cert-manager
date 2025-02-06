@@ -63,7 +63,7 @@ func Test_controller_Register(t *testing.T) {
 			name: "gateway is re-queued when an 'Updated' event is received for this gateway",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
 				// We can't use the gateway-api fake.NewSimpleClientset due to
-				// Gateway being pluralized as "gatewaies" instead of
+				// Gateway being pluralized as "gateway" -"y" +"ies" instead of
 				// "gateways". The trick is thus to use Create instead.
 				_, err := c.GatewayV1().Gateways("namespace-1").Create(context.Background(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "gateway-1",
@@ -186,8 +186,8 @@ func Test_controller_Register(t *testing.T) {
 			// NOTE(mael): we can't use Gateway with GWObjects because of a
 			// limitation in client-go's NewSimpleClientset. It uses a heuristic
 			// that wrongly guesses the resource from the Gateway kind
-			// ("gatewaies" instead of "gateways"). To work around this, the
-			// only way is to either use a real apiserver or to use call Create
+			// ("gateway" -"y" +"ies" instead of "gateways"). To work around this,
+			// the only way is to either use a real apiserver or to use call Create
 			// instead of setting existing objects with NewSimpleClientset. See:
 			// https://github.com/kubernetes/client-go/blob/7a90b0858/testing/fixture.go#L326-L331
 			b := &testpkg.Builder{T: t, CertManagerObjects: o}

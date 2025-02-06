@@ -35,7 +35,7 @@ type instrumentedConnector struct {
 
 var _ connector = instrumentedConnector{}
 
-func newInstumentedConnector(conn connector, metrics *metrics.Metrics, log logr.Logger) connector {
+func newInstrumentedConnector(conn connector, metrics *metrics.Metrics, log logr.Logger) connector {
 	return instrumentedConnector{
 		conn:    conn,
 		metrics: metrics,
