@@ -698,6 +698,9 @@
         "logLevel": {
           "$ref": "#/$defs/helm-values.global.logLevel"
         },
+        "logFormat": {
+          "$ref": "#/$defs/helm-values.global.logFormat"
+        },
         "podSecurityPolicy": {
           "$ref": "#/$defs/helm-values.global.podSecurityPolicy"
         },
@@ -762,6 +765,11 @@
       "default": 2,
       "description": "Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.",
       "type": "number"
+    },
+    "helm-values.global.logFormat": {
+      "default": "text",
+      "description": "Set the log format of cert-manager. Log formats are text and json.",
+      "enum": ["text", "json"]
     },
     "helm-values.global.podSecurityPolicy": {
       "properties": {
