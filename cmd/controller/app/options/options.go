@@ -262,7 +262,7 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
-		logf.Log.Info("the ValidateCAA feature flag is scheduled for removal in v1.18 and will become a no-op")
+		logf.Log.Info("the ValidateCAA feature flag has been removed and is now a no-op")
 	}
 
 	return enabled
