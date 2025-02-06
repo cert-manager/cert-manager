@@ -18,9 +18,6 @@ package authority
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
@@ -36,6 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -86,10 +84,11 @@ func TestDynamicAuthority(t *testing.T) {
 	defer da.StopWatchingRotation(output)
 
 	waitForRotationAndSign := func(testInitial bool) {
-		privateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		privateKey, err := pki.GenerateECPrivateKey(521)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		template := &x509.Certificate{
 			PublicKey: privateKey.Public(),
 		}
@@ -152,7 +151,7 @@ func TestDynamicAuthorityMulti(t *testing.T) {
 	defer da.StopWatchingRotation(output)
 
 	waitForRotationAndSign := func() {
-		privateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		privateKey, err := pki.GenerateECPrivateKey(521)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,10 +187,13 @@ func Test__caRequiresRegeneration(t *testing.T) {
 		// Generate a certificate and private key pair
 		pk, err := pki.GenerateECPrivateKey(384)
 		assert.NoError(t, err)
+
 		pkBytes, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
 		assert.NoError(t, err)
-		serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+
+		serialNumber, err := cmrand.SerialNumber()
 		assert.NoError(t, err)
+
 		cert := &x509.Certificate{
 			Version:               3,
 			BasicConstraintsValid: true,
