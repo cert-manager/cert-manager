@@ -130,6 +130,9 @@ podDisruptionBudget:
   # +docs:type=unknown
   # maxUnavailable: 1
 
+  # -- (string) Unhealthy pod eviction policy for the PDB.
+  # unhealthyPodEvictionPolicy: AlwaysAllow
+
 # A comma-separated list of feature gates that should be enabled on the
 # controller pod.
 featureGates: ""
@@ -719,6 +722,9 @@ webhook:
     # +docs:type=unknown
     # maxUnavailable: 1
 
+    # -- (string) Unhealthy pod eviction policy for the PDB.
+    # unhealthyPodEvictionPolicy: AlwaysAllow
+
   # Optional additional annotations to add to the webhook Deployment.
   # +docs:property
   # deploymentAnnotations: {}
@@ -1085,6 +1091,9 @@ cainjector:
     # +docs:property
     # +docs:type=unknown
     # maxUnavailable: 1
+
+    # -- (string) Unhealthy pod eviction policy for the PDB.
+    # unhealthyPodEvictionPolicy: AlwaysAllow
 
   # Optional additional annotations to add to the cainjector Deployment.
   # +docs:property
