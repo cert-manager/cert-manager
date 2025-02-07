@@ -1,3 +1,5 @@
+//go:build !livedns_test
+
 // +skip_license_check
 
 package util

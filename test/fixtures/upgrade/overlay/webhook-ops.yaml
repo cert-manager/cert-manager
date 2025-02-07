@@ -22,4 +22,4 @@ spec:
     spec:
       containers:
       #@overlay/match by=overlay.subset({"name": "cert-manager-webhook"})
-      - image: #@ "docker.io/library/cert-manager-webhook-amd64:{}".format(data.values.app_version)
+      - image: #@ "docker.io/library/cert-manager-webhook-{}:{}".format(data.values.arch, data.values.app_version)

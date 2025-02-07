@@ -29,7 +29,7 @@ set -o pipefail
 finalfile="$1"
 lockfile="$finalfile.lock"
 
-# On OSX, flock is not installed, we just skip locking in that case,
+# On macOS, flock is not installed, we just skip locking in that case,
 # this means that running verify in parallel without downloading all
 # tools first will not work.
 flock_installed=$(command -v flock >/dev/null && echo "yes" || echo "no")
