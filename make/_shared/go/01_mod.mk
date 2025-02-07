@@ -84,7 +84,7 @@ shared_generate_targets += generate-govulncheck
 # `verify-govulncheck` not added to the `shared_verify_targets` variable and is
 # not run by `make verify`, because `make verify` is run for each PR, and we do
 # not want new vulnerabilities in existing code to block the merging of PRs.
-# Instead `make verify-govulnecheck` is intended to be run periodically by a CI job.
+# Instead `make verify-govulncheck` is intended to be run periodically by a CI job.
 verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
