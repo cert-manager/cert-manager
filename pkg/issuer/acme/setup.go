@@ -429,10 +429,20 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 		return nil, err
 	}
 
+	gvk := a.issuer.GetObjectKind().GroupVersionKind()
 	_, err = a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
+			Labels: map[string]string{
+				v1.PartOfCertManagerControllerLabelKey: "true",
+				v1.AccountPrivateKeyLabelKey:           "true",
+			},
+			Annotations: map[string]string{
+				v1.IssuerNameAnnotationKey:  a.issuer.GetName(),
+				v1.IssuerGroupAnnotationKey: gvk.Group,
+				v1.IssuerKindAnnotationKey:  gvk.Kind,
+			},
 		},
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
