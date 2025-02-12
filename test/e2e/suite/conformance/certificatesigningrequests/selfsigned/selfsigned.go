@@ -106,7 +106,7 @@ func createSelfSignedIssuer(ctx context.Context, f *framework.Framework) string 
 			},
 		},
 	}, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to create self-signed issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for Self Signed Issuer to be Ready")
@@ -129,7 +129,7 @@ func createSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework) 
 			},
 		},
 	}, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to create self-signed issuer")
 
 	// wait for issuer to be ready
 	By("Waiting for Self Signed Cluster Issuer to be Ready")

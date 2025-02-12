@@ -128,7 +128,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		}
 	}
 
-	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
+	instrumentedVCertClient := newInstrumentedConnector(vcertClient, metrics, logger)
 
 	v := &Venafi{
 		namespace:     namespace,
@@ -151,11 +151,11 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string, userAgent string) (*vcert.Config, error) {
-	venCfg := iss.GetSpec().Venafi
+	venaCfg := iss.GetSpec().Venafi
 
 	switch {
-	case venCfg.TPP != nil:
-		tpp := venCfg.TPP
+	case venaCfg.TPP != nil:
+		tpp := venaCfg.TPP
 		tppSecret, err := secretsLister.Secrets(namespace).Get(tpp.CredentialsRef.Name)
 		if err != nil {
 			return nil, err
@@ -178,7 +178,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
 			BaseUrl:       tpp.URL,
-			Zone:          venCfg.Zone,
+			Zone:          venaCfg.Zone,
 			// always enable verbose logging for now
 			LogVerbose: true,
 			// We supply the CA bundle here, to trigger the vcert's builtin
@@ -201,8 +201,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				TLSRenegotiationSupport: ptr.To(tls.RenegotiateOnceAsClient),
 			}),
 		}, nil
-	case venCfg.Cloud != nil:
-		cloud := venCfg.Cloud
+	case venaCfg.Cloud != nil:
+		cloud := venaCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
 			return nil, err
@@ -217,7 +217,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,
 			BaseUrl:       cloud.URL,
-			Zone:          venCfg.Zone,
+			Zone:          venaCfg.Zone,
 			// always enable verbose logging for now
 			LogVerbose: true,
 			Credentials: &endpoint.Authentication{

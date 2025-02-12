@@ -217,8 +217,8 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 		return err
 	}
 
-	log.V(logf.DebugLevel).Info("self signed certificate issued")
-	s.recorder.Event(csr, corev1.EventTypeNormal, "CertificateIssued", "Certificate self signed successfully")
+	log.V(logf.DebugLevel).Info("self-signed certificate issued")
+	s.recorder.Event(csr, corev1.EventTypeNormal, "CertificateIssued", "Certificate self-signed successfully")
 
 	return nil
 }

@@ -59,15 +59,15 @@ func (s *SANMatcher) Match(actual interface{}) (success bool, err error) {
 	}
 
 	var actualSANExtension pkix.Extension
-	var SANfound bool
+	var SANFound bool
 	for _, extension := range actualExtensions {
 		if extension.Id.Equal(oidExtensionSubjectAltName) {
 			actualSANExtension = extension
-			SANfound = true
+			SANFound = true
 		}
 	}
 
-	if !SANfound {
+	if !SANFound {
 		return false, fmt.Errorf("The supplied Extensions does not contain a SAN extension, got: %v", actualExtensions)
 	}
 
