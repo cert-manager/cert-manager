@@ -150,12 +150,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
-	if apierrors.IsNotFound(err) {
-		log.V(logf.DebugLevel).Info("certificate not found for key", "error", err.Error())
-		return nil
-	}
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		return err
+	}
+	if crt == nil || crt.DeletionTimestamp != nil {
+		// If the Certificate object was/ is being deleted, we don't want to update its status.
+		return nil
 	}
 
 	input, err := c.gatherer.DataForCertificate(ctx, crt)
