@@ -56,7 +56,7 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.ClusterIssuer) (err er
 		return err
 	}
 
-	err = i.Setup(ctx)
+	err = i.Setup(ctx, issuerCopy)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		log.Error(err, "error setting up issuer")
