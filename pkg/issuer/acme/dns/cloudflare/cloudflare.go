@@ -235,6 +235,10 @@ func (c *DNSProvider) findTxtRecord(fqdn string) (*cloudFlareRecord, error) {
 
 	for _, rec := range records {
 		if rec.Name == util.UnFqdn(fqdn) {
+			// Cloudflare made a breaking change to their API and removed the ZoneID from responses:
+			// https://developers.cloudflare.com/fundamentals/api/reference/deprecations/#2024-11-30
+			// The simplest fix is to set the ZoneID manually here
+			rec.ZoneID = zoneID
 			return &rec, nil
 		}
 	}
