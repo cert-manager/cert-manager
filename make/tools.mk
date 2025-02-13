@@ -28,7 +28,7 @@ TOOLS :=
 TOOLS += helm=v3.11.2
 TOOLS += kubectl=v1.29.7
 TOOLS += kind=v0.20.0
-TOOLS += controller-gen=v0.12.0
+TOOLS += controller-gen=v0.17.2
 TOOLS += cosign=v1.12.1
 TOOLS += cmrel=fa10147dadc8c36718b7b08aed6d8c6418eb2
 TOOLS += release-notes=v0.14.0
@@ -56,7 +56,7 @@ KUBEBUILDER_ASSETS_VERSION=1.27.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.21.13
+VENDORED_GO_VERSION := 1.23.6
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
