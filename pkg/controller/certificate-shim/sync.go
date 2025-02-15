@@ -257,18 +257,6 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike me
 		return errs
 	}
 
-	switch {
-	case l.TLS.Mode == nil:
-		errs = append(errs, field.Required(path.Child("tls").Child("mode"),
-			"the mode field is required"))
-	case l.Protocol == gwapi.TLSProtocolType && *l.TLS.Mode == gwapi.TLSModePassthrough:
-		// skip TLS-listener in TLS-passthrough mode
-		return errs
-	case *l.TLS.Mode != gwapi.TLSModeTerminate:
-		errs = append(errs, field.NotSupported(path.Child("tls").Child("mode"),
-			*l.TLS.Mode, []string{string(gwapi.TLSModeTerminate)}))
-	}
-
 	if len(l.TLS.CertificateRefs) == 0 {
 		errs = append(errs, field.Required(path.Child("tls").Child("certificateRef"),
 			"listener has no certificateRefs"))
@@ -290,6 +278,14 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike me
 					*secretRef.Namespace, "cross-namespace secret references are not allowed in listeners"))
 			}
 		}
+	}
+
+	if l.TLS.Mode == nil {
+		errs = append(errs, field.Required(path.Child("tls").Child("mode"),
+			"the mode field is required"))
+	} else if *l.TLS.Mode != gwapi.TLSModeTerminate {
+		errs = append(errs, field.NotSupported(path.Child("tls").Child("mode"),
+			*l.TLS.Mode, []string{string(gwapi.TLSModeTerminate)}))
 	}
 
 	return errs
