@@ -257,13 +257,14 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike me
 		return errs
 	}
 
-	if l.TLS.Mode == nil {
+	switch {
+	case l.TLS.Mode == nil:
 		errs = append(errs, field.Required(path.Child("tls").Child("mode"),
 			"the mode field is required"))
-	} else if l.Protocol == gwapi.TLSProtocolType && *l.TLS.Mode == gwapi.TLSModePassthrough {
+	case l.Protocol == gwapi.TLSProtocolType && *l.TLS.Mode == gwapi.TLSModePassthrough:
 		// skip TLS-listener in TLS-passthrough mode
 		return errs
-	} else if *l.TLS.Mode != gwapi.TLSModeTerminate {
+	case *l.TLS.Mode != gwapi.TLSModeTerminate:
 		errs = append(errs, field.NotSupported(path.Child("tls").Child("mode"),
 			*l.TLS.Mode, []string{string(gwapi.TLSModeTerminate)}))
 	}
