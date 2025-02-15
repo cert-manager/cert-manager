@@ -350,7 +350,7 @@ func ExpectConditionApproved(csr *certificatesv1.CertificateSigningRequest, _ cr
 
 // ExpectConditionNotDenied checks that the CertificateSigningRequest has not
 // been Denied
-func ExpectConditiotNotDenied(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
+func ExpectConditionNotDenied(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	if ctrlutil.CertificateSigningRequestIsDenied(csr) {
 		return fmt.Errorf("CertificateSigningRequest has a Denied condition: %v", csr.Status.Conditions)
 	}

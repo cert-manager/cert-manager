@@ -194,7 +194,7 @@ func Test_certificatesRequestsForSecret(t *testing.T) {
 			clusterResourceNamespace: "test-namespace",
 			expectedAffected:         []*certificatesv1.CertificateSigningRequest{},
 		},
-		"if issuers are not self signed then don't return requests": {
+		"if issuers are not self-signed then don't return requests": {
 			existingCSRs: []runtime.Object{
 				gen.CertificateSigningRequest("a",
 					gen.AddCertificateSigningRequestAnnotations(map[string]string{

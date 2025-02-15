@@ -168,7 +168,7 @@ spec:
                         PreferredChain is the chain to use if the ACME server outputs multiple.
                         PreferredChain is no guarantee that this one gets delivered by the ACME
                         endpoint.
-                        For example, for Let's Encrypt's DST crosssign you would use:
+                        For example, for Let's Encrypt's DST cross-sign you would use:
                         "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
                         This value picks the first certificate bundle in the combined set of
                         ACME default and alternative chains that has a root-most certificate with
@@ -387,15 +387,15 @@ spec:
                                     type: object
                                     properties:
                                       clientID:
-                                        description: client ID of the managed identity, can not be used at the same time as resourceID
+                                        description: client ID of the managed identity, cannot be used at the same time as resourceID
                                         type: string
                                       resourceID:
                                         description: |-
-                                          resource ID of the managed identity, can not be used at the same time as clientID
+                                          resource ID of the managed identity, cannot be used at the same time as clientID
                                           Cannot be used for Azure Managed Service Identity
                                         type: string
                                       tenantID:
-                                        description: tenant ID of the managed identity, can not be used at the same time as resourceID
+                                        description: tenant ID of the managed identity, cannot be used at the same time as resourceID
                                         type: string
                                   resourceGroupName:
                                     description: resource group the DNS zone is located in

@@ -394,7 +394,7 @@ func TestGenerateCSR(t *testing.T) {
 		}
 	}
 
-	literalSubectGenerator := func(t *testing.T, literal string) []byte {
+	literalSubjectGenerator := func(t *testing.T, literal string) []byte {
 		rawSubject, err := UnmarshalSubjectStringToRDNSequence(literal)
 		if err != nil {
 			t.Fatal(err)
@@ -681,7 +681,7 @@ func TestGenerateCSR(t *testing.T) {
 						Critical: true,
 					},
 				},
-				RawSubject: literalSubectGenerator(t, exampleLiteralSubject),
+				RawSubject: literalSubjectGenerator(t, exampleLiteralSubject),
 			},
 			literalCertificateSubjectFeatureEnabled: true,
 		},
@@ -699,7 +699,7 @@ func TestGenerateCSR(t *testing.T) {
 						Critical: true,
 					},
 				},
-				RawSubject: literalSubectGenerator(t, exampleMultiValueRDNLiteralSubject),
+				RawSubject: literalSubjectGenerator(t, exampleMultiValueRDNLiteralSubject),
 			},
 			literalCertificateSubjectFeatureEnabled: true,
 		},

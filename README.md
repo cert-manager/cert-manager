@@ -66,9 +66,9 @@ Be sure to include as much information as you can about your environment.
 
 ## Community
 
-The `cert-manager-dev` Google Group is used for project wide announcements and development coordination.
-Anybody can join the group by visiting [here](https://groups.google.com/forum/#!forum/cert-manager-dev)
-and clicking "Join Group". A Google account is required to join the group.
+The [`cert-manager-dev` Google Group](https://groups.google.com/forum/#!forum/cert-manager-dev)
+is used for project wide announcements and development coordination.
+Anybody with a Google account can join the group by visiting the group and clicking "Join Group".
 
 ### Meetings
 

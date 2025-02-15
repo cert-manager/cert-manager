@@ -287,7 +287,7 @@ E2E_CERT_MANAGER_VERSION ?=
 
 # Install cert-manager with E2E specific images and deployment settings.
 # The values.best-practice.yaml file is applied for compliance with the
-# Kyverno policy which has been installed in a pre-requisite target.
+# Kyverno policy which has been installed in a prerequisite target.
 #
 # TODO: move these commands to separate scripts for readability
 #

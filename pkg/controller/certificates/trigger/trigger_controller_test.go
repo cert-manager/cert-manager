@@ -248,7 +248,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				ObservedGeneration: 42,
 			}},
 		},
-		"should not set Issuing=True when other Ceritificates with the same secret name are found, the secret does not exist and the certificate is not the first": {
+		"should not set Issuing=True when other Certificates with the same secret name are found, the secret does not exist and the certificate is not the first": {
 			existingCertificate: gen.Certificate("cert-2",
 				gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
 				gen.SetCertificateNamespace("testns"),
@@ -268,7 +268,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 			wantDataForCertificateCalled: false,
 			wantShouldReissueCalled:      false,
 		},
-		"should set Issuing=True when other Ceritificates with the same secret name are found, the secret does not exist and the certificate is the first": {
+		"should set Issuing=True when other Certificates with the same secret name are found, the secret does not exist and the certificate is the first": {
 			existingCertificate: gen.Certificate("cert-1",
 				gen.SetCertificateCreationTimestamp(fixedNow),
 				gen.SetCertificateNamespace("testns"),
@@ -302,7 +302,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				LastTransitionTime: &fixedNow,
 			}},
 		},
-		"should set Issuing=True when other Ceritificates with the same secret name are found, the secret does exist and the certificate is the owner": {
+		"should set Issuing=True when other Certificates with the same secret name are found, the secret does exist and the certificate is the owner": {
 			existingCertificate: gen.Certificate("cert-2",
 				gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
 				gen.SetCertificateNamespace("testns"),
@@ -347,7 +347,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				LastTransitionTime: &fixedNow,
 			}},
 		},
-		"should not set Issuing=True when other Ceritificates with the same secret name are found, the secret does exist and the certificate is first but not the owner": {
+		"should not set Issuing=True when other Certificates with the same secret name are found, the secret does exist and the certificate is first but not the owner": {
 			existingCertificate: gen.Certificate("cert-1",
 				gen.SetCertificateCreationTimestamp(fixedNow),
 				gen.SetCertificateNamespace("testns"),

@@ -143,7 +143,7 @@ func TestScheduleN(t *testing.T) {
 			expected:   ascendingChallengeN(maxConcurrentChallenges),
 		},
 		{
-			name:       "schedule no new if current number is higher than MaxConcurrentChallenges",
+			name:       "schedule no new if current number is greater than MaxConcurrentChallenges",
 			n:          maxConcurrentChallenges,
 			challenges: ascendingChallengeN(maxConcurrentChallenges * 4),
 			expected:   ascendingChallengeN(maxConcurrentChallenges),

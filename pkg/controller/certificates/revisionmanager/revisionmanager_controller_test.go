@@ -317,7 +317,7 @@ func TestCertificateRequestsToDelete(t *testing.T) {
 			limit: 1,
 			exp:   []revision{},
 		},
-		"multiple requests with some with good revsions should return list in order": {
+		"multiple requests with some with good revisions should return list in order": {
 			input: []*cmapi.CertificateRequest{
 				gen.CertificateRequestFrom(baseCR,
 					gen.SetCertificateRequestName("cr-1"),
@@ -369,7 +369,7 @@ func TestCertificateRequestsToDelete(t *testing.T) {
 				},
 			},
 		},
-		"multiple requests with some with good revsions but less than the limit, should return list in order under limit": {
+		"multiple requests with some with good revisions but less than the limit, should return list in order under limit": {
 			input: []*cmapi.CertificateRequest{
 				gen.CertificateRequestFrom(baseCR,
 					gen.SetCertificateRequestName("cr-1"),
