@@ -320,6 +320,11 @@ func buildCertificates(
 				continue
 			}
 
+			// We never issue certificates for TLS Passthrough mode
+			if l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwapi.TLSModePassthrough {
+				continue
+			}
+
 			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
