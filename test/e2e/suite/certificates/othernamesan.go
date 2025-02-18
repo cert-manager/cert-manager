@@ -141,7 +141,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 		Expect(cert.Extensions).To(HaveSameSANsAs(expectedSanExtension))
 	})
 
-	It("Should error if a certificate is supplied with an othername containing an invalid oid value", func() {
+	It("Should error if a certificate is supplied with an `otherName` containing an invalid oid value", func() {
 		_, err := createCertificate(f, []cmapi.OtherName{
 			{
 				OID:       "BAD_OID",
@@ -157,7 +157,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 
 	})
 
-	It("Should error if a certificate is supplied with an othername without a UTF8 value", func() {
+	It("Should error if a certificate is supplied with an `otherName` without a UTF8 value", func() {
 		_, err := createCertificate(f, []cmapi.OtherName{
 			{
 				OID: "1.3.6.1.4.1.311.20.2.3",
