@@ -151,7 +151,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	// generate a self signed root ca valid for 60d
+	// generate a self-signed root ca valid for 60d
 	rootCert, rootCertPEM := generateSelfSignedCACert(t, rootPK, "root")
 	ecCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -619,7 +619,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestRequest(testCSR),
-				gen.SetCertificateSigningRequestSignerName("issers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
 				gen.SetCertificateSigningRequestDuration("30m"),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
@@ -654,7 +654,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestRequest(testCSR),
-				gen.SetCertificateSigningRequestSignerName("issers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
 				gen.SetCertificateSigningRequestExpirationSeconds(654),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {

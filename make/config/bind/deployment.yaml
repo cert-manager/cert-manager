@@ -15,7 +15,7 @@ spec:
         app: bind
     spec:
       securityContext:
-        # 101 is the userid of the bind user
+        # 101 is the user id of the bind user
         runAsUser: 101
         runAsGroup: 101
         fsGroup: 101

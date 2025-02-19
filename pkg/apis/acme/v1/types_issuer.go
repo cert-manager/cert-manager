@@ -46,7 +46,7 @@ type ACMEIssuer struct {
 	// PreferredChain is the chain to use if the ACME server outputs multiple.
 	// PreferredChain is no guarantee that this one gets delivered by the ACME
 	// endpoint.
-	// For example, for Let's Encrypt's DST crosssign you would use:
+	// For example, for Let's Encrypt's DST cross-sign you would use:
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	// This value picks the first certificate bundle in the combined set of
 	// ACME default and alternative chains that has a root-most certificate with
@@ -702,16 +702,16 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 // If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used.
 // Otherwise, we fall-back to using Azure Managed Service Identity.
 type AzureManagedIdentity struct {
-	// client ID of the managed identity, can not be used at the same time as resourceID
+	// client ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
 	ClientID string `json:"clientID,omitempty"`
 
-	// resource ID of the managed identity, can not be used at the same time as clientID
+	// resource ID of the managed identity, cannot be used at the same time as clientID
 	// Cannot be used for Azure Managed Service Identity
 	// +optional
 	ResourceID string `json:"resourceID,omitempty"`
 
-	// tenant ID of the managed identity, can not be used at the same time as resourceID
+	// tenant ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
 	TenantID string `json:"tenantID,omitempty"`
 }

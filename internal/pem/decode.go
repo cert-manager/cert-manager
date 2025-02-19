@@ -146,7 +146,7 @@ func SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
 
 // SafeDecodeCertificateBundle calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
 // how large we expect a reasonable-length PEM-encoded X.509 certificate bundle (such as a TLS trust store) to be.
-// The baseline is a bundle of 4k-bit RSA certificates, all self signed. This is smaller than the 16k-bit RSA keys
+// The baseline is a bundle of 4k-bit RSA certificates, all self-signed. This is smaller than the 16k-bit RSA keys
 // we use in other functions, because using such large keys would make our estimate several times
 // too large for a realistic bundle which would be used in practice.
 func SafeDecodeCertificateBundle(b []byte) (*stdpem.Block, []byte, error) {
