@@ -19,6 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -102,6 +103,12 @@ type ACMEIssuer struct {
 	// it, it will create an error on the Order.
 	// Defaults to false.
 	EnableDurationFeature bool
+
+	// Sets the overall timeout for creating certificates in seconds. For most
+	// Issuers the default should be sufficient, however e.g. letsencrypt
+	// staging sometimes takes longer, especially on slow local environments.
+	// Defaults to 20s
+	AuthorizationTimeout *metav1.Duration
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
