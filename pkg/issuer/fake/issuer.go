@@ -24,7 +24,7 @@ import (
 )
 
 type Issuer struct {
-	SetupFunc func(context.Context) error
+	SetupFunc func(context.Context, cmapi.GenericIssuer) error
 	IssueFunc func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error)
 }
 
@@ -33,8 +33,8 @@ var _ issuer.Interface = &Issuer{}
 // Setup initializes the issuer. This may include registering accounts with
 // a service, creating a CA and storing it somewhere, or verifying
 // credentials and authorization with a remote server.
-func (i *Issuer) Setup(ctx context.Context) error {
-	return i.SetupFunc(ctx)
+func (i *Issuer) Setup(ctx context.Context, issuer cmapi.GenericIssuer) error {
+	return i.SetupFunc(ctx, issuer)
 }
 
 // Issue attempts to issue a certificate as described by the certificate
