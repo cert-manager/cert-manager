@@ -45,7 +45,9 @@ func (m *Metrics) updateCertificateExpiry(crt *cmapi.Certificate) {
 		"namespace":    crt.Namespace,
 		"issuer_name":  crt.Spec.IssuerRef.Name,
 		"issuer_kind":  crt.Spec.IssuerRef.Kind,
-		"issuer_group": crt.Spec.IssuerRef.Group}).Set(expiryTime)
+		"issuer_group": crt.Spec.IssuerRef.Group,
+		"secret_name":  crt.Spec.SecretName,
+	}).Set(expiryTime)
 }
 
 // updateCertificateRenewalTime updates the renew before duration of a certificate
@@ -61,8 +63,9 @@ func (m *Metrics) updateCertificateRenewalTime(crt *cmapi.Certificate) {
 		"namespace":    crt.Namespace,
 		"issuer_name":  crt.Spec.IssuerRef.Name,
 		"issuer_kind":  crt.Spec.IssuerRef.Kind,
-		"issuer_group": crt.Spec.IssuerRef.Group}).Set(renewalTime)
-
+		"issuer_group": crt.Spec.IssuerRef.Group,
+		"secret_name":  crt.Spec.SecretName,
+	}).Set(renewalTime)
 }
 
 // updateCertificateStatus will update the metric for that Certificate
@@ -93,6 +96,7 @@ func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current c
 			"issuer_name":  crt.Spec.IssuerRef.Name,
 			"issuer_kind":  crt.Spec.IssuerRef.Kind,
 			"issuer_group": crt.Spec.IssuerRef.Group,
+			"secret_name":  crt.Spec.SecretName,
 		}).Set(value)
 	}
 }
