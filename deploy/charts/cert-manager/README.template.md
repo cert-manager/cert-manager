@@ -239,6 +239,11 @@ It cannot be used if `maxUnavailable` is set.
 This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set.
 
 
+#### **podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `unknown`
+
+This sets the Unhealthy pod eviction policy feature for the PDB. `IfHealthyBudget` and `AlwaysAllow` are the two policies to choose from.
+
+
 #### **featureGates** ~ `string`
 > Default value:
 > ```yaml
@@ -979,6 +984,11 @@ This property configures the maximum unavailable pods for disruptions. Can eithe
 It cannot be used if `minAvailable` is set.
 
 
+#### **podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `unknown`
+
+This sets the Unhealthy pod eviction policy feature for the PDB. `IfHealthyBudget` and `AlwaysAllow` are the two policies to choose from.
+
+
 #### **webhook.deploymentAnnotations** ~ `object`
 
 Optional additional annotations to add to the webhook Deployment.
@@ -1451,6 +1461,11 @@ Cannot be used if `maxUnavailable` is set.
 `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
 an integer (e.g. 1) or a percentage value (e.g. 25%).  
 Cannot be used if `minAvailable` is set.
+
+
+#### **podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `unknown`
+
+This sets the Unhealthy pod eviction policy feature for the PDB. `IfHealthyBudget` and `AlwaysAllow` are the two policies to choose from.
 
 
 #### **cainjector.deploymentAnnotations** ~ `object`
