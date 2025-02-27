@@ -70,7 +70,7 @@ func (cfg *WebhookConfigFile) GetPathRefs() ([]*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return paths, err
+	return paths, nil
 
 }
 
