@@ -760,6 +760,64 @@ func TestValidateCertificate(t *testing.T) {
 					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
 			},
 		},
+		"signature algorithm SHA+RSA allowed for empty key (RSA)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:         "testcn",
+					SecretName:         "abc",
+					IssuerRef:          validIssuerRef,
+					SignatureAlgorithm: internalcmapi.SHA256WithRSA,
+				},
+			},
+		},
+		"signature algorithm SHA+RSA allowed for RSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.RSAKeyAlgorithm,
+						Size:      3072,
+					},
+					SignatureAlgorithm: internalcmapi.SHA256WithRSA,
+				},
+			},
+		},
+		"signature algorithm SHA+RSA not allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.ECDSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.SHA256WithRSA,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.SHA256WithRSA,
+					"for key algorithm ECDSA the allowed signature algorithms are [ECDSAWithSHA256 ECDSAWithSHA384 ECDSAWithSHA512]"),
+			},
+		},
+		"signature algorithm SHA+ECDSA not allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.RSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.ECDSAWithSHA256,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.ECDSAWithSHA256,
+					"for key algorithm RSA the allowed signature algorithms are [SHA256WithRSA SHA384WithRSA SHA512WithRSA]"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
