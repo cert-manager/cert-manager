@@ -316,7 +316,13 @@ If not set and create is true, a name is generated using the fullname template.
 
 #### **serviceAccount.annotations** ~ `object`
 
-Optional additional annotations to add to the controller's Service Account.
+Optional additional annotations to add to the controller's Service Account. Templates are allowed for both keys and values.  
+Example using templating:
+
+```yaml
+annotations:
+  "{{ .Chart.Name }}-helm-chart/version": "{{ .Chart.Version }}"
+```
 
 #### **serviceAccount.labels** ~ `object`
 
@@ -365,7 +371,7 @@ config:
   kubernetesAPIBurst: 9000
   numberOfConcurrentWorkers: 200
   enableGatewayAPI: true
-  # Feature gates as of v1.16.0. Listed with their default values.
+  # Feature gates as of v1.17.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
     AdditionalCertificateOutputFormats: true # BETA - default=true
@@ -374,13 +380,13 @@ config:
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
     LiteralCertificateSubject: true # BETA - default=true
-    NameConstraints: false # ALPHA - default=false
+    NameConstraints: true # BETA - default=true
     OtherNames: false # ALPHA - default=false
     SecretsFilteredCaching: true # BETA - default=true
     ServerSideApply: false # ALPHA - default=false
     StableCertificateRequestName: true # BETA - default=true
     UseCertificateRequestBasicConstraints: false # ALPHA - default=false
-    UseDomainQualifiedFinalizer: false # ALPHA - default=false
+    UseDomainQualifiedFinalizer: true # BETA - default=false
     ValidateCAA: false # ALPHA - default=false
   # Configure the metrics server for TLS
   # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
@@ -678,7 +684,7 @@ enableServiceLinks indicates whether information about services should be inject
 
 Enable Prometheus monitoring for the cert-manager controller and webhook. If you use the Prometheus Operator, set prometheus.podmonitor.enabled or prometheus.servicemonitor.enabled, to create a PodMonitor or a  
 ServiceMonitor resource.  
-Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
+Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you cannot enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
 #### **prometheus.servicemonitor.enabled** ~ `bool`
 > Default value:
 > ```yaml

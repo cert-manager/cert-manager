@@ -99,7 +99,7 @@ func TestSign(t *testing.T) {
 
 	skEC, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Errorf("failed to generate ECDA private key: %s", err)
+		t.Errorf("failed to generate EC private key: %s", err)
 		t.FailNow()
 	}
 	skECPEM, err := pki.EncodeECPrivateKey(skEC)

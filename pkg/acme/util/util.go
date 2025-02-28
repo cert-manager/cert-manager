@@ -17,8 +17,7 @@ limitations under the License.
 package util
 
 import (
-	"crypto/rand"
-	"math/big"
+	"math/rand/v2"
 	"net/http"
 	"time"
 )
@@ -34,7 +33,7 @@ const (
 func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 
 	// According to the spec badNonce is urn:ietf:params:acme:error:badNonce.
-	// However, we can not use the request body in here as it is closed already.
+	// However, we cannot use the request body in here as it is closed already.
 	// So we're using its status code instead: 400
 	if resp.StatusCode != http.StatusBadRequest {
 		return -1
@@ -45,10 +44,8 @@ func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 		return -1
 	}
 
-	var jitter time.Duration
-	if x, err := rand.Int(rand.Reader, big.NewInt(1000)); err == nil {
-		jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
-	}
+	// No need for a cryptographically secure RNG here
+	jitter := 1 + time.Millisecond*time.Duration(rand.Int64N(1000)) // #nosec G404
 
 	// the exponent is calculated slightly contrived to allow the gosec:G115
 	// linter to recognise the safe type conversion.

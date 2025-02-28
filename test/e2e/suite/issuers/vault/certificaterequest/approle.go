@@ -23,10 +23,12 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	vaultaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -257,10 +259,14 @@ func runVaultAppRoleTests(issuerKind string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Verifying the Certificate is valid")
-			cr, err = crClient.Get(ctx, cr.Name, metav1.GetOptions{})
+			_, err = crClient.Get(ctx, cr.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			// Vault can issue certificates with slightly skewed duration.
-			f.CertificateRequestDurationValid(cr, v.expectedDuration, 30*time.Second)
+			err = h.ValidateCertificateRequest(types.NamespacedName{
+				Namespace: f.Namespace.Name,
+				Name:      certificateRequestName,
+			}, key, certificaterequests.ExpectDuration(v.expectedDuration, 30*time.Second))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }

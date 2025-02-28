@@ -19,6 +19,7 @@ package solver
 import (
 	"fmt"
 	"net/http"
+	"net/netip"
 	"path"
 	"strings"
 	"time"
@@ -55,9 +56,19 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		"listen_port", h.ListenPort,
 	)
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h.Server = http.Server{
+		Addr:              fmt.Sprintf(":%d", h.ListenPort),
+		Handler:           h.challengeHandler(log),
+		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
+	}
+
+	return h.Server.ListenAndServe()
+}
+
+func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// extract vars from the request
-		host := strings.Split(r.Host, ":")[0]
+		host := parseHost(r.Host)
 		basePath := path.Dir(r.URL.EscapedPath())
 		token := path.Base(r.URL.EscapedPath())
 
@@ -66,7 +77,9 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 			"path", r.URL.EscapedPath(),
 			"base_path", basePath,
 			"token", token,
+			"headers", r.Header,
 		)
+
 		if r.URL.EscapedPath() == "/" || r.URL.EscapedPath() == "/healthz" {
 			log.Info("responding OK to health check")
 			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -100,13 +113,22 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, h.Key)
-	})
+	}
+}
 
-	h.Server = http.Server{
-		Addr:              fmt.Sprintf(":%d", h.ListenPort),
-		Handler:           handler,
-		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
+func parseHost(s string) string {
+	// ip v4/v6 with port
+	addrPort, err := netip.ParseAddrPort(s)
+	if err == nil {
+		return addrPort.Addr().String()
 	}
 
-	return h.Server.ListenAndServe()
+	// ip v4/v6 without port
+	addr, err := netip.ParseAddr(s)
+	if err == nil {
+		return addr.String()
+	}
+
+	host := strings.Split(s, ":")
+	return host[0]
 }

@@ -47,7 +47,7 @@ func CertificateFrom(crt *v1.Certificate, mods ...CertificateModifier) *v1.Certi
 	return crt
 }
 
-// SetIssuer sets the Certificate.spec.issuerRef field
+// SetCertificateIssuer sets the Certificate.spec.issuerRef field
 func SetCertificateIssuer(o cmmeta.ObjectReference) CertificateModifier {
 	return func(c *v1.Certificate) {
 		c.Spec.IssuerRef = o
@@ -289,5 +289,11 @@ func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
 func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.CertificateAdditionalOutputFormat) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.AdditionalOutputFormats = additionalOutputFormats
+	}
+}
+
+func SetCertificateKeystore(keystores *v1.CertificateKeystores) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.Keystores = keystores
 	}
 }

@@ -26,7 +26,6 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -35,6 +34,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	metainstall "github.com/cert-manager/cert-manager/internal/apis/meta/install"
+	"github.com/cert-manager/cert-manager/internal/kube"
 	crapproval "github.com/cert-manager/cert-manager/internal/webhook/admission/certificaterequest/approval"
 	cridentity "github.com/cert-manager/cert-manager/internal/webhook/admission/certificaterequest/identity"
 	"github.com/cert-manager/cert-manager/internal/webhook/admission/resourcevalidation"
@@ -49,8 +49,7 @@ import (
 // resource types, validation, defaulting and conversion functions.
 func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
 	crlog.SetLogger(log)
-
-	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
+	restcfg, err := kube.BuildClientConfig(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err
 	}

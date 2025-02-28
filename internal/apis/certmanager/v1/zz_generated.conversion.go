@@ -1275,10 +1275,11 @@ func Convert_certmanager_IssuerStatus_To_v1_IssuerStatus(in *certmanager.IssuerS
 
 func autoConvert_v1_JKSKeystore_To_certmanager_JKSKeystore(in *v1.JKSKeystore, out *certmanager.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
-	out.Alias = (*string)(unsafe.Pointer(in.Alias))
+	out.Password = (*string)(unsafe.Pointer(in.Password))
 	return nil
 }
 
@@ -1289,10 +1290,11 @@ func Convert_v1_JKSKeystore_To_certmanager_JKSKeystore(in *v1.JKSKeystore, out *
 
 func autoConvert_certmanager_JKSKeystore_To_v1_JKSKeystore(in *certmanager.JKSKeystore, out *v1.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
-	out.Alias = (*string)(unsafe.Pointer(in.Alias))
+	out.Password = (*string)(unsafe.Pointer(in.Password))
 	return nil
 }
 
@@ -1375,10 +1377,11 @@ func Convert_certmanager_OtherName_To_v1_OtherName(in *certmanager.OtherName, ou
 
 func autoConvert_v1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1.PKCS12Keystore, out *certmanager.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
+	out.Profile = certmanager.PKCS12Profile(in.Profile)
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
-	out.Profile = certmanager.PKCS12Profile(in.Profile)
+	out.Password = (*string)(unsafe.Pointer(in.Password))
 	return nil
 }
 
@@ -1389,10 +1392,11 @@ func Convert_v1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1.PKCS12Keysto
 
 func autoConvert_certmanager_PKCS12Keystore_To_v1_PKCS12Keystore(in *certmanager.PKCS12Keystore, out *v1.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
+	out.Profile = v1.PKCS12Profile(in.Profile)
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
-	out.Profile = v1.PKCS12Profile(in.Profile)
+	out.Password = (*string)(unsafe.Pointer(in.Password))
 	return nil
 }
 

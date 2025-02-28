@@ -63,7 +63,7 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 }
 
 // serializeApply converts the given Challenge object in JSON. Only the
-// objectmeta, and spec fields will be copied and encoded into the serialized
+// ObjectMeta, and Spec fields will be copied and encoded into the serialized
 // slice. All other fields will be left at their zero value.
 // TypeMeta will be populated with the Kind "Challenge" and API Version
 // "acme.cert-manager.io/v1" respectively.

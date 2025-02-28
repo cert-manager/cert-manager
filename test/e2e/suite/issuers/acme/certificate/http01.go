@@ -281,12 +281,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// the self-sign issuer to make it have a "proper" TLS cert
 		// TODO: investigate if we still need to use the self-signed issuer here
 
-		issuer := gen.Issuer("selfsign",
+		issuer := gen.Issuer("self-sign",
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for (selfsign) Issuer to become Ready")
+		By("Waiting for (self-sign) Issuer to become Ready")
 		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
@@ -302,7 +302,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(secretname),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{
-				Name: "selfsign",
+				Name: "self-sign",
 				Kind: v1.IssuerKind,
 			}),
 			gen.SetCertificateCommonName(acmeIngressDomain),

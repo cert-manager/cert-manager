@@ -174,7 +174,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"feature gate must also be enabled (default as of 1.15).")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
-		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
@@ -259,6 +259,10 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.EnableGatewayAPI {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
+		logf.Log.Info("the ValidateCAA feature flag has been removed and is now a no-op")
 	}
 
 	return enabled

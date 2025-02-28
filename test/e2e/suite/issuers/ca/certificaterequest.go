@@ -24,8 +24,10 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -165,15 +167,17 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 				csr, key, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames(exampleDNSNames...), gen.SetCSRIPAddresses(exampleIPAddresses...), gen.SetCSRURIs(exampleURLs()...))
 				Expect(err).NotTo(HaveOccurred())
 				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
-				cr, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
+				_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Verifying the CertificateRequest is valid")
 				err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, key)
 				Expect(err).NotTo(HaveOccurred())
-				cr, err = crClient.Get(ctx, cr.Name, metav1.GetOptions{})
+				err = h.ValidateCertificateRequest(types.NamespacedName{
+					Namespace: f.Namespace.Name,
+					Name:      certificateRequestName,
+				}, key, certificaterequests.ExpectDuration(v.expectedDuration, 0))
 				Expect(err).NotTo(HaveOccurred())
-				f.CertificateRequestDurationValid(cr, v.expectedDuration, 0)
 			})
 		}
 	})

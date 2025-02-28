@@ -148,8 +148,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if crt.PrivateKey != nil {
 		switch crt.PrivateKey.Algorithm {
 		case "", internalcmapi.RSAKeyAlgorithm:
-			if crt.PrivateKey.Size > 0 && (crt.PrivateKey.Size < 2048 || crt.PrivateKey.Size > 8192) {
-				el = append(el, field.Invalid(fldPath.Child("privateKey", "size"), crt.PrivateKey.Size, "must be between 2048 & 8192 for rsa keyAlgorithm"))
+			if crt.PrivateKey.Size > 0 && (crt.PrivateKey.Size < pki.MinRSAKeySize || crt.PrivateKey.Size > pki.MaxRSAKeySize) {
+				el = append(el, field.Invalid(fldPath.Child("privateKey", "size"), crt.PrivateKey.Size, fmt.Sprintf("must be between %d and %d for rsa keyAlgorithm", pki.MinRSAKeySize, pki.MaxRSAKeySize)))
 			}
 		case internalcmapi.ECDSAKeyAlgorithm:
 			if crt.PrivateKey.Size > 0 && crt.PrivateKey.Size != 256 && crt.PrivateKey.Size != 384 && crt.PrivateKey.Size != 521 {
@@ -196,6 +196,10 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	}
 
 	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
+
+	if crt.Keystores != nil {
+		el = append(el, validateKeystores(crt, fldPath)...)
+	}
 
 	return el
 }
@@ -372,6 +376,48 @@ func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath
 			continue
 		}
 		aofSet.Insert(string(val.Type))
+	}
+
+	return el
+}
+
+const (
+	keystoresMutuallyExclusivePasswordsFmt = "exactly one of passwordSecretRef and password must be provided for %s keystores; cannot set both"
+
+	keystoresPasswordRequiredFmt = "must set exactly one of passwordSecretRef and password must for %s keystores"
+
+	keystoresLiteralPasswordMustNotBeEmptyFmt = "literal password cannot be empty if set on %s keystores"
+)
+
+func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+
+	if crt.Keystores.JKS != nil {
+		if crt.Keystores.JKS.Password != nil && crt.Keystores.JKS.PasswordSecretRef.Name != "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "JKS")))
+		}
+
+		if crt.Keystores.JKS.Password == nil && crt.Keystores.JKS.PasswordSecretRef.Name == "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresPasswordRequiredFmt, "JKS")))
+		}
+
+		if crt.Keystores.JKS.Password != nil && len(*crt.Keystores.JKS.Password) == 0 {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "jks", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "JKS")))
+		}
+	}
+
+	if crt.Keystores.PKCS12 != nil {
+		if crt.Keystores.PKCS12.Password != nil && crt.Keystores.PKCS12.PasswordSecretRef.Name != "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")))
+		}
+
+		if crt.Keystores.PKCS12.Password == nil && crt.Keystores.PKCS12.PasswordSecretRef.Name == "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")))
+		}
+
+		if crt.Keystores.PKCS12.Password != nil && len(*crt.Keystores.PKCS12.Password) == 0 {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")))
+		}
 	}
 
 	return el

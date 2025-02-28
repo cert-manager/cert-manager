@@ -45,7 +45,7 @@ type ACMEIssuer struct {
 	// PreferredChain is the chain to use if the ACME server outputs multiple.
 	// PreferredChain is no guarantee that this one gets delivered by the ACME
 	// endpoint.
-	// For example, for Let's Encrypt's DST crosssign you would use:
+	// For example, for Let's Encrypt's DST cross-sign you would use:
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	PreferredChain string
 
@@ -594,6 +594,8 @@ type AzureManagedIdentity struct {
 	ClientID string
 
 	ResourceID string
+
+	TenantID string
 }
 
 type AzureDNSEnvironment string

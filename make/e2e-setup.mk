@@ -263,9 +263,9 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ValidateCAA=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
-feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # When testing an published chart the repo can be configured using
 # E2E_CERT_MANAGER_REPO
@@ -287,7 +287,7 @@ E2E_CERT_MANAGER_VERSION ?=
 
 # Install cert-manager with E2E specific images and deployment settings.
 # The values.best-practice.yaml file is applied for compliance with the
-# Kyverno policy which has been installed in a pre-requisite target.
+# Kyverno policy which has been installed in a prerequisite target.
 #
 # TODO: move these commands to separate scripts for readability
 #

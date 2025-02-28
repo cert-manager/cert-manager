@@ -20,13 +20,18 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"encoding/pem"
 	"reflect"
 	"testing"
+
+	"github.com/cert-manager/cert-manager/internal/pem"
 )
 
 func extractSANsFromCertificate(t *testing.T, certDER string) pkix.Extension {
-	block, rest := pem.Decode([]byte(certDER))
+	block, rest, err := pem.SafeDecodeSingleCertificate([]byte(certDER))
+	if err != nil {
+		t.Fatalf("expected no PEM decode err but got %s", err)
+	}
+
 	if len(rest) > 0 {
 		t.Fatal("Expected no rest")
 	}
@@ -47,7 +52,11 @@ func extractSANsFromCertificate(t *testing.T, certDER string) pkix.Extension {
 }
 
 func extractSANsFromCertificateRequest(t *testing.T, csrDER string) pkix.Extension {
-	block, rest := pem.Decode([]byte(csrDER))
+	block, rest, err := pem.SafeDecodeCSR([]byte(csrDER))
+	if err != nil {
+		t.Fatalf("expected no PEM decode err but got %s", err)
+	}
+
 	if len(rest) > 0 {
 		t.Fatal("Expected no rest")
 	}

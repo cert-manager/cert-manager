@@ -724,7 +724,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 			},
 			errs: []*field.Error{field.Required(fldPath.Child("ca", "secretName"), "")},
 		},
-		"valid self signed issuer": {
+		"valid self-signed issuer": {
 			spec: &cmapi.IssuerSpec{
 				IssuerConfig: cmapi.IssuerConfig{
 					SelfSigned: &cmapi.SelfSignedIssuer{},
@@ -1252,7 +1252,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
 				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
-				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"),
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
@@ -1269,9 +1269,40 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
 				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
-				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"),
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+			},
+		},
+
+		"invalid azuredns managedIdentity tenantID used without managedIdentity clientID ": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						TenantID: "some-tenant-id",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns managedIdentity tenantID used with resourceID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					SubscriptionID:    "test",
+					ResourceGroupName: "test",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ResourceID: "test",
+						TenantID:   "some-tenant-id",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityTenantID and managedIdentityResourceID cannot both be specified"),
+				field.Required(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"),
 			},
 		},
 		"invalid azuredns clientSecret used with managedIdentity": {
@@ -1291,7 +1322,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
 				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
-				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"),
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
@@ -1329,7 +1360,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
-		"invalid azuredns managedIdentity with both cliendID and resourceID": {
+		"invalid azuredns managedIdentity with both clientID and resourceID": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					SubscriptionID:    "test",
