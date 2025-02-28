@@ -132,8 +132,8 @@ tools += govulncheck=v1.1.3
 tools += operator-sdk=v1.38.0
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 tools += gh=v2.63.1
-# https:///github.com/redhat-openshift-ecosystem/openshift-preflight/releases
-tools += preflight=1.11.1
+# https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
+tools += preflight=1.12.0
 # https://github.com/daixiang0/gci/releases
 tools += gci=v0.13.5
 # https://github.com/google/yamlfmt/releases
@@ -598,8 +598,8 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=ec4abfa6afd8952027cf15a4b05b80317edb18572184c33018769d6f39443af5
-preflight_linux_arm64_SHA256SUM=07e10e30b824ee14b57925315fbe0fa6df90e84a1c3df1fd15546cc14382b135
+preflight_linux_amd64_SHA256SUM=0cdad38aff54242f2dd531f520e9393485a5931cd8f9fc9ebd8a23a53c2bf199
+preflight_linux_arm64_SHA256SUM=9d814ff81b94b070c6ff6941fb124d4dab9efd2f37e083c10012540db4e6a60c
 
 # Currently there are no official releases for darwin, you cannot submit results
 # on non-official binaries, but we can still run tests.
