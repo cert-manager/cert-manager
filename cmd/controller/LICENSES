@@ -33,8 +33,8 @@ github.com/digitalocean/godo,https://github.com/digitalocean/godo/blob/v1.93.0/L
 github.com/emicklei/go-restful/v3,https://github.com/emicklei/go-restful/blob/v3.11.0/LICENSE,MIT
 github.com/felixge/httpsnoop,https://github.com/felixge/httpsnoop/blob/v1.0.4/LICENSE.txt,MIT
 github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.5.4/LICENSE,MIT
-github.com/go-jose/go-jose/v3,https://github.com/go-jose/go-jose/blob/v3.0.3/LICENSE,Apache-2.0
-github.com/go-jose/go-jose/v3/json,https://github.com/go-jose/go-jose/blob/v3.0.3/json/LICENSE,BSD-3-Clause
+github.com/go-jose/go-jose/v3,https://github.com/go-jose/go-jose/blob/v3.0.4/LICENSE,Apache-2.0
+github.com/go-jose/go-jose/v3/json,https://github.com/go-jose/go-jose/blob/v3.0.4/json/LICENSE,BSD-3-Clause
 github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.4/v3/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.3.0/LICENSE,Apache-2.0
 github.com/go-logr/stdr,https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE,Apache-2.0
