@@ -316,8 +316,9 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 		fqdnToZoneLock.Lock()
 		delete(fqdnToZone, fqdn) // Remove expired entry
 		fqdnToZoneLock.Unlock()
+	} else {
+		fqdnToZoneLock.RUnlock() // Only unlock if no cache entry exists
 	}
-	fqdnToZoneLock.RUnlock()
 
 	labelIndexes := dns.Split(fqdn)
 
