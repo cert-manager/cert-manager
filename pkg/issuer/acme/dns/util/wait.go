@@ -28,7 +28,7 @@ type preCheckDNSFunc func(ctx context.Context, fqdn, value string, nameservers [
 	useAuthoritative bool) (bool, error)
 type dnsQueryFunc func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
-type CachedEntry struct {
+type cachedEntry struct {
 	Response   *dns.Msg
 	ExpiryTime time.Time
 }
@@ -42,7 +42,7 @@ var (
 	dnsQuery dnsQueryFunc = DNSQuery
 
 	fqdnToZoneLock sync.RWMutex
-	fqdnToZone     = map[string]CachedEntry{}
+	fqdnToZone     = map[string]cachedEntry{}
 )
 
 const defaultResolvConf = "/etc/resolv.conf"
@@ -367,7 +367,7 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 				fqdnToZoneLock.Lock()
 				defer fqdnToZoneLock.Unlock()
 
-				fqdnToZone[fqdn] = CachedEntry{
+				fqdnToZone[fqdn] = cachedEntry{
 					Response:   in,
 					ExpiryTime: time.Now().Add(time.Duration(soa.Hdr.Ttl) * time.Second),
 				}
