@@ -28,6 +28,11 @@ type preCheckDNSFunc func(ctx context.Context, fqdn, value string, nameservers [
 	useAuthoritative bool) (bool, error)
 type dnsQueryFunc func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
+type cachedEntry struct {
+	Response   *dns.Msg
+	ExpiryTime time.Time
+}
+
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
 	// the DNS challenge is ready.
@@ -37,7 +42,7 @@ var (
 	dnsQuery dnsQueryFunc = DNSQuery
 
 	fqdnToZoneLock sync.RWMutex
-	fqdnToZone     = map[string]string{}
+	fqdnToZone     = map[string]cachedEntry{}
 )
 
 const defaultResolvConf = "/etc/resolv.conf"
@@ -298,14 +303,23 @@ func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) (
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
 // domain labels until the nameserver returns a SOA record in the answer section.
 func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (string, error) {
-	fqdnToZoneLock.RLock()
 	// Do we have it cached?
-	if zone, ok := fqdnToZone[fqdn]; ok {
-		fqdnToZoneLock.RUnlock()
-		logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached zone record", "zoneRecord", zone, "fqdn", fqdn)
-		return zone, nil
-	}
+	fqdnToZoneLock.RLock()
+	cachedEntryItem, existsInCache := fqdnToZone[fqdn]
 	fqdnToZoneLock.RUnlock()
+
+	if existsInCache {
+		// ensure cachedEntry is not expired
+		if time.Now().Before(cachedEntryItem.ExpiryTime) {
+			logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached DNS response", "fqdn", fqdn)
+			return cachedEntryItem.Response.Answer[0].(*dns.SOA).Hdr.Name, nil
+		}
+
+		// Remove expired entry
+		fqdnToZoneLock.Lock()
+		delete(fqdnToZone, fqdn)
+		fqdnToZoneLock.Unlock()
+	}
 
 	labelIndexes := dns.Split(fqdn)
 
@@ -354,10 +368,13 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 				fqdnToZoneLock.Lock()
 				defer fqdnToZoneLock.Unlock()
 
-				zone := soa.Hdr.Name
-				fqdnToZone[fqdn] = zone
-				logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning discovered zone record", "zoneRecord", zone, "fqdn", fqdn)
-				return zone, nil
+				fqdnToZone[fqdn] = cachedEntry{
+					Response:   in,
+					ExpiryTime: time.Now().Add(time.Duration(soa.Hdr.Ttl) * time.Second),
+				}
+
+				logf.FromContext(ctx).V(logf.DebugLevel).Info("Caching DNS response", "fqdn", fqdn, "ttl", soa.Hdr.Ttl)
+				return soa.Hdr.Name, nil
 			}
 		}
 	}
