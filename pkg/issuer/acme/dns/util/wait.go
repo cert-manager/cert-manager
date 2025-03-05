@@ -303,21 +303,22 @@ func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) (
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
 // domain labels until the nameserver returns a SOA record in the answer section.
 func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (string, error) {
-	fqdnToZoneLock.RLock()
 	// Do we have it cached?
-	if cachedEntry, ok := fqdnToZone[fqdn]; ok {
-		// check if cachedEntry is not expired
-		if time.Now().Before(cachedEntry.ExpiryTime) {
-			fqdnToZoneLock.RUnlock()
+	fqdnToZoneLock.RLock()
+	cachedEntryItem, existsInCache := fqdnToZone[fqdn]
+	fqdnToZoneLock.RUnlock()
+
+	if existsInCache {
+		// ensure cachedEntry is not expired
+		if time.Now().Before(cachedEntryItem.ExpiryTime) {
 			logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached DNS response", "fqdn", fqdn)
-			return cachedEntry.Response.Answer[0].(*dns.SOA).Hdr.Name, nil
+			return cachedEntryItem.Response.Answer[0].(*dns.SOA).Hdr.Name, nil
 		}
-		fqdnToZoneLock.RUnlock()
+
+		// Remove expired entry
 		fqdnToZoneLock.Lock()
-		delete(fqdnToZone, fqdn) // Remove expired entry
+		delete(fqdnToZone, fqdn)
 		fqdnToZoneLock.Unlock()
-	} else {
-		fqdnToZoneLock.RUnlock() // Only unlock if no cache entry exists
 	}
 
 	labelIndexes := dns.Split(fqdn)
