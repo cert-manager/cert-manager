@@ -197,7 +197,7 @@ certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-g
 certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 1
-# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+# HELP certmanager_certificate_renewal_timestamp_seconds The data after which the certificate should renew. Expressed as Unix Epoch Time.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 ` + clockCounterMetric + clockGaugeMetric + `
@@ -233,7 +233,7 @@ certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-g
 certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 1
 certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+# HELP certmanager_certificate_renewal_timestamp_seconds The data after which the certificate should renew. Expressed as Unix Epoch Time.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
 ` + clockCounterMetric + clockGaugeMetric + `

@@ -38,7 +38,7 @@ const expiryMetadata = `
 `
 
 const renewalTimeMetadata = `
-	# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+	# HELP certmanager_certificate_renewal_timestamp_seconds The data after which the certificate should renew. Expressed as Unix Epoch Time.
 	# TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 `
 
