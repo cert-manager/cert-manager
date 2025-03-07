@@ -33,12 +33,12 @@ import (
 )
 
 const expiryMetadata = `
-	# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+	# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
 	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
 
 const renewalTimeMetadata = `
-	# HELP certmanager_certificate_renewal_timestamp_seconds The data after which the certificate should renew. Expressed as Unix Epoch Time.
+	# HELP certmanager_certificate_renewal_timestamp_seconds The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.
 	# TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 `
 

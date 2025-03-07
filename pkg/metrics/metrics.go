@@ -105,7 +105,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "certificate_expiration_timestamp_seconds",
-				Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
+				Help:      "The timestamp after which the certificate expires, expressed in Unix Epoch Time.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
@@ -114,7 +114,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "certificate_renewal_timestamp_seconds",
-				Help:      "The data after which the certificate should renew. Expressed as Unix Epoch Time.",
+				Help:      "The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
