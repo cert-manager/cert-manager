@@ -209,9 +209,9 @@ spec:
             failureThreshold: {{ .failureThreshold }}
           {{- end }}
           {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- range $key, $value := .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{ $key }}: {{ $value | quote }}
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
