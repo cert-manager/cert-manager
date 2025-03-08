@@ -25,11 +25,11 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-func Test_finalizerRequired(t *testing.T) {
+func Test_not_hasFinalizer(t *testing.T) {
 	tests := []struct {
 		name       string
 		finalizers []string
-		want       bool
+		want       bool // what we expect !hasFinalizer to return
 	}{
 		{
 			name:       "no-finalizers",
@@ -77,7 +77,7 @@ func Test_finalizerRequired(t *testing.T) {
 			assert.Equal(
 				t,
 				tt.want,
-				finalizerRequired(
+				!hasFinalizer(
 					gen.Challenge("example", gen.SetChallengeFinalizers(tt.finalizers)),
 				),
 			)
