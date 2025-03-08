@@ -53,18 +53,17 @@ type Metrics struct {
 	log      logr.Logger
 	registry *prometheus.Registry
 
-	clockTimeSeconds                     prometheus.CounterFunc
-	clockTimeSecondsGauge                prometheus.GaugeFunc
-	certificateIssuanceTimeSeconds       *prometheus.GaugeVec
-	certificateExpiryTimeSeconds         *prometheus.GaugeVec
-	certificateRenewalTimeSeconds        *prometheus.GaugeVec
-	certificateTotalIssueDurationSeconds *prometheus.GaugeVec
-	certificateReadyStatus               *prometheus.GaugeVec
-	acmeClientRequestDurationSeconds     *prometheus.SummaryVec
-	acmeClientRequestCount               *prometheus.CounterVec
-	venafiClientRequestDurationSeconds   *prometheus.SummaryVec
-	controllerSyncCallCount              *prometheus.CounterVec
-	controllerSyncErrorCount             *prometheus.CounterVec
+	clockTimeSeconds                   prometheus.CounterFunc
+	clockTimeSecondsGauge              prometheus.GaugeFunc
+	certificateIssuanceTimeSeconds     *prometheus.GaugeVec
+	certificateExpiryTimeSeconds       *prometheus.GaugeVec
+	certificateRenewalTimeSeconds      *prometheus.GaugeVec
+	certificateReadyStatus             *prometheus.GaugeVec
+	acmeClientRequestDurationSeconds   *prometheus.SummaryVec
+	acmeClientRequestCount             *prometheus.CounterVec
+	venafiClientRequestDurationSeconds *prometheus.SummaryVec
+	controllerSyncCallCount            *prometheus.CounterVec
+	controllerSyncErrorCount           *prometheus.CounterVec
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -126,17 +125,6 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Namespace: namespace,
 				Name:      "certificate_renewal_timestamp_seconds",
 				Help:      "The number of seconds before expiration time the certificate should renew.",
-			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
-		)
-
-		// Because this comes from a spec field, it will always have a value regardless of whether or
-		// not the certificate has been issued.
-		certificateTotalIssueDurationSeconds = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "certificate_total_issue_duration_seconds",
-				Help:      "The total amount of time that the certificate is, or will be issued for, in seconds.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
@@ -220,18 +208,17 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		log:      log.WithName("metrics"),
 		registry: registry,
 
-		clockTimeSeconds:                     clockTimeSeconds,
-		clockTimeSecondsGauge:                clockTimeSecondsGauge,
-		certificateIssuanceTimeSeconds:       certificateIssuanceTimeSeconds,
-		certificateExpiryTimeSeconds:         certificateExpiryTimeSeconds,
-		certificateRenewalTimeSeconds:        certificateRenewalTimeSeconds,
-		certificateTotalIssueDurationSeconds: certificateTotalIssueDurationSeconds,
-		certificateReadyStatus:               certificateReadyStatus,
-		acmeClientRequestCount:               acmeClientRequestCount,
-		acmeClientRequestDurationSeconds:     acmeClientRequestDurationSeconds,
-		venafiClientRequestDurationSeconds:   venafiClientRequestDurationSeconds,
-		controllerSyncCallCount:              controllerSyncCallCount,
-		controllerSyncErrorCount:             controllerSyncErrorCount,
+		clockTimeSeconds:                   clockTimeSeconds,
+		clockTimeSecondsGauge:              clockTimeSecondsGauge,
+		certificateIssuanceTimeSeconds:     certificateIssuanceTimeSeconds,
+		certificateExpiryTimeSeconds:       certificateExpiryTimeSeconds,
+		certificateRenewalTimeSeconds:      certificateRenewalTimeSeconds,
+		certificateReadyStatus:             certificateReadyStatus,
+		acmeClientRequestCount:             acmeClientRequestCount,
+		acmeClientRequestDurationSeconds:   acmeClientRequestDurationSeconds,
+		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
+		controllerSyncCallCount:            controllerSyncCallCount,
+		controllerSyncErrorCount:           controllerSyncErrorCount,
 	}
 
 	return m
@@ -244,7 +231,6 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.certificateIssuanceTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
-	m.registry.MustRegister(m.certificateTotalIssueDurationSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)

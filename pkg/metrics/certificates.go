@@ -30,7 +30,6 @@ func (m *Metrics) UpdateCertificate(crt *cmapi.Certificate) {
 	m.updateCertificateStatus(crt)
 	m.updateCertificateIssuance(crt)
 	m.updateCertificateExpiry(crt)
-	m.updateCertificateTotalIssueDuration(crt)
 	m.updateCertificateRenewalTime(crt)
 }
 
@@ -82,23 +81,6 @@ func (m *Metrics) updateCertificateRenewalTime(crt *cmapi.Certificate) {
 		"issuer_group": crt.Spec.IssuerRef.Group}).Set(renewalTime)
 }
 
-// updateCertificateTotalIssueDuration will update the metric for that Certificate
-func (m *Metrics) updateCertificateTotalIssueDuration(crt *cmapi.Certificate) {
-	totalIssueDuration := cmapi.DefaultCertificateDuration
-	if crt.Spec.Duration != nil {
-		totalIssueDuration = crt.Spec.Duration.Duration
-	}
-
-	totalIssueDurationSeconds := float64(totalIssueDuration.Seconds())
-
-	m.certificateTotalIssueDurationSeconds.With(prometheus.Labels{
-		"name":         crt.Name,
-		"namespace":    crt.Namespace,
-		"issuer_name":  crt.Spec.IssuerRef.Name,
-		"issuer_kind":  crt.Spec.IssuerRef.Kind,
-		"issuer_group": crt.Spec.IssuerRef.Group}).Set(totalIssueDurationSeconds)
-}
-
 // updateCertificateStatus will update the metric for that Certificate
 func (m *Metrics) updateCertificateStatus(crt *cmapi.Certificate) {
 	for _, c := range crt.Status.Conditions {
@@ -140,5 +122,4 @@ func (m *Metrics) RemoveCertificate(key types.NamespacedName) {
 	m.certificateIssuanceTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 	m.certificateRenewalTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 	m.certificateReadyStatus.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
-	m.certificateTotalIssueDurationSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 }

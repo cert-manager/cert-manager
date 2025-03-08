@@ -47,11 +47,6 @@ const renewalTimeMetadata = `
 	# TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 `
 
-const totalIssueDurationMetadata = `
-	# HELP certmanager_certificate_total_issue_duration_seconds The total amount of time that the certificate is, or will be issued for, in seconds.
-	# TYPE certmanager_certificate_total_issue_duration_seconds gauge
-`
-
 const readyMetadata = `
   # HELP certmanager_certificate_ready_status The ready status of the certificate.
   # TYPE certmanager_certificate_ready_status gauge
@@ -59,8 +54,8 @@ const readyMetadata = `
 
 func TestCertificateMetrics(t *testing.T) {
 	type testT struct {
-		crt                                                                                              *cmapi.Certificate
-		expectedIssuance, expectedExpiry, expectedReady, expectedRenewalTime, expectedTotalIssueDuration string
+		crt                                                                  *cmapi.Certificate
+		expectedIssuance, expectedExpiry, expectedReady, expectedRenewalTime string
 	}
 	tests := map[string]testT{
 		"certificate with issuance and expiry time, and ready status": {
@@ -97,9 +92,6 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedRenewalTime: `
 		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
-			expectedTotalIssueDuration: `
-		certificate_issued_duration_seconds{issuer_group="cert-manager.io",issuer_kind="Issuer",issuer_name="cert-manager.io"} 7776000
-`,
 		},
 
 		"certificate with no expiry and no status should give an issuance and expiry of 0 and Unknown status": {
@@ -124,9 +116,6 @@ func TestCertificateMetrics(t *testing.T) {
 `,
 			expectedRenewalTime: `
 		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
-`,
-			expectedTotalIssueDuration: `
-		certificate_issued_duration_seconds{issuer_group="cert-manager.io",issuer_kind="Issuer",issuer_name="cert-manager.io"} 7776000
 `,
 		},
 
@@ -163,9 +152,6 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedRenewalTime: `
 		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
-			expectedTotalIssueDuration: `
-		certificate_issued_duration_seconds{issuer_group="cert-manager.io",issuer_kind="Issuer",issuer_name="cert-manager.io"} 7776000
-`,
 		},
 		"certificate with issuance, expiry, and status Unknown should give an expiry and Unknown status": {
 			crt: gen.Certificate("test-certificate",
@@ -199,9 +185,6 @@ func TestCertificateMetrics(t *testing.T) {
 `,
 			expectedRenewalTime: `
 		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
-`,
-			expectedTotalIssueDuration: `
-		certificate_issued_duration_seconds{issuer_group="cert-manager.io",issuer_kind="Issuer",issuer_name="cert-manager.io"} 7776000
 `,
 		},
 		"certificate with expiry and ready status and renew before": {
@@ -240,9 +223,6 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedRenewalTime: `
 		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
 `,
-			expectedTotalIssueDuration: `
-		certificate_issued_duration_seconds{issuer_group="cert-manager.io",issuer_kind="Issuer",issuer_name="cert-manager.io"} 7776000
-`,
 		},
 		"certificate with duration explicitly set has a matching duration metric": {
 			crt: gen.Certificate("test-certificate",
@@ -268,9 +248,6 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedRenewalTime: `
 		certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
-			expectedTotalIssueDuration: `
-		certificate_issued_duration_seconds{issuer_group="cert-manager.io",issuer_kind="Issuer",issuer_name="cert-manager.io"} 100
-`,
 		},
 	}
 	for n, test := range tests {
@@ -295,13 +272,6 @@ func TestCertificateMetrics(t *testing.T) {
 			if err := testutil.CollectAndCompare(m.certificateRenewalTimeSeconds,
 				strings.NewReader(renewalTimeMetadata+test.expectedRenewalTime),
 				"certmanager_certificate_renewal_timestamp_seconds",
-			); err != nil {
-				t.Errorf("unexpected collecting result:\n%s", err)
-			}
-
-			if err := testutil.CollectAndCompare(m.certificateTotalIssueDurationSeconds,
-				strings.NewReader(totalIssueDurationMetadata+test.expectedTotalIssueDuration),
-				"certificate_total_issue_duration_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
@@ -439,17 +409,6 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateTotalIssueDurationSeconds,
-		strings.NewReader(totalIssueDurationMetadata+`
-        certmanager_certificate_total_issue_duration_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 7776000
-        certmanager_certificate_total_issue_duration_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 7776000
-        certmanager_certificate_total_issue_duration_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 1
-`),
-		"certmanager_certificate_renewal_timestamp_seconds",
-	); err != nil {
-		t.Errorf("unexpected collecting result:\n%s", err)
-	}
-
 	// Remove second certificate and check not exists
 	m.RemoveCertificate(types.NamespacedName{
 		Namespace: "default-unit-test-ns",
@@ -489,16 +448,6 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateTotalIssueDurationSeconds,
-		strings.NewReader(totalIssueDurationMetadata+`
-        certmanager_certificate_total_issue_duration_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 7776000
-        certmanager_certificate_total_issue_duration_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 1
-`),
-		"certmanager_certificate_total_issue_duration_seconds",
-	); err != nil {
-		t.Errorf("unexpected collecting result:\n%s", err)
-	}
-
 	// Remove all Certificates (even is already removed) and observe no Certificates
 	m.RemoveCertificate(types.NamespacedName{
 		Namespace: "default-unit-test-ns",
@@ -519,9 +468,6 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result")
 	}
 	if testutil.CollectAndCount(m.certificateExpiryTimeSeconds, "certmanager_certificate_issuance_timestamp_seconds") != 0 {
-		t.Errorf("unexpected collecting result")
-	}
-	if testutil.CollectAndCount(m.certificateTotalIssueDurationSeconds, "certmanager_certificate_total_issue_duration_seconds") != 0 {
 		t.Errorf("unexpected collecting result")
 	}
 }
