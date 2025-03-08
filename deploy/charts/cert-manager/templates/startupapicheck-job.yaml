@@ -53,6 +53,9 @@ spec:
           - check
           - api
           - --wait={{ .Values.startupapicheck.timeout }}
+          {{- if .Values.global.logFormat }}
+          - --logging-format={{ .Values.global.logFormat }}
+          {{- end }}
           {{- with .Values.startupapicheck.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
