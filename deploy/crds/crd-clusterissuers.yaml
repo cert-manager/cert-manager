@@ -18,6 +18,8 @@ spec:
     kind: ClusterIssuer
     listKind: ClusterIssuerList
     plural: clusterissuers
+    shortNames:
+      - ciss
     singular: clusterissuer
     categories:
       - cert-manager
