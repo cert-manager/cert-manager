@@ -3576,7 +3576,7 @@ spec:
                         url:
                           description: |-
                             URL is the base URL for Venafi Cloud.
-                            Defaults to "https://api.venafi.cloud/v1".
+                            Defaults to "https://api.venafi.cloud/".
                           type: string
                     tpp:
                       description: |-
