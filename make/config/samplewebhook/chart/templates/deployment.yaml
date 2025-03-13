@@ -59,8 +59,8 @@ spec:
         - name: certs
           secret:
             secretName: {{ include "example-webhook.servingCertificate" . }}
-      {{- range $key, $value := .Values.nodeSelector }}
       nodeSelector:
+      {{- range $key, $value := .Values.nodeSelector }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
       {{- with .Values.affinity }}

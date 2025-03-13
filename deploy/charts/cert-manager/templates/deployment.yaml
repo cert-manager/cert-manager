@@ -209,8 +209,8 @@ spec:
             failureThreshold: {{ .failureThreshold }}
           {{- end }}
           {{- end }}
-      {{- range $key, $value := .Values.nodeSelector }}
       nodeSelector:
+      {{- range $key, $value := .Values.nodeSelector }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
       {{- with .Values.affinity }}
