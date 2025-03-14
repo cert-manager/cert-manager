@@ -55,6 +55,7 @@ type Metrics struct {
 
 	clockTimeSeconds                   prometheus.CounterFunc
 	clockTimeSecondsGauge              prometheus.GaugeFunc
+	certificateIssuanceTimeSeconds     *prometheus.GaugeVec
 	certificateExpiryTimeSeconds       *prometheus.GaugeVec
 	certificateRenewalTimeSeconds      *prometheus.GaugeVec
 	certificateReadyStatus             *prometheus.GaugeVec
@@ -99,6 +100,15 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			func() float64 {
 				return float64(c.Now().Unix())
 			},
+		)
+
+		certificateIssuanceTimeSeconds = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_issuance_timestamp_seconds",
+				Help:      "The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
 
 		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
@@ -200,6 +210,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 
 		clockTimeSeconds:                   clockTimeSeconds,
 		clockTimeSecondsGauge:              clockTimeSecondsGauge,
+		certificateIssuanceTimeSeconds:     certificateIssuanceTimeSeconds,
 		certificateExpiryTimeSeconds:       certificateExpiryTimeSeconds,
 		certificateRenewalTimeSeconds:      certificateRenewalTimeSeconds,
 		certificateReadyStatus:             certificateReadyStatus,
@@ -217,6 +228,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
+	m.registry.MustRegister(m.certificateIssuanceTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
