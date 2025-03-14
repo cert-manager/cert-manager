@@ -154,7 +154,7 @@ type VenafiTPP struct {
 // VenafiCloud defines connection configuration details for Venafi Cloud
 type VenafiCloud struct {
 	// URL is the base URL for Venafi Cloud.
-	// Defaults to "https://api.venafi.cloud/v1".
+	// Defaults to "https://api.venafi.cloud/".
 	URL string
 
 	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
