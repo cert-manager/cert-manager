@@ -123,6 +123,11 @@ func (in *IngressShimConfig) DeepCopyInto(out *IngressShimConfig) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.ExtraCertificateAnnotations != nil {
+		in, out := &in.ExtraCertificateAnnotations, &out.ExtraCertificateAnnotations
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

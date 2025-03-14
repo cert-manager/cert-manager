@@ -143,6 +143,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 
 	fs.StringSliceVar(&c.IngressShimConfig.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", c.IngressShimConfig.DefaultAutoCertificateAnnotations, ""+
 		"The annotation consumed by the ingress-shim controller to indicate an ingress is requesting a certificate")
+	fs.StringSliceVar(&c.IngressShimConfig.ExtraCertificateAnnotations, "extra-certificate-annotations", []string{}, ""+
+		"Extra annotation to be added by the ingress-shim controller to certificate object")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerName, "default-issuer-name", c.IngressShimConfig.DefaultIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerKind, "default-issuer-kind", c.IngressShimConfig.DefaultIssuerKind, ""+
