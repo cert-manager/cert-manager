@@ -176,6 +176,19 @@ logging:
 				cc.Logging.Format = "text"
 			}),
 		},
+		{
+			yaml: `
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
+ingressShimConfig: {}
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath, "--extra-certificate-annotations", "venafi.cert-manager.io/custom-fields"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
+				cc.IngressShimConfig.ExtraCertificateAnnotations = []string{"venafi.cert-manager.io/custom-fields"}
+			}),
+		},
 	}
 
 	for i, tc := range tests {
