@@ -123,7 +123,9 @@ func SyncFnFor(
 			return nil
 		}
 
-		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup)
+		extraAnnotations := extractExtraAnnotations(ingLike, defaults.ExtraCertificateAnnotations)
+
+		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations)
 		if err != nil {
 			return err
 		}
@@ -138,22 +140,26 @@ func SyncFnFor(
 
 		for _, crt := range updateCrts {
 
+			obj := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            crt.Name,
+					Namespace:       crt.Namespace,
+					Labels:          crt.Labels,
+					OwnerReferences: crt.OwnerReferences,
+				},
+				Spec: cmapi.CertificateSpec{
+					DNSNames:    crt.Spec.DNSNames,
+					IPAddresses: crt.Spec.IPAddresses,
+					IssuerRef:   crt.Spec.IssuerRef,
+					Usages:      crt.Spec.Usages,
+				},
+			}
+			if len(extraAnnotations) > 0 {
+				obj.ObjectMeta.Annotations = extraAnnotations
+			}
+
 			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            crt.Name,
-						Namespace:       crt.Namespace,
-						Labels:          crt.Labels,
-						OwnerReferences: crt.OwnerReferences,
-					},
-					Spec: cmapi.CertificateSpec{
-						DNSNames:    crt.Spec.DNSNames,
-						IPAddresses: crt.Spec.IPAddresses,
-						SecretName:  crt.Spec.SecretName,
-						IssuerRef:   crt.Spec.IssuerRef,
-						Usages:      crt.Spec.Usages,
-					},
-				})
+				err = internalcertificates.Apply(ctx, cmClient, fieldManager, obj)
 			} else {
 				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
 			}
@@ -299,6 +305,7 @@ func buildCertificates(
 	cmLister cmlisters.CertificateLister,
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
+	annotations map[string]string,
 ) (newCrts, updateCrts []*cmapi.Certificate, _ error) {
 	tlsHosts := make(map[corev1.ObjectReference][]string)
 	switch ingLike := ingLike.(type) {
@@ -413,6 +420,10 @@ func buildCertificates(
 				Usages: cmapi.DefaultKeyUsages(),
 			},
 		}
+		// Add annotation if any passed in
+		if len(annotations) > 0 {
+			crt.ObjectMeta.Annotations = annotations
+		}
 
 		switch o := ingLike.(type) {
 		case *networkingv1.Ingress:
@@ -452,6 +463,15 @@ func buildCertificates(
 			updateCrt.Spec = crt.Spec
 			updateCrt.Labels = crt.Labels
 
+			// extra annotation wanted but none set
+			if len(updateCrt.GetAnnotations()) == 0 && len(annotations) > 0 {
+				updateCrt.SetAnnotations(annotations)
+			}
+			// update append extra annotations
+			if len(updateCrt.GetAnnotations()) > 0 && len(annotations) > 0 {
+				updateCrt.SetAnnotations(mergeAnnotations(updateCrt.GetAnnotations(), annotations))
+			}
+
 			setIssuerSpecificConfig(crt, ingLike)
 
 			updateCrts = append(updateCrts, updateCrt)
@@ -476,6 +496,21 @@ func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Obje
 	return toBeRemoved
 }
 
+func mergeAnnotations(a, b map[string]string) map[string]string {
+	merged := make(map[string]string)
+
+	// Copy annotations from the first map
+	for k, v := range a {
+		merged[k] = v
+	}
+
+	// Copy annotations from the second map (overwriting if key exists)
+	for k, v := range b {
+		merged[k] = v
+	}
+
+	return merged
+}
 func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 	switch o := ingLike.(type) {
 	case *networkingv1.Ingress:
@@ -688,6 +723,20 @@ func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []strin
 		}
 	}
 	return false
+}
+
+func extractExtraAnnotations(ingLike metav1.Object, e []string) map[string]string {
+	annotations := ingLike.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	extraAnnotations := make(map[string]string)
+	for _, x := range e {
+		if s, ok := annotations[x]; ok {
+			extraAnnotations[x] = s
+		}
+	}
+	return extraAnnotations
 }
 
 // isDeletedInForeground returns true if the given ingressLike resource
