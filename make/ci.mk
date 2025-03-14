@@ -57,6 +57,11 @@ verify-licenses: $(BINDIR)/scratch/LATEST-LICENSES $(BINDIR)/scratch/LATEST-LICE
 verify-crds: | $(NEEDS_GO) $(NEEDS_CONTROLLER-GEN) $(NEEDS_YQ)
 	./hack/check-crds.sh $(GO) $(CONTROLLER-GEN) $(YQ)
 
+# generate-licenses here is provided as an alias so that maintainers who're accustomed to running `make generate-licenses`
+# on newer cert-manager versions don't need to remember a different command for 1.12 LTS
+.PHONY: generate-licenses
+generate-licenses: update-licenses
+
 .PHONY: update-licenses
 update-licenses:
 	rm -rf LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/ctl/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES test/integration/LICENSES test/e2e/LICENSES

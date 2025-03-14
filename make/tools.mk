@@ -56,7 +56,7 @@ KUBEBUILDER_ASSETS_VERSION=1.27.1
 TOOLS += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 TOOLS += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
-VENDORED_GO_VERSION := 1.23.6
+VENDORED_GO_VERSION := 1.23.7
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(BINDIR)/downloaded to $(BINDIR)/tools.
