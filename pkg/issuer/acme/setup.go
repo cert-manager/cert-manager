@@ -433,6 +433,9 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
+			Labels: map[string]string{
+				"app.kubernetes.io/managed-by": "cert-manager",
+			},
 		},
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
