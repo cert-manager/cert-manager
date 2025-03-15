@@ -61,7 +61,7 @@ type solver interface {
 type dnsProviderConstructors struct {
 	cloudDNS     func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error)
-	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
+	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, chainRole, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
@@ -372,6 +372,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
 			providerConfig.Route53.Role,
+			providerConfig.Route53.ChainRole,
 			webIdentityToken,
 			canUseAmbientCredentials,
 			s.DNS01Nameservers,

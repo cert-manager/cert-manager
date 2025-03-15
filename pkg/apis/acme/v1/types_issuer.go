@@ -595,6 +595,11 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// +optional
 	Role string `json:"role,omitempty"`
 
+	// ChainRole is a Role ARN which the Route53 provider will assume using credentials from the initial AssumeRole action.
+	// Role must be specified to use ChainRole.
+	// +optional
+	ChainRole string `json:"chain_role,omitempty"`
+
 	// If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
 	// +optional
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
