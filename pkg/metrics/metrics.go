@@ -105,7 +105,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		certificateIssuanceTimeSeconds = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "certificate_issuance_timestamp_seconds",
+				Name:      "certificate_not_before_timestamp_seconds",
 				Help:      "The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},

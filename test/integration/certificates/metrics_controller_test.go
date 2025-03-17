@@ -192,9 +192,9 @@ func TestMetricsController(t *testing.T) {
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-# HELP certmanager_certificate_issuance_timestamp_seconds The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.
-# TYPE certmanager_certificate_issuance_timestamp_seconds gauge
-certmanager_certificate_issuance_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
+# HELP certmanager_certificate_not_before_timestamp_seconds The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_not_before_timestamp_seconds gauge
+certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 # HELP certmanager_certificate_ready_status The ready status of the certificate.
 # TYPE certmanager_certificate_ready_status gauge
 certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
@@ -234,9 +234,9 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
-# HELP certmanager_certificate_issuance_timestamp_seconds The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.
-# TYPE certmanager_certificate_issuance_timestamp_seconds gauge
-certmanager_certificate_issuance_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 200
+# HELP certmanager_certificate_not_before_timestamp_seconds The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_not_before_timestamp_seconds gauge
+certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 200
 # HELP certmanager_certificate_ready_status The ready status of the certificate.
 # TYPE certmanager_certificate_ready_status gauge
 certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
