@@ -32,9 +32,14 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-const issuanceMetadata = `
-	# HELP certmanager_certificate_not_before_timestamp_seconds The timestamp after which the certificate is valid, expressed as a Unix Epoch Time.
+const notBeforeMetadata = `
+	# HELP certmanager_certificate_not_before_timestamp_seconds The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.
 	# TYPE certmanager_certificate_not_before_timestamp_seconds gauge
+`
+
+const notAfterMetadata = `
+	# HELP certmanager_certificate_not_after_timestamp_seconds The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.
+	# TYPE certmanager_certificate_not_after_timestamp_seconds gauge
 `
 
 const expiryMetadata = `
@@ -54,8 +59,8 @@ const readyMetadata = `
 
 func TestCertificateMetrics(t *testing.T) {
 	type testT struct {
-		crt                                                                  *cmapi.Certificate
-		expectedIssuance, expectedExpiry, expectedReady, expectedRenewalTime string
+		crt                                                                                     *cmapi.Certificate
+		expectedNotBefore, expectedNotAfter, expectedExpiry, expectedReady, expectedRenewalTime string
 	}
 	tests := map[string]testT{
 		"certificate with issuance and expiry time, and ready status": {
@@ -77,10 +82,12 @@ func TestCertificateMetrics(t *testing.T) {
 					Status: cmmeta.ConditionTrue,
 				}),
 			),
-			expectedIssuance: `
+			expectedNotAfter: `
+		certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
+`,
+			expectedNotBefore: `
 		certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 100
 `,
-
 			expectedExpiry: `
 		certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
 `,
@@ -103,7 +110,10 @@ func TestCertificateMetrics(t *testing.T) {
 					Group: "test-issuer-group",
 				}),
 			),
-			expectedIssuance: `
+			expectedNotAfter: `
+		certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
+`,
+			expectedNotBefore: `
 		certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 			expectedExpiry: `
@@ -138,7 +148,10 @@ func TestCertificateMetrics(t *testing.T) {
 					Status: cmmeta.ConditionFalse,
 				}),
 			),
-			expectedIssuance: `
+			expectedNotAfter: `
+		certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 100
+`,
+			expectedNotBefore: `
 		certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 10
 `,
 			expectedExpiry: `
@@ -172,7 +185,10 @@ func TestCertificateMetrics(t *testing.T) {
 					Status: cmmeta.ConditionUnknown,
 				}),
 			),
-			expectedIssuance: `
+			expectedNotAfter: `
+		certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 99999
+`,
+			expectedNotBefore: `
 		certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 10
 `,
 			expectedExpiry: `
@@ -209,7 +225,10 @@ func TestCertificateMetrics(t *testing.T) {
 					Time: time.Unix(2208988804, 0),
 				}),
 			),
-			expectedIssuance: `
+			expectedNotAfter: `
+		certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 2.208988804e+09
+`,
+			expectedNotBefore: `
 		certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 10
 `,
 			expectedExpiry: `
@@ -234,7 +253,10 @@ func TestCertificateMetrics(t *testing.T) {
 				}),
 				gen.SetCertificateDuration(&metav1.Duration{Duration: time.Second * 100}),
 			),
-			expectedIssuance: `
+			expectedNotAfter: `
+		certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
+`,
+			expectedNotBefore: `
 		certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="test-certificate",namespace="test-ns"} 0
 `,
 			expectedExpiry: `
@@ -255,8 +277,15 @@ func TestCertificateMetrics(t *testing.T) {
 			m := New(logtesting.NewTestLogger(t), clock.RealClock{})
 			m.UpdateCertificate(test.crt)
 
-			if err := testutil.CollectAndCompare(m.certificateIssuanceTimeSeconds,
-				strings.NewReader(issuanceMetadata+test.expectedIssuance),
+			if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
+				strings.NewReader(notAfterMetadata+test.expectedNotAfter),
+				"certmanager_certificate_not_after_timestamp_seconds",
+			); err != nil {
+				t.Errorf("unexpected collecting result:\n%s", err)
+			}
+
+			if err := testutil.CollectAndCompare(m.certificateNotBeforeTimeSeconds,
+				strings.NewReader(notBeforeMetadata+test.expectedNotBefore),
 				"certmanager_certificate_not_before_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
@@ -376,8 +405,19 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateIssuanceTimeSeconds,
-		strings.NewReader(issuanceMetadata+`
+	if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
+		strings.NewReader(notAfterMetadata+`
+        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 200
+        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
+`),
+		"certmanager_certificate_not_after_timestamp_seconds",
+	); err != nil {
+		t.Errorf("unexpected collecting result:\n%s", err)
+	}
+
+	if err := testutil.CollectAndCompare(m.certificateNotBeforeTimeSeconds,
+		strings.NewReader(notBeforeMetadata+`
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 99
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 199
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 299
@@ -438,8 +478,18 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateIssuanceTimeSeconds,
-		strings.NewReader(issuanceMetadata+`
+	if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
+		strings.NewReader(notAfterMetadata+`
+        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
+`),
+		"certmanager_certificate_not_after_timestamp_seconds",
+	); err != nil {
+		t.Errorf("unexpected collecting result:\n%s", err)
+	}
+
+	if err := testutil.CollectAndCompare(m.certificateNotBeforeTimeSeconds,
+		strings.NewReader(notBeforeMetadata+`
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 99
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 299
 `),
