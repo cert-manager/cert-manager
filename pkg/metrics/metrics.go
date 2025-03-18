@@ -55,6 +55,8 @@ type Metrics struct {
 
 	clockTimeSeconds                   prometheus.CounterFunc
 	clockTimeSecondsGauge              prometheus.GaugeFunc
+	certificateNotAfterTimeSeconds     *prometheus.GaugeVec
+	certificateNotBeforeTimeSeconds    *prometheus.GaugeVec
 	certificateExpiryTimeSeconds       *prometheus.GaugeVec
 	certificateRenewalTimeSeconds      *prometheus.GaugeVec
 	certificateReadyStatus             *prometheus.GaugeVec
@@ -99,6 +101,24 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			func() float64 {
 				return float64(c.Now().Unix())
 			},
+		)
+
+		certificateNotBeforeTimeSeconds = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_not_before_timestamp_seconds",
+				Help:      "The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
+		)
+
+		certificateNotAfterTimeSeconds = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_not_after_timestamp_seconds",
+				Help:      "The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
 
 		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
@@ -200,6 +220,8 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 
 		clockTimeSeconds:                   clockTimeSeconds,
 		clockTimeSecondsGauge:              clockTimeSecondsGauge,
+		certificateNotAfterTimeSeconds:     certificateNotAfterTimeSeconds,
+		certificateNotBeforeTimeSeconds:    certificateNotBeforeTimeSeconds,
 		certificateExpiryTimeSeconds:       certificateExpiryTimeSeconds,
 		certificateRenewalTimeSeconds:      certificateRenewalTimeSeconds,
 		certificateReadyStatus:             certificateReadyStatus,
@@ -217,6 +239,8 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
+	m.registry.MustRegister(m.certificateNotAfterTimeSeconds)
+	m.registry.MustRegister(m.certificateNotBeforeTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)

@@ -28,8 +28,42 @@ import (
 // condition.
 func (m *Metrics) UpdateCertificate(crt *cmapi.Certificate) {
 	m.updateCertificateStatus(crt)
+	m.updateCertificateNotAfter(crt)
+	m.updateCertificateNotBefore(crt)
 	m.updateCertificateExpiry(crt)
 	m.updateCertificateRenewalTime(crt)
+}
+
+// updateCertificateNotAfter updates the issuance time of a certificate
+func (m *Metrics) updateCertificateNotAfter(crt *cmapi.Certificate) {
+	notAfterTime := 0.0
+
+	if crt.Status.NotBefore != nil {
+		notAfterTime = float64(crt.Status.NotAfter.Unix())
+	}
+
+	m.certificateNotAfterTimeSeconds.With(prometheus.Labels{
+		"name":         crt.Name,
+		"namespace":    crt.Namespace,
+		"issuer_name":  crt.Spec.IssuerRef.Name,
+		"issuer_kind":  crt.Spec.IssuerRef.Kind,
+		"issuer_group": crt.Spec.IssuerRef.Group}).Set(notAfterTime)
+}
+
+// updateCertificateNotBefore updates the issuance time of a certificate
+func (m *Metrics) updateCertificateNotBefore(crt *cmapi.Certificate) {
+	notBeforeTime := 0.0
+
+	if crt.Status.NotBefore != nil {
+		notBeforeTime = float64(crt.Status.NotBefore.Unix())
+	}
+
+	m.certificateNotBeforeTimeSeconds.With(prometheus.Labels{
+		"name":         crt.Name,
+		"namespace":    crt.Namespace,
+		"issuer_name":  crt.Spec.IssuerRef.Name,
+		"issuer_kind":  crt.Spec.IssuerRef.Kind,
+		"issuer_group": crt.Spec.IssuerRef.Group}).Set(notBeforeTime)
 }
 
 // updateCertificateExpiry updates the expiry time of a certificate
@@ -62,7 +96,6 @@ func (m *Metrics) updateCertificateRenewalTime(crt *cmapi.Certificate) {
 		"issuer_name":  crt.Spec.IssuerRef.Name,
 		"issuer_kind":  crt.Spec.IssuerRef.Kind,
 		"issuer_group": crt.Spec.IssuerRef.Group}).Set(renewalTime)
-
 }
 
 // updateCertificateStatus will update the metric for that Certificate
@@ -103,6 +136,8 @@ func (m *Metrics) RemoveCertificate(key types.NamespacedName) {
 	namespace, name := key.Namespace, key.Name
 
 	m.certificateExpiryTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
+	m.certificateNotAfterTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
+	m.certificateNotBeforeTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 	m.certificateRenewalTimeSeconds.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 	m.certificateReadyStatus.DeletePartialMatch(prometheus.Labels{"name": name, "namespace": namespace})
 }
