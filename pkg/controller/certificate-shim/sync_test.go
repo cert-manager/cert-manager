@@ -3811,7 +3811,7 @@ func TestExtractAnnotations(t *testing.T) {
 		},
 		{
 			IngressLike: buildIngress("name", "namespace", nil),
-			Expected:    map[string]string{},
+			Expected:    nil,
 		},
 	}
 	for _, test := range tests {

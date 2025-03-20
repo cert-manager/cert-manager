@@ -124,7 +124,6 @@ func SyncFnFor(
 		}
 
 		extraAnnotations := extractExtraAnnotations(ingLike, defaults.ExtraCertificateAnnotations)
-
 		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations)
 		if err != nil {
 			return err
@@ -140,26 +139,23 @@ func SyncFnFor(
 
 		for _, crt := range updateCrts {
 
-			obj := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            crt.Name,
-					Namespace:       crt.Namespace,
-					Labels:          crt.Labels,
-					OwnerReferences: crt.OwnerReferences,
-				},
-				Spec: cmapi.CertificateSpec{
-					DNSNames:    crt.Spec.DNSNames,
-					IPAddresses: crt.Spec.IPAddresses,
-					IssuerRef:   crt.Spec.IssuerRef,
-					Usages:      crt.Spec.Usages,
-				},
-			}
-			if len(extraAnnotations) > 0 {
-				obj.ObjectMeta.Annotations = extraAnnotations
-			}
-
 			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-				err = internalcertificates.Apply(ctx, cmClient, fieldManager, obj)
+				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            crt.Name,
+						Namespace:       crt.Namespace,
+						Labels:          crt.Labels,
+						OwnerReferences: crt.OwnerReferences,
+						Annotations:     extraAnnotations,
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:    crt.Spec.DNSNames,
+						IPAddresses: crt.Spec.IPAddresses,
+						SecretName:  crt.Spec.SecretName,
+						IssuerRef:   crt.Spec.IssuerRef,
+						Usages:      crt.Spec.Usages,
+					},
+				})
 			} else {
 				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
 			}
@@ -406,6 +402,7 @@ func buildCertificates(
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
 				Labels:          labels,
+				Annotations:     annotations,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
@@ -419,10 +416,6 @@ func buildCertificates(
 				},
 				Usages: cmapi.DefaultKeyUsages(),
 			},
-		}
-		// Add annotation if any passed in
-		if len(annotations) > 0 {
-			crt.ObjectMeta.Annotations = annotations
 		}
 
 		switch o := ingLike.(type) {
@@ -736,6 +729,10 @@ func extractExtraAnnotations(ingLike metav1.Object, e []string) map[string]strin
 			extraAnnotations[x] = s
 		}
 	}
+	if len(extraAnnotations) == 0 {
+		return nil
+	}
+
 	return extraAnnotations
 }
 
