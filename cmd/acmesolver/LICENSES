@@ -3,7 +3,7 @@ github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENS
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/acmesolver-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/acmesolver-binary/LICENSE,Apache-2.0
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.2.0/LICENSE.txt,MIT
-github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.3.0/LICENSE,Apache-2.0
+github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.2/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.2.4/LICENSE,Apache-2.0
 github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
 github.com/golang/protobuf/proto,https://github.com/golang/protobuf/blob/v1.5.4/LICENSE,BSD-3-Clause
@@ -26,7 +26,7 @@ go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.24.0/LICENSE.txt,MIT
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.36.0:LICENSE,BSD-3-Clause
 golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.30.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.22.0:LICENSE,BSD-3-Clause
-google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.33.0/LICENSE,BSD-3-Clause
+google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.35.2/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 k8s.io/api,https://github.com/kubernetes/api/blob/v0.29.7/LICENSE,Apache-2.0

@@ -24,7 +24,7 @@ CVE-2024-24557
 # a major version of 0. In any case this is a vuln in Kubernetes clusters, not in our code.
 CVE-2020-8559
 
-# DLA-3972-1 refers to an out-of-date timezone database in Debian 11 (bullseye).
+# The DLA-* "vulnerabilities" below refer to an out-of-date timezone database in Debian 11 (bullseye).
 # The Debian 11 tzdata package has been updated to address the issue,
 # but cert-manager uses github.com/GoogleContainerTools/distroless base images,
 # where Debian 11 is no longer supported.
@@ -36,3 +36,4 @@ CVE-2020-8559
 # https://security-tracker.debian.org/tracker/DLA-3972-1
 # https://lists.debian.org/debian-lts-announce/2024/11/msg00030.html
 DLA-3972-1
+DLA-4085-1
