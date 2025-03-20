@@ -35,7 +35,7 @@ var lookupNameserversTestsOK = []struct {
 	},
 	{
 		fqdn: "physics.georgetown.edu.",
-		nss:  []string{"ns4.georgetown.edu.", "ns5.georgetown.edu.", "ns6.georgetown.edu."},
+		nss:  []string{"ns.b1ddi.physics.georgetown.edu.", "ns4.georgetown.edu.", "ns5.georgetown.edu.", "ns6.georgetown.edu."},
 	},
 }
 
