@@ -123,7 +123,8 @@ func SyncFnFor(
 			return nil
 		}
 
-		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup)
+		extraAnnotations := extractExtraAnnotations(ingLike, defaults.ExtraCertificateAnnotations)
+		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations)
 		if err != nil {
 			return err
 		}
@@ -145,6 +146,7 @@ func SyncFnFor(
 						Namespace:       crt.Namespace,
 						Labels:          crt.Labels,
 						OwnerReferences: crt.OwnerReferences,
+						Annotations:     extraAnnotations,
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:    crt.Spec.DNSNames,
@@ -299,6 +301,7 @@ func buildCertificates(
 	cmLister cmlisters.CertificateLister,
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
+	annotations map[string]string,
 ) (newCrts, updateCrts []*cmapi.Certificate, _ error) {
 	tlsHosts := make(map[corev1.ObjectReference][]string)
 	switch ingLike := ingLike.(type) {
@@ -399,6 +402,7 @@ func buildCertificates(
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
 				Labels:          labels,
+				Annotations:     annotations,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
@@ -452,6 +456,15 @@ func buildCertificates(
 			updateCrt.Spec = crt.Spec
 			updateCrt.Labels = crt.Labels
 
+			// extra annotation wanted but none set
+			if len(updateCrt.GetAnnotations()) == 0 && len(annotations) > 0 {
+				updateCrt.SetAnnotations(annotations)
+			}
+			// update append extra annotations
+			if len(updateCrt.GetAnnotations()) > 0 && len(annotations) > 0 {
+				updateCrt.SetAnnotations(mergeAnnotations(updateCrt.GetAnnotations(), annotations))
+			}
+
 			setIssuerSpecificConfig(crt, ingLike)
 
 			updateCrts = append(updateCrts, updateCrt)
@@ -476,6 +489,21 @@ func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Obje
 	return toBeRemoved
 }
 
+func mergeAnnotations(a, b map[string]string) map[string]string {
+	merged := make(map[string]string)
+
+	// Copy annotations from the first map
+	for k, v := range a {
+		merged[k] = v
+	}
+
+	// Copy annotations from the second map (overwriting if key exists)
+	for k, v := range b {
+		merged[k] = v
+	}
+
+	return merged
+}
 func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 	switch o := ingLike.(type) {
 	case *networkingv1.Ingress:
@@ -688,6 +716,24 @@ func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []strin
 		}
 	}
 	return false
+}
+
+func extractExtraAnnotations(ingLike metav1.Object, e []string) map[string]string {
+	annotations := ingLike.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	extraAnnotations := make(map[string]string)
+	for _, x := range e {
+		if s, ok := annotations[x]; ok {
+			extraAnnotations[x] = s
+		}
+	}
+	if len(extraAnnotations) == 0 {
+		return nil
+	}
+
+	return extraAnnotations
 }
 
 // isDeletedInForeground returns true if the given ingressLike resource

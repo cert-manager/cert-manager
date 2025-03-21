@@ -289,6 +289,7 @@ func autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *
 	out.DefaultIssuerKind = in.DefaultIssuerKind
 	out.DefaultIssuerGroup = in.DefaultIssuerGroup
 	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
+	out.ExtraCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.ExtraCertificateAnnotations))
 	return nil
 }
 
@@ -302,6 +303,7 @@ func autoConvert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *
 	out.DefaultIssuerKind = in.DefaultIssuerKind
 	out.DefaultIssuerGroup = in.DefaultIssuerGroup
 	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
+	out.ExtraCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.ExtraCertificateAnnotations))
 	return nil
 }
 
