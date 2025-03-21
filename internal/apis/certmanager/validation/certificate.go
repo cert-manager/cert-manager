@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -39,6 +40,23 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
+
+// mapping for key algorithm to allowed signature algorithms
+var keyAlgToAllowedSigAlgs = map[internalcmapi.PrivateKeyAlgorithm][]internalcmapi.SignatureAlgorithm{
+	internalcmapi.RSAKeyAlgorithm: {
+		internalcmapi.SHA256WithRSA,
+		internalcmapi.SHA384WithRSA,
+		internalcmapi.SHA512WithRSA,
+	},
+	internalcmapi.ECDSAKeyAlgorithm: {
+		internalcmapi.ECDSAWithSHA256,
+		internalcmapi.ECDSAWithSHA384,
+		internalcmapi.ECDSAWithSHA512,
+	},
+	internalcmapi.Ed25519KeyAlgorithm: {
+		internalcmapi.PureEd25519,
+	},
+}
 
 // Validation functions for cert-manager Certificate types
 
@@ -159,6 +177,18 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 			break
 		default:
 			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa, ecdsa or ed25519"))
+		}
+	}
+
+	if crt.SignatureAlgorithm != "" {
+		actualKeyAlg := internalcmapi.RSAKeyAlgorithm
+		if crt.PrivateKey != nil && crt.PrivateKey.Algorithm != "" {
+			actualKeyAlg = crt.PrivateKey.Algorithm
+		}
+		allowed, ok := keyAlgToAllowedSigAlgs[actualKeyAlg]
+		if ok && !slices.Contains(allowed, crt.SignatureAlgorithm) {
+			el = append(el, field.Invalid(fldPath.Child("signatureAlgorithm"), crt.SignatureAlgorithm,
+				fmt.Sprintf("for key algorithm %s the allowed signature algorithms are %v", actualKeyAlg, allowed)))
 		}
 	}
 
