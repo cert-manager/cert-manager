@@ -114,6 +114,10 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	// +optional
 	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
+
+	// KeyType is the type of the account key (RSA or ECC), such as "RSA2048", "RSA4096", "P256", "P384"
+	// +optional
+	KeyType string `json:"keyType,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
