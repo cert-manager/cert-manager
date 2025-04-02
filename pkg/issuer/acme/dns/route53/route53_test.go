@@ -286,6 +286,7 @@ func TestRoute53Present(t *testing.T) {
 }
 
 func TestAssumeRole(t *testing.T) {
+	t.Setenv("AWS_CONFIG_FILE", "/foo/bar")
 	creds := &ststypes.Credentials{
 		AccessKeyId:     aws.String("foo"),
 		SecretAccessKey: aws.String("bar"),
