@@ -76,7 +76,15 @@ endif
 # Git and versioning information #
 ##################################
 
-git_version := $(shell git describe --tags --always --match='v*' --abbrev=14 --dirty)
+# Check if tags are available before running git describe and fail back to the GitHub API
+# This is necessary as helm package in the integration test would fail with no valid semver version
+# When forking this repo, you don't have tags by default
+# this enables easier onboarding for new contributors
+ifneq ($(shell git tag -l),)
+	git_version := $(shell git describe --tags --always --match='v*' --abbrev=14 --dirty)
+else
+	git_version := $(shell curl  "https://api.github.com/repos/cert-manager/cert-manager/tags" | jq -r '.[0].name')
+endif
 VERSION ?= $(git_version)
 IS_PRERELEASE := $(shell git describe --tags --always --match='v*' --abbrev=0 | grep -q '-' && echo true || echo false)
 GITCOMMIT := $(shell git rev-parse HEAD)
