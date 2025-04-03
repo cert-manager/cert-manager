@@ -91,7 +91,9 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	switch {
 	case acme.IsFailureState(o.Status.State):
 		log.V(logf.DebugLevel).Info("Doing nothing as Order is in a failed state")
-		// if the Order is failed there's nothing left for us to do, return nil
+		acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
+		o.Status.Reason = fmt.Sprintf("Since the state of the Order resource %v", acmeOrder.Status)
+
 		return nil
 	case o.Status.URL == "":
 		log.V(logf.DebugLevel).Info("Creating new ACME order as status.url is not set")
@@ -213,6 +215,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 				return nil
 			}
 		}
+		o.Status.Reason = fmt.Sprintf("at least one Challenge was found to be 'failed'")
 		return err
 
 	// anyChallengesFailed(challenges) == false is already implied by the above
@@ -244,6 +247,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
+
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 				return nil
 			}
