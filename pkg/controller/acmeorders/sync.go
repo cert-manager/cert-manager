@@ -98,8 +98,14 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return c.createOrder(ctx, cl, o)
 	case o.Status.FinalizeURL == "":
 		log.V(logf.DebugLevel).Info("Updating Order status as status.finalizeURL is not set")
-		_, err := c.updateOrderStatus(ctx, cl, o)
+		acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
+			if acmeErr.StatusCode == 200 && acmeOrder.Status == acmeapi.StatusInvalid {
+				log.Error(err, fmt.Sprintf("ACME Order status is %q", acmeapi.StatusInvalid))
+				c.setOrderState(&o.Status, string(cmacme.Errored))
+				o.Status.Reason = fmt.Sprintf("Order status is %q: %v", acmeapi.StatusInvalid, err)
+				return nil
+			}
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
@@ -213,6 +219,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 				return nil
 			}
 		}
+		o.Status.Reason = fmt.Sprintf("at least one Challenge was found to be 'failed'")
 		return err
 
 	// anyChallengesFailed(challenges) == false is already implied by the above
@@ -244,6 +251,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
+
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 				return nil
 			}
@@ -568,8 +576,14 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 
 	// Before checking whether the call to CreateOrderCert returned a
 	// non-4xx error, ensure the order status is up-to-date.
-	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
+	acmeOrder, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
+		if acmeErr.StatusCode == 200 && acmeOrder.Status == acmeapi.StatusInvalid {
+			log.Error(err, fmt.Sprintf("ACME Order status is %q", acmeapi.StatusInvalid))
+			c.setOrderState(&o.Status, string(cmacme.Errored))
+			o.Status.Reason = fmt.Sprintf("Order status is %q: %v", acmeapi.StatusInvalid, err)
+			return nil
+		}
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
@@ -628,6 +642,12 @@ func (c *controller) syncCertificateData(ctx context.Context, cl acmecl.Interfac
 	log := logf.FromContext(ctx)
 	acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
+		if acmeErr.StatusCode == 200 && acmeOrder.Status == acmeapi.StatusInvalid {
+			log.Error(err, fmt.Sprintf("ACME Order status is %q", acmeapi.StatusInvalid))
+			c.setOrderState(&o.Status, string(cmacme.Errored))
+			o.Status.Reason = fmt.Sprintf("Order status is %q: %v", acmeapi.StatusInvalid, err)
+			return nil
+		}
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
