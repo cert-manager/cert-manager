@@ -22,6 +22,7 @@ limitations under the License.
 package v1
 
 import (
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -29,5 +30,41 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&v1.Challenge{}, func(obj interface{}) { SetObjectDefaults_Challenge(obj.(*v1.Challenge)) })
+	scheme.AddTypeDefaultingFunc(&v1.ChallengeList{}, func(obj interface{}) { SetObjectDefaults_ChallengeList(obj.(*v1.ChallengeList)) })
+	scheme.AddTypeDefaultingFunc(&v1.Order{}, func(obj interface{}) { SetObjectDefaults_Order(obj.(*v1.Order)) })
+	scheme.AddTypeDefaultingFunc(&v1.OrderList{}, func(obj interface{}) { SetObjectDefaults_OrderList(obj.(*v1.OrderList)) })
 	return nil
+}
+
+func SetObjectDefaults_Challenge(in *v1.Challenge) {
+	if in.Spec.IssuerRef.Kind == "" {
+		in.Spec.IssuerRef.Kind = "Issuer"
+	}
+	if in.Spec.IssuerRef.Group == "" {
+		in.Spec.IssuerRef.Group = "cert-manager.io"
+	}
+}
+
+func SetObjectDefaults_ChallengeList(in *v1.ChallengeList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_Challenge(a)
+	}
+}
+
+func SetObjectDefaults_Order(in *v1.Order) {
+	if in.Spec.IssuerRef.Kind == "" {
+		in.Spec.IssuerRef.Kind = "Issuer"
+	}
+	if in.Spec.IssuerRef.Group == "" {
+		in.Spec.IssuerRef.Group = "cert-manager.io"
+	}
+}
+
+func SetObjectDefaults_OrderList(in *v1.OrderList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_Order(a)
+	}
 }
