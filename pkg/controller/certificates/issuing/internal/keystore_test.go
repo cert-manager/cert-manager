@@ -41,10 +41,12 @@ func mustGeneratePrivateKey(t *testing.T, encoding cmapi.PrivateKeyEncoding) []b
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	pkBytes, err := pki.EncodePrivateKey(pk, encoding)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return pkBytes
 }
 

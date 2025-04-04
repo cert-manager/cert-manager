@@ -18,8 +18,6 @@ package testing
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
@@ -36,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/cert-manager/cert-manager/internal/webhook"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
@@ -145,10 +144,11 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 }
 
 func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error) {
-	caPK, err := rsa.GenerateKey(rand.Reader, 2048)
+	caPK, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	rootCA := &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
@@ -162,14 +162,17 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 		KeyUsage:  x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		IsCA:      true,
 	}
-	rootCADER, err := x509.CreateCertificate(rand.Reader, rootCA, rootCA, caPK.Public(), caPK)
+
+	rootCADER, err := x509.CreateCertificate(cmrand.Reader, rootCA, rootCA, caPK.Public(), caPK)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	rootCA, err = x509.ParseCertificate(rootCADER)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	servingCert := &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
@@ -182,14 +185,17 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}
-	servingPK, err := rsa.GenerateKey(rand.Reader, 2048)
+
+	servingPK, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	servingDER, err := x509.CreateCertificate(rand.Reader, servingCert, rootCA, servingPK.Public(), caPK)
+
+	servingDER, err := x509.CreateCertificate(cmrand.Reader, servingCert, rootCA, servingPK.Public(), caPK)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	servingCert, err = x509.ParseCertificate(servingDER)
 	if err != nil {
 		return nil, nil, nil, err
@@ -200,13 +206,16 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	caPEM, err = pki.EncodeX509(rootCA)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	certificatePEM, err = pki.EncodeX509(servingCert)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	return
 }

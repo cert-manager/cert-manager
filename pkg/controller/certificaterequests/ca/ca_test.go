@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
@@ -42,6 +41,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
@@ -629,12 +629,15 @@ func TestCA_Sign(t *testing.T) {
 // Returns a map that is meant to be used for creating a certificate Secret
 // that contains the fields "tls.crt" and "tls.key".
 func secretDataFor(t *testing.T, caKey *ecdsa.PrivateKey, caCrt *x509.Certificate) (secretData map[string][]byte) {
-	rootCADER, err := x509.CreateCertificate(rand.Reader, caCrt, caCrt, caKey.Public(), caKey)
+	rootCADER, err := x509.CreateCertificate(cmrand.Reader, caCrt, caCrt, caKey.Public(), caKey)
 	require.NoError(t, err)
+
 	caCrt, err = x509.ParseCertificate(rootCADER)
 	require.NoError(t, err)
+
 	caKeyPEM, err := pki.EncodeECPrivateKey(caKey)
 	require.NoError(t, err)
+
 	caCrtPEM, err := pki.EncodeX509(caCrt)
 	require.NoError(t, err)
 
