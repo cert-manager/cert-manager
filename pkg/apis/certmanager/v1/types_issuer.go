@@ -200,6 +200,11 @@ type VaultIssuer struct {
 	// Server is the connection address for the Vault server, e.g: "https://vault.example.com:8200".
 	Server string `json:"server"`
 
+	// ServerName is used to verify the hostname on the returned certificates
+	// by the Vault server.
+	// +optional
+	ServerName string `json:"serverName,omitempty"`
+
 	// Path is the mount path of the Vault PKI backend's `sign` endpoint, e.g:
 	// "my_pki_mount/sign/my-role-name".
 	Path string `json:"path"`

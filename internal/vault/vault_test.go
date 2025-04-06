@@ -1422,6 +1422,29 @@ func TestNewConfig(t *testing.T) {
 			expectedErr: errors.New("failed to load vault client certificate: could not parse the TLS certificate from Secrets 'test-namespace/bundle'(cert) and 'test-namespace/bundle'(key): tls: failed to find any PEM data in certificate input"),
 			fakeLister:  clientCertificateSecretRefFakeSecretLister("test-namespace", "bundle", "ca.crt", testLeafCertificate, "tls.crt", "not a valid certificate", "tls.key", "not a valid certificate"),
 		},
+		"if server name is set it should be added to the config": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{
+					Server:     "https://vault.example.com",
+					ServerName: "vault.example.net",
+				},
+				)),
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
+				}
+
+				expectedServerName := "vault.example.net"
+				clientServerName := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.ServerName
+
+				if clientServerName != expectedServerName {
+					return fmt.Errorf("got unexpected server name in config, exp=%v got=%v",
+						expectedServerName, clientServerName)
+				}
+
+				return nil
+			},
+		},
 	}
 
 	for name, test := range tests {
