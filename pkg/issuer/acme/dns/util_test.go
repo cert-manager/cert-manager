@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
@@ -129,8 +131,8 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			}
 			return nil, nil
 		},
-		route53: func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error) {
-			f.call("route53", accessKey, secretKey, hostedZoneID, region, role, webIdentityToken, ambient, util.RecursiveNameservers)
+		route53: func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role string, webIdentityTokenRetriever stscreds.IdentityTokenRetriever, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error) {
+			f.call("route53", accessKey, secretKey, hostedZoneID, region, role, webIdentityTokenRetriever, ambient, util.RecursiveNameservers)
 			return nil, nil
 		},
 		azureDNS: func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error) {

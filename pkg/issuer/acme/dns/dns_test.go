@@ -18,9 +18,11 @@ package dns
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -489,13 +491,10 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", nil, false, util.RecursiveNameservers},
 		},
 	}
-
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
+	require.Equal(t, expectedR53Call, f.dnsProviders.calls)
 }
 
 func TestRoute53SecretAccessKey(t *testing.T) {
@@ -552,13 +551,10 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", nil, false, util.RecursiveNameservers},
 		},
 	}
-
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
+	require.Equal(t, expectedR53Call, f.dnsProviders.calls)
 }
 
 func TestRoute53AmbientCreds(t *testing.T) {
@@ -605,7 +601,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "", nil, true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -643,27 +639,27 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "", nil, false, util.RecursiveNameservers},
 				},
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		f := tt.in
-		f.Setup(t)
-		defer f.Finish(t)
-		s := f.Solver
-		_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
-		if tt.out.expectedErr != err {
-			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
-		}
-
-		if tt.out.expectedCall != nil {
-			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls) {
-				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			f := tt.in
+			f.Setup(t)
+			defer f.Finish(t)
+			s := f.Solver
+			_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
+			if tt.out.expectedErr != err {
+				t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 			}
-		}
+
+			if tt.out.expectedCall != nil {
+				require.Equal(t, []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+			}
+		})
 	}
 }
 
@@ -712,7 +708,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "my-role", nil, true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -751,26 +747,26 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "my-other-role", nil, false, util.RecursiveNameservers},
 				},
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		f := tt.in
-		f.Setup(t)
-		defer f.Finish(t)
-		s := f.Solver
-		_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
-		if tt.out.expectedErr != err {
-			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
-		}
-
-		if tt.out.expectedCall != nil {
-			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls) {
-				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			f := tt.in
+			f.Setup(t)
+			defer f.Finish(t)
+			s := f.Solver
+			_, _, err := s.solverForChallenge(context.Background(), f.Challenge)
+			if tt.out.expectedErr != err {
+				t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 			}
-		}
+
+			if tt.out.expectedCall != nil {
+				require.Equal(t, []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+			}
+		})
 	}
 }
