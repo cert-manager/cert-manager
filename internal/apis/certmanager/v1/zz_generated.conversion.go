@@ -1578,6 +1578,7 @@ func autoConvert_v1_VaultIssuer_To_certmanager_VaultIssuer(in *v1.VaultIssuer, o
 		return err
 	}
 	out.Server = in.Server
+	out.ServerName = in.ServerName
 	out.Path = in.Path
 	out.Namespace = in.Namespace
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
@@ -1621,6 +1622,7 @@ func autoConvert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.Vault
 		return err
 	}
 	out.Server = in.Server
+	out.ServerName = in.ServerName
 	out.Path = in.Path
 	out.Namespace = in.Namespace
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))

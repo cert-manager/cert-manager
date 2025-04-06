@@ -3540,6 +3540,11 @@ spec:
                     server:
                       description: 'Server is the connection address for the Vault server, e.g: "https://vault.example.com:8200".'
                       type: string
+                    serverName:
+                      description: |-
+                        ServerName is used to verify the hostname on the returned certificates
+                        by the Vault server.
+                      type: string
                 venafi:
                   description: |-
                     Venafi configures this issuer to sign certificates using a Venafi TPP
