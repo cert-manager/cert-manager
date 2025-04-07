@@ -128,7 +128,7 @@ Aggregate ClusterRoles to Kubernetes default user-facing roles. For more informa
 > true
 > ```
 
-By default, we will be deploying the controller-challenges role but if you want to use your own roles, please set this to false.
+By default, we will be deploying the controller-challenges and controller-orders role but if you want to use your own roles, please set this to false.
 #### **global.podSecurityPolicy.enabled** ~ `bool`
 > Default value:
 > ```yaml
