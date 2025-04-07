@@ -797,8 +797,8 @@
         "create": {
           "$ref": "#/$defs/helm-values.global.rbac.create"
         },
-        "selfSigned": {
-          "$ref": "#/$defs/helm-values.global.rbac.selfSigned"
+        "useControllerChallengesRole": {
+          "$ref": "#/$defs/helm-values.global.rbac.useControllerChallengesRole"
         }
       },
       "type": "object"
@@ -813,7 +813,7 @@
       "description": "Create required ClusterRoles and ClusterRoleBindings for cert-manager.",
       "type": "boolean"
     },
-    "helm-values.global.rbac.selfSigned": {
+    "helm-values.global.rbac.useControllerChallengesRole": {
       "default": false,
       "description": "Using self-signed certificates",
       "type": "boolean"
