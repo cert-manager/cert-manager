@@ -815,7 +815,7 @@
     },
     "helm-values.global.rbac.useACME": {
       "default": true,
-      "description": "By default, we will be deploying the controller-challenges role but if you want to use your own roles, please set this to false.",
+      "description": "By default, we will be deploying the controller-challenges and controller-orders role but if you want to use your own roles, please set this to false.",
       "type": "boolean"
     },
     "helm-values.global.revisionHistoryLimit": {
