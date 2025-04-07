@@ -33,8 +33,9 @@ global:
     create: true
     # Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
     aggregateClusterRoles: true
-    # Using self-signed certificates
-    useControllerChallengesRole: false
+    # By default, we will be deploying the controller-challenges role but if you want to use
+    # your own roles, please set this to false.
+    useControllerChallengesRole: true
 
   podSecurityPolicy:
     # Create PodSecurityPolicy for cert-manager.

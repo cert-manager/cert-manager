@@ -814,8 +814,8 @@
       "type": "boolean"
     },
     "helm-values.global.rbac.useControllerChallengesRole": {
-      "default": false,
-      "description": "Using self-signed certificates",
+      "default": true,
+      "description": "By default, we will be deploying the controller-challenges role but if you want to use your own roles, please set this to false.",
       "type": "boolean"
     },
     "helm-values.global.revisionHistoryLimit": {
