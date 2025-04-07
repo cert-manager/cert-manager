@@ -218,6 +218,7 @@ rules:
 ---
 
 # Challenges controller role
+{{ if .Values.global.rbac.useControllerChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -275,7 +276,7 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list", "watch"]
-
+{{- end }}
 ---
 
 # ingress-shim controller role
@@ -401,6 +402,7 @@ subjects:
 
 ---
 
+{{ if .Values.global.rbac.useControllerChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -419,6 +421,7 @@ subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
     kind: ServiceAccount
+{{- end }}
 
 ---
 
