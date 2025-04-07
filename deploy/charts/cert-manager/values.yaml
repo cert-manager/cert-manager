@@ -35,7 +35,7 @@ global:
     aggregateClusterRoles: true
     # By default, we will be deploying the controller-challenges role but if you want to use
     # your own roles, please set this to false.
-    useControllerChallengesRole: true
+    useACME: true
 
   podSecurityPolicy:
     # Create PodSecurityPolicy for cert-manager.

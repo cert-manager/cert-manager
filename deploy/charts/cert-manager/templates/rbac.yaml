@@ -179,7 +179,7 @@ rules:
 ---
 
 # Orders controller role
-{{ if .Values.global.rbac.useControllerChallengesRole }}
+{{ if .Values.global.rbac.useACME }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -219,7 +219,7 @@ rules:
 ---
 
 # Challenges controller role
-{{ if .Values.global.rbac.useControllerChallengesRole }}
+{{ if .Values.global.rbac.useACME }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -381,7 +381,7 @@ subjects:
     kind: ServiceAccount
 
 ---
-{{ if .Values.global.rbac.useControllerChallengesRole }}
+{{ if .Values.global.rbac.useACME }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -403,7 +403,7 @@ subjects:
 {{- end}}
 ---
 
-{{ if .Values.global.rbac.useControllerChallengesRole }}
+{{ if .Values.global.rbac.useACME }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

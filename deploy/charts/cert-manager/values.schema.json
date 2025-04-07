@@ -797,8 +797,8 @@
         "create": {
           "$ref": "#/$defs/helm-values.global.rbac.create"
         },
-        "useControllerChallengesRole": {
-          "$ref": "#/$defs/helm-values.global.rbac.useControllerChallengesRole"
+        "useACME": {
+          "$ref": "#/$defs/helm-values.global.rbac.useACME"
         }
       },
       "type": "object"
@@ -813,7 +813,7 @@
       "description": "Create required ClusterRoles and ClusterRoleBindings for cert-manager.",
       "type": "boolean"
     },
-    "helm-values.global.rbac.useControllerChallengesRole": {
+    "helm-values.global.rbac.useACME": {
       "default": true,
       "description": "By default, we will be deploying the controller-challenges role but if you want to use your own roles, please set this to false.",
       "type": "boolean"

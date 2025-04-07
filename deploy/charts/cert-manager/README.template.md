@@ -122,7 +122,7 @@ Create required ClusterRoles and ClusterRoleBindings for cert-manager.
 > ```
 
 Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
-#### **global.rbac.useControllerChallengesRole** ~ `bool`
+#### **global.rbac.useACME** ~ `bool`
 > Default value:
 > ```yaml
 > true
