@@ -220,7 +220,7 @@ rules:
 ---
 
 # HTTP01 Challenges controller role
-{{ if .Values.global.rbac.useHttpChallengesRole }}
+{{ if .Values.global.rbac.useHTTPChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -450,7 +450,7 @@ subjects:
 
 ---
 
-{{ if .Values.global.rbac.useHttpChallengesRole }}
+{{ if .Values.global.rbac.useHTTPChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

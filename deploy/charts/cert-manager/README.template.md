@@ -122,7 +122,7 @@ Create required ClusterRoles and ClusterRoleBindings for cert-manager.
 > ```
 
 Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
-#### **global.rbac.useHttpChallengesRole** ~ `bool`
+#### **global.rbac.useHTTPChallengesRole** ~ `bool`
 > Default value:
 > ```yaml
 > true
@@ -136,7 +136,7 @@ By default, we will be deploying the http01 controller-challenges but if you wan
 > ```
 
 By default, we will be deploying the dns01 controller-challenges but if you want to use your own roles, please set this to false.
-#### **global.rbac.useOrderRole** ~ `bool`
+#### **global.rbac.useOrdersRole** ~ `bool`
 > Default value:
 > ```yaml
 > true

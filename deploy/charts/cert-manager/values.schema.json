@@ -800,11 +800,11 @@
         "useDNSChallengesRole": {
           "$ref": "#/$defs/helm-values.global.rbac.useDNSChallengesRole"
         },
-        "useHttpChallengesRole": {
-          "$ref": "#/$defs/helm-values.global.rbac.useHttpChallengesRole"
+        "useHTTPChallengesRole": {
+          "$ref": "#/$defs/helm-values.global.rbac.useHTTPChallengesRole"
         },
-        "useOrderRole": {
-          "$ref": "#/$defs/helm-values.global.rbac.useOrderRole"
+        "useOrdersRole": {
+          "$ref": "#/$defs/helm-values.global.rbac.useOrdersRole"
         }
       },
       "type": "object"
@@ -824,12 +824,12 @@
       "description": "By default, we will be deploying the dns01 controller-challenges but if you want to use your own roles, please set this to false.",
       "type": "boolean"
     },
-    "helm-values.global.rbac.useHttpChallengesRole": {
+    "helm-values.global.rbac.useHTTPChallengesRole": {
       "default": true,
       "description": "By default, we will be deploying the http01 controller-challenges but if you want to use your own roles, please set this to false.",
       "type": "boolean"
     },
-    "helm-values.global.rbac.useOrderRole": {
+    "helm-values.global.rbac.useOrdersRole": {
       "default": true,
       "description": "By default, we will be deploying the controller-orders role but if you want to use your own roles, please set this to false.",
       "type": "boolean"
