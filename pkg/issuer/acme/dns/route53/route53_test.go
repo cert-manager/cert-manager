@@ -286,6 +286,9 @@ func TestRoute53Present(t *testing.T) {
 }
 
 func TestAssumeRole(t *testing.T) {
+	// Set the AWS config file to a non-existent file to ensure that the
+	// SDK does not load any local configuration.
+	t.Setenv("AWS_CONFIG_FILE", "/dev/null")
 	creds := &ststypes.Credentials{
 		AccessKeyId:     aws.String("foo"),
 		SecretAccessKey: aws.String("bar"),
