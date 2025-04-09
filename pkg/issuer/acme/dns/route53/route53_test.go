@@ -303,7 +303,22 @@ func TestRoute53Cleanup(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore-not-found",
+			name: "hosted-zone-lookup-failure",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname": MockResponse{StatusCode: 400, Body: ListHostedZonesByName400ResponseInvalidDomainName},
+			},
+			expectedError: `failed to determine Route 53 hosted zone ID: operation error Route 53: ListHostedZonesByName, https response error StatusCode: 400, RequestID: <REDACTED>, InvalidDomainName: Simulated message`,
+		},
+		{
+			name: "change-resource-records-failure",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
+				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets403Response},
+			},
+			expectedError: `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 400, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`,
+		},
+		{
+			name: "change-resource-records-failure-ignore-not-found",
 			responses: MockResponseMap{
 				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
 				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets400Response},

@@ -281,7 +281,7 @@ func (r *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.ChangeAction, fqdn, value string, ttl int) error {
 	hostedZoneID, err := r.getHostedZoneID(ctx, fqdn)
 	if err != nil {
-		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %v", err)
+		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %w", err)
 	}
 
 	recordSet := newTXTRecordSet(fqdn, value, ttl)
@@ -311,9 +311,6 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		}
 		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
-			return true, fmt.Errorf("failed to query Route 53 change status: %w", err)
-		}
-		if resp.ChangeInfo == nil {
 			return true, fmt.Errorf("failed to query Route 53 change status: %w", err)
 		}
 		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {

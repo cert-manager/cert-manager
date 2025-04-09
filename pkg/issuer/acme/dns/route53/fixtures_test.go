@@ -57,6 +57,19 @@ var ListHostedZonesByNameResponse = `<?xml version="1.0" encoding="UTF-8"?>
    <MaxItems>1</MaxItems>
 </ListHostedZonesByNameResponse>`
 
+// An example of an error returned by the ListHostedZonesByName API when the
+// request contains an invalid domain name:
+// - https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListHostedZonesByName.html#API_ListHostedZonesByName_Errors
+var ListHostedZonesByName400ResponseInvalidDomainName = `<?xml version="1.0" encoding="UTF-8"?>
+<ErrorResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <Error>
+	<Code>InvalidDomainName</Code>
+	<Message>Simulated message</Message>
+	<Resource></Resource>
+	<RequestId>SOMEREQUESTID</RequestId>
+  </Error>
+</ErrorResponse>`
+
 var GetChangeResponse = `<?xml version="1.0" encoding="UTF-8"?>
 <GetChangeResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
    <ChangeInfo>
