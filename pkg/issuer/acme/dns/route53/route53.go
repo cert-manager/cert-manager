@@ -311,10 +311,10 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		}
 		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
-			return false, fmt.Errorf("failed to query Route 53 change status: %w", err)
+			return true, fmt.Errorf("failed to query Route 53 change status: %w", err)
 		}
 		if resp.ChangeInfo == nil {
-			return false, fmt.Errorf("failed to query Route 53 change status: %w", err)
+			return true, fmt.Errorf("failed to query Route 53 change status: %w", err)
 		}
 		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {
 			return true, nil

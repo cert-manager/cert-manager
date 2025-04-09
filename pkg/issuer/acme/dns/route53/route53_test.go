@@ -41,7 +41,7 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 		context.TODO(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("abc", "123", " ")),
 		config.WithRegion("mock-region"),
-		config.WithRetryMaxAttempts(1),
+		config.WithRetryMaxAttempts(0),
 		config.WithHTTPClient(ts.Client()),
 	)
 	if err != nil {
@@ -287,25 +287,52 @@ func TestRoute53Present(t *testing.T) {
 }
 
 func TestRoute53Cleanup(t *testing.T) {
-	l := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(10)))
-	ctx := logr.NewContext(context.Background(), l)
-
-	mockResponses := MockResponseMap{
-		"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
-		"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets400Response},
+	type testCase struct {
+		name          string
+		responses     MockResponseMap
+		expectedError string
 	}
 
-	ts := newMockServer(t, mockResponses)
-	defer ts.Close()
+	tests := []testCase{
+		{
+			name: "success",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
+				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
+				"/2013-04-01/change/123456":            MockResponse{StatusCode: 200, Body: GetChangeResponse},
+			},
+		},
+		{
+			name: "ignore-not-found",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
+				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets400Response},
+			},
+		},
+	}
 
-	provider, err := makeRoute53Provider(ts)
-	require.NoError(t, err, "Expected to make a Route 53 provider without error")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(6)))
+			ctx := logr.NewContext(context.Background(), l)
 
-	domain := "example.com"
-	keyAuth := "123456d=="
+			ts := newMockServer(t, tc.responses)
+			defer ts.Close()
 
-	err = provider.CleanUp(ctx, domain, "_acme-challenge."+domain+".", keyAuth)
-	require.NoError(t, err, "Expected Cleanup to return no error")
+			provider, err := makeRoute53Provider(ts)
+			require.NoError(t, err, "Expected to make a Route 53 provider without error")
+
+			domain := "example.com"
+			keyAuth := "123456d=="
+
+			err = provider.CleanUp(ctx, domain, "_acme-challenge."+domain+".", keyAuth)
+			if tc.expectedError == "" {
+				assert.NoError(t, err, "Expected Cleanup to return no error")
+			} else {
+				assert.EqualError(t, err, tc.expectedError)
+			}
+		})
+	}
 }
 
 func TestAssumeRole(t *testing.T) {
