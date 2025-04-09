@@ -122,6 +122,13 @@ Create required ClusterRoles and ClusterRoleBindings for cert-manager.
 > ```
 
 Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
+#### **global.rbac.disableHTTPChallengesRole** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+To use HTTP-01 ACME challenges, cert-manager needs extra permissions to create pods. If you want to avoid this added permission and disable HTTP-01 set this value.
 #### **global.podSecurityPolicy.enabled** ~ `bool`
 > Default value:
 > ```yaml
