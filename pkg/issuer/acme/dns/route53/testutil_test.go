@@ -29,6 +29,7 @@ type MockResponseMap map[string]MockResponse
 
 func newMockServer(t *testing.T, responses MockResponseMap) *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("%s: %s", r.Method, r.URL)
 		path := r.URL.Path
 		resp, ok := responses[path]
 		if !ok {

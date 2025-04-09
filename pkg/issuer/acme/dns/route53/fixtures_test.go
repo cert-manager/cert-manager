@@ -75,3 +75,18 @@ var ChangeResourceRecordSets403Response = `<?xml version="1.0"?>
   </Error>
   <RequestId>SOMEREQUESTID</RequestId>
 </ErrorResponse>`
+
+// An example of an error returned by the ChangeResourceRecordSets API when the
+// request refers to a record set that does not exist:
+// - https://docs.aws.amazon.com/Route53/latest/APIReference/API_ChangeResourceRecordSets.html#API_ChangeResourceRecordSets_Errors
+//
+// This sample error XML was derived from examples and user reported log messages in the following pages:
+// - https://github.com/aws/aws-sdk-go-v2/blob/f529add9a2cd0d97281fd81f711c620c1e95cfb8/service/route53/internal/customizations/doc.go#L16C1-L21C25
+// - https://github.com/cert-manager/cert-manager/issues/7547
+// - https://github.com/cert-manager/cert-manager/pull/7548
+var ChangeResourceRecordSets400Response = `<?xml version="1.0"?>
+<InvalidChangeBatch xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <Messages>
+    <Message>Tried to delete resource record set [name='_acme-challenge.example.com.', type='TXT', set-identifier='"5CiRHXrp9tvpLNX8F9M8qbi8u9kwb3xnHrKdLNDlRQA"'] but it was not found</Message>
+  </Messages>
+</InvalidChangeBatch>`
