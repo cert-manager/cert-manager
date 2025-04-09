@@ -537,6 +537,21 @@ spec:
                       type: object
                       additionalProperties:
                         type: string
+                signatureAlgorithm:
+                  description: |-
+                    Signature algorith to use.
+                    Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA.
+                    Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512.
+                    Allowed values for Ed25519 keys: PureEd25519.
+                  type: string
+                  enum:
+                    - SHA256WithRSA
+                    - SHA384WithRSA
+                    - SHA512WithRSA
+                    - ECDSAWithSHA256
+                    - ECDSAWithSHA384
+                    - ECDSAWithSHA512
+                    - PureEd25519
                 subject:
                   description: |-
                     Requested set of X509 certificate subject attributes.
