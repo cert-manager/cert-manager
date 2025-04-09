@@ -128,7 +128,7 @@ Aggregate ClusterRoles to Kubernetes default user-facing roles. For more informa
 > false
 > ```
 
-By default, we will be deploying the http01 controller-challenges but if you want to use your own roles, please set this to true.
+To use HTTP-01 ACME challenges, cert-manager needs extra permissions to create pods. If you want to avoid this added permission and disable HTTP-01 set this value.
 #### **global.podSecurityPolicy.enabled** ~ `bool`
 > Default value:
 > ```yaml
