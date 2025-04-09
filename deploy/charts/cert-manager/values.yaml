@@ -34,14 +34,8 @@ global:
     # Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
     aggregateClusterRoles: true
     # By default, we will be deploying the http01 controller-challenges but if you want to use
-    # your own roles, please set this to false.
-    useHTTPChallengesRole: true
-    # By default, we will be deploying the dns01 controller-challenges but if you want to use
-    # your own roles, please set this to false.
-    useDNSChallengesRole: true
-    # By default, we will be deploying the controller-orders role but if you want to use
-    # your own roles, please set this to false.
-    useOrdersRole: true
+    # your own roles, please set this to true.
+    disableHTTPChallengesRole: false
 
   podSecurityPolicy:
     # Create PodSecurityPolicy for cert-manager.

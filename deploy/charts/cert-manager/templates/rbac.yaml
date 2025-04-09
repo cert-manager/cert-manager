@@ -179,7 +179,6 @@ rules:
 ---
 
 # Orders controller role
-{{ if .Values.global.rbac.useOrdersRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -215,12 +214,11 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "patch"]
-{{- end }}
 
 ---
 
 # HTTP01 Challenges controller role
-{{ if .Values.global.rbac.useHTTPChallengesRole }}
+{{ if not .Values.global.rbac.disableHTTPChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -279,7 +277,6 @@ rules:
 ---
 
 # DNS01 Challenges controller role
-{{ if .Values.global.rbac.useDNSChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -321,7 +318,6 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list", "watch"]
-{{- end }}
 
 ---
 
@@ -427,7 +423,6 @@ subjects:
 
 ---
 
-{{ if .Values.global.rbac.useOrdersRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -446,7 +441,6 @@ subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
     kind: ServiceAccount
-{{- end}}
 
 ---
 
@@ -473,7 +467,6 @@ subjects:
 
 ---
 
-{{ if .Values.global.rbac.useDNSChallengesRole }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -492,7 +485,6 @@ subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
     kind: ServiceAccount
-{{- end }}
 
 ---
 
