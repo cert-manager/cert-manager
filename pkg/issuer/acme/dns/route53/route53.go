@@ -25,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 
@@ -251,17 +250,35 @@ func NewDNSProvider(
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(ctx, route53types.ChangeActionUpsert, fqdn, value, route53TTL)
+	if err := r.changeRecord(ctx, route53types.ChangeActionUpsert, fqdn, value, route53TTL); err != nil {
+		return removeReqID(err)
+	}
+	return nil
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
+	log := logf.FromContext(ctx)
 	value = `"` + value + `"`
-	return r.changeRecord(ctx, route53types.ChangeActionDelete, fqdn, value, route53TTL)
+	if err := r.changeRecord(ctx, route53types.ChangeActionDelete, fqdn, value, route53TTL); err != nil {
+		// If we try to delete something and get a 'InvalidChangeBatch' that
+		// means it's already deleted, no need to consider it an error.
+		var apiErr *route53types.InvalidChangeBatch
+		if errors.As(err, &apiErr) {
+			log.V(logf.DebugLevel).Info(
+				"Got InvalidChangeBatch error when attempting to delete the TXT record. "+
+					"Ignoring the error and asssuming that the TXT record has already been deleted.",
+				"error", err,
+				"error-messages", apiErr.Messages,
+			)
+			return nil
+		}
+		return removeReqID(err)
+	}
+	return nil
 }
 
 func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.ChangeAction, fqdn, value string, ttl int) error {
-	log := logf.FromContext(ctx)
 	hostedZoneID, err := r.getHostedZoneID(ctx, fqdn)
 	if err != nil {
 		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %v", err)
@@ -283,17 +300,7 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 
 	resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
 	if err != nil {
-		var apiErr smithy.APIError
-		if errors.As(err, &apiErr) {
-			if apiErr.ErrorCode() == "InvalidChangeBatch" && action == route53types.ChangeActionDelete {
-				log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
-				// If we try to delete something and get a 'InvalidChangeBatch' that
-				// means it's already deleted, no need to consider it an error.
-				return nil
-			}
-		}
-		return fmt.Errorf("failed to change Route 53 record set: %v", removeReqID(err))
-
+		return fmt.Errorf("failed to change Route 53 record set: %w", err)
 	}
 
 	statusID := resp.ChangeInfo.Id
@@ -304,7 +311,10 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		}
 		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
-			return false, fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))
+			return false, fmt.Errorf("failed to query Route 53 change status: %w", err)
+		}
+		if resp.ChangeInfo == nil {
+			return false, fmt.Errorf("failed to query Route 53 change status: %w", err)
 		}
 		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {
 			return true, nil
@@ -329,7 +339,7 @@ func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string,
 	}
 	resp, err := r.client.ListHostedZonesByName(ctx, reqParams)
 	if err != nil {
-		return "", removeReqID(err)
+		return "", err
 	}
 
 	zoneToID := make(map[string]string)
