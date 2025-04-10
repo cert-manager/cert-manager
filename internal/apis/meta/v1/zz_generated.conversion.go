@@ -23,7 +23,7 @@ package v1
 
 import (
 	meta "github.com/cert-manager/cert-manager/internal/apis/meta"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -35,64 +35,64 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddConversionFunc((*meta.LocalObjectReference)(nil), (*v1.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(a.(*meta.LocalObjectReference), b.(*v1.LocalObjectReference), scope)
+	if err := s.AddConversionFunc((*meta.LocalObjectReference)(nil), (*metav1.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(a.(*meta.LocalObjectReference), b.(*metav1.LocalObjectReference), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*meta.ObjectReference)(nil), (*v1.ObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_meta_ObjectReference_To_v1_ObjectReference(a.(*meta.ObjectReference), b.(*v1.ObjectReference), scope)
+	if err := s.AddConversionFunc((*meta.ObjectReference)(nil), (*metav1.ObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_meta_ObjectReference_To_v1_ObjectReference(a.(*meta.ObjectReference), b.(*metav1.ObjectReference), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*meta.SecretKeySelector)(nil), (*v1.SecretKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(a.(*meta.SecretKeySelector), b.(*v1.SecretKeySelector), scope)
+	if err := s.AddConversionFunc((*meta.SecretKeySelector)(nil), (*metav1.SecretKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(a.(*meta.SecretKeySelector), b.(*metav1.SecretKeySelector), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1.LocalObjectReference)(nil), (*meta.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(a.(*v1.LocalObjectReference), b.(*meta.LocalObjectReference), scope)
+	if err := s.AddConversionFunc((*metav1.LocalObjectReference)(nil), (*meta.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(a.(*metav1.LocalObjectReference), b.(*meta.LocalObjectReference), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1.ObjectReference)(nil), (*meta.ObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_ObjectReference_To_meta_ObjectReference(a.(*v1.ObjectReference), b.(*meta.ObjectReference), scope)
+	if err := s.AddConversionFunc((*metav1.ObjectReference)(nil), (*meta.ObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ObjectReference_To_meta_ObjectReference(a.(*metav1.ObjectReference), b.(*meta.ObjectReference), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1.SecretKeySelector)(nil), (*meta.SecretKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(a.(*v1.SecretKeySelector), b.(*meta.SecretKeySelector), scope)
+	if err := s.AddConversionFunc((*metav1.SecretKeySelector)(nil), (*meta.SecretKeySelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(a.(*metav1.SecretKeySelector), b.(*meta.SecretKeySelector), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *v1.LocalObjectReference, out *meta.LocalObjectReference, s conversion.Scope) error {
+func autoConvert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *metav1.LocalObjectReference, out *meta.LocalObjectReference, s conversion.Scope) error {
 	out.Name = in.Name
 	return nil
 }
 
-func autoConvert_meta_LocalObjectReference_To_v1_LocalObjectReference(in *meta.LocalObjectReference, out *v1.LocalObjectReference, s conversion.Scope) error {
+func autoConvert_meta_LocalObjectReference_To_v1_LocalObjectReference(in *meta.LocalObjectReference, out *metav1.LocalObjectReference, s conversion.Scope) error {
 	out.Name = in.Name
 	return nil
 }
 
-func autoConvert_v1_ObjectReference_To_meta_ObjectReference(in *v1.ObjectReference, out *meta.ObjectReference, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Kind = in.Kind
-	out.Group = in.Group
-	return nil
-}
-
-func autoConvert_meta_ObjectReference_To_v1_ObjectReference(in *meta.ObjectReference, out *v1.ObjectReference, s conversion.Scope) error {
+func autoConvert_v1_ObjectReference_To_meta_ObjectReference(in *metav1.ObjectReference, out *meta.ObjectReference, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Kind = in.Kind
 	out.Group = in.Group
 	return nil
 }
 
-func autoConvert_v1_SecretKeySelector_To_meta_SecretKeySelector(in *v1.SecretKeySelector, out *meta.SecretKeySelector, s conversion.Scope) error {
+func autoConvert_meta_ObjectReference_To_v1_ObjectReference(in *meta.ObjectReference, out *metav1.ObjectReference, s conversion.Scope) error {
+	out.Name = in.Name
+	out.Kind = in.Kind
+	out.Group = in.Group
+	return nil
+}
+
+func autoConvert_v1_SecretKeySelector_To_meta_SecretKeySelector(in *metav1.SecretKeySelector, out *meta.SecretKeySelector, s conversion.Scope) error {
 	if err := Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(&in.LocalObjectReference, &out.LocalObjectReference, s); err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func autoConvert_v1_SecretKeySelector_To_meta_SecretKeySelector(in *v1.SecretKey
 	return nil
 }
 
-func autoConvert_meta_SecretKeySelector_To_v1_SecretKeySelector(in *meta.SecretKeySelector, out *v1.SecretKeySelector, s conversion.Scope) error {
+func autoConvert_meta_SecretKeySelector_To_v1_SecretKeySelector(in *meta.SecretKeySelector, out *metav1.SecretKeySelector, s conversion.Scope) error {
 	if err := Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(&in.LocalObjectReference, &out.LocalObjectReference, s); err != nil {
 		return err
 	}

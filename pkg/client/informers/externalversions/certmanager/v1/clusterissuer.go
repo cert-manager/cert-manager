@@ -19,13 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	apiscertmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	versioned "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +36,7 @@ import (
 // ClusterIssuers.
 type ClusterIssuerInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.ClusterIssuerLister
+	Lister() certmanagerv1.ClusterIssuerLister
 }
 
 type clusterIssuerInformer struct {
@@ -70,7 +70,7 @@ func NewFilteredClusterIssuerInformer(client versioned.Interface, resyncPeriod t
 				return client.CertmanagerV1().ClusterIssuers().Watch(context.TODO(), options)
 			},
 		},
-		&certmanagerv1.ClusterIssuer{},
+		&apiscertmanagerv1.ClusterIssuer{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,9 +81,9 @@ func (f *clusterIssuerInformer) defaultInformer(client versioned.Interface, resy
 }
 
 func (f *clusterIssuerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&certmanagerv1.ClusterIssuer{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscertmanagerv1.ClusterIssuer{}, f.defaultInformer)
 }
 
-func (f *clusterIssuerInformer) Lister() v1.ClusterIssuerLister {
-	return v1.NewClusterIssuerLister(f.Informer().GetIndexer())
+func (f *clusterIssuerInformer) Lister() certmanagerv1.ClusterIssuerLister {
+	return certmanagerv1.NewClusterIssuerLister(f.Informer().GetIndexer())
 }

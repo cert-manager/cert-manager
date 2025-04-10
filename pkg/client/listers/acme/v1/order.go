@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // OrderLister helps list Orders.
@@ -30,7 +30,7 @@ import (
 type OrderLister interface {
 	// List lists all Orders in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Order, err error)
+	List(selector labels.Selector) (ret []*acmev1.Order, err error)
 	// Orders returns an object that can list and get Orders.
 	Orders(namespace string) OrderNamespaceLister
 	OrderListerExpansion
@@ -38,17 +38,17 @@ type OrderLister interface {
 
 // orderLister implements the OrderLister interface.
 type orderLister struct {
-	listers.ResourceIndexer[*v1.Order]
+	listers.ResourceIndexer[*acmev1.Order]
 }
 
 // NewOrderLister returns a new OrderLister.
 func NewOrderLister(indexer cache.Indexer) OrderLister {
-	return &orderLister{listers.New[*v1.Order](indexer, v1.Resource("order"))}
+	return &orderLister{listers.New[*acmev1.Order](indexer, acmev1.Resource("order"))}
 }
 
 // Orders returns an object that can list and get Orders.
 func (s *orderLister) Orders(namespace string) OrderNamespaceLister {
-	return orderNamespaceLister{listers.NewNamespaced[*v1.Order](s.ResourceIndexer, namespace)}
+	return orderNamespaceLister{listers.NewNamespaced[*acmev1.Order](s.ResourceIndexer, namespace)}
 }
 
 // OrderNamespaceLister helps list and get Orders.
@@ -56,15 +56,15 @@ func (s *orderLister) Orders(namespace string) OrderNamespaceLister {
 type OrderNamespaceLister interface {
 	// List lists all Orders in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Order, err error)
+	List(selector labels.Selector) (ret []*acmev1.Order, err error)
 	// Get retrieves the Order from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Order, error)
+	Get(name string) (*acmev1.Order, error)
 	OrderNamespaceListerExpansion
 }
 
 // orderNamespaceLister implements the OrderNamespaceLister
 // interface.
 type orderNamespaceLister struct {
-	listers.ResourceIndexer[*v1.Order]
+	listers.ResourceIndexer[*acmev1.Order]
 }
