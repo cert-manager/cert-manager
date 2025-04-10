@@ -26,7 +26,7 @@ import (
 
 	cainjector "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
-	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
+	cainjectorv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -39,40 +39,40 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.CAInjectorConfiguration)(nil), (*cainjector.CAInjectorConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(a.(*v1alpha1.CAInjectorConfiguration), b.(*cainjector.CAInjectorConfiguration), scope)
+	if err := s.AddGeneratedConversionFunc((*cainjectorv1alpha1.CAInjectorConfiguration)(nil), (*cainjector.CAInjectorConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(a.(*cainjectorv1alpha1.CAInjectorConfiguration), b.(*cainjector.CAInjectorConfiguration), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*cainjector.CAInjectorConfiguration)(nil), (*v1alpha1.CAInjectorConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(a.(*cainjector.CAInjectorConfiguration), b.(*v1alpha1.CAInjectorConfiguration), scope)
+	if err := s.AddGeneratedConversionFunc((*cainjector.CAInjectorConfiguration)(nil), (*cainjectorv1alpha1.CAInjectorConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(a.(*cainjector.CAInjectorConfiguration), b.(*cainjectorv1alpha1.CAInjectorConfiguration), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.EnableDataSourceConfig)(nil), (*cainjector.EnableDataSourceConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(a.(*v1alpha1.EnableDataSourceConfig), b.(*cainjector.EnableDataSourceConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*cainjectorv1alpha1.EnableDataSourceConfig)(nil), (*cainjector.EnableDataSourceConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(a.(*cainjectorv1alpha1.EnableDataSourceConfig), b.(*cainjector.EnableDataSourceConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*cainjector.EnableDataSourceConfig)(nil), (*v1alpha1.EnableDataSourceConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(a.(*cainjector.EnableDataSourceConfig), b.(*v1alpha1.EnableDataSourceConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*cainjector.EnableDataSourceConfig)(nil), (*cainjectorv1alpha1.EnableDataSourceConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(a.(*cainjector.EnableDataSourceConfig), b.(*cainjectorv1alpha1.EnableDataSourceConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.EnableInjectableConfig)(nil), (*cainjector.EnableInjectableConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(a.(*v1alpha1.EnableInjectableConfig), b.(*cainjector.EnableInjectableConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*cainjectorv1alpha1.EnableInjectableConfig)(nil), (*cainjector.EnableInjectableConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(a.(*cainjectorv1alpha1.EnableInjectableConfig), b.(*cainjector.EnableInjectableConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*cainjector.EnableInjectableConfig)(nil), (*v1alpha1.EnableInjectableConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(a.(*cainjector.EnableInjectableConfig), b.(*v1alpha1.EnableInjectableConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*cainjector.EnableInjectableConfig)(nil), (*cainjectorv1alpha1.EnableInjectableConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(a.(*cainjector.EnableInjectableConfig), b.(*cainjectorv1alpha1.EnableInjectableConfig), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(in *v1alpha1.CAInjectorConfiguration, out *cainjector.CAInjectorConfiguration, s conversion.Scope) error {
+func autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(in *cainjectorv1alpha1.CAInjectorConfiguration, out *cainjector.CAInjectorConfiguration, s conversion.Scope) error {
 	out.KubeConfig = in.KubeConfig
 	out.Namespace = in.Namespace
 	if err := sharedv1alpha1.Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
@@ -96,11 +96,11 @@ func autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfig
 }
 
 // Convert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration is an autogenerated conversion function.
-func Convert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(in *v1alpha1.CAInjectorConfiguration, out *cainjector.CAInjectorConfiguration, s conversion.Scope) error {
+func Convert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(in *cainjectorv1alpha1.CAInjectorConfiguration, out *cainjector.CAInjectorConfiguration, s conversion.Scope) error {
 	return autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(in, out, s)
 }
 
-func autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(in *cainjector.CAInjectorConfiguration, out *v1alpha1.CAInjectorConfiguration, s conversion.Scope) error {
+func autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(in *cainjector.CAInjectorConfiguration, out *cainjectorv1alpha1.CAInjectorConfiguration, s conversion.Scope) error {
 	out.KubeConfig = in.KubeConfig
 	out.Namespace = in.Namespace
 	if err := sharedv1alpha1.Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
@@ -124,11 +124,11 @@ func autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfig
 }
 
 // Convert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration is an autogenerated conversion function.
-func Convert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(in *cainjector.CAInjectorConfiguration, out *v1alpha1.CAInjectorConfiguration, s conversion.Scope) error {
+func Convert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(in *cainjector.CAInjectorConfiguration, out *cainjectorv1alpha1.CAInjectorConfiguration, s conversion.Scope) error {
 	return autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(in, out, s)
 }
 
-func autoConvert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(in *v1alpha1.EnableDataSourceConfig, out *cainjector.EnableDataSourceConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(in *cainjectorv1alpha1.EnableDataSourceConfig, out *cainjector.EnableDataSourceConfig, s conversion.Scope) error {
 	if err := v1.Convert_Pointer_bool_To_bool(&in.Certificates, &out.Certificates, s); err != nil {
 		return err
 	}
@@ -136,11 +136,11 @@ func autoConvert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceC
 }
 
 // Convert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig is an autogenerated conversion function.
-func Convert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(in *v1alpha1.EnableDataSourceConfig, out *cainjector.EnableDataSourceConfig, s conversion.Scope) error {
+func Convert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(in *cainjectorv1alpha1.EnableDataSourceConfig, out *cainjector.EnableDataSourceConfig, s conversion.Scope) error {
 	return autoConvert_v1alpha1_EnableDataSourceConfig_To_cainjector_EnableDataSourceConfig(in, out, s)
 }
 
-func autoConvert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(in *cainjector.EnableDataSourceConfig, out *v1alpha1.EnableDataSourceConfig, s conversion.Scope) error {
+func autoConvert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(in *cainjector.EnableDataSourceConfig, out *cainjectorv1alpha1.EnableDataSourceConfig, s conversion.Scope) error {
 	if err := v1.Convert_bool_To_Pointer_bool(&in.Certificates, &out.Certificates, s); err != nil {
 		return err
 	}
@@ -148,11 +148,11 @@ func autoConvert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceC
 }
 
 // Convert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig is an autogenerated conversion function.
-func Convert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(in *cainjector.EnableDataSourceConfig, out *v1alpha1.EnableDataSourceConfig, s conversion.Scope) error {
+func Convert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(in *cainjector.EnableDataSourceConfig, out *cainjectorv1alpha1.EnableDataSourceConfig, s conversion.Scope) error {
 	return autoConvert_cainjector_EnableDataSourceConfig_To_v1alpha1_EnableDataSourceConfig(in, out, s)
 }
 
-func autoConvert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(in *v1alpha1.EnableInjectableConfig, out *cainjector.EnableInjectableConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(in *cainjectorv1alpha1.EnableInjectableConfig, out *cainjector.EnableInjectableConfig, s conversion.Scope) error {
 	if err := v1.Convert_Pointer_bool_To_bool(&in.ValidatingWebhookConfigurations, &out.ValidatingWebhookConfigurations, s); err != nil {
 		return err
 	}
@@ -169,11 +169,11 @@ func autoConvert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableC
 }
 
 // Convert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig is an autogenerated conversion function.
-func Convert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(in *v1alpha1.EnableInjectableConfig, out *cainjector.EnableInjectableConfig, s conversion.Scope) error {
+func Convert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(in *cainjectorv1alpha1.EnableInjectableConfig, out *cainjector.EnableInjectableConfig, s conversion.Scope) error {
 	return autoConvert_v1alpha1_EnableInjectableConfig_To_cainjector_EnableInjectableConfig(in, out, s)
 }
 
-func autoConvert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(in *cainjector.EnableInjectableConfig, out *v1alpha1.EnableInjectableConfig, s conversion.Scope) error {
+func autoConvert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(in *cainjector.EnableInjectableConfig, out *cainjectorv1alpha1.EnableInjectableConfig, s conversion.Scope) error {
 	if err := v1.Convert_bool_To_Pointer_bool(&in.ValidatingWebhookConfigurations, &out.ValidatingWebhookConfigurations, s); err != nil {
 		return err
 	}
@@ -190,6 +190,6 @@ func autoConvert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableC
 }
 
 // Convert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig is an autogenerated conversion function.
-func Convert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(in *cainjector.EnableInjectableConfig, out *v1alpha1.EnableInjectableConfig, s conversion.Scope) error {
+func Convert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(in *cainjector.EnableInjectableConfig, out *cainjectorv1alpha1.EnableInjectableConfig, s conversion.Scope) error {
 	return autoConvert_cainjector_EnableInjectableConfig_To_v1alpha1_EnableInjectableConfig(in, out, s)
 }
