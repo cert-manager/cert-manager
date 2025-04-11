@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -29,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/diff"
 	coretesting "k8s.io/client-go/testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -295,8 +295,8 @@ func TestCleanupIngresses(t *testing.T) {
 					t.Errorf("error getting ingress resource: %v", err)
 				}
 
-				if !reflect.DeepEqual(expectedIng, actualIng) {
-					t.Errorf("expected did not match actual: %v", diff.ObjectDiff(expectedIng, actualIng))
+				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
+					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -394,8 +394,8 @@ func TestCleanupIngresses(t *testing.T) {
 					t.Errorf("error getting ingress resource: %v", err)
 				}
 
-				if !reflect.DeepEqual(expectedIng, actualIng) {
-					t.Errorf("expected did not match actual: %v", diff.ObjectDiff(expectedIng, actualIng))
+				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
+					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
 				}
 			},
 		},

@@ -70,7 +70,7 @@ func TestEnsureService(t *testing.T) {
 					{
 						Name:       "http",
 						Port:       acmeSolverListenPort,
-						TargetPort: intstr.FromInt(acmeSolverListenPort),
+						TargetPort: intstr.FromInt32(acmeSolverListenPort),
 					},
 				},
 				Selector: podLabels(chal),
@@ -200,7 +200,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 					{
 						Name:       "http",
 						Port:       acmeSolverListenPort,
-						TargetPort: intstr.FromInt(acmeSolverListenPort),
+						TargetPort: intstr.FromInt32(acmeSolverListenPort),
 					},
 				},
 				Selector: podLabels(chal),
