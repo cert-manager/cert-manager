@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +45,7 @@ import (
 // Ensure that when the controller is running against an empty API server, it
 // creates and stores a new CA keypair.
 func TestDynamicAuthority_Bootstrap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -93,7 +93,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 // Ensures that when the controller is running and the CA Secret is deleted,
 // it is automatically recreated within a bounded amount of time.
 func TestDynamicAuthority_Recreates(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)

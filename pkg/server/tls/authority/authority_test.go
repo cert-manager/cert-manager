@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	testlogr "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +43,7 @@ import (
 // Integration tests for the authority can be found in `test/integration/webhook/dynamic_authority_test.go`.
 
 func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAuthority {
-	logger := testlogr.NewTestLoggerWithOptions(t, testlogr.Options{
+	logger := testr.NewWithOptions(t, testr.Options{
 		Verbosity: 3,
 	})
 	logger = logger.WithName(name)

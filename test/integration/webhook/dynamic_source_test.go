@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +45,7 @@ import (
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_Bootstrap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -110,7 +110,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_CARotation(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -223,7 +223,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 func TestDynamicSource_leaderelection(t *testing.T) {
 	const nrManagers = 2 // number of managers to start for this test
 
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	env, stop := apiserver.RunBareControlPlane(t)

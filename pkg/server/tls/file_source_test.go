@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"golang.org/x/sync/errgroup"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -56,9 +56,9 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		CertPath:       certFile,
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
-		log:            logtesting.NewTestLogger(t),
+		log:            testr.New(t),
 	}
-	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
+	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), testr.New(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Start(ctx)
@@ -107,7 +107,7 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
 	}
-	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
+	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), testr.New(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Start(ctx)
