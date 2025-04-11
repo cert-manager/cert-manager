@@ -34,6 +34,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalorders "github.com/cert-manager/cert-manager/internal/controller/orders"
@@ -265,10 +267,14 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	log.V(logf.DebugLevel).Info("order URL not set, submitting Order to ACME server")
 
 	dnsIdentifierSet := sets.New[string](o.Spec.DNSNames...)
-	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
-
 	ipIdentifierSet := sets.New[string](o.Spec.IPAddresses...)
-	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", sets.List(dnsIdentifierSet))
+	if len(validation.IsValidIP(field.NewPath(""), o.Spec.CommonName)) == 0 {
+		ipIdentifierSet.Insert(o.Spec.CommonName)
+	} else if len(validation.IsFullyQualifiedDomainName(field.NewPath(""), o.Spec.CommonName)) == 0 {
+		dnsIdentifierSet.Insert(o.Spec.CommonName)
+	}
+	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
+	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", sets.List(ipIdentifierSet))
 
 	authzIDs := acmeapi.DomainIDs(sets.List(dnsIdentifierSet)...)
 	authzIDs = append(authzIDs, acmeapi.IPIDs(sets.List(ipIdentifierSet)...)...)
