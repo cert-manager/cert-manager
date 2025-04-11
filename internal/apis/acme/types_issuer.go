@@ -102,6 +102,8 @@ type ACMEIssuer struct {
 	// it, it will create an error on the Order.
 	// Defaults to false.
 	EnableDurationFeature bool
+
+	KeyType string
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
