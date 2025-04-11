@@ -853,6 +853,27 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 		},
+		"create order that passes all challenges yet still 'invalid' and ensure 'reason' field is set ": {
+			order: testOrderErroredWithDetail,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderErroredWithDetail, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderInvalid.Namespace, testOrderErroredWithDetail)),
+	
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderInvalid, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+		},
 		"should leave the order state as-is if the challenge is marked invalid but the acme order is pending": {
 			order: testOrderPending,
 			builder: &testpkg.Builder{
