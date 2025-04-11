@@ -59,7 +59,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, ctx := ktesting.NewTestContext(t)
-	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(ctx)
@@ -74,7 +74,7 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, ctx := ktesting.NewTestContext(t)
-	_, err := NewDNSProvider(ctx, "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, err := NewDNSProvider(ctx, "", "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
@@ -125,7 +125,7 @@ func TestSessionProviderGetSessionRegion(t *testing.T) {
 			region = fakeIssuerRegion
 		}
 
-		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, allowAmbientCredentials, userAgent)
+		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, "", webIdentityToken, allowAmbientCredentials, userAgent)
 		p.StsProvider = func(cfg aws.Config) StsClient {
 			return &mockSTS{
 				AssumeRoleWithWebIdentityFn: func(
