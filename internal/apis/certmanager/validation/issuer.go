@@ -311,6 +311,10 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 		unionCount++
 	}
 
+	if auth.ClientCertificate != nil {
+		unionCount++
+	}
+
 	if auth.Kubernetes != nil {
 		unionCount++
 
@@ -339,7 +343,7 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 	}
 
 	if unionCount == 0 {
-		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef"))
+		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate"))
 	}
 
 	// Due to the fact that there has not been any "oneOf" validation on
@@ -358,6 +362,25 @@ func ValidateVenafiTPP(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el fiel
 	}
 
 	// TODO: validate CABundle using validateCABundleNotEmpty
+
+	// Validate only one of CABundle/CABundleSecretRef is passed
+	el = append(el, validateVenafiTPPCABundleUnique(tpp, fldPath)...)
+
+	return el
+}
+
+func validateVenafiTPPCABundleUnique(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el field.ErrorList) {
+	numCAs := 0
+	if len(tpp.CABundle) > 0 {
+		numCAs++
+	}
+	if tpp.CABundleSecretRef != nil {
+		numCAs++
+	}
+
+	if numCAs > 1 {
+		el = append(el, field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as TPP CA Bundle"))
+	}
 
 	return el
 }
@@ -441,10 +464,18 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 					el = append(el, field.Required(fldPath.Child("azureDNS", "tenantID"), ""))
 				}
 				if p.AzureDNS.ManagedIdentity != nil {
-					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"))
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity cannot be used at the same time as clientID, clientSecretSecretRef or tenantID"))
 				}
-			} else if p.AzureDNS.ManagedIdentity != nil && len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
+			} else if p.AzureDNS.ManagedIdentity != nil {
+				if len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
+				}
+				if len(p.AzureDNS.ManagedIdentity.TenantID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityTenantID and managedIdentityResourceID cannot both be specified"))
+				}
+				if len(p.AzureDNS.ManagedIdentity.TenantID) > 0 && len(p.AzureDNS.ManagedIdentity.ClientID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"))
+				}
 			}
 
 			// SubscriptionID must always be defined
@@ -505,10 +536,6 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
-			// region is the only required field for route53 as ambient credentials can be used instead
-			if len(p.Route53.Region) == 0 {
-				el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
-			}
 			// We don't include a validation here asserting that either the
 			// AccessKeyID or SecretAccessKeyID must be specified, because it is
 			// valid to use neither when using ambient credentials.

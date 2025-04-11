@@ -30,7 +30,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// RunWebhookServer creates and starts a new apiserver that acts as a external
+// RunWebhookServer creates and starts a new apiserver that acts as an external
 // webhook server for solving DNS challenges using the provided solver
 // implementations. This can be used as an entry point by external webhook
 // implementations, see

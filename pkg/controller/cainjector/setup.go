@@ -165,7 +165,20 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				// injectables is here where we define which
 				// objects' events should trigger a reconcile.
 				builder.WithPredicates(predicates)).
-			Watches(new(corev1.Secret), handler.EnqueueRequestsFromMapFunc(secretForInjectableMapFuncBuilder(mgr.GetClient(), log, setup)))
+			Watches(
+				new(corev1.Secret),
+				handler.EnqueueRequestsFromMapFunc(secretForInjectableMapFuncBuilder(mgr.GetClient(), log, setup)),
+				// Why do we use builder.OnlyMetadata?
+				//
+				// 1. To reduce memory use of cainjector, by only caching the
+				//    metadata of Secrets, not the data.
+				// 2. To reduce the load on the K8S API server, by only listing
+				//    the metadata of the Secrets when cainjector starts up.
+				//
+				// This configuration works in conjunction with the `DisableFor`
+				// option in the manager client.Options and client.CacheOptions.
+				builder.OnlyMetadata,
+			)
 		if opts.EnableCertificatesDataSource {
 			// Index injectable with a new field. If the injectable's CA is
 			// to be sourced from a Certificate's Secret, the field's value will be the
@@ -176,10 +189,15 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
 				return err
 			}
-			b.Watches(new(corev1.Secret), handler.EnqueueRequestsFromMapFunc(
-				certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup))).
-				Watches(new(cmapi.Certificate),
-					handler.EnqueueRequestsFromMapFunc(certToInjectableMapFuncBuilder(mgr.GetClient(), log, setup)))
+			b.Watches(
+				new(corev1.Secret),
+				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup)),
+				// See "Why do we use builder.OnlyMetadata?" above.
+				builder.OnlyMetadata,
+			).Watches(
+				new(cmapi.Certificate),
+				handler.EnqueueRequestsFromMapFunc(certToInjectableMapFuncBuilder(mgr.GetClient(), log, setup)),
+			)
 		}
 		if err := b.Complete(r); err != nil {
 			return fmt.Errorf("error registering controller for %s: %w", setup.objType.GetName(), err)

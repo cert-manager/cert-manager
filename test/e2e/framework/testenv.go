@@ -22,10 +22,8 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Defines methods that help provision test environments
@@ -71,19 +69,4 @@ func (f *Framework) CreateKubeResourceQuota(ctx context.Context) (*v1.ResourceQu
 // DeleteKubeNamespace will delete a namespace resource
 func (f *Framework) DeleteKubeNamespace(ctx context.Context, namespace string) error {
 	return f.KubeClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
-}
-
-// WaitForKubeNamespaceNotExist will wait for the namespace with the given name
-// to not exist for up to 2 minutes.
-func (f *Framework) WaitForKubeNamespaceNotExist(ctx context.Context, namespace string) error {
-	return wait.PollUntilContextTimeout(ctx, Poll, time.Minute*2, true, func(ctx context.Context) (bool, error) {
-		_, err := f.KubeClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-		if apierrors.IsNotFound(err) {
-			return true, nil
-		}
-		if err != nil {
-			return false, err
-		}
-		return false, nil
-	})
 }

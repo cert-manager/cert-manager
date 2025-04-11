@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	cliflag "k8s.io/component-base/cli/flag"
 
@@ -107,7 +108,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
 
 	// HTTP-01 solver pod configuration via flags is a now deprecated
-	// mechanism- please use pod template instead when adding any new
+	// mechanism - please use pod template instead when adding any new
 	// configuration options
 	// https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 	// These flags however will not be deprecated for backwards compatibility purposes.
@@ -141,7 +142,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
 
 	fs.StringSliceVar(&c.IngressShimConfig.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", c.IngressShimConfig.DefaultAutoCertificateAnnotations, ""+
-		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
+		"The annotation consumed by the ingress-shim controller to indicate an ingress is requesting a certificate")
+	fs.StringSliceVar(&c.IngressShimConfig.ExtraCertificateAnnotations, "extra-certificate-annotations", []string{}, ""+
+		"Extra annotation to be added by the ingress-shim controller to certificate object")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerName, "default-issuer-name", c.IngressShimConfig.DefaultIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerKind, "default-issuer-kind", c.IngressShimConfig.DefaultIssuerKind, ""+
@@ -152,7 +155,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.StringSliceVar(&c.ACMEDNS01Config.RecursiveNameservers, "dns01-recursive-nameservers",
 		c.ACMEDNS01Config.RecursiveNameservers, "A list of comma separated dns server endpoints used for DNS01 and DNS-over-HTTPS (DoH) check requests. "+
 			"This should be a list containing entries of the following formats: `<ip address>:<port>` or `https://<DoH RFC 8484 server address>`. "+
-			"For example: `8.8.8.8:53,8.8.4.4:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
+			"For example: `8.8.8.8:53,8.8.4.4:53,[2001:4860:4860::8888]:53` or `https://1.1.1.1/dns-query,https://8.8.8.8/dns-query`. "+
 			"To make sure ALL DNS requests happen through DoH, `dns01-recursive-nameservers-only` should also be set to true.")
 	fs.BoolVar(&c.ACMEDNS01Config.RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		c.ACMEDNS01Config.RecursiveNameserversOnly,
@@ -173,7 +176,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"feature gate must also be enabled (default as of 1.15).")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
-		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
@@ -219,11 +222,11 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.StringVar(&c.HealthzListenAddress, "internal-healthz-listen-address", c.HealthzListenAddress, ""+
 		"The host and port that the healthz server should listen on. "+
 		"The healthz server serves the /livez endpoint, which is called by the LivenessProbe.")
-	fs.MarkHidden("internal-healthz-listen-address")
+	utilruntime.Must(fs.MarkHidden("internal-healthz-listen-address"))
 
 	fs.DurationVar(&c.LeaderElectionConfig.HealthzTimeout, "internal-healthz-leader-election-timeout", c.LeaderElectionConfig.HealthzTimeout, ""+
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
-	fs.MarkHidden("internal-healthz-leader-election-timeout")
+	utilruntime.Must(fs.MarkHidden("internal-healthz-leader-election-timeout"))
 
 	logf.AddFlags(&c.Logging, fs)
 }
@@ -258,6 +261,10 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.EnableGatewayAPI {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
+		logf.Log.Info("the ValidateCAA feature flag has been removed and is now a no-op")
 	}
 
 	return enabled

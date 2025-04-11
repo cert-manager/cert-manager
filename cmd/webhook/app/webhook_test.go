@@ -50,7 +50,10 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 
 	var finalConfig *config.WebhookConfiguration
 
-	logsapi.ResetForTest(nil)
+	if err := logsapi.ResetForTest(nil); err != nil {
+		t.Error(err)
+	}
+
 	cmd := newServerCommand(context.TODO(), func(ctx context.Context, cc *config.WebhookConfiguration) error {
 		finalConfig = cc
 		return nil
@@ -178,7 +181,6 @@ logging:
 	}
 
 	for i, tc := range tests {
-		tc := tc
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			tempDir := t.TempDir()
 

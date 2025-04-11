@@ -268,7 +268,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		secret.Labels["abc"] = "123"
 		secret.Labels["foo"] = "bar"
 
-		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, secret, metav1.UpdateOptions{})
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, secret, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, secretName, metav1.GetOptions{})
@@ -278,7 +278,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(secret.Labels).To(HaveKeyWithValue("abc", "123"))
 		Expect(secret.Labels).To(HaveKeyWithValue("foo", "bar"))
 
-		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Apply(context.Background(),
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Apply(context.Background(),
 			applycorev1.Secret(secret.Name, secret.Namespace).
 				WithAnnotations(secret.Annotations).
 				WithLabels(secret.Labels),
@@ -343,10 +343,10 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 				})
 			}
 
-			for _, expectedAnnoation := range []string{"an-annotation", "another-annotation"} {
+			for _, expectedAnnotation := range []string{"an-annotation", "another-annotation"} {
 				var found bool
 				for _, managedAnnotation := range managedAnnotations {
-					if expectedAnnoation == managedAnnotation {
+					if expectedAnnotation == managedAnnotation {
 						found = true
 						break
 					}

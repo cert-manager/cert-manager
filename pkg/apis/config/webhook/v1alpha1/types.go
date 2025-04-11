@@ -64,4 +64,12 @@ type WebhookConfiguration struct {
 	// features.
 	// +optional
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
+
+	// The host and port that the metrics endpoint should listen on.
+	// The value "0" disables the metrics server.
+	// Defaults to '0.0.0.0:9402'.
+	MetricsListenAddress string `json:"metricsListenAddress,omitempty"`
+
+	// metricsTLSConfig is used to configure the metrics server TLS settings.
+	MetricsTLSConfig sharedv1alpha1.TLSConfig `json:"metricsTLSConfig"`
 }

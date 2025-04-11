@@ -63,7 +63,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("Issuer: the private key Secret is created after the request is created should still be signed", func() {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		var err error
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
@@ -89,7 +89,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
@@ -125,7 +125,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("Issuer: private key Secret is updated with a valid private key after the request is created should still be signed", func() {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		var err error
 		By("creating Secret with missing private key")
@@ -158,7 +158,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
@@ -190,7 +190,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("ClusterIssuer: the private key Secret is created after the request is created should still be signed", func() {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		var err error
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
@@ -216,7 +216,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})
@@ -252,7 +252,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	})
 
 	It("ClusterIssuer: private key Secret is updated with a valid private key after the request is created should still be signed", func() {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		var err error
 		By("creating Secret with missing private key")
@@ -285,7 +285,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		By("approving request")
 		request.Status.Conditions = append(request.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 			Type: certificatesv1.CertificateApproved, Status: corev1.ConditionTrue,
-			Reason: "Approved", Message: "approved for cert-manager.io selfigned e2e test",
+			Reason: "Approved", Message: "approved for cert-manager.io self-signed e2e test",
 			LastUpdateTime: metav1.NewTime(time.Now()), LastTransitionTime: metav1.NewTime(time.Now()),
 		})
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().UpdateApproval(context.TODO(), request.Name, request, metav1.UpdateOptions{})

@@ -38,30 +38,30 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.KeyUsagesFeature,
+		featureset.Ed25519FeatureSet,
+		featureset.IssueCAFeature,
+	)
+
 	issuer := &kubernetes{
 		testWithRootCA: true,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault Kubernetes Auth Issuer With Root CA",
-		CreateIssuerFunc: issuer.createIssuer,
-		DeleteIssuerFunc: issuer.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault Kubernetes Auth Issuer With Root CA",
+		CreateIssuerFunc:    issuer.createIssuer,
+		DeleteIssuerFunc:    issuer.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	clusterIssuer := &kubernetes{
 		testWithRootCA: true,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault Kubernetes Auth ClusterIssuer With Root CA",
-		CreateIssuerFunc: clusterIssuer.createClusterIssuer,
-		DeleteIssuerFunc: clusterIssuer.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault Kubernetes Auth ClusterIssuer With Root CA",
+		CreateIssuerFunc:    clusterIssuer.createClusterIssuer,
+		DeleteIssuerFunc:    clusterIssuer.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 
@@ -69,6 +69,8 @@ type kubernetes struct {
 	testWithRootCA bool
 	// saTokenSecretName is the name of the Secret containing the service account token
 	saTokenSecretName string
+	// saBoundSA is the name of the service account which is used in the test, will be cleaned up after the test
+	saBoundSA string
 
 	setup *vault.VaultInitializer
 }
@@ -120,7 +122,14 @@ func (k *kubernetes) delete(ctx context.Context, f *framework.Framework, signerN
 		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		k.setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.setup.Role())
+		err = k.setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Config.Addons.CertManager.ClusterResourceNamespace, k.saBoundSA)
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, ref.Name, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = k.setup.CleanKubernetesRole(ctx, f.KubeClientSet, f.Namespace.Name, k.saBoundSA)
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	Expect(k.setup.Clean(ctx)).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
@@ -141,12 +150,12 @@ func (k *kubernetes) initVault(ctx context.Context, f *framework.Framework, boun
 	By("Creating a ServiceAccount for Vault authentication")
 
 	// boundNS is name of the service account for which a Secret containing the service account token will be created
-	boundSA := "vault-issuer-" + rand.String(5)
-	err := k.setup.CreateKubernetesRole(ctx, f.KubeClientSet, boundNS, boundSA)
+	k.saBoundSA = "vault-issuer-" + rand.String(5)
+	err := k.setup.CreateKubernetesRole(ctx, f.KubeClientSet, boundNS, k.saBoundSA)
 	Expect(err).NotTo(HaveOccurred())
 
 	k.saTokenSecretName = "vault-sa-secret-" + rand.String(5)
-	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(ctx, vault.NewVaultKubernetesSecret(k.saTokenSecretName, boundSA), metav1.CreateOptions{})
+	_, err = f.KubeClientSet.CoreV1().Secrets(boundNS).Create(ctx, vault.NewVaultKubernetesSecret(k.saTokenSecretName, k.saBoundSA), metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 

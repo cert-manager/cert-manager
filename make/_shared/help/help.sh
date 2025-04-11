@@ -71,10 +71,10 @@ done <<< "$raw_expansions"
 
 ## 3. Sort and print the extracted line items
 
-RULE_COLOR="$(tput setaf 6)"
-CATEGORY_COLOR="$(tput setaf 3)"
-CLEAR_STYLE="$(tput sgr0)"
-PURPLE=$(tput setaf 125)
+RULE_COLOR="$(TERM=xterm tput setaf 6)"
+CATEGORY_COLOR="$(TERM=xterm tput setaf 3)"
+CLEAR_STYLE="$(TERM=xterm tput sgr0)"
+PURPLE=$(TERM=xterm tput setaf 125)
 
 extracted_lines=$(echo -e "$extracted_lines" | LC_ALL=C sort -r)
 current_category=""

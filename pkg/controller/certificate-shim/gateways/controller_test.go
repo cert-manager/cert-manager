@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
@@ -41,7 +42,7 @@ func Test_controller_Register(t *testing.T) {
 		name           string
 		existingCert   *cmapi.Certificate
 		givenCall      func(*testing.T, cmclient.Interface, gwclient.Interface)
-		expectAddCalls []interface{}
+		expectAddCalls []types.NamespacedName
 	}{
 		{
 			name: "gateway is re-queued when an 'Added' event is received for this gateway",
@@ -51,7 +52,12 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectAddCalls: []interface{}{"namespace-1/gateway-1"},
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-1",
+				},
+			},
 		},
 		{
 			name: "gateway is re-queued when an 'Updated' event is received for this gateway",
@@ -69,8 +75,18 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectAddCalls: []interface{}{"namespace-1/gateway-1", "namespace-1/gateway-1"},
-			//                                <----- Create ------>    <------ Update ----->
+			expectAddCalls: []types.NamespacedName{
+				// Create
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-1",
+				},
+				// Update
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-1",
+				},
+			},
 		},
 		{
 			name: "gateway is re-queued when a 'Deleted' event is received for this gateway",
@@ -83,8 +99,18 @@ func Test_controller_Register(t *testing.T) {
 				err = c.GatewayV1().Gateways("namespace-1").Delete(context.Background(), "gateway-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
-			expectAddCalls: []interface{}{"namespace-1/gateway-1", "namespace-1/gateway-1"},
-			//                                <----- Create ------>    <------ Delete ----->
+			expectAddCalls: []types.NamespacedName{
+				// Create
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-1",
+				},
+				// Delete
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-1",
+				},
+			},
 		},
 		{
 			name: "gateway is re-queued when an 'Added' event is received for its child Certificate",
@@ -97,7 +123,12 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectAddCalls: []interface{}{"namespace-1/gateway-2"},
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-2",
+				},
+			},
 		},
 		{
 			name: "gateway is re-queued when an 'Updated' event is received for its child Certificate",
@@ -116,7 +147,12 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectAddCalls: []interface{}{"namespace-1/gateway-2"},
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-2",
+				},
+			},
 		},
 		{
 			name: "gateway is re-queued when a 'Deleted' event is received for its child Certificate",
@@ -130,7 +166,12 @@ func Test_controller_Register(t *testing.T) {
 				// err := c.CertmanagerV1().Certificates("namespace-1").Delete(context.Background(), "cert-1", metav1.DeleteOptions{})
 				// require.NoError(t, err)
 			},
-			expectAddCalls: []interface{}{"namespace-1/gateway-2"},
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "gateway-2",
+				},
+			},
 		},
 	}
 
@@ -181,34 +222,34 @@ func Test_controller_Register(t *testing.T) {
 
 type mockWorkqueue struct {
 	t          *testing.T
-	callsToAdd []interface{}
+	callsToAdd []types.NamespacedName
 }
 
-var _ workqueue.Interface = &mockWorkqueue{}
+var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
 
-func (m *mockWorkqueue) Add(arg0 interface{}) {
+func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
 	m.callsToAdd = append(m.callsToAdd, arg0)
 }
 
-func (m *mockWorkqueue) AddAfter(arg0 interface{}, arg1 time.Duration) {
+func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {
 	m.t.Error("workqueue.AddAfter was called but was not expected to be called")
 }
 
-func (m *mockWorkqueue) AddRateLimited(arg0 interface{}) {
+func (m *mockWorkqueue) AddRateLimited(arg0 types.NamespacedName) {
 	m.t.Error("workqueue.AddRateLimited was called but was not expected to be called")
 }
 
-func (m *mockWorkqueue) Done(arg0 interface{}) {
+func (m *mockWorkqueue) Done(arg0 types.NamespacedName) {
 	m.t.Error("workqueue.Done was called but was not expected to be called")
 }
 
-func (m *mockWorkqueue) Forget(arg0 interface{}) {
+func (m *mockWorkqueue) Forget(arg0 types.NamespacedName) {
 	m.t.Error("workqueue.Forget was called but was not expected to be called")
 }
 
-func (m *mockWorkqueue) Get() (interface{}, bool) {
+func (m *mockWorkqueue) Get() (types.NamespacedName, bool) {
 	m.t.Error("workqueue.Get was called but was not expected to be called")
-	return nil, false
+	return types.NamespacedName{}, false
 }
 
 func (m *mockWorkqueue) Len() int {
@@ -216,7 +257,7 @@ func (m *mockWorkqueue) Len() int {
 	return 0
 }
 
-func (m *mockWorkqueue) NumRequeues(arg0 interface{}) int {
+func (m *mockWorkqueue) NumRequeues(arg0 types.NamespacedName) int {
 	m.t.Error("workqueue.NumRequeues was called but was not expected to be called")
 	return 0
 }

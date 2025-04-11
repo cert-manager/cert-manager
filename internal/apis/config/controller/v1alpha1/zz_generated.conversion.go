@@ -26,7 +26,7 @@ import (
 
 	controller "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
-	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
+	controllerv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -39,60 +39,60 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMEDNS01Config)(nil), (*controller.ACMEDNS01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(a.(*v1alpha1.ACMEDNS01Config), b.(*controller.ACMEDNS01Config), scope)
+	if err := s.AddGeneratedConversionFunc((*controllerv1alpha1.ACMEDNS01Config)(nil), (*controller.ACMEDNS01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(a.(*controllerv1alpha1.ACMEDNS01Config), b.(*controller.ACMEDNS01Config), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*controller.ACMEDNS01Config)(nil), (*v1alpha1.ACMEDNS01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(a.(*controller.ACMEDNS01Config), b.(*v1alpha1.ACMEDNS01Config), scope)
+	if err := s.AddGeneratedConversionFunc((*controller.ACMEDNS01Config)(nil), (*controllerv1alpha1.ACMEDNS01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(a.(*controller.ACMEDNS01Config), b.(*controllerv1alpha1.ACMEDNS01Config), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMEHTTP01Config)(nil), (*controller.ACMEHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(a.(*v1alpha1.ACMEHTTP01Config), b.(*controller.ACMEHTTP01Config), scope)
+	if err := s.AddGeneratedConversionFunc((*controllerv1alpha1.ACMEHTTP01Config)(nil), (*controller.ACMEHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(a.(*controllerv1alpha1.ACMEHTTP01Config), b.(*controller.ACMEHTTP01Config), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*controller.ACMEHTTP01Config)(nil), (*v1alpha1.ACMEHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(a.(*controller.ACMEHTTP01Config), b.(*v1alpha1.ACMEHTTP01Config), scope)
+	if err := s.AddGeneratedConversionFunc((*controller.ACMEHTTP01Config)(nil), (*controllerv1alpha1.ACMEHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(a.(*controller.ACMEHTTP01Config), b.(*controllerv1alpha1.ACMEHTTP01Config), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ControllerConfiguration)(nil), (*controller.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(a.(*v1alpha1.ControllerConfiguration), b.(*controller.ControllerConfiguration), scope)
+	if err := s.AddGeneratedConversionFunc((*controllerv1alpha1.ControllerConfiguration)(nil), (*controller.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(a.(*controllerv1alpha1.ControllerConfiguration), b.(*controller.ControllerConfiguration), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*controller.ControllerConfiguration)(nil), (*v1alpha1.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(a.(*controller.ControllerConfiguration), b.(*v1alpha1.ControllerConfiguration), scope)
+	if err := s.AddGeneratedConversionFunc((*controller.ControllerConfiguration)(nil), (*controllerv1alpha1.ControllerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(a.(*controller.ControllerConfiguration), b.(*controllerv1alpha1.ControllerConfiguration), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.IngressShimConfig)(nil), (*controller.IngressShimConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(a.(*v1alpha1.IngressShimConfig), b.(*controller.IngressShimConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*controllerv1alpha1.IngressShimConfig)(nil), (*controller.IngressShimConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(a.(*controllerv1alpha1.IngressShimConfig), b.(*controller.IngressShimConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*controller.IngressShimConfig)(nil), (*v1alpha1.IngressShimConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(a.(*controller.IngressShimConfig), b.(*v1alpha1.IngressShimConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*controller.IngressShimConfig)(nil), (*controllerv1alpha1.IngressShimConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(a.(*controller.IngressShimConfig), b.(*controllerv1alpha1.IngressShimConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.LeaderElectionConfig)(nil), (*controller.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(a.(*v1alpha1.LeaderElectionConfig), b.(*controller.LeaderElectionConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*controllerv1alpha1.LeaderElectionConfig)(nil), (*controller.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(a.(*controllerv1alpha1.LeaderElectionConfig), b.(*controller.LeaderElectionConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*controller.LeaderElectionConfig)(nil), (*v1alpha1.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(a.(*controller.LeaderElectionConfig), b.(*v1alpha1.LeaderElectionConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*controller.LeaderElectionConfig)(nil), (*controllerv1alpha1.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(a.(*controller.LeaderElectionConfig), b.(*controllerv1alpha1.LeaderElectionConfig), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1alpha1.ACMEDNS01Config, out *controller.ACMEDNS01Config, s conversion.Scope) error {
+func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *controllerv1alpha1.ACMEDNS01Config, out *controller.ACMEDNS01Config, s conversion.Scope) error {
 	out.RecursiveNameservers = *(*[]string)(unsafe.Pointer(&in.RecursiveNameservers))
 	if err := v1.Convert_Pointer_bool_To_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
@@ -104,11 +104,11 @@ func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1al
 }
 
 // Convert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config is an autogenerated conversion function.
-func Convert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *v1alpha1.ACMEDNS01Config, out *controller.ACMEDNS01Config, s conversion.Scope) error {
+func Convert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *controllerv1alpha1.ACMEDNS01Config, out *controller.ACMEDNS01Config, s conversion.Scope) error {
 	return autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in, out, s)
 }
 
-func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *controller.ACMEDNS01Config, out *v1alpha1.ACMEDNS01Config, s conversion.Scope) error {
+func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *controller.ACMEDNS01Config, out *controllerv1alpha1.ACMEDNS01Config, s conversion.Scope) error {
 	out.RecursiveNameservers = *(*[]string)(unsafe.Pointer(&in.RecursiveNameservers))
 	if err := v1.Convert_bool_To_Pointer_bool(&in.RecursiveNameserversOnly, &out.RecursiveNameserversOnly, s); err != nil {
 		return err
@@ -120,11 +120,11 @@ func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *cont
 }
 
 // Convert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config is an autogenerated conversion function.
-func Convert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *controller.ACMEDNS01Config, out *v1alpha1.ACMEDNS01Config, s conversion.Scope) error {
+func Convert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *controller.ACMEDNS01Config, out *controllerv1alpha1.ACMEDNS01Config, s conversion.Scope) error {
 	return autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in, out, s)
 }
 
-func autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *v1alpha1.ACMEHTTP01Config, out *controller.ACMEHTTP01Config, s conversion.Scope) error {
+func autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *controllerv1alpha1.ACMEHTTP01Config, out *controller.ACMEHTTP01Config, s conversion.Scope) error {
 	out.SolverImage = in.SolverImage
 	out.SolverResourceRequestCPU = in.SolverResourceRequestCPU
 	out.SolverResourceRequestMemory = in.SolverResourceRequestMemory
@@ -138,11 +138,11 @@ func autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *v1
 }
 
 // Convert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config is an autogenerated conversion function.
-func Convert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *v1alpha1.ACMEHTTP01Config, out *controller.ACMEHTTP01Config, s conversion.Scope) error {
+func Convert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *controllerv1alpha1.ACMEHTTP01Config, out *controller.ACMEHTTP01Config, s conversion.Scope) error {
 	return autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in, out, s)
 }
 
-func autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *controller.ACMEHTTP01Config, out *v1alpha1.ACMEHTTP01Config, s conversion.Scope) error {
+func autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *controller.ACMEHTTP01Config, out *controllerv1alpha1.ACMEHTTP01Config, s conversion.Scope) error {
 	out.SolverImage = in.SolverImage
 	out.SolverResourceRequestCPU = in.SolverResourceRequestCPU
 	out.SolverResourceRequestMemory = in.SolverResourceRequestMemory
@@ -156,11 +156,11 @@ func autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *co
 }
 
 // Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config is an autogenerated conversion function.
-func Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *controller.ACMEHTTP01Config, out *v1alpha1.ACMEHTTP01Config, s conversion.Scope) error {
+func Convert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *controller.ACMEHTTP01Config, out *controllerv1alpha1.ACMEHTTP01Config, s conversion.Scope) error {
 	return autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in, out, s)
 }
 
-func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *v1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
+func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *controllerv1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
 	out.KubeConfig = in.KubeConfig
 	out.APIServerHost = in.APIServerHost
 	if err := sharedv1alpha1.Convert_Pointer_float32_To_float32(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
@@ -218,11 +218,11 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 }
 
 // Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration is an autogenerated conversion function.
-func Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *v1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
+func Convert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in *controllerv1alpha1.ControllerConfiguration, out *controller.ControllerConfiguration, s conversion.Scope) error {
 	return autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfiguration(in, out, s)
 }
 
-func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
+func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *controllerv1alpha1.ControllerConfiguration, s conversion.Scope) error {
 	out.APIServerHost = in.APIServerHost
 	out.KubeConfig = in.KubeConfig
 	if err := sharedv1alpha1.Convert_float32_To_Pointer_float32(&in.KubernetesAPIQPS, &out.KubernetesAPIQPS, s); err != nil {
@@ -280,37 +280,39 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 }
 
 // Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration is an autogenerated conversion function.
-func Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *v1alpha1.ControllerConfiguration, s conversion.Scope) error {
+func Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *controllerv1alpha1.ControllerConfiguration, s conversion.Scope) error {
 	return autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in, out, s)
 }
 
-func autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *v1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *controllerv1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
 	out.DefaultIssuerName = in.DefaultIssuerName
 	out.DefaultIssuerKind = in.DefaultIssuerKind
 	out.DefaultIssuerGroup = in.DefaultIssuerGroup
 	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
+	out.ExtraCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.ExtraCertificateAnnotations))
 	return nil
 }
 
 // Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig is an autogenerated conversion function.
-func Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *v1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
+func Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *controllerv1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
 	return autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in, out, s)
 }
 
-func autoConvert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *controller.IngressShimConfig, out *v1alpha1.IngressShimConfig, s conversion.Scope) error {
+func autoConvert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *controller.IngressShimConfig, out *controllerv1alpha1.IngressShimConfig, s conversion.Scope) error {
 	out.DefaultIssuerName = in.DefaultIssuerName
 	out.DefaultIssuerKind = in.DefaultIssuerKind
 	out.DefaultIssuerGroup = in.DefaultIssuerGroup
 	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
+	out.ExtraCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.ExtraCertificateAnnotations))
 	return nil
 }
 
 // Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig is an autogenerated conversion function.
-func Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *controller.IngressShimConfig, out *v1alpha1.IngressShimConfig, s conversion.Scope) error {
+func Convert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *controller.IngressShimConfig, out *controllerv1alpha1.IngressShimConfig, s conversion.Scope) error {
 	return autoConvert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in, out, s)
 }
 
-func autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in *v1alpha1.LeaderElectionConfig, out *controller.LeaderElectionConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in *controllerv1alpha1.LeaderElectionConfig, out *controller.LeaderElectionConfig, s conversion.Scope) error {
 	if err := sharedv1alpha1.Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
@@ -321,11 +323,11 @@ func autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfi
 }
 
 // Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig is an autogenerated conversion function.
-func Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in *v1alpha1.LeaderElectionConfig, out *controller.LeaderElectionConfig, s conversion.Scope) error {
+func Convert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in *controllerv1alpha1.LeaderElectionConfig, out *controller.LeaderElectionConfig, s conversion.Scope) error {
 	return autoConvert_v1alpha1_LeaderElectionConfig_To_controller_LeaderElectionConfig(in, out, s)
 }
 
-func autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *v1alpha1.LeaderElectionConfig, s conversion.Scope) error {
+func autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *controllerv1alpha1.LeaderElectionConfig, s conversion.Scope) error {
 	if err := sharedv1alpha1.Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
@@ -336,6 +338,6 @@ func autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfi
 }
 
 // Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig is an autogenerated conversion function.
-func Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *v1alpha1.LeaderElectionConfig, s conversion.Scope) error {
+func Convert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *controller.LeaderElectionConfig, out *controllerv1alpha1.LeaderElectionConfig, s conversion.Scope) error {
 	return autoConvert_controller_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in, out, s)
 }

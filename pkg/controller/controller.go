@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/client-go/tools/cache"
@@ -40,17 +41,17 @@ type runDurationFunc struct {
 }
 
 type queueingController interface {
-	Register(*Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error)
-	ProcessItem(ctx context.Context, key string) error
+	Register(*Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error)
+	ProcessItem(ctx context.Context, key types.NamespacedName) error
 }
 
 func NewController(
 	name string,
 	metrics *metrics.Metrics,
-	syncFunc func(ctx context.Context, key string) error,
+	syncFunc func(ctx context.Context, key types.NamespacedName) error,
 	mustSync []cache.InformerSynced,
 	runDurationFuncs []runDurationFunc,
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 ) Interface {
 	return &controller{
 		name:             name,
@@ -68,7 +69,7 @@ type controller struct {
 
 	// the function that should be called when an item is popped
 	// off the workqueue
-	syncHandler func(ctx context.Context, key string) error
+	syncHandler func(ctx context.Context, key types.NamespacedName) error
 
 	// mustSync is a slice of informers that must have synced before
 	// this controller can start
@@ -82,7 +83,7 @@ type controller struct {
 
 	// queue is a reference to the queue used to enqueue resources
 	// to be processed
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 
 	// metrics is used to expose Prometheus, shared by all controllers
 	metrics *metrics.Metrics
@@ -114,7 +115,6 @@ func (c *controller) Run(workers int, ctx context.Context) error {
 	}
 
 	for _, f := range c.runDurationFuncs {
-		f := f // capture range variable
 		go wait.Until(func() { f.fn(ctx) }, f.duration, ctx.Done())
 	}
 
@@ -137,21 +137,16 @@ func (c *controller) worker(ctx context.Context) {
 			break
 		}
 
-		var key string
 		// use an inlined function so we can use defer
 		func() {
 			defer c.queue.Done(obj)
-			var ok bool
-			if key, ok = obj.(string); !ok {
-				return
-			}
-			log := log.WithValues("key", key)
+
 			log.V(logf.DebugLevel).Info("syncing item")
 
 			// Increase sync count for this controller
 			c.metrics.IncrementSyncCallCount(c.name)
 
-			err := c.syncHandler(ctx, key)
+			err := c.syncHandler(ctx, obj)
 			if err != nil {
 				if strings.Contains(err.Error(), genericregistry.OptimisticLockErrorMsg) {
 					log.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())

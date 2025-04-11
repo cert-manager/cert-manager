@@ -47,8 +47,10 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-		f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, issuerName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should validate a signing keypair", func() {

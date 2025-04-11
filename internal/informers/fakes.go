@@ -130,7 +130,7 @@ func (fsi FakeSecretInterface) Delete(ctx context.Context, name string, opts met
 	panic("not implemented")
 }
 func (fsi FakeSecretInterface) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	panic("not implemeted")
+	panic("not implemented")
 }
 func (fsi FakeSecretInterface) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	panic("not implemented")

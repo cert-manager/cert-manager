@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
@@ -137,6 +138,22 @@ func ExpectCertificateOrganizationToMatch(certificate *cmapi.Certificate, secret
 	var expectedOrganization []string
 	if certificate.Spec.Subject != nil {
 		expectedOrganization = certificate.Spec.Subject.Organizations
+	}
+	if certificate.Spec.LiteralSubject != "" {
+		sequence, err := pki.UnmarshalSubjectStringToRDNSequence(certificate.Spec.LiteralSubject)
+		if err != nil {
+			return err
+		}
+
+		for _, rdns := range sequence {
+			for _, atv := range rdns {
+				if atv.Type.Equal(pki.OIDConstants.Organization) {
+					if str, ok := atv.Value.(string); ok {
+						expectedOrganization = append(expectedOrganization, str)
+					}
+				}
+			}
+		}
 	}
 
 	if !util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) {
@@ -381,7 +398,7 @@ func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *
 					privateKey := secret.Data[corev1.TLSPrivateKeyKey]
 					block, _ := pem.Decode(privateKey)
 					if !bytes.Equal(derKey, block.Bytes) {
-						return fmt.Errorf("expected additional output Format DER %s to contain the binary formated private Key", cmapi.CertificateOutputFormatDERKey)
+						return fmt.Errorf("expected additional output Format DER %s to contain the binary formatted private Key", cmapi.CertificateOutputFormatDERKey)
 					}
 				} else {
 					return fmt.Errorf("expected additional output format DER key %s to be present in secret", cmapi.CertificateOutputFormatDERKey)
@@ -405,4 +422,25 @@ func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *
 	}
 
 	return nil
+}
+
+func ExpectDuration(duration, fuzz time.Duration) func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	return func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+		certBytes, ok := secret.Data[corev1.TLSCertKey]
+		if !ok {
+			return fmt.Errorf("no certificate data found in secret %q", secret.Name)
+		}
+		cert, err := pki.DecodeX509CertificateBytes(certBytes)
+		if err != nil {
+			return err
+		}
+
+		certDuration := cert.NotAfter.Sub(cert.NotBefore)
+		if certDuration > (duration+fuzz) || certDuration < duration {
+			return fmt.Errorf("expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
+				fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
+		}
+
+		return nil
+	}
 }

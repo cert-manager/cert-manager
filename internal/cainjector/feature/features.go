@@ -16,11 +16,12 @@ limitations under the License.
 
 // feature contains cainjector feature gate setup code. Do not import this
 // package into any code that's shared with other components to prevent
-// overwriting other component's featue gates, see i.e
+// overwriting other component's feature gates, see i.e
 // https://github.com/cert-manager/cert-manager/issues/6011
 package feature
 
 import (
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/featuregate"
 
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -45,10 +46,17 @@ const (
 	//
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
+
+	// Owner: @ThatsMrTalbot
+	// Alpha: v1.17
+	//
+	// CAInjectorMerging changes the ca-injector to merge new certs in instead
+	// of replacing them outright.
+	CAInjectorMerging featuregate.Feature = "CAInjectorMerging"
 )
 
 func init() {
-	utilfeature.DefaultMutableFeatureGate.Add(cainjectorFeatureGates)
+	utilruntime.Must(utilfeature.DefaultMutableFeatureGate.Add(cainjectorFeatureGates))
 }
 
 // cainjectorFeatureGates defines all feature gates for the cainjector component.
@@ -59,5 +67,6 @@ func init() {
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ServerSideApply: {Default: false, PreRelease: featuregate.Alpha},
+	ServerSideApply:   {Default: false, PreRelease: featuregate.Alpha},
+	CAInjectorMerging: {Default: false, PreRelease: featuregate.Alpha},
 }

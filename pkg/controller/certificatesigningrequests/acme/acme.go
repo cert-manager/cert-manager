@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -80,19 +81,21 @@ func init() {
 
 func controllerBuilder() *certificatesigningrequests.Controller {
 	return certificatesigningrequests.New(apiutil.IssuerACME, NewACME,
-		func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+		func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) ([]cache.InformerSynced, error) {
 			orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 			csrLister := ctx.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 
-			orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+			if _, err := orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 				WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
 					log, queue,
 					certificatesv1.SchemeGroupVersion.WithKind("CertificateSigningRequest"),
-					func(_, name string) (interface{}, error) {
+					func(_, name string) (*certificatesv1.CertificateSigningRequest, error) {
 						return csrLister.Get(name)
 					},
 				),
-			})
+			}); err != nil {
+				return nil, fmt.Errorf("error setting up event handler: %v", err)
+			}
 			return []cache.InformerSynced{orderInformer.HasSynced}, nil
 		},
 	)

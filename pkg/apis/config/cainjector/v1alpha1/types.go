@@ -64,10 +64,18 @@ type CAInjectorConfiguration struct {
 	// features.
 	// +optional
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
+
+	// The host and port that the metrics endpoint should listen on.
+	// The value "0" disables the metrics server.
+	// Defaults to '0.0.0.0:9402'.
+	MetricsListenAddress string `json:"metricsListenAddress,omitempty"`
+
+	// metricsTLSConfig is used to configure the metrics server TLS settings.
+	MetricsTLSConfig sharedv1alpha1.TLSConfig `json:"metricsTLSConfig"`
 }
 
 type EnableDataSourceConfig struct {
-	// Certificates detemines whether cainjector's control loops will watch
+	// Certificates determines whether cainjector's control loops will watch
 	// cert-manager Certificate resources as potential sources of CA data.
 	// If not set, defaults to true.
 	Certificates *bool `json:"certificates"`

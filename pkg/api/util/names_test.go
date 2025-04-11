@@ -176,7 +176,6 @@ func TestDNSSafeShortenToNCharacters(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		test := test
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			out := DNSSafeShortenToNCharacters(test.in, test.maxLength)
 			if out != test.expOut {
@@ -267,7 +266,6 @@ func TestComputeSecureUniqueDeterministicNameFromData(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		test := test
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			out, err := ComputeSecureUniqueDeterministicNameFromData(test.in, test.maxLength)
 			if (err != nil) != test.expErr {

@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -66,19 +67,19 @@ func Test_controllerBuilder(t *testing.T) {
 		existingCSR       runtime.Object
 		existingCMObjects []runtime.Object
 		givenCall         func(*testing.T, cmclient.Interface, kubernetes.Interface)
-		expectRequeueKey  string
+		expectRequeueKey  types.NamespacedName
 	}{
 		"if no request then no request should sync": {
 			existingCSR:       nil,
 			existingCMObjects: []runtime.Object{baseOrder},
 			givenCall:         func(t *testing.T, _ cmclient.Interface, _ kubernetes.Interface) {},
-			expectRequeueKey:  "",
+			expectRequeueKey:  types.NamespacedName{},
 		},
 		"if no changes to request or order, then no request should sync": {
 			existingCSR:       baseCSR,
 			existingCMObjects: []runtime.Object{baseOrder},
 			givenCall:         func(t *testing.T, _ cmclient.Interface, _ kubernetes.Interface) {},
-			expectRequeueKey:  "",
+			expectRequeueKey:  types.NamespacedName{},
 		},
 		"request should be synced if an owned order is updated": {
 			existingCSR: baseCSR,
@@ -95,7 +96,9 @@ func Test_controllerBuilder(t *testing.T) {
 				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(context.TODO(), order, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "test-csr",
+			expectRequeueKey: types.NamespacedName{
+				Name: "test-csr",
+			},
 		},
 		"request should not be synced if updated order is not owned": {
 			existingCSR: baseCSR,
@@ -109,7 +112,7 @@ func Test_controllerBuilder(t *testing.T) {
 				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(context.TODO(), order, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "",
+			expectRequeueKey: types.NamespacedName{},
 		},
 		"request should be synced if request is updated": {
 			existingCSR:       baseCSR,
@@ -121,7 +124,9 @@ func Test_controllerBuilder(t *testing.T) {
 				_, err := kubeclient.CertificatesV1().CertificateSigningRequests().UpdateStatus(context.TODO(), csr, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "test-csr",
+			expectRequeueKey: types.NamespacedName{
+				Name: "test-csr",
+			},
 		},
 	}
 
@@ -158,7 +163,7 @@ func Test_controllerBuilder(t *testing.T) {
 			// to be nil.
 			time.AfterFunc(50*time.Millisecond, queue.ShutDown)
 
-			var gotKeys []string
+			var gotKeys []types.NamespacedName
 			for {
 				// Get blocks until either (1) a key is returned, or (2) the
 				// queue is shut down.
@@ -166,13 +171,13 @@ func Test_controllerBuilder(t *testing.T) {
 				if done {
 					break
 				}
-				gotKeys = append(gotKeys, gotKey.(string))
+				gotKeys = append(gotKeys, gotKey)
 			}
 			assert.Equal(t, 0, queue.Len(), "queue should be empty")
 
 			// We only expect 0 or 1 keys received in the queue.
-			if test.expectRequeueKey != "" {
-				assert.Equal(t, []string{test.expectRequeueKey}, gotKeys)
+			if test.expectRequeueKey != (types.NamespacedName{}) {
+				assert.Equal(t, []types.NamespacedName{test.expectRequeueKey}, gotKeys)
 			} else {
 				assert.Nil(t, gotKeys)
 			}
@@ -916,11 +921,15 @@ func Test_ProcessItem(t *testing.T) {
 			defer test.builder.Stop()
 
 			controller := controllerBuilder()
-			controller.Register(test.builder.Context)
+			if _, _, err := controller.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 
 			test.builder.Start()
 
-			err := controller.ProcessItem(context.Background(), test.csr.Name)
+			err := controller.ProcessItem(context.Background(), types.NamespacedName{
+				Name: test.csr.Name,
+			})
 			if (err != nil) != test.expectedErr {
 				t.Errorf("unexpected error, exp=%t got=%v", test.expectedErr, err)
 			}

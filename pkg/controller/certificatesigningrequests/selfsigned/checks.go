@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	clientv1 "k8s.io/client-go/listers/certificates/v1"
 	"k8s.io/client-go/util/workqueue"
 
@@ -43,7 +44,7 @@ import (
 func handleSecretReferenceWorkFunc(log logr.Logger,
 	lister clientv1.CertificateSigningRequestLister,
 	helper issuer.Helper,
-	queue workqueue.RateLimitingInterface,
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	issuerOptions controllerpkg.IssuerOptions,
 ) func(obj any) {
 	return func(obj any) {
@@ -60,13 +61,10 @@ func handleSecretReferenceWorkFunc(log logr.Logger,
 			return
 		}
 		for _, request := range requests {
-			log := logf.WithRelatedResource(log, request)
-			key, err := controllerpkg.KeyFunc(request)
-			if err != nil {
-				log.Error(err, "error computing key for resource")
-				continue
-			}
-			queue.Add(key)
+			queue.Add(types.NamespacedName{
+				Name:      request.Name,
+				Namespace: request.Namespace,
+			})
 		}
 	}
 }
@@ -88,7 +86,7 @@ func certificateSigningRequestsForSecret(log logr.Logger,
 		return nil, fmt.Errorf("failed to list certificate requests: %w", err)
 	}
 
-	dbg.Info("checking if self signed certificate signing requests reference secret")
+	dbg.Info("checking if self-signed certificate signing requests reference secret")
 	var affected []*certificatesv1.CertificateSigningRequest
 	for _, request := range requests {
 		ref, ok := util.SignerIssuerRefFromSignerName(request.Spec.SignerName)

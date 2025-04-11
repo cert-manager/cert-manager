@@ -26,7 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -34,6 +36,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -43,7 +46,7 @@ func (f *fakeSolver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *c
 }
 
 // Check should return Error only if propagation check cannot be performed.
-// It MUST return `false, nil` if can contact all relevant services and all is
+// It MUST return `false, nil` if it can contact all relevant services and all it is
 // doing is waiting for propagation
 func (f *fakeSolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakeCheck(ctx, issuer, ch)
@@ -52,14 +55,14 @@ func (f *fakeSolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cma
 // CleanUp will remove challenge records for a given solver.
 // This may involve deleting resources in the Kubernetes API Server, or
 // communicating with other external components (e.g. DNS providers).
-func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
-	return f.fakeCleanUp(ctx, issuer, ch)
+func (f *fakeSolver) CleanUp(ctx context.Context, ch *cmacme.Challenge) error {
+	return f.fakeCleanUp(ctx, ch)
 }
 
 type fakeSolver struct {
 	fakePresent func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
 	fakeCheck   func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
-	fakeCleanUp func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
+	fakeCleanUp func(ctx context.Context, ch *cmacme.Challenge) error
 }
 
 type testT struct {
@@ -71,7 +74,7 @@ type testT struct {
 	acmeClient *acmecl.FakeACME
 }
 
-func TestSyncHappyPath(t *testing.T) {
+func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinalizer string) {
 	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		Solvers: []cmacme.ACMEChallengeSolver{
 			{
@@ -85,7 +88,7 @@ func TestSyncHappyPath(t *testing.T) {
 		gen.SetChallengeIssuer(cmmeta.ObjectReference{
 			Name: "testissuer",
 		}),
-		gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer}),
+		gen.SetChallengeFinalizers([]string{finalizer}),
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
@@ -99,7 +102,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, ch *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -131,7 +134,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
 					return simulatedCleanupError
 				},
 			},
@@ -188,7 +191,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.DefaultTestNamespace,
 							gen.ChallengeFrom(baseChallenge,
 								gen.SetChallengeProcessing(true),
-								gen.SetChallengeFinalizers([]string{cmacme.ACMEFinalizer})))),
+								gen.SetChallengeFinalizers([]string{activeFinalizer})))),
 				},
 			},
 			expectErr: false,
@@ -203,7 +206,17 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 				), testIssuerHTTP01Enabled},
-				ExpectedActions: []testpkg.Action{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+							"status",
+							gen.DefaultTestNamespace,
+							gen.ChallengeFrom(baseChallenge,
+								gen.SetChallengeURL("testurl"),
+								gen.SetChallengeProcessing(true),
+								gen.SetChallengeReason("unexpected non-ACME API error: challenge was not present in authorization"),
+								gen.SetChallengeState(cmacme.Errored)))),
+				},
 			},
 			expectErr: true,
 			acmeClient: &acmecl.FakeACME{
@@ -334,7 +347,7 @@ func TestSyncHappyPath(t *testing.T) {
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -389,7 +402,7 @@ func TestSyncHappyPath(t *testing.T) {
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -448,7 +461,7 @@ func TestSyncHappyPath(t *testing.T) {
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -508,7 +521,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -543,7 +556,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -578,13 +591,35 @@ func TestSyncHappyPath(t *testing.T) {
 	}
 }
 
+func TestSyncHappyPathFinalizerLegacyToLegacy(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, false)
+	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer, cmacme.ACMELegacyFinalizer)
+}
+
+func TestSyncHappyPathFinalizerDomainQualifiedToLegacy(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, false)
+	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMELegacyFinalizer)
+}
+
+func TestSyncHappyPathFinalizerLegacyToDomainQualified(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, true)
+	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer, cmacme.ACMEDomainQualifiedFinalizer)
+}
+
+func TestSyncHappyPathFinalizerDomainQualifiedToDomainQualified(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, true)
+	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMEDomainQualifiedFinalizer)
+}
+
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
 	test.builder.Init()
 	defer test.builder.Stop()
 
 	c := &controller{}
-	c.Register(test.builder.Context)
+	if _, _, err := c.Register(test.builder.Context); err != nil {
+		t.Fatal(err)
+	}
 	c.helper = issuer.NewHelper(
 		test.builder.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 		test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),

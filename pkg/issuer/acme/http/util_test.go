@@ -40,7 +40,7 @@ type solverFixture struct {
 	// This is useful if you want to load the clientset with some resources *after* the
 	// fixture has been created.
 	PreFn func(*testing.T, *solverFixture)
-	// CheckFn should performs checks to ensure the output of the test is as expected.
+	// CheckFn should perform checks to ensure the output of the test is as expected.
 	// Optional additional values may be provided, which represent the output of the
 	// function under test.
 	CheckFn func(*testing.T, *solverFixture, ...interface{})

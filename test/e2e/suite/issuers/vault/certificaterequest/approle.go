@@ -23,10 +23,12 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	vaultaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -96,12 +98,15 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(setup.Clean(ctx)).NotTo(HaveOccurred())
 
 		if issuerKind == cmapi.IssuerKind {
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		} else {
-			f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}
 
-		f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should generate a new valid certificate", func() {
@@ -153,7 +158,7 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, vaultIssuerName, issuerKind,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, vaultIssuerName, issuerKind,
 			&metav1.Duration{
 				Duration: time.Hour * 24 * 90,
 			},
@@ -196,7 +201,6 @@ func runVaultAppRoleTests(issuerKind string) {
 	}
 
 	for _, v := range cases {
-		v := v
 		It("should generate a new certificate "+v.label, func() {
 			By("Creating an Issuer")
 
@@ -245,7 +249,7 @@ func runVaultAppRoleTests(issuerKind string) {
 			By("Creating a CertificateRequest")
 			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, vaultIssuerName,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, vaultIssuerName,
 				issuerKind, v.inputDuration, crDNSNames, crIPAddresses, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
@@ -255,10 +259,14 @@ func runVaultAppRoleTests(issuerKind string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Verifying the Certificate is valid")
-			cr, err = crClient.Get(ctx, cr.Name, metav1.GetOptions{})
+			_, err = crClient.Get(ctx, cr.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			// Vault can issue certificates with slightly skewed duration.
-			f.CertificateRequestDurationValid(cr, v.expectedDuration, 30*time.Second)
+			err = h.ValidateCertificateRequest(types.NamespacedName{
+				Namespace: f.Namespace.Name,
+				Name:      certificateRequestName,
+			}, key, certificaterequests.ExpectDuration(v.expectedDuration, 30*time.Second))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }

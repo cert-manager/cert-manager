@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -51,7 +52,7 @@ type Controller struct {
 
 	recorder record.EventRecorder
 
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
 func init() {
@@ -65,13 +66,20 @@ func init() {
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+	c.queue = workqueue.NewTypedRateLimitingQueueWithConfig(
+		controllerpkg.DefaultItemBasedRateLimiter(),
+		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+			Name: ControllerName,
+		},
+	)
 
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 	mustSync := []cache.InformerSynced{certificateRequestInformer.Informer().HasSynced}
-	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	c.certificateRequestLister = certificateRequestInformer.Lister()
 	c.cmClient = ctx.CMClient
@@ -83,15 +91,11 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	return c.queue, mustSync, nil
 }
 
-func (c *Controller) ProcessItem(ctx context.Context, key string) error {
+func (c *Controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		log.Error(err, "invalid resource key")
-		return nil
-	}
+	namespace, name := key.Namespace, key.Name
 
 	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 	if apierrors.IsNotFound(err) {

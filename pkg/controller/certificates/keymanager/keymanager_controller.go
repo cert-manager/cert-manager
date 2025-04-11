@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -75,28 +75,39 @@ type controller struct {
 
 func NewController(
 	log logr.Logger, ctx *controllerpkg.Context,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
+) (*controller, workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	// create a queue used to queue up items to be processed
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(
+		controllerpkg.DefaultCertificateRateLimiter(),
+		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+			Name: ControllerName,
+		},
+	)
 
 	// obtain references to all the informers used by this controller
 	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
-	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
+	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Trigger reconciles on changes to any 'owned' secret resources
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ResourceOwnerOf,
 		),
-	})
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Trigger reconciles on changes to certificates named as spec.secretName
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ExtractResourceName(predicate.CertificateSecretName),
 		),
-	})
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -112,7 +123,7 @@ func NewController(
 		coreClient:        ctx.Client,
 		recorder:          ctx.Recorder,
 		fieldManager:      ctx.FieldManager,
-	}, queue, mustSync
+	}, queue, mustSync, nil
 }
 
 // isNextPrivateKeyLabelSelector is a label selector used to match Secret
@@ -127,15 +138,11 @@ func init() {
 	isNextPrivateKeyLabelSelector = labels.NewSelector().Add(*r)
 }
 
-func (c *controller) ProcessItem(ctx context.Context, key string) error {
+func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
 
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		log.Error(err, "invalid resource key passed to ProcessItem")
-		return nil
-	}
+	namespace, name := key.Namespace, key.Name
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
@@ -212,11 +219,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return c.deleteSecretResources(ctx, secrets)
 	}
 
-	violations, err := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
-	if err != nil {
-		log.Error(err, "Internal error verifying if private key matches spec - please open an issue.")
-		return nil
-	}
+	violations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if len(violations) > 0 {
 		log.V(logf.DebugLevel).Info("Regenerating private key due to change in fields", "violations", violations)
 		c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonDeleted, "Regenerating private key due to change in fields: %v", violations)
@@ -246,11 +249,7 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Failed to decode private key stored in Secret %q - generating new key", crt.Spec.SecretName)
 		return c.createAndSetNextPrivateKey(ctx, crt)
 	}
-	violations, err := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
-	if err != nil {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonDecodeFailed, "Failed to check if private key stored in Secret %q is up to date - generating new key", crt.Spec.SecretName)
-		return c.createAndSetNextPrivateKey(ctx, crt)
-	}
+	violations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if len(violations) > 0 {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonCannotRegenerateKey, "User intervention required: existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v, but cert-manager cannot create new private key as the Certificate's .spec.privateKey.rotationPolicy is unset or set to Never. To allow cert-manager to create a new private key you can set .spec.privateKey.rotationPolicy to 'Always' (this will result in the private key being regenerated every time a cert is renewed) ", crt.Spec.SecretName, violations)
 		return nil
@@ -368,14 +367,14 @@ type controllerWrapper struct {
 	*controller
 }
 
-func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync := NewController(log, ctx)
+	ctrl, queue, mustSync, err := NewController(log, ctx)
 	c.controller = ctrl
 
-	return queue, mustSync, nil
+	return queue, mustSync, err
 }
 
 func init() {

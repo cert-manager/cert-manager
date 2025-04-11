@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // IssuerLister helps list Issuers.
@@ -30,7 +30,7 @@ import (
 type IssuerLister interface {
 	// List lists all Issuers in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Issuer, err error)
+	List(selector labels.Selector) (ret []*certmanagerv1.Issuer, err error)
 	// Issuers returns an object that can list and get Issuers.
 	Issuers(namespace string) IssuerNamespaceLister
 	IssuerListerExpansion
@@ -38,25 +38,17 @@ type IssuerLister interface {
 
 // issuerLister implements the IssuerLister interface.
 type issuerLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*certmanagerv1.Issuer]
 }
 
 // NewIssuerLister returns a new IssuerLister.
 func NewIssuerLister(indexer cache.Indexer) IssuerLister {
-	return &issuerLister{indexer: indexer}
-}
-
-// List lists all Issuers in the indexer.
-func (s *issuerLister) List(selector labels.Selector) (ret []*v1.Issuer, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Issuer))
-	})
-	return ret, err
+	return &issuerLister{listers.New[*certmanagerv1.Issuer](indexer, certmanagerv1.Resource("issuer"))}
 }
 
 // Issuers returns an object that can list and get Issuers.
 func (s *issuerLister) Issuers(namespace string) IssuerNamespaceLister {
-	return issuerNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return issuerNamespaceLister{listers.NewNamespaced[*certmanagerv1.Issuer](s.ResourceIndexer, namespace)}
 }
 
 // IssuerNamespaceLister helps list and get Issuers.
@@ -64,36 +56,15 @@ func (s *issuerLister) Issuers(namespace string) IssuerNamespaceLister {
 type IssuerNamespaceLister interface {
 	// List lists all Issuers in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Issuer, err error)
+	List(selector labels.Selector) (ret []*certmanagerv1.Issuer, err error)
 	// Get retrieves the Issuer from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Issuer, error)
+	Get(name string) (*certmanagerv1.Issuer, error)
 	IssuerNamespaceListerExpansion
 }
 
 // issuerNamespaceLister implements the IssuerNamespaceLister
 // interface.
 type issuerNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Issuers in the indexer for a given namespace.
-func (s issuerNamespaceLister) List(selector labels.Selector) (ret []*v1.Issuer, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Issuer))
-	})
-	return ret, err
-}
-
-// Get retrieves the Issuer from the indexer for a given namespace and name.
-func (s issuerNamespaceLister) Get(name string) (*v1.Issuer, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("issuer"), name)
-	}
-	return obj.(*v1.Issuer), nil
+	listers.ResourceIndexer[*certmanagerv1.Issuer]
 }

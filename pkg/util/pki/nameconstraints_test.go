@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"net"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cert-manager/cert-manager/internal/pem"
 )
 
 // TestMarshalNameConstraints tests the MarshalNameConstraints function
@@ -202,7 +203,11 @@ func getExtensionFromPem(pemData string) (pkix.Extension, error) {
 	pemData = strings.TrimSpace(pemData)
 	csrPEM := []byte(pemData)
 
-	block, _ := pem.Decode(csrPEM)
+	block, _, err := pem.SafeDecodeCSR(csrPEM)
+	if err != nil {
+		return pkix.Extension{}, fmt.Errorf("expected no PEM decode err but got %s", err)
+	}
+
 	if block == nil || block.Type != "CERTIFICATE REQUEST" {
 		return pkix.Extension{}, fmt.Errorf("Failed to decode PEM block or the type is not 'CERTIFICATE REQUEST'")
 	}

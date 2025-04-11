@@ -134,6 +134,11 @@ func TestEnsurePod(t *testing.T) {
 			ObjectMeta: pod.ObjectMeta,
 		}
 	)
+	scPod := pod.DeepCopy()
+	scPod.Spec.SecurityContext.RunAsUser = ptr.To(int64(1020))
+	scPod.Spec.SecurityContext.RunAsNonRoot = nil
+	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
+	scPod.Spec.Tolerations = []corev1.Toleration{}
 	tests := map[string]testT{
 		"should do nothing if pod already exists": {
 			builder: &testpkg.Builder{
@@ -148,6 +153,91 @@ func TestEnsurePod(t *testing.T) {
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
 			},
 			chal: chal,
+		},
+		"should have the correct default security context": {
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+			},
+		},
+		"security context should be configurable": {
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
+											RunAsUser: ptr.To(int64(1020)),
+											SeccompProfile: &corev1.SeccompProfile{
+												Type: corev1.SeccompProfileTypeRuntimeDefault,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+			},
+		},
+		"security context should be configurable using gateway-api": {
+			chal: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+				},
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
+											RunAsUser: ptr.To(int64(1020)),
+											SeccompProfile: &corev1.SeccompProfile{
+												Type: corev1.SeccompProfileTypeRuntimeDefault,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+			},
 		},
 		"should clean up if multiple pods exist": {
 			builder: &testpkg.Builder{
@@ -281,6 +371,97 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
+										Labels: map[string]string{
+											"this is a":           "label",
+											cmacme.DomainLabelKey: "44655555555",
+										},
+										Annotations: map[string]string{
+											"sidecar.istio.io/inject":                        "true",
+											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+											"foo": "bar",
+										},
+									},
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										PriorityClassName: "high",
+										NodeSelector: map[string]string{
+											"node": "selector",
+										},
+										Tolerations: []corev1.Toleration{
+											{
+												Key:      "key",
+												Operator: "Exists",
+												Effect:   "NoSchedule",
+											},
+										},
+										ServiceAccountName: "cert-manager",
+										ImagePullSecrets:   []corev1.LocalObjectReference{{Name: "cred"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				resultingPod.Labels = map[string]string{
+					"this is a":                         "label",
+					cmacme.DomainLabelKey:               "44655555555",
+					cmacme.TokenLabelKey:                "1",
+					cmacme.SolverIdentificationLabelKey: "true",
+				}
+				resultingPod.Annotations = map[string]string{
+					"sidecar.istio.io/inject":                        "true",
+					"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+					"foo": "bar",
+				}
+				resultingPod.Spec.NodeSelector = map[string]string{
+					"kubernetes.io/os": "linux",
+					"node":             "selector",
+				}
+				resultingPod.Spec.Tolerations = []corev1.Toleration{
+					{
+						Key:      "key",
+						Operator: "Exists",
+						Effect:   "NoSchedule",
+					},
+				}
+				resultingPod.Spec.PriorityClassName = "high"
+				resultingPod.Spec.ServiceAccountName = "cert-manager"
+				resultingPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "cred"}}
+				s.testResources[createdPodKey] = resultingPod
+
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
+
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				// ignore pointer differences here
+				resultingPod.OwnerReferences = resp.OwnerReferences
+
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated from merge\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should use labels, annotations and spec fields from template when using gateway-api": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
 										Labels: map[string]string{

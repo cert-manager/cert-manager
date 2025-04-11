@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -69,7 +70,7 @@ type controller struct {
 	secretLister             internalinformers.SecretLister
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
-	scheduledWorkQueue       scheduler.ScheduledWorkQueue
+	scheduledWorkQueue       scheduler.ScheduledWorkQueue[types.NamespacedName]
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -86,27 +87,38 @@ func NewController(
 	log logr.Logger,
 	ctx *controllerpkg.Context,
 	shouldReissue policies.Func,
-) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
+) (*controller, workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	// create a queue used to queue up items to be processed
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(
+		controllerpkg.DefaultCertificateRateLimiter(),
+		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+			Name: ControllerName,
+		},
+	)
 
 	// obtain references to all the informers used by this controller
 	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
-	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
+	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// When a CertificateRequest resource changes, enqueue the Certificate resource that owns it.
-	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
-	})
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 	// When a Secret resource changes, enqueue any Certificate resources that name it as spec.secretName.
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Trigger reconciles on changes to the Secret named `spec.secretName`
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ExtractResourceName(predicate.CertificateSecretName)),
-	})
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -132,17 +144,13 @@ func NewController(
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
 		}).DataForCertificate,
-	}, queue, mustSync
+	}, queue, mustSync, nil
 }
 
-func (c *controller) ProcessItem(ctx context.Context, key string) error {
+func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		log.Error(err, "invalid resource key passed to ProcessItem")
-		return nil
-	}
+	namespace, name := key.Namespace, key.Name
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
@@ -162,7 +170,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// It is possible for multiple Certificates to reference the same Secret. In that case, without this check,
 	// the duplicate Certificates would each be issued and store their version of the X.509 certificate in the
-	// target Secret, triggering the re-issuance of the other Certificate resources who's spec no longer matches
+	// target Secret, triggering the re-issuance of the other Certificate resources whose spec no longer matches
 	// what is in the Secret. This would cause a flood of re-issuance attempts and overloads the Kubernetes API
 	// and the API server of the issuing CA.
 	isOwner, duplicates, err := internalcertificates.CertificateOwnsSecret(ctx, c.certificateLister, c.secretLister, crt)
@@ -327,7 +335,7 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 // has elapsed.
 // If the 'durationUntilRenewalTime' is less than zero, it will not be
 // queued again.
-func (c *controller) scheduleRecheckOfCertificateIfRequired(log logr.Logger, key string, durationUntilRenewalTime time.Duration) {
+func (c *controller) scheduleRecheckOfCertificateIfRequired(log logr.Logger, key types.NamespacedName, durationUntilRenewalTime time.Duration) {
 	// don't schedule a re-queue if the time is in the past.
 	// if it is in the past, the resource will be triggered during the
 	// current call to the ProcessItem method. If we added the item to the
@@ -349,17 +357,17 @@ type controllerWrapper struct {
 	*controller
 }
 
-func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync := NewController(log,
+	ctrl, queue, mustSync, err := NewController(log,
 		ctx,
 		policies.NewTriggerPolicyChain(ctx.Clock).Evaluate,
 	)
 	c.controller = ctrl
 
-	return queue, mustSync, nil
+	return queue, mustSync, err
 }
 
 func init() {

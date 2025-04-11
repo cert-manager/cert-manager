@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -312,7 +313,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR where the requested duration annotations contains garbage data should mark as Failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 				}),
 				gen.SetCertificateSigningRequestDuration("garbage-duration"),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -359,7 +360,7 @@ func TestProcessItem(t *testing.T) {
 						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
 							gen.SetCertificateSigningRequestDuration("garbage-duration"),
 							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 							}),
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 								Type:   certificatesv1.CertificateApproved,
@@ -381,7 +382,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which does not yet have a pickup ID, but the client responds with fields type error, should mark as Failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -390,7 +391,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RequestCertificateFn: func(_ []byte, _ []venafiapi.CustomField) (string, error) {
+					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "", venaficlient.ErrCustomFieldsType{Type: "test-type"}
 					},
 				}, nil
@@ -430,7 +431,7 @@ func TestProcessItem(t *testing.T) {
 						"",
 						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
 							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 							}),
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 								Type:   certificatesv1.CertificateApproved,
@@ -452,7 +453,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which does not yet have a pickup ID, but the client responds a generic error, should mark as Failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -461,7 +462,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RequestCertificateFn: func(_ []byte, _ []venafiapi.CustomField) (string, error) {
+					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "", errors.New("generic error")
 					},
 				}, nil
@@ -501,7 +502,7 @@ func TestProcessItem(t *testing.T) {
 						"",
 						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
 							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 							}),
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 								Type:   certificatesv1.CertificateApproved,
@@ -523,7 +524,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which does not yet have a pickup ID, should update the annotation with one and return": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -532,7 +533,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RequestCertificateFn: func(_ []byte, _ []venafiapi.CustomField) (string, error) {
+					RequestCertificateFn: func(_ []byte, _ time.Duration, _ []venafiapi.CustomField) (string, error) {
 						return "test-pickup-id", nil
 					},
 				}, nil
@@ -569,7 +570,7 @@ func TestProcessItem(t *testing.T) {
 						"",
 						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
 							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 								"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 							}),
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -584,7 +585,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which has a pickup ID, retrieve certificate returns a pending error, fire event and return error": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 					"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -594,7 +595,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, endpoint.ErrCertificatePending{}
 					},
 				}, nil
@@ -635,7 +636,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which has a pickup ID, retrieve certificate returns a timeout error, fire event and return error": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 					"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -645,7 +646,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, endpoint.ErrRetrieveCertificateTimeout{}
 					},
 				}, nil
@@ -686,7 +687,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which has a pickup ID, retrieve certificate returns a generic error, fire event and return error": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 					"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -696,7 +697,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return nil, errors.New("generic error")
 					},
 				}, nil
@@ -737,7 +738,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which has a pickup ID, retrieve certificate returns garbage certificates, should mark as Failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 					"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -747,7 +748,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return []byte("garbage"), nil
 					},
 				}, nil
@@ -787,7 +788,7 @@ func TestProcessItem(t *testing.T) {
 						"",
 						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
 							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 								"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 							}),
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -810,7 +811,7 @@ func TestProcessItem(t *testing.T) {
 		"an approved CSR which has a pickup ID, retrieve certificate returns a CA and certificate should update with certificate": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
-					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 					"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 				}),
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -820,7 +821,7 @@ func TestProcessItem(t *testing.T) {
 			),
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
-					RetrieveCertificateFn: func(_ string, _ []byte, _ []venafiapi.CustomField) ([]byte, error) {
+					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
 						return []byte(fmt.Sprintf("%s%s", certBundle.ChainPEM, certBundle.CAPEM)), nil
 					},
 				}, nil
@@ -860,7 +861,7 @@ func TestProcessItem(t *testing.T) {
 						"",
 						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
 							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
+								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "field value"}]`,
 								"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
 							}),
 							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
@@ -907,10 +908,14 @@ func TestProcessItem(t *testing.T) {
 				apiutil.IssuerVenafi,
 				func(*controllerpkg.Context) certificatesigningrequests.Signer { return venafi },
 			)
-			controller.Register(test.builder.Context)
+			if _, _, err := controller.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 			test.builder.Start()
 
-			err := controller.ProcessItem(context.Background(), test.csr.Name)
+			err := controller.ProcessItem(context.Background(), types.NamespacedName{
+				Name: test.csr.Name,
+			})
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}

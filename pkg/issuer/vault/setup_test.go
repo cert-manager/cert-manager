@@ -45,9 +45,11 @@ import (
 func TestVault_Setup(t *testing.T) {
 	// Create a mock Vault HTTP server.
 	vaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" {
+		if r.URL.Path == "/v1/auth/approle/login" || r.URL.Path == "/v1/auth/kubernetes/login" || r.URL.Path == "/v1/auth/cert/login" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`))
+			if _, err := w.Write([]byte(`{"auth":{"client_token": "5b1a0318-679c-9c45-e5c6-d1b9a9035d49"}}`)); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}))
 	defer vaultServer.Close()
@@ -403,9 +405,21 @@ func TestVault_Setup(t *testing.T) {
 			},
 			expectErr: "error initializing Vault client: parse \" https://vault.example.com\": first path segment in URL cannot contain colon",
 		},
+		{
+			name: "valid auth.clientCertificate: All fields can be omitted",
+			givenIssuer: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
+					Path:   "pki_int",
+					Server: vaultServer.URL,
+					Auth: v1.VaultAuth{
+						ClientCertificate: &v1.VaultClientCertificateAuth{},
+					},
+				},
+			},
+			expectCond: "Ready True: VaultVerified: Vault verified",
+		},
 	}
 	for _, tt := range tests {
-		tt := tt // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(tt.name, func(t *testing.T) {
 			givenIssuer := &v1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
@@ -457,7 +471,7 @@ func TestVault_Setup(t *testing.T) {
 			// was the controller-side validation (i.e., the validation that we
 			// do in setup.go). To prevent the breakage of existing Issuer or
 			// ClusterIssuers resources due to the webhook-side validation
-			// suddently becoming stricter than the controller-side validation,
+			// suddenly becoming stricter than the controller-side validation,
 			// we perform the webhook validation too and check that it passes.
 			converted := internalapi.IssuerConfig{}
 			err = internalv1.Convert_v1_IssuerConfig_To_certmanager_IssuerConfig(&tt.givenIssuer, &converted, nil)

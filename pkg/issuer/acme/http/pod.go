@@ -155,6 +155,10 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 			pod = s.mergePodObjectMetaWithPodTemplate(pod,
 				ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
 		}
+		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+			pod = s.mergePodObjectMetaWithPodTemplate(pod,
+				ch.Spec.Solver.HTTP01.GatewayHTTPRoute.PodTemplate)
+		}
 	}
 
 	return pod
@@ -163,7 +167,7 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 // Note: this function builds pod spec using defaults and any configuration
 // options passed via flags to cert-manager controller.
 // Solver pod configuration via flags is a now deprecated
-// mechanism- please use pod template instead when adding any new
+// mechanism - please use pod template instead when adding any new
 // configuration options
 // https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
@@ -291,6 +295,19 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 	}
 
 	pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, podTempl.Spec.ImagePullSecrets...)
+
+	if podTempl.Spec.SecurityContext != nil {
+		pod.Spec.SecurityContext = &corev1.PodSecurityContext{}
+		pod.Spec.SecurityContext.SELinuxOptions = podTempl.Spec.SecurityContext.SELinuxOptions
+		pod.Spec.SecurityContext.RunAsUser = podTempl.Spec.SecurityContext.RunAsUser
+		pod.Spec.SecurityContext.RunAsGroup = podTempl.Spec.SecurityContext.RunAsGroup
+		pod.Spec.SecurityContext.RunAsNonRoot = podTempl.Spec.SecurityContext.RunAsNonRoot
+		pod.Spec.SecurityContext.SupplementalGroups = podTempl.Spec.SecurityContext.SupplementalGroups
+		pod.Spec.SecurityContext.FSGroup = podTempl.Spec.SecurityContext.FSGroup
+		pod.Spec.SecurityContext.Sysctls = podTempl.Spec.SecurityContext.Sysctls
+		pod.Spec.SecurityContext.FSGroupChangePolicy = podTempl.Spec.SecurityContext.FSGroupChangePolicy
+		pod.Spec.SecurityContext.SeccompProfile = podTempl.Spec.SecurityContext.SeccompProfile
+	}
 
 	return pod
 }

@@ -49,10 +49,10 @@ type Interface interface {
 	WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	Register(ctx context.Context, acct *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
 	GetReg(ctx context.Context, url string) (*acme.Account, error)
-	// HTTP01ChallengeResponse will be called once when an cert-manager.io
+	// HTTP01ChallengeResponse will be called once when a cert-manager.io
 	// Challenge for an http-01 challenge type is being created.
 	HTTP01ChallengeResponse(token string) (string, error)
-	// DNS01ChallengeResponse will be called once when an cert-manager.io
+	// DNS01ChallengeResponse will be called once when a cert-manager.io
 	// Challenge for an http-01 challenge type is being created.
 	DNS01ChallengeRecord(token string) (string, error)
 	Discover(ctx context.Context) (acme.Directory, error)

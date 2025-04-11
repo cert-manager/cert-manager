@@ -168,10 +168,6 @@ func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Con
 	return logr.NewContext(ctx, l)
 }
 
-func V(level int) klog.Verbose {
-	return klog.V(klog.Level(level))
-}
-
 // LogWithFormat is a wrapper for logger that adds Infof method to log messages
 // with the given format and arguments.
 //

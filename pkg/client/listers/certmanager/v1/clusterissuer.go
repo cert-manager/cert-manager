@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterIssuerLister helps list ClusterIssuers.
@@ -30,39 +30,19 @@ import (
 type ClusterIssuerLister interface {
 	// List lists all ClusterIssuers in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.ClusterIssuer, err error)
+	List(selector labels.Selector) (ret []*certmanagerv1.ClusterIssuer, err error)
 	// Get retrieves the ClusterIssuer from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.ClusterIssuer, error)
+	Get(name string) (*certmanagerv1.ClusterIssuer, error)
 	ClusterIssuerListerExpansion
 }
 
 // clusterIssuerLister implements the ClusterIssuerLister interface.
 type clusterIssuerLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*certmanagerv1.ClusterIssuer]
 }
 
 // NewClusterIssuerLister returns a new ClusterIssuerLister.
 func NewClusterIssuerLister(indexer cache.Indexer) ClusterIssuerLister {
-	return &clusterIssuerLister{indexer: indexer}
-}
-
-// List lists all ClusterIssuers in the indexer.
-func (s *clusterIssuerLister) List(selector labels.Selector) (ret []*v1.ClusterIssuer, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.ClusterIssuer))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterIssuer from the index for a given name.
-func (s *clusterIssuerLister) Get(name string) (*v1.ClusterIssuer, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("clusterissuer"), name)
-	}
-	return obj.(*v1.ClusterIssuer), nil
+	return &clusterIssuerLister{listers.New[*certmanagerv1.ClusterIssuer](indexer, certmanagerv1.Resource("clusterissuer"))}
 }

@@ -18,7 +18,6 @@ package certificates
 
 import (
 	"context"
-	"encoding/pem"
 	"strconv"
 	"testing"
 	"time"
@@ -36,12 +35,11 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/revisionmanager"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // TestRevisionManagerController will ensure that the revision manager
-// controller will delete old CertificateRequests occording to the
+// controller will delete old CertificateRequests according to the
 // spec.revisionHistoryLimit value
 func TestRevisionManagerController(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
@@ -59,7 +57,10 @@ func TestRevisionManagerController(t *testing.T) {
 		SharedInformerFactory: cmFactory,
 	}
 
-	ctrl, queue, mustSync := revisionmanager.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := revisionmanager.NewController(logf.Log, &controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	c := controllerpkg.NewController(
 		"revisionmanager_controller_test",
@@ -80,8 +81,7 @@ func TestRevisionManagerController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -107,26 +107,10 @@ func TestRevisionManagerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create a new private key
-	sk, err := utilpki.GenerateRSAPrivateKey(2048)
+	csrPEM, _, err := gen.CSRForCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	csr, err := utilpki.GenerateCSR(crt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Create 6 CertificateRequests which are owned by this Certificate
 	for i := 0; i < 6; i++ {

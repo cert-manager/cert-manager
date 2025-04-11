@@ -32,6 +32,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
 
@@ -54,6 +55,8 @@ type Metrics struct {
 
 	clockTimeSeconds                   prometheus.CounterFunc
 	clockTimeSecondsGauge              prometheus.GaugeFunc
+	certificateNotAfterTimeSeconds     *prometheus.GaugeVec
+	certificateNotBeforeTimeSeconds    *prometheus.GaugeVec
 	certificateExpiryTimeSeconds       *prometheus.GaugeVec
 	certificateRenewalTimeSeconds      *prometheus.GaugeVec
 	certificateReadyStatus             *prometheus.GaugeVec
@@ -100,11 +103,29 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			},
 		)
 
+		certificateNotBeforeTimeSeconds = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_not_before_timestamp_seconds",
+				Help:      "The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
+		)
+
+		certificateNotAfterTimeSeconds = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_not_after_timestamp_seconds",
+				Help:      "The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
+		)
+
 		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "certificate_expiration_timestamp_seconds",
-				Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
+				Help:      "The timestamp after which the certificate expires, expressed in Unix Epoch Time.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
@@ -113,7 +134,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "certificate_renewal_timestamp_seconds",
-				Help:      "The number of seconds before expiration time the certificate should renew.",
+				Help:      "The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.",
 			},
 			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
 		)
@@ -186,13 +207,21 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		)
 	)
 
+	// Create Registry and register the recommended collectors
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		collectors.NewGoCollector(),
+	)
 	// Create server and register Prometheus metrics handler
 	m := &Metrics{
 		log:      log.WithName("metrics"),
-		registry: prometheus.NewRegistry(),
+		registry: registry,
 
 		clockTimeSeconds:                   clockTimeSeconds,
 		clockTimeSecondsGauge:              clockTimeSecondsGauge,
+		certificateNotAfterTimeSeconds:     certificateNotAfterTimeSeconds,
+		certificateNotBeforeTimeSeconds:    certificateNotBeforeTimeSeconds,
 		certificateExpiryTimeSeconds:       certificateExpiryTimeSeconds,
 		certificateRenewalTimeSeconds:      certificateRenewalTimeSeconds,
 		certificateReadyStatus:             certificateReadyStatus,
@@ -210,6 +239,8 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
+	m.registry.MustRegister(m.certificateNotAfterTimeSeconds)
+	m.registry.MustRegister(m.certificateNotBeforeTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)

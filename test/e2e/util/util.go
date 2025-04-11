@@ -22,8 +22,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"net"
 	"net/url"
@@ -34,10 +32,14 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gwapiv1beta1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
@@ -46,7 +48,10 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/predicate"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
+
+	. "github.com/onsi/gomega"
 )
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -163,8 +168,13 @@ func WaitForCRDToNotExist(ctx context.Context, client apiextensionsv1.CustomReso
 }
 
 // Deprecated: use test/unit/gen/CertificateRequest in future
-func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind string, duration *metav1.Duration,
-	dnsNames []string, ips []net.IP, uris []string, keyAlgorithm x509.PublicKeyAlgorithm) (*v1.CertificateRequest, crypto.Signer, error) {
+func NewCertManagerBasicCertificateRequest(
+	name, namespace string,
+	issuerName, issuerKind string,
+	duration *metav1.Duration,
+	dnsNames []string, ips []net.IP, uris []string,
+	keyAlgorithm x509.PublicKeyAlgorithm,
+) (*v1.CertificateRequest, crypto.Signer, error) {
 	cn := "test.domain.com"
 	if len(dnsNames) > 0 {
 		cn = dnsNames[0]
@@ -179,71 +189,28 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 		parsedURIs = append(parsedURIs, parsed)
 	}
 
-	var sk crypto.Signer
-	var signatureAlgorithm x509.SignatureAlgorithm
-	var err error
-
-	switch keyAlgorithm {
-	case x509.RSA:
-		sk, err = pki.GenerateRSAPrivateKey(2048)
-		if err != nil {
-			return nil, nil, err
-		}
-		signatureAlgorithm = x509.SHA256WithRSA
-	case x509.ECDSA:
-		sk, err = pki.GenerateECPrivateKey(pki.ECCurve256)
-		if err != nil {
-			return nil, nil, err
-		}
-		signatureAlgorithm = x509.ECDSAWithSHA256
-	case x509.Ed25519:
-		sk, err = pki.GenerateEd25519PrivateKey()
-		if err != nil {
-			return nil, nil, err
-		}
-		signatureAlgorithm = x509.PureEd25519
-	default:
-		return nil, nil, fmt.Errorf("unrecognised key algorithm: %s", err)
-	}
-
-	csr := &x509.CertificateRequest{
-		Version:            0,
-		SignatureAlgorithm: signatureAlgorithm,
-		PublicKeyAlgorithm: keyAlgorithm,
-		PublicKey:          sk.Public(),
-		Subject: pkix.Name{
-			CommonName: cn,
-		},
-		DNSNames:    dnsNames,
-		IPAddresses: ips,
-		URIs:        parsedURIs,
-	}
-
-	csrBytes, err := pki.EncodeCSR(csr, sk)
+	csrPEM, sk, err := gen.CSR(keyAlgorithm,
+		gen.SetCSRCommonName(cn),
+		gen.SetCSRDNSNames(dnsNames...),
+		gen.SetCSRIPAddresses(ips...),
+		gen.SetCSRURIs(parsedURIs...),
+	)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
-	})
-
-	return &v1.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.CertificateRequestSpec{
-			Duration: duration,
-			Request:  csrPEM,
-			IssuerRef: cmmeta.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
-			},
-		},
-	}, sk, nil
+	return gen.CertificateRequest(name,
+		gen.SetCertificateRequestNamespace(namespace),
+		gen.SetCertificateRequestDuration(duration),
+		gen.SetCertificateRequestCSR(csrPEM),
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			Name: issuerName,
+			Kind: issuerKind,
+		}),
+	), sk, nil
 }
 
-func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1.Certificate {
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration *metav1.Duration, renewBefore *metav1.Duration) *v1.Certificate {
 	return &v1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -396,4 +363,65 @@ func HasIngresses(d discovery.DiscoveryInterface, groupVersion string) bool {
 		}
 	}
 	return false
+}
+
+// AddFinalizer will add a finalizer to the given object, it is designed to
+// be used within Eventually calls so conflicts get resolved
+func AddFinalizer(g Gomega, ctx context.Context, cli client.Client, obj client.Object, finalizer string) {
+	key := client.ObjectKeyFromObject(obj)
+	g.Expect(cli.Get(ctx, key, obj)).NotTo(HaveOccurred(), "failed to get %T", obj)
+
+	if controllerutil.AddFinalizer(obj, finalizer) {
+		g.Expect(cli.Update(ctx, obj)).NotTo(HaveOccurred(), "failed to update %T", obj)
+	}
+}
+
+// RemoveFinalizer will remove a finalizer to the given object, it is designed to
+// be used within Eventually calls so conflicts get resolved. If the object
+// does not exist then no error is returned as removing the finalizer may cause
+// deletion
+func RemoveFinalizer(g Gomega, ctx context.Context, cli client.Client, obj client.Object, finalizer string) {
+	key := client.ObjectKeyFromObject(obj)
+
+	if err := cli.Get(ctx, key, obj); err != nil {
+		g.Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred(), "failed to get %T", obj)
+		return
+	}
+
+	if controllerutil.RemoveFinalizer(obj, finalizer) {
+		g.Expect(client.IgnoreNotFound(cli.Update(ctx, obj))).NotTo(HaveOccurred(), "failed to update %T", obj)
+	}
+}
+
+// ObjectPtrConstraint is a constraint used for ensuring T is a both a pointer
+// and implements client.Object
+type ObjectPtrConstraint[T any] interface {
+	*T
+	client.Object
+}
+
+// ObjectListPtrConstraint is a constraint used for ensuring T is a both a
+// pointer and implements client.ObjectList
+type ObjectListPtrConstraint[T any] interface {
+	*T
+	client.ObjectList
+}
+
+// ListMatchingPredicates will list the objects that match a set of predicates
+func ListMatchingPredicates[O any, OL any, P ObjectPtrConstraint[O], PL ObjectListPtrConstraint[OL]](g Gomega, ctx context.Context, cli client.Client, predicates ...predicate.Func) []O {
+	list := PL(new(OL))
+	g.Expect(cli.List(ctx, list)).ToNot(HaveOccurred(), "failed to list objects")
+
+	// Evaluate predicates
+	funcs := predicate.Funcs(predicates)
+	out := make([]O, 0)
+	err := meta.EachListItem(list, func(o runtime.Object) error {
+		if funcs.Evaluate(o) {
+			out = append(out, *(o.(P)))
+		}
+		return nil
+	})
+	Expect(err).NotTo(HaveOccurred(), "failed to iterate over objects")
+
+	return out
 }

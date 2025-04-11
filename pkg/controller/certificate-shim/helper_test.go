@@ -79,6 +79,29 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(`"1725 Slough Avenue, Suite 200, Scranton Business Park","1800 Slough Avenue, Suite 200, Scranton Business Park"`, joinedAddresses)
 			},
 		},
+		"success renew before pct": {
+			crt: gen.Certificate("example-cert"),
+			annotations: map[string]string{
+				cmapi.CommonNameAnnotationKey:               "www.example.com",
+				cmapi.DurationAnnotationKey:                 "168h", // 1 week
+				cmapi.RenewBeforePercentageAnnotationKey:    "50",
+				cmapi.UsagesAnnotationKey:                   "server auth,signing",
+				cmapi.PrivateKeyAlgorithmAnnotationKey:      "RSA",
+				cmapi.PrivateKeyEncodingAnnotationKey:       "PKCS1",
+				cmapi.PrivateKeySizeAnnotationKey:           "2048",
+				cmapi.PrivateKeyRotationPolicyAnnotationKey: "Always",
+			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal("www.example.com", crt.Spec.CommonName)
+				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
+				a.Equal(ptr.To(int32(50)), crt.Spec.RenewBeforePercentage)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
+				a.Equal(cmapi.RSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal(cmapi.PKCS1, crt.Spec.PrivateKey.Encoding)
+				a.Equal(2048, crt.Spec.PrivateKey.Size)
+				a.Equal(cmapi.RotationPolicyAlways, crt.Spec.PrivateKey.RotationPolicy)
+			},
+		},
 		"success rsa private key algorithm": {
 			crt: gen.Certificate("example-cert"),
 			annotations: map[string]string{
@@ -172,6 +195,14 @@ func Test_translateAnnotations(t *testing.T) {
 			annotations: validAnnotations(),
 			mutate: func(tc *testCase) {
 				tc.annotations[cmapi.RenewBeforeAnnotationKey] = "an un-parsable duration string"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"bad renewBeforePercentage": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.RenewBeforePercentageAnnotationKey] = "an un-parsable integer"
 			},
 			expectedError: errInvalidIngressAnnotation,
 		},
@@ -275,7 +306,6 @@ func Test_translateAnnotations(t *testing.T) {
 		},
 	}
 	for name, tc := range tests {
-		tc := tc // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(name, func(t *testing.T) {
 			if tc.mutate != nil {
 				tc.mutate(&tc)

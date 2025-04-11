@@ -22,4 +22,4 @@ spec:
     spec:
       containers:
       #@overlay/match by=overlay.subset({"name": "cert-manager-cainjector"})
-      - image: #@ "docker.io/library/cert-manager-cainjector-amd64:{}".format(data.values.app_version)
+      - image: #@ "docker.io/library/cert-manager-cainjector-{}:{}".format(data.values.arch, data.values.app_version)

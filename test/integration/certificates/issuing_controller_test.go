@@ -80,7 +80,8 @@ func TestIssuingController(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -102,8 +103,7 @@ func TestIssuingController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -148,21 +148,10 @@ func TestIssuingController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -296,7 +285,8 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -318,8 +308,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -371,21 +360,10 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -494,7 +472,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 // Test_IssuingController_SecretTemplate performs a basic check to ensure that
 // values in a Certificate's SecretTemplate will be copied to the target
-// Secret- when they are both added and deleted.
+// Secret - when they are both added and deleted.
 func Test_IssuingController_SecretTemplate(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
@@ -521,7 +499,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -543,8 +522,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -589,21 +567,10 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, sk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -739,8 +706,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 }
 
 // Test_IssuingController_AdditionalOutputFormats performs a basic check to
-// ensure that values in a Certificate's AddiationOutputFormats will be copied
-// to the target Secret- when they are both added and deleted.
+// ensure that values in a Certificate's AdditionalOutputFormats will be copied
+// to the target Secret - when they are both added and deleted.
 func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
@@ -768,7 +735,8 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -790,8 +758,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -836,21 +803,10 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create x509 CSR from Certificate
-	csr, err := utilpki.GenerateCSR(crt)
+	csrPEM, err := gen.CSRWithSignerForCertificate(crt, pk)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Encode CSR
-	csrDER, err := utilpki.EncodeCSR(csr, pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
 
 	// Sign Certificate
 	certTemplate, err := utilpki.CertificateTemplateFromCertificate(crt)
@@ -978,7 +934,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 // is removed again when disabled.
 // Also ensures that changes to the Secret which modify the owner reference,
 // are reverted or corrected if needed by the issuing controller.
-func Test_IssuingController_OwnerRefernece(t *testing.T) {
+func Test_IssuingController_OwnerReference(t *testing.T) {
 	const (
 		fieldManager = "cert-manager-issuing-test"
 	)
@@ -1006,7 +962,8 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: fieldManager,
 	}
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c := controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerNoOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer func() {
@@ -1103,7 +1060,8 @@ func Test_IssuingController_OwnerRefernece(t *testing.T) {
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: fieldManager,
 	}
-	ctrl, queue, mustSync = issuing.NewController(logf.Log, &controllerContext)
+	ctrl, queue, mustSync, err = issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
 	c = controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
 	stopControllerOwnerRef := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopControllerOwnerRef()

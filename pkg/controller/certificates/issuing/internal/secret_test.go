@@ -18,7 +18,6 @@ package internal
 
 import (
 	"context"
-	"encoding/pem"
 	"errors"
 	"strings"
 	"testing"
@@ -34,6 +33,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -78,16 +78,27 @@ func Test_SecretsManager(t *testing.T) {
 	baseCertWithAdditionalOutputFormatDER := gen.CertificateFrom(baseCertBundle.Certificate,
 		gen.SetCertificateAdditionalOutputFormats(cmapi.CertificateAdditionalOutputFormat{Type: "DER"}),
 	)
+
 	baseCertWithAdditionalOutputFormatCombinedPEM := gen.CertificateFrom(baseCertBundle.Certificate,
 		gen.SetCertificateAdditionalOutputFormats(cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"}),
 	)
+
 	baseCertWithAdditionalOutputFormats := gen.CertificateFrom(baseCertBundle.Certificate,
 		gen.SetCertificateAdditionalOutputFormats(
 			cmapi.CertificateAdditionalOutputFormat{Type: "DER"},
 			cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 		),
 	)
-	block, _ := pem.Decode(baseCertBundle.PrivateKeyBytes)
+	keystorePassword := "something"
+	baseCertWithJKSKeystore := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{JKS: &cmapi.JKSKeystore{Create: true, Password: &keystorePassword}}),
+	)
+
+	baseCertWithPKCS12Keystore := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{PKCS12: &cmapi.PKCS12Keystore{Create: true, Password: &keystorePassword}}),
+	)
+
+	block, _, _ := pem.SafeDecodePrivateKey(baseCertBundle.PrivateKeyBytes)
 	tlsDerContent := block.Bytes
 
 	tests := map[string]struct {
@@ -756,9 +767,41 @@ func Test_SecretsManager(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-	}
 
-	// TODO: add to these tests once the JKS/PKCS12 support is updated
+		"if secret does not exist, create new Secret with JKS keystore": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithJKSKeystore,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					assert.NotNil(t, gotCnf.Data[cmapi.JKSSecretKey])
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with PKCS12 keystore": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithPKCS12Keystore,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					assert.NotNil(t, gotCnf.Data[cmapi.PKCS12SecretKey])
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -807,7 +850,7 @@ func Test_getCertificateSecret(t *testing.T) {
 				Type:       corev1.SecretTypeTLS,
 			},
 		},
-		"if secret exists, expect onlt basic metadata to be retuned, but the Type set to tls": {
+		"if secret exists, expect only basic metadata to be retuned, but the Type set to tls": {
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",

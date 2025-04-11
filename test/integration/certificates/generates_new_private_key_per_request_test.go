@@ -339,23 +339,41 @@ func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 		FieldManager: "cert-manager-certificates-issuing-test",
 	}
 
-	// TODO: set field mananager before calling each of those- is that what we do in actual code?
-	revCtrl, revQueue, revMustSync := revisionmanager.NewController(log, &controllerContext)
+	// TODO: set field manager before calling each of those - is that what we do in actual code?
+	revCtrl, revQueue, revMustSync, err := revisionmanager.NewController(log, &controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 	revisionManager := controllerpkg.NewController("revisionmanager_controller", metrics, revCtrl.ProcessItem, revMustSync, nil, revQueue)
 
-	readyCtrl, readyQueue, readyMustSync := readiness.NewController(log, &controllerContext, policies.NewReadinessPolicyChain(clock), pki.RenewalTime, readiness.BuildReadyConditionFromChain)
+	readyCtrl, readyQueue, readyMustSync, err := readiness.NewController(log, &controllerContext, policies.NewReadinessPolicyChain(clock), pki.RenewalTime, readiness.BuildReadyConditionFromChain)
+	if err != nil {
+		t.Fatal(err)
+	}
 	readinessManager := controllerpkg.NewController("readiness_controller", metrics, readyCtrl.ProcessItem, readyMustSync, nil, readyQueue)
 
-	issueCtrl, issueQueue, issueMustSync := issuing.NewController(log, &controllerContext)
+	issueCtrl, issueQueue, issueMustSync, err := issuing.NewController(log, &controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 	issueManager := controllerpkg.NewController("issuing_controller", metrics, issueCtrl.ProcessItem, issueMustSync, nil, issueQueue)
 
-	reqCtrl, reqQueue, reqMustSync := requestmanager.NewController(log, &controllerContext)
+	reqCtrl, reqQueue, reqMustSync, err := requestmanager.NewController(log, &controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 	requestManager := controllerpkg.NewController("requestmanager_controller", metrics, reqCtrl.ProcessItem, reqMustSync, nil, reqQueue)
 
-	keyCtrl, keyQueue, keyMustSync := keymanager.NewController(log, &controllerContext)
+	keyCtrl, keyQueue, keyMustSync, err := keymanager.NewController(log, &controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 	keyManager := controllerpkg.NewController("keymanager_controller", metrics, keyCtrl.ProcessItem, keyMustSync, nil, keyQueue)
 
-	triggerCtrl, triggerQueue, triggerMustSync := trigger.NewController(log, &controllerContext, policies.NewTriggerPolicyChain(clock).Evaluate)
+	triggerCtrl, triggerQueue, triggerMustSync, err := trigger.NewController(log, &controllerContext, policies.NewTriggerPolicyChain(clock).Evaluate)
+	if err != nil {
+		t.Fatal(err)
+	}
 	triggerManager := controllerpkg.NewController("trigger_controller", metrics, triggerCtrl.ProcessItem, triggerMustSync, nil, triggerQueue)
 
 	return framework.StartInformersAndControllers(t, factory, cmFactory, revisionManager, requestManager, keyManager, triggerManager, readinessManager, issueManager)

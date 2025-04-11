@@ -29,7 +29,7 @@ import (
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
-// ApplyStatus will make a Apply API call with the given client to the order's
+// ApplyStatus will make an Apply API call with the given client to the order's
 // status sub-resource endpoint. All data in the given Order object is dropped;
 // expect for the name, namespace, and status object. The given fieldManager is
 // will be used as the FieldManager in the Apply call.

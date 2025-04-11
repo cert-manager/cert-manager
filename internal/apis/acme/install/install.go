@@ -23,19 +23,15 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/cert-manager/cert-manager/internal/apis/acme"
-	cmapi "github.com/cert-manager/cert-manager/internal/apis/acme/v1"
-	"github.com/cert-manager/cert-manager/internal/apis/acme/v1alpha2"
-	"github.com/cert-manager/cert-manager/internal/apis/acme/v1alpha3"
-	"github.com/cert-manager/cert-manager/internal/apis/acme/v1beta1"
+	v1 "github.com/cert-manager/cert-manager/internal/apis/acme/v1"
 	cmmetav1 "github.com/cert-manager/cert-manager/internal/apis/meta/v1"
 )
 
 // Install registers the API group and adds types to a scheme
 func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(acme.AddToScheme(scheme))
-	utilruntime.Must(v1alpha2.AddToScheme(scheme))
-	utilruntime.Must(v1alpha3.AddToScheme(scheme))
-	utilruntime.Must(v1beta1.AddToScheme(scheme))
-	utilruntime.Must(cmapi.AddToScheme(scheme))
+	// The first version in this list will be the default version used
+	utilruntime.Must(v1.AddToScheme(scheme))
+
 	utilruntime.Must(cmmetav1.AddToScheme(scheme))
 }

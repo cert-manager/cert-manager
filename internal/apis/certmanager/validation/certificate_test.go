@@ -362,7 +362,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "size"), 1024, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+				field.Invalid(fldPath.Child("privateKey", "size"), 1024, "must be between 2048 and 8192 for rsa keyAlgorithm"),
 			},
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 8196": {
@@ -379,7 +379,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "size"), 8196, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+				field.Invalid(fldPath.Child("privateKey", "size"), 8196, "must be between 2048 and 8192 for rsa keyAlgorithm"),
 			},
 		},
 		"certificate with ecdsa keyAlgorithm specified and invalid keysize": {
@@ -552,14 +552,14 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with incorrect email": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailAddresses: []string{"aliceexample.com"},
+					EmailAddresses: []string{"alice.example.com"},
 					SecretName:     "abc",
 					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailAddresses").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
+				field.Invalid(fldPath.Child("emailAddresses").Index(0), "alice.example.com", "invalid email address: mail: missing '@' or angle-addr"),
 			},
 		},
 		"invalid certificate with email formatted with name": {
@@ -763,7 +763,7 @@ func TestValidateCertificate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)()
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
 			assert.ElementsMatch(t, warnings, s.warnings)
@@ -862,6 +862,64 @@ func TestValidateDuration(t *testing.T) {
 			},
 			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one second"].Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapi.MinimumRenewBefore))},
 		},
+		"renewBefore and renewBeforePercentage both set": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					RenewBefore:           usefulDurations["one month"],
+					RenewBeforePercentage: ptr.To(int32(95)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one month"].Duration, "renewBefore and renewBeforePercentage are mutually exclusive and cannot both be set"),
+				field.Invalid(fldPath.Child("renewBeforePercentage"), int32(95), "renewBefore and renewBeforePercentage are mutually exclusive and cannot both be set"),
+			},
+		},
+		"valid duration and renewBeforePercentage": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              usefulDurations["one year"],
+					RenewBeforePercentage: ptr.To(int32(95)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
+		"unset duration, valid renewBeforePercentage for default": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					RenewBeforePercentage: ptr.To(int32(95)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
+		"renewBeforePercentage is equal to duration": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					RenewBeforePercentage: ptr.To(int32(0)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(0), "certificate renewBeforePercentage must result in a renewBefore less than duration")},
+		},
+		"renewBeforePercentage results in less than the minimum permitted value": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					RenewBeforePercentage: ptr.To(int32(100)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(100), fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore))},
+		},
 		"duration is less than the minimum permitted value": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
@@ -876,7 +934,6 @@ func TestValidateDuration(t *testing.T) {
 		},
 	}
 	for n, s := range scenarios {
-		s := s // G601: Remove after Go 1.22. https://go.dev/wiki/LoopvarExperiment
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateDuration(&s.cfg.Spec, fldPath)
 			assert.ElementsMatch(t, errs, s.errs)
@@ -988,7 +1045,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, test.featureEnabled)()
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, test.featureEnabled)
 			gotErr := validateAdditionalOutputFormats(test.spec, field.NewPath("spec"))
 			assert.Equal(t, test.expErr, gotErr)
 		})
@@ -1124,7 +1181,158 @@ func Test_validateLiteralSubject(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)()
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)
+			errs, warnings := ValidateCertificate(test.a, test.cfg)
+			assert.ElementsMatch(t, errs, test.errs)
+			assert.ElementsMatch(t, warnings, []string{})
+		})
+	}
+}
+
+func Test_validateKeystores(t *testing.T) {
+	emptyString := ""
+	keystorePassword := "changeit"
+
+	fldPath := field.NewPath("spec")
+	tests := map[string]struct {
+		cfg  *internalcmapi.Certificate
+		a    *admissionv1.AdmissionRequest
+		errs []*field.Error
+	}{
+		"JKS PasswordSecretRef and Password are mutually exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS one of PasswordSecretRef / Password is required (nil password)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresPasswordRequiredFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS one of PasswordSecretRef / Password is required (empty strings)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "",
+								},
+							},
+							Password: &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 PasswordSecretRef and Password are mutually exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 one of PasswordSecretRef / Password is required (nil password)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 one of PasswordSecretRef / Password is required (empty strings)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "",
+								},
+							},
+							Password: &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
 			assert.ElementsMatch(t, warnings, []string{})

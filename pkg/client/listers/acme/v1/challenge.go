@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ChallengeLister helps list Challenges.
@@ -30,7 +30,7 @@ import (
 type ChallengeLister interface {
 	// List lists all Challenges in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Challenge, err error)
+	List(selector labels.Selector) (ret []*acmev1.Challenge, err error)
 	// Challenges returns an object that can list and get Challenges.
 	Challenges(namespace string) ChallengeNamespaceLister
 	ChallengeListerExpansion
@@ -38,25 +38,17 @@ type ChallengeLister interface {
 
 // challengeLister implements the ChallengeLister interface.
 type challengeLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*acmev1.Challenge]
 }
 
 // NewChallengeLister returns a new ChallengeLister.
 func NewChallengeLister(indexer cache.Indexer) ChallengeLister {
-	return &challengeLister{indexer: indexer}
-}
-
-// List lists all Challenges in the indexer.
-func (s *challengeLister) List(selector labels.Selector) (ret []*v1.Challenge, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Challenge))
-	})
-	return ret, err
+	return &challengeLister{listers.New[*acmev1.Challenge](indexer, acmev1.Resource("challenge"))}
 }
 
 // Challenges returns an object that can list and get Challenges.
 func (s *challengeLister) Challenges(namespace string) ChallengeNamespaceLister {
-	return challengeNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return challengeNamespaceLister{listers.NewNamespaced[*acmev1.Challenge](s.ResourceIndexer, namespace)}
 }
 
 // ChallengeNamespaceLister helps list and get Challenges.
@@ -64,36 +56,15 @@ func (s *challengeLister) Challenges(namespace string) ChallengeNamespaceLister 
 type ChallengeNamespaceLister interface {
 	// List lists all Challenges in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Challenge, err error)
+	List(selector labels.Selector) (ret []*acmev1.Challenge, err error)
 	// Get retrieves the Challenge from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Challenge, error)
+	Get(name string) (*acmev1.Challenge, error)
 	ChallengeNamespaceListerExpansion
 }
 
 // challengeNamespaceLister implements the ChallengeNamespaceLister
 // interface.
 type challengeNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Challenges in the indexer for a given namespace.
-func (s challengeNamespaceLister) List(selector labels.Selector) (ret []*v1.Challenge, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Challenge))
-	})
-	return ret, err
-}
-
-// Get retrieves the Challenge from the indexer for a given namespace and name.
-func (s challengeNamespaceLister) Get(name string) (*v1.Challenge, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("challenge"), name)
-	}
-	return obj.(*v1.Challenge), nil
+	listers.ResourceIndexer[*acmev1.Challenge]
 }

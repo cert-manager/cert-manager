@@ -23,13 +23,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -45,7 +45,7 @@ func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
 
 // renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController.
 func renewalTimeBuilder(rt *metav1.Time) pki.RenewalTimeFunc {
-	return func(notBefore, notAfter time.Time, cert *metav1.Duration) *metav1.Time {
+	return func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32) *metav1.Time {
 		return rt
 	}
 }
@@ -74,7 +74,7 @@ func TestProcessItem(t *testing.T) {
 		// key that should be passed to ProcessItem.
 		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
 		// if neither is set, the key will be "".
-		key string
+		key types.NamespacedName
 
 		// cert to be loaded to fake clientset
 		cert *cmapi.Certificate
@@ -105,10 +105,16 @@ func TestProcessItem(t *testing.T) {
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
-			key: "abc/def/ghi",
+			key: types.NamespacedName{
+				Namespace: "abc",
+				Name:      "def/ghi",
+			},
 		},
 		"do nothing if a key references a Certificate that does not exist": {
-			key: "namespace/name",
+			key: types.NamespacedName{
+				Namespace: "namespace",
+				Name:      "name",
+			},
 		},
 		"update status for a Certificate that is evaluated as Ready and whose spec.secretName secret contains a valid X509 cert": {
 			condition: cmapi.CertificateCondition{
@@ -216,7 +222,7 @@ func TestProcessItem(t *testing.T) {
 					Message: "ready message",
 				})),
 		},
-		"update status for a Certificate that has a Ready condition and the policy evaluates to True- should remain True": {
+		"update status for a Certificate that has a Ready condition and the policy evaluates to True - should remain True": {
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
 				Status:             cmmeta.ConditionTrue,
@@ -285,7 +291,7 @@ func TestProcessItem(t *testing.T) {
 				c := gen.CertificateFrom(test.cert,
 					gen.SetCertificateStatusCondition(test.condition))
 
-				// gen package functions don't accept pointers- we need to test setting these values to nil in some scenarios.
+				// gen package functions don't accept pointers - we need to test setting these values to nil in some scenarios.
 				c.Status.NotAfter = test.notAfter
 				c.Status.NotBefore = test.notBefore
 				c.Status.RenewalTime = test.renewalTime
@@ -303,10 +309,10 @@ func TestProcessItem(t *testing.T) {
 			defer builder.Stop()
 
 			key := test.key
-			if key == "" && cert != nil {
-				key, err = controllerpkg.KeyFunc(cert)
-				if err != nil {
-					t.Fatal(err)
+			if key == (types.NamespacedName{}) && cert != nil {
+				key = types.NamespacedName{
+					Name:      cert.Name,
+					Namespace: cert.Namespace,
 				}
 			}
 

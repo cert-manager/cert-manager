@@ -11,11 +11,9 @@ this directory.
 package azuredns
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -100,7 +98,7 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 
 	logf.Log.V(logf.InfoLevel).Info("No ClientID found: attempting to authenticate with ambient credentials (Azure Workload Identity or Azure Managed Service Identity, in that order)")
 	if !ambient {
-		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
+		return nil, fmt.Errorf("ClientID was omitted without providing one of `--cluster-issuer-ambient-credentials` or `--issuer-ambient-credentials`. These are necessary to enable Azure Managed Identities")
 	}
 
 	// Use Workload Identity if present
@@ -111,6 +109,9 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 		if managedIdentity != nil {
 			if managedIdentity.ClientID != "" {
 				wcOpt.ClientID = managedIdentity.ClientID
+			}
+			if managedIdentity.TenantID != "" {
+				wcOpt.TenantID = managedIdentity.TenantID
 			}
 		}
 
@@ -212,7 +213,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
 	if err != nil {
 		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr); respErr.StatusCode == http.StatusNotFound {
+		if errors.As(err, &respErr); respErr != nil && respErr.StatusCode == http.StatusNotFound {
 			set = &dns.RecordSet{
 				Properties: &dns.RecordSetProperties{
 					TTL:        to.Ptr(int64(60)),
@@ -273,33 +274,69 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 // is the same to avoid spurious challenge updates.
 //
 // The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from a azure-sdk func that makes API calls.
+// we have a non-nil error coming from an azure-sdk func that makes API calls.
 func stabilizeError(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	redactResponse := func(resp *http.Response) *http.Response {
-		if resp == nil {
-			return nil
+	return NormalizedError{
+		Cause: err,
+	}
+}
+
+type NormalizedError struct {
+	Cause error
+}
+
+func (e NormalizedError) Error() string {
+	var (
+		authErr *azidentity.AuthenticationFailedError
+		respErr *azcore.ResponseError
+	)
+
+	switch {
+	case errors.As(e.Cause, &authErr):
+		msg := new(strings.Builder)
+		fmt.Fprintln(msg, "authentication failed:")
+
+		if authErr.RawResponse != nil {
+			if authErr.RawResponse.Request != nil {
+				fmt.Fprintf(msg, "%s %s://%s%s\n", authErr.RawResponse.Request.Method, authErr.RawResponse.Request.URL.Scheme, authErr.RawResponse.Request.URL.Host, authErr.RawResponse.Request.URL.Path)
+			}
+
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
+			fmt.Fprintf(msg, "RESPONSE %s\n", authErr.RawResponse.Status)
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
 		}
 
-		response := *resp
-		response.Body = io.NopCloser(bytes.NewReader([]byte("<REDACTED>")))
-		return &response
-	}
+		fmt.Fprint(msg, "see logs for more information")
 
-	var authErr *azidentity.AuthenticationFailedError
-	if errors.As(err, &authErr) {
-		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
-		authErr.RawResponse = redactResponse(authErr.RawResponse)
-	}
+		return msg.String()
+	case errors.As(e.Cause, &respErr):
+		msg := new(strings.Builder)
+		fmt.Fprintln(msg, "request error:")
 
-	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) {
-		//nolint: bodyclose // False positive, this already a processed body, probably just pointing to a buffer.
-		respErr.RawResponse = redactResponse(respErr.RawResponse)
-	}
+		if respErr.RawResponse != nil {
+			if respErr.RawResponse.Request != nil {
+				fmt.Fprintf(msg, "%s %s://%s%s\n", respErr.RawResponse.Request.Method, respErr.RawResponse.Request.URL.Scheme, respErr.RawResponse.Request.URL.Host, respErr.RawResponse.Request.URL.Path)
+			}
 
-	return err
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
+			fmt.Fprintf(msg, "RESPONSE %s\n", respErr.RawResponse.Status)
+			if respErr.ErrorCode != "" {
+				fmt.Fprintf(msg, "ERROR CODE: %s\n", respErr.ErrorCode)
+			} else {
+				fmt.Fprintln(msg, "ERROR CODE UNAVAILABLE")
+			}
+			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
+		}
+
+		fmt.Fprint(msg, "see logs for more information")
+
+		return msg.String()
+
+	default:
+		return e.Cause.Error()
+	}
 }

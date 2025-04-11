@@ -36,6 +36,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -150,7 +151,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	// generate a self signed root ca valid for 60d
+	// generate a self-signed root ca valid for 60d
 	rootCert, rootCertPEM := generateSelfSignedCACert(t, rootPK, "root")
 	ecCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -573,10 +574,14 @@ func runTest(t *testing.T, test testT) {
 		apiutil.IssuerCA,
 		func(*controller.Context) certificatesigningrequests.Signer { return ca },
 	)
-	controller.Register(test.builder.Context)
+	if _, _, err := controller.Register(test.builder.Context); err != nil {
+		t.Fatal(err)
+	}
 	test.builder.Start()
 
-	err := controller.ProcessItem(context.Background(), test.csr.Name)
+	err := controller.ProcessItem(context.Background(), types.NamespacedName{
+		Name: test.csr.Name,
+	})
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
@@ -614,7 +619,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestRequest(testCSR),
-				gen.SetCertificateSigningRequestSignerName("issers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
 				gen.SetCertificateSigningRequestDuration("30m"),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
@@ -649,7 +654,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestRequest(testCSR),
-				gen.SetCertificateSigningRequestSignerName("issers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
 				gen.SetCertificateSigningRequestExpirationSeconds(654),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {

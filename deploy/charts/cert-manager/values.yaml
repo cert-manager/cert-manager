@@ -33,6 +33,9 @@ global:
     create: true
     # Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
     aggregateClusterRoles: true
+    # To use HTTP-01 ACME challenges, cert-manager needs extra permissions to create pods.
+    # If you want to avoid this added permission and disable HTTP-01 set this value.
+    disableHTTPChallengesRole: false
 
   podSecurityPolicy:
     # Create PodSecurityPolicy for cert-manager.
@@ -120,12 +123,14 @@ podDisruptionBudget:
   # an integer (e.g. 1) or a percentage value (e.g. 25%).
   # It cannot be used if `maxUnavailable` is set.
   # +docs:property
+  # +docs:type=unknown
   # minAvailable: 1
 
   # This configures the maximum unavailable pods for disruptions. It can either be set to
   # an integer (e.g. 1) or a percentage value (e.g. 25%).
   # it cannot be used if `minAvailable` is set.
   # +docs:property
+  # +docs:type=unknown
   # maxUnavailable: 1
 
 # A comma-separated list of feature gates that should be enabled on the
@@ -166,6 +171,19 @@ clusterResourceNamespace: ""
 # This is helpful when installing cert manager as a chart dependency (sub chart).
 namespace: ""
 
+# Override the "cert-manager.fullname" value. This value is used as part of
+# most of the names of the resources created by this Helm chart.
+# +docs:property
+# fullnameOverride: "my-cert-manager"
+
+# Override the "cert-manager.name" value, which is used to annotate some of
+# the resources that are created by this Chart (using "app.kubernetes.io/name").
+# NOTE: There are some inconsistencies in the Helm chart when it comes to
+# these annotations (some resources use eg. "cainjector.name" which resolves
+# to the value "cainjector").
+# +docs:property
+# nameOverride: "my-cert-manager"
+
 serviceAccount:
   # Specifies whether a service account should be created.
   create: true
@@ -175,7 +193,10 @@ serviceAccount:
   # +docs:property
   # name: ""
 
-  # Optional additional annotations to add to the controller's Service Account.
+  # Optional additional annotations to add to the controller's Service Account. Templates are allowed for both keys and values.
+  # Example using templating:
+  # annotations:
+  #   "{{ .Chart.Name }}-helm-chart/version": "{{ .Chart.Version }}"
   # +docs:property
   # annotations: {}
 
@@ -195,8 +216,10 @@ enableCertificateOwnerRef: false
 
 # This property is used to configure options for the controller pod.
 # This allows setting options that would usually be provided using flags.
-# An APIVersion and Kind must be specified in your values.yaml file.
-# Flags will override options that are set here.
+#
+# If `apiVersion` and `kind` are unspecified they default to the current latest
+# version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin
+# the version by specifying the `apiVersion` yourself.
 #
 # For example:
 #  config:
@@ -210,25 +233,32 @@ enableCertificateOwnerRef: false
 #    kubernetesAPIQPS: 9000
 #    kubernetesAPIBurst: 9000
 #    numberOfConcurrentWorkers: 200
+#    enableGatewayAPI: true
+#    # Feature gates as of v1.17.0. Listed with their default values.
+#    # See https://cert-manager.io/docs/cli/controller/
 #    featureGates:
-#      AdditionalCertificateOutputFormats: true
-#      DisallowInsecureCSRUsageDefinition: true
-#      ExperimentalCertificateSigningRequestControllers: true
-#      ExperimentalGatewayAPISupport: true
-#      LiteralCertificateSubject: true
-#      SecretsFilteredCaching: true
-#      ServerSideApply: true
-#      StableCertificateRequestName: true
-#      UseCertificateRequestBasicConstraints: true
-#      ValidateCAA: true
+#      AdditionalCertificateOutputFormats: true # BETA - default=true
+#      AllAlpha: false # ALPHA - default=false
+#      AllBeta: false # BETA - default=false
+#      ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
+#      ExperimentalGatewayAPISupport: true # BETA - default=true
+#      LiteralCertificateSubject: true # BETA - default=true
+#      NameConstraints: true # BETA - default=true
+#      OtherNames: false # ALPHA - default=false
+#      SecretsFilteredCaching: true # BETA - default=true
+#      ServerSideApply: false # ALPHA - default=false
+#      StableCertificateRequestName: true # BETA - default=true
+#      UseCertificateRequestBasicConstraints: false # ALPHA - default=false
+#      UseDomainQualifiedFinalizer: true # BETA - default=false
+#      ValidateCAA: false # ALPHA - default=false
+#    # Configure the metrics server for TLS
+#    # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
 #    metricsTLSConfig:
 #      dynamic:
 #        secretNamespace: "cert-manager"
 #        secretName: "cert-manager-metrics-ca"
 #        dnsNames:
 #        - cert-manager-metrics
-#        - cert-manager-metrics.cert-manager
-#        - cert-manager-metrics.cert-manager.svc
 config: {}
 
 # Setting Nameservers for DNS01 Self Check.
@@ -261,7 +291,7 @@ approveSignerNames:
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.
 #
-# Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificiateRequests approver.
+# Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificateRequests approver.
 #
 # For example:
 #  extraArgs:
@@ -269,9 +299,11 @@ approveSignerNames:
 extraArgs: []
 
 # Additional environment variables to pass to cert-manager controller binary.
+# For example:
+#  extraEnv:
+#  - name: SOME_VAR
+#    value: 'some value'
 extraEnv: []
-# - name: SOME_VAR
-#   value: 'some value'
 
 # Resources to provide to the cert-manager controller pod.
 #
@@ -467,17 +499,24 @@ enableServiceLinks: false
 # +docs:section=Prometheus
 
 prometheus:
-  # Enable Prometheus monitoring for the cert-manager controller to use with the
-  # Prometheus Operator. If this option is enabled without enabling `prometheus.servicemonitor.enabled` or
-  # `prometheus.podmonitor.enabled`, 'prometheus.io' annotations are added to the cert-manager Deployment
-  # resources. Additionally, a service is created which can be used together
-  # with your own ServiceMonitor (managed outside of this Helm chart).
-  # Otherwise, a ServiceMonitor/ PodMonitor is created.
+  # Enable Prometheus monitoring for the cert-manager controller and webhook.
+  # If you use the Prometheus Operator, set prometheus.podmonitor.enabled or
+  # prometheus.servicemonitor.enabled, to create a PodMonitor or a
+  # ServiceMonitor resource.
+  # Otherwise, 'prometheus.io' annotations are added to the cert-manager and
+  # cert-manager-webhook Deployments.
+  # Note that you cannot enable both PodMonitor and ServiceMonitor as they are
+  # mutually exclusive. Enabling both will result in an error.
   enabled: true
 
   servicemonitor:
     # Create a ServiceMonitor to add cert-manager to Prometheus.
     enabled: false
+
+    # The namespace that the service monitor should live in, defaults
+    # to the cert-manager namespace.
+    # +docs:property
+    # namespace: cert-manager
 
     # Specifies the `prometheus` label on the created ServiceMonitor. This is
     # used when different Prometheus instances have label selectors matching
@@ -520,10 +559,15 @@ prometheus:
     # +docs:property
     endpointAdditionalProperties: {}
 
-  # Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in a error.
+  # Note that you cannot enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
     enabled: false
+
+    # The namespace that the pod monitor should live in, defaults
+    # to the cert-manager namespace.
+    # +docs:property
+    # namespace: cert-manager
 
     # Specifies the `prometheus` label on the created PodMonitor. This is
     # used when different Prometheus instances have label selectors matching
@@ -558,6 +602,15 @@ prometheus:
     #     sourceLabels:
     #     - __meta_kubernetes_pod_node_name
     #     targetLabel: instance
+    #   # Configure the PodMonitor for TLS connections
+    #   # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
+    #   scheme: https
+    #   tlsConfig:
+    #     serverName: cert-manager-metrics
+    #     ca:
+    #       secret:
+    #         name: cert-manager-metrics-ca
+    #         key: "tls.crt"
     #
     # +docs:property
     endpointAdditionalProperties: {}
@@ -591,8 +644,10 @@ webhook:
 
   # This is used to configure options for the webhook pod.
   # This allows setting options that would usually be provided using flags.
-  # An APIVersion and Kind must be specified in your values.yaml file.
-  # Flags override options that are set here.
+  #
+  # If `apiVersion` and `kind` are unspecified they default to the current latest
+  # version (currently `webhook.config.cert-manager.io/v1alpha1`). You can pin
+  # the version by specifying the `apiVersion` yourself.
   #
   # For example:
   #  apiVersion: webhook.config.cert-manager.io/v1alpha1
@@ -605,6 +660,14 @@ webhook:
   #  # This should be uncommented and set as a default by the chart once
   #  # the apiVersion of WebhookConfiguration graduates beyond v1alpha1.
   #  securePort: 10250
+  #  # Configure the metrics server for TLS
+  #  # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
+  #  metricsTLSConfig:
+  #    dynamic:
+  #      secretNamespace: "cert-manager"
+  #      secretName: "cert-manager-metrics-ca"
+  #      dnsNames:
+  #      - cert-manager-metrics
   config: {}
 
   # The update strategy for the cert-manager webhook deployment.
@@ -649,12 +712,14 @@ webhook:
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # It cannot be used if `maxUnavailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # minAvailable: 1
 
     # This property configures the maximum unavailable pods for disruptions. Can either be set to
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # It cannot be used if `minAvailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # maxUnavailable: 1
 
   # Optional additional annotations to add to the webhook Deployment.
@@ -705,6 +770,13 @@ webhook:
   extraArgs: []
   # Path to a file containing a WebhookConfiguration object used to configure the webhook.
   # - --config=<path-to-config-file>
+
+  # Additional environment variables to pass to cert-manager webhook binary.
+  # For example:
+  #  extraEnv:
+  #  - name: SOME_VAR
+  #    value: 'some value'
+  extraEnv: []
 
   # Comma separated list of feature gates that should be enabled on the
   # webhook pod.
@@ -831,7 +903,7 @@ webhook:
     # +docs:property
     # name: ""
 
-    # Optional additional annotations to add to the controller's Service Account.
+    # Optional additional annotations to add to the webhook's Service Account.
     # +docs:property
     # annotations: {}
 
@@ -942,8 +1014,10 @@ cainjector:
 
   # This is used to configure options for the cainjector pod.
   # It allows setting options that are usually provided via flags.
-  # An APIVersion and Kind must be specified in your values.yaml file.
-  # Flags override options that are set here.
+  #
+  # If `apiVersion` and `kind` are unspecified they default to the current latest
+  # version (currently `cainjector.config.cert-manager.io/v1alpha1`). You can pin
+  # the version by specifying the `apiVersion` yourself.
   #
   # For example:
   #  apiVersion: cainjector.config.cert-manager.io/v1alpha1
@@ -953,6 +1027,14 @@ cainjector:
   #   format: text
   #  leaderElectionConfig:
   #   namespace: kube-system
+  #  # Configure the metrics server for TLS
+  #  # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
+  #  metricsTLSConfig:
+  #    dynamic:
+  #      secretNamespace: "cert-manager"
+  #      secretName: "cert-manager-metrics-ca"
+  #      dnsNames:
+  #      - cert-manager-metrics
   config: {}
 
   # Deployment update strategy for the cert-manager cainjector deployment.
@@ -997,12 +1079,14 @@ cainjector:
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # Cannot be used if `maxUnavailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # minAvailable: 1
 
     # `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to
     # an integer (e.g. 1) or a percentage value (e.g. 25%).
     # Cannot be used if `minAvailable` is set.
     # +docs:property
+    # +docs:type=unknown
     # maxUnavailable: 1
 
   # Optional additional annotations to add to the cainjector Deployment.
@@ -1013,11 +1097,22 @@ cainjector:
   # +docs:property
   # podAnnotations: {}
 
+  # Optional additional annotations to add to the cainjector metrics Service.
+  # +docs:property
+  # serviceAnnotations: {}
+
   # Additional command line flags to pass to cert-manager cainjector binary.
   # To see all available flags run `docker run quay.io/jetstack/cert-manager-cainjector:<version> --help`.
   extraArgs: []
   # Enable profiling for cainjector.
   # - --enable-profiling=true
+
+  # Additional environment variables to pass to cert-manager cainjector binary.
+  # For example:
+  #  extraEnv:
+  #  - name: SOME_VAR
+  #    value: 'some value'
+  extraEnv: []
 
   # Comma separated list of feature gates that should be enabled on the
   # cainjector pod.
@@ -1084,6 +1179,9 @@ cainjector:
   # Optional additional labels to add to the CA Injector Pods.
   podLabels: {}
 
+  # Optional additional labels to add to the CA Injector metrics Service.
+  serviceLabels: {}
+
   image:
     # The container registry to pull the cainjector image from.
     # +docs:property
@@ -1114,7 +1212,7 @@ cainjector:
     # +docs:property
     # name: ""
 
-    # Optional additional annotations to add to the controller's Service Account.
+    # Optional additional annotations to add to the cainjector's Service Account.
     # +docs:property
     # annotations: {}
 
@@ -1221,6 +1319,13 @@ startupapicheck:
   # +docs:property
   extraArgs:
   - -v
+
+  # Additional environment variables to pass to cert-manager startupapicheck binary.
+  # For example:
+  #  extraEnv:
+  #  - name: SOME_VAR
+  #    value: 'some value'
+  extraEnv: []
 
   # Resources to provide to the cert-manager controller pod.
   #
@@ -1345,5 +1450,19 @@ startupapicheck:
 #     apiVersion: v1
 #     kind: ConfigMap
 #     metadata:
-#       name: '{{ template "cert-manager.name" . }}-extra-configmap'
+#       name: '{{ template "cert-manager.fullname" . }}-extra-configmap'
 extraObjects: []
+
+# Field used by our release pipeline to produce the static manifests.
+# The field defaults to "helm" but is set to "static" when we render
+# the static YAML manifests.
+# +docs:hidden
+creator: "helm"
+
+# Field that can be used as a condition when cert-manager is a dependency.
+# This definition is only here as a placeholder such that it is included in
+# the json schema.
+# See https://helm.sh/docs/chart_best_practices/dependencies/#conditions-and-tags
+# for more info.
+# +docs:hidden
+enabled: true

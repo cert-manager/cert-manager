@@ -40,6 +40,7 @@ func (in *CAInjectorConfiguration) DeepCopyInto(out *CAInjectorConfiguration) {
 			(*out)[key] = val
 		}
 	}
+	in.MetricsTLSConfig.DeepCopyInto(&out.MetricsTLSConfig)
 	return
 }
 

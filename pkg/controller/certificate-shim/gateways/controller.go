@@ -22,6 +22,7 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -42,10 +43,10 @@ type controller struct {
 	sync          shimhelper.SyncFn
 
 	// For testing purposes.
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	c.gatewayLister = ctx.GWShared.Gateway().V1().Gateways().Lister()
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
@@ -53,9 +54,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// We don't need to requeue Gateways on "Deleted" events, since our Sync
 	// function does nothing when the Gateway lister returns "not found". But we
 	// still do it for consistency with the rest of the controllers.
-	ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: c.queue,
-	})
+	}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	// Even thought the Gateway controller already re-queues the Gateway after
 	// creating a child Certificate, we still re-queue the Gateway when we
@@ -67,9 +70,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	//
 	// Regarding "Deleted" events on Certificates, we requeue the parent Gateway
 	// to immediately recreate the Certificate when the Certificate is deleted.
-	ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		WorkFunc: certificateHandler(c.queue),
-	})
+	}); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
 
 	mustSync := []cache.InformerSynced{
 		ctx.GWShared.Gateway().V1().Gateways().Informer().HasSynced,
@@ -79,12 +84,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	return c.queue, mustSync, nil
 }
 
-func (c *controller) ProcessItem(ctx context.Context, key string) error {
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
-	}
+func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
+	namespace, name := key.Namespace, key.Name
 
 	gateway, err := c.gatewayLister.Gateways(namespace).Get(name)
 
@@ -115,7 +116,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 //	    name: gateway-1
 //	    blockOwnerDeletion: true
 //	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interface{}) {
+func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj interface{}) {
 	return func(obj interface{}) {
 		crt, ok := obj.(*cmapi.Certificate)
 		if !ok {
@@ -137,14 +138,22 @@ func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interfac
 			return
 		}
 
-		queue.Add(crt.Namespace + "/" + ref.Name)
+		queue.Add(types.NamespacedName{
+			Namespace: crt.Namespace,
+			Name:      ref.Name,
+		})
 	}
 }
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, ControllerName).
-			For(&controller{queue: workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)}).
+			For(&controller{queue: workqueue.NewTypedRateLimitingQueueWithConfig(
+				controllerpkg.DefaultItemBasedRateLimiter(),
+				workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
+					Name: ControllerName,
+				},
+			)}).
 			Complete()
 	})
 }

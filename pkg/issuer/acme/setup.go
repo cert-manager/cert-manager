@@ -115,7 +115,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		if err != nil {
 			msg = messageAccountRegistrationFailed + err.Error()
 			reason = errorAccountRegistrationFailed
-			return fmt.Errorf(msg)
+			return fmt.Errorf("%s", msg)
 		}
 		// We clear the ACME account URI as we have generated a new private key
 		a.issuer.GetStatus().ACMEStatus().URI = ""
@@ -139,7 +139,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	case err != nil:
 		reason = errorAccountVerificationFailed
 		msg = messageAccountVerificationFailed + err.Error()
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 	rsaPk, ok := pk.(*rsa.PrivateKey)
 	if !ok {
@@ -244,7 +244,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		case err != nil:
 			reason = errorAccountRegistrationFailed
 			msg = messageAccountRegistrationFailed + err.Error()
-			return fmt.Errorf(msg)
+			return fmt.Errorf("%s", msg)
 		}
 
 		// set the external account binding
@@ -258,7 +258,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	account, err := a.registerAccount(ctx, cl, eabAccount)
 	if err != nil {
 		// TODO: this error could be from an account registration or an attempt
-		// to retrieve an existing account- perhaps we should log different
+		// to retrieve an existing account - perhaps we should log different
 		// messages in those two scenarios.
 		reason = errorAccountRegistrationFailed
 		msg = messageAccountRegistrationFailed + err.Error()
@@ -433,6 +433,9 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
+			Labels: map[string]string{
+				"app.kubernetes.io/managed-by": "cert-manager",
+			},
 		},
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),

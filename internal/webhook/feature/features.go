@@ -16,11 +16,12 @@ limitations under the License.
 
 // feature contains webhook's feature gate setup functionality. Do not import
 // this package into any code that's shared with other components to prevent
-// overwriting other component's featue gates, see i.e
+// overwriting other component's feature gates, see i.e
 // https://github.com/cert-manager/cert-manager/issues/6011
 package feature
 
 import (
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/featuregate"
 
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -66,6 +67,7 @@ const (
 
 	// Owner: @tanujd11
 	// Alpha: v1.14
+	// Beta: v1.17
 	//
 	// NameConstraints adds support for Name Constraints in Certificate resources
 	// with IsCA=true.
@@ -82,7 +84,7 @@ const (
 )
 
 func init() {
-	utilfeature.DefaultMutableFeatureGate.Add(webhookFeatureGates)
+	utilruntime.Must(utilfeature.DefaultMutableFeatureGate.Add(webhookFeatureGates))
 }
 
 // webhookFeatureGates defines all feature gates for the webhook component.
@@ -97,6 +99,6 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 
 	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
 	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
-	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
+	NameConstraints:                    {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
 }

@@ -34,15 +34,20 @@ import (
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 const (
-	tppUsernameKey    = "username"
-	tppPasswordKey    = "password"
-	tppAccessTokenKey = "access-token"
+	tppUsernameKey     = "username"
+	tppPasswordKey     = "password"
+	tppAccessTokenKey  = "access-token"
+	tppClientIdKey     = "client-id"
+	defaultTppClientId = "cert-manager.io"
+	// Setting Scope statically for simplicity
+	tppScopes = "certificate:manage"
 
 	defaultAPIKeyKey = "api-key"
 )
@@ -52,15 +57,15 @@ type VenafiClientBuilder func(namespace string, secretsLister internalinformers.
 
 // Interface implements a Venafi client
 type Interface interface {
-	RequestCertificate(csrPEM []byte, customFields []api.CustomField) (string, error)
-	RetrieveCertificate(pickupID string, csrPEM []byte, customFields []api.CustomField) ([]byte, error)
+	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
+	RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
 	VerifyCredentials() error
 }
 
-// Venafi is a implementation of vcert library to manager certificates from TPP or Venafi Cloud
+// Venafi is an implementation of vcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -81,7 +86,7 @@ type connector interface {
 	ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error)
 	RequestCertificate(req *certificate.Request) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
-	// TODO: (irbekrm) this method is never used- can it be removed?
+	// TODO: (irbekrm) this method is never used - can it be removed?
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
@@ -93,7 +98,16 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		return nil, err
 	}
 
-	vcertClient, err := vcert.NewClient(cfg)
+	// Using `false` here ensures we do not immediately authenticate to the
+	// Venafi backend. Doing so invokes a call which forces the use of APIKey
+	// on the TPP side. This auth method has been removed since 22.4 of TPP.
+	// This results in an APIKey usage error.
+	// Reference code from vcert library which still refers to the APIKey.
+	// ref: https://github.com/Venafi/vcert/blob/master/pkg/venafi/tpp/connector.go#L137-L146
+	//
+	// cert-manager uses the VerifyCredentials function below after the client
+	// has been created.
+	vcertClient, err := vcert.NewClient(cfg, false)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
@@ -114,39 +128,57 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		}
 	}
 
-	instrumentedVCertClient := newInstumentedConnector(vcertClient, metrics, logger)
+	instrumentedVCertClient := newInstrumentedConnector(vcertClient, metrics, logger)
 
-	return &Venafi{
+	v := &Venafi{
 		namespace:     namespace,
 		secretsLister: secretsLister,
 		vcertClient:   instrumentedVCertClient,
 		cloudClient:   cc,
 		tppClient:     tppc,
 		config:        cfg,
-	}, nil
+	}
+
+	// Since we did not authenticate when creating the client, authenticate
+	// now to verify the credentials passed. Ensure that upon leaving this
+	// function that credentials have been verified.
+	if err := v.VerifyCredentials(); err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string, userAgent string) (*vcert.Config, error) {
-	venCfg := iss.GetSpec().Venafi
+	venaCfg := iss.GetSpec().Venafi
 
 	switch {
-	case venCfg.TPP != nil:
-		tpp := venCfg.TPP
+	case venaCfg.TPP != nil:
+		tpp := venaCfg.TPP
 		tppSecret, err := secretsLister.Secrets(namespace).Get(tpp.CredentialsRef.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		caBundle, err := caBundleForVcertTPP(tpp, secretsLister, namespace)
 		if err != nil {
 			return nil, err
 		}
 
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
+		clientId := string(tppSecret.Data[tppClientIdKey])
+		// fallback to default client-id if not provided
+		if clientId == "" {
+			clientId = defaultTppClientId
+		}
 		accessToken := string(tppSecret.Data[tppAccessTokenKey])
 
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
 			BaseUrl:       tpp.URL,
-			Zone:          venCfg.Zone,
+			Zone:          venaCfg.Zone,
 			// always enable verbose logging for now
 			LogVerbose: true,
 			// We supply the CA bundle here, to trigger the vcert's builtin
@@ -156,20 +188,21 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			// below. But we want to retain the CA bundle validation errors that
 			// were returned in previous versions of this code.
 			// https://github.com/Venafi/vcert/blob/89645a7710a7b529765274cb60dc5e28066217a1/client.go#L55-L61
-			ConnectionTrust: string(tpp.CABundle),
+			ConnectionTrust: string(caBundle),
 			Credentials: &endpoint.Authentication{
 				User:        username,
 				Password:    password,
 				AccessToken: accessToken,
+				ClientId:    clientId,
 			},
 			Client: httpClientForVcert(&httpClientForVcertOptions{
 				UserAgent:               ptr.To(userAgent),
-				CABundle:                tpp.CABundle,
+				CABundle:                caBundle,
 				TLSRenegotiationSupport: ptr.To(tls.RenegotiateOnceAsClient),
 			}),
 		}, nil
-	case venCfg.Cloud != nil:
-		cloud := venCfg.Cloud
+	case venaCfg.Cloud != nil:
+		cloud := venaCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
 			return nil, err
@@ -184,7 +217,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,
 			BaseUrl:       cloud.URL,
-			Zone:          venCfg.Zone,
+			Zone:          venaCfg.Zone,
 			// always enable verbose logging for now
 			LogVerbose: true,
 			Credentials: &endpoint.Authentication{
@@ -312,6 +345,48 @@ func httpClientForVcert(options *httpClientForVcertOptions) *http.Client {
 	}
 }
 
+// caBundleForVcertTPP is used to by ConnectionTrust and Client fields of vcert.Config.
+// This function sets appropriate CA based on provided bundle or kubernetes secret
+// If no custom CA bundle is configured, an empty byte slice is returned.
+// Assumes exactly one of the in-line/Secret CA bundles are defined.
+// If the `key` of the Secret CA bundle is not defined, its value defaults to
+// `ca.crt`.
+func caBundleForVcertTPP(tpp *cmapi.VenafiTPP, secretsLister internalinformers.SecretLister, namespace string) (caBundle []byte, err error) {
+	if len(tpp.CABundle) > 0 {
+		return tpp.CABundle, nil
+	}
+
+	secretRef := tpp.CABundleSecretRef
+	if secretRef == nil {
+		return nil, nil
+	}
+
+	var certBytes []byte
+	var ok bool
+
+	if secretRef != nil {
+		secret, err := secretsLister.Secrets(namespace).Get(secretRef.Name)
+		if err != nil {
+			return nil, fmt.Errorf("could not access secret '%s/%s': %s", namespace, secretRef.Name, err)
+		}
+
+		var key string
+		if secretRef.Key != "" {
+			key = secretRef.Key
+		} else {
+			key = cmmeta.TLSCAKey
+		}
+
+		certBytes, ok = secret.Data[key]
+		if !ok {
+			return nil, fmt.Errorf("no data for %q in secret '%s/%s'", key, namespace, secretRef.Name)
+		}
+
+	}
+
+	return certBytes, nil
+}
+
 func (v *Venafi) Ping() error {
 	return v.vcertClient.Ping()
 }
@@ -355,9 +430,24 @@ func (v *Venafi) VerifyCredentials() error {
 		}
 
 		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
-			err := v.tppClient.Authenticate(&endpoint.Authentication{
+			// Use vcert library GetRefreshToken which brings back a token pair.
+			// This includes the access_token which we set against the tppClient.
+			// Replaces usage of v.tppClient.Authenticate function which would
+			// have called the APIKey endpoint resulting in error.
+			resp, err := v.tppClient.GetRefreshToken(&endpoint.Authentication{
 				User:     v.config.Credentials.User,
 				Password: v.config.Credentials.Password,
+				ClientId: v.config.Credentials.ClientId,
+				Scope:    tppScopes,
+			})
+
+			if err != nil {
+				return fmt.Errorf("tppClient.GetRefreshToken: %v", err)
+			}
+
+			// Ensure that the access_token is stored on the tppClient object.
+			err = v.tppClient.Authenticate(&endpoint.Authentication{
+				AccessToken: resp.Access_token,
 			})
 
 			if err != nil {

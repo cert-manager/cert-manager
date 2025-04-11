@@ -26,22 +26,23 @@ CRI_ARCH := $(HOST_ARCH)
 # is set in one place only.
 K8S_VERSION := 1.30
 
-IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:0115d7e01987c13e1be90b09c223c3e0d8e9a92e97c0421e712ad3577e2d78e5
-IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:031d2da484f3d89c78007cbb1cf1d7ae992e069683a2cdca0a0efb63a63fc735
-IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:5371ead07ebd09ff858f568a07b6807e8568772af61e626c9a0a5137bd7e62db
+IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.10.1@sha256:959e313aceec9f38e18a329ca3756402959e84e63ae8ba7ac1ee48aec28d51b9
+IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:127def0e41f49fea6e260abf7b1662fe7bdfb9f33e8f9047fb74d0162a5697bb
+IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d388cd67b38fb4f55eb5e38107dbbce9e06208b8e3839f0b63f8631f286181be
 IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
-IMAGE_bind_amd64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:b6ea4da6cb689985a6729f20a1a2775b9211bdaebd2c956f22871624d4925db2
+IMAGE_bind_amd64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:8c45ba363b2921950161451cf3ff58dff1816fa46b16fb8fa601d5500cdc2ffc
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
-IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:1570f04e96fb5e0ad71c2de61fee71c8d55b2fe5b7c827ce65e81bf7cc99bcbd
+IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:bb7af851ac5832c315e0863d12ed583cee54c495d58a206f1d0897647505ed70
 
-IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.9.4@sha256:3cdc716f0395886008c5e49972297adf1af87eeef472f71ff8de11bf53f25766
-IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.10.3@sha256:acf77f4fd08056941b5640d9489d46f2a1777e29d574e51926eac5250144dbd2
-IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.10.3@sha256:3ec997a6a26f600e4c2e439c3671e9f21c83a73bf486134eb6732481d0e371ca
+IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.10.1@sha256:624d1a22b56a52fc4b8e330bef968cd77d49c6eeb36166f20036d50782307341
+IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:c076a1ba9e0fb33d8eca3e7499caddfa3bb4f5e52e9dee589d8476ae1688cd34
+IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d8d750012ed4bb46fd41d8892e92af6fb9fd212317bc23e68a2a47199646b04a
 IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
-IMAGE_bind_arm64 := docker.io/eafxx/bind:latest-ccf145d3@sha256:a302cff9f7ecfac0c3cfde1b53a614a81d16f93a247c838d3dac43384fefd9b4
+IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:7fcfebdfacf52fa0dee2b1ae37ebe235fe169cbc404974c396937599ca69da6f
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
-IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.25.2@sha256:abbb2b7fee8eafddfd4ebd8e45510e6c1d86937461bc6934470ffb57211a9a8b
+IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:dbfec77951e123bf383a09412a51df218b716aaf3fe7b2778bb2f208ac495dc5
 
+# https://github.com/letsencrypt/pebble/releases
 PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
 
 LOCALIMAGE_pebble := local/pebble:local
@@ -155,10 +156,10 @@ endef
 # get the message "warning: undefined variable 'CI'".
 .PHONY: preload-kind-image
 ifeq ($(shell printenv CI),)
-preload-kind-image:
+preload-kind-image: | $(NEEDS_CTR)
 	@$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || (set -x; $(CTR) pull $(IMAGE_kind_$(CRI_ARCH)))
 else
-preload-kind-image: $(call image-tar,kind)
+preload-kind-image: $(call image-tar,kind) | $(NEEDS_CTR)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
@@ -262,19 +263,19 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ValidateCAA=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
-feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # When testing an published chart the repo can be configured using
-# E2E_CERT_MANAGER_REPO 
+# E2E_CERT_MANAGER_REPO
 E2E_CERT_MANAGER_REPO ?= https://charts.jetstack.io
 # When testing an published chart the chart name can be configured using
-# E2E_CERT_MANAGER_CHART. This can also be set to a local path to test a 
+# E2E_CERT_MANAGER_CHART. This can also be set to a local path to test a
 # downloaded chart
 E2E_CERT_MANAGER_CHART ?= cert-manager
 # When testing an published chart, default to the latest release
-E2E_CERT_MANAGER_VERSION ?= 
+E2E_CERT_MANAGER_VERSION ?=
 
 # Example running E2E tests against a downloaded chart:
 # 	E2E_EXISTING_CHART=true E2E_CERT_MANAGER_CHART=./cert-manager-v1.14.2.tgz make e2e-setup
@@ -286,7 +287,7 @@ E2E_CERT_MANAGER_VERSION ?=
 
 # Install cert-manager with E2E specific images and deployment settings.
 # The values.best-practice.yaml file is applied for compliance with the
-# Kyverno policy which has been installed in a pre-requisite target.
+# Kyverno policy which has been installed in a prerequisite target.
 #
 # TODO: move these commands to separate scripts for readability
 #
@@ -303,7 +304,7 @@ e2e-setup-certmanager: e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(b
 		--wait \
 		--namespace cert-manager \
 		--repo $(E2E_CERT_MANAGER_REPO) \
-		$(addprefix --version,$(E2E_CERT_MANAGER_VERSION)) \
+		$(addprefix --version=,$(E2E_CERT_MANAGER_VERSION)) \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
 		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api}" \
@@ -355,7 +356,7 @@ e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
-# defined. When configuring solver block for ACME HTTTP01 challenge on an
+# defined. When configuring solver block for ACME HTTP01 challenge on an
 # ACME issuer, cert-manager users can currently specify either an Ingress
 # name or a class. We also e2e test these two ways of creating Ingresses
 # with ingress-shim. For the ingress controller to watch our Ingresses that
@@ -368,7 +369,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 4.7.3 \
+		--version 4.10.1 \
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
@@ -392,17 +393,21 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 		--wait \
 		--namespace kyverno \
 		--create-namespace \
-		--version 3.0.4 \
-		--set image.tag=v1.8.1 \
-		--set initImage.tag=v1.8.1 \
-		--set image.pullPolicy=Never \
-		--set initImage.pullPolicy=Never \
+		--version 3.2.4 \
+		--set webhooksCleanup.enabled=false \
+		--set reportsController.enabled=false \
+		--set cleanupController.enabled=false \
+		--set backgroundController.enabled=false \
+		--set admissionController.container.image.tag=$(TAG) \
+		--set admissionController.container.image.pullPolicy=Never \
+		--set admissionController.initContainer.image.tag=$(TAG) \
+		--set admissionController.initContainer.image.pullPolicy=Never \
 		kyverno kyverno/kyverno >/dev/null
 	@$(KUBECTL) create ns cert-manager >/dev/null 2>&1 || true
 	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
 
 $(bin_dir)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(bin_dir)/downloaded
-	$(CURL) https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
+	$(CURL) https://github.com/inteon/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 
 # We can't use GOBIN with "go install" because cross-compilation is not
 # possible with go install. That's a problem when cross-compiling for
@@ -412,7 +417,7 @@ $(call local-image-tar,pebble).dir/pebble: $(bin_dir)/downloaded/pebble-$(PEBBLE
 	tar xzf $< -C /tmp
 	cd /tmp/pebble-$(PEBBLE_COMMIT) && GOOS=linux GOARCH=$(CRI_ARCH) CGO_ENABLED=$(CGO_ENABLED) GOMAXPROCS=$(GOBUILDPROCS) $(GOBUILD) $(GOFLAGS) -o $(CURDIR)/$@ ./cmd/pebble
 
-$(call local-image-tar,pebble): $(call local-image-tar,pebble).dir/pebble make/config/pebble/Containerfile.pebble
+$(call local-image-tar,pebble): $(call local-image-tar,pebble).dir/pebble make/config/pebble/Containerfile.pebble | $(NEEDS_CTR)
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
 	$(CTR) build --quiet \
 		-f make/config/pebble/Containerfile.pebble \
@@ -434,7 +439,7 @@ $(call local-image-tar,samplewebhook).dir/samplewebhook: make/config/samplewebho
 	@mkdir -p $(dir $@)
 	GOOS=linux GOARCH=$(CRI_ARCH) $(GOBUILD) -o $@ $(GOFLAGS) make/config/samplewebhook/sample/main.go
 
-$(call local-image-tar,samplewebhook): $(call local-image-tar,samplewebhook).dir/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook
+$(call local-image-tar,samplewebhook): $(call local-image-tar,samplewebhook).dir/samplewebhook make/config/samplewebhook/Containerfile.samplewebhook | $(NEEDS_CTR)
 	@$(eval BASE := BASE_IMAGE_controller-linux-$(CRI_ARCH))
 	$(CTR) build --quiet \
 		-f make/config/samplewebhook/Containerfile.samplewebhook \
@@ -462,13 +467,15 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 12.2.4 \
+		--version 18.2.4 \
 		--namespace projectcontour \
 		--create-namespace \
 		--set contour.ingressClass.create=false \
 		--set contour.ingressClass.default=false \
-		--set image.tag=$(TAG) \
-		--set image.pullPolicy=Never \
+		--set contour.image.registry=ghcr.io \
+		--set contour.image.repository=projectcontour/contour \
+		--set contour.image.tag=$(TAG) \
+		--set contour.image.pullPolicy=Never \
 		--set contour.service.type=ClusterIP \
 		--set contour.service.externalTrafficPolicy="" \
 		--set envoy.service.type=ClusterIP \

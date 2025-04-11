@@ -18,9 +18,13 @@ package vault
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
@@ -32,9 +36,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
+	k8srand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const vaultToken = "vault-root-token"
@@ -52,6 +58,7 @@ type VaultInitializer struct {
 	intermediateMount  string
 	role               string // AppRole auth role
 	appRoleAuthPath    string // AppRole auth mount point in Vault
+	clientCertAuthPath string // Client certificate auth mount point in Vault
 	kubernetesAuthPath string // Kubernetes auth mount point in Vault
 
 	// Whether the intermediate CA should be configured with root CA
@@ -59,12 +66,36 @@ type VaultInitializer struct {
 	kubernetesAPIServerURL string // Kubernetes API Server URL
 }
 
+func NewVaultInitializerClientCertificate(
+	kubeClient kubernetes.Interface,
+	details Details,
+	configureWithRoot bool,
+) *VaultInitializer {
+	testId := k8srand.String(10)
+	rootMount := fmt.Sprintf("%s-root-ca", testId)
+	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
+	role := fmt.Sprintf("%s-role", testId)
+	clientCertAuthPath := fmt.Sprintf("%s-auth-clientcert", testId)
+
+	return &VaultInitializer{
+		kubeClient: kubeClient,
+		details:    details,
+
+		rootMount:          rootMount,
+		intermediateMount:  intermediateMount,
+		role:               role,
+		clientCertAuthPath: clientCertAuthPath,
+
+		configureWithRoot: configureWithRoot,
+	}
+}
+
 func NewVaultInitializerAppRole(
 	kubeClient kubernetes.Interface,
 	details Details,
 	configureWithRoot bool,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -89,7 +120,7 @@ func NewVaultInitializerKubernetes(
 	configureWithRoot bool,
 	apiServerURL string,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
@@ -115,12 +146,13 @@ func NewVaultInitializerAllAuth(
 	configureWithRoot bool,
 	apiServerURL string,
 ) *VaultInitializer {
-	testId := rand.String(10)
+	testId := k8srand.String(10)
 	rootMount := fmt.Sprintf("%s-root-ca", testId)
 	intermediateMount := fmt.Sprintf("%s-intermediate-ca", testId)
 	role := fmt.Sprintf("%s-role", testId)
 	appRoleAuthPath := fmt.Sprintf("%s-auth-approle", testId)
 	kubernetesAuthPath := fmt.Sprintf("%s-auth-kubernetes", testId)
+	clientCertAuthPath := fmt.Sprintf("%s-client-certificate", testId)
 
 	return &VaultInitializer{
 		kubeClient: kubeClient,
@@ -131,6 +163,7 @@ func NewVaultInitializerAllAuth(
 		role:               role,
 		appRoleAuthPath:    appRoleAuthPath,
 		kubernetesAuthPath: kubernetesAuthPath,
+		clientCertAuthPath: clientCertAuthPath,
 
 		configureWithRoot:      configureWithRoot,
 		kubernetesAPIServerURL: apiServerURL,
@@ -153,6 +186,12 @@ func (v *VaultInitializer) Role() string {
 // The format is "xxxxx-auth-approle".
 func (v *VaultInitializer) AppRoleAuthPath() string {
 	return v.appRoleAuthPath
+}
+
+// AppRoleAuthPath returns the AppRole auth mount point in Vault.
+// The format is "/v1/auth/xxxxx-auth-clientcert".
+func (v *VaultInitializer) ClientCertificateAuthPath() string {
+	return path.Join("/v1", "auth", v.clientCertAuthPath)
 }
 
 // KubernetesAuthPath returns the Kubernetes auth mount point in Vault.
@@ -339,6 +378,12 @@ func (v *VaultInitializer) Setup(ctx context.Context) error {
 		}
 	}
 
+	if v.clientCertAuthPath != "" {
+		if err := v.setupClientCertAuth(ctx); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -372,8 +417,8 @@ func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, e
 		ctx,
 		v.role,
 		schema.AppRoleWriteRoleRequest{
-			Period:   "24h",
-			Policies: []string{v.role},
+			TokenPeriod:   "24h",
+			TokenPolicies: []string{v.role},
 		},
 		vault.WithMountPath(v.appRoleAuthPath),
 	)
@@ -612,7 +657,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 			// Kubernetes auth config for both testing the "secretRef" Kubernetes
 			// auth and the "serviceAccountRef" Kubernetes auth because the former
 			// relies on static tokens for which "iss" is
-			// "kubernetes/serviceaccount", and the later relies on bound tokens for
+			// "kubernetes/serviceaccount", and the latter relies on bound tokens for
 			// which "iss" is "https://kubernetes.default.svc.cluster.local".
 			// https://www.vaultproject.io/docs/auth/kubernetes#kubernetes-1-21
 			DisableIssValidation: true,
@@ -626,7 +671,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 	return nil
 }
 
-// CreateKubernetesrole creates a service account and ClusterRoleBinding for
+// CreateKubernetesRole creates a service account and ClusterRoleBinding for
 // Kubernetes auth delegation. The name "boundSA" refers to the Vault param
 // "bound_service_account_names".
 func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kubernetes.Interface, boundNS, boundSA string) error {
@@ -755,9 +800,86 @@ func CleanKubernetesRoleForServiceAccountRefAuth(ctx context.Context, client kub
 		return err
 	}
 
-	if err := client.CoreV1().ServiceAccounts(saNS).Delete(ctx, saName, metav1.DeleteOptions{}); err != nil {
-		return err
+	return nil
+}
+
+func (v *VaultInitializer) setupClientCertAuth(ctx context.Context) error {
+	// vault auth-enable cert
+	resp, err := v.client.System.AuthListEnabledMethods(ctx)
+	if err != nil {
+		return fmt.Errorf("error fetching auth mounts: %s", err.Error())
+	}
+
+	if _, ok := resp.Data[v.clientCertAuthPath]; ok {
+		return nil
+	}
+
+	_, err = v.client.System.AuthEnableMethod(
+		ctx,
+		v.clientCertAuthPath,
+		schema.AuthEnableMethodRequest{
+			Type: "cert",
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("error enabling cert auth: %s", err.Error())
 	}
 
 	return nil
+}
+
+func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte, cert []byte, _ error) {
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "example.com"},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0),
+		BasicConstraintsValid: true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+
+	certificateBytes, err := x509.CreateCertificate(cryptorand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: privateKeyBytes})
+	certificatePEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificateBytes})
+
+	role_path := v.IntermediateSignPath()
+	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] } `, role_path)
+	_, err = v.client.System.PoliciesWriteAclPolicy(
+		ctx,
+		v.role,
+		schema.PoliciesWriteAclPolicyRequest{
+			Policy: policy,
+		},
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating policy: %s", err.Error())
+	}
+
+	// vault write auth/cert/certs/web
+	_, err = v.client.Auth.CertWriteCertificate(
+		ctx,
+		v.role,
+		schema.CertWriteCertificateRequest{
+			DisplayName:   v.role,
+			Certificate:   string(certificatePEM),
+			TokenPolicies: []string{v.role},
+			TokenTtl:      "3600",
+		},
+		vault.WithMountPath(v.clientCertAuthPath),
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating cert auth role: %s", err.Error())
+	}
+
+	return privateKeyPEM, certificatePEM, nil
 }

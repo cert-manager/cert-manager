@@ -18,12 +18,11 @@ package framework
 
 import (
 	"context"
-	"time"
+	"slices"
 
 	api "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,10 +37,8 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -95,10 +92,10 @@ func NewDefaultFramework(baseName string) *Framework {
 // It uses the config provided to it for the duration of the tests.
 func NewFramework(baseName string, cfg *config.Config) *Framework {
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	certmgrscheme.AddToScheme(scheme)
-	apiext.AddToScheme(scheme)
-	apireg.AddToScheme(scheme)
+	Expect(kscheme.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(certmgrscheme.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiext.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apireg.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	f := &Framework{
 		Config:   cfg,
@@ -163,14 +160,13 @@ func (f *Framework) BeforeEach(ctx context.Context) {
 func (f *Framework) AfterEach(ctx context.Context) {
 	RemoveCleanupAction(f.cleanupHandle)
 
-	f.printAddonLogs()
+	f.printAddonLogs(ctx)
 
 	if !f.Config.Cleanup {
 		return
 	}
 
-	for i := len(f.requiredAddons) - 1; i >= 0; i-- {
-		a := f.requiredAddons[i]
+	for _, a := range slices.Backward(f.requiredAddons) {
 		By("De-provisioning test-scoped addon")
 		err := a.Deprovision(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -181,11 +177,11 @@ func (f *Framework) AfterEach(ctx context.Context) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func (f *Framework) printAddonLogs() {
+func (f *Framework) printAddonLogs(ctx context.Context) {
 	if CurrentSpecReport().Failed() {
 		for _, a := range f.requiredAddons {
 			if a, ok := a.(loggableAddon); ok {
-				l, err := a.Logs()
+				l, err := a.Logs(ctx)
 				Expect(err).NotTo(HaveOccurred())
 
 				for ident, l := range l {
@@ -212,7 +208,7 @@ func (f *Framework) RequireGlobalAddon(a addon.Addon) {
 }
 
 type loggableAddon interface {
-	Logs() (map[string]string, error)
+	Logs(ctx context.Context) (map[string]string, error)
 }
 
 // RequireAddon calls the Setup and Provision method on the given addon, failing
@@ -235,39 +231,6 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 
 func (f *Framework) Helper() *helper.Helper {
 	return f.helper
-}
-
-func (f *Framework) CertificateDurationValid(ctx context.Context, c *v1.Certificate, duration, fuzz time.Duration) {
-	By("Verifying TLS certificate exists")
-	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, c.Spec.SecretName, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	certBytes, ok := secret.Data[api.TLSCertKey]
-	if !ok {
-		Failf("No certificate data found for Certificate %q", c.Name)
-	}
-	cert, err := pki.DecodeX509CertificateBytes(certBytes)
-	Expect(err).NotTo(HaveOccurred())
-	By("Verifying that the duration is valid")
-	certDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if certDuration > (duration+fuzz) || certDuration < duration {
-		Failf("Expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
-			fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
-	}
-}
-
-func (f *Framework) CertificateRequestDurationValid(c *v1.CertificateRequest, duration, fuzz time.Duration) {
-	By("Verifying TLS certificate exists")
-	if len(c.Status.Certificate) == 0 {
-		Failf("No certificate data found for CertificateRequest %s", c.Name)
-	}
-	cert, err := pki.DecodeX509CertificateBytes(c.Status.Certificate)
-	Expect(err).NotTo(HaveOccurred())
-	By("Verifying that the duration is valid")
-	certDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if certDuration > (duration+fuzz) || certDuration < duration {
-		Failf("Expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
-			fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
-	}
 }
 
 // CertManagerDescribe is a wrapper function for ginkgo describe. Adds namespacing.

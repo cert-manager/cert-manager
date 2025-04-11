@@ -31,6 +31,7 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var (
@@ -163,6 +164,14 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
 
+	if renewBeforePercentage, found := ingLikeAnnotations[cmapi.RenewBeforePercentageAnnotationKey]; found {
+		pct, err := strconv.ParseInt(renewBeforePercentage, 10, 32)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforePercentageAnnotationKey, err)
+		}
+		crt.Spec.RenewBeforePercentage = ptr.To(int32(pct))
+	}
+
 	if usages, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; found {
 		var newUsages []cmapi.KeyUsage
 		for _, usageName := range strings.Split(usages, ",") {
@@ -236,7 +245,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 		switch algorithm {
 		case cmapi.RSAKeyAlgorithm:
-			if size < 2048 || size > 8192 {
+			if size < pki.MinRSAKeySize || size > pki.MaxRSAKeySize {
 				return fmt.Errorf("%w %q: invalid private key size for RSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
 			}
 		case cmapi.ECDSAKeyAlgorithm:

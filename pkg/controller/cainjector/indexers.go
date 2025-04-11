@@ -20,8 +20,8 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,7 +48,7 @@ const (
 func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []ctrl.Request {
 		secretName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
-		certName := owningCertForSecret(obj.(*corev1.Secret))
+		certName := owningCertForSecret(obj.(*metav1.PartialObjectMetadata))
 		if certName == nil {
 			return nil
 		}
@@ -128,7 +128,7 @@ func certToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config se
 
 // secretForInjectableMapFuncBuilder returns a handler.MapFunc that, for a
 // config for particular injectable type (i.e CRD, APIService) and a Secret,
-// returns all injectables that have the inject-ca-from-secret annotion with the
+// returns all injectables that have the inject-ca-from-secret annotation with the
 // given secret name. This will be used in an event handler to ensure that
 // changes to a Secret triggers a reconcile loop for the relevant injectable.
 func secretForInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {

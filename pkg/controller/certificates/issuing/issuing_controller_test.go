@@ -27,8 +27,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
@@ -1397,13 +1397,10 @@ func TestIssuingController(t *testing.T) {
 
 			test.builder.Start()
 
-			key, err := cache.MetaNamespaceKeyFunc(test.certificate)
-			if err != nil {
-				t.Errorf("failed to build meta namespace key from certificate: %s", err)
-				t.FailNow()
-			}
-
-			err = w.controller.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(context.Background(), types.NamespacedName{
+				Namespace: test.certificate.Namespace,
+				Name:      test.certificate.Name,
+			})
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}

@@ -19,21 +19,23 @@ package test
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/cert-manager/cert-manager/pkg/scheduler"
 )
 
-var _ scheduler.ScheduledWorkQueue = &FakeScheduler{}
+var _ scheduler.ScheduledWorkQueue[types.NamespacedName] = &FakeScheduler{}
 
 // FakeScheduler allows stubbing the methods of scheduler.ScheduledWorkQueue in tests.
 type FakeScheduler struct {
-	AddFunc    func(interface{}, time.Duration)
-	ForgetFunc func(interface{})
+	AddFunc    func(types.NamespacedName, time.Duration)
+	ForgetFunc func(types.NamespacedName)
 }
 
-func (f *FakeScheduler) Add(obj interface{}, duration time.Duration) {
+func (f *FakeScheduler) Add(obj types.NamespacedName, duration time.Duration) {
 	f.AddFunc(obj, duration)
 }
 
-func (f *FakeScheduler) Forget(obj interface{}) {
+func (f *FakeScheduler) Forget(obj types.NamespacedName) {
 	f.ForgetFunc(obj)
 }

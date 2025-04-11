@@ -136,11 +136,14 @@ func TestAcmeOrdersController(t *testing.T) {
 	}
 
 	// Create a new orders controller.
-	ctrl, queue, mustSync := acmeorders.NewController(
+	ctrl, queue, mustSync, err := acmeorders.NewController(
 		logf.Log,
 		&controllerContext,
 		false,
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"orders_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -161,8 +164,7 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	// Create a Namespace.
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testName}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -211,11 +213,11 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Wait for the Challenge to be created.
 	var chal *cmacme.Challenge
 	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
-		chals, err := cmCl.AcmeV1().Challenges(testName).List(ctx, metav1.ListOptions{})
+		challenges, err := cmCl.AcmeV1().Challenges(testName).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
-		l := len(chals.Items)
+		l := len(challenges.Items)
 		// Challenge has not been created yet
 		if l == 0 {
 			return false, nil
@@ -225,7 +227,7 @@ func TestAcmeOrdersController(t *testing.T) {
 			return false, fmt.Errorf("expected maximum 1 challenge, got %d", l)
 		}
 		// Check that the Challenge is owned by our Order.
-		chal = &chals.Items[0]
+		chal = &challenges.Items[0]
 		if !metav1.IsControlledBy(chal, order) {
 			return false, fmt.Errorf("found an unexpected Challenge resource: %v", chal.Name)
 		}
@@ -242,7 +244,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	// valid.
 	// https://github.com/cert-manager/cert-manager/issues/2868
 
-	// Set the Challenge state to valid- the status of the ACME order remains 'pending'.
+	// Set the Challenge state to valid, the status of the ACME order remains 'pending'.
 	chal = chal.DeepCopy()
 	chal.Status.State = cmacme.Valid
 	_, err = cmCl.AcmeV1().Challenges(testName).UpdateStatus(ctx, chal, metav1.UpdateOptions{})

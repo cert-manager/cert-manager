@@ -21,10 +21,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
@@ -37,7 +37,7 @@ import (
 // call when enqueuing Certificate resources.
 // If no predicate constructors are given, all Certificate resources will be
 // enqueued on every invocation.
-func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqueue.Interface, lister cmlisters.CertificateLister, selector labels.Selector, predicateBuilders ...predicate.ExtractorFunc) func(obj interface{}) {
+func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqueue.TypedInterface[types.NamespacedName], lister cmlisters.CertificateLister, selector labels.Selector, predicateBuilders ...predicate.ExtractorFunc) func(obj interface{}) {
 	return func(obj interface{}) {
 		s, ok := obj.(metav1.Object)
 		if !ok {
@@ -58,12 +58,10 @@ func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqu
 		}
 
 		for _, cert := range certs {
-			key, err := controllerpkg.KeyFunc(cert)
-			if err != nil {
-				log.Error(err, "Error determining 'key' for resource")
-				continue
-			}
-			queue.Add(key)
+			queue.Add(types.NamespacedName{
+				Name:      cert.Name,
+				Namespace: cert.Namespace,
+			})
 		}
 	}
 }

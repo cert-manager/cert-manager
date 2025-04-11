@@ -46,13 +46,15 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
 	var unsupportedHTTP01Features = featureset.NewFeatureSet(
-		featureset.IPAddressFeature,
 		featureset.DurationFeature,
 		featureset.WildcardsFeature,
 		featureset.URISANsFeature,
 		featureset.CommonNameFeature,
 		featureset.KeyUsagesFeature,
 		featureset.EmailSANsFeature,
+		featureset.SaveCAToSecret,
+		featureset.IssueCAFeature,
+		featureset.OtherNamesFeature,
 	)
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
@@ -64,6 +66,9 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.CommonNameFeature,
 		featureset.KeyUsagesFeature,
 		featureset.EmailSANsFeature,
+		featureset.SaveCAToSecret,
+		featureset.IssueCAFeature,
+		featureset.OtherNamesFeature,
 	)
 
 	http01 := &acme{
@@ -75,8 +80,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	}
 
 	(&certificatesigningrequests.Suite{
-		Name:                "ACME HTTP01 Issuer",
-		DomainSuffix:        "ingress-nginx.http01.example.com",
+		Name:                "ACME HTTP01 Issuer (Ingress)",
+		HTTP01TestType:      "Ingress",
 		CreateIssuerFunc:    http01.createHTTP01Issuer,
 		DeleteIssuerFunc:    http01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
@@ -91,8 +96,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	}).Define()
 
 	(&certificatesigningrequests.Suite{
-		Name:                "ACME HTTP01 ClusterIssuer",
-		DomainSuffix:        "ingress-nginx.http01.example.com",
+		Name:                "ACME HTTP01 ClusterIssuer (Ingress)",
+		HTTP01TestType:      "Ingress",
 		CreateIssuerFunc:    http01.createHTTP01ClusterIssuer,
 		DeleteIssuerFunc:    http01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,

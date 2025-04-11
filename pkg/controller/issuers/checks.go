@@ -29,7 +29,7 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, erro
 	issuers, err := c.issuerLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
+		return nil, fmt.Errorf("error listing issuers: %s", err.Error())
 	}
 
 	var affected []*v1.Issuer
@@ -61,6 +61,12 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, erro
 				if iss.Spec.Venafi.TPP.CredentialsRef.Name == secret.Name {
 					affected = append(affected, iss)
 					continue
+				}
+				if iss.Spec.Venafi.TPP.CABundleSecretRef != nil {
+					if iss.Spec.Venafi.TPP.CABundleSecretRef.Name == secret.Name {
+						affected = append(affected, iss)
+						continue
+					}
 				}
 			}
 			if iss.Spec.Venafi.Cloud != nil {

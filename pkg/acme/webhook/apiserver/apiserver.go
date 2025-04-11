@@ -24,11 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/version"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/endpoints/openapi"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/component-base/version"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
@@ -42,7 +43,7 @@ var (
 )
 
 func init() {
-	whapi.AddToScheme(Scheme)
+	utilruntime.Must(whapi.AddToScheme(Scheme))
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -92,21 +93,15 @@ type CompletedConfig struct {
 
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
 func (c *Config) Complete() CompletedConfig {
-	completedCfg := completedConfig{
+	c.GenericConfig.EffectiveVersion = version.NewEffectiveVersion("1.1")
+	c.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+	c.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+
+	return CompletedConfig{&completedConfig{
 		c.GenericConfig.Complete(),
 		&c.ExtraConfig,
 		c.GenericConfig.ClientConfig,
-	}
-
-	completedCfg.GenericConfig.Version = &version.Info{
-		Major: "1",
-		Minor: "1",
-	}
-
-	completedCfg.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
-	completedCfg.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
-
-	return CompletedConfig{&completedCfg}
+	}}
 }
 
 // New returns a new instance of apiserver from the given config. Each of the
@@ -167,7 +162,7 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		}
 		s.GenericAPIServer.AddPostStartHookOrDie(postStartName,
 			func(context genericapiserver.PostStartHookContext) error {
-				return solver.Initialize(c.restConfig, context.StopCh)
+				return solver.Initialize(c.restConfig, context.Done())
 			},
 		)
 	}

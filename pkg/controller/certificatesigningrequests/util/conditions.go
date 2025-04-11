@@ -20,6 +20,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -69,8 +70,10 @@ func CertificateSigningRequestSetFailed(csr *certificatesv1.CertificateSigningRe
 		LastUpdateTime:     nowTime,
 	})
 
-	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for CertificateSigningRequest %s/%s condition Failed to %v",
-		csr.Namespace, csr.Name, nowTime.Time)
+	logf.Log.V(logf.InfoLevel).Info("Setting lastTransitionTime for CertificateSigningRequest condition",
+		"certificateSigningRequest", klog.KObj(csr),
+		"condition", certificatesv1.CertificateFailed,
+		"lastTransitionTime", nowTime.Time)
 }
 
 func certificateSigningRequestGetCondition(csr *certificatesv1.CertificateSigningRequest, condType certificatesv1.RequestConditionType) *certificatesv1.CertificateSigningRequestCondition {

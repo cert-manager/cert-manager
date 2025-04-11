@@ -36,29 +36,8 @@ include make/e2e-setup.mk
 include make/scan.mk
 include make/ko.mk
 
-.PHONY: go-workspace
-go-workspace: export GOWORK?=$(abspath go.work)
-## Create a go.work file in the repository root (or GOWORK)
-##
-## @category Development
-go-workspace: | $(NEEDS_GO)
-	@rm -f $(GOWORK)
-	$(GO) work init
-	$(GO) work use . ./cmd/acmesolver ./cmd/cainjector ./cmd/controller ./cmd/startupapicheck ./cmd/webhook ./test/integration ./test/e2e
-
 .PHONY: tidy
-## Run "go mod tidy" on each module in this repo
-##
-## @category Development
-tidy: | $(NEEDS_GO)
-	$(GO) mod tidy
-	cd cmd/acmesolver && $(GO) mod tidy
-	cd cmd/cainjector && $(GO) mod tidy
-	cd cmd/controller && $(GO) mod tidy
-	cd cmd/startupapicheck && $(GO) mod tidy
-	cd cmd/webhook && $(GO) mod tidy
-	cd test/integration && $(GO) mod tidy
-	cd test/e2e && $(GO) mod tidy
+tidy: generate-go-mod-tidy
 
 .PHONY: update-base-images
 update-base-images: | $(NEEDS_CRANE)

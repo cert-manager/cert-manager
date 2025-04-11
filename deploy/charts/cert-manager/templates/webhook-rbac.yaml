@@ -15,6 +15,15 @@ rules:
   resources: ["secrets"]
   resourceNames:
   - '{{ template "webhook.fullname" . }}-ca'
+  {{- $certmanagerNamespace := include "cert-manager.namespace" . }}
+  {{- with (.Values.webhook.config.metricsTLSConfig).dynamic }}
+  {{- if $certmanagerNamespace | eq .secretNamespace }}
+  # Allow webhook to read and update the metrics CA Secret when dynamic TLS is
+  # enabled for the metrics server and if the Secret is configured to be in the
+  # same namespace as cert-manager.
+  - {{ .secretName | quote }}
+  {{- end }}
+  {{- end }}
   verbs: ["get", "list", "watch", "update"]
 # It's not possible to grant CREATE permission on a single resourceName.
 - apiGroups: [""]
@@ -38,8 +47,7 @@ roleRef:
   kind: Role
   name: {{ template "webhook.fullname" . }}:dynamic-serving
 subjects:
-- apiGroup: ""
-  kind: ServiceAccount
+- kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ include "cert-manager.namespace" . }}
 
@@ -76,8 +84,7 @@ roleRef:
   kind: ClusterRole
   name: {{ template "webhook.fullname" . }}:subjectaccessreviews
 subjects:
-- apiGroup: ""
-  kind: ServiceAccount
+- kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ include "cert-manager.namespace" . }}
 {{- end }}

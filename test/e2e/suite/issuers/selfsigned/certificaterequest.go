@@ -21,8 +21,10 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -76,8 +78,10 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, certificateRequestSecretName, metav1.DeleteOptions{})
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, certificateRequestSecretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("Self Signed and private key", func() {
@@ -106,7 +110,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to obtain an ECDSA Certificate backed by a ECSDA key", func() {
+		It("should be able to obtain an ECDSA Certificate backed by a ECDSA key", func() {
 			// Replace RSA key secret with ECDSA one
 			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, newPrivateKeySecret(
 				certificateRequestSecretName, f.Namespace.Name, rootECKey), metav1.UpdateOptions{})
@@ -165,7 +169,6 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			},
 		}
 		for _, v := range cases {
-			v := v // capture range variable
 			It("should generate a signed certificate valid for "+v.label, func() {
 				crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
@@ -182,9 +185,11 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				By("Verifying the CertificateRequest is valid")
 				err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, rootRSAKeySigner)
 				Expect(err).NotTo(HaveOccurred())
-				cr, err := crClient.Get(ctx, certificateRequestName, metav1.GetOptions{})
+				err = h.ValidateCertificateRequest(types.NamespacedName{
+					Namespace: f.Namespace.Name,
+					Name:      certificateRequestName,
+				}, rootRSAKeySigner, certificaterequests.ExpectDuration(v.expectedDuration, 0))
 				Expect(err).NotTo(HaveOccurred())
-				f.CertificateRequestDurationValid(cr, v.expectedDuration, 0)
 			})
 		}
 	})

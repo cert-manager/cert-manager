@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -113,15 +114,19 @@ const informerResyncPeriod = time.Second
 // for any unset fields.
 func (b *Builder) Init() {
 	if b.Context == nil {
-		b.Context = &controller.Context{
-			RootContext: context.Background(),
-		}
+		b.Context = &controller.Context{}
+	}
+	if b.Context.RootContext == nil {
+		b.Context.RootContext = context.Background()
 	}
 	if b.StringGenerator == nil {
 		b.StringGenerator = rand.String
 	}
 	scheme := metadatafake.NewTestScheme()
-	metav1.AddMetaToScheme(scheme)
+	if err := metav1.AddMetaToScheme(scheme); err != nil {
+		b.T.Fatalf("error adding meta to scheme: %v", err)
+	}
+	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
@@ -213,10 +218,10 @@ func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
 func (b *Builder) CheckAndFinish(args ...interface{}) {
 	defer b.Stop()
 	if err := b.AllActionsExecuted(); err != nil {
-		b.T.Errorf(err.Error())
+		b.T.Error(err)
 	}
 	if err := b.AllEventsCalled(); err != nil {
-		b.T.Errorf(err.Error())
+		b.T.Error(err)
 	}
 
 	// resync listers before running checks
@@ -245,8 +250,7 @@ func (b *Builder) AllActionsExecuted() error {
 
 	var unexpectedActions []coretesting.Action
 	var errs []error
-	missingActions := make([]Action, len(b.ExpectedActions))
-	copy(missingActions, b.ExpectedActions)
+	missingActions := slices.Clone(b.ExpectedActions)
 	for _, a := range firedActions {
 		// skip list and watch actions
 		if a.GetVerb() == "list" || a.GetVerb() == "watch" {

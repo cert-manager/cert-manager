@@ -445,7 +445,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-		"should return error to try again if there was a error getting issuer wasn't a not found error": {
+		"should return error to try again if there was an error getting issuer wasn't a not found error": {
 			certificateRequest: baseCR.DeepCopy(),
 			helper: &issuerfake.Helper{
 				GetGenericIssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
@@ -773,7 +773,9 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	c := New(util.IssuerSelfSigned, func(*controller.Context) Issuer { return test.issuerImpl })
-	c.Register(test.builder.Context)
+	if _, _, err := c.Register(test.builder.Context); err != nil {
+		t.Fatal(err)
+	}
 
 	if test.helper != nil {
 		c.helper = test.helper

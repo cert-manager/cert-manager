@@ -81,16 +81,18 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	}
 	d.tsigAlgorithm = tsigAlgorithm
 
-	logf.V(logf.DebugLevel).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
-	logf.V(logf.DebugLevel).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
-	logf.V(logf.DebugLevel).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
 	keyLen := len(d.tsigSecret)
 	mask := make([]rune, keyLen/2)
 	for i := range mask {
 		mask[i] = '*'
 	}
 	masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
-	logf.V(logf.DebugLevel).Infof("            tsigSecret:       %s\n", masked)
+	logf.Log.V(logf.DebugLevel).Info("DNSProvider",
+		"nameserver", d.nameserver,
+		"tsigAlgorithm", d.tsigAlgorithm,
+		"tsigKeyName", d.tsigKeyName,
+		"tsigSecret", masked,
+	)
 
 	return d, nil
 }
@@ -105,10 +107,10 @@ func (r *DNSProvider) CleanUp(_, fqdn, zone, value string) error {
 	return r.changeRecord("REMOVE", fqdn, zone, value, 60)
 }
 
-func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) error {
+func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl uint32) error {
 	// Create RR
 	rr := new(dns.TXT)
-	rr.Hdr = dns.RR_Header{Name: fqdn, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: uint32(ttl)}
+	rr.Hdr = dns.RR_Header{Name: fqdn, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: ttl}
 	rr.Txt = []string{value}
 	rrs := []dns.RR{rr}
 

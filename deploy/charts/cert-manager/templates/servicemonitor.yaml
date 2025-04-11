@@ -29,10 +29,23 @@ metadata:
 spec:
   jobLabel: {{ template "cert-manager.fullname" . }}
   selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: "controller"
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+        - {{ include "cainjector.name" . }}
+        - {{ template "cert-manager.name" . }}
+        - {{ include "webhook.name" . }}
+      - key: app.kubernetes.io/instance
+        operator: In
+        values:
+        - {{ .Release.Name }}
+      - key: app.kubernetes.io/component
+        operator: In
+        values:
+        - cainjector
+        - controller
+        - webhook
 {{- if .Values.prometheus.servicemonitor.namespace }}
   namespaceSelector:
     matchNames:

@@ -28,7 +28,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
+// Venafi is an implementation of govcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
 	issuer cmapi.GenericIssuer
 	*controller.Context

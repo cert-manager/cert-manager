@@ -15,14 +15,14 @@ steps:
   args: ['fetch', '--unshallow']
 
 ## Build release artifacts and push to a bucket
-- name: 'eu.gcr.io/jetstack-build-infra-images/make-dind:20230406-0ef4440-bullseye'
+- name: 'europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/make-dind:20240422-6b43e85-bookworm'
   entrypoint: bash
   args:
   - -c
   - |
     set -eu -o pipefail
     make vendor-go
-    make CMREL_KEY="${_KMS_KEY}" RELEASE_TARGET_BUCKET="${_RELEASE_TARGET_BUCKET}" -j16 upload-release
+    make CMREL_KEY="${_KMS_KEY}" RELEASE_TARGET_BUCKET="${_RELEASE_TARGET_BUCKET}" -j8 upload-release
     echo "Wrote to ${_RELEASE_TARGET_BUCKET}"
 
 tags:
@@ -34,4 +34,6 @@ substitutions:
   _RELEASE_TARGET_BUCKET: "cert-manager-release"
 
 options:
-  machineType: N1_HIGHCPU_32
+  # https://cloud.google.com/build/docs/optimize-builds/increase-vcpu-for-builds
+  # https://cloud.google.com/build/pricing
+  machineType: E2_HIGHCPU_32

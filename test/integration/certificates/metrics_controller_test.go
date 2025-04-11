@@ -53,7 +53,7 @@ certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 )
 
-// TestMetricscontoller performs a basic test to ensure that Certificates
+// TestMetricsController performs a basic test to ensure that Certificates
 // metrics are exposed when a Certificate is created, updated, and removed when
 // it is deleted.
 func TestMetricsController(t *testing.T) {
@@ -102,7 +102,10 @@ func TestMetricsController(t *testing.T) {
 			Metrics: metricsHandler,
 		},
 	}
-	ctrl, queue, mustSync := controllermetrics.NewController(&controllerContext)
+	ctrl, queue, mustSync, err := controllermetrics.NewController(&controllerContext)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"metrics_test",
 		metricsHandler,
@@ -145,7 +148,8 @@ func TestMetricsController(t *testing.T) {
 			return err
 		}
 
-		if strings.TrimSpace(string(output)) != strings.TrimSpace(expectedOutput) {
+		trimmedOutput := strings.SplitN(string(output), "# HELP go_gc_duration_seconds", 2)[0]
+		if strings.TrimSpace(trimmedOutput) != strings.TrimSpace(expectedOutput) {
 			return fmt.Errorf("got unexpected metrics output\nexp:\n%s\ngot:\n%s\n",
 				expectedOutput, output)
 		}
@@ -185,15 +189,21 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	// Should expose that Certificate as unknown with no expiry
-	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
+# HELP certmanager_certificate_not_after_timestamp_seconds The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_not_after_timestamp_seconds gauge
+certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
+# HELP certmanager_certificate_not_before_timestamp_seconds The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_not_before_timestamp_seconds gauge
+certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 # HELP certmanager_certificate_ready_status The ready status of the certificate.
 # TYPE certmanager_certificate_ready_status gauge
 certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 1
-# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+# HELP certmanager_certificate_renewal_timestamp_seconds The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 ` + clockCounterMetric + clockGaugeMetric + `
@@ -205,6 +215,9 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	// Set Certificate Expiry and Ready status True
 	crt.Status.NotAfter = &metav1.Time{
 		Time: time.Unix(100, 0),
+	}
+	crt.Status.NotBefore = &metav1.Time{
+		Time: time.Unix(200, 0),
 	}
 	crt.Status.Conditions = []cmapi.CertificateCondition{
 		{
@@ -221,15 +234,21 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	}
 
 	// Should expose that Certificate as ready with expiry
-	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
+# HELP certmanager_certificate_not_after_timestamp_seconds The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_not_after_timestamp_seconds gauge
+certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
+# HELP certmanager_certificate_not_before_timestamp_seconds The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_not_before_timestamp_seconds gauge
+certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 200
 # HELP certmanager_certificate_ready_status The ready status of the certificate.
 # TYPE certmanager_certificate_ready_status gauge
 certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 1
 certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+# HELP certmanager_certificate_renewal_timestamp_seconds The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
 ` + clockCounterMetric + clockGaugeMetric + `

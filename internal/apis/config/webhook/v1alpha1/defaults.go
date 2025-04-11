@@ -24,6 +24,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 )
 
+const defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
@@ -37,6 +39,10 @@ func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	}
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = "localhost:6060"
+	}
+
+	if obj.MetricsListenAddress == "" {
+		obj.MetricsListenAddress = defaultPrometheusMetricsServerAddress
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)

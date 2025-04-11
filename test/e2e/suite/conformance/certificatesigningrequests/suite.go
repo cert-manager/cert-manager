@@ -64,6 +64,11 @@ type Suite struct {
 	// If not specified, this function will be skipped.
 	DeProvisionFunc func(context.Context, *framework.Framework, *certificatesv1.CertificateSigningRequest)
 
+	// SharedIPAddress is the IP address that will be used in all certificates
+	// that require an IP address to be set. For HTTP-01 tests, this IP address
+	// will be set to the IP address of the Ingress/ Gateway controller.
+	SharedIPAddress string
+
 	// DomainSuffix is a suffix used on all domain requests.
 	// This is useful when the issuer being tested requires special
 	// configuration for a set of domains in order for certificates to be
@@ -72,18 +77,55 @@ type Suite struct {
 	// nginx-ingress addon.
 	DomainSuffix string
 
+	// HTTP01TestType is set to "Ingress" or "Gateway" to determine which IPs
+	// and Domains will be used to run the ACME HTTP-01 test suites.
+	HTTP01TestType string
+
 	// UnsupportedFeatures is a list of features that are not supported by this
 	// invocation of the test suite.
 	// This is useful if a particular issuers explicitly does not support
 	// certain features due to restrictions in their implementation.
 	UnsupportedFeatures featureset.FeatureSet
 
-	// completed is used internally to track whether Complete() has been called
-	completed bool
+	// validated is used internally to track whether Validate has been called already.
+	validated bool
 }
 
-// complete will validate configuration and set default values.
-func (s *Suite) complete(f *framework.Framework) {
+// setup will set default values for fields on the Suite struct.
+func (s *Suite) setup(f *framework.Framework) {
+	if s.SharedIPAddress == "" {
+		switch s.HTTP01TestType {
+		case "Ingress":
+			s.SharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
+		case "Gateway":
+			s.SharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
+		default:
+			s.SharedIPAddress = "127.0.0.1"
+		}
+	}
+
+	if s.DomainSuffix == "" {
+		switch s.HTTP01TestType {
+		case "Ingress":
+			s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		case "Gateway":
+			s.DomainSuffix = f.Config.Addons.Gateway.Domain
+		default:
+			s.DomainSuffix = "example.com"
+		}
+	}
+
+	if s.UnsupportedFeatures == nil {
+		s.UnsupportedFeatures = make(featureset.FeatureSet)
+	}
+}
+
+// validate will validate the Suite struct to ensure all required fields are set.
+func (s *Suite) validate() {
+	if s.validated {
+		return
+	}
+
 	if s.Name == "" {
 		Fail("Name must be set")
 	}
@@ -92,15 +134,11 @@ func (s *Suite) complete(f *framework.Framework) {
 		Fail("CreateIssuerFunc must be set")
 	}
 
-	if s.DomainSuffix == "" {
-		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+	if s.HTTP01TestType == "Gateway" {
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 	}
 
-	if s.UnsupportedFeatures == nil {
-		s.UnsupportedFeatures = make(featureset.FeatureSet)
-	}
-
-	s.completed = true
+	s.validated = true
 }
 
 // it is called by the tests to in Define() to setup and run the test
@@ -109,7 +147,7 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(context.Context,
 		return
 	}
 	It(name, func(ctx context.Context) {
-		framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
+		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalCertificateSigningRequestControllers)
 
 		By("Creating an issuer resource")
 		signerName := s.CreateIssuerFunc(ctx, f)

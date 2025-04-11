@@ -103,8 +103,7 @@ func (b *Cloudflare) Provision() error {
 }
 
 func (b *Cloudflare) Deprovision() error {
-	b.Base.Details().KubeClient.CoreV1().Secrets(b.createdSecret.Namespace).Delete(context.TODO(), b.createdSecret.Name, metav1.DeleteOptions{})
-	return nil
+	return b.Base.Details().KubeClient.CoreV1().Secrets(b.createdSecret.Namespace).Delete(context.TODO(), b.createdSecret.Name, metav1.DeleteOptions{})
 }
 
 func (b *Cloudflare) Details() *Details {

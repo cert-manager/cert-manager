@@ -14,7 +14,7 @@
 <a href="https://goreportcard.com/report/github.com/cert-manager/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cert-manager/cert-manager" /></a>
 <br />
 <a href="https://artifacthub.io/packages/search?repo=cert-manager"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cert-manager" /></a>
-<a href="https://api.securityscorecards.dev/projects/github.com/cert-manager/cert-manager"><img src="https://api.securityscorecards.dev/projects/github.com/cert-manager/cert-manager/badge" alt="Scorecard score"/></a>
+<a href="https://scorecard.dev/viewer/?uri=github.com/cert-manager/cert-manager"><img src="https://api.scorecard.dev/projects/github.com/cert-manager/cert-manager/badge" alt="Scorecard score"/></a>
 <a href="https://clomonitor.io/projects/cncf/cert-manager"><img src="https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/cert-manager/badge" alt="CLOMonitor"/></a>
 <br />
 <a href="https://www.bestpractices.dev/projects/8079"><img src="https://www.bestpractices.dev/projects/8079/badge"></a>
@@ -66,9 +66,9 @@ Be sure to include as much information as you can about your environment.
 
 ## Community
 
-The `cert-manager-dev` Google Group is used for project wide announcements and development coordination.
-Anybody can join the group by visiting [here](https://groups.google.com/forum/#!forum/cert-manager-dev)
-and clicking "Join Group". A Google account is required to join the group.
+The [`cert-manager-dev` Google Group](https://groups.google.com/forum/#!forum/cert-manager-dev)
+is used for project wide announcements and development coordination.
+Anybody with a Google account can join the group by visiting the group and clicking "Join Group".
 
 ### Meetings
 

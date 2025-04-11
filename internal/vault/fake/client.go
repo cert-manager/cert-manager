@@ -39,6 +39,10 @@ func NewFakeClient() *FakeClient {
 	}
 }
 
+func (c *FakeClient) CloneConfig() *vault.Config {
+	return vault.DefaultConfig()
+}
+
 func (c *FakeClient) WithNewRequest(r *vault.Request) *FakeClient {
 	c.NewRequestS = r
 	return c

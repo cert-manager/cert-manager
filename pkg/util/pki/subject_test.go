@@ -161,7 +161,6 @@ func TestRoundTripRDNSequence(t *testing.T) {
 	}
 
 	for _, tc := range rdnSequences {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			newRDNSeq, err := UnmarshalSubjectStringToRDNSequence(tc.rdn.String())
 			if err != nil {

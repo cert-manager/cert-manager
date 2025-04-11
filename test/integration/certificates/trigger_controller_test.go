@@ -81,7 +81,10 @@ func TestTriggerController(t *testing.T) {
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shouldReissue)
+	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -120,7 +123,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Only use the 'current certificate nearing expiry' policy chain during the
 	// test as we want to test the very specific cases of triggering/not
 	// triggering depending on whether a renewal is required.
-	shoudReissue := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock)}.Evaluate
+	shouldReissue := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock)}.Evaluate
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
@@ -187,7 +190,10 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		FieldManager: "cert-manager-certificates-trigger-test",
 	}
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
+	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
@@ -241,7 +247,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	// Issuing condition will be applied because SecretDoesNotExist policy
 	// will evaluate to true. However, this is not what we are testing in
 	// this test.
-	shoudReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
+	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
 
@@ -283,7 +289,10 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, controllerContext, shoudReissue)
+	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c := controllerpkg.NewController(
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),

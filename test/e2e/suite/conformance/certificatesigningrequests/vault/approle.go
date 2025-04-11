@@ -53,56 +53,50 @@ type secrets struct {
 }
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.KeyUsagesFeature,
+		featureset.Ed25519FeatureSet,
+		featureset.IssueCAFeature,
+	)
+
 	issuer := &approle{
 		testWithRootCA: true,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault AppRole Issuer With Root CA",
-		CreateIssuerFunc: issuer.createIssuer,
-		DeleteIssuerFunc: issuer.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault AppRole Issuer With Root CA",
+		CreateIssuerFunc:    issuer.createIssuer,
+		DeleteIssuerFunc:    issuer.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	issuerNoRoot := &approle{
 		testWithRootCA: false,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault AppRole Issuer Without Root CA",
-		CreateIssuerFunc: issuerNoRoot.createIssuer,
-		DeleteIssuerFunc: issuerNoRoot.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault AppRole Issuer Without Root CA",
+		CreateIssuerFunc:    issuerNoRoot.createIssuer,
+		DeleteIssuerFunc:    issuerNoRoot.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	clusterIssuer := &approle{
 		testWithRootCA: true,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault AppRole ClusterIssuer With Root CA",
-		CreateIssuerFunc: clusterIssuer.createClusterIssuer,
-		DeleteIssuerFunc: clusterIssuer.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault AppRole ClusterIssuer With Root CA",
+		CreateIssuerFunc:    clusterIssuer.createClusterIssuer,
+		DeleteIssuerFunc:    clusterIssuer.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	clusterIssuerNoRoot := &approle{
 		testWithRootCA: false,
 	}
 	(&certificatesigningrequests.Suite{
-		Name:             "Vault AppRole ClusterIssuer Without Root CA",
-		CreateIssuerFunc: clusterIssuerNoRoot.createClusterIssuer,
-		DeleteIssuerFunc: clusterIssuerNoRoot.delete,
-		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.KeyUsagesFeature,
-			featureset.Ed25519FeatureSet,
-		),
+		Name:                "Vault AppRole ClusterIssuer Without Root CA",
+		CreateIssuerFunc:    clusterIssuerNoRoot.createClusterIssuer,
+		DeleteIssuerFunc:    clusterIssuerNoRoot.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 

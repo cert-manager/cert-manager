@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
@@ -37,7 +38,6 @@ import (
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
@@ -48,6 +48,7 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	"github.com/cert-manager/cert-manager/internal/kube"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -220,6 +221,7 @@ type IngressShimOptions struct {
 	DefaultIssuerKind                 string
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
+	ExtraCertificateAnnotations       []string
 }
 
 type CertificateOptions struct {
@@ -237,7 +239,7 @@ type SchedulerOptions struct {
 	MaxConcurrentChallenges int
 }
 
-// ContextFactory is used for constructing new Contexts who's clients have been
+// ContextFactory is used for constructing new Contexts whose clients have been
 // configured with a User Agent built from the component name.
 type ContextFactory struct {
 	// baseRestConfig is the base Kubernetes REST config that can authenticate to
@@ -257,7 +259,7 @@ type ContextFactory struct {
 // corresponding QPS and Burst buckets.
 func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactory, error) {
 	// Load the users Kubernetes config
-	restConfig, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
+	restConfig, err := kube.BuildClientConfig(opts.APIServerHost, opts.Kubeconfig)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rest config: %w", err)
 	}
@@ -322,15 +324,15 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 	}, nil
 }
 
-// Build builds a new controller Context who's clients have a User Agent
+// Build builds a new controller Context whose clients have a User Agent
 // derived from the optional component name.
 func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	restConfig := util.RestConfigWithUserAgent(c.baseRestConfig, component...)
 
 	scheme := runtime.NewScheme()
-	kscheme.AddToScheme(scheme)
-	cmscheme.AddToScheme(scheme)
-	gwscheme.AddToScheme(scheme)
+	utilruntime.Must(kscheme.AddToScheme(scheme))
+	utilruntime.Must(cmscheme.AddToScheme(scheme))
+	utilruntime.Must(gwscheme.AddToScheme(scheme))
 
 	clients, err := buildClients(restConfig, c.ctx.ContextOptions)
 	if err != nil {

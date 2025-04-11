@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -530,7 +531,7 @@ func TestProcessItem(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				KubeObjects:        []runtime.Object{csrBundle.secret},
 				ExpectedEvents: []string{
-					"Normal CertificateIssued Certificate self signed successfully",
+					"Normal CertificateIssued Certificate self-signed successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -616,10 +617,14 @@ func TestProcessItem(t *testing.T) {
 				apiutil.IssuerSelfSigned,
 				func(*controller.Context) certificatesigningrequests.Signer { return selfsigned },
 			)
-			controller.Register(test.builder.Context)
+			if _, _, err := controller.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
 			test.builder.Start()
 
-			err := controller.ProcessItem(context.Background(), test.csr.Name)
+			err := controller.ProcessItem(context.Background(), types.NamespacedName{
+				Name: test.csr.Name,
+			})
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}

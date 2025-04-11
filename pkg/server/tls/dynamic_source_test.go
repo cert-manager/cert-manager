@@ -37,6 +37,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
+// Integration tests for the DynamicSource can be found in `test/integration/webhook/dynamic_source_test.go`.
+
 func signUsingTempCA(t *testing.T, template *x509.Certificate) *x509.Certificate {
 	// generate random ca private key
 	caPrivateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
@@ -238,7 +240,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				template.NotAfter = template.NotBefore.Add(150 * time.Millisecond)
 
 				signedCert := signUsingTempCA(t, template)
-				// Reset the NotBefor and NotAfter so we have high precision values here
+				// Reset the NotBefore and NotAfter so we have high precision values here
 				signedCert.NotBefore = time.Now()
 				signedCert.NotAfter = signedCert.NotBefore.Add(150 * time.Millisecond)
 
@@ -278,7 +280,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

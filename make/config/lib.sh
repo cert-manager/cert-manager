@@ -95,7 +95,7 @@ color() {
 trace() {
   # This mysterious awk expression makes sure to double-quote the arguments
   # that have special characters in them, such as spaces, curly braces (since
-  # zsh interprets curly braces), interogation marks, simple braces, and "*".
+  # zsh interprets curly braces), interrogation marks, simple braces, and "*".
   for arg in "$@"; do echo "$arg"; done \
     | awk '{if (NR==1) printf "'"$yel"'%s '"$bold"'",$0; else if ($0 ~ / |\}|\{|\(|\)|\\|\*|\?/) printf "\"%s\" ",$0; else printf "%s ",$0} END {printf "\n"}'
 

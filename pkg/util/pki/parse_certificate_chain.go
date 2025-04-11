@@ -93,8 +93,7 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	}
 
 	// To prevent a malicious input from causing a DoS, we limit the number of unique
-	// certificates to 1000. This helps us avoid issues with O(n^2) time complexity
-	// in the algorithm below.
+	// certificates. This helps us avoid issues with O(n^2) time complexity in the algorithm below.
 	if len(certs) > 1000 {
 		return PEMBundle{}, errors.NewInvalidData("certificate chain is too long, must be less than 1000 certificates")
 	}
@@ -217,7 +216,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 // A, which is why the argument order for the two input chains does not
 // matter.
 //
-// Gluability: We say that the chains A and B are glueable when either the
+// Glueability: We say that the chains A and B are glueable when either the
 // leaf certificate of A can be verified using the root certificate of B,
 // or that the leaf certificate of B can be verified using the root certificate
 // of A.
@@ -235,7 +234,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 //	+------+-------+      +------+-------+      +------+-------+
 //	leaf certificate                            root certificate
 //
-// The function returns false if the chains A and B are not gluable.
+// The function returns false if the chains A and B are not glueable.
 func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
 	bRoot := b.root()
 

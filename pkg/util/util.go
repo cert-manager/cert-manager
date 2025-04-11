@@ -99,7 +99,9 @@ func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 func JoinWithEscapeCSV(in []string) (string, error) {
 	b := new(bytes.Buffer)
 	writer := csv.NewWriter(b)
-	writer.Write(in)
+	if err := writer.Write(in); err != nil {
+		return "", fmt.Errorf("failed to write %q as CSV: %w", in, err)
+	}
 	writer.Flush()
 
 	if err := writer.Error(); err != nil {

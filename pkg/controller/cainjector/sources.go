@@ -96,9 +96,9 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	}
 	if namespace != "" && certName.Namespace != namespace {
 		err := fmt.Errorf("cannot read CA data from Certificate in namespace %s, cainjector is scoped to namespace %s", certName.Namespace, namespace)
-		forbidenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
-		log.Error(forbidenErr, "cannot read data source")
-		return nil, forbidenErr
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	var cert cmapi.Certificate
@@ -117,6 +117,13 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
 	}
+	// Only use Secrets that have been created by this Certificate.
+	// The Secret must have a `cert-manager.io/certificate-name` annotation
+	// value matching the name of this Certificate..
+	// NOTE: "owner" is not the `ownerReference`, because cert-manager does not
+	// usually set the ownerReference of the Secret.
+	// TODO: The logged warning below is misleading because it contains the
+	// ownerReference, which is not the reason for ignoring the Secret.
 	owner := owningCertForSecret(&secret)
 	if owner == nil || *owner != certName {
 		log.V(logf.WarnLevel).Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
@@ -165,9 +172,9 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 
 	if namespace != "" && secretName.Namespace != namespace {
 		err := fmt.Errorf("cannot read CA data from Secret in namespace %s, cainjector is scoped to namespace %s", secretName.Namespace, namespace)
-		forbidenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
-		log.Error(forbidenErr, "cannot read data source")
-		return nil, forbidenErr
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	// grab the associated secret

@@ -56,14 +56,14 @@ func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.Pr
 	})
 }
 
-// BuildHTTPClient returns a instrumented HTTP client to be used by an ACME client.
+// BuildHTTPClient returns an instrumented HTTP client to be used by an ACME client.
 // For the time being, we construct a new HTTP client on each invocation, because we need
 // to set the 'skipTLSVerify' flag on the HTTP client itself distinct from the ACME client
 func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client {
 	return BuildHTTPClientWithCABundle(metrics, skipTLSVerify, nil)
 }
 
-// BuildHTTPClientWithCABundle returns a instrumented HTTP client to be used by an ACME
+// BuildHTTPClientWithCABundle returns an instrumented HTTP client to be used by an ACME
 // client, with an optional custom CA bundle set.
 // For the time being, we construct a new HTTP client on each invocation, because we need
 // to set the 'skipTLSVerify' flag and the CA bundle on the HTTP client itself, distinct

@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -33,21 +34,33 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// KeyFunc creates a key for an API object. The key can be passed to a
-// worker function that processes an object from a queue such as
-// ProcessItem.
-var KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
-
 // DefaultItemBasedRateLimiter returns a new rate limiter with base delay of 5
 // seconds, max delay of 5 minutes.
-func DefaultItemBasedRateLimiter() workqueue.RateLimiter {
-	return workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*5)
+func DefaultItemBasedRateLimiter() workqueue.TypedRateLimiter[types.NamespacedName] {
+	return workqueue.NewTypedItemExponentialFailureRateLimiter[types.NamespacedName](time.Second*5, time.Minute*5)
 }
 
-// HandleOwnedResourceNamespacedFunc returns a function thataccepts a
+// DefaultCertificateRateLimiter returns a new rate limiter with base delay of 1
+// seconds, max delay of 30 seconds.
+func DefaultCertificateRateLimiter() workqueue.TypedRateLimiter[types.NamespacedName] {
+	return workqueue.NewTypedItemExponentialFailureRateLimiter[types.NamespacedName](time.Second*1, time.Second*30)
+}
+
+// DefaultCertificateRateLimiter returns a new rate limiter with base delay of 5
+// seconds, max delay of 30 minutes.
+func DefaultACMERateLimiter() workqueue.TypedRateLimiter[types.NamespacedName] {
+	return workqueue.NewTypedItemExponentialFailureRateLimiter[types.NamespacedName](time.Second*5, time.Minute*30)
+}
+
+// HandleOwnedResourceNamespacedFunc returns a function that accepts a
 // Kubernetes object and adds its owner references to the workqueue.
 // https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
-func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimitingInterface, ownerGVK schema.GroupVersionKind, get func(namespace, name string) (interface{}, error)) func(obj interface{}) {
+func HandleOwnedResourceNamespacedFunc[T metav1.Object](
+	log logr.Logger,
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
+	ownerGVK schema.GroupVersionKind,
+	get func(namespace, name string) (T, error),
+) func(obj interface{}) {
 	return func(obj interface{}) {
 		log := log.WithName("handleOwnedResource")
 
@@ -87,12 +100,10 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 					log.Error(err, "error getting referenced owning resource from cache")
 					continue
 				}
-				objKey, err := KeyFunc(obj)
-				if err != nil {
-					log.Error(err, "error computing key for resource")
-					continue
-				}
-				queue.Add(objKey)
+				queue.Add(types.NamespacedName{
+					Name:      obj.GetName(),
+					Namespace: obj.GetNamespace(),
+				})
 			}
 		}
 	}
@@ -101,17 +112,20 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 // QueuingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply queues objects that are added/updated/deleted.
 type QueuingEventHandler struct {
-	Queue workqueue.RateLimitingInterface
+	Queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
 // Enqueue adds a key for an object to the workqueue.
 func (q *QueuingEventHandler) Enqueue(obj interface{}) {
-	key, err := KeyFunc(obj)
+	objectName, err := cache.DeletionHandlingObjectToName(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-	q.Queue.Add(key)
+	q.Queue.Add(types.NamespacedName{
+		Name:      objectName.Name,
+		Namespace: objectName.Namespace,
+	})
 }
 
 // OnAdd adds a newly created object to the workqueue.

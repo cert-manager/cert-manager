@@ -57,11 +57,11 @@ var (
 type Server struct {
 	// ListenAddr is the address the HTTP server should listen on
 	// This must be specified.
-	ListenAddr int32
+	ListenAddr int
 
 	// HealthzAddr is the address the healthz HTTP server should listen on
 	// If not specified, the healthz endpoint will not be exposed.
-	HealthzAddr *int32
+	HealthzAddr *int
 
 	// PprofAddress is the address the pprof endpoint should be served on if enabled.
 	PprofAddress string
@@ -86,6 +86,21 @@ type Server struct {
 	// MinTLSVersion is the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MinTLSVersion string
+
+	// The host and port that the metrics endpoint should listen on.
+	MetricsListenAddress string
+
+	// If specified, the metrics server will listen with TLS using certificates
+	// provided by this CertificateSource.
+	MetricsCertificateSource servertls.CertificateSource
+
+	// MetricsCipherSuites is the list of allowed cipher suites for the server.
+	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
+	MetricsCipherSuites []string
+
+	// MetricsMinTLSVersion is the minimum TLS version supported.
+	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
+	MetricsMinTLSVersion string
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -104,13 +119,22 @@ func (s *Server) Run(ctx context.Context) error {
 		return err
 	}
 
+	metricsCipherSuites, err := ciphers.TLSCipherSuites(s.MetricsCipherSuites)
+	if err != nil {
+		return err
+	}
+	metricsMinVersion, err := ciphers.TLSVersion(s.MetricsMinTLSVersion)
+	if err != nil {
+		return err
+	}
+
 	if s.ListenAddr == 0 {
 		webhookPort, err := freePort()
 		if err != nil {
 			return err
 		}
 
-		s.ListenAddr = int32(webhookPort)
+		s.ListenAddr = webhookPort
 	}
 
 	mgr, err := ctrl.NewManager(
@@ -119,9 +143,19 @@ func (s *Server) Run(ctx context.Context) error {
 			Scheme:         s.ResourceScheme,
 			Logger:         log,
 			LeaderElection: false, // The webhook component does not need to perform leader election
-			Metrics:        metricsserver.Options{BindAddress: "0"},
+			Metrics: metricsserver.Options{
+				BindAddress:   s.MetricsListenAddress,
+				SecureServing: s.MetricsCertificateSource != nil,
+				TLSOpts: []func(*tls.Config){
+					func(cfg *tls.Config) {
+						cfg.CipherSuites = metricsCipherSuites
+						cfg.MinVersion = metricsMinVersion
+						cfg.GetCertificate = s.MetricsCertificateSource.GetCertificate
+					},
+				},
+			},
 			WebhookServer: webhook.NewServer(webhook.Options{
-				Port: int(s.ListenAddr),
+				Port: s.ListenAddr,
 				TLSOpts: []func(*tls.Config){
 					func(cfg *tls.Config) {
 						cfg.CipherSuites = cipherSuites
@@ -137,6 +171,12 @@ func (s *Server) Run(ctx context.Context) error {
 
 	if err := mgr.Add(s.CertificateSource); err != nil {
 		return err
+	}
+
+	if s.MetricsCertificateSource != nil {
+		if err := mgr.Add(s.MetricsCertificateSource); err != nil {
+			return err
+		}
 	}
 
 	// if a HealthzAddr is provided, start the healthz listener
@@ -249,7 +289,7 @@ func (s *Server) Port() (int, error) {
 		return 0, ErrNotListening
 	}
 
-	return int(s.ListenAddr), nil
+	return s.ListenAddr, nil
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {

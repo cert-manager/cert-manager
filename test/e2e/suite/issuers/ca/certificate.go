@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -62,8 +63,10 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, issuerSecretName, metav1.DeleteOptions{})
-		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, issuerSecretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("when the CA is the root", func() {
@@ -157,7 +160,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		It("should be able to create a certificate with additional output formats", func() {
 			// Output formats is only enabled via this feature gate being enabled.
 			// Don't run test if the gate isn't enabled.
-			framework.RequireFeatureGate(f, utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
 
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
@@ -208,7 +211,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			},
 		}
 		for _, v := range cases {
-			v := v
 			It("should generate a signed keypair valid for "+v.label, func() {
 				certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
@@ -235,7 +237,8 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				err = f.Helper().ValidateCertificate(cert)
 				Expect(err).NotTo(HaveOccurred())
 
-				f.CertificateDurationValid(ctx, cert, v.expectedDuration, 0)
+				err = f.Helper().ValidateCertificate(cert, certificates.ExpectDuration(v.expectedDuration, 0))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		}
 	})

@@ -25,6 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -74,19 +75,21 @@ func init() {
 			For(certificaterequests.New(
 				apiutil.IssuerACME,
 				NewACME,
-				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.RateLimitingInterface) ([]cache.InformerSynced, error) {
+				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) ([]cache.InformerSynced, error) {
 					orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
 
-					orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
+					if _, err := orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 						WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
 							log, queue,
 							cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind),
-							func(namespace, name string) (interface{}, error) {
+							func(namespace, name string) (*cmapi.CertificateRequest, error) {
 								return certificateRequestLister.CertificateRequests(namespace).Get(name)
 							},
 						),
-					})
+					}); err != nil {
+						return nil, fmt.Errorf("error setting up event handler: %v", err)
+					}
 					return []cache.InformerSynced{orderInformer.HasSynced}, nil
 				},
 			)).
@@ -232,7 +235,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 
 	log.V(logf.InfoLevel).Info("certificate issued")
 
-	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
+	// Order valid, return cert. The calling controller will update with ready if it's happy with the cert.
 	return &issuerpkg.IssueResponse{
 		Certificate: order.Status.Certificate,
 	}, nil

@@ -222,13 +222,13 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 
 		// only run a controller if it's been enabled
 		if !enabledControllers.Has(n) {
-			log.V(logf.InfoLevel).Info("not starting controller as it's disabled")
+			log.V(logf.InfoLevel).Info("skipping disabled controller")
 			continue
 		}
 
 		// don't run clusterissuers controller if scoped to a single namespace
 		if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-			log.V(logf.InfoLevel).Info("not starting controller as cert-manager has been scoped to a single namespace")
+			log.V(logf.InfoLevel).Info("skipping as cert-manager is scoped to a single namespace")
 			continue
 		}
 
@@ -265,6 +265,14 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		return fmt.Errorf("error starting controller: %v", err)
 	}
 	log.V(logf.InfoLevel).Info("control loops exited")
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
+		ctx.GWShared.Shutdown()
+	}
+
+	ctx.HTTP01ResourceMetadataInformersFactory.Shutdown()
+	ctx.KubeSharedInformerFactory.Shutdown()
+	ctx.SharedInformerFactory.Shutdown()
 
 	return nil
 }
@@ -349,6 +357,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
 			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
+			ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
 		},
 
 		CertificateOptions: controller.CertificateOptions{

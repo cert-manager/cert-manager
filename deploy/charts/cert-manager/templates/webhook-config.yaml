@@ -1,6 +1,7 @@
 {{- if .Values.webhook.config -}}
-{{- $_ := .Values.webhook.config.apiVersion | required ".Values.webhook.config.apiVersion must be set !" -}}
-{{- $_ := .Values.webhook.config.kind | required ".Values.webhook.config.kind must be set !" -}}
+{{- $config := .Values.webhook.config -}}
+{{- $_ := set $config "apiVersion" (default "webhook.config.cert-manager.io/v1alpha1" $config.apiVersion) -}}
+{{- $_ := set $config "kind" (default "WebhookConfiguration" $config.kind) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -14,5 +15,5 @@ metadata:
     {{- include "labels" . | nindent 4 }}
 data:
   config.yaml: |
-    {{- .Values.webhook.config | toYaml | nindent 4 }}
+    {{- $config | toYaml | nindent 4 }}
 {{- end -}}

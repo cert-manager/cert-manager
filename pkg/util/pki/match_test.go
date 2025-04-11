@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pki
+package pki_test
 
 import (
-	"bytes"
 	"crypto"
+	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
-	"encoding/pem"
 	"reflect"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func mustGenerateRSA(t *testing.T, keySize int) crypto.PrivateKey {
-	pk, err := GenerateRSAPrivateKey(keySize)
+	pk, err := pki.GenerateRSAPrivateKey(keySize)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func mustGenerateRSA(t *testing.T, keySize int) crypto.PrivateKey {
 }
 
 func mustGenerateECDSA(t *testing.T, keySize int) crypto.PrivateKey {
-	pk, err := GenerateECPrivateKey(keySize)
+	pk, err := pki.GenerateECPrivateKey(keySize)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func mustGenerateECDSA(t *testing.T, keySize int) crypto.PrivateKey {
 }
 
 func mustGenerateEd25519(t *testing.T) crypto.PrivateKey {
-	pk, err := GenerateEd25519PrivateKey()
+	pk, err := pki.GenerateEd25519PrivateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,6 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 		expectedAlgo cmapi.PrivateKeyAlgorithm
 		expectedSize int
 		violations   []string
-		err          string
 	}{
 		"should match if keySize and algorithm are correct (RSA)": {
 			key:          mustGenerateRSA(t, 2048),
@@ -75,18 +74,18 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 			violations:   []string{"spec.privateKey.size"},
 		},
 		"should match if keySize and algorithm are correct (ECDSA)": {
-			key:          mustGenerateECDSA(t, ECCurve256),
+			key:          mustGenerateECDSA(t, pki.ECCurve256),
 			expectedAlgo: cmapi.ECDSAKeyAlgorithm,
 			expectedSize: 256,
 		},
 		"should not match if ECDSA keySize is incorrect": {
-			key:          mustGenerateECDSA(t, ECCurve256),
+			key:          mustGenerateECDSA(t, pki.ECCurve256),
 			expectedAlgo: cmapi.ECDSAKeyAlgorithm,
-			expectedSize: ECCurve521,
+			expectedSize: pki.ECCurve521,
 			violations:   []string{"spec.privateKey.size"},
 		},
 		"should not match if keyAlgorithm is incorrect": {
-			key:          mustGenerateECDSA(t, ECCurve256),
+			key:          mustGenerateECDSA(t, pki.ECCurve256),
 			expectedAlgo: cmapi.RSAKeyAlgorithm,
 			expectedSize: 2048,
 			violations:   []string{"spec.privateKey.algorithm"},
@@ -98,7 +97,7 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			violations, err := PrivateKeyMatchesSpec(
+			violations := pki.PrivateKeyMatchesSpec(
 				test.key,
 				cmapi.CertificateSpec{
 					PrivateKey: &cmapi.CertificatePrivateKey{
@@ -107,16 +106,6 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 					},
 				},
 			)
-			switch {
-			case err != nil:
-				if test.err != err.Error() {
-					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
-				}
-			default:
-				if test.err != "" {
-					t.Errorf("got no error but expected: %s", test.err)
-				}
-			}
 			if !reflect.DeepEqual(violations, test.violations) {
 				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
 			}
@@ -132,7 +121,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 		violations []string
 	}{
 		"should not report any violation if Certificate otherName(s) match the CertificateRequest's": {
-			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "cn",
 				OtherNames: []cmapi.OtherName{
 					{
@@ -140,7 +129,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 						UTF8Value: "upn@testdomain.local",
 					},
 				},
-			}}, t),
+			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "cn",
 				OtherNames: []cmapi.OtherName{
@@ -153,7 +142,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 			err: "",
 		},
 		"should report violation if Certificate otherName(s) mismatch the CertificateRequest's": {
-			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "cn",
 				OtherNames: []cmapi.OtherName{
 					{
@@ -161,7 +150,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 						UTF8Value: "upn@testdomain.local",
 					},
 				},
-			}}, t),
+			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "cn",
 				OtherNames: []cmapi.OtherName{
@@ -177,7 +166,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 			},
 		},
 		"should not report violation if Certificate otherName(s) match the CertificateRequest's (with different order)": {
-			crSpec: MustBuildCertificateRequest(&cmapi.Certificate{Spec: cmapi.CertificateSpec{
+			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "cn",
 				OtherNames: []cmapi.OtherName{
 					{
@@ -189,7 +178,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 						UTF8Value: "upn@testdomain.local",
 					},
 				},
-			}}, t),
+			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "cn",
 				OtherNames: []cmapi.OtherName{
@@ -208,7 +197,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			violations, err := RequestMatchesSpec(test.crSpec, test.certSpec)
+			violations, err := pki.RequestMatchesSpec(test.crSpec, test.certSpec)
 			if err != nil {
 				if test.err == "" {
 					t.Errorf("Unexpected error: %s", err.Error())
@@ -226,12 +215,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 
 func TestRequestMatchesSpecSubject(t *testing.T) {
 	createCSRBlob := func(literalSubject string) []byte {
-		pk, err := GenerateRSAPrivateKey(2048)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		seq, err := UnmarshalSubjectStringToRDNSequence(literalSubject)
+		seq, err := pki.UnmarshalSubjectStringToRDNSequence(literalSubject)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -241,16 +225,15 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		csr := &x509.CertificateRequest{
-			RawSubject: asn1Seq,
-		}
-
-		csrBytes, err := x509.CreateCertificateRequest(bytes.NewBuffer(nil), csr, pk)
+		pemBytes, _, err := gen.CSR(x509.Ed25519, func(cr *x509.CertificateRequest) error {
+			cr.RawSubject = asn1Seq
+			return nil
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+		return pemBytes
 	}
 
 	tests := []struct {
@@ -280,9 +263,8 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
-			violations, err := RequestMatchesSpec(
+			violations, err := pki.RequestMatchesSpec(
 				&cmapi.CertificateRequest{
 					Spec: cmapi.CertificateRequestSpec{
 						Request: test.x509CSR,
@@ -308,11 +290,10 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 	}
 }
 
-func TestSecretDataAltNamesMatchSpec(t *testing.T) {
+func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 	tests := map[string]struct {
-		data       []byte
+		x509       *x509.Certificate
 		spec       cmapi.CertificateSpec
-		err        string
 		violations []string
 	}{
 		"should match if common name and dns names exactly equal": {
@@ -320,7 +301,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			}),
@@ -330,7 +311,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"cn", "at", "least", "one"},
 			}),
 		},
@@ -339,7 +320,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one", "cn"},
 			}),
 		},
@@ -347,7 +328,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "at",
 				DNSNames:   []string{"least", "one"},
 			}),
@@ -357,7 +338,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			}),
 			violations: []string{"spec.commonName"},
@@ -367,7 +348,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one", "other"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			}),
 			violations: []string{"spec.commonName", "spec.dnsNames"},
@@ -376,7 +357,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one", "other"},
 			}),
@@ -387,7 +368,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one", "other"},
 			}),
@@ -397,7 +378,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				DNSNames: []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "at",
 				DNSNames:   []string{"at", "least", "one"},
 			}),
@@ -407,7 +388,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 				CommonName: "cn",
 				DNSNames:   []string{"at", "least", "one"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName: "at",
 				DNSNames:   []string{"at", "least", "one", "cn"},
 			}),
@@ -416,7 +397,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			}),
 		},
@@ -424,7 +405,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.2.1"},
 			}),
 			violations: []string{"spec.ipAddresses"},
@@ -433,7 +414,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 			spec: cmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1"},
 			},
-			data: selfSignCertificate(t, cmapi.CertificateSpec{
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
 				CommonName:  "127.0.0.1",
 				IPAddresses: []string{"127.0.0.1"},
 			}),
@@ -442,17 +423,7 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			violations, err := SecretDataAltNamesMatchSpec(&corev1.Secret{Data: map[string][]byte{corev1.TLSCertKey: test.data}}, test.spec)
-			switch {
-			case err != nil:
-				if test.err != err.Error() {
-					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
-				}
-			default:
-				if test.err != "" {
-					t.Errorf("got no error but expected: %s", test.err)
-				}
-			}
+			violations := pki.FuzzyX509AltNamesMatchSpec(test.x509, test.spec)
 			if !reflect.DeepEqual(violations, test.violations) {
 				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
 			}
@@ -460,42 +431,37 @@ func TestSecretDataAltNamesMatchSpec(t *testing.T) {
 	}
 }
 
-func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
-	pk, err := GenerateRSAPrivateKey(2048)
+func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) *x509.Certificate {
+	template, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{Spec: spec})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	template, err := CertificateTemplateFromCertificate(&cmapi.Certificate{Spec: spec})
+	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pemData, _, err := SignCertificate(template, template, pk.Public(), pk)
+	// Marshal and unmarshal to ensure all fields are set correctly
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, pk.Public(), pk)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return pemData
+	cert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return cert
 }
 
-func MustBuildCertificateRequest(crt *cmapi.Certificate, t *testing.T) *cmapi.CertificateRequest {
-	pk, err := GenerateRSAPrivateKey(2048)
+func mustBuildCertificateRequest(t *testing.T, crt *cmapi.Certificate) *cmapi.CertificateRequest {
+	pemData, _, err := gen.CSRForCertificate(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	csrTemplate, err := GenerateCSR(crt, WithOtherNames(true))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var buffer bytes.Buffer
-	csr, err := x509.CreateCertificateRequest(&buffer, csrTemplate, pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pemData := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csr})
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        t.Name(),

@@ -29,10 +29,23 @@ metadata:
 spec:
   jobLabel: {{ template "cert-manager.fullname" . }}
   selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: "controller"
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+        - {{ include "cainjector.name" . }}
+        - {{ template "cert-manager.name" . }}
+        - {{ include "webhook.name" . }}
+      - key: app.kubernetes.io/instance
+        operator: In
+        values:
+        - {{ .Release.Name }}
+      - key: app.kubernetes.io/component
+        operator: In
+        values:
+        - cainjector
+        - controller
+        - webhook
 {{- if .Values.prometheus.podmonitor.namespace }}
   namespaceSelector:
     matchNames:
@@ -44,7 +57,7 @@ spec:
       interval: {{ .Values.prometheus.podmonitor.interval }}
       scrapeTimeout: {{ .Values.prometheus.podmonitor.scrapeTimeout }}
       honorLabels: {{ .Values.prometheus.podmonitor.honorLabels }}
-      {{- with .Values.prometheus.servicemonitor.endpointAdditionalProperties }}
-      {{- toYaml . | nindent 4 }}
+      {{- with .Values.prometheus.podmonitor.endpointAdditionalProperties }}
+      {{- toYaml . | nindent 6 }}
       {{- end }}
 {{- end }}

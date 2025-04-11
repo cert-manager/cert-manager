@@ -1,8 +1,8 @@
 issues:
   exclude-rules:
     - linters:
+        - govet
         - dogsled
-        - errcheck
         - promlinter
         - errname
         - exhaustive
@@ -18,9 +18,6 @@ issues:
       text: "G(101|107|204|306|402)"
     - linters:
         - staticcheck
-      text: "SA(1002|1006|4000|4006)"
-    - linters:
-        - staticcheck
       text: "(NewCertManagerBasicCertificateRequest)"
 linters:
   # Explicitly define all enabled linters
@@ -31,6 +28,7 @@ linters:
     - bidichk
     - bodyclose
     - contextcheck
+    - copyloopvar
     - decorder
     - dogsled
     - dupword
@@ -38,9 +36,7 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    - execinquery
     - exhaustive
-    - exportloopref
     - forbidigo
     - gci
     - ginkgolinter
@@ -91,3 +87,8 @@ linters-settings:
       - prefix(github.com/cert-manager/cert-manager) # Custom section: groups all imports with the specified Prefix.
       - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
       - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+  govet:
+    enable: ["shadow"]
+    settings:
+      shadow:
+        strict: true

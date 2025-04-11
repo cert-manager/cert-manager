@@ -22,23 +22,26 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"fmt"
 	"net"
 	"reflect"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
-// PrivateKeyMatchesSpec returns an error if the private key bit size
-// doesn't match the provided spec. RSA, Ed25519 and ECDSA are supported.
-// If any error is returned, a list of violations will also be returned.
-func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+// PrivateKeyMatchesSpec returns a list of violations for the provided private
+// key against the provided CertificateSpec. It will return an empty list/ nil
+// if there are no violations found. RSA, Ed25519 and ECDSA private keys are
+// supported.
+// The function panics if the CertificateSpec contains an unknown key algorithm,
+// since this should have been caught by the CertificateSpec validation already.
+func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []string {
 	spec = *spec.DeepCopy()
 	if spec.PrivateKey == nil {
 		spec.PrivateKey = &cmapi.CertificatePrivateKey{}
@@ -51,14 +54,16 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
 	default:
-		return nil, fmt.Errorf("unrecognised key algorithm type %q", spec.PrivateKey.Algorithm)
+		// This should never happen as the CertificateSpec validation should
+		// catch this before it reaches this point.
+		panic(fmt.Sprintf("[PROGRAMMING ERROR] unrecognised key algorithm type %q", spec.PrivateKey.Algorithm))
 	}
 }
 
-func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []string {
 	rsaPk, ok := pk.(*rsa.PrivateKey)
 	if !ok {
-		return []string{"spec.privateKey.algorithm"}, nil
+		return []string{"spec.privateKey.algorithm"}
 	}
 	var violations []string
 	// TODO: we should not use implicit defaulting here, and instead rely on
@@ -73,13 +78,13 @@ func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) 
 	if rsaPk.N.BitLen() != keySize {
 		violations = append(violations, "spec.privateKey.size")
 	}
-	return violations, nil
+	return violations
 }
 
-func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []string {
 	ecdsaPk, ok := pk.(*ecdsa.PrivateKey)
 	if !ok {
-		return []string{"spec.privateKey.algorithm"}, nil
+		return []string{"spec.privateKey.algorithm"}
 	}
 	var violations []string
 	// TODO: we should not use implicit defaulting here, and instead rely on
@@ -94,16 +99,16 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 	if expectedKeySize != ecdsaPk.Curve.Params().BitSize {
 		violations = append(violations, "spec.privateKey.size")
 	}
-	return violations, nil
+	return violations
 }
 
-func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey) ([]string, error) {
+func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey) []string {
 	_, ok := pk.(ed25519.PrivateKey)
 	if !ok {
-		return []string{"spec.privateKey.algorithm"}, nil
+		return []string{"spec.privateKey.algorithm"}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
@@ -127,7 +132,7 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	}
 
 	// It is safe to mutate top-level fields in `spec` as it is not a pointer
-	// meaning changes will not effect the caller.
+	// meaning changes will not affect the caller.
 	if spec.Subject == nil {
 		spec.Subject = &cmapi.X509Subject{}
 	}
@@ -273,17 +278,16 @@ func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherNam
 	return true, nil
 }
 
-// SecretDataAltNamesMatchSpec will compare a Secret resource containing certificate
-// data to a CertificateSpec and return a list of 'violations' for any fields that
-// do not match their counterparts.
+// FuzzyX509AltNamesMatchSpec will compare a X509 Certificate to a CertificateSpec
+// and return a list of 'violations' for any fields that do not match their counterparts.
+//
 // This is a purposely less comprehensive check than RequestMatchesSpec as some
 // issuers override/force certain fields.
-func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSpec) ([]string, error) {
-	x509cert, err := DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
-	if err != nil {
-		return nil, err
-	}
-
+//
+// Deprecated: This function is very fuzzy and makes too many assumptions about
+// how the issuer maps a CSR to a certificate. We only keep it for backward compatibility
+// reasons, but use other comparison functions when possible.
+func FuzzyX509AltNamesMatchSpec(x509cert *x509.Certificate, spec cmapi.CertificateSpec) []string {
 	var violations []string
 
 	// Perform a 'loose' check on the x509 certificate to determine if the
@@ -291,11 +295,11 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	// This check allows names to move between the DNSNames and CommonName
 	// field freely in order to account for CAs behaviour of promoting DNSNames
 	// to be CommonNames or vice-versa.
-	expectedDNSNames := sets.New[string](spec.DNSNames...)
+	expectedDNSNames := sets.New(spec.DNSNames...)
 	if spec.CommonName != "" {
 		expectedDNSNames.Insert(spec.CommonName)
 	}
-	allDNSNames := sets.New[string](x509cert.DNSNames...)
+	allDNSNames := sets.New(x509cert.DNSNames...)
 	if x509cert.Subject.CommonName != "" {
 		allDNSNames.Insert(x509cert.Subject.CommonName)
 	}
@@ -322,7 +326,7 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 		violations = append(violations, "spec.emailAddresses")
 	}
 
-	return violations, nil
+	return violations
 }
 
 func extractSANExtension(extensions []pkix.Extension) (pkix.Extension, error) {

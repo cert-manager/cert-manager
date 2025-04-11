@@ -151,13 +151,15 @@ kube::version::get_version_vars() {
 # This function reads the path to cert-manager
 # repo from a REPO_PATH variable that needs to be set before calling it.
 kube::version::last_published_release() {
+    search_prefix="${1:-"v*"}"
+
     # KUBE_GIT_COMMIT get_version_vars
     kube::version::get_version_vars
 
     local git=(git --work-tree "${REPO_ROOT}")
 
     # Find the last git tag which is not alpha or beta tag
-    local latest=$("${git[@]}" tag --list 'v*' | grep -v 'alpha\|beta' | tail -n1)
+    local latest=$("${git[@]}" tag --list $search_prefix | sort -V | grep -v 'alpha\|beta' | tail -n1)
 
 
     if [[ "${latest}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-].*)?([+].*)?$ ]]; then

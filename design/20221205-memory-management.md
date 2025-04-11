@@ -90,6 +90,22 @@ This proposal suggests a mechanism how to avoid caching cert-manager unrelated `
 
 - use the same mechanism to improve memory consumption by cainjector. This proposal focuses on controller only as it is the more complex part however we need to fix this problem in cainjector too and it would be nice to be consistent
 
+  > 📖 Update: In [#7161: Reduce memory usage by only caching the metadata of Secret resources](https://github.com/cert-manager/cert-manager/pull/716199)
+  > we addressed the high startup memory usage of cainjector with metadata-only caching features of controller-runtime.
+  > We did not use the split cache design that was implemented for the
+  > controller, and this contradicts the goal above: "use the same mechanism to
+  > improve memory consumption by cainjector ... to be consistent".
+  > Why? Because the split cache mechanism is overkill for cainjector.
+  > The split cache design is designed to reduce memory use **and** minimize the
+  > ongoing load on the K8S API server; which is appropriate for the controller
+  > because it has multiple controller loops each reading Secret resources every
+  > time a Certificate is reconciled.
+  > It is not necessary for cainjector, because cainjector reads relatively few
+  > Secret resources, infrequently; `cainjector` only reads Secrets having the
+  > `cert-manager.io/allow-direct-injection` or Secrets created from
+  > Certificates having that annotation. And it only reads the Secret data once
+  > during while reconciling the target resource.
+
 #### Must not
 
 - make our controllers less reliable (i.e by introducing edge cases where a cert-manager related event does not trigger a reconcile). Given the wide usage of cert-manager and the various different usage scenarios, any such edge case would be likely to occur for some users
@@ -124,7 +140,7 @@ cert-manager needs to watch all `Secret`s in the cluster because some user creat
 
 - in some cases a missing `Secret` does not cause issuer reconcile ([such as a missing ACME EAB key where we explicitly rely on `Secret` events to retry issuer setup](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/issuer/acme/setup.go#L228)). In this case, it is more efficient as well as a better user experience to reconcile on `Secret` creation event as that way we avoid wasting CPU cycles whilst waiting for the user to create the `Secret` and when the `Secret` does get created, the issuer will be reconciled immediately.
 
-The caching mechanim is required for ensuring quick issuance and not taking too much of kube apiserver's resources. `Secret`s with the issued X.509 certificates and with temporary private keys get retrieved a number of times during issuance and all the control loops involved in issuance need full `Secret` data. Currently the `Secret`s are retrieved from informers cache. Retrieving them from kube apiserver would mean a large number of additional calls to kube apiserver, which is undesirable. The default cert-manager installation uses a rate-limited client (20QPS with a burst of 50). There is also server-side [API Priority and Fairness system](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) that prevents rogue clients from overwhelming kube apiserver. Both these mechanisms mean that the result of a large number of additional calls will be slower issuance as cert-manager will get rate limited (either client-side or server-side). The rate limiting can be modified to allow higher throughput for cert-manager, but this would have an impact of kube apiserver's availability for other tenants - so in either case additional API calls would have a cost for the user.
+The caching mechanism is required for ensuring quick issuance and not taking too much of kube apiserver's resources. `Secret`s with the issued X.509 certificates and with temporary private keys get retrieved a number of times during issuance and all the control loops involved in issuance need full `Secret` data. Currently the `Secret`s are retrieved from informers cache. Retrieving them from kube apiserver would mean a large number of additional calls to kube apiserver, which is undesirable. The default cert-manager installation uses a rate-limited client (20QPS with a burst of 50). There is also server-side [API Priority and Fairness system](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) that prevents rogue clients from overwhelming kube apiserver. Both these mechanisms mean that the result of a large number of additional calls will be slower issuance as cert-manager will get rate limited (either client-side or server-side). The rate limiting can be modified to allow higher throughput for cert-manager, but this would have an impact of kube apiserver's availability for other tenants, so in either case additional API calls would have a cost for the user.
 
 ### User Stories
 
@@ -141,7 +157,7 @@ See issue description here https://github.com/cert-manager/cert-manager/issues/4
   Users could mitigate this by labelling the `Secret`s.
 
 - Risk of unintentionally or intentionally overwhelming kube apiserver with the additional requests.
-  A default cert-manager installation uses rate limiting (default 50 QPS with a burst of 20). This should be sufficient to ensure that in case of a large number of additional requests from cert-manager controller, the kube apiserver is not slowed down. Cert-manager controller allows to configure rate limiting QPS and burst (there is no upper limit). Since 1.20, Kubernetes by default uses [API Priority and Fairness](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) for fine grained server side rate limiting, which should prevent clients that don't sufficiently rate limit themselves from overwhelming the kube apiserver.
+  A default cert-manager installation uses rate limiting (default 50 QPS with a burst of 20). This should be sufficient to ensure that in case of a large number of additional requests from cert-manager controller, the kube apiserver is not slowed down. Cert-manager controller allows to configure rate limiting QPS and burst (there is no upper limit). Since 1.20, Kubernetes by default uses [API Priority and Fairness](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) for fine-grained server side rate limiting, which should prevent clients that don't sufficiently rate limit themselves from overwhelming the kube apiserver.
   In a cluster where API Priority and Fairness is disabled and cert-manager's rate limiter has been configured with a very high QPS and burst, it might be possible to overwhelm kube apiserver. However, this is already possible today, if a user has the rights to configure cert-manager installation, i.e by creating a large number of cert-manager resources in a tight loop.
   To limit the possibility of overwhelming the kube apiserver:
   - we should ensure that control loops that access secrets do not unnecessarily retry on errors (i.e if a secret is not found or has invalid data).
@@ -156,7 +172,7 @@ See issue description here https://github.com/cert-manager/cert-manager/issues/4
 
 Ensure that `certificate.Spec.SecretName` `Secret` as well as the `Secret` with temporary private key are labelled with a `controller.cert-manager.io/fao: true` [^2] label.
 The temporary private key `Secret` is short lived so it should be okay to only label it on creation.
-The `certificate.Spec.SecretName` `Secret` should be checked for the label value on every reconcile of the owning `Certificate`, same as with the secret template labels and annotations, see [here](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/controller/certificates/issuing/issuing_controller.go#L187-L191).
+The `certificate.Spec.SecretName` `Secret` should be checked for the label value on every reconcile of the owning `Certificate`, same as with the secret template labels and annotations, see [`c.ensureSecretData`](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/controller/certificates/issuing/issuing_controller.go#L187-L191).
 
 Add a partial metadata informers factory, set up with [a client-go client that knows how to make GET/LIST/WATCH requests for `PartialMetadata`](https://github.com/kubernetes/client-go/blob/v0.26.0/metadata/metadata.go#L50-L58).
 Add a filter to ensure that any informers for this factory will list _only_ resources that are _not_ labelled with a known 'cert-manager' label.
@@ -226,9 +242,9 @@ func (f *filteredSecretsInformer) Lister() corelisters.SecretLister {
 }
 
 func newFilteredSecretsInformer(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	secretLabelSeclector, _ := knownCertManagerSecretLabelSelector()
+	secretLabelSelector, _ := knownCertManagerSecretLabelSelector()
 	return coreinformers.NewFilteredSecretInformer(client, "", resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, func(listOptions *metav1.ListOptions) {
-		listOptions.LabelSelector = secretLabelSeclector
+		listOptions.LabelSelector = secretLabelSelector
 	})
 }
 
@@ -294,48 +310,48 @@ Use the new `Secret`s getter in all control loops that need to get any `Secret`:
 
 ### Metrics
 
-The following metrics are based on [a prototype implementation of this design](https://github.com/irbekrm/cert-manager/tree/partial_metadata).
+The following metrics are based on [a prototype implementation of this design](https://github.com/cert-manager/cert-manager/tree/ffe820d310ff2d8bf8efb36ab43b8acd2100be18).
 The tests were run on a kind cluster.
 
 #### Cluster with large cert-manager unrelated secrets
 
-Test the memory spike caused by the inital LIST-ing of `Secret`s, the size of cache after the inital LIST has been processed and a spike caused by changes to `Secret` resources.
+Test the memory spike caused by the initial LIST-ing of `Secret`s, the size of cache after the initial LIST has been processed and a spike caused by changes to `Secret` resources.
 
 ##### cert-manager v1.11
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](/design/images/20221205-memory-management/createsecrets.png)
+![screenshot of a terminal using dd to create generic kubernetes secrets `foo-{0..300}`](/design/images/20221205-memory-management/createsecrets.png)
 
-Install cert-manager from [latest master with client-go metrics enabled](https://github.com/irbekrm/cert-manager/tree/client_go_metrics).
+Install cert-manager from [latest master with client-go metrics enabled](https://github.com/cert-manager/cert-manager/tree/24af3abab8a43d51e29897a3c57a531a35599db6).
 
 Wait for cert-manager to start and populate the caches.
 
-Apply a label to all `Secret`s to initate cache resync:
+Apply a label to all `Secret`s to initiate cache resync:
 
-![alt text](/design/images/20221205-memory-management/labelsecret.png)
+![screenshot of `kubectl label secret --all foo=bar`](/design/images/20221205-memory-management/labelsecret.png)
 
-Observe that memory consumption spikes on controller startup when all `Secret`s are initally listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
+Observe that memory consumption spikes on controller startup when all `Secret`s are initially listed, there is a second smaller spike around the time the `Secret`s got labelled and that memory consumption remains high:
 
-![alt text](/design/images/20221205-memory-management/latestmastersecrets.png)
+![screenshot of Grafana graph of prometheus metrics for Memory consumption (spikes to 1.15 GB, declines, spikes to 800 MB and then steadies out at 700 MB -- which is high)](/design/images/20221205-memory-management/latestmastersecrets.png)
 
 ##### partial metadata prototype
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](/design/images/20221205-memory-management/createsecrets.png)
+![screenshot of a terminal using dd to create generic kubernetes secrets `foo-{0..300}`](/design/images/20221205-memory-management/createsecrets.png)
 
-Deploy cert-manager from [partial metadata prototype](https://github.com/irbekrm/cert-manager/tree/partial_metadata).
+Deploy cert-manager from [partial metadata prototype](https://github.com/cert-manager/cert-manager/tree/ffe820d310ff2d8bf8efb36ab43b8acd2100be18).
 
 Wait for cert-manager to start and populate the caches.
 
-Apply a label to all `Secret`s to initate cache resync:
+Apply a label to all `Secret`s to initiate cache resync:
 
-![alt text](/design/images/20221205-memory-management/labelsecret.png)
+![screenshot of `kubectl label secret --all foo=bar`](/design/images/20221205-memory-management/labelsecret.png)
 
 Observe that the memory consumption is significantly lower:
 
-![alt text](/design/images/20221205-memory-management/partialmetadatasecrets.png)
+![screenshot of Grafana graph of prometheus metrics for Memory consumption ending around 27.5 MB](/design/images/20221205-memory-management/partialmetadatasecrets.png)
 
 #### Issuance of a large number of `Certificate`s
 
@@ -346,32 +362,32 @@ Here is a script that sets up the issuers, creates the `Certificate`s, waits for
 
 ##### latest cert-manager
 
-This test was run against a version of cert-manager that corresponds to v1.11.0-alpha.2 with some added client-go metrics https://github.com/irbekrm/cert-manager/tree/client_go_metrics.
+This test was run against a version of cert-manager that corresponds to v1.11.0-alpha.2 with some added client-go metrics https://github.com/cert-manager/cert-manager/tree/24af3abab8a43d51e29897a3c57a531a35599db6.
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
-![alt text](/design/images/20221205-memory-management/masterissuanceterminal.png)
+![screenshot of "Script started running at 11:18:15/start: 1673263095 end: 1673263512/runtime is 417 seconds](/design/images/20221205-memory-management/masterissuanceterminal.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
-![alt text](/design/images/20221205-memory-management/mastercertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (up to 1.8s)/Total reconciles across all control loops](/design/images/20221205-memory-management/mastercertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
-![alt text](/design/images/20221205-memory-management/masterkubeapiserver.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (rising to 25)](/design/images/20221205-memory-management/masterkubeapiserver.png)
 
 ##### partial metadata
 
 Run a script to set up 10 CA issuers, create 500 certificates and observe the time taken for all certs to be issued:
-![alt text](/design/images/20221205-memory-management/partialnolabels.png)
+![screenshot of "Script started running at 11:35:05/start: 1673264105 end: 1673264701/runtime is 596 seconds"](/design/images/20221205-memory-management/partialnolabels.png)
 
 Observe resource consumption, request rate and latency for cert-manager controller:
-![alt text](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (dropping from 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialnolabelscertmanager.png)
 
 Observe resource consumption and rate of requests for `Secret` resources for kube apiserver:
-![alt text](/design/images/20221205-memory-management/partialnolabelskubeapiserver.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (peaking below 25)](/design/images/20221205-memory-management/partialnolabelskubeapiserver.png)
 
 The issuance is slightly slowed down because on each issuance cert-manager needs to get the unlabelled CA `Secret` directly from kube apiserver.
 Users could mitigate this by adding cert-manager labels to the CA `Secret`s.
 Run a modified version of the same script, but [with CA `Secret`s labelled](https://gist.github.com/irbekrm/bc56a917a164b1a3a097bda483def0b8#file-measure-issuance-time-sh-L31-L34):
 
-![alt text](/design/images/20221205-memory-management/partiallabels.png)
+![screenshot of "Script started running at 12:20:48/start: 1673266848 end: 1673267347/runtime is 499 seconds](/design/images/20221205-memory-management/partiallabels.png)
 
 For CA issuers, normally a `Secret` will be retrieved once per issuer reconcile and once per certificate request signing. In some cases, two `Secret`s might be retrieved during certificate request signing see [secrets for issuers](#secrets-for-clusterissuers). We could look into improving this, by initializing a client with credentials and sharing with certificate request controllers, similarly to how it's currently done with [ACME clients](https://github.com/cert-manager/cert-manager/blob/v1.11.0/pkg/controller/context.go#L188-L190).
 
@@ -509,12 +525,12 @@ The configured `Secret` will be retrieved when the issuer is reconciled (events 
 #### Upstream mechanisms
 
 There are a number of existing upstream mechanisms how to limit what gets stored in the cache. This section focuses on what is available for client-go informers which we use in cert-manager controllers, but there is a controller-runtime wrapper available for each of these mechanisms that should make it usable in cainjector as well.
- 
+
  ##### Filtering
 
 Filtering which objects get watched using [label or field selectors](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L328-L332). These selectors allow to filter what resources are retrieved during the initial list call and watch calls to kube apiserver by informer's `ListerWatcher` component (and therefore will end up in the cache). client-go informer factory allows configuring individual informers with [list options](https://github.com/kubernetes/client-go/blob/v12.0.0/informers/factory.go#L78-L84) that will be used [for list and watch calls](https://github.com/kubernetes/client-go/blob/v12.0.0/informers/core/v1/secret.go#L59-L72).
 This mechanism is used by other projects that use client-go controllers, for example [istio](https://github.com/istio/istio/blob/1.16.0/pilot/pkg/status/distribution/state.go#L100-L103).
-The same filtering mechanism is [also available for cert-manager.io resources](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/client/informers/externalversions/factory.go#L63-L69). We shouldn't need to filter what cert-manager.io resoruces we watch though.
+The same filtering mechanism is [also available for cert-manager.io resources](https://github.com/cert-manager/cert-manager/blob/v1.10.1/pkg/client/informers/externalversions/factory.go#L63-L69). We shouldn't need to filter what cert-manager.io resources we watch though.
 This mechanism seems the most straightforward to use, but currently we don't have a way to identify all resources (secrets) we need to watch using a label or field selector, see [###Secrets].
 
 ##### Partial object metadata
@@ -598,57 +614,57 @@ In practice:
 
 This would need to start as an alpha feature and would require alpha/beta testing by actual users for us to be able to measure the gain in memory reduction in concrete cluster setup.
 
-[Here](https://github.com/irbekrm/cert-manager/tree/experimental_transform_funcs) is a prototype of this solution.
-In the prototype [`Secrets Transformer` function](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L219-L238)
-is the tranform that gets applied to all `Secret`s before they are cached. If a `Secret` does not have any known cert-manager labels or annotations it removes `data`, `metada.managedFields` and `metadata.Annotations` and applies a `cert-manager.io/metadata-only` label.
-[`SecretGetter`](https://github.com/irbekrm/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L241-L261) is used by any control loop that needs to GET a `Secret`. It retrieves it from kube apiserver or cache dependign on whether `cert-manager.io/metadata-only` label was found.
+irbekrm created a [commit with a prototype of this solution](https://github.com/cert-manager/cert-manager/commit/d44d4ed2e27fb9b7695a74ae254113f3166aadb4).
+In the prototype [`Secrets Transformer` function](https://github.com/cert-manager/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L219-L238)
+is the transform that gets applied to all `Secret`s before they are cached. If a `Secret` does not have any known cert-manager labels or annotations it removes `data`, `metadata.managedFields` and `metadata.Annotations` and applies a `cert-manager.io/metadata-only` label.
+[`SecretGetter`](https://github.com/cert-manager/cert-manager/blob/d44d4ed2e27fb9b7695a74ae254113f3166aadb4/pkg/controller/util.go#L241-L261) is used by any control loop that needs to GET a `Secret`. It retrieves it from kube apiserver or cache depending on whether `cert-manager.io/metadata-only` label was found.
 
 #### Drawbacks
 
 - All cluster `Secret`s are still listed
 
 - The transform functions only get run before the object is placed into informer's cache. The full object will be in controller's memory for a period of time before that (in DeltaFIFO store (?)). So the users will still see memory spikes when events related to cert-manager unrelated cluster `Secret`s occur.
-See performance of the protototype:
+See performance of the prototype:
 
 Create 300 cert-manager unrelated `Secret`s of size ~1Mb:
 
-![alt text](/design/images/20221205-memory-management/createsecrets.png)
+![screenshot of a terminal using dd to create generic kubernetes secrets `foo-{0..300}`](/design/images/20221205-memory-management/createsecrets.png)
 
-Deploy cert-manager from https://github.com/irbekrm/cert-manager/tree/experimental_transform_funcs
+Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/d44d4ed2e27fb9b7695a74ae254113f3166aadb4
 
 Wait for cert-manager caches to sync, then run a command to label all `Secret`s to make caches resync:
 
-![alt text](/design/images/20221205-memory-management/labelsecret.png)
+![screenshot of `kubectl label secret --all foo=bar`](/design/images/20221205-memory-management/labelsecret.png)
 
-Observe that altough altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
+Observe that although altogether memory consumption remains quite low, there is a spike corresponding to the initial listing of `Secret`s:
 
-![alt text](/design/images/20221205-memory-management/transformfunctionsgrafana.png)
+![screenshot of Grafana showing prometheus memory consumption graph with memory usage spiking at 900 MB](/design/images/20221205-memory-management/transformfunctionsgrafana.png)
 
 ### Use PartialMetadata only
 
 We could cache PartialMetadata only for `Secret` objects. This would mean having
-just one, metadata, informer for `Secret`s and always GETting the `Secret`s
+just one, metadata, informer for `Secret`s and always `GET` the `Secret`s
 directly from kube apiserver.
 
 #### Drawbacks
 
-Large number of additional requests to kube apiserver. For a default cert-manager installation this would mean slow issuance as client-go rate limiting would kick in. The limits can be modified via cert-manager controller flags, however this would then mean less availability of kube apisever to other cluster tenants.
+Large number of additional requests to kube apiserver. For a default cert-manager installation this would mean slow issuance as client-go rate limiting would kick in. The limits can be modified via cert-manager controller flags, however this would then mean less availability of kube apiserver to other cluster tenants.
 Additionally, the `Secret`s that we actually need to cache are not likely going to be large in size, so there would be less value from memory savings perspective.
 
-Here is a branch that implements a very experimental version of using partial metadata only https://github.com/irbekrm/cert-manager/tree/just_partial.
+Here is a branch that implements a very experimental version of using partial metadata only https://github.com/cert-manager/cert-manager/tree/a01db22e8148318e9a16ad3acea1506c0d1a3ccc
 
 The following metrics are approximate as the prototype could probably be optimized. Compare with [metrics section of this proposal](#issuance-of-a-large-number-of-certificates) for an approximate idea of the increase in kube apiserver calls during issuance.
 
-Deploy cert-manager from https://github.com/irbekrm/cert-manager/tree/just_partial
+Deploy cert-manager from https://github.com/cert-manager/cert-manager/tree/a01db22e8148318e9a16ad3acea1506c0d1a3ccc
 
-Run a script to set up 10 CA issuers, create 500 certificates and observe that the time taken is significantly higher than for latest version of cert-manager:
-![alt text](/design/images/20221205-memory-management/partialonly.png)
+Run a script to set up 10 CA issuers, create 500 certificates and observe that the time taken is significantly greater than for latest version of cert-manager:
+![screenshot of "Script started running at 16:39:04/start: 1673368744 end: 1673369829/runtime is 1085 seconds"](/design/images/20221205-memory-management/partialonly.png)
 
 Observe high request latency for cert-manager:
-![alt text](/design/images/20221205-memory-management/partialonlycertmanager.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Rate of request to kube apiserver/Rate limiting per call to kube apiserver (up to 2s)/Total reconciles across all control loops](/design/images/20221205-memory-management/partialonlycertmanager.png)
 
 Observe a large number of additional requests to kube apiserver:
-![alt text](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
+![Grafana graphs showing Memory consumption/CPU consumption/Requests for secrets to kube apiserver (peaking above 25)](/design/images/20221205-memory-management/partialonlykubeapiserver.png)
 
 ### Use paging to limit the memory spike when controller starts up
 
@@ -656,17 +672,17 @@ LIST calls to kube apiserver can be [paginated](https://kubernetes.io/docs/refer
 Perhaps not getting all objects at once on the initial LIST would limit the spike in memory when cert-manager controller starts up.
 
 However, currently it is not possible to paginate the initial LISTs made by client-go informers.
-Although it is possible to set [page limit](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L371-L387) when creating a client-go informer factory or an individual informer, this will in practice not be used for the inital LIST.
+Although it is possible to set [page limit](https://github.com/kubernetes/apimachinery/blob/v0.26.0/pkg/apis/meta/v1/types.go#L371-L387) when creating a client-go informer factory or an individual informer, this will in practice not be used for the initial LIST.
 LIST requests can be served either from etcd or [kube apiserver watch cache](https://github.com/kubernetes/apiserver/tree/v0.26.0/pkg/storage/cacher).
 Watch cache does not support pagination, so if a request is forwarded to the cache, the response will contain a full list.
-Client-go makes the inital LIST request [with resource version 0](https://github.com/kubernetes/client-go/blob/v0.26.0/tools/cache/reflector.go#L592-L596) for performance reasons (to ensure that watch cache is used) and this results in [the response being served from kube apiserver watch cache](https://github.com/kubernetes/apiserver/blob/v0.26.0/pkg/storage/cacher/cacher.go#L621-L635).
+Client-go makes the initial LIST request [with resource version 0](https://github.com/kubernetes/client-go/blob/v0.26.0/tools/cache/reflector.go#L592-L596) for performance reasons (to ensure that watch cache is used) and this results in [the response being served from kube apiserver watch cache](https://github.com/kubernetes/apiserver/blob/v0.26.0/pkg/storage/cacher/cacher.go#L621-L635).
 
 There is currently an open PR to implement pagination from watch cache https://github.com/kubernetes/kubernetes/pull/108392.
 
 ### Filter the Secrets to watch with a label
 
 Only watch `Secret`s with known `cert-manager.io` labels. Ensure that label gets applied to all `Secret`s we manage (such as `spec.secretName` `Secret` for `Certificate`).
-We already ensure that all `spec.secretName` `Secret`s get annotated when synced- we can use the same mechanism to apply a label.
+We already ensure that all `spec.secretName` `Secret`s get annotated when synced - we can use the same mechanism to apply a label.
 Users will have to ensure that `Secret`s they create are labelled.
 We can help them to discover which `Secret`s that are currently deployed to cluster and need labelling with a `cmctl` command.
 In terms of resource consumption and calls to apiserver, this would be the most efficient solution (only relevant `Secret`s are being listed/watched/cached and all relevant `Secret`s are cached in full).
@@ -688,8 +704,8 @@ See an example flag implementation for cainjector in https://github.com/cert-man
 It might work well for cases where 'known' selectors need to be passed that we could event document such as `type!=helm.sh/release.v1`.
 
 #### Drawbacks
- 
-- bad user experience- no straightforward way to tell if the selector actually does what was expected and an easy footgun especially when users attempt to specify which `Secret`s _should_ (rather than _shouldn't_) be watched
+
+- bad user experience - no straightforward way to tell if the selector actually does what was expected and an easy footgun especially when users attempt to specify which `Secret`s _should_ (rather than _shouldn't_) be watched
 
 - users should aim to use 'negative' selectors, but that be complicated if there is a large number of random `Secret`s in cluster that don't have a unifying selector
 

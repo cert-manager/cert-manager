@@ -18,7 +18,6 @@ package acmeorders
 
 import (
 	"context"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"testing"
@@ -27,9 +26,11 @@ import (
 	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/pem"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -243,10 +244,11 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	decodeAll := func(pemBytes []byte) [][]byte {
 		var blocks [][]byte
 		for {
-			block, rest := pem.Decode(pemBytes)
+			block, rest, _ := pem.SafeDecodeCertificateBundle(pemBytes)
 			if block == nil {
 				break
 			}
+
 			blocks = append(blocks, block.Bytes)
 			pemBytes = rest
 		}
@@ -933,7 +935,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	gotScheduled := false
 	fakeScheduler := schedulertest.FakeScheduler{
-		AddFunc: func(obj interface{}, duration time.Duration) {
+		AddFunc: func(obj types.NamespacedName, duration time.Duration) {
 			gotScheduled = true
 		},
 	}

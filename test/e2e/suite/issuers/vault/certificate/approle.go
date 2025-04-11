@@ -27,6 +27,7 @@ import (
 	vaultaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -98,12 +99,15 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 		Expect(setup.Clean(ctx)).NotTo(HaveOccurred())
 
 		if issuerKind == cmapi.IssuerKind {
-			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		} else {
-			f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, vaultIssuerName, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}
 
-		f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(ctx, vaultSecretName, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should generate a new valid certificate", func() {
@@ -204,7 +208,6 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 	}
 
 	for _, v := range cases {
-		v := v
 		It("should generate a new certificate "+v.label, func() {
 			By("Creating an Issuer")
 
@@ -264,7 +267,8 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 			Expect(err).NotTo(HaveOccurred())
 
 			// Vault subtract 30 seconds to the NotBefore date.
-			f.CertificateDurationValid(ctx, cert, v.expectedDuration, time.Second*30)
+			err = f.Helper().ValidateCertificate(cert, certificates.ExpectDuration(v.expectedDuration, time.Second*30))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }

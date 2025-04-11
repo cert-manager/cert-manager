@@ -38,6 +38,7 @@ import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -60,6 +61,7 @@ type Client interface {
 	NewRequest(method, requestPath string) *vault.Request
 	RawRequest(r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
+	CloneConfig() *vault.Config
 }
 
 // For mocking purposes.
@@ -186,7 +188,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 	// the time of validation, we must still allow multiple authentication methods
 	// to be specified.
 	// In terms of implementation, we will use the first authentication method.
-	// The order of precedence is: tokenSecretRef, appRole, kubernetes
+	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes
 
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef != nil {
@@ -210,6 +212,17 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
+	clientCert := v.issuer.GetSpec().Vault.Auth.ClientCertificate
+	if clientCert != nil {
+		token, err := v.requestTokenWithClientCertificate(client, clientCert)
+		if err != nil {
+			return err
+		}
+		client.SetToken(token)
+
+		return nil
+	}
+
 	kubernetesAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
 	if kubernetesAuth != nil {
 		token, err := v.requestTokenWithKubernetesAuth(ctx, client, kubernetesAuth)
@@ -220,7 +233,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	return fmt.Errorf("error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
+	return cmerrors.NewInvalidData("error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -249,6 +262,10 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 
 	if clientCertificate != nil {
 		cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{*clientCertificate}
+	}
+
+	if serverName := v.issuer.GetSpec().Vault.ServerName; len(serverName) != 0 {
+		cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.ServerName = serverName
 	}
 
 	return cfg, nil
@@ -429,6 +446,79 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 	return token, nil
 }
 
+func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertificateAuth *v1.VaultClientCertificateAuth) (string, error) {
+	// If secretName is set, load client certificate from Secret, otherwise assume that a
+	// fitting client certificate is loaded in the client already.
+	if len(clientCertificateAuth.SecretName) != 0 {
+		secret, err := v.secretsLister.Secrets(v.namespace).Get(clientCertificateAuth.SecretName)
+		if err != nil {
+			return "", err
+		}
+
+		cert, ok := secret.Data["tls.crt"]
+		if !ok {
+			return "", fmt.Errorf("no data for tls.crt in secret '%s/%s'", v.namespace, clientCertificateAuth.SecretName)
+		}
+		key, ok := secret.Data["tls.key"]
+		if !ok {
+			return "", fmt.Errorf("no data for tls.key in secret '%s/%s'", v.namespace, clientCertificateAuth.SecretName)
+		}
+
+		clientCertificate, err := tls.X509KeyPair(cert, key)
+		if err != nil {
+			return "", fmt.Errorf("error reading client certificate: %s", err.Error())
+		}
+
+		// Setting up a short lived client with a configured client certificate.
+		// It is only meant to be used for requesting a Vault token. We clone
+		// http.Client's Transport separately as it has to be adjusted and does
+		// not seem to be cloned by CloneConfig.
+		cfg := client.CloneConfig()
+		tmpTransport := cfg.HttpClient.Transport.(*http.Transport).Clone()
+		tmpTransport.TLSClientConfig.Certificates = append(tmpTransport.TLSClientConfig.Certificates, clientCertificate)
+		cfg.HttpClient.Transport = tmpTransport
+		client, err = vault.NewClient(cfg)
+		if err != nil {
+			return "", fmt.Errorf("error initializing intermediary Vault client: %s", err.Error())
+		}
+	}
+
+	parameters := map[string]string{
+		"name": clientCertificateAuth.Name,
+	}
+
+	mountPath := clientCertificateAuth.Path
+	if mountPath == "" {
+		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
 func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Client, kubernetesAuth *v1.VaultKubernetesAuth) (string, error) {
 	var jwt string
 	switch {
@@ -473,7 +563,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 				// Vault backend can bind the kubernetes auth backend role to the service account and specific namespace of the service account.
 				// Providing additional audiences is not considered a major non-mitigatable security risk
 				// as if someone creates an Issuer in another namespace/globally with the same audiences
-				// in attempt to highjack the certificate vault (if role config mandates sa:namespace) won't authorise the connection
+				// in attempt to hijack the certificate vault (if role config mandates sa:namespace) won't authorise the connection
 				// as token subject won't match vault role requirement to have SA originated from the specific namespace.
 				Audiences: audiences,
 

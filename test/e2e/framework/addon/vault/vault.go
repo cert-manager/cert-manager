@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package vault contains an addon that installs Vault
+// Package vault contains an addon that installs Vault
 package vault
 
 import (
 	"context"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -44,6 +43,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -442,8 +442,15 @@ func (v *Vault) Logs(ctx context.Context) (map[string]string, error) {
 }
 
 func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte) {
-	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
-	ca, _ := x509.ParseCertificate(catls.Certificate[0])
+	catls, err := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	ca, err := x509.ParseCertificate(catls.Certificate[0])
+	if err != nil {
+		panic(err)
+	}
 
 	cert := &x509.Certificate{
 		Version:      3,
@@ -461,15 +468,34 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 		DNSNames:     []string{dnsName},
 	}
 
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		panic(err)
+	}
 
-	return encodePublicKey(certBytes), encodePrivateKey(privateKey)
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	encodedPrivateKey, err := pki.EncodePKCS8PrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	return encodePublicKey(certBytes), encodedPrivateKey
 }
 
 func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, []byte) {
-	catls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
-	ca, _ := x509.ParseCertificate(catls.Certificate[0])
+	catls, err := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	ca, err := x509.ParseCertificate(catls.Certificate[0])
+	if err != nil {
+		panic(err)
+	}
 
 	cert := &x509.Certificate{
 		Version:      3,
@@ -485,10 +511,22 @@ func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, 
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}
 
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	certBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		panic(err)
+	}
 
-	return encodePublicKey(certBytes), encodePrivateKey(privateKey)
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	encodedPrivateKey, err := pki.EncodePKCS8PrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	return encodePublicKey(certBytes), encodedPrivateKey
 }
 
 func GenerateCA() ([]byte, []byte, error) {
@@ -506,18 +544,24 @@ func GenerateCA() ([]byte, []byte, error) {
 		BasicConstraintsValid: true,
 	}
 
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	caBytes, _ := x509.CreateCertificate(rand.Reader, ca, ca, &privateKey.PublicKey, privateKey)
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return encodePublicKey(caBytes), encodePrivateKey(privateKey), nil
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	encodedPrivateKey, err := pki.EncodePKCS8PrivateKey(privateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return encodePublicKey(caBytes), encodedPrivateKey, nil
 }
 
 func encodePublicKey(pub []byte) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: pub})
-}
-
-func encodePrivateKey(priv *rsa.PrivateKey) []byte {
-	pkcs8Bytes, _ := x509.MarshalPKCS8PrivateKey(priv)
-	block := &pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes}
-	return pem.EncodeToMemory(block)
 }

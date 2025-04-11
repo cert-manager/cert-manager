@@ -26,6 +26,10 @@ import (
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cainjectorbundle "github.com/cert-manager/cert-manager/internal/cainjector/bundle"
+	"github.com/cert-manager/cert-manager/internal/cainjector/feature"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // This file contains logic for dealing with injectables, such as injecting CA
@@ -110,7 +114,21 @@ func (t *mutatingWebhookTarget) AsObject() client.Object {
 
 func (t *mutatingWebhookTarget) SetCA(data []byte) {
 	for ind := range t.obj.Webhooks {
-		t.obj.Webhooks[ind].ClientConfig.CABundle = data
+		if utilfeature.DefaultFeatureGate.Enabled(feature.CAInjectorMerging) {
+			// If we for any reason cannot merge the certificate in, we replace it with
+			// the new certificate.
+			//
+			// This mirrors the old behavior of this function so is a reasonable
+			// fallback
+			bundle, err := cainjectorbundle.AppendCertificatesToBundle(t.obj.Webhooks[ind].ClientConfig.CABundle, data)
+			if err != nil {
+				bundle = data
+			}
+
+			t.obj.Webhooks[ind].ClientConfig.CABundle = bundle
+		} else {
+			t.obj.Webhooks[ind].ClientConfig.CABundle = data
+		}
 	}
 }
 
@@ -145,7 +163,21 @@ func (t *validatingWebhookTarget) AsObject() client.Object {
 
 func (t *validatingWebhookTarget) SetCA(data []byte) {
 	for ind := range t.obj.Webhooks {
-		t.obj.Webhooks[ind].ClientConfig.CABundle = data
+		if utilfeature.DefaultFeatureGate.Enabled(feature.CAInjectorMerging) {
+			// If we for any reason cannot merge the certificate in, we replace it with
+			// the new certificate.
+			//
+			// This mirrors the old behavior of this function so is a reasonable
+			// fallback
+			bundle, err := cainjectorbundle.AppendCertificatesToBundle(t.obj.Webhooks[ind].ClientConfig.CABundle, data)
+			if err != nil {
+				bundle = data
+			}
+
+			t.obj.Webhooks[ind].ClientConfig.CABundle = bundle
+		} else {
+			t.obj.Webhooks[ind].ClientConfig.CABundle = data
+		}
 	}
 }
 
@@ -179,7 +211,21 @@ func (t *apiServiceTarget) AsObject() client.Object {
 }
 
 func (t *apiServiceTarget) SetCA(data []byte) {
-	t.obj.Spec.CABundle = data
+	if utilfeature.DefaultFeatureGate.Enabled(feature.CAInjectorMerging) {
+		// If we for any reason cannot merge the certificate in, we replace it with
+		// the new certificate.
+		//
+		// This mirrors the old behavior of this function so is a reasonable
+		// fallback
+		bundle, err := cainjectorbundle.AppendCertificatesToBundle(t.obj.Spec.CABundle, data)
+		if err != nil {
+			bundle = data
+		}
+
+		t.obj.Spec.CABundle = bundle
+	} else {
+		t.obj.Spec.CABundle = data
+	}
 }
 
 type apiServiceTargetPatch struct {
@@ -226,7 +272,22 @@ func (t *crdConversionTarget) SetCA(data []byte) {
 	if t.obj.Spec.Conversion.Webhook.ClientConfig == nil {
 		t.obj.Spec.Conversion.Webhook.ClientConfig = &apiext.WebhookClientConfig{}
 	}
-	t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle = data
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.CAInjectorMerging) {
+		// If we for any reason cannot merge the certificate in, we replace it with
+		// the new certificate.
+		//
+		// This mirrors the old behavior of this function so is a reasonable
+		// fallback
+		bundle, err := cainjectorbundle.AppendCertificatesToBundle(t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle, data)
+		if err != nil {
+			bundle = data
+		}
+
+		t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle = bundle
+	} else {
+		t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle = data
+	}
 }
 
 type customResourceDefinitionPatch struct {
