@@ -31,7 +31,7 @@ import (
 	"testing"
 	"time"
 
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -56,7 +56,7 @@ type ServerOptions struct {
 }
 
 func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
-	log := logtesting.NewTestLogger(t)
+	log := testr.New(t)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	webhookFlags := options.NewWebhookFlags()

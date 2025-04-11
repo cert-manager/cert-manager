@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +52,7 @@ var (
 const defaultPort = "53"
 
 func TestRFC2136CanaryLocalTestServer(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:       t,
 		Zones:   []string{rfc2136TestZone},
@@ -79,7 +79,7 @@ func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 }
 
 func TestRFC2136ServerSuccess(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:       t,
 		Zones:   []string{rfc2136TestZone},
@@ -104,7 +104,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 }
 
 func TestRFC2136ServerError(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:       t,
 		Zones:   []string{rfc2136TestZone},
@@ -131,7 +131,7 @@ func TestRFC2136ServerError(t *testing.T) {
 }
 
 func TestRFC2136TsigClient(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:             t,
 		Zones:         []string{rfc2136TestZone},
@@ -320,7 +320,7 @@ func TestRFC2136InvalidTSIGAlgorithm(t *testing.T) {
 }
 
 func TestRFC2136ValidUpdatePacket(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:     t,
 		Zones: []string{rfc2136TestZone},
