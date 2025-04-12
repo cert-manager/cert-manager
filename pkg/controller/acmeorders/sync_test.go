@@ -90,7 +90,12 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
-	testOrderIP := gen.Order("testorder", gen.SetOrderIssuer(cmmeta.ObjectReference{Name: testIssuerHTTP01.Name}), gen.SetOrderIPAddresses("10.0.0.1"))
+	testOrderIP := gen.Order("testorder",
+		gen.SetOrderCommonName("10.0.0.2"),
+		gen.SetOrderIssuer(cmmeta.ObjectReference{
+			Name: testIssuerHTTP01.Name,
+		}),
+		gen.SetOrderIPAddresses("10.0.0.1"))
 
 	pendingStatus := cmacme.OrderStatus{
 		State:       cmacme.Pending,
