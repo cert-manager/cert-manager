@@ -39,7 +39,7 @@ import (
 // ValidationFunc describes a CertificateSigningRequest validation helper function
 type ValidationFunc func(csr *certificatesv1.CertificateSigningRequest, key crypto.Signer) error
 
-// ExpectValidCertificateCertificate checks if the certificate is a valid x509 certificate
+// ExpectValidCertificate checks if the certificate is a valid x509 certificate
 func ExpectValidCertificate(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	_, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 	return err

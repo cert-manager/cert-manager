@@ -48,7 +48,7 @@ type DNSProvider struct {
 	userAgent string
 }
 
-// DNSZone is the Zone-Record returned from Cloudflare (we`ll ignore everything we don't need)
+// DNSZone is the Zone-Record returned from Cloudflare (we'll ignore everything we don't need)
 // See https://api.cloudflare.com/#zone-properties
 type DNSZone struct {
 	ID   string `json:"id"`

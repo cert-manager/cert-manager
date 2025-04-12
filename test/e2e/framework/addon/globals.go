@@ -81,7 +81,7 @@ func InitGlobals(cfg *config.Config) {
 	}
 }
 
-// SetupGlobals setups all of the global addons.
+// SetupGlobalsPrimary setups all of the global addons.
 // The primary ginkgo process is the process with index 1.
 // This function should be called by the test suite entrypoint in a SynchronizedBeforeSuite
 // block to ensure it is run only on ginkgo process #1. It has to be run before
