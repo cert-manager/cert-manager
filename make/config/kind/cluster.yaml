@@ -15,6 +15,14 @@
 # various addon Services such as ingress-nginx, Gateway etc.
 # TODO: parameterize the service subnet range instead of hardcoding it so that it is defined in one place only
 # It could be interpolated with ytt like for addons i.e https://github.com/cert-manager/cert-manager/blob/134398e939bb2b1401697eaf589405ad469cd609/make/e2e-setup.mk#L379
+#
+# TIP: If you are running kind on a computer with corporate MITM VPN, you can add
+# the MITM certs to the kind trust store by adding these extra mounts to the control-plane node:
+#   nodes:
+#     - role: control-plane
+#       extraMounts:
+#       - hostPath: /etc/ssl/certs
+#         containerPath: /etc/ssl/certs
 
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
