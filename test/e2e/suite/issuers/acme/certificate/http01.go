@@ -394,7 +394,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 											Path: "/",
 											Backend: networkingv1beta1.IngressBackend{
 												ServiceName: "doesnotexist",
-												ServicePort: intstr.FromInt(443),
+												ServicePort: intstr.FromInt32(443),
 											},
 										},
 									},

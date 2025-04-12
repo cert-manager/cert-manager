@@ -124,7 +124,7 @@ func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 				{
 					Name:       "http",
 					Port:       acmeSolverListenPort,
-					TargetPort: intstr.FromInt(acmeSolverListenPort),
+					TargetPort: intstr.FromInt32(acmeSolverListenPort),
 				},
 			},
 			Selector: podLabels,
