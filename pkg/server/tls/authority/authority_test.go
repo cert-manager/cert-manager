@@ -51,6 +51,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 	da := &DynamicAuthority{
 		SecretNamespace: "test-namespace",
 		SecretName:      "test-secret",
+		CommonName:      "test-common-name",
 		CADuration:      365 * 24 * time.Hour,
 		LeafDuration:    7 * 24 * time.Hour,
 
