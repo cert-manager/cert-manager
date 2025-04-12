@@ -44,7 +44,17 @@ cleanup() {
 }
 trap "cleanup" EXIT SIGINT
 
-rsync -aEq "${projectdir}/." "${tmp}" --exclude "_bin/"
+# Why not just "cp" to the tmp dir?
+# A dumb "cp" will fail sometimes since _bin can get changed while it's being copied if targets are run in parallel,
+# and cp doesn't have some universal "exclude" option to ignore "_bin"
+#
+# We previously used "rsync" here, but:
+# 1. That's another tool we need to depend on
+# 2. rsync on macOS 15.4 and newer is actually openrsync, which has different permissions and throws errors when copying git objects
+#
+# So, we use find to list all files except _bin, and then copy each in turn
+find . -maxdepth 1 -not \( -path "./_bin" -prune \) | xargs -I% cp -af "${projectdir}/%" "${tmp}/"
+
 pushd "${tmp}" >/dev/null
 
 "$@"

@@ -19,13 +19,12 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -328,8 +327,8 @@ func TestScheduleN(t *testing.T) {
 			if err == nil && test.err {
 				t.Errorf("expected to get an error, but got none")
 			}
-			if !reflect.DeepEqual(chs, test.expected) {
-				t.Errorf("expected did not match actual: %v", diff.ObjectDiff(test.expected, chs))
+			if diff := cmp.Diff(test.expected, chs); diff != "" {
+				t.Errorf("expected did not match actual (-want +got):\n%s", diff)
 			}
 		})
 	}

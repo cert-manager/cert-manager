@@ -98,7 +98,8 @@ var (
 	defaultACMEHTTP01SolverRunAsNonRoot          = true
 	defaultACMEHTTP01SolverNameservers           = []string{}
 
-	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
+	defaultAutoCertificateAnnotations  = []string{"kubernetes.io/tls-acme"}
+	defaultExtraCertificateAnnotations = []string{}
 
 	AllControllers = []string{
 		issuerscontroller.ControllerName,
@@ -264,6 +265,10 @@ func SetDefaults_IngressShimConfig(obj *v1alpha1.IngressShimConfig) {
 
 	if len(obj.DefaultAutoCertificateAnnotations) == 0 {
 		obj.DefaultAutoCertificateAnnotations = defaultAutoCertificateAnnotations
+	}
+
+	if len(obj.ExtraCertificateAnnotations) == 0 {
+		obj.ExtraCertificateAnnotations = defaultExtraCertificateAnnotations
 	}
 }
 

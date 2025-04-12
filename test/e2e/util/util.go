@@ -291,7 +291,7 @@ func NewV1Beta1Ingress(name, secretName string, annotations map[string]string, d
 									Path: "/",
 									Backend: networkingv1beta1.IngressBackend{
 										ServiceName: "somesvc",
-										ServicePort: intstr.FromInt(80),
+										ServicePort: intstr.FromInt32(80),
 									},
 								},
 							},
