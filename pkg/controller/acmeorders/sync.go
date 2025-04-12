@@ -268,9 +268,11 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 
 	dnsIdentifierSet := sets.New[string](o.Spec.DNSNames...)
 	ipIdentifierSet := sets.New[string](o.Spec.IPAddresses...)
-	if len(validation.IsValidIP(field.NewPath(""), o.Spec.CommonName)) == 0 {
+	switch {
+	case o.Spec.CommonName == "":
+	case net.ParseIP(o.Spec.CommonName) != nil:
 		ipIdentifierSet.Insert(o.Spec.CommonName)
-	} else if len(validation.IsFullyQualifiedDomainName(field.NewPath(""), o.Spec.CommonName)) == 0 {
+	case len(validation.IsFullyQualifiedDomainName(nil, o.Spec.CommonName)) == 0:
 		dnsIdentifierSet.Insert(o.Spec.CommonName)
 	}
 	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
