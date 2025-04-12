@@ -19,6 +19,8 @@ spec:
     kind: Issuer
     listKind: IssuerList
     plural: issuers
+    shortNames:
+      - iss
     singular: issuer
     categories:
       - cert-manager
