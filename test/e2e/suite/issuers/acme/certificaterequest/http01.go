@@ -127,9 +127,13 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
+		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(acmeIngressDomain), gen.SetCSRDNSNames(acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -143,9 +147,13 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain}, nil, nil, x509.ECDSA)
+		csr, key, err := gen.CSR(x509.ECDSA, gen.SetCSRCommonName(acmeIngressDomain), gen.SetCSRDNSNames(acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -160,13 +168,13 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-			[]string{
-				acmeIngressDomain,
-				e2eutil.RandomSubdomainLength(acmeIngressDomain, maxLengthOfDomainSegment),
-			},
-			nil, nil, x509.RSA)
+		csr, key, err := gen.CSR(x509.ECDSA, gen.SetCSRCommonName(acmeIngressDomain), gen.SetCSRDNSNames(acmeIngressDomain, e2eutil.RandomSubdomainLength(acmeIngressDomain, maxLengthOfDomainSegment)))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -178,10 +186,14 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-			[]string{e2eutil.RandomSubdomain(acmeIngressDomain)},
-			nil, nil, x509.RSA)
+		dnsName := e2eutil.RandomSubdomain(acmeIngressDomain)
+		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(dnsName), gen.SetCSRDNSNames(dnsName))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -193,9 +205,13 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
 		// create test fixture
 		By("Creating a CertificateRequest")
-		cr, _, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-			[]string{"google.com"}, nil, nil, x509.RSA)
+		csr, _, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("google.com"), gen.SetCSRDNSNames("google.com"))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -212,9 +228,13 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
+		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(acmeIngressDomain), gen.SetCSRDNSNames(acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
