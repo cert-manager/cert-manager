@@ -14,7 +14,7 @@ jobs:
   analysis:
     name: Scorecards analysis
     runs-on: ubuntu-latest
-    if: github.event.repository.default_branch == github.ref_name
+    if: github.ref_name == github.event.repository.default_branch
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
