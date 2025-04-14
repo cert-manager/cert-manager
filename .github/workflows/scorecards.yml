@@ -14,12 +14,13 @@ jobs:
   analysis:
     name: Scorecards analysis
     runs-on: ubuntu-latest
+    if: github.ref_name == github.event.repository.default_branch
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
       # Used to receive a badge.
       id-token: write
-    
+
     steps:
       - name: "Checkout code"
         uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846 # tag=v3.0.0
