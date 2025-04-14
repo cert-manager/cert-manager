@@ -207,14 +207,14 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	ch, err := c.challengeLister.Challenges(namespace).Get(name)
-
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "challenge in work queue no longer exists")
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	// WARNING: we do want to call Sync when ch.DeletionTimestamp != nil, such that
+	// we can perform the required cleanup and remove the finalizer.
+	if ch == nil {
+		// Challenge object no longer exists
+		return nil
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, ch))

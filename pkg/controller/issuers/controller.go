@@ -134,13 +134,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	issuer, err := c.issuerLister.Issuers(namespace).Get(name)
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "issuer in work queue no longer exists")
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if issuer == nil || issuer.DeletionTimestamp != nil {
+		// If the Issuer object was/ is being deleted, we don't want to update its status.
+		return nil
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, issuer))
