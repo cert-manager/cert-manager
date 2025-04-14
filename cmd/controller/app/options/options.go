@@ -267,5 +267,12 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		logf.Log.Info("the ValidateCAA feature flag has been removed and is now a no-op")
 	}
 
+	// If running namespaced, remove all cluster-scoped controllers.
+	if o.Namespace != "" {
+		logf.Log.Info("disabling all cluster-scoped controllers as cert-manager is scoped to a single namespace",
+			"controllers", strings.Join(defaults.ClusterScopedControllers, ", "))
+		enabled = enabled.Delete(defaults.ClusterScopedControllers...)
+	}
+
 	return enabled
 }
