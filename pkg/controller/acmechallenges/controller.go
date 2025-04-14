@@ -213,7 +213,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// WARNING: we do want to call Sync when ch.DeletionTimestamp != nil, such that
 	// we can perform the required cleanup and remove the finalizer.
 	if ch == nil {
-		// Challenge does no longer exist
+		// Challenge object no longer exists
 		return nil
 	}
 

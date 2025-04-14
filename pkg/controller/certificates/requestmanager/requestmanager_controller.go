@@ -143,7 +143,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return err
 	}
 	if crt == nil || crt.DeletionTimestamp != nil {
-		// If the Certificate object is being deleted, we don't want to create any
+		// If the Certificate object was/ is being deleted, we don't want to create any
 		// new CertificateRequests objects
 		return nil
 	}
