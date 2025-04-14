@@ -251,8 +251,6 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(defaults.DefaultEnabledControllers...)
 	}
 
-	enabled = enabled.Delete(disabled...)
-
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
 		logf.Log.Info("enabling all experimental certificatesigningrequest controllers")
 		enabled = enabled.Insert(defaults.ExperimentalCertificateSigningRequestControllers...)
@@ -273,6 +271,9 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 			"controllers", strings.Join(defaults.ClusterScopedControllers, ", "))
 		enabled = enabled.Delete(defaults.ClusterScopedControllers...)
 	}
+
+	// Only after all controllers have been added, remove the disabled ones.
+	enabled = enabled.Delete(disabled...)
 
 	return enabled
 }

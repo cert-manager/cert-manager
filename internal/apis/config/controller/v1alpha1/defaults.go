@@ -122,6 +122,12 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+		// experimental CSR controllers
+		csracmecontroller.CSRControllerName,
+		csrcacontroller.CSRControllerName,
+		csrselfsignedcontroller.CSRControllerName,
+		csrvenaficontroller.CSRControllerName,
+		csrvaultcontroller.CSRControllerName,
 	}
 
 	DefaultEnabledControllers = []string{
