@@ -411,6 +411,9 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 					if id[0].Value != "10.0.0.1" || id[0].Type != "ip" {
 						return nil, errors.New("AuthzID needs to be the IP")
 					}
+					if id[1].Value != "10.0.0.2" || id[1].Type != "ip" {
+						return nil, errors.New("AuthzID needs to be the IP")
+					}
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
