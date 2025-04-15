@@ -1,32 +1,46 @@
-issues:
-  exclude-rules:
-    - linters:
-        - govet
-        - dogsled
-        - promlinter
-        - errname
-        - exhaustive
-        - nilerr
-        - interfacebloat
-        - nilnil
-        - nakedret
-        - musttag
-        - gomoddirectives
-      text: ".*"
-    - linters:
-        - gosec
-      text: "G(101|107|204|306|402)"
-    - linters:
-        - staticcheck
-      text: "(NewCertManagerBasicCertificateRequest)"
+version: "2"
 linters:
-  # Explicitly define all enabled linters
-  disable-all: true
+  default: none
+  settings:
+    govet:
+      enable:
+        - shadow
+      settings:
+        shadow:
+          strict: true
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1001", "-ST1003", "-ST1005", "-ST1012", "-ST1016", "-ST1020", "-ST1021", "-ST1022", "-QF1001", "-QF1003", "-QF1008"]
+  exclusions:
+    generated: lax
+    presets: [comments, common-false-positives, legacy, std-error-handling]
+    rules:
+      - linters:
+          - dogsled
+          - errname
+          - exhaustive
+          - gomoddirectives
+          - govet
+          - interfacebloat
+          - musttag
+          - nakedret
+          - nilerr
+          - nilnil
+          - promlinter
+        text: .*
+      - linters:
+          - gosec
+        text: G(101|107|204|306|402)
+      - linters:
+          - staticcheck
+        text: (NewCertManagerBasicCertificateRequest)
+    paths: [third_party$, builtin$, examples$]
+    warn-unused: true
   enable:
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
+    - canonicalheader
     - contextcheck
     - copyloopvar
     - decorder
@@ -37,23 +51,22 @@ linters:
     - errchkjson
     - errname
     - exhaustive
+    - exptostd
     - forbidigo
-    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - gocritic
-    - gofmt
     - goheader
     - goprintffuncname
     - gosec
-    - gosimple
     - gosmopolitan
     - govet
     - grouper
     - importas
     - ineffassign
     - interfacebloat
+    - intrange
     - loggercheck
     - makezero
     - mirror
@@ -71,24 +84,23 @@ linters:
     - sloglint
     - staticcheck
     - tagalign
-    - tenv
     - testableexamples
-    - typecheck
     - unconvert
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - wastedassign
-linters-settings:
-  gci:
-    sections:
-      - standard # Standard section: captures all standard packages.
-      - default # Default section: contains all imports that could not be matched to another section type.
-      - prefix(github.com/cert-manager/cert-manager) # Custom section: groups all imports with the specified Prefix.
-      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
-      - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
-  govet:
-    enable: ["shadow"]
-    settings:
-      shadow:
-        strict: true
+formatters:
+  enable: [gci, gofmt]
+  settings:
+    gci:
+      sections:
+        - standard # Standard section: captures all standard packages.
+        - default # Default section: contains all imports that could not be matched to another section type.
+        - prefix(github.com/cert-manager/cert-manager) # Custom section: groups all imports with the specified Prefix.
+        - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+        - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+  exclusions:
+    generated: lax
+    paths: [third_party$, builtin$, examples$]
