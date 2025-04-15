@@ -282,10 +282,15 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 
 	resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
 	if err != nil {
-		if errors.Is(err, &route53types.InvalidChangeBatch{}) && action == route53types.ChangeActionDelete {
-			log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
-			// If we try to delete something and get a 'InvalidChangeBatch' that
-			// means it's already deleted, no need to consider it an error.
+		// If we try to delete something and get a 'InvalidChangeBatch' that
+		// means it's already deleted, no need to consider it an error.
+		var apiErr *route53types.InvalidChangeBatch
+		if errors.As(err, &apiErr) && action == route53types.ChangeActionDelete {
+			log.V(logf.DebugLevel).Info(
+				"Got InvalidChangeBatch error when attempting to delete the TXT record. "+
+					"Ignoring the error and assuming that the TXT record has already been deleted.",
+				"error", err,
+			)
 			return nil
 		}
 		return fmt.Errorf("failed to change Route 53 record set: %v", removeReqID(err))
