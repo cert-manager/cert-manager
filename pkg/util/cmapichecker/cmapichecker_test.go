@@ -328,7 +328,7 @@ func TestCheck(t *testing.T) {
 				t.Fatalf("failed to create checker: %v", err)
 			}
 
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				t.Logf("# check %d", i)
 
 				err = checker.Check(context.Background())

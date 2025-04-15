@@ -158,11 +158,10 @@ func populateFederatedToken(t *testing.T, filename string, content string) {
 
 func TestGetAuthorizationFederatedSPT(t *testing.T) {
 	// Create a file that will be used to store a federated token
-	f, err := os.CreateTemp("", "")
+	f, err := os.CreateTemp(t.TempDir(), "")
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	defer os.Remove(f.Name())
 
 	// Close the file to simplify logic within populateFederatedToken helper
 	if err := f.Close(); err != nil {

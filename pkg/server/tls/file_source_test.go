@@ -36,15 +36,7 @@ import (
 )
 
 func TestFileSource_ReadsFile(t *testing.T) {
-	dir, err := os.MkdirTemp("", "test-filesource-readsfile-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 
 	serial := "serial1"
 	pkBytes, certBytes := generatePrivateKeyAndCertificate(t, serial)
@@ -86,15 +78,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 }
 
 func TestFileSource_UpdatesFile(t *testing.T) {
-	dir, err := os.MkdirTemp("", "test-filesource-updatesfile-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 
 	serial := "serial1"
 	pkBytes, certBytes := generatePrivateKeyAndCertificate(t, serial)

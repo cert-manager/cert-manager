@@ -48,7 +48,6 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilkube "github.com/cert-manager/cert-manager/pkg/util/kube"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
@@ -157,7 +156,7 @@ func NewController(
 			ctx.FieldManager,
 		),
 		fieldManager:         ctx.FieldManager,
-		localTemporarySigner: pki.GenerateLocallySignedTemporaryCertificate,
+		localTemporarySigner: utilpki.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync, nil
 }
 
@@ -220,7 +219,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		logf.WithResource(log, nextPrivateKeySecret).Error(err, "failed to parse next private key, waiting for keymanager controller")
 		return nil
 	}
-	pkViolations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
+	pkViolations := utilpki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if len(pkViolations) > 0 {
 		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkViolations)
 		return nil
@@ -251,7 +250,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// Verify the CSR options match what is requested in certificate.spec.
 	// If there are violations in the spec, then the requestmanager will handle this.
-	requestViolations, err := pki.RequestMatchesSpec(req, crt.Spec)
+	requestViolations, err := utilpki.RequestMatchesSpec(req, crt.Spec)
 	if err != nil {
 		return err
 	}

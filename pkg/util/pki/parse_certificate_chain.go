@@ -112,13 +112,10 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// chain. If no match is found after a pass, then the list can never be reduced
 	// to a single chain and we error.
 	// For lots of certificates, the time complexity is O(n^2).
-	for {
-		// If a single list is left, then we have built the entire chain. Stop
-		// iterating.
-		if len(chains) == 1 {
-			break
-		}
-
+	//
+	// If a single list is left, then we have built the entire chain. Stop
+	// iterating.
+	for len(chains) > 1 {
 		// If we were not able to merge two chains in this pass, then the chain is
 		// broken and cannot be built. Error.
 		mergedTwoChains := false

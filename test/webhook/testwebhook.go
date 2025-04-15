@@ -72,10 +72,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	}
 
 	var caPEM []byte
-	tempDir, err := os.MkdirTemp("", "webhook-tls-")
-	if err != nil {
-		t.Fatal(err)
-	}
+	tempDir := t.TempDir()
 	if !webhookConfig.TLSConfig.FilesystemConfigProvided() && !webhookConfig.TLSConfig.DynamicConfigProvided() {
 		// Generate a CA and serving certificate
 		ca, certificatePEM, privateKeyPEM, err := generateTLSAssets()

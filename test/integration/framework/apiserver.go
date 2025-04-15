@@ -87,7 +87,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 		t.Fatal(err)
 	}
 
-	f, err := os.CreateTemp("", "integration-")
+	f, err := os.CreateTemp(t.TempDir(), "integration-")
 	if err != nil {
 		t.Fatal(err)
 	}
