@@ -474,7 +474,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 }
 
 func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
-	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.Local))
+	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.UTC))
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {

@@ -26,7 +26,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -109,7 +108,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 		By("adding a finalizer to the Certificate")
-		Eventually(util.AddFinalizer).
+		Eventually(e2eutil.AddFinalizer).
 			WithContext(ctx).
 			WithArguments(f.CRClient, crt, finalizer).
 			Should(Succeed())
@@ -132,7 +131,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 		Expect(err).NotTo(HaveOccurred())
 
 		By("removing the finalizer from the Certificate")
-		Eventually(util.RemoveFinalizer).
+		Eventually(e2eutil.RemoveFinalizer).
 			WithContext(ctx).
 			WithArguments(f.CRClient, crt, finalizer).
 			Should(Succeed())
@@ -140,7 +139,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 
 	It("should not create a CertificateRequest while the Certificate is being deleted", func() {
 		By("ensuring all CertificateRequest objects are deleted")
-		Eventually(util.ListMatchingPredicates[cmapi.CertificateRequest, cmapi.CertificateRequestList]).
+		Eventually(e2eutil.ListMatchingPredicates[cmapi.CertificateRequest, cmapi.CertificateRequestList]).
 			WithContext(ctx).
 			WithArguments(
 				f.CRClient,
@@ -153,7 +152,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 
 	It("should not create a Secret while the Certificate is being deleted", func() {
 		By("ensuring all Secret objects are deleted")
-		Eventually(util.ListMatchingPredicates[corev1.Secret, corev1.SecretList]).
+		Eventually(e2eutil.ListMatchingPredicates[corev1.Secret, corev1.SecretList]).
 			WithContext(ctx).
 			WithArguments(
 				f.CRClient,

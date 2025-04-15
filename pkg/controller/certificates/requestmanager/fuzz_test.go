@@ -30,8 +30,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -44,13 +43,13 @@ var (
 
 func init() {
 	var err error
-	globalBundle, err = createCryptoBundle(&cmapi.Certificate{
+	globalBundle, err = createCryptoBundle(&cmapiv1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "testns",
 			Name:      "test",
 			UID:       "test",
 		},
-		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-1"}},
+		Spec: cmapiv1.CertificateSpec{CommonName: "test-bundle-1"}},
 	)
 	if err != nil {
 		panic(err)
@@ -74,8 +73,8 @@ func FuzzProcessItem(f *testing.F) {
 
 		// Create up to 10 random certificate requests
 		requests := make([]runtime.Object, 0)
-		for i := 0; i < numberOfRequests%10; i++ {
-			request := &v1.CertificateRequest{}
+		for range numberOfRequests % 10 {
+			request := &cmapiv1.CertificateRequest{}
 			err := fdp.GenerateStruct(request)
 			if err != nil {
 				if len(requests) == 0 {
@@ -89,10 +88,10 @@ func FuzzProcessItem(f *testing.F) {
 		// Create a certificate and a secret
 		// The certificate can be entirely random, or the fuzzer
 		// can generate one from the global bundle.
-		var certificate *v1.Certificate
+		var certificate *cmapiv1.Certificate
 		var secret *corev1.Secret
 		if randomizeCertificate {
-			certificate = &v1.Certificate{}
+			certificate = &cmapiv1.Certificate{}
 			err := fdp.GenerateStruct(certificate)
 			if err != nil {
 				return
@@ -104,7 +103,7 @@ func FuzzProcessItem(f *testing.F) {
 		} else {
 			certificate = gen.CertificateFrom(globalBundle.certificate,
 				gen.SetCertificateNextPrivateKeySecretName("secret"),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}))
+				gen.SetCertificateStatusCondition(cmapiv1.CertificateCondition{Type: cmapiv1.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}))
 			secret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: globalBundle.certificate.Namespace, Name: "secret"},
 				Data:       map[string][]byte{corev1.TLSPrivateKeyKey: globalBundle.privateKeyBytes},

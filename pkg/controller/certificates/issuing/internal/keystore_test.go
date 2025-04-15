@@ -71,7 +71,7 @@ func mustSelfSignCertificate(t *testing.T) []byte {
 
 func mustSelfSignCertificates(t *testing.T, count int) []byte {
 	var buf bytes.Buffer
-	for i := 0; i < count; i++ {
+	for range count {
 		buf.Write(mustSelfSignCertificate(t))
 	}
 	return buf.Bytes()
@@ -542,7 +542,7 @@ func TestManyPasswordLengths(t *testing.T) {
 	// Pre-create password test cases. This cannot be done during the test itself
 	// since the fuzzer cannot be used concurrently.
 	var passwords [testN]string
-	for testi := 0; testi < testN; testi++ {
+	for testi := range testN {
 		// fill the password with random characters
 		f.Fuzz(&passwords[testi])
 	}
@@ -550,7 +550,7 @@ func TestManyPasswordLengths(t *testing.T) {
 	// Run these tests in parallel
 	s := semaphore.NewWeighted(32)
 	g, ctx := errgroup.WithContext(context.Background())
-	for tests := 0; tests < testN; tests++ {
+	for tests := range testN {
 		testi := tests
 		if ctx.Err() != nil {
 			t.Errorf("internal error while testing JKS Keystore password lengths: %s", ctx.Err())

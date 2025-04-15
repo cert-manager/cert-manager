@@ -30,8 +30,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
@@ -55,7 +54,7 @@ func FuzzProcessItem(f *testing.F) {
 		numberOfsecrets int) {
 
 		fdp := gfh.NewConsumer(data)
-		existingCertificate := &v1.Certificate{}
+		existingCertificate := &cmapiv1.Certificate{}
 		err := fdp.GenerateStruct(existingCertificate)
 		if err != nil {
 			return
@@ -65,8 +64,8 @@ func FuzzProcessItem(f *testing.F) {
 
 		// Create up to 10 certificates
 		existingCertManagerObjects := make([]runtime.Object, 0)
-		for i := 0; i < numberOfCerts%10; i++ {
-			cert := &v1.Certificate{}
+		for i := range numberOfCerts % 10 {
+			cert := &cmapiv1.Certificate{}
 			err := fdp.GenerateStruct(cert)
 			if err != nil {
 				if len(existingCertManagerObjects) == 0 {
@@ -88,7 +87,7 @@ func FuzzProcessItem(f *testing.F) {
 
 		// Create up to 10 secrets
 		existingKubeObjects := make([]runtime.Object, 0)
-		for i := 0; i < numberOfsecrets%10; i++ {
+		for range numberOfsecrets % 10 {
 			secret := &corev1.Secret{}
 			err := fdp.GenerateStruct(secret)
 			if err != nil {
@@ -135,7 +134,7 @@ func FuzzProcessItem(f *testing.F) {
 		} else {
 			mockDataForCertificateReturnErr = nil
 		}
-		w.dataForCertificate = func(context.Context, *cmapi.Certificate) (policies.Input, error) {
+		w.dataForCertificate = func(context.Context, *cmapiv1.Certificate) (policies.Input, error) {
 			return mockDataForCertificateReturn, mockDataForCertificateReturnErr
 		}
 

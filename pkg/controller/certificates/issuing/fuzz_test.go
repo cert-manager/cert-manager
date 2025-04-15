@@ -27,8 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -37,7 +36,7 @@ import (
 
 var (
 	fuzzBundle testcrypto.CryptoBundle
-	baseCert   *v1.Certificate
+	baseCert   *cmapiv1.Certificate
 )
 
 func init() {
@@ -71,9 +70,9 @@ func FuzzProcessItem(f *testing.F) {
 		fdp := gfh.NewConsumer(data)
 
 		// Create the random certificate
-		var certificate *v1.Certificate
+		var certificate *cmapiv1.Certificate
 		if randomizeCert {
-			certificate = &v1.Certificate{}
+			certificate = &cmapiv1.Certificate{}
 			err := fdp.GenerateStruct(certificate)
 			if err != nil {
 				return
@@ -101,9 +100,9 @@ func FuzzProcessItem(f *testing.F) {
 		// The fuzzer can randomize this entirely or use
 		// a template certificate.
 		if addIssuingCert {
-			var issuingCert *v1.Certificate
+			var issuingCert *cmapiv1.Certificate
 			if randomizeIssuingCert {
-				issuingCert = &v1.Certificate{}
+				issuingCert = &cmapiv1.Certificate{}
 				err := fdp.GenerateStruct(issuingCert)
 				if err != nil {
 					return
@@ -112,8 +111,8 @@ func FuzzProcessItem(f *testing.F) {
 				metaFixedClockStart := metav1.NewTime(fixedClockStart)
 
 				issCert := gen.CertificateFrom(baseCert.DeepCopy(),
-					gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-						Type:               cmapi.CertificateConditionIssuing,
+					gen.SetCertificateStatusCondition(cmapiv1.CertificateCondition{
+						Type:               cmapiv1.CertificateConditionIssuing,
 						Status:             cmmeta.ConditionTrue,
 						ObservedGeneration: 3,
 						LastTransitionTime: &metaFixedClockStart,

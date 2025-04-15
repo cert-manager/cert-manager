@@ -113,7 +113,7 @@ func TestRevisionManagerController(t *testing.T) {
 	}
 
 	// Create 6 CertificateRequests which are owned by this Certificate
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, &cmapi.CertificateRequest{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: crtName + "-",

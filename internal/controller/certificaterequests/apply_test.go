@@ -45,7 +45,7 @@ func Test_serializeApply(t *testing.T) {
 	jobs := make(chan int)
 
 	wg.Add(numJobs)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		go func() {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
@@ -74,7 +74,7 @@ func Test_serializeApply(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		jobs <- i
 	}
 	close(jobs)
@@ -100,7 +100,7 @@ func Test_serializeApplyStatus(t *testing.T) {
 	jobs := make(chan int)
 
 	wg.Add(numJobs)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		go func() {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
@@ -131,7 +131,7 @@ func Test_serializeApplyStatus(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		jobs <- i
 	}
 	close(jobs)

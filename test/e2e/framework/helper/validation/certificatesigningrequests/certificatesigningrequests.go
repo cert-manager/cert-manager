@@ -321,10 +321,7 @@ func ExpectIsCA(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) 
 		return err
 	}
 
-	markedIsCA := false
-	if csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true" {
-		markedIsCA = true
-	}
+	markedIsCA := csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
 
 	if cert.IsCA != markedIsCA {
 		return fmt.Errorf("requested certificate does not match expected IsCA, exp=%t got=%t",

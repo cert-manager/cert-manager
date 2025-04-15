@@ -24,8 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
@@ -45,7 +44,7 @@ func FuzzProcessItem(f *testing.F) {
 
 		// Create a fully random certificate
 		// This may be invalid.
-		certificate := &v1.Certificate{}
+		certificate := &cmapiv1.Certificate{}
 		err := fdp.GenerateStruct(certificate)
 		if err != nil {
 			return
@@ -59,9 +58,9 @@ func FuzzProcessItem(f *testing.F) {
 		}
 
 		// Create fully random requests. these may be invalid.
-		requests := make([]*cmapi.CertificateRequest, 0)
-		for i := 0; i < numberOfRequests%10; i++ {
-			request := &cmapi.CertificateRequest{}
+		requests := make([]*cmapiv1.CertificateRequest, 0)
+		for range numberOfRequests % 10 {
+			request := &cmapiv1.CertificateRequest{}
 			err = fdp.GenerateStruct(request)
 			if err != nil {
 				if len(requests) == 0 {
