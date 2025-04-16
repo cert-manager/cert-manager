@@ -275,8 +275,11 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	case len(validation.IsFullyQualifiedDomainName(nil, o.Spec.CommonName)) == 0:
 		dnsIdentifierSet.Insert(o.Spec.CommonName)
 	}
-	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
-	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", sets.List(ipIdentifierSet))
+	log.V(logf.DebugLevel).Info(
+		"build set of domains and ips for Order",
+		"domains", sets.List(dnsIdentifierSet),
+		"ips", sets.List(ipIdentifierSet),
+	)
 
 	authzIDs := acmeapi.DomainIDs(sets.List(dnsIdentifierSet)...)
 	authzIDs = append(authzIDs, acmeapi.IPIDs(sets.List(ipIdentifierSet)...)...)
