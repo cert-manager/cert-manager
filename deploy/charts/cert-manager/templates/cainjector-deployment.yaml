@@ -136,9 +136,9 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
-      {{- if .Values.cainjector.nodeSelector }}
+      {{- with .Values.cainjector.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.cainjector.nodeSelector }}
+        {{- range $key, $value := . }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
       {{- end }}

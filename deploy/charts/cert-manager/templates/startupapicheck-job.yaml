@@ -76,9 +76,9 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if .Values.startupapicheck.nodeSelector }}
+      {{- with .Values.startupapicheck.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.startupapicheck.nodeSelector }}
+        {{- range $key, $value := . }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
       {{- end }}
