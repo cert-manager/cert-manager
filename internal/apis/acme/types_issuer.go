@@ -239,6 +239,10 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// Optional ingress template used to configure the ACME challenge solver
 	// ingress used for HTTP01 challenges
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate
+
+	// Optional service template used to configure the ACME challenge solver
+	// service used for HTTP01 challenges
+	ServiceTemplate *ACMEChallengeSolverHTTP01ServiceTemplate
 }
 
 type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
@@ -327,6 +331,25 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 	Annotations map[string]string
 
 	// Labels that should be added to the created ACME HTTP01 solver ingress.
+	Labels map[string]string
+}
+
+type ACMEChallengeSolverHTTP01ServiceTemplate struct {
+	// ObjectMeta overrides for the service used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	// +optional
+	ACMEChallengeSolverHTTP01ServiceObjectMeta
+}
+
+type ACMEChallengeSolverHTTP01ServiceObjectMeta struct {
+	// Annotations that should be added to the created ACME HTTP01 solver service.
+	// +optional
+	Annotations map[string]string
+
+	// Labels that should be added to the created ACME HTTP01 solver service.
+	// +optional
 	Labels map[string]string
 }
 

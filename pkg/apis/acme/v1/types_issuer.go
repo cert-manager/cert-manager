@@ -266,6 +266,11 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// ingress used for HTTP01 challenges.
 	// +optional
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate `json:"ingressTemplate,omitempty"`
+
+	// Optional service template used to configure the ACME challenge solver
+	// service used for HTTP01 challenges.
+	// +optional
+	ServiceTemplate *ACMEChallengeSolverHTTP01ServiceTemplate `json:"serviceTemplate,omitempty"`
 }
 
 // The ACMEChallengeSolverHTTP01GatewayHTTPRoute solver will create HTTPRoute objects for a Gateway class
@@ -365,6 +370,25 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 
 	// Labels that should be added to the created ACME HTTP01 solver ingress.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01ServiceTemplate struct {
+	// ObjectMeta overrides for the service used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	// +optional
+	ACMEChallengeSolverHTTP01ServiceObjectMeta `json:"metadata"`
+}
+
+type ACMEChallengeSolverHTTP01ServiceObjectMeta struct {
+	// Annotations that should be added to the created ACME HTTP01 solver service.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels that should be added to the created ACME HTTP01 solver service.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 }

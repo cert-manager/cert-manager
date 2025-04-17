@@ -106,6 +106,17 @@ func getServiceType(ch *cmacme.Challenge) (corev1.ServiceType, error) {
 	return "", fmt.Errorf("neither HTTP01 Ingress nor Gateway solvers were found")
 }
 
+func getServiceTemplate(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01ServiceTemplate, error) {
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.Ingress != nil {
+		return ch.Spec.Solver.HTTP01.Ingress.ServiceTemplate, nil
+	}
+	// Gateway solver does not support ServiceTemplate, return nil
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+		return nil, nil
+	}
+	return nil, fmt.Errorf("neither HTTP01 Ingress nor Gateway solvers were found")
+}
+
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
