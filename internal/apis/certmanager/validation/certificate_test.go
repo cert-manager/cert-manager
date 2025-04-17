@@ -801,7 +801,20 @@ func TestValidateCertificate(t *testing.T) {
 					"for key algorithm ECDSA the allowed signature algorithms are [ECDSAWithSHA256 ECDSAWithSHA384 ECDSAWithSHA512]"),
 			},
 		},
-		"signature algorithm SHA+ECDSA not allowed for ECDSA key": {
+		"signature algorithm SHA+ECDSA allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.ECDSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.ECDSAWithSHA256,
+				},
+			},
+		},
+		"signature algorithm SHA+ECDSA not allowed for RSA key": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
@@ -816,6 +829,53 @@ func TestValidateCertificate(t *testing.T) {
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.ECDSAWithSHA256,
 					"for key algorithm RSA the allowed signature algorithms are [SHA256WithRSA SHA384WithRSA SHA512WithRSA]"),
+			},
+		},
+		"signature algorithm Ed25519 not allowed for RSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.RSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.PureEd25519,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.PureEd25519,
+					"for key algorithm RSA the allowed signature algorithms are [SHA256WithRSA SHA384WithRSA SHA512WithRSA]"),
+			},
+		},
+		"signature algorithm Ed25519 not allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.ECDSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.PureEd25519,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.PureEd25519,
+					"for key algorithm ECDSA the allowed signature algorithms are [ECDSAWithSHA256 ECDSAWithSHA384 ECDSAWithSHA512]"),
+			},
+		},
+		"signature algorithm Ed25519 allowed for Ed25519 key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.Ed25519KeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.PureEd25519,
+				},
 			},
 		},
 	}
