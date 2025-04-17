@@ -251,8 +251,6 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(defaults.DefaultEnabledControllers...)
 	}
 
-	enabled = enabled.Delete(disabled...)
-
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
 		logf.Log.Info("enabling all experimental certificatesigningrequest controllers")
 		enabled = enabled.Insert(defaults.ExperimentalCertificateSigningRequestControllers...)
@@ -266,6 +264,16 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
 		logf.Log.Info("the ValidateCAA feature flag has been removed and is now a no-op")
 	}
+
+	// If running namespaced, remove all cluster-scoped controllers.
+	if o.Namespace != "" {
+		logf.Log.Info("disabling all cluster-scoped controllers as cert-manager is scoped to a single namespace",
+			"controllers", strings.Join(defaults.ClusterScopedControllers, ", "))
+		enabled = enabled.Delete(defaults.ClusterScopedControllers...)
+	}
+
+	// Only after all controllers have been added, remove the disabled ones.
+	enabled = enabled.Delete(disabled...)
 
 	return enabled
 }

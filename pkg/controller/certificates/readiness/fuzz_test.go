@@ -26,8 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -53,7 +52,7 @@ func FuzzProcessItem(f *testing.F) {
 		fdp := gfh.NewConsumer(data)
 
 		// Create the certificate
-		cert := &v1.Certificate{}
+		cert := &cmapiv1.Certificate{}
 		err := fdp.GenerateStruct(cert)
 		if err != nil {
 			return
@@ -123,14 +122,14 @@ func createPEMPrivateKey() []byte {
 	if err != nil {
 		panic(err)
 	}
-	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
+	pkData, err := pki.EncodePrivateKey(pk, cmapiv1.PKCS8)
 	if err != nil {
 		panic(err)
 	}
 	return pkData
 }
 
-func createSignedCertificate(pkData []byte, spec *cmapi.Certificate) ([]byte, error) {
+func createSignedCertificate(pkData []byte, spec *cmapiv1.Certificate) ([]byte, error) {
 	pk, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
 		return []byte(""), err

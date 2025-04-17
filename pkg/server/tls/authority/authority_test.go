@@ -141,7 +141,7 @@ func TestDynamicAuthorityMulti(t *testing.T) {
 	fake := kubefake.NewSimpleClientset()
 
 	authorities := make([]*DynamicAuthority, 0)
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		da := testAuthority(t, fmt.Sprintf("authority-%d", i), fake)
 		authorities = append(authorities, da)
 	}

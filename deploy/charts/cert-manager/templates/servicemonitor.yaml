@@ -16,7 +16,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "controller"
     {{- include "labels" . | nindent 4 }}
+    {{- if .Values.prometheus.servicemonitor.prometheusInstance }}
     prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
+    {{- end }}
     {{- with .Values.prometheus.servicemonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -54,8 +56,12 @@ spec:
   endpoints:
   - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
     path: {{ .Values.prometheus.servicemonitor.path }}
+    {{- if .Values.prometheus.servicemonitor.interval }}
     interval: {{ .Values.prometheus.servicemonitor.interval }}
+    {{- end }}
+    {{- if .Values.prometheus.servicemonitor.scrapeTimeout }}
     scrapeTimeout: {{ .Values.prometheus.servicemonitor.scrapeTimeout }}
+    {{- end }}
     honorLabels: {{ .Values.prometheus.servicemonitor.honorLabels }}
     {{- with .Values.prometheus.servicemonitor.endpointAdditionalProperties }}
     {{- toYaml . | nindent 4 }}

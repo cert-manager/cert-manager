@@ -118,9 +118,13 @@ func testRFC2136DNSProvider() bool {
 
 			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-				[]string{dnsDomain}, nil, nil, x509.RSA)
+			csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(dnsDomain), gen.SetCSRDNSNames(dnsDomain))
 			Expect(err).NotTo(HaveOccurred())
+			cr := gen.CertificateRequest(certificateRequestName,
+				gen.SetCertificateRequestNamespace(f.Namespace.Name),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestCSR(csr),
+			)
 
 			_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -131,9 +135,13 @@ func testRFC2136DNSProvider() bool {
 		It("should obtain a signed certificate for a wildcard domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-				[]string{"*." + dnsDomain}, nil, nil, x509.RSA)
+			csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("*."+dnsDomain), gen.SetCSRDNSNames("*."+dnsDomain))
 			Expect(err).NotTo(HaveOccurred())
+			cr := gen.CertificateRequest(certificateRequestName,
+				gen.SetCertificateRequestNamespace(f.Namespace.Name),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestCSR(csr),
+			)
 
 			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -144,9 +152,13 @@ func testRFC2136DNSProvider() bool {
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuerName, v1.IssuerKind, nil,
-				[]string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
+			csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("*."+dnsDomain), gen.SetCSRDNSNames("*."+dnsDomain, dnsDomain))
 			Expect(err).NotTo(HaveOccurred())
+			cr := gen.CertificateRequest(certificateRequestName,
+				gen.SetCertificateRequestNamespace(f.Namespace.Name),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestCSR(csr),
+			)
 
 			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())

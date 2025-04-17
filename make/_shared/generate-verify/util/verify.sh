@@ -53,7 +53,7 @@ trap "cleanup" EXIT SIGINT
 # 2. rsync on macOS 15.4 and newer is actually openrsync, which has different permissions and throws errors when copying git objects
 #
 # So, we use find to list all files except _bin, and then copy each in turn
-find . -maxdepth 1 -not \( -path "./_bin" -prune \) | xargs -I% cp -af "${projectdir}/%" "${tmp}/"
+find . -maxdepth 1 -not \( -path "./_bin" \) -not \( -path "." \) | xargs -I% cp -af "${projectdir}/%" "${tmp}/"
 
 pushd "${tmp}" >/dev/null
 

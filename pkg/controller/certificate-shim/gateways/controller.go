@@ -88,14 +88,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	gateway, err := c.gatewayLister.Gateways(namespace).Get(name)
-
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("Gateway '%s' in work queue no longer exists", key))
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if gateway == nil || gateway.DeletionTimestamp != nil {
+		// If the Gateway object was/ is being deleted, we don't want to start creating Certificates.
+		return nil
 	}
 
 	return c.sync(ctx, gateway)

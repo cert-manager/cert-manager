@@ -48,7 +48,7 @@ type DNSProvider struct {
 	userAgent string
 }
 
-// DNSZone is the Zone-Record returned from Cloudflare (we`ll ignore everything we don't need)
+// DNSZone is the Zone-Record returned from Cloudflare (we'll ignore everything we don't need)
 // See https://api.cloudflare.com/#zone-properties
 type DNSZone struct {
 	ID   string `json:"id"`
@@ -112,7 +112,7 @@ func FindNearestZoneForFQDN(ctx context.Context, c DNSProviderType, fqdn string)
 	mappedFQDN := strings.Split(fqdn, ".")
 	nextName := util.UnFqdn(fqdn) // remove the trailing dot
 	var lastErr error
-	for i := 0; i < len(mappedFQDN)-1; i++ {
+	for i := range len(mappedFQDN) - 1 {
 		var from, to = len(mappedFQDN[i]) + 1, len(nextName)
 		if from > to {
 			continue
@@ -320,7 +320,7 @@ type cloudFlareRecord struct {
 // following functions are copy-pasted from go's internal
 // http server
 func validHeaderFieldValue(v string) bool {
-	for i := 0; i < len(v); i++ {
+	for i := range len(v) {
 		b := v[i]
 		if isCTL(b) && !isLWS(b) {
 			return false

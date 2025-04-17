@@ -122,6 +122,12 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+		// experimental CSR controllers
+		csracmecontroller.CSRControllerName,
+		csrcacontroller.CSRControllerName,
+		csrselfsignedcontroller.CSRControllerName,
+		csrvenaficontroller.CSRControllerName,
+		csrvaultcontroller.CSRControllerName,
 	}
 
 	DefaultEnabledControllers = []string{
@@ -147,6 +153,15 @@ var (
 	}
 
 	ExperimentalCertificateSigningRequestControllers = []string{
+		csracmecontroller.CSRControllerName,
+		csrcacontroller.CSRControllerName,
+		csrselfsignedcontroller.CSRControllerName,
+		csrvenaficontroller.CSRControllerName,
+		csrvaultcontroller.CSRControllerName,
+	}
+
+	ClusterScopedControllers = []string{
+		clusterissuerscontroller.ControllerName,
 		csracmecontroller.CSRControllerName,
 		csrcacontroller.CSRControllerName,
 		csrselfsignedcontroller.CSRControllerName,
@@ -300,7 +315,6 @@ func SetDefaults_ACMEHTTP01Config(obj *v1alpha1.ACMEHTTP01Config) {
 	if len(obj.SolverNameservers) == 0 {
 		obj.SolverNameservers = defaultACMEHTTP01SolverNameservers
 	}
-
 }
 
 func SetDefaults_ACMEDNS01Config(obj *v1alpha1.ACMEDNS01Config) {

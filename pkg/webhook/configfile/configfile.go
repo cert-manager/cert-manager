@@ -74,7 +74,7 @@ func (cfg *WebhookConfigFile) GetPathRefs() ([]*string, error) {
 
 }
 
-// webhookConfigurationPathRefs returns pointers to all the WebhookConfiguration fields that contain filepaths.
+// WebhookConfigurationPathRefs returns pointers to all the WebhookConfiguration fields that contain filepaths.
 // You might use this, for example, to resolve all relative paths against some common root before
 // passing the configuration to the application. This method must be kept up to date as new fields are added.
 func WebhookConfigurationPathRefs(cfg *config.WebhookConfiguration) ([]*string, error) {

@@ -80,7 +80,7 @@ func BenchmarkScheduleAscending(b *testing.B) {
 			chs := ascendingChallengeN(c)
 			s := &Scheduler{}
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_ = s.scheduleN(30, chs)
 			}
 		})
@@ -94,7 +94,7 @@ func BenchmarkScheduleRandom(b *testing.B) {
 			chs := randomChallengeN(c, 0)
 			s := &Scheduler{}
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_ = s.scheduleN(30, chs)
 			}
 		})
@@ -108,7 +108,7 @@ func BenchmarkScheduleDuplicates(b *testing.B) {
 			chs := randomChallengeN(c, 3)
 			s := &Scheduler{}
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_ = s.scheduleN(30, chs)
 			}
 		})

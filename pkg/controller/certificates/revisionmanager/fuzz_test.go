@@ -46,7 +46,7 @@ func FuzzProcessItem(f *testing.F) {
 
 		// Create up to 10 random certificate requests
 		requests := make([]runtime.Object, 0)
-		for i := 0; i < numberOfRequests%10; i++ {
+		for range numberOfRequests % 10 {
 			request := &v1.CertificateRequest{}
 			err := fdp.GenerateStruct(request)
 			if err != nil {
@@ -63,7 +63,7 @@ func FuzzProcessItem(f *testing.F) {
 
 		// Create up to 10 random certificates
 		existingCertManagerObjects := make([]runtime.Object, 0)
-		for i := 0; i < numberOfCerts%10; i++ {
+		for i := range numberOfCerts % 10 {
 			cert := &v1.Certificate{}
 			err := fdp.GenerateStruct(cert)
 			if err != nil {

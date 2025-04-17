@@ -158,12 +158,14 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, vaultIssuerName, issuerKind,
-			&metav1.Duration{
-				Duration: time.Hour * 24 * 90,
-			},
-			crDNSNames, crIPAddresses, nil, x509.RSA)
+		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(crDNSNames[0]), gen.SetCSRDNSNames(crDNSNames...), gen.SetCSRIPAddresses(crIPAddresses...))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: issuerKind, Name: vaultIssuerName}),
+			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -249,9 +251,14 @@ func runVaultAppRoleTests(issuerKind string) {
 			By("Creating a CertificateRequest")
 			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, vaultIssuerName,
-				issuerKind, v.inputDuration, crDNSNames, crIPAddresses, nil, x509.RSA)
+			csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(crDNSNames[0]), gen.SetCSRDNSNames(crDNSNames...), gen.SetCSRIPAddresses(crIPAddresses...))
 			Expect(err).NotTo(HaveOccurred())
+			cr := gen.CertificateRequest(certificateRequestName,
+				gen.SetCertificateRequestNamespace(f.Namespace.Name),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: issuerKind, Name: vaultIssuerName}),
+				gen.SetCertificateRequestDuration(v.inputDuration),
+				gen.SetCertificateRequestCSR(csr),
+			)
 			_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 

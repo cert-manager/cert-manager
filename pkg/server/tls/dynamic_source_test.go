@@ -214,7 +214,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					// Rotate the root
 					mockAuth.notifyCh <- struct{}{}
 
@@ -258,7 +258,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 
-				for i := 0; i < 5; i++ {
+				for range 5 {
 					// Sleep for a short time to allow the DynamicSource to generate a new certificate
 					// The certificate should get renewed after 100ms, we wait for 200ms to allow for
 					// possible delays of max 100ms (based on experiments, we noticed that issuance of
