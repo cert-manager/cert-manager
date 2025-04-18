@@ -19,11 +19,9 @@ package venafi
 import (
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
-	"math/big"
 	"testing"
 	"time"
 
@@ -41,6 +39,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -77,7 +76,7 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	serialNumber, err := cmrand.SerialNumber()
 	if err != nil {
 		t.Fatal(err)
 	}

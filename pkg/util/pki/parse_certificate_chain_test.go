@@ -18,7 +18,6 @@ package pki
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
@@ -26,6 +25,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 )
 
 type testBundle struct {
@@ -40,7 +41,7 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	serialNumber, err := cmrand.SerialNumber()
 	if err != nil {
 		t.Fatal(err)
 	}
