@@ -90,7 +90,22 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
-	testOrderIP := gen.Order("testorder", gen.SetOrderIssuer(cmmeta.ObjectReference{Name: testIssuerHTTP01.Name}), gen.SetOrderIPAddresses("10.0.0.1"))
+	testOrderIP := gen.Order("testorder",
+		gen.SetOrderCommonName("10.0.0.2"),
+		gen.SetOrderIssuer(cmmeta.ObjectReference{
+			Name: testIssuerHTTP01.Name,
+		}),
+		gen.SetOrderIPAddresses("10.0.0.1"))
+
+	const ipv6AddressOne = "2001:4860:4860::8888"
+	const ipv6AddressTwo = "2001:4860:4860::8844"
+
+	testOrderIPV6 := gen.Order("testorder",
+		gen.SetOrderCommonName(ipv6AddressOne),
+		gen.SetOrderIssuer(cmmeta.ObjectReference{
+			Name: testIssuerHTTP01.Name,
+		}),
+		gen.SetOrderIPAddresses(ipv6AddressTwo))
 
 	pendingStatus := cmacme.OrderStatus{
 		State:       cmacme.Pending,
@@ -381,7 +396,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 		},
-		"create a new order with the acme server with an IP address": {
+		"create a new order with the acme server with an IPv4 address": {
 			order: testOrderIP,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderIP},
@@ -406,6 +421,53 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 					if id[0].Value != "10.0.0.1" || id[0].Type != "ip" {
 						return nil, errors.New("AuthzID needs to be the IP")
 					}
+					if id[1].Value != "10.0.0.2" || id[1].Type != "ip" {
+						return nil, errors.New("AuthzID needs to be the IP")
+					}
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+		},
+		"create a new order with the acme server with an IPv6 address": {
+			order: testOrderIPV6,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderIPV6},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
+						gen.OrderFrom(testOrderIPV6, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []cmacme.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					if id[0].Value != ipv6AddressTwo || id[0].Type != "ip" {
+						return nil, fmt.Errorf("AuthzID 1 needs to be expected IPv6 address: wanted value=%s but got %s", ipv6AddressTwo, id[0].Value)
+					}
+
+					if id[1].Value != ipv6AddressOne || id[1].Type != "ip" {
+						return nil, fmt.Errorf("AuthzID 2 needs to be expected IPv6 address: wanted value=%s but got %s", ipv6AddressOne, id[1].Value)
+					}
+
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
