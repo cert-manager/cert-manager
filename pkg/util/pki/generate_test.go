@@ -35,6 +35,10 @@ import (
 )
 
 func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) *v1.Certificate {
+	return buildCertificateWithKeyAndSigParams(keyAlgo, keySize, "")
+}
+
+func buildCertificateWithKeyAndSigParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int, sigAlg v1.SignatureAlgorithm) *v1.Certificate {
 	return &v1.Certificate{
 		Spec: v1.CertificateSpec{
 			CommonName: "test",
@@ -43,6 +47,7 @@ func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) 
 				Algorithm: keyAlgo,
 				Size:      keySize,
 			},
+			SignatureAlgorithm: sigAlg,
 		},
 	}
 }
