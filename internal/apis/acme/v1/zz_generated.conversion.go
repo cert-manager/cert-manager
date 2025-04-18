@@ -988,6 +988,7 @@ func autoConvert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *acmev1.ACMEIssuer, out *ac
 	}
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
+	out.KeyType = in.KeyType
 	return nil
 }
 
@@ -1022,6 +1023,7 @@ func autoConvert_acme_ACMEIssuer_To_v1_ACMEIssuer(in *acme.ACMEIssuer, out *acme
 	}
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
+	out.KeyType = in.KeyType
 	return nil
 }
 

@@ -18,9 +18,8 @@ package acme
 
 import (
 	"context"
-	"crypto/rsa"
+	"crypto"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/url"
@@ -141,15 +140,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 		msg = messageAccountVerificationFailed + err.Error()
 		return fmt.Errorf("%s", msg)
 	}
-	rsaPk, ok := pk.(*rsa.PrivateKey)
-	if !ok {
-		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf(messageTemplateNotRSA,
-			a.issuer.GetSpec().ACME.PrivateKey.Name)
-		return nil
-	}
 
-	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(a.issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, rsaPk)
+	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(a.issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, pk)
 
 	// TODO: don't always clear the client cache.
 	//  In future we should intelligently manage items in the account cache
@@ -162,7 +154,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	httpClient := accounts.BuildHTTPClientWithCABundle(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify, a.issuer.GetSpec().ACME.CABundle)
 
-	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, pk, a.userAgent)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -217,7 +209,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		status = cmmeta.ConditionTrue
 
 		// ensure the cached client in the account registry is up to date
-		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, pk, a.userAgent)
 		return nil
 	}
 
@@ -316,14 +308,14 @@ func (a *Acme) Setup(ctx context.Context) error {
 	status = cmmeta.ConditionTrue
 	reason = successAccountRegistered
 	msg = messageAccountRegistered
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(rsaPk)
+	privateKeyBytes := pki.MarshalPrivateKey(pk)
 	checksum := sha256.Sum256(privateKeyBytes)
 	checksumString := base64.StdEncoding.EncodeToString(checksum[:])
 	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 	a.issuer.GetStatus().ACMEStatus().LastPrivateKeyHash = checksumString
 	// ensure the cached client in the account registry is up to date
-	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, pk, a.userAgent)
 
 	return nil
 }
@@ -422,9 +414,33 @@ func (a *Acme) getEABKey(ctx context.Context, ns string) ([]byte, error) {
 
 // createAccountPrivateKey will generate a new RSA private key, and create it
 // as a secret resource in the apiserver.
-func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (crypto.Signer, error) {
 	sel = acme.PrivateKeySelector(sel)
-	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
+	var accountPrivKey crypto.Signer
+	var err error
+
+	keyType := a.issuer.GetSpec().ACME.KeyType
+	switch keyType {
+	case "", "RSA2048":
+		accountPrivKey, err = pki.GenerateRSAPrivateKey(2048)
+	case "RSA4096":
+		accountPrivKey, err = pki.GenerateRSAPrivateKey(4096)
+	case "RSA8192":
+		accountPrivKey, err = pki.GenerateRSAPrivateKey(8192)
+	case "P256":
+		accountPrivKey, err = pki.GenerateECPrivateKey(256)
+	case "P384":
+		accountPrivKey, err = pki.GenerateECPrivateKey(384)
+	case "P521":
+		accountPrivKey, err = pki.GenerateECPrivateKey(521)
+	default:
+		return nil, fmt.Errorf("unsupported acme account key type: %s", keyType)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	bytes, err := pki.EncodePrivateKey(accountPrivKey, v1.PKCS1)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +454,7 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 			},
 		},
 		Data: map[string][]byte{
-			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
+			sel.Key: bytes,
 		},
 	}, metav1.CreateOptions{})
 
