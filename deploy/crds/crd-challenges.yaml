@@ -3090,6 +3090,30 @@ spec:
                                               Value is the taint value the toleration matches to.
                                               If the operator is Exists, the value should be empty, otherwise just a regular string.
                                             type: string
+                            serviceTemplate:
+                              description: |-
+                                Optional service template used to configure the ACME challenge solver
+                                service used for HTTP01 challenges.
+                              type: object
+                              properties:
+                                metadata:
+                                  description: |-
+                                    ObjectMeta overrides for the service used to solve HTTP01 challenges.
+                                    Only the 'labels' and 'annotations' fields may be set.
+                                    If labels or annotations overlap with in-built values, the values here
+                                    will override the in-built values.
+                                  type: object
+                                  properties:
+                                    annotations:
+                                      description: Annotations that should be added to the created ACME HTTP01 solver service.
+                                      type: object
+                                      additionalProperties:
+                                        type: string
+                                    labels:
+                                      description: Labels that should be added to the created ACME HTTP01 solver service.
+                                      type: object
+                                      additionalProperties:
+                                        type: string
                             serviceType:
                               description: |-
                                 Optional service type for Kubernetes solver service. Supported values
