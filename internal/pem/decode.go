@@ -22,9 +22,12 @@ import (
 	stdpem "encoding/pem"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 )
 
-// The constants below are estimates at reasonable upper bounds for sizes of PEM data that cert-manager might encounter.
+// The defaults below are estimates at reasonable upper bounds for sizes of PEM data that cert-manager might encounter.
+// Operators can use the CERT_MANAGER_ env vars to set these values to higher or lower values depending on their environment and use-case.
 // cert-manager supports RSA, ECDSA and Ed25519 keys, of which RSA keys are by far the largest.
 
 // We'll aim to support RSA certs / keys which are larger than the maximum size (defined in pkg/util/pki.MaxRSAKeySize).
@@ -41,26 +44,33 @@ import (
 
 // See https://fm4dd.com/openssl/certexamples.shtm for examples of large RSA certs / keys
 
-const (
+var (
+	// Environment variable names
+	envMaxCertSize       = "CERT_MANAGER_MAX_CERT_SIZE"
+	envMaxPrivateKeySize = "CERT_MANAGER_MAX_PRIVATE_KEY_SIZE"
+	envMaxChainSize      = "CERT_MANAGER_MAX_CHAIN_SIZE"
+	envMaxBundleCerts    = "CERT_MANAGER_MAX_BUNDLE_CERTS"
+	envEstimatedCertSize = "CERT_MANAGER_ESTIMATED_CERT_SIZE"
+
 	// maxCertificatePEMSize is the maximum size, in bytes, of a single PEM-encoded X.509 certificate which SafeDecodeSingleCertificate will accept.
 	// The value is based on how large a "realistic" (but still very large) self-signed 16k-bit RSA certificate might be.
 	// 16k-bit RSA keys are impractical on most on modern hardware due to how slow they can be,
 	// so we can reasonably assume that no real-world PEM-encoded X.509 cert will be this large.
 	// Note that X.509 certificates can contain extra arbitrary data (e.g. DNS names, policy names, etc) whose size is hard to predict.
 	// So we guess at how much of that data we'll allow in very large certs and allow about 1kB of such data.
-	maxCertificatePEMSize = 6500
+	maxCertificatePEMSize = getEnvInt(envMaxCertSize, 6500)
 
 	// maxPrivateKeyPEMSize is the maximum size, in bytes, of PEM-encoded private keys which SafeDecodePrivateKey will accept.
 	// cert-manager supports RSA, ECDSA and Ed25519 keys, of which RSA is by far the largest.
 	// The value is based on how large a "realistic" (but very large) 16k-bit RSA private key might be.
 	// Given that 16k-bit RSA keys are so slow to use as to be impractical on modern hardware,
 	// we can reasonably assume that no real-world PEM-encoded key will be this large.
-	maxPrivateKeyPEMSize = 13000
+	maxPrivateKeyPEMSize = getEnvInt(envMaxPrivateKeySize, 13000)
 
 	// maxChainSize is the maximum number of 16k-bit RSA certificates signed by 16k-bit RSA CAs we'll allow in a given call to SafeDecodeCertificateChain.
 	// This is _not_ the maximum number of certificates cert-manager will process in a given chain, which could be much larger.
 	// This is simply the maximum number of worst-case certificates we'll accept in a chain.
-	maxChainSize = 10
+	maxChainSize = getEnvInt(envMaxChainSize, 10)
 
 	// maxCertsInTrustBundle is an estimated upper-bound for how many large certs might appear in a PEM-encoded trust bundle,
 	// based on the cert-manager `cert-manager-package-debian` bundle [1] which contains 129 certificates.
@@ -69,22 +79,20 @@ const (
 	// In practice, trust stores will contain ECDSA/EdDSA certificates which are smaller than RSA certs, and so will be able to have more certificates
 	// than maxCertsInTrustBundle if needed.
 	// [1] quay.io/jetstack/cert-manager-package-debian:20210119.0@sha256:116133f68938ef568aca17a0c691d5b1ef73a9a207029c9a068cf4230053fed5
-	maxCertsInTrustBundle = 150
+	maxCertsInTrustBundle = getEnvInt(envMaxBundleCerts, 150)
 
 	// estimatedCACertSize is a guess of how many bytes a large realistic trust bundle cert might be. This is slightly larger
 	// than a typical self-signed 4096-bit RSA cert (which is just under 2kB).
 	// For other estimates (such as maxCertificatePEMSize) we use a much larger RSA key, but using such a large RSA key would make
 	// maxBundleSize's estimate unrealistically large.
-	estimatedCACertSize = 2200
+	estimatedCACertSize = getEnvInt(envEstimatedCertSize, 2200)
 
 	// maxBundleSize is an estimate for the max reasonable size for a PEM-encoded TLS trust bundle.
 	// See also comments for maxCertsInTrustBundle and estimatedCACertSize.
 	// This estimate is ultimately based on the cert-manager `cert-manager-package-debian` bundle [1] which contains 129 certificates, totalling ~196kB of data.
 	// [1] quay.io/jetstack/cert-manager-package-debian:20210119.0@sha256:116133f68938ef568aca17a0c691d5b1ef73a9a207029c9a068cf4230053fed5
 	maxBundleSize = maxCertsInTrustBundle * estimatedCACertSize
-)
 
-var (
 	// ErrNoPEMData is returned when the given data contained no PEM
 	ErrNoPEMData = errors.New("no PEM data was found in given input")
 )
@@ -95,6 +103,17 @@ type ErrPEMDataTooLarge int
 // Error returns an error string
 func (e ErrPEMDataTooLarge) Error() string {
 	return fmt.Sprintf("provided PEM data was larger than the maximum %dB", int(e))
+}
+
+// getEnvInt reads an environment variable and returns its integer value.
+// If the environment variable is not set or invalid, returns the default value.
+func getEnvInt(key string, defaultValue int) int {
+	if val, exists := os.LookupEnv(key); exists {
+		if intVal, err := strconv.Atoi(val); err == nil {
+			return intVal
+		}
+	}
+	return defaultValue
 }
 
 func safeDecodeInternal(b []byte, maxSize int) (*stdpem.Block, []byte, error) {
