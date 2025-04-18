@@ -162,6 +162,9 @@
         "topologySpreadConstraints": {
           "$ref": "#/$defs/helm-values.topologySpreadConstraints"
         },
+        "verticalPodAutoscaler": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler"
+        },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.volumeMounts"
         },
@@ -239,6 +242,47 @@
       "description": "List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.\nref: https://cert-manager.io/docs/concepts/certificaterequest/#approval",
       "items": {},
       "type": "array"
+    },
+    "helm-values.verticalPodAutoscaler": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable or disable the VerticalPodAutoscaler for the component."
+        },
+        "controlledValues": {
+          "type": "string",
+          "default": "RequestsAndLimits",
+          "description": "Specifies which resource values should be controlled. Can be RequestsAndLimits (default) or RequestsOnly."
+        },
+        "mode": {
+          "type": "string",
+          "default": "Auto",
+          "description": "Mode of VPA operation. Can be Off, Initial, Recreate, or Auto (default)."
+        },
+        "updatePolicy": {
+          "type": "object",
+          "properties": {
+            "updateMode": {
+              "type": "string",
+              "default": "Auto",
+              "description": "Determines when updates are applied. Can be Off, Initial, or Auto (default)."
+            }
+          },
+          "description": "Configuration for update policy behavior."
+        },
+        "minAllowed": {
+          "type": "object",
+          "description": "Minimum allowed resources for the pods. If not set, it will default to the current resource requests."
+        },
+        "maxAllowed": {
+          "type": "object",
+          "description": "Maximum allowed resources for the pods. If not set, it allows unlimited scaling."
+        }
+      },
+      "type": "object",
+      "description": "Configuration for VerticalPodAutoscaler resource."
     },
     "helm-values.automountServiceAccountToken": {
       "description": "Automounting API credentials for a particular pod.",
@@ -318,6 +362,9 @@
         },
         "topologySpreadConstraints": {
           "$ref": "#/$defs/helm-values.cainjector.topologySpreadConstraints"
+        },
+        "verticalPodAutoscaler": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler"
         },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.cainjector.volumeMounts"
@@ -465,6 +512,47 @@
     },
     "helm-values.cainjector.podDisruptionBudget.minAvailable": {
       "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.cainjector.verticalPodAutoscaler": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable or disable the VerticalPodAutoscaler for the component."
+        },
+        "controlledValues": {
+          "type": "string",
+          "default": "RequestsAndLimits",
+          "description": "Specifies which resource values should be controlled. Can be RequestsAndLimits (default) or RequestsOnly."
+        },
+        "mode": {
+          "type": "string",
+          "default": "Auto",
+          "description": "Mode of VPA operation. Can be Off, Initial, Recreate, or Auto (default)."
+        },
+        "updatePolicy": {
+          "type": "object",
+          "properties": {
+            "updateMode": {
+              "type": "string",
+              "default": "Auto",
+              "description": "Determines when updates are applied. Can be Off, Initial, or Auto (default)."
+            }
+          },
+          "description": "Configuration for update policy behavior."
+        },
+        "minAllowed": {
+          "type": "object",
+          "description": "Minimum allowed resources for the pods. If not set, it will default to the current resource requests."
+        },
+        "maxAllowed": {
+          "type": "object",
+          "description": "Maximum allowed resources for the pods. If not set, it allows unlimited scaling."
+        }
+      },
+      "type": "object",
+      "description": "Configuration for VerticalPodAutoscaler resource."
     },
     "helm-values.cainjector.podLabels": {
       "default": {},
