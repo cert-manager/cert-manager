@@ -1329,6 +1329,66 @@ func Test_validateKeystores(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
+		"PKCS12 PasswordSecretRef / Password can be omitted for profile Passwordless": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							Profile:           internalcmapi.PasswordlessPKCS12Profile,
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+			a:    someAdmissionRequest,
+		},
+		"PKCS12 must not set PasswordSecretRef for profile Passwordless": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							Profile: internalcmapi.PasswordlessPKCS12Profile,
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordlessMustNotSetPassword, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 must not set Password for profile Passwordless": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							Profile:  internalcmapi.PasswordlessPKCS12Profile,
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordlessMustNotSetPassword, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
 	}
 
 	for name, test := range tests {

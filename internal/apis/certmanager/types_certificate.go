@@ -466,17 +466,21 @@ type PKCS12Keystore struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (eg. because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	// `Passwordless`: Encodes PKCS#12 files without any encryption or MACs. It's an error to specify
+	// password or passwordSecretRef if using Passwordless profile,
 	Profile PKCS12Profile
 
 	// containing the password used to encrypt the PKCS#12 keystore.
 	// Mutually exclusive with password.
-	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// One of password or passwordSecretRef must provide a password with a non-zero length or
+	// profile set to Passwordless.
 	// +optional
 	PasswordSecretRef cmmeta.SecretKeySelector
 
 	// Password provides a literal password used to encrypt the PKCS#12 keystore.
 	// Mutually exclusive with passwordSecretRef.
-	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// One of password or passwordSecretRef must provide a password with a non-zero length or
+	// profile set to Passwordless.
 	// +optional
 	Password *string
 }
@@ -492,6 +496,9 @@ const (
 
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
+
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Passwordless
+	PasswordlessPKCS12Profile PKCS12Profile = "Passwordless"
 )
 
 // CertificateStatus defines the observed state of Certificate
