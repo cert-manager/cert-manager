@@ -387,6 +387,8 @@ const (
 	keystoresPasswordRequiredFmt = "must set exactly one of passwordSecretRef and password must for %s keystores"
 
 	keystoresLiteralPasswordMustNotBeEmptyFmt = "literal password cannot be empty if set on %s keystores"
+
+	keystoresPasswordlessMustNotSetPassword = "must not set passwordSecretRef or password if Passwordless profile set on %s keystores"
 )
 
 func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
@@ -407,16 +409,22 @@ func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) 
 	}
 
 	if crt.Keystores.PKCS12 != nil {
-		if crt.Keystores.PKCS12.Password != nil && crt.Keystores.PKCS12.PasswordSecretRef.Name != "" {
-			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")))
-		}
+		if crt.Keystores.PKCS12.Profile == internalcmapi.PasswordlessPKCS12Profile {
+			if crt.Keystores.PKCS12.Password != nil || crt.Keystores.PKCS12.PasswordSecretRef.Name != "" {
+				el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordlessMustNotSetPassword, "PKCS#12")))
+			}
+		} else {
+			if crt.Keystores.PKCS12.Password != nil && crt.Keystores.PKCS12.PasswordSecretRef.Name != "" {
+				el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")))
+			}
 
-		if crt.Keystores.PKCS12.Password == nil && crt.Keystores.PKCS12.PasswordSecretRef.Name == "" {
-			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")))
-		}
+			if crt.Keystores.PKCS12.Password == nil && crt.Keystores.PKCS12.PasswordSecretRef.Name == "" {
+				el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")))
+			}
 
-		if crt.Keystores.PKCS12.Password != nil && len(*crt.Keystores.PKCS12.Password) == 0 {
-			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")))
+			if crt.Keystores.PKCS12.Password != nil && len(*crt.Keystores.PKCS12.Password) == 0 {
+				el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")))
+			}
 		}
 	}
 

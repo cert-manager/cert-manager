@@ -63,6 +63,8 @@ func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey [
 	}
 
 	switch profile {
+	case cmapi.PasswordlessPKCS12Profile:
+		return pkcs12.Passwordless.Encode(key, certs[0], cas, password)
 	case cmapi.Modern2023PKCS12Profile:
 		return pkcs12.Modern2023.Encode(key, certs[0], cas, password)
 	case cmapi.LegacyDESPKCS12Profile:
@@ -81,6 +83,8 @@ func encodePKCS12Truststore(profile cmapi.PKCS12Profile, password string, caPem 
 	}
 
 	switch profile {
+	case cmapi.PasswordlessPKCS12Profile:
+		return pkcs12.Passwordless.EncodeTrustStore(cas, password)
 	case cmapi.Modern2023PKCS12Profile:
 		return pkcs12.Modern2023.EncodeTrustStore(cas, password)
 	case cmapi.LegacyDESPKCS12Profile:
