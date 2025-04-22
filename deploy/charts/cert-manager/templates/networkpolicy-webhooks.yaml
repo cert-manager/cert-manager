@@ -1,5 +1,5 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.webhook.networkPolicy.enabled }}
-
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -18,4 +18,5 @@ spec:
   policyTypes:
   - Ingress
 
+{{- end }}
 {{- end }}

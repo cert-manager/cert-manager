@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if and .Values.prometheus.enabled (and .Values.prometheus.podmonitor.enabled .Values.prometheus.servicemonitor.enabled) }}
 {{- fail "Either .Values.prometheus.podmonitor.enabled or .Values.prometheus.servicemonitor.enabled can be enabled at a time, but not both." }}
 {{- else if and .Values.prometheus.enabled .Values.prometheus.podmonitor.enabled }}
@@ -60,4 +61,5 @@ spec:
       {{- with .Values.prometheus.podmonitor.endpointAdditionalProperties }}
       {{- toYaml . | nindent 6 }}
       {{- end }}
+{{- end }}
 {{- end }}

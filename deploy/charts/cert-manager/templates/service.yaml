@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if and .Values.prometheus.enabled (not .Values.prometheus.podmonitor.enabled) }}
 apiVersion: v1
 kind: Service
@@ -34,4 +35,5 @@ spec:
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "controller"
+{{- end }}
 {{- end }}

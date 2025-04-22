@@ -603,6 +603,9 @@
         },
         "keep": {
           "$ref": "#/$defs/helm-values.crds.keep"
+        },
+        "only": {
+          "$ref": "#/$defs/helm-values.crds.only"
         }
       },
       "type": "object"
@@ -615,6 +618,11 @@
     "helm-values.crds.keep": {
       "default": true,
       "description": "This option makes it so that the \"helm.sh/resource-policy\": keep annotation is added to the CRD. This will prevent Helm from uninstalling the CRD when the Helm release is uninstalled. WARNING: when the CRDs are removed, all cert-manager custom resources\n(Certificates, Issuers, ...) will be removed too by the garbage collector.",
+      "type": "boolean"
+    },
+    "helm-values.crds.only": {
+      "default": false,
+      "description": "This option causes Helm to only produces the CRDs and not other resources.",
       "type": "boolean"
     },
     "helm-values.creator": {

@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.startupapicheck.enabled }}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 apiVersion: policy/v1beta1
@@ -47,5 +48,6 @@ spec:
     ranges:
     - min: 1000
       max: 1000
+{{- end }}
 {{- end }}
 {{- end }}

@@ -86,6 +86,9 @@ crds:
   # (Certificates, Issuers, ...) will be removed too by the garbage collector.
   keep: true
 
+  # This option causes Helm to only produces the CRDs and not other resources.
+  only: false
+
 # +docs:section=Controller
 
 # The number of replicas of the cert-manager controller to run.
