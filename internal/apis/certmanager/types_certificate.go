@@ -236,6 +236,9 @@ type CertificateSpec struct {
 	// encoding and the rotation policy.
 	PrivateKey *CertificatePrivateKey
 
+	// Signature algorith to use.
+	SignatureAlgorithm SignatureAlgorithm
+
 	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
 	//
 	// This option defaults to true, and should only be disabled if the target
