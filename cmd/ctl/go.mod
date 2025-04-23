@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/cmd/ctl
 
-go 1.23.0
+go 1.23.8
 
 // Note on cert-manager versioning:
 // Because cmctl and the core cert-manager module live in the same repository, but cmctl depends on a specific
