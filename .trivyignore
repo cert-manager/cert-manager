@@ -11,6 +11,8 @@ GHSA-f5pg-7wfw-84q9
 # these vulnerabilities require a malicious chart to be used.
 CVE-2024-25620
 CVE-2024-26147
+CVE-2025-32386
+CVE-2025-32387
 
 # CVE-2019-25210 is a problem in `helm --dry-run` which the Helm maintainers say was intentional and isn't a bug
 # It certainly doesn't seem like a risk for our uses of Helm.
