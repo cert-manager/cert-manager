@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/webhook-binary
 
-go 1.23.0
+go 1.23.8
 
 replace github.com/cert-manager/cert-manager => ../../
 

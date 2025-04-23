@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/e2e-tests
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
