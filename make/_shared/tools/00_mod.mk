@@ -138,6 +138,8 @@ tools += preflight=1.12.1
 tools += gci=v0.13.6
 # https://github.com/google/yamlfmt/releases
 tools += yamlfmt=v0.16.0
+# https://github.com/yannh/kubeconform/releases
+tools += kubeconform=v0.6.7
 
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 K8S_CODEGEN_VERSION := v0.32.3
@@ -345,6 +347,7 @@ go_dependencies += operator-sdk=github.com/operator-framework/operator-sdk/cmd/o
 go_dependencies += gh=github.com/cli/cli/v2/cmd/gh
 go_dependencies += gci=github.com/daixiang0/gci
 go_dependencies += yamlfmt=github.com/google/yamlfmt/cmd/yamlfmt
+go_dependencies += kubeconform=github.com/yannh/kubeconform/cmd/kubeconform
 
 #################
 # go build tags #

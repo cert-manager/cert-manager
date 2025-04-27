@@ -17,6 +17,8 @@ jobs:
   govulncheck:
     runs-on: ubuntu-latest
 
+    if: github.repository_owner == 'cert-manager'
+
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
