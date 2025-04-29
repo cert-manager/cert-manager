@@ -435,6 +435,26 @@ Option to disable cert-manager's build-in auto-approver. The auto-approver appro
 List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.  
 ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
 
+#### **verticalPodAutoscaler.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+#### **verticalPodAutoscaler.controlledValues** ~ `string`
+> Default value:
+> ```yaml
+> RequestsAndLimits
+> ```
+#### **verticalPodAutoscaler.mode** ~ `string`
+> Default value:
+> ```yaml
+> Auto
+> ```
+#### **verticalPodAutoscaler.updatePolicy.updateMode** ~ `string`
+> Default value:
+> ```yaml
+> Auto
+> ```
 #### **extraArgs** ~ `array`
 > Default value:
 > ```yaml
@@ -1472,6 +1492,26 @@ Optional additional annotations to add to the cainjector Pods.
 
 Optional additional annotations to add to the cainjector metrics Service.
 
+#### **cainjector.verticalPodAutoscaler.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+#### **cainjector.verticalPodAutoscaler.controlledValues** ~ `string`
+> Default value:
+> ```yaml
+> RequestsAndLimits
+> ```
+#### **cainjector.verticalPodAutoscaler.mode** ~ `string`
+> Default value:
+> ```yaml
+> Auto
+> ```
+#### **cainjector.verticalPodAutoscaler.updatePolicy.updateMode** ~ `string`
+> Default value:
+> ```yaml
+> Auto
+> ```
 #### **cainjector.extraArgs** ~ `array`
 > Default value:
 > ```yaml
