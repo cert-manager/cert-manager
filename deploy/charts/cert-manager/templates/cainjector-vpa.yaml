@@ -1,5 +1,4 @@
 {{- if .Values.cainjector.enabled }}
-{{- if .Capabilities.APIVersions.Has "autoscaling.k8s.io/v1" }}
 {{- if .Values.cainjector.verticalPodAutoscaler.enabled }}
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
@@ -40,6 +39,5 @@ spec:
   updatePolicy:
     {{- toYaml .Values.cainjector.verticalPodAutoscaler.updatePolicy | nindent 4 }}
   {{- end }}
-{{- end }}
 {{- end }}
 {{- end }}

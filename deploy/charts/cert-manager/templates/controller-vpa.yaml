@@ -1,4 +1,3 @@
-{{- if .Capabilities.APIVersions.Has "autoscaling.k8s.io/v1" }}
 {{- if .Values.verticalPodAutoscaler.enabled }}
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
@@ -39,5 +38,4 @@ spec:
   updatePolicy:
     {{- toYaml .Values.verticalPodAutoscaler.updatePolicy | nindent 4 }}
   {{- end }}
-{{- end }}
 {{- end }}
