@@ -455,6 +455,30 @@ ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
 > ```yaml
 > Auto
 > ```
+#### **verticalPodAutoscaler.minAllowed** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+minAllowed. If not set, it will default to the current resource requests
+
+```yaml
+cpu: 50m
+memory: 64Mi
+```
+#### **verticalPodAutoscaler.maxAllowed** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+maxAllowed  
+If not set, it allows unlimited scaling
+
+```yaml
+cpu: 1
+```
 #### **extraArgs** ~ `array`
 > Default value:
 > ```yaml
@@ -1512,6 +1536,30 @@ Optional additional annotations to add to the cainjector metrics Service.
 > ```yaml
 > Auto
 > ```
+#### **cainjector.verticalPodAutoscaler.minAllowed** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+minAllowed. If not set, it will default to the current resource requests
+
+```yaml
+cpu: 50m
+memory: 64Mi
+```
+#### **cainjector.verticalPodAutoscaler.maxAllowed** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+maxAllowed  
+If not set, it allows unlimited scaling
+
+```yaml
+cpu: 1
+```
 #### **cainjector.extraArgs** ~ `array`
 > Default value:
 > ```yaml

@@ -575,6 +575,12 @@
         "enabled": {
           "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.enabled"
         },
+        "maxAllowed": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.maxAllowed"
+        },
+        "minAllowed": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.minAllowed"
+        },
         "mode": {
           "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.mode"
         },
@@ -591,6 +597,16 @@
     "helm-values.cainjector.verticalPodAutoscaler.enabled": {
       "default": false,
       "type": "boolean"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.maxAllowed": {
+      "default": {},
+      "description": "maxAllowed\nIf not set, it allows unlimited scaling\ncpu: 1",
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.minAllowed": {
+      "default": {},
+      "description": "minAllowed. If not set, it will default to the current resource requests\ncpu: 50m\nmemory: 64Mi",
+      "type": "object"
     },
     "helm-values.cainjector.verticalPodAutoscaler.mode": {
       "default": "Auto",
@@ -1636,6 +1652,12 @@
         "enabled": {
           "$ref": "#/$defs/helm-values.verticalPodAutoscaler.enabled"
         },
+        "maxAllowed": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.maxAllowed"
+        },
+        "minAllowed": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.minAllowed"
+        },
         "mode": {
           "$ref": "#/$defs/helm-values.verticalPodAutoscaler.mode"
         },
@@ -1652,6 +1674,16 @@
     "helm-values.verticalPodAutoscaler.enabled": {
       "default": false,
       "type": "boolean"
+    },
+    "helm-values.verticalPodAutoscaler.maxAllowed": {
+      "default": {},
+      "description": "maxAllowed\nIf not set, it allows unlimited scaling\ncpu: 1",
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.minAllowed": {
+      "default": {},
+      "description": "minAllowed. If not set, it will default to the current resource requests\ncpu: 50m\nmemory: 64Mi",
+      "type": "object"
     },
     "helm-values.verticalPodAutoscaler.mode": {
       "default": "Auto",

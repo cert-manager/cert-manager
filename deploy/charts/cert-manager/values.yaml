@@ -299,9 +299,11 @@ verticalPodAutoscaler:
   # If not set, it will default to the current resource requests
   #   cpu: 50m
   #   memory: 64Mi
+  minAllowed: {}
   # maxAllowed
   # If not set, it allows unlimited scaling
   #   cpu: 1
+  maxAllowed: {}
 
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.
@@ -1127,9 +1129,11 @@ cainjector:
     # If not set, it will default to the current resource requests
     #   cpu: 50m
     #   memory: 64Mi
+    minAllowed: {}
     # maxAllowed
     # If not set, it allows unlimited scaling
     #   cpu: 1
+    maxAllowed: {}
 
   # Additional command line flags to pass to cert-manager cainjector binary.
   # To see all available flags run `docker run quay.io/jetstack/cert-manager-cainjector:<version> --help`.
