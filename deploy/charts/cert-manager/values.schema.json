@@ -243,47 +243,6 @@
       "items": {},
       "type": "array"
     },
-    "helm-values.verticalPodAutoscaler": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable or disable the VerticalPodAutoscaler for the component."
-        },
-        "controlledValues": {
-          "type": "string",
-          "default": "RequestsAndLimits",
-          "description": "Specifies which resource values should be controlled. Can be RequestsAndLimits (default) or RequestsOnly."
-        },
-        "mode": {
-          "type": "string",
-          "default": "Auto",
-          "description": "Mode of VPA operation. Can be Off, Initial, Recreate, or Auto (default)."
-        },
-        "updatePolicy": {
-          "type": "object",
-          "properties": {
-            "updateMode": {
-              "type": "string",
-              "default": "Auto",
-              "description": "Determines when updates are applied. Can be Off, Initial, or Auto (default)."
-            }
-          },
-          "description": "Configuration for update policy behavior."
-        },
-        "minAllowed": {
-          "type": "object",
-          "description": "Minimum allowed resources for the pods. If not set, it will default to the current resource requests."
-        },
-        "maxAllowed": {
-          "type": "object",
-          "description": "Maximum allowed resources for the pods. If not set, it allows unlimited scaling."
-        }
-      },
-      "type": "object",
-      "description": "Configuration for VerticalPodAutoscaler resource."
-    },
     "helm-values.automountServiceAccountToken": {
       "description": "Automounting API credentials for a particular pod.",
       "type": "boolean"
@@ -513,47 +472,6 @@
     "helm-values.cainjector.podDisruptionBudget.minAvailable": {
       "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `maxUnavailable` is set."
     },
-    "helm-values.cainjector.verticalPodAutoscaler": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable or disable the VerticalPodAutoscaler for the component."
-        },
-        "controlledValues": {
-          "type": "string",
-          "default": "RequestsAndLimits",
-          "description": "Specifies which resource values should be controlled. Can be RequestsAndLimits (default) or RequestsOnly."
-        },
-        "mode": {
-          "type": "string",
-          "default": "Auto",
-          "description": "Mode of VPA operation. Can be Off, Initial, Recreate, or Auto (default)."
-        },
-        "updatePolicy": {
-          "type": "object",
-          "properties": {
-            "updateMode": {
-              "type": "string",
-              "default": "Auto",
-              "description": "Determines when updates are applied. Can be Off, Initial, or Auto (default)."
-            }
-          },
-          "description": "Configuration for update policy behavior."
-        },
-        "minAllowed": {
-          "type": "object",
-          "description": "Minimum allowed resources for the pods. If not set, it will default to the current resource requests."
-        },
-        "maxAllowed": {
-          "type": "object",
-          "description": "Maximum allowed resources for the pods. If not set, it allows unlimited scaling."
-        }
-      },
-      "type": "object",
-      "description": "Configuration for VerticalPodAutoscaler resource."
-    },
     "helm-values.cainjector.podLabels": {
       "default": {},
       "description": "Optional additional labels to add to the CA Injector Pods.",
@@ -647,6 +565,49 @@
       "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
       "items": {},
       "type": "array"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler": {
+      "additionalProperties": false,
+      "properties": {
+        "controlledValues": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.controlledValues"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.enabled"
+        },
+        "mode": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.mode"
+        },
+        "updatePolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.updatePolicy"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.controlledValues": {
+      "default": "RequestsAndLimits",
+      "type": "string"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.enabled": {
+      "default": false,
+      "type": "boolean"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.mode": {
+      "default": "Auto",
+      "type": "string"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.updatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "updateMode": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.updatePolicy.updateMode"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.updatePolicy.updateMode": {
+      "default": "Auto",
+      "type": "string"
     },
     "helm-values.cainjector.volumeMounts": {
       "default": [],
@@ -1665,6 +1626,49 @@
       "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
       "items": {},
       "type": "array"
+    },
+    "helm-values.verticalPodAutoscaler": {
+      "additionalProperties": false,
+      "properties": {
+        "controlledValues": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.controlledValues"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.enabled"
+        },
+        "mode": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.mode"
+        },
+        "updatePolicy": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.updatePolicy"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.controlledValues": {
+      "default": "RequestsAndLimits",
+      "type": "string"
+    },
+    "helm-values.verticalPodAutoscaler.enabled": {
+      "default": false,
+      "type": "boolean"
+    },
+    "helm-values.verticalPodAutoscaler.mode": {
+      "default": "Auto",
+      "type": "string"
+    },
+    "helm-values.verticalPodAutoscaler.updatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "updateMode": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.updatePolicy.updateMode"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.updatePolicy.updateMode": {
+      "default": "Auto",
+      "type": "string"
     },
     "helm-values.volumeMounts": {
       "default": [],
