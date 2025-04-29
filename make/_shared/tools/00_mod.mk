@@ -18,8 +18,17 @@ endif
 
 ##########################################
 
-export DOWNLOAD_DIR ?= $(CURDIR)/$(bin_dir)/downloaded
-export GOVENDOR_DIR ?= $(CURDIR)/$(bin_dir)/go_vendor
+default_shared_dir := $(CURDIR)/$(bin_dir)
+# If $(HOME) is set and $(CI) is not, use the $(HOME)/.cache
+# folder to store downloaded binaries.
+ifneq ($(shell printenv HOME),)
+ifeq ($(shell printenv CI),)
+default_shared_dir := $(HOME)/.cache/makefile-modules
+endif
+endif
+
+export DOWNLOAD_DIR ?= $(default_shared_dir)/downloaded
+export GOVENDOR_DIR ?= $(default_shared_dir)/go_vendor
 
 $(bin_dir)/tools $(DOWNLOAD_DIR)/tools:
 	@mkdir -p $@
