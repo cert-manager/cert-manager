@@ -341,7 +341,11 @@ type CertificatePrivateKey struct {
 	// to await user intervention.
 	// If set to `Always`, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
-	// Default is `Never` for backward compatibility.
+	// Default is `Always`.
+	// The default was changed from `Never` to `Always` in cert-manager >=v1.18.0.
+	// The new default can be disabled by setting the
+	// `--feature-gates=DefaultPrivateKeyRotationPolicyAlways=false` option on
+	// the controller component.
 	// +optional
 	RotationPolicy PrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
 
