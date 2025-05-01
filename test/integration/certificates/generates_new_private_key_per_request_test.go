@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
@@ -43,6 +44,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
@@ -66,11 +68,11 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 			IssuerRef: cmmeta.ObjectReference{
 				Name: "issuer",
 			},
-			PrivateKey: &cmapi.CertificatePrivateKey{
-				// This doesn't actually make any difference in this test case because there is no existing private
-				// key, meaning there's no private key to re-use.
-				RotationPolicy: cmapi.RotationPolicyAlways,
-			},
+			// PrivateKey: &cmapi.CertificatePrivateKey{
+			// 	// This doesn't actually make any difference in this test case because there is no existing private
+			// 	// key, meaning there's no private key to re-use.
+			// 	RotationPolicy: cmapi.RotationPolicyAlways,
+			// },
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -194,8 +196,8 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	stopControllers := runAllControllers(t, config)
 	defer stopControllers()
 
-	_, _, cmCl, _, _ := framework.NewClients(t, config)
-	crt, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
+	kCl, _, cmCl, _, _ := framework.NewClients(t, config)
+	c1 := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt"},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
@@ -203,13 +205,28 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 			IssuerRef: cmmeta.ObjectReference{
 				Name: "issuer",
 			},
-			PrivateKey: &cmapi.CertificatePrivateKey{
-				// This doesn't actually make any difference in this test case because there is no existing private
-				// key, meaning there's no private key to re-use.
-				RotationPolicy: cmapi.RotationPolicyAlways,
-			},
+			// PrivateKey: &cmapi.CertificatePrivateKey{
+			// 	// This doesn't actually make any difference in this test case because there is no existing private
+			// 	// key, meaning there's no private key to re-use.
+			// 	RotationPolicy: cmapi.RotationPolicyAlways,
+			// },
+		},
+	}
+
+	pk, err := pki.GeneratePrivateKeyForCertificate(c1)
+	require.NoError(t, err)
+	pkBytes, err := pki.EncodePrivateKey(pk, cmapi.PKCS1)
+	require.NoError(t, err)
+	_, err = kCl.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "testsecret",
+		},
+		Data: map[string][]byte{
+			"tls.key": pkBytes,
 		},
 	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+	crt, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, c1, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("failed to create certificate: %v", err)
 	}
@@ -308,10 +325,13 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		t.Fatalf("failed to parse first CSR: %v", err)
 	}
 
-	pk1 := csr1.PublicKey.(crypto.PublicKey)
-	pk2 := csr2.PublicKey.(crypto.PublicKey)
-
-	if pk1.(comparablePublicKey).Equal(pk2) {
+	pk1, ok := csr1.PublicKey.(crypto.PublicKey)
+	require.True(t, ok)
+	pk2, ok := csr2.PublicKey.(crypto.PublicKey)
+	require.True(t, ok)
+	t.Log(pk1)
+	t.Log(pk2)
+	if cpk, ok := pk1.(comparablePublicKey); ok && cpk.Equal(pk2) {
 		t.Errorf("expected the two requests to have been signed by distinct private keys, but the private key has been reused")
 	}
 }
