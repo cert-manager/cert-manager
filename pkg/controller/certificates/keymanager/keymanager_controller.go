@@ -173,7 +173,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// if there is no existing Secret resource, create a new one
 	if len(secrets) == 0 {
-		rotationPolicy := cmapi.RotationPolicyNever
+		rotationPolicy := cmapi.RotationPolicyAlways
 		if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.RotationPolicy != "" {
 			rotationPolicy = crt.Spec.PrivateKey.RotationPolicy
 		}
