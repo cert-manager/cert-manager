@@ -15,7 +15,7 @@ github.com/aws/aws-sdk-go-v2/config,https://github.com/aws/aws-sdk-go-v2/blob/co
 github.com/aws/aws-sdk-go-v2/credentials,https://github.com/aws/aws-sdk-go-v2/blob/credentials/v1.17.34/credentials/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds,https://github.com/aws/aws-sdk-go-v2/blob/feature/ec2/imds/v1.16.14/feature/ec2/imds/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/configsources,https://github.com/aws/aws-sdk-go-v2/blob/internal/configsources/v1.3.18/internal/configsources/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go-v2/internal/endpoints/v2,https://github.com/aws/aws-sdk-go-v2/blob/internal/endpoints/v2.6.18/internal/endpoints/v2/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go-v2/internal/endpoints/v2,https://github.com/aws/aws-sdk-go-v2/blob/internal/endpoints/v2.6.18/internal/endpoints/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/ini,https://github.com/aws/aws-sdk-go-v2/blob/internal/ini/v1.8.1/internal/ini/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/sync/singleflight,https://github.com/aws/aws-sdk-go-v2/blob/v1.31.0/internal/sync/singleflight/LICENSE,BSD-3-Clause
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding,https://github.com/aws/aws-sdk-go-v2/blob/service/internal/accept-encoding/v1.11.5/service/internal/accept-encoding/LICENSE.txt,Apache-2.0
@@ -50,7 +50,7 @@ github.com/go-asn1-ber/asn1-ber,https://github.com/go-asn1-ber/asn1-ber/blob/v1.
 github.com/go-http-utils/headers,https://github.com/go-http-utils/headers/blob/fed159eddc2a/LICENSE,MIT
 github.com/go-jose/go-jose/v4,https://github.com/go-jose/go-jose/blob/v4.0.5/LICENSE,Apache-2.0
 github.com/go-jose/go-jose/v4/json,https://github.com/go-jose/go-jose/blob/v4.0.5/json/LICENSE,BSD-3-Clause
-github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.8/v3/LICENSE,MIT
+github.com/go-ldap/ldap/v3,https://github.com/go-ldap/ldap/blob/v3.4.8/LICENSE,MIT
 github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.2/LICENSE,Apache-2.0
 github.com/go-logr/stdr,https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE,Apache-2.0
 github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.3.0/LICENSE,Apache-2.0
@@ -70,7 +70,7 @@ github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Ap
 github.com/google/s2a-go,https://github.com/google/s2a-go/blob/v0.1.8/LICENSE.md,Apache-2.0
 github.com/google/uuid,https://github.com/google/uuid/blob/v1.6.0/LICENSE,BSD-3-Clause
 github.com/googleapis/enterprise-certificate-proxy/client,https://github.com/googleapis/enterprise-certificate-proxy/blob/v0.3.4/LICENSE,Apache-2.0
-github.com/googleapis/gax-go/v2,https://github.com/googleapis/gax-go/blob/v2.13.0/v2/LICENSE,BSD-3-Clause
+github.com/googleapis/gax-go/v2,https://github.com/googleapis/gax-go/blob/v2.13.0/LICENSE,BSD-3-Clause
 github.com/gorilla/websocket,https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE,BSD-2-Clause
 github.com/grpc-ecosystem/go-grpc-prometheus,https://github.com/grpc-ecosystem/go-grpc-prometheus/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/grpc-ecosystem/grpc-gateway/v2,https://github.com/grpc-ecosystem/grpc-gateway/blob/v2.25.1/LICENSE,BSD-3-Clause
@@ -124,7 +124,7 @@ github.com/x448/float16,https://github.com/x448/float16/blob/v0.8.4/LICENSE,MIT
 github.com/youmark/pkcs8,https://github.com/youmark/pkcs8/blob/3c2c7870ae76/LICENSE,MIT
 go.etcd.io/etcd/api/v3,https://github.com/etcd-io/etcd/blob/api/v3.5.17/api/LICENSE,Apache-2.0
 go.etcd.io/etcd/client/pkg/v3,https://github.com/etcd-io/etcd/blob/client/pkg/v3.5.17/client/pkg/LICENSE,Apache-2.0
-go.etcd.io/etcd/client/v3,https://github.com/etcd-io/etcd/blob/client/v3.5.17/client/v3/LICENSE,Apache-2.0
+go.etcd.io/etcd/client/v3,https://github.com/etcd-io/etcd/blob/client/v3.5.17/client/LICENSE,Apache-2.0
 go.opencensus.io,https://github.com/census-instrumentation/opencensus-go/blob/v0.24.0/LICENSE,Apache-2.0
 go.opentelemetry.io/auto/sdk,https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.1.0/sdk/LICENSE,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.58.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE,Apache-2.0
