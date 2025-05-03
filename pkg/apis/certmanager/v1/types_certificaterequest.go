@@ -43,8 +43,18 @@ const (
 )
 
 // +genclient
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Approved",type="string",JSONPath=`.status.conditions[?(@.type == "Approved")].status`
+// +kubebuilder:printcolumn:name="Denied",type="string",JSONPath=`.status.conditions[?(@.type == "Denied")].status`
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=`.spec.issuerRef.name`
+// +kubebuilder:printcolumn:name="Requester",type="string",JSONPath=`.spec.username`
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Namespaced,shortName={cr,crs},categories=cert-manager
+// +kubebuilder:subresource:status
 
 // A CertificateRequest is used to request a signed certificate from one of the
 // configured issuers.
