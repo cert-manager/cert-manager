@@ -23,23 +23,23 @@ import (
 )
 
 // CertificateNotAfterValidity returns the duration for which the certificate
-// should be valid, based on the template and the earlist expiration date of the CA certificates.
+// should be valid, based on the template and the earliest expiration date of the CA certificates.
 func CertificateNotAfterValidity(template *x509.Certificate, caCerts []*x509.Certificate) (time.Time, error) {
 	if len(caCerts) == 0 {
 		return time.Now(), fmt.Errorf("no CA certificates provided")
 	}
 
-	// Find the earlist expiration date of the CA certificates
-	earlist := caCerts[0].NotAfter
+	// Find the earliest expiration date of the CA certificates
+	earliest := caCerts[0].NotAfter
 	for _, caCert := range caCerts[1:] {
-		if caCert.NotAfter.Before(earlist) {
-			earlist = caCert.NotAfter
+		if caCert.NotAfter.Before(earliest) {
+			earliest = caCert.NotAfter
 		}
 	}
 
-	// Return the earlist expiration date if it is before the template's NotAfter
-	if earlist.Before(template.NotAfter) {
-		return earlist, nil
+	// Return the earliest expiration date if it is before the template's NotAfter
+	if earliest.Before(template.NotAfter) {
+		return earliest, nil
 	}
 
 	return template.NotAfter, nil
