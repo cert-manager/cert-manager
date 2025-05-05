@@ -134,7 +134,7 @@ func checkDNSPropagation(ctx context.Context, fqdn, value string, nameservers []
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
-		r, err := DNSQuery(ctx, fqdn, dns.TypeTXT, []string{ns}, true)
+		r, err := dnsQuery(ctx, fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
 			return false, err
 		}
@@ -282,7 +282,7 @@ func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) (
 		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
 	}
 
-	r, err := DNSQuery(ctx, zone, dns.TypeNS, nameservers, true)
+	r, err := dnsQuery(ctx, zone, dns.TypeNS, nameservers, true)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +339,7 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 	for _, index := range labelIndexes {
 		domain := fqdn[index:]
 
-		in, err := DNSQuery(ctx, domain, dns.TypeSOA, nameservers, true)
+		in, err := dnsQuery(ctx, domain, dns.TypeSOA, nameservers, true)
 		if err != nil {
 			return "", err
 		}
