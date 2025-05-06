@@ -26,9 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -36,7 +34,6 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -74,7 +71,7 @@ type testT struct {
 	acmeClient *acmecl.FakeACME
 }
 
-func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinalizer string) {
+func TestSyncHappyPath(t *testing.T) {
 	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		Solvers: []cmacme.ACMEChallengeSolver{
 			{
@@ -88,7 +85,7 @@ func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinali
 		gen.SetChallengeIssuer(cmmeta.ObjectReference{
 			Name: "testissuer",
 		}),
-		gen.SetChallengeFinalizers([]string{finalizer}),
+		gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer}),
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
@@ -191,7 +188,7 @@ func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinali
 							gen.DefaultTestNamespace,
 							gen.ChallengeFrom(baseChallenge,
 								gen.SetChallengeProcessing(true),
-								gen.SetChallengeFinalizers([]string{activeFinalizer})))),
+								gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer})))),
 				},
 			},
 			expectErr: false,
@@ -589,26 +586,6 @@ func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinali
 			runTest(t, test)
 		})
 	}
-}
-
-func TestSyncHappyPathFinalizerLegacyToLegacy(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, false)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer, cmacme.ACMELegacyFinalizer)
-}
-
-func TestSyncHappyPathFinalizerDomainQualifiedToLegacy(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, false)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMELegacyFinalizer)
-}
-
-func TestSyncHappyPathFinalizerLegacyToDomainQualified(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, true)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer, cmacme.ACMEDomainQualifiedFinalizer)
-}
-
-func TestSyncHappyPathFinalizerDomainQualifiedToDomainQualified(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, true)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMEDomainQualifiedFinalizer)
 }
 
 func runTest(t *testing.T, test testT) {
