@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -154,6 +155,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
+	// Apply runtime defaults to apply default values that are governed by
+	// controller feature gates, such as DefaultPrivateKeyRotationPolicyAlways.
+	cminternal.SetRuntimeDefaults_Certificate(crt)
+
 	// Discover all 'owned' secrets that have the `next-private-key` label
 	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy(crt))
 	if err != nil {
@@ -173,13 +178,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// if there is no existing Secret resource, create a new one
 	if len(secrets) == 0 {
-		rotationPolicy := cmapi.RotationPolicyNever
-		if utilfeature.DefaultFeatureGate.Enabled(feature.DefaultPrivateKeyRotationPolicyAlways) {
-			rotationPolicy = cmapi.RotationPolicyAlways
-		}
-		if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.RotationPolicy != "" {
-			rotationPolicy = crt.Spec.PrivateKey.RotationPolicy
-		}
+		// PrivateKey is a pointer, but it will never be nil because we called
+		// the SetRuntimeDefaults function at the start of this function.
+		rotationPolicy := crt.Spec.PrivateKey.RotationPolicy
 		switch rotationPolicy {
 		case cmapi.RotationPolicyNever:
 			return c.createNextPrivateKeyRotationPolicyNever(ctx, crt)
