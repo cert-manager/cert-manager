@@ -28,7 +28,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetRuntimeDefaults_Certificate sets the rotation policy to Always by default or
+// SetRuntimeDefaults_Certificate sets the default rotation policy to Always, or
 // Never if the DefaultPrivateKeyRotationPolicyAlways feature is disabled.
 //
 // NOTE: This is deliberately not called `SetObjectDefault_`, because that would
@@ -46,9 +46,11 @@ func SetRuntimeDefaults_Certificate(in *cmapi.Certificate) {
 	if in.Spec.PrivateKey == nil {
 		in.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
-	defaultRotationPolicy := cmapi.RotationPolicyNever
-	if utilfeature.DefaultFeatureGate.Enabled(feature.DefaultPrivateKeyRotationPolicyAlways) {
-		defaultRotationPolicy = cmapi.RotationPolicyAlways
+	if in.Spec.PrivateKey.RotationPolicy == "" {
+		defaultRotationPolicy := cmapi.RotationPolicyNever
+		if utilfeature.DefaultFeatureGate.Enabled(feature.DefaultPrivateKeyRotationPolicyAlways) {
+			defaultRotationPolicy = cmapi.RotationPolicyAlways
+		}
+		in.Spec.PrivateKey.RotationPolicy = defaultRotationPolicy
 	}
-	in.Spec.PrivateKey.RotationPolicy = defaultRotationPolicy
 }

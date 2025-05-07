@@ -708,7 +708,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
 			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
 
-			By("Ensuing both certificates are signed by same private key")
+			By("Ensuring both certificates are signed by same private key")
 			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
 			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
 

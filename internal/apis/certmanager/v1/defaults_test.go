@@ -44,4 +44,17 @@ func Test_SetRuntimeDefaults_Certificate_PrivateKey_RotationPolicy(t *testing.T)
 		SetRuntimeDefaults_Certificate(in)
 		assert.Equal(t, cmapi.RotationPolicyNever, in.Spec.PrivateKey.RotationPolicy)
 	})
+	t.Run("explicit-rotation-policy", func(t *testing.T) {
+		const expectedRotationPolicy = cmapi.PrivateKeyRotationPolicy("neither-always-nor-never")
+		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DefaultPrivateKeyRotationPolicyAlways, false)
+		in := &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				PrivateKey: &cmapi.CertificatePrivateKey{
+					RotationPolicy: expectedRotationPolicy,
+				},
+			},
+		}
+		SetRuntimeDefaults_Certificate(in)
+		assert.Equal(t, expectedRotationPolicy, in.Spec.PrivateKey.RotationPolicy)
+	})
 }
