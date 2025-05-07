@@ -176,7 +176,7 @@ type ACMEChallenge struct {
 	// This is used to compute the 'key' that must also be presented.
 	Token string `json:"token"`
 
-	// Type is the type of challenge being offered, e.g. 'http-01', 'dns-01',
+	// Type is the type of challenge being offered, e.g., 'http-01', 'dns-01',
 	// 'tls-sni-01', etc.
 	// This is the raw value retrieved from the ACME server.
 	// Only 'http-01' and 'dns-01' are supported by cert-manager, other values

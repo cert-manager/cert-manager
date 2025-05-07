@@ -60,7 +60,7 @@ type Getter interface {
 
 	// ListClients will return a full list of all ACME clients by their UIDs.
 	// This can be used to enumerate all registered clients and call RemoveClient
-	// on any clients that should no longer be registered, e.g. because their
+	// on any clients that should no longer be registered, e.g., because their
 	// corresponding Issuer resource has been deleted.
 	ListClients() map[string]acmecl.Interface
 }
@@ -180,7 +180,7 @@ func (r *registry) RemoveClient(uid string) {
 
 // ListClients will return a full list of all ACME clients by their UIDs.
 // This can be used to enumerate all registered clients and call RemoveClient
-// on any clients that should no longer be registered, e.g. because their
+// on any clients that should no longer be registered, e.g., because their
 // corresponding Issuer resource has been deleted.
 func (r *registry) ListClients() map[string]acmecl.Interface {
 	r.lock.RLock()

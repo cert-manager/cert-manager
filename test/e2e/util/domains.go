@@ -23,14 +23,14 @@ import (
 )
 
 // RandomSubdomain returns a new subdomain domain of the domain suffix.
-// e.g. abcd.example.com.
+// e.g., abcd.example.com.
 func RandomSubdomain(domain string) string {
 	return RandomSubdomainLength(domain, 5)
 }
 
 // RandomSubdomainLength returns a new subdomain domain of the domain suffix, where the
 // subdomain has `length` number of characters.
-// e.g. abcdefghij.example.com.
+// e.g., abcdefghij.example.com.
 func RandomSubdomainLength(domain string, length int) string {
 	return fmt.Sprintf("%s.%s", rand.String(length), domain)
 }

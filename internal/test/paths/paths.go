@@ -46,7 +46,7 @@ var (
 
 // PathForCRD attempts to find a path to the named CRD.
 // The 'name' is the name of the resource contained within the CRD as denoted
-// by the filename, e.g. 'foobar' would find a CRD with a filename containing
+// by the filename, e.g., 'foobar' would find a CRD with a filename containing
 // the word 'foobar'.
 func PathForCRD(t *testing.T, name string) string {
 	dir, err := CRDDirectory()

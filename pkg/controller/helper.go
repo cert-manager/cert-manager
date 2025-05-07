@@ -47,7 +47,7 @@ func (o IssuerOptions) ResourceNamespaceRef(ref cmmeta.ObjectReference, challeng
 }
 
 // CanUseAmbientCredentials returns whether `iss` will attempt to configure itself
-// from ambient credentials (e.g. from a cloud metadata service).
+// from ambient credentials (e.g., from a cloud metadata service).
 func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 	switch iss.(type) {
 	case *cmapi.ClusterIssuer:
@@ -59,7 +59,7 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 }
 
 // CanUseAmbientCredentialsFromRef returns whether the referenced issuer will attempt
-// to configure itself from ambient credentials (e.g. from a cloud metadata service).
+// to configure itself from ambient credentials (e.g., from a cloud metadata service).
 // This function is identical to CanUseAmbientCredentials, but takes a reference to
 // the issuer instead of the issuer itself (which means we don't need to fetch the
 // issuer from the API server).

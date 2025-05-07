@@ -272,7 +272,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 			errMsg := "must be one of Issuer or ClusterIssuer"
 
 			if issuerRef.Group == "" {
-				// Sometimes the user sets a kind for an external issuer (e.g. "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
+				// Sometimes the user sets a kind for an external issuer (e.g., "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
 				// to set the group (an easy mistake to make - see https://github.com/cert-manager/csi-driver/issues/197).
 				// If the users forgets the group but otherwise has a correct Kind set for an external issuer, we can give a hint
 				// as to what they need to do to fix.

@@ -127,7 +127,7 @@ func SetupGlobalsNonPrimary(cfg *config.Config, transferred []AddonTransferableD
 // This should be called by the test suite in a SynchronizedBeforeSuite block
 // after the Setup data has been transferred to all ginkgo processes, so that
 // not all processes have to wait for the addons to be provisioned. Instead,
-// the individual test has to check that the addon is provisioned (eg. by querying
+// the individual test has to check that the addon is provisioned (e.g., by querying
 // the API server for a resource that the addon creates or by checking that an
 // HTTP endpoint is available)
 // This function should be run only on ginkgo process #1.

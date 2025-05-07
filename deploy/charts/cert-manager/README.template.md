@@ -237,13 +237,13 @@ This prevents downtime during voluntary disruptions such as during a Node upgrad
 Pod is currently running.
 #### **podDisruptionBudget.minAvailable** ~ `unknown`
 
-This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+This configures the minimum available pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).  
 It cannot be used if `maxUnavailable` is set.
 
 
 #### **podDisruptionBudget.maxUnavailable** ~ `unknown`
 
-This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set.
+This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%). it cannot be used if `minAvailable` is set.
 
 
 #### **featureGates** ~ `string`
@@ -307,7 +307,7 @@ Override the "cert-manager.fullname" value. This value is used as part of most o
 
 #### **nameOverride** ~ `string`
 
-Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use eg. "cainjector.name" which resolves to the value "cainjector").
+Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use, e.g., "cainjector.name" which resolves to the value "cainjector").
 
 #### **serviceAccount.create** ~ `bool`
 > Default value:
@@ -432,7 +432,7 @@ Option to disable cert-manager's build-in auto-approver. The auto-approver appro
 > - clusterissuers.cert-manager.io/*
 > ```
 
-List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.  
+List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because, e.g., you are using approver-policy, you can enable 'disableAutoApproval'.  
 ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
 
 #### **extraArgs** ~ `array`
@@ -976,13 +976,13 @@ This prevents downtime during voluntary disruptions such as during a Node upgrad
 Pod is currently running.
 #### **webhook.podDisruptionBudget.minAvailable** ~ `unknown`
 
-This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).  
 It cannot be used if `maxUnavailable` is set.
 
 
 #### **webhook.podDisruptionBudget.maxUnavailable** ~ `unknown`
 
-This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).  
 It cannot be used if `minAvailable` is set.
 
 
@@ -1449,14 +1449,14 @@ Pod is currently running.
 #### **cainjector.podDisruptionBudget.minAvailable** ~ `unknown`
 
 `minAvailable` configures the minimum available pods for disruptions. It can either be set to  
-an integer (e.g. 1) or a percentage value (e.g. 25%).  
+an integer (e.g., 1) or a percentage value (e.g., 25%).  
 Cannot be used if `maxUnavailable` is set.
 
 
 #### **cainjector.podDisruptionBudget.maxUnavailable** ~ `unknown`
 
 `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
-an integer (e.g. 1) or a percentage value (e.g. 25%).  
+an integer (e.g., 1) or a percentage value (e.g., 25%).  
 Cannot be used if `minAvailable` is set.
 
 

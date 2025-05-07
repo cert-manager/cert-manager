@@ -20,7 +20,7 @@ about: Suggest an idea to improve cert-manager
 - Kubernetes version:
 - Cloud-provider/provisioner:
 - cert-manager version: 
-- Install method: e.g. helm/static manifests
+- Install method: e.g., helm/static manifests
 
 
 /kind feature
