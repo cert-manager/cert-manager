@@ -668,6 +668,9 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						RotationPolicy: cmapi.RotationPolicyNever,
+					},
 				},
 			}
 			By("Creating a Certificate")
