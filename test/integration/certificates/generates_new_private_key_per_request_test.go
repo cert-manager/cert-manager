@@ -18,7 +18,6 @@ package certificates
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"testing"
 	"time"
@@ -340,10 +339,6 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	match, err := pki.PublicKeysEqual(csr1.PublicKey, csr2.PublicKey)
 	require.NoError(t, err)
 	assert.False(t, match, "expected the two requests to have been signed by distinct private keys, but the private key has been reused")
-}
-
-type comparablePublicKey interface {
-	Equal(crypto.PublicKey) bool
 }
 
 func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
