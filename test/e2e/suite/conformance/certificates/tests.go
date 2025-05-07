@@ -669,6 +669,10 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
 					PrivateKey: &cmapi.CertificatePrivateKey{
+						// Explicitly set RotationPolicy to Never to test the
+						// behavior of reusing the same private key when a
+						// certificate is reissued.
+						// The default value is Always.
 						RotationPolicy: cmapi.RotationPolicyNever,
 					},
 				},
