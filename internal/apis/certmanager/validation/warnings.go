@@ -21,4 +21,6 @@ package validation
 const (
 	// deprecatedACMEEABKeyAlgorithmField is raised when the deprecated keyAlgorithm field for an ACME issuer's external account binding (EAB) is set.
 	deprecatedACMEEABKeyAlgorithmField = "ACME issuer spec field 'externalAccount.keyAlgorithm' is deprecated. The value of this field will be ignored."
+	// newDefaultPrivateKeyRotationPolicy is raised when the Certificate.Spec.PrivateKey.RotationPolicy is omitted.
+	newDefaultPrivateKeyRotationPolicy = "spec.privateKey.rotationPolicy: In cert-manager >= v1.18.0, the default value changed from `Never` to `Always`."
 )

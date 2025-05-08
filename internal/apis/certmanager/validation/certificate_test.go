@@ -57,7 +57,6 @@ func TestValidateCertificate(t *testing.T) {
 		cfg                           *internalcmapi.Certificate
 		a                             *admissionv1.AdmissionRequest
 		errs                          []*field.Error
-		warnings                      []string
 		nameConstraintsFeatureEnabled bool
 	}{
 		"valid basic certificate": {
@@ -878,13 +877,29 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"explicit rotation policy": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
-			assert.ElementsMatch(t, warnings, s.warnings)
+			if s.cfg.Spec.PrivateKey == nil || s.cfg.Spec.PrivateKey.RotationPolicy == "" {
+				assert.Contains(t, warnings, newDefaultPrivateKeyRotationPolicy, "a warning is expected when the rotation policy is omitted.")
+			} else {
+				assert.NotContains(t, warnings, newDefaultPrivateKeyRotationPolicy)
+			}
 		})
 	}
 }
@@ -1302,7 +1317,8 @@ func Test_validateLiteralSubject(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			assert.ElementsMatch(t, warnings, []string{})
+			// None of these test inputs include a privateKey field, so they will all result in this warning.
+			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
 		})
 	}
 }
@@ -1453,7 +1469,8 @@ func Test_validateKeystores(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			assert.ElementsMatch(t, warnings, []string{})
+			// None of these test inputs include a privateKey field, so they will all result in this warning.
+			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
 		})
 	}
 }

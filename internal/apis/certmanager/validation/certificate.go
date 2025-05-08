@@ -234,10 +234,13 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	return el
 }
 
-func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (allErrs field.ErrorList, warnings []string) {
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs, nil
+	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	if crt.Spec.PrivateKey == nil || crt.Spec.PrivateKey.RotationPolicy == "" {
+		warnings = append(warnings, newDefaultPrivateKeyRotationPolicy)
+	}
+	return allErrs, warnings
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
