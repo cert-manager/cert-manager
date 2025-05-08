@@ -120,7 +120,7 @@ functionality for cert-manager.`,
 	options.AddConfigFlags(cmd.Flags(), webhookConfig)
 
 	// explicitly set provided args in case it does not equal os.Args[:1],
-	// eg. when running tests
+	// e.g., when running tests
 	cmd.SetArgs(allArgs)
 
 	return cmd

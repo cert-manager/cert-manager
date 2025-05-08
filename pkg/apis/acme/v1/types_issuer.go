@@ -163,7 +163,7 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the HTTP01 challenge flow.
 	// It is not possible to obtain certificates for wildcard domain names
-	// (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
+	// (e.g., `*.example.com`) using the HTTP01 challenge mechanism.
 	// +optional
 	HTTP01 *ACMEChallengeSolverHTTP01 `json:"http01,omitempty"`
 
@@ -772,14 +772,14 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 
 	// The name of the solver to use, as defined in the webhook provider
 	// implementation.
-	// This will typically be the name of the provider, e.g. 'cloudflare'.
+	// This will typically be the name of the provider, e.g., 'cloudflare'.
 	SolverName string `json:"solverName"`
 
 	// Additional configuration that should be passed to the webhook apiserver
 	// when challenges are processed.
 	// This can contain arbitrary JSON data.
 	// Secret values should not be specified in this stanza.
-	// If secret values are needed (e.g. credentials for a DNS service), you
+	// If secret values are needed (e.g., credentials for a DNS service), you
 	// should use a SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.

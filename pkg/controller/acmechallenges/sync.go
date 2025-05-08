@@ -58,7 +58,7 @@ type solver interface {
 	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) error
 	// CleanUp will remove challenge records for a given solver.
 	// This may involve deleting resources in the Kubernetes API Server, or
-	// communicating with other external components (e.g. DNS providers).
+	// communicating with other external components (e.g., DNS providers).
 	CleanUp(ctx context.Context, ch *cmacme.Challenge) error
 }
 

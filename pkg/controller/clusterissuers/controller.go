@@ -57,7 +57,7 @@ type controller struct {
 	issuerFactory issuer.Factory
 
 	// clusterResourceNamespace is the namespace used to store resources
-	// referenced by ClusterIssuer resources, e.g. acme account secrets
+	// referenced by ClusterIssuer resources, e.g., acme account secrets
 	clusterResourceNamespace string
 
 	// fieldManager is the manager name used for the Apply operations.

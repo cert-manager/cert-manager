@@ -171,7 +171,7 @@ $(bin_dir)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(bin_dir)/test
 e2e-build: $(bin_dir)/test/e2e.test
 
 ## Sets the search prefix for finding the "latest" release in test-upgrade
-## To find the latest release for e.g. cert-manager v1.12, use "v1.12*"
+## To find the latest release for, e.g., cert-manager v1.12, use "v1.12*"
 UPGRADE_TEST_INITIAL_RELEASE_PREFIX ?=
 
 ## Can be set to choose a different starting point for the upgrade test,

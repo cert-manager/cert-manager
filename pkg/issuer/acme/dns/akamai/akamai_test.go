@@ -80,7 +80,7 @@ func TestNewDNSProvider(t *testing.T) {
 
 }
 
-// TestPresentBasicFlow tests basic flow, e.g. no record exists.
+// TestPresentBasicFlow tests basic flow, e.g., no record exists.
 func TestPresentBasicFlow(t *testing.T) {
 	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
 	assert.NoError(t, err)
