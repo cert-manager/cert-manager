@@ -87,15 +87,16 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
+	// Remove legacy finalizer
+	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+		return finalizer == cmacme.ACMELegacyFinalizer
+	})
+
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
-	//
-	// -- We only need to add a finalizer label if no supported finalizer label is present.
 	if finalizerRequired(ch) {
-		ch.Finalizers = append(slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-			return finalizer == cmacme.ACMELegacyFinalizer
-		}), cmacme.ACMEDomainQualifiedFinalizer)
+		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEDomainQualifiedFinalizer)
 		return nil
 	}
 
