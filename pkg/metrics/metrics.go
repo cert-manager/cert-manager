@@ -65,6 +65,8 @@ type Metrics struct {
 	venafiClientRequestDurationSeconds *prometheus.SummaryVec
 	controllerSyncCallCount            *prometheus.CounterVec
 	controllerSyncErrorCount           *prometheus.CounterVec
+	issuerReadyStatus                  *prometheus.GaugeVec
+	clusterIssuerReadyStatus           *prometheus.GaugeVec
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -205,6 +207,24 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			},
 			[]string{"controller"},
 		)
+
+		clusterIssuerReadyStatus = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "clusterissuer_ready_status",
+				Help:      "The ready status of the clusterissuer",
+			},
+			[]string{"name", "condition"},
+		)
+
+		issuerReadyStatus = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "issuer_ready_status",
+				Help:      "The ready status of the issuer",
+			},
+			[]string{"name", "namespace", "condition"},
+		)
 	)
 
 	// Create Registry and register the recommended collectors
@@ -230,6 +250,8 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
 		controllerSyncCallCount:            controllerSyncCallCount,
 		controllerSyncErrorCount:           controllerSyncErrorCount,
+		clusterIssuerReadyStatus:           clusterIssuerReadyStatus,
+		issuerReadyStatus:                  issuerReadyStatus,
 	}
 
 	return m
@@ -249,6 +271,8 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
+	m.registry.MustRegister(m.clusterIssuerReadyStatus)
+	m.registry.MustRegister(m.issuerReadyStatus)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
