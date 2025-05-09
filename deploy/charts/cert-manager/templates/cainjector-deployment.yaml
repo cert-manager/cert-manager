@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.cainjector.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -163,4 +164,5 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}
+{{- end }}
 {{- end }}

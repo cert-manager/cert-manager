@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -235,3 +236,4 @@ spec:
       {{- with .Values.hostAliases }}
       hostAliases: {{ toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}
