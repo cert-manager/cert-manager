@@ -157,6 +157,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// Apply runtime defaults to apply default values that are governed by
 	// controller feature gates, such as DefaultPrivateKeyRotationPolicyAlways.
+	// We deep copy the object to avoid mutating the client-go cache.
+	crt = crt.DeepCopy()
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label

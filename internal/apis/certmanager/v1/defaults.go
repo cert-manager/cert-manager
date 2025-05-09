@@ -28,8 +28,15 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetRuntimeDefaults_Certificate sets the default rotation policy to Always, or
-// Never if the DefaultPrivateKeyRotationPolicyAlways feature is disabled.
+// SetRuntimeDefaults_Certificate mutates the supplied Certificate object,
+// setting defaults for certain missing fields:
+// - Sets the default  private key rotation policy to:
+//   - Always, if the DefaultPrivateKeyRotationPolicyAlways feature is enabled
+//   - Never, if the DefaultPrivateKeyRotationPolicyAlways feature is disabled.
+//
+// NOTE: Do not supply Certificate objects retrieved from a client-go lister
+// because you may corrupt the cache. Do a DeepCopy first. See:
+// https://pkg.go.dev/github.com/cert-manager/cert-manager@v1.17.2/pkg/client/listers/certmanager/v1#CertificateNamespaceLister
 //
 // NOTE: This is deliberately not called `SetObjectDefault_`, because that would
 // cause defaultergen to add this to the scheme default, which would be
