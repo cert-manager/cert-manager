@@ -102,9 +102,11 @@ spec:
                     group:
                       description: Group of the resource being referred to.
                       type: string
+                      default: cert-manager.io
                     kind:
                       description: Kind of the resource being referred to.
                       type: string
+                      default: Issuer
                     name:
                       description: Name of the resource being referred to.
                       type: string
