@@ -136,6 +136,7 @@ const (
 	// Owner: @jsoref
 	// Alpha: v1.16
 	// Beta: v1.17
+	// GA: v1.18
 	//
 	// UseDomainQualifiedFinalizer changes the finalizer added to cert-manager created
 	// resources to acme.cert-manager.io/finalizer instead of finalizer.acme.cert-manager.io.
@@ -192,7 +193,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
-	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.Beta},
+	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
 	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
 
 	// NB: Deprecated + removed feature gates are kept here.
