@@ -381,7 +381,7 @@ config:
   # Feature gates as of v1.18.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
-    AdditionalCertificateOutputFormats: true # BETA - default=true
+    AdditionalCertificateOutputFormats: true # GA - default=true
     AllAlpha: false # ALPHA - default=false
     AllBeta: false # BETA - default=false
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false

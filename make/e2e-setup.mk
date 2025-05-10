@@ -222,7 +222,7 @@ $(call local-image-tar,vaultretagged): $(call image-tar,vault)
 	tar cf $@ -C /tmp/vault .
 	@rm -rf /tmp/vault
 
-FEATURE_GATES ?= AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true,NameConstraints=true,OtherNames=true
+FEATURE_GATES ?= ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true,NameConstraints=true,OtherNames=true
 
 ## Set this environment variable to a non empty string to cause cert-manager to
 ## be installed using best-practice configuration settings, and to install
@@ -263,8 +263,8 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
-feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # When testing an published chart the repo can be configured using

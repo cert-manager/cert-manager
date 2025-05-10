@@ -394,13 +394,6 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
 
-	if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-		if len(crt.AdditionalOutputFormats) > 0 {
-			el = append(el, field.Forbidden(fldPath.Child("additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"))
-		}
-		return el
-	}
-
 	// Ensure the set of output formats is unique, keyed on "Type".
 	aofSet := sets.NewString()
 	for _, val := range crt.AdditionalOutputFormats {

@@ -59,6 +59,7 @@ const (
 	// Owner: @joshvanl
 	// Alpha: v1.7
 	// Beta: v1.15
+	// GA: v1.18
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -187,7 +188,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
-	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.Beta},
+	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},

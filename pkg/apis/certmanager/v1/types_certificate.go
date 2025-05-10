@@ -299,10 +299,6 @@ type CertificateSpec struct {
 
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
-	//
-	// This is a Beta Feature enabled by default. It can be disabled with the
-	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
-	// the controller and webhook components.
 	// +optional
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 
