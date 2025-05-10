@@ -258,10 +258,6 @@ type CertificateSpec struct {
 
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
-	//
-	// This is a Beta Feature enabled by default. It can be disabled with the
-	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
-	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
 
 	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
