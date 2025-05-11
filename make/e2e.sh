@@ -77,7 +77,7 @@ flake_attempts=1
 ginkgo_skip=
 ginkgo_focus=
 
-feature_gates=AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,LiteralCertificateSubject=true,OtherNames=true
+feature_gates=ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,LiteralCertificateSubject=true,OtherNames=true
 
 artifacts="./$BINDIR/artifacts"
 

@@ -29,12 +29,10 @@ import (
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates"
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -142,11 +140,9 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		return fmt.Errorf("failed to add keystores to Secret: %w", err)
 	}
 
-	// Add additional output formats if feature enabled.
-	if utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-		if err := setAdditionalOutputFormats(crt, secret, data); err != nil {
-			return fmt.Errorf("failed to add additional output formats to Secret: %w", err)
-		}
+	// Add additional output formats if enabled.
+	if err := setAdditionalOutputFormats(crt, secret, data); err != nil {
+		return fmt.Errorf("failed to add additional output formats to Secret: %w", err)
 	}
 
 	secret.Data[corev1.TLSPrivateKeyKey] = data.PrivateKey
