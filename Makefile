@@ -76,7 +76,7 @@ endif
 # Git and versioning information #
 ##################################
 
-# Check if tags are available before running git describe and fail back to the GitHub API
+# Check if tags are available before running git describe and fall back to the GitHub API
 # This is necessary as helm package in the integration test would fail with no valid semver version
 # When forking this repo, you don't have tags by default
 # this enables easier onboarding for new contributors
