@@ -1,0 +1,102 @@
+diff --git i/third_party/forked/acme/acme.go w/third_party/forked/acme/acme.go
+index a43c62f1d..b3caaafdf 100644
+--- i/third_party/forked/acme/acme.go
++++ w/third_party/forked/acme/acme.go
+@@ -186,10 +186,11 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
+ 		Nonce     string `json:"newNonce"`
+ 		KeyChange string `json:"keyChange"`
+ 		Meta      struct {
+-			Terms        string   `json:"termsOfService"`
+-			Website      string   `json:"website"`
+-			CAA          []string `json:"caaIdentities"`
+-			ExternalAcct bool     `json:"externalAccountRequired"`
++			Terms        string            `json:"termsOfService"`
++			Website      string            `json:"website"`
++			CAA          []string          `json:"caaIdentities"`
++			ExternalAcct bool              `json:"externalAccountRequired"`
++			Profiles     map[string]string `json:"profiles"`
+ 		}
+ 	}
+ 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
+@@ -209,6 +210,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
+ 		Website:                 v.Meta.Website,
+ 		CAA:                     v.Meta.CAA,
+ 		ExternalAccountRequired: v.Meta.ExternalAcct,
++		Profiles:                v.Meta.Profiles,
+ 	}
+ 	return *c.dir, nil
+ }
+diff --git i/third_party/forked/acme/rfc8555.go w/third_party/forked/acme/rfc8555.go
+index 3152e531b..675496393 100644
+--- i/third_party/forked/acme/rfc8555.go
++++ w/third_party/forked/acme/rfc8555.go
+@@ -205,6 +205,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
+ 		Identifiers []wireAuthzID `json:"identifiers"`
+ 		NotBefore   string        `json:"notBefore,omitempty"`
+ 		NotAfter    string        `json:"notAfter,omitempty"`
++		Profile     string        `json:"profile,omitempty"`
+ 	}{}
+ 	for _, v := range id {
+ 		req.Identifiers = append(req.Identifiers, wireAuthzID{
+@@ -212,12 +213,15 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
+ 			Value: v.Value,
+ 		})
+ 	}
++
+ 	for _, o := range opt {
+ 		switch o := o.(type) {
+ 		case orderNotBeforeOpt:
+ 			req.NotBefore = time.Time(o).Format(time.RFC3339)
+ 		case orderNotAfterOpt:
+ 			req.NotAfter = time.Time(o).Format(time.RFC3339)
++		case orderProfileOpt:
++			req.Profile = string(o)
+ 		default:
+ 			// Package's fault if we let this happen.
+ 			panic(fmt.Sprintf("unsupported order option type %T", o))
+diff --git i/third_party/forked/acme/types.go w/third_party/forked/acme/types.go
+index 45492adc8..c42de92dd 100644
+--- i/third_party/forked/acme/types.go
++++ w/third_party/forked/acme/types.go
+@@ -304,6 +304,10 @@ type Directory struct {
+ 	// ExternalAccountRequired indicates that the CA requires for all account-related
+ 	// requests to include external account binding information.
+ 	ExternalAccountRequired bool
++
++	// Profiles lists any profiles presented by the server which can be chosen for
++	// issuing certificates. The key is the name of the profile, and the value is a description.
++	Profiles map[string]string
+ }
+ 
+ // Order represents a client's request for a certificate.
+@@ -379,6 +383,11 @@ func WithOrderNotAfter(t time.Time) OrderOption {
+ 	return orderNotAfterOpt(t)
+ }
+ 
++// WithOrderProfile set order's profile
++func WithOrderProfile(profile string) OrderOption {
++	return orderProfileOpt(profile)
++}
++
+ type orderNotBeforeOpt time.Time
+ 
+ func (orderNotBeforeOpt) privateOrderOpt() {}
+@@ -387,6 +396,10 @@ type orderNotAfterOpt time.Time
+ 
+ func (orderNotAfterOpt) privateOrderOpt() {}
+ 
++type orderProfileOpt string
++
++func (orderProfileOpt) privateOrderOpt() {}
++
+ // Authorization encodes an authorization response.
+ type Authorization struct {
+ 	// URI uniquely identifies a authorization.
+@@ -549,6 +562,7 @@ type wireChallenge struct {
+ 	Status    string
+ 	Validated time.Time
+ 	Error     *wireError
++	Profile   string
+ }
+ 
+ func (c *wireChallenge) challenge() *Challenge {
