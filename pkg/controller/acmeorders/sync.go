@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,6 +45,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (

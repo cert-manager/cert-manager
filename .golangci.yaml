@@ -33,6 +33,8 @@ linters:
       - linters:
           - staticcheck
         text: (NewCertManagerBasicCertificateRequest)
+      - path: third_party
+        text: "."
     paths: [third_party$, builtin$, examples$]
     warn-unused: true
   enable:
@@ -104,3 +106,6 @@ formatters:
   exclusions:
     generated: lax
     paths: [third_party$, builtin$, examples$]
+    rules:
+      - path: third_party
+        text: "."

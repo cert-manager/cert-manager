@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"testing"
 
-	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -35,6 +34,7 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // Present the challenge value with the given solver.

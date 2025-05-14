@@ -1,0 +1,9 @@
+# Clone folders from third_party repos and forks.
+# More info can be found here: https://github.com/cert-manager/klone
+targets:
+  forked:
+    - folder_name: acme
+      repo_url: https://go.googlesource.com/crypto
+      repo_ref: v0.38.0
+      repo_hash: aae6e61070421a51c1ba3bd9bba4b9b3979ed488
+      repo_path: acme

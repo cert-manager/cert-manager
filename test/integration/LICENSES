@@ -7,6 +7,7 @@ github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENS
 github.com/cenkalti/backoff/v4,https://github.com/cenkalti/backoff/blob/v4.3.0/LICENSE,MIT
 github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
 github.com/cert-manager/cert-manager/integration-tests/framework,https://github.com/cert-manager/cert-manager/blob/HEAD/integration-tests/LICENSE,Apache-2.0
+github.com/cert-manager/cert-manager/third_party/forked/acme,https://github.com/cert-manager/cert-manager/blob/HEAD/third_party/forked/acme/LICENSE,BSD-3-Clause
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt,MIT
 github.com/coreos/go-semver/semver,https://github.com/coreos/go-semver/blob/v0.3.1/LICENSE,Apache-2.0
 github.com/coreos/go-systemd/v22/journal,https://github.com/coreos/go-systemd/blob/v22.5.0/LICENSE,Apache-2.0
