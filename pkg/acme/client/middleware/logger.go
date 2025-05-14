@@ -19,11 +19,11 @@ package middleware
 import (
 	"context"
 
-	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 	"github.com/go-logr/logr"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func NewLogger(baseCl client.Interface) client.Interface {
