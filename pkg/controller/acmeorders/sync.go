@@ -26,7 +26,7 @@ import (
 	"net/http"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

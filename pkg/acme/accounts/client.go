@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	"github.com/cert-manager/cert-manager/pkg/acme/client/middleware"
