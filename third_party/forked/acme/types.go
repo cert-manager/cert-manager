@@ -304,6 +304,10 @@ type Directory struct {
 	// ExternalAccountRequired indicates that the CA requires for all account-related
 	// requests to include external account binding information.
 	ExternalAccountRequired bool
+
+	// Profiles lists any profiles presented by the server which can be chosen for
+	// issuing certificates. The key is the name of the profile, and the value is a description.
+	Profiles map[string]string
 }
 
 // Order represents a client's request for a certificate.
@@ -379,6 +383,11 @@ func WithOrderNotAfter(t time.Time) OrderOption {
 	return orderNotAfterOpt(t)
 }
 
+// WithOrderProfile set order's profile
+func WithOrderProfile(profile string) OrderOption {
+	return orderProfileOpt(profile)
+}
+
 type orderNotBeforeOpt time.Time
 
 func (orderNotBeforeOpt) privateOrderOpt() {}
@@ -386,6 +395,10 @@ func (orderNotBeforeOpt) privateOrderOpt() {}
 type orderNotAfterOpt time.Time
 
 func (orderNotAfterOpt) privateOrderOpt() {}
+
+type orderProfileOpt string
+
+func (orderProfileOpt) privateOrderOpt() {}
 
 // Authorization encodes an authorization response.
 type Authorization struct {
@@ -549,6 +562,7 @@ type wireChallenge struct {
 	Status    string
 	Validated time.Time
 	Error     *wireError
+	Profile   string
 }
 
 func (c *wireChallenge) challenge() *Challenge {

@@ -205,6 +205,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 		Identifiers []wireAuthzID `json:"identifiers"`
 		NotBefore   string        `json:"notBefore,omitempty"`
 		NotAfter    string        `json:"notAfter,omitempty"`
+		Profile     string        `json:"profile,omitempty"`
 	}{}
 	for _, v := range id {
 		req.Identifiers = append(req.Identifiers, wireAuthzID{
@@ -212,12 +213,15 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 			Value: v.Value,
 		})
 	}
+
 	for _, o := range opt {
 		switch o := o.(type) {
 		case orderNotBeforeOpt:
 			req.NotBefore = time.Time(o).Format(time.RFC3339)
 		case orderNotAfterOpt:
 			req.NotAfter = time.Time(o).Format(time.RFC3339)
+		case orderProfileOpt:
+			req.Profile = string(o)
 		default:
 			// Package's fault if we let this happen.
 			panic(fmt.Sprintf("unsupported order option type %T", o))
