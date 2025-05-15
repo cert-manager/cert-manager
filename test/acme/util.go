@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -135,10 +136,8 @@ func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func(ctx context
 			if !ok {
 				continue
 			}
-			for _, k := range txt.Txt {
-				if k == value {
-					return false, nil
-				}
+			if slices.Contains(txt.Txt, value) {
+				return false, nil
 			}
 		}
 		return true, nil
