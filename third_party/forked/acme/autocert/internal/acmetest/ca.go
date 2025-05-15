@@ -34,7 +34,7 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/crypto/acme"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // CAServer is a simple test server which implements ACME spec bits needed for testing.

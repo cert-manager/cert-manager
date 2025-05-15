@@ -296,7 +296,7 @@ func init() {
 // userAgent returns the User-Agent header value. It includes the package name,
 // the module version (if available), and the c.UserAgent value (if set).
 func (c *Client) userAgent() string {
-	ua := "golang.org/x/crypto/acme"
+	ua := "github.com/cert-manager/cert-manager/third_party/forked/acme"
 	if packageVersion != "" {
 		ua += "@" + packageVersion
 	}
