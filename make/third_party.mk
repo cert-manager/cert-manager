@@ -13,6 +13,9 @@
 # limitations under the License.
 
 .PHONY: update-third-party
+## Update the code in the `third_party/` directory.
+##
+## @category Development
 update-third-party: | $(NEEDS_KLONE)
 	pushd third_party && $(KLONE) sync
 	find third_party/forked/acme -iname '*.go' \
