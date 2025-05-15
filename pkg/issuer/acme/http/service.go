@@ -108,14 +108,14 @@ func (s *Solver) createService(ctx context.Context, ch *cmacme.Challenge) (*core
 
 func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	podLabels := podLabels(ch)
+
+	// Build base service object
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    ch.Namespace,
-			Labels:       podLabels,
-			Annotations: map[string]string{
-				"auth.istio.io/8089": "NONE",
-			},
+			GenerateName:    "cm-acme-http-solver-",
+			Namespace:       ch.Namespace,
+			Labels:          make(map[string]string),
+			Annotations:     make(map[string]string),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.ServiceSpec{
@@ -131,6 +131,12 @@ func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 		},
 	}
 
+	// Set default labels and annotations
+	for k, v := range podLabels {
+		service.ObjectMeta.Labels[k] = v
+	}
+	service.ObjectMeta.Annotations["auth.istio.io/8089"] = "NONE"
+
 	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
 	serviceType, err := getServiceType(ch)
 	if err != nil {
@@ -138,6 +144,23 @@ func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	}
 	if serviceType != "" {
 		service.Spec.Type = serviceType
+	}
+
+	// Merge metadata from ServiceTemplate if provided
+	serviceTemplate, err := getServiceTemplate(ch)
+	if err != nil {
+		// This should ideally not happen if getServiceType succeeded, but handle defensively
+		return nil, fmt.Errorf("failed to get service template: %w", err)
+	}
+	if serviceTemplate != nil {
+		// Merge labels from template, overriding defaults
+		for k, v := range serviceTemplate.Labels {
+			service.ObjectMeta.Labels[k] = v
+		}
+		// Merge annotations from template, overriding defaults
+		for k, v := range serviceTemplate.Annotations {
+			service.ObjectMeta.Annotations[k] = v
+		}
 	}
 
 	return service, nil
