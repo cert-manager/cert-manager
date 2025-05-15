@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.startupapicheck.enabled }}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -22,5 +23,6 @@ subjects:
   - kind: ServiceAccount
     name: {{ template "startupapicheck.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}
 {{- end }}
 {{- end }}

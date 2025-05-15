@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.cainjector.enabled }}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 kind: ClusterRole
@@ -16,5 +17,6 @@ rules:
   verbs:     ['use']
   resourceNames:
   - {{ template "cainjector.fullname" . }}
+{{- end }}
 {{- end }}
 {{- end }}
