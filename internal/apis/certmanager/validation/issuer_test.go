@@ -414,6 +414,47 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("skipTLSVerify"), true, "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"),
 			},
 		},
+		"acme issuer with both a CA bundle from caBundleSecretRef and SkipTLSVerify": {
+			spec: &cmacme.ACMEIssuer{
+				Email:             "valid-email",
+				Server:            "valid-server",
+				CABundleSecretRef: &validSecretKeyRef,
+				SkipTLSVerify:     true,
+				PrivateKey:        validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundleSecretRef"), "", "caBundleSecretRef and skipTLSVerify are mutually exclusive and cannot both be set"),
+				field.Invalid(fldPath.Child("skipTLSVerify"), true, "caBundleSecretRef and skipTLSVerify are mutually exclusive and cannot both be set"),
+			},
+		},
+		"acme issuer with both a CA bundle and caBundleSecretRef": {
+			spec: &cmacme.ACMEIssuer{
+				Email:             "valid-email",
+				Server:            "valid-server",
+				CABundleSecretRef: &validSecretKeyRef,
+				CABundle:          caBundle,
+				PrivateKey:        validSecretKeyRef,
+				SkipTLSVerify:     false,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "", "caBundle and caBundleSecretRef are mutually exclusive and cannot both be set"),
+				field.Invalid(fldPath.Child("caBundleSecretRef"), "", "caBundle and caBundleSecretRef are mutually exclusive and cannot both be set"),
+			},
+		},
 		"acme solver without any config": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
