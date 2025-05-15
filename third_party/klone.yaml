@@ -1,0 +1,9 @@
+# Clone folders from third_party repos and forks.
+# More info can be found here: https://github.com/cert-manager/klone
+targets:
+  forked:
+    - folder_name: acme
+      repo_url: https://github.com/sigmavirus24/golang-x-crypto
+      repo_ref: proposal/73101
+      repo_hash: c622daa7bb7676bd5480b7f49679e5e4c2adb4fb
+      repo_path: acme
