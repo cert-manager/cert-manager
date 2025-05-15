@@ -17,7 +17,11 @@ limitations under the License.
 package metrics
 
 import (
+	"fmt"
 	"time"
+
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // ObserveACMERequestDuration increases bucket counters for that ACME client duration.
@@ -28,4 +32,23 @@ func (m *Metrics) ObserveACMERequestDuration(duration time.Duration, labels ...s
 // IncrementACMERequestCount increases the acme client request counter.
 func (m *Metrics) IncrementACMERequestCount(labels ...string) {
 	m.acmeClientRequestCount.WithLabelValues(labels...).Inc()
+}
+
+func (m *Metrics) UpdateChallengeStatus(challenge *acmev1.Challenge) {
+	value := 0.0
+	if challenge.Status.State == acmev1.Ready {
+		value = 1.0
+	}
+	m.certificateChallenegeStatus.With(prometheus.Labels{
+		"status":     string(challenge.Status.State),
+		"reason":     string(challenge.Status.Reason),
+		"domain":     challenge.Spec.DNSName,
+		"processing": fmt.Sprint(challenge.Status.Processing),
+	}).Set(value)
+}
+
+func (m *Metrics) RemoveChallengeStatus(challenge *acmev1.Challenge) {
+	m.certificateChallenegeStatus.DeletePartialMatch(prometheus.Labels{
+		"domain": challenge.Spec.DNSName,
+	})
 }
