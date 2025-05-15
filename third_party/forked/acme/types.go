@@ -56,6 +56,15 @@ var (
 
 	// ErrNoAccount indicates that the Client's key has not been registered with the CA.
 	ErrNoAccount = errors.New("acme: account does not exist")
+
+	// ErrCADoesNotSupportProfiles indicates that [WithOrderProfile] was
+	// included with a CA that does not advertise support for profiles in
+	// their directory.
+	ErrCADoesNotSupportProfiles = errors.New("acme: certificate authority does not support profiles")
+
+	// ErrProfileNotInSetOfSupportedProfiles indicates that the profile
+	// specified with [WithOrderProfile} is not one supported by the CA
+	ErrProfileNotInSetOfSupportedProfiles = errors.New("acme: certificate authority does not advertise a profile with name")
 )
 
 // A Subproblem describes an ACME subproblem as reported in an Error.
@@ -305,9 +314,9 @@ type Directory struct {
 	// requests to include external account binding information.
 	ExternalAccountRequired bool
 
-	// Profiles lists any profiles presented by the server which can be chosen for
-	// issuing certificates. The key is the name of the profile, and the value is a description.
-	Profiles map[string]string
+	// Profiles indicates that the CA supports specifying a profile for an
+	// order. See also [WithOrderNotAfter].
+	Profiles Profiles
 }
 
 // Order represents a client's request for a certificate.
@@ -383,9 +392,13 @@ func WithOrderNotAfter(t time.Time) OrderOption {
 	return orderNotAfterOpt(t)
 }
 
-// WithOrderProfile set order's profile
-func WithOrderProfile(profile string) OrderOption {
-	return orderProfileOpt(profile)
+// WithOrderProfile sets an order's Profile field for servers which support
+// profiles.
+// See also:
+// * https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
+// * https://letsencrypt.org/docs/profiles/
+func WithOrderProfile(name string) OrderOption {
+	return orderProfileOpt(name)
 }
 
 type orderNotBeforeOpt time.Time
@@ -562,7 +575,6 @@ type wireChallenge struct {
 	Status    string
 	Validated time.Time
 	Error     *wireError
-	Profile   string
 }
 
 func (c *wireChallenge) challenge() *Challenge {
@@ -637,3 +649,18 @@ func WithTemplate(t *x509.Certificate) CertOption {
 type certOptTemplate x509.Certificate
 
 func (*certOptTemplate) privateCertOpt() {}
+
+type Profiles map[string]string
+
+func (ps Profiles) isSupported() bool {
+	return len(ps) > 0
+}
+
+func (ps Profiles) GetDescription(name string) string {
+	return ps[name]
+}
+
+func (ps Profiles) Has(name string) bool {
+	_, ok := ps[name]
+	return ok
+}
