@@ -32,8 +32,29 @@ import (
 	"software.sslmate.com/src/go-pkcs12"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
+
+func pkcs12EncoderFromProfile(profile cmapi.PKCS12Profile) *pkcs12.Encoder {
+	var encoder *pkcs12.Encoder
+
+	switch profile {
+	case cmapi.Modern2023PKCS12Profile:
+		encoder = pkcs12.Modern2023
+
+	case cmapi.LegacyDESPKCS12Profile:
+		encoder = pkcs12.LegacyDES
+
+	case cmapi.LegacyRC2PKCS12Profile:
+		encoder = pkcs12.LegacyRC2
+
+	default:
+		encoder = pkcs12.LegacyRC2
+	}
+
+	return encoder.WithRand(cmrand.Reader)
+}
 
 // encodePKCS12Keystore will encode a PKCS12 keystore using the password provided.
 // The key, certificate and CA data must be provided in PKCS1 or PKCS8 PEM format.
@@ -62,16 +83,7 @@ func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey [
 		cas = append(certs[1:], cas...)
 	}
 
-	switch profile {
-	case cmapi.Modern2023PKCS12Profile:
-		return pkcs12.Modern2023.Encode(key, certs[0], cas, password)
-	case cmapi.LegacyDESPKCS12Profile:
-		return pkcs12.LegacyDES.Encode(key, certs[0], cas, password)
-	case cmapi.LegacyRC2PKCS12Profile:
-		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
-	default:
-		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
-	}
+	return pkcs12EncoderFromProfile(profile).Encode(key, certs[0], cas, password)
 }
 
 func encodePKCS12Truststore(profile cmapi.PKCS12Profile, password string, caPem []byte) ([]byte, error) {
@@ -80,16 +92,11 @@ func encodePKCS12Truststore(profile cmapi.PKCS12Profile, password string, caPem 
 		return nil, err
 	}
 
-	switch profile {
-	case cmapi.Modern2023PKCS12Profile:
-		return pkcs12.Modern2023.EncodeTrustStore(cas, password)
-	case cmapi.LegacyDESPKCS12Profile:
-		return pkcs12.LegacyDES.EncodeTrustStore(cas, password)
-	case cmapi.LegacyRC2PKCS12Profile:
-		return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
-	default:
-		return pkcs12.LegacyRC2.EncodeTrustStore(cas, password)
-	}
+	return pkcs12EncoderFromProfile(profile).EncodeTrustStore(cas, password)
+}
+
+func newJKS() jks.KeyStore {
+	return jks.New(jks.WithCustomRandomNumberGenerator(cmrand.Reader))
 }
 
 func encodeJKSKeystore(password []byte, keyAlias string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
@@ -116,7 +123,8 @@ func encodeJKSKeystore(password []byte, keyAlias string, rawKey []byte, certPem 
 		}
 	}
 
-	ks := jks.New()
+	ks := newJKS()
+
 	if err = ks.SetPrivateKeyEntry(keyAlias, jks.PrivateKeyEntry{
 		CreationTime:     time.Now(),
 		PrivateKey:       keyDER,
@@ -140,14 +148,17 @@ func encodeJKSKeystore(password []byte, keyAlias string, rawKey []byte, certPem 
 }
 
 func encodeJKSTruststore(password []byte, caPem []byte) ([]byte, error) {
-	ks := jks.New()
+	ks := newJKS()
+
 	if err := addCAsToJKSStore(&ks, caPem); err != nil {
 		return nil, err
 	}
+
 	buf := &bytes.Buffer{}
 	if err := ks.Store(buf, password); err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }
 
