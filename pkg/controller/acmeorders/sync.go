@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,6 +45,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
@@ -285,6 +285,11 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	if o.Spec.Duration != nil {
 		options = append(options, acmeapi.WithOrderNotAfter(c.clock.Now().Add(o.Spec.Duration.Duration)))
 	}
+
+	if o.Spec.Profile != "" {
+		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
+	}
+
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
