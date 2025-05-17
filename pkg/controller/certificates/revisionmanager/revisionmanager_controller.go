@@ -117,9 +117,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	log = logf.WithResource(log, crt)
 
-	// If RevisionHistoryLimit is nil, don't attempt to garbage collect old
-	// CertificateRequests
+	// If RevisionHistoryLimit is nil, then default to 1
 	if crt.Spec.RevisionHistoryLimit == nil {
+		defaultRevisionHistoryLimit := int32(1)
+		crt.Spec.RevisionHistoryLimit = &defaultRevisionHistoryLimit
+	}
+
+	// If RevisionHistoryLimit is 0, don't attempt to garbage collect old
+	// CertificateRequests
+	if *crt.Spec.RevisionHistoryLimit == 0 {
 		return nil
 	}
 

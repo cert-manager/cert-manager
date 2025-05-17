@@ -252,8 +252,8 @@ type CertificateSpec struct {
 	// revisions exceeds this number.
 	//
 	// If set, revisionHistoryLimit must be a value of `1` or greater.
-	// If unset (`nil`), revisions will not be garbage collected.
-	// Default value is `nil`.
+	// If set to 0, revisions will not be garbage collected.
+	// Default value is `1`.
 	RevisionHistoryLimit *int32
 
 	// Defines extra output formats of the private key and signed certificate chain
