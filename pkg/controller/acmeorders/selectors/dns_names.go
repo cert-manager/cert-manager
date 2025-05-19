@@ -17,6 +17,8 @@ limitations under the License.
 package selectors
 
 import (
+	"slices"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -37,10 +39,8 @@ func (s *dnsNamesSelector) Matches(meta metav1.ObjectMeta, dnsName string) (bool
 		return true, 0
 	}
 
-	for _, d := range s.allowedDNSNames {
-		if dnsName == d {
-			return true, 1
-		}
+	if slices.Contains(s.allowedDNSNames, dnsName) {
+		return true, 1
 	}
 
 	return false, 0
