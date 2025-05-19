@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"golang.org/x/crypto/acme"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // TODO: expand this out one day to be backed by the pebble wfe package

@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,6 +38,7 @@ import (
 	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestSync(t *testing.T) {
