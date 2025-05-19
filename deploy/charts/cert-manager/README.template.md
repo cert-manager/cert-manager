@@ -710,13 +710,14 @@ The namespace that the service monitor should live in, defaults to the cert-mana
 > ```
 
 Specifies the `prometheus` label on the created ServiceMonitor. This is used when different Prometheus instances have label selectors matching different ServiceMonitors.
-#### **prometheus.servicemonitor.targetPort** ~ `number`
+#### **prometheus.servicemonitor.targetPort** ~ `string,integer`
 > Default value:
 > ```yaml
-> 9402
+> http-metrics
 > ```
 
 The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.
+
 #### **prometheus.servicemonitor.path** ~ `string`
 > Default value:
 > ```yaml
