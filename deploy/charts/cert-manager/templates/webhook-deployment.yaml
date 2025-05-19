@@ -171,6 +171,18 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{- if (.Values.webhook.resources.limits).cpu }}
+          - name: GOMAXPROCS
+            valueFrom:
+              resourceFieldRef:
+                resource: limits.cpu
+          {{- end }}
+          {{- if (.Values.webhook.resources.limits).memory }}
+          - name: GOMEMLIMIT
+            valueFrom:
+              resourceFieldRef:
+                resource: limits.memory
+          {{- end }}
           {{- with .Values.webhook.extraEnv }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
