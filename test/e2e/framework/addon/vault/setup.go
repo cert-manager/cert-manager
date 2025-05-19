@@ -18,7 +18,6 @@ package vault
 
 import (
 	"context"
-	cryptorand "crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -40,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -843,7 +843,7 @@ func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
 
-	certificateBytes, err := x509.CreateCertificate(cryptorand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	certificateBytes, err := x509.CreateCertificate(cmrand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		return nil, nil, err
 	}
