@@ -19,6 +19,7 @@ limitations under the License.
 // certificate_expiration_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
 // certificate_renewal_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
 // certificate_ready_status{name, namespace, condition, issuer_name, issuer_kind, issuer_group}
+// certificate_challenge_status{status, domain, reason, processing, id, type}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -65,6 +66,7 @@ type Metrics struct {
 	venafiClientRequestDurationSeconds *prometheus.SummaryVec
 	controllerSyncCallCount            *prometheus.CounterVec
 	controllerSyncErrorCount           *prometheus.CounterVec
+	certificateChallengeStatus         *prometheus.GaugeVec
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -205,6 +207,12 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			},
 			[]string{"controller"},
 		)
+
+		certificateChallengeStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "certificate_challenge_status",
+			Help:      "The status of certificate challenges.",
+		}, []string{"status", "domain", "reason", "processing", "id", "type"})
 	)
 
 	// Create Registry and register the recommended collectors
@@ -230,6 +238,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
 		controllerSyncCallCount:            controllerSyncCallCount,
 		controllerSyncErrorCount:           controllerSyncErrorCount,
+		certificateChallengeStatus:         certificateChallengeStatus,
 	}
 
 	return m
@@ -249,6 +258,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
+	m.registry.MustRegister(m.certificateChallengeStatus)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
