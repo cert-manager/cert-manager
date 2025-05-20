@@ -35,20 +35,19 @@ func (m *Metrics) IncrementACMERequestCount(labels ...string) {
 }
 
 func (m *Metrics) UpdateChallengeStatus(challenge *acmev1.Challenge) {
-	value := 0.0
-	if challenge.Status.State == acmev1.Ready {
-		value = 1.0
-	}
-	m.certificateChallenegeStatus.With(prometheus.Labels{
+	value := 1.0
+	m.certificateChallengeStatus.With(prometheus.Labels{
 		"status":     string(challenge.Status.State),
 		"reason":     string(challenge.Status.Reason),
 		"domain":     challenge.Spec.DNSName,
+		"type":       string(challenge.Spec.Type),
+		"id":         string(challenge.GetUID()),
 		"processing": fmt.Sprint(challenge.Status.Processing),
 	}).Set(value)
 }
 
 func (m *Metrics) RemoveChallengeStatus(challenge *acmev1.Challenge) {
-	m.certificateChallenegeStatus.DeletePartialMatch(prometheus.Labels{
-		"domain": challenge.Spec.DNSName,
+	m.certificateChallengeStatus.DeletePartialMatch(prometheus.Labels{
+		"id": string(challenge.GetUID()),
 	})
 }

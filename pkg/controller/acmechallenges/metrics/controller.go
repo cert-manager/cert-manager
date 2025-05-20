@@ -1,4 +1,5 @@
 /*
+Copyright 2020 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,7 +32,7 @@ import (
 const (
 	// ControllerName is the string used to refer to this controller
 	// when enabling or disabling it from command line flags.
-	ControllerName = "certificates-metrics"
+	ControllerName = "certificate-challenges-metrics"
 )
 
 // controllerWrapper wraps the `controller` structure to make it implement

@@ -27,10 +27,12 @@ func TestCertificateChallengeStatusMetrics(t *testing.T) {
 			challenge: gen.Challenge("test-challenge-status",
 				gen.SetChallengeDNSName("example.com"),
 				gen.SetChallengeProcessing(false),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
 				gen.SetChallengeState(cmacme.Ready),
+				gen.SetChallengeUID("test-challenge-uid"),
 			),
 			expectedMetric: `
-			certmanager_certificate_challenge_status{domain="example.com",processing="false",reason="",status="ready"} 1
+			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="ready",type="DNS-01"} 1
 			`,
 		},
 	}
@@ -40,7 +42,7 @@ func TestCertificateChallengeStatusMetrics(t *testing.T) {
 			m := New(testr.New(t), clock.RealClock{})
 			m.UpdateChallengeStatus(test.challenge)
 
-			if err := testutil.CollectAndCompare(m.certificateChallenegeStatus,
+			if err := testutil.CollectAndCompare(m.certificateChallengeStatus,
 				strings.NewReader(certificateChallengeStatusMetadata+test.expectedMetric),
 				"certmanager_certificate_challenge_status",
 			); err != nil {
