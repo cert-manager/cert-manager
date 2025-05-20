@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2025 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,11 +20,12 @@ import (
 	"strings"
 	"testing"
 
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/go-logr/logr/testr"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/utils/clock"
+
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const certificateChallengeStatusMetadata = `

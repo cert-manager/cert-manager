@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"time"
 
-	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/prometheus/client_golang/prometheus"
+
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 // ObserveACMERequestDuration increases bucket counters for that ACME client duration.
@@ -38,7 +39,7 @@ func (m *Metrics) UpdateChallengeStatus(challenge *acmev1.Challenge) {
 	value := 1.0
 	m.certificateChallengeStatus.With(prometheus.Labels{
 		"status":     string(challenge.Status.State),
-		"reason":     string(challenge.Status.Reason),
+		"reason":     challenge.Status.Reason,
 		"domain":     challenge.Spec.DNSName,
 		"type":       string(challenge.Spec.Type),
 		"id":         string(challenge.GetUID()),
