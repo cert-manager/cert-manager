@@ -36,7 +36,14 @@ func (m *Metrics) IncrementACMERequestCount(labels ...string) {
 }
 
 func (m *Metrics) UpdateChallengeStatus(challenge *acmev1.Challenge) {
-	value := 1.0
+	value := 0.0
+
+	for _, status := range challengeValidStatuses {
+		if string(challenge.Status.State) == string(status) {
+			value = 1.0
+			break
+		}
+	}
 	m.certificateChallengeStatus.With(prometheus.Labels{
 		"status":     string(challenge.Status.State),
 		"reason":     challenge.Status.Reason,

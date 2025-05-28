@@ -35,20 +35,29 @@ const certificateChallengeStatusMetadata = `
 
 func TestCertificateChallengeStatusMetrics(t *testing.T) {
 	type TestChallenge struct {
-		challenge      *cmacme.Challenge
+		challenges     []*cmacme.Challenge
 		expectedMetric string
 	}
 
+	pendingToValidChallenges := make([]*cmacme.Challenge, 0)
+	pendingToValidChallenges = append(pendingToValidChallenges, gen.Challenge("test-challenge-status",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+		gen.SetChallengeState(cmacme.Pending),
+		gen.SetChallengeUID("test-challenge-uid"),
+	), gen.Challenge("test-challenge-status-2",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+		gen.SetChallengeState(cmacme.Ready),
+		gen.SetChallengeUID("test-challenge-uid"),
+	))
 	testCases := map[string]TestChallenge{
 		"challenge-metric-active-state-valid": {
-			challenge: gen.Challenge("test-challenge-status",
-				gen.SetChallengeDNSName("example.com"),
-				gen.SetChallengeProcessing(false),
-				gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
-				gen.SetChallengeState(cmacme.Ready),
-				gen.SetChallengeUID("test-challenge-uid"),
-			),
+			challenges: pendingToValidChallenges,
 			expectedMetric: `
+			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="pending",type="DNS-01"} 0
 			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="ready",type="DNS-01"} 1
 			`,
 		},
@@ -57,7 +66,10 @@ func TestCertificateChallengeStatusMetrics(t *testing.T) {
 	for testName, test := range testCases {
 		t.Run(testName, func(t *testing.T) {
 			m := New(testr.New(t), clock.RealClock{})
-			m.UpdateChallengeStatus(test.challenge)
+
+			for _, challenge := range test.challenges {
+				m.UpdateChallengeStatus(challenge)
+			}
 
 			if err := testutil.CollectAndCompare(m.certificateChallengeStatus,
 				strings.NewReader(certificateChallengeStatusMetadata+test.expectedMetric),
