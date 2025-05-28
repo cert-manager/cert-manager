@@ -123,12 +123,6 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		crt.Spec.RevisionHistoryLimit = &defaultRevisionHistoryLimit
 	}
 
-	// If RevisionHistoryLimit is 0, don't attempt to garbage collect old
-	// CertificateRequests
-	if *crt.Spec.RevisionHistoryLimit == 0 {
-		return nil
-	}
-
 	// Only garbage collect over Certificates that are in a Ready=True condition.
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionReady,

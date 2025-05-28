@@ -507,7 +507,6 @@ spec:
                     revisions exceeds this number.
 
                     If set, revisionHistoryLimit must be a value of `1` or greater.
-                    If set to 0, revisions will not be garbage collected.
                     Default value is `1`.
                   type: integer
                   format: int32
