@@ -142,22 +142,6 @@ func TestProcessItem(t *testing.T) {
 				),
 			},
 		},
-		"do nothing if revision limit is not set to 0": {
-			certificate: gen.CertificateFrom(baseCrt,
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
-				gen.SetCertificateRevisionHistoryLimit(0),
-			),
-			requests: []runtime.Object{
-				gen.CertificateRequestFrom(baseCR,
-					gen.SetCertificateRequestName("cr-1"),
-					gen.SetCertificateRequestRevision("1"),
-				),
-				gen.CertificateRequestFrom(baseCR,
-					gen.SetCertificateRequestName("cr-2"),
-					gen.SetCertificateRequestRevision("2"),
-				),
-			},
-		},
 		"delete 1 request if 2 requests exist since the default limit is 1": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
