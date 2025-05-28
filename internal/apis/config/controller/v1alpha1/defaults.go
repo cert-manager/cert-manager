@@ -129,6 +129,7 @@ var (
 		csrselfsignedcontroller.CSRControllerName,
 		csrvenaficontroller.CSRControllerName,
 		csrvaultcontroller.CSRControllerName,
+		acmechallengesmetricscontroller.ControllerName,
 	}
 
 	DefaultEnabledControllers = []string{
