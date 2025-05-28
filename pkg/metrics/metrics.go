@@ -72,7 +72,7 @@ type Metrics struct {
 
 var (
 	readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
-	challengeValidStatuses = [...]acmemeta.State{acmemeta.Ready, acmemeta.Valid}
+	challengeValidStatuses = [...]acmemeta.State{acmemeta.Ready, acmemeta.Valid, acmemeta.Errored, acmemeta.Expired, acmemeta.Invalid, acmemeta.Processing, acmemeta.Unknown, acmemeta.Pending}
 )
 
 // New creates a Metrics struct and populates it with prometheus metric types.

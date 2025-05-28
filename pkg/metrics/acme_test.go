@@ -57,8 +57,14 @@ func TestCertificateChallengeStatusMetrics(t *testing.T) {
 		"challenge-metric-active-state-valid": {
 			challenges: pendingToValidChallenges,
 			expectedMetric: `
+			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="",type="DNS-01"} 0
+        	certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="errored",type="DNS-01"} 0
+         	certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="expired",type="DNS-01"} 0
+          	certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="invalid",type="DNS-01"} 0
+           	certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="processing",type="DNS-01"} 0
 			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="pending",type="DNS-01"} 0
 			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="ready",type="DNS-01"} 1
+			certmanager_certificate_challenge_status{domain="example.com",id="test-challenge-uid",processing="false",reason="",status="valid",type="DNS-01"} 0
 			`,
 		},
 	}

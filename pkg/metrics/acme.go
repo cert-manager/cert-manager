@@ -36,22 +36,21 @@ func (m *Metrics) IncrementACMERequestCount(labels ...string) {
 }
 
 func (m *Metrics) UpdateChallengeStatus(challenge *acmev1.Challenge) {
-	value := 0.0
-
 	for _, status := range challengeValidStatuses {
+		value := 0.0
 		if string(challenge.Status.State) == string(status) {
 			value = 1.0
-			break
 		}
+
+		m.certificateChallengeStatus.With(prometheus.Labels{
+			"status":     string(status),
+			"reason":     challenge.Status.Reason,
+			"domain":     challenge.Spec.DNSName,
+			"type":       string(challenge.Spec.Type),
+			"id":         string(challenge.GetUID()),
+			"processing": fmt.Sprint(challenge.Status.Processing),
+		}).Set(value)
 	}
-	m.certificateChallengeStatus.With(prometheus.Labels{
-		"status":     string(challenge.Status.State),
-		"reason":     challenge.Status.Reason,
-		"domain":     challenge.Spec.DNSName,
-		"type":       string(challenge.Spec.Type),
-		"id":         string(challenge.GetUID()),
-		"processing": fmt.Sprint(challenge.Status.Processing),
-	}).Set(value)
 }
 
 func (m *Metrics) RemoveChallengeStatus(challenge *acmev1.Challenge) {
