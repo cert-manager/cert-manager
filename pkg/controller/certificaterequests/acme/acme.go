@@ -141,8 +141,6 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 		return nil, nil
 	}
 
-	log.Info(fmt.Sprintf("profile: %s", issuer.GetSpec().ACME.Profile))
-
 	// If we fail to build the order we have to hard fail.
 	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature, issuer.GetSpec().ACME.Profile)
 	if err != nil {
@@ -156,6 +154,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 
 	order, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
 	if k8sErrors.IsNotFound(err) {
+		log.V(logf.DebugLevel).Info("creating order", "profile", expectedOrder.Spec.Profile)
 		// Failing to create the order here is most likely network related.
 		// We should backoff and keep trying.
 		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{FieldManager: a.fieldManager})
