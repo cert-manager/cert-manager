@@ -43,7 +43,8 @@ IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:dbfec77951e123bf383a09412a51df218b716aaf3fe7b2778bb2f208ac495dc5
 
 # https://github.com/letsencrypt/pebble/releases
-PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
+# v2.7.0
+PEBBLE_COMMIT = bbe7775c27078417e379287a431fa5a716a6788d
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
@@ -407,7 +408,7 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
 
 $(bin_dir)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(bin_dir)/downloaded
-	$(CURL) https://github.com/inteon/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
+	$(CURL) https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 
 # We can't use GOBIN with "go install" because cross-compilation is not
 # possible with go install. That's a problem when cross-compiling for
