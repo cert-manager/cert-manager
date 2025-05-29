@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"errors"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -258,6 +259,24 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	return nil
 }
 
+func isRetryableError(err error) bool {
+	for _, targetErr := range []error{
+		acmeapi.ErrCADoesNotSupportProfiles,
+		acmeapi.ErrProfileNotInSetOfSupportedProfiles,
+	} {
+		if errors.Is(err, targetErr) {
+			return false
+		}
+	}
+	var acmeErr *acmeapi.Error
+	if errors.As(err, &acmeErr) {
+		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			return false
+		}
+	}
+	return true
+}
+
 func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
 	log := logf.FromContext(ctx)
 
@@ -291,15 +310,13 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
-	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+	if err != nil {
+		if !isRetryableError(err) {
 			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to create Order: %v", err)
 			return nil
 		}
-	}
-	if err != nil {
 		return fmt.Errorf("error creating new order: %v", err)
 	}
 	log.V(logf.DebugLevel).Info("submitted Order to ACME server")
@@ -325,6 +342,8 @@ func (c *controller) updateOrderStatusFromACMEOrder(o *cmacme.Order, acmeOrder *
 	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
 	// order's URI field will be empty when calling GetOrder due to the
 	// 'Location' header not being set on the response from the ACME server.
+	// TODO(wallrj): We have forked golan.org/x/crypto/acme. Consider fixing
+	// this bug in the fork.
 	if acmeOrder.URI != "" {
 		o.Status.URL = acmeOrder.URI
 	}
