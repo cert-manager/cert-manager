@@ -42,9 +42,11 @@ IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:dbfec77951e123bf383a09412a51df218b716aaf3fe7b2778bb2f208ac495dc5
 
-# https://github.com/letsencrypt/pebble/releases
-# v2.7.0
-PEBBLE_COMMIT = bbe7775c27078417e379287a431fa5a716a6788d
+# We are using @inteon's fork of Pebble, which adds support for signing CSRs with
+# Ed25519 keys:
+# - https://github.com/letsencrypt/pebble/pull/468
+# - https://github.com/inteon/pebble/tree/add_Ed25519_support
+PEBBLE_COMMIT = 8318667fcd32f96579c45ee64c747d52519f0cdc
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
@@ -407,8 +409,12 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	@$(KUBECTL) create ns cert-manager >/dev/null 2>&1 || true
 	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
 
+# We are using Tim's fork of Pebble, which adds support for signing CSRs with
+# Ed25519 keys:
+# - https://github.com/letsencrypt/pebble/pull/468
+# - https://github.com/inteon/pebble/tree/add_Ed25519_support
 $(bin_dir)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(bin_dir)/downloaded
-	$(CURL) https://github.com/letsencrypt/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
+	$(CURL) https://github.com/inteon/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 
 # We can't use GOBIN with "go install" because cross-compilation is not
 # possible with go install. That's a problem when cross-compiling for
