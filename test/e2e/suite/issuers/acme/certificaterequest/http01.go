@@ -169,7 +169,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a CertificateRequest")
-		csr, key, err := gen.CSR(x509.ECDSA, gen.SetCSRCommonName(acmeIngressDomain), gen.SetCSRDNSNames(acmeIngressDomain, e2eutil.RandomSubdomainLength(acmeIngressDomain, maxLengthOfDomainSegment)))
+		csr, key, err := gen.CSR(x509.ECDSA, gen.SetCSRDNSNames(acmeIngressDomain, e2eutil.RandomSubdomainLength(acmeIngressDomain, maxLengthOfDomainSegment)))
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
@@ -209,7 +209,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(acmeIngressDomain), gen.SetCSRDNSNames(acmeIngressDomain))
+		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames(acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
