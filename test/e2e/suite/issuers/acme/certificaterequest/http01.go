@@ -133,6 +133,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
+			gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
@@ -154,6 +155,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
+			gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
@@ -175,6 +177,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
+			gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
@@ -192,6 +195,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
+			gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 		)
 
 		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
@@ -215,6 +219,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
+			gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 		)
 
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
