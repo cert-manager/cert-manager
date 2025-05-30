@@ -28,6 +28,13 @@ spec:
           args:
           - -config=/config/config.json
           - -strict={{ .Values.strict }}
+          env:
+          # https://github.com/letsencrypt/pebble/tree/main?tab=readme-ov-file#testing-at-full-speed
+          - name: PEBBLE_VA_NOSLEEP
+            value: "1"
+          # https://github.com/letsencrypt/pebble/tree/main?tab=readme-ov-file#invalid-anti-replay-nonce-errors
+          - name: PEBBLE_WFE_NONCEREJECT
+            value: "0"
           volumeMounts:
           - name: config
             mountPath: /config
