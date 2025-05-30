@@ -103,8 +103,8 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	EnableDurationFeature bool
 
-	// Profile allows requesting a certificate profile from the ACME server; supported
-	// profiles are listed by the server's ACME directory URL.
+	// Profile allows requesting a certificate profile from the ACME server.
+	// Supported profiles are listed by the server's ACME directory URL.
 	Profile string `json:"profile,omitempty"`
 }
 
