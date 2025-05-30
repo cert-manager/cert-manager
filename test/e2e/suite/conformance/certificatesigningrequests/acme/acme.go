@@ -36,11 +36,17 @@ import (
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	runACMEIssuerTests(nil)
 })
-var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
-	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
-		KeyID: "kid-1",
-	})
-})
+
+// TODO(wallrj): Fix or remove these EAB tests because they are incompatible
+// with the latest version of Pebble.
+// The tests fail with errors such as:
+// > May 30 11:14:09.500: INFO: Expected Issuer acme-issuer-dns01-wslns condition Ready=True but it has: [{Ready False 2025-05-30 11:13:20 +0000 UTC ErrRegisterACMEAccount Failed to register ACME account: 403 urn:ietf:params:acme:error:unauthorized: external account binding JWS verification error: go-jose/go-jose: error in cryptographic primitive 1}]
+//
+// var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
+// 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
+// 		KeyID: "kid-1",
+// 	})
+// })
 
 func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
