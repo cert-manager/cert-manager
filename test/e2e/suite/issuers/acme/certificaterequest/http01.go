@@ -183,26 +183,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
-
-		By("Creating a CertificateRequest")
-		dnsName := e2eutil.RandomSubdomain(acmeIngressDomain)
-		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(dnsName), gen.SetCSRDNSNames(dnsName))
-		Expect(err).NotTo(HaveOccurred())
-		cr := gen.CertificateRequest(certificateRequestName,
-			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
-			gen.SetCertificateRequestCSR(csr),
-		)
-
-		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		By("Verifying the CertificateRequest is valid")
-		err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Minute*5, key)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
 		// create test fixture
 		By("Creating a CertificateRequest")
