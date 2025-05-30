@@ -279,8 +279,8 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			secretName = "test-secret"
 			// Must match the keyID and key in the Pebble config. See:
 			// [config.json]: make/config/pebble/templates/configmaps.yaml
-			keyID      = "kid-1"
-			key        = "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"
+			keyID = "kid-1"
+			key   = "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"
 		)
 
 		keyBytes := []byte(key)
