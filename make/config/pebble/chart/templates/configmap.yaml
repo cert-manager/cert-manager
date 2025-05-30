@@ -18,8 +18,9 @@ data:
         "tlsPort": 443,
         "externalAccountBindingRequired": false,
         "externalAccountMACKeys": {
-          "kid-1": "a2lkLXNlY3JldC0x",
-          "kid-2": "a2lkLXNlY3JldC0y"
+          "kid-1": "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W",
+          "kid-2": "b10lLJs8l1GPIzsLP0s6pMt8O0XVGnfTaCeROxQM0BIt2XrJMDHJZBM5NuQmQJQH",
+          "kid-3": "HjudV5qnbreN-n9WyFSH-t4HXuEx_XFen45zuxY-G1h6fr74V3cUM_dVlwQZBWmc"
         },
         "domainBlocklist": ["google.com"],
         "profiles": {
