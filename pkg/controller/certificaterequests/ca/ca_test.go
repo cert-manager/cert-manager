@@ -513,7 +513,7 @@ func TestCA_Sign(t *testing.T) {
 				// injecting a time (instead of time.Now) to the template
 				// functions. This work is being tracked in this issue:
 				// https://github.com/cert-manager/cert-manager/issues/3738
-				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
+				expectNotAfter := time.Now().UTC().Add(time.Minute)
 				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
 				assert.LessOrEqualf(t, deltaSec, 1., "expected a time delta lower than 1 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
 			},
