@@ -310,9 +310,17 @@ func (h *Helper) defaultKeyUsagesToAdd(ctx context.Context, ns string, issuerRef
 	var keyUsages x509.KeyUsage
 	var extKeyUsages []x509.ExtKeyUsage
 
-	// Vault and ACME issuers will add server auth and client auth extended key
+	// The ACME test server "Pebble" will only add server auth extended key
+	// usages by default, so we need to add them to the list of expected usages.
+	// - https://github.com/letsencrypt/pebble/pull/472
+	// - https://github.com/letsencrypt/pebble/releases/tag/v2.7.0
+	if issuerSpec.ACME != nil {
+		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth)
+	}
+
+	// Vault issuers will add server auth and client auth extended key
 	// usages by default so we need to add them to the list of expected usages
-	if issuerSpec.ACME != nil || issuerSpec.Vault != nil {
+	if issuerSpec.Vault != nil {
 		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
 	}
 

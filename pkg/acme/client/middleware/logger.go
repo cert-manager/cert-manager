@@ -20,10 +20,10 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"golang.org/x/crypto/acme"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func NewLogger(baseCl client.Interface) client.Interface {

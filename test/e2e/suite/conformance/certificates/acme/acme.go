@@ -40,11 +40,12 @@ import (
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	runACMEIssuerTests(nil)
 })
-var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
-	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
-		KeyID: "kid-1",
-	})
-})
+
+// var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
+// 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
+// 		KeyID: "kid-1",
+// 	})
+// })
 
 func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME

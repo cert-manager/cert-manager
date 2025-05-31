@@ -114,6 +114,11 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	// +optional
 	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
+
+	// Profile allows requesting a certificate profile from the ACME server.
+	// Supported profiles are listed by the server's ACME directory URL.
+	// +optional
+	Profile string `json:"profile,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME

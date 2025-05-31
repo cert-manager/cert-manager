@@ -199,6 +199,11 @@ spec:
                             Name of the resource being referred to.
                             More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                           type: string
+                    profile:
+                      description: |-
+                        Profile allows requesting a certificate profile from the ACME server.
+                        Supported profiles are listed by the server's ACME directory URL.
+                      type: string
                     server:
                       description: |-
                         Server is the URL used to access the ACME server's 'directory' endpoint.
