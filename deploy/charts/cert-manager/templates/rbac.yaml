@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.global.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -680,4 +681,5 @@ subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ include "cert-manager.namespace" . }}
     kind: ServiceAccount
+{{- end }}
 {{- end }}
