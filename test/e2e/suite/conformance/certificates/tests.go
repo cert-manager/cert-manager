@@ -536,7 +536,6 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					"cert-manager.io/issuer":                      issuerRef.Name,
 					"cert-manager.io/issuer-kind":                 issuerRef.Kind,
 					"cert-manager.io/issuer-group":                issuerRef.Group,
-					"cert-manager.io/common-name":                 domain,
 					"cert-manager.io/duration":                    duration.String(),
 					"cert-manager.io/renew-before":                renewBefore.String(),
 					"cert-manager.io/revision-history-limit":      strconv.FormatInt(int64(*revisionHistoryLimit), 10),
@@ -559,7 +558,6 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					"cert-manager.io/issuer":                      issuerRef.Name,
 					"cert-manager.io/issuer-kind":                 issuerRef.Kind,
 					"cert-manager.io/issuer-group":                issuerRef.Group,
-					"cert-manager.io/common-name":                 domain,
 					"cert-manager.io/duration":                    duration.String(),
 					"cert-manager.io/renew-before":                renewBefore.String(),
 					"cert-manager.io/revision-history-limit":      strconv.FormatInt(int64(*revisionHistoryLimit), 10),
@@ -590,7 +588,6 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
 					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
-					Expect(certificate.Spec.CommonName).To(Equal(domain))
 					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
 					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 					Expect(certificate.Spec.RevisionHistoryLimit).To(Equal(revisionHistoryLimit))
