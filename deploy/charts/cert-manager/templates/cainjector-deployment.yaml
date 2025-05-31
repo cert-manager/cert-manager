@@ -42,11 +42,17 @@ spec:
         {{- end }}
       {{- with .Values.cainjector.podAnnotations }}
       annotations:
+        {{- if .Values.cainjector.config -}}
+        checksum/config: {{ include (print $.Template.BasePath "/cainjector-config.yaml") $ | sha256sum }}
+        {{- end }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
       {{- if not .Values.cainjector.podAnnotations }}
       annotations:
+        {{- if .Values.cainjector.config -}}
+        checksum/config: {{ include (print $.Template.BasePath "/cainjector-config.yaml") $ | sha256sum }}
+        {{- end }}
       {{- end }}
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
