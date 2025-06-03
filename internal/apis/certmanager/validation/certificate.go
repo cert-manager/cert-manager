@@ -57,7 +57,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
-	var commonName = crt.CommonName
+	commonName := crt.CommonName
 	if crt.LiteralSubject != "" {
 		if !utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject) {
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
@@ -417,6 +417,11 @@ func validateRenewTimeWindow(fldPath *field.Path, renewTimeWindow string, durati
 			return append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
 		}
 		renewTime := pki.RenewalTime(notBefore, notAfter, renewBefore, renewBeforePercentage, renewTimeWindow)
+		// TODO: this seems to appear when restoring certificate resources via velero
+		zeroTime := &metav1.Time{}
+		if renewTime.DeepCopy().Equal(zeroTime) {
+			return el
+		}
 		if renewTime.After(notAfter) {
 			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow, calculated renewTime is %s", renewTime)))
 		} else {
