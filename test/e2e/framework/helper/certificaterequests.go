@@ -25,6 +25,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -137,6 +138,17 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 
 	commonNameCorrect := true
 	expectedCN := csr.Subject.CommonName
+	// Do not verify the CN when using an ACME issuer with the ACME test
+	// server "Pebble", because Pebble ignores the requested CN and it does
+	// not currently allow us to simulate the Lets Encrypt behavior of
+	// "promoting" the first DNS name to CN. See:
+	// - https://github.com/letsencrypt/pebble/pull/491
+	if issuerSpec.ACME != nil && strings.Contains(issuerSpec.ACME.Server, "pebble") {
+		expectedCN = ""
+	}
+	// Some issuers such as Let's Encrypt, "promote" one of the DNS names as
+	// the CN if a specific CN has not been requested. See:
+	// - https://community.letsencrypt.org/t/is-common-name-automatically-included-in-san/214002
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
 		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) {
 			commonNameCorrect = false

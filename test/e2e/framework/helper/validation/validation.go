@@ -75,11 +75,14 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectCertificateOrganizationToMatch,
 		certificates.ExpectValidAnnotations,
 		certificates.ExpectValidCertificate,
-		certificates.ExpectValidCommonName,
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectConditionReadyObservedGeneration,
 		certificates.ExpectValidBasicConstraints,
+	}
+
+	if !fs.Has(featureset.CommonNameFeature) {
+		out = append(out, certificates.ExpectValidCommonName)
 	}
 
 	if !fs.Has(featureset.URISANsFeature) {

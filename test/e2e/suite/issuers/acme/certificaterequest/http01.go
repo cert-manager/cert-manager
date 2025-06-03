@@ -123,7 +123,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
-		Skip("Pebble always drops the CN: https://github.com/letsencrypt/pebble/pull/491")
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
@@ -145,7 +144,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	})
 
 	It("should obtain a signed ecdsa certificate with a single CN from the ACME server", func() {
-		Skip("Pebble always drops the CN: https://github.com/letsencrypt/pebble/pull/491")
 		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
