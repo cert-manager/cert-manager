@@ -293,9 +293,13 @@ func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAl
 		expectedExtendedKeyUsages = append(expectedExtendedKeyUsages, x509.ExtKeyUsageServerAuth)
 	}
 
-	// If using ECDSA then ignore key encipherment
-	// See  https://security.stackexchange.com/a/224509
-	if keyAlg == cmapi.ECDSAKeyAlgorithm {
+	// Most issuers will drop the "key encipherment" KU, if using ECDSA keys.
+	// The best explanation I can find is: https://security.stackexchange.com/a/224509
+	// The exceptions are the CA and SelfSigned issuers.
+	//
+	// TODO(wallrj): Perhaps CA and SelfSigned issuers should also drop or
+	// reject KeyEncipherment for ECDSA certificates.
+	if issuerSpec.SelfSigned == nil && issuerSpec.CA == nil && keyAlg == cmapi.ECDSAKeyAlgorithm {
 		expectedKeyUsages &^= x509.KeyUsageKeyEncipherment
 	}
 
