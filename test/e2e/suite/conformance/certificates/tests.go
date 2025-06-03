@@ -585,12 +585,17 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			// Verify that the ingres-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
+			// TODO(wallrj): These checks are redundant. The unit
+			// tests for certificate-shim Sync already verify that
+			// the annotations are converted to Certificate fields.
 			By("Validating the created Certificate")
 			err = f.Helper().ValidateCertificate(
 				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
 					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
-					Expect(certificate.Spec.CommonName).To(Equal(domain))
+					if !s.UnsupportedFeatures.Has(featureset.CommonNameFeature) {
+						Expect(certificate.Spec.CommonName).To(Equal(domain))
+					}
 					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
 					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 					Expect(certificate.Spec.RevisionHistoryLimit).To(Equal(revisionHistoryLimit))
