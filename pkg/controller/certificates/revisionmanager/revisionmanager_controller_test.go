@@ -81,7 +81,6 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if Certificate is not in a Ready=True state": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}),
-				gen.SetCertificateRevisionHistoryLimit(1),
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(baseCR,
@@ -96,13 +95,11 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if no requests exist": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
-				gen.SetCertificateRevisionHistoryLimit(1),
 			),
 		},
 		"do nothing if requests don't have or bad revisions set": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
-				gen.SetCertificateRevisionHistoryLimit(1),
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(baseCR,
@@ -117,7 +114,6 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if requests aren't owned by this Certificate": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
-				gen.SetCertificateRevisionHistoryLimit(1),
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(baseCRNoOwner,
@@ -146,25 +142,9 @@ func TestProcessItem(t *testing.T) {
 				),
 			},
 		},
-		"do nothing if revision limit is not set": {
+		"delete 1 request if 2 requests exist since the default limit is 1": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
-			),
-			requests: []runtime.Object{
-				gen.CertificateRequestFrom(baseCR,
-					gen.SetCertificateRequestName("cr-1"),
-					gen.SetCertificateRequestRevision("1"),
-				),
-				gen.CertificateRequestFrom(baseCR,
-					gen.SetCertificateRequestName("cr-2"),
-					gen.SetCertificateRequestRevision("2"),
-				),
-			},
-		},
-		"delete 1 request if limit is 1 and 2 requests exist": {
-			certificate: gen.CertificateFrom(baseCrt,
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
-				gen.SetCertificateRevisionHistoryLimit(1),
 			),
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(baseCR,
