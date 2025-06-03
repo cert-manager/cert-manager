@@ -450,6 +450,11 @@ func validateRenewTimeWindow(fldPath *field.Path, renewTimeWindow string, durati
 			return append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
 		}
 		renewTime := pki.RenewalTime(notBefore, notAfter, renewBefore, renewBeforePercentage, renewTimeWindow)
+		// TODO: this seems to appear when restoring certificate resources via velero
+		zeroTime := &metav1.Time{}
+		if renewTime.DeepCopy().Equal(zeroTime) {
+			return el
+		}
 		if renewTime.After(notAfter) {
 			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow, calculated renewTime is %s", renewTime)))
 		} else {
