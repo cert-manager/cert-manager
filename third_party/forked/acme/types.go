@@ -60,6 +60,15 @@ var (
 	// errPreAuthorizationNotSupported indicates that the server does not
 	// support pre-authorization of identifiers.
 	errPreAuthorizationNotSupported = errors.New("acme: pre-authorization is not supported")
+
+	// ErrCADoesNotSupportProfiles indicates that [WithOrderProfile] was
+	// included with a CA that does not advertise support for profiles in
+	// their directory.
+	ErrCADoesNotSupportProfiles = errors.New("acme: certificate authority does not support profiles")
+
+	// ErrProfileNotInSetOfSupportedProfiles indicates that the profile
+	// specified with [WithOrderProfile} is not one supported by the CA
+	ErrProfileNotInSetOfSupportedProfiles = errors.New("acme: certificate authority does not advertise a profile with name")
 )
 
 // A Subproblem describes an ACME subproblem as reported in an Error.
@@ -308,6 +317,10 @@ type Directory struct {
 	// ExternalAccountRequired indicates that the CA requires for all account-related
 	// requests to include external account binding information.
 	ExternalAccountRequired bool
+
+	// Profiles indicates that the CA supports specifying a profile for an
+	// order. See also [WithOrderNotAfter].
+	Profiles Profiles
 }
 
 // Order represents a client's request for a certificate.
@@ -383,6 +396,15 @@ func WithOrderNotAfter(t time.Time) OrderOption {
 	return orderNotAfterOpt(t)
 }
 
+// WithOrderProfile sets an order's Profile field for servers which support
+// profiles.
+// See also:
+// * https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
+// * https://letsencrypt.org/docs/profiles/
+func WithOrderProfile(name string) OrderOption {
+	return orderProfileOpt(name)
+}
+
 type orderNotBeforeOpt time.Time
 
 func (orderNotBeforeOpt) privateOrderOpt() {}
@@ -390,6 +412,10 @@ func (orderNotBeforeOpt) privateOrderOpt() {}
 type orderNotAfterOpt time.Time
 
 func (orderNotAfterOpt) privateOrderOpt() {}
+
+type orderProfileOpt string
+
+func (orderProfileOpt) privateOrderOpt() {}
 
 // Authorization encodes an authorization response.
 type Authorization struct {
@@ -627,3 +653,18 @@ func WithTemplate(t *x509.Certificate) CertOption {
 type certOptTemplate x509.Certificate
 
 func (*certOptTemplate) privateCertOpt() {}
+
+type Profiles map[string]string
+
+func (ps Profiles) isSupported() bool {
+	return len(ps) > 0
+}
+
+func (ps Profiles) GetDescription(name string) string {
+	return ps[name]
+}
+
+func (ps Profiles) Has(name string) bool {
+	_, ok := ps[name]
+	return ok
+}
