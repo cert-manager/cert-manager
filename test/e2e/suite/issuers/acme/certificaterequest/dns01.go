@@ -124,7 +124,6 @@ func testRFC2136DNSProvider() bool {
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
 				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
-				gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 			)
 
 			_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
@@ -142,7 +141,6 @@ func testRFC2136DNSProvider() bool {
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
 				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
-				gen.SetCertificateRequestKeyUsages(v1.UsageDigitalSignature),
 			)
 
 			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
