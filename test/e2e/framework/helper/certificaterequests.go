@@ -259,16 +259,17 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, n
 // others respect some or all of the requested usages.
 // There are also some special cases where the usages are influenced by the key
 // algorithm and the isCA field.
-func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAlg cmapi.PrivateKeyAlgorithm, issuerSpec *cmapi.IssuerSpec) (expectedKeyUsages x509.KeyUsage, expectedExtendedKeyUsages []x509.ExtKeyUsage, err error) {
+func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAlg cmapi.PrivateKeyAlgorithm, issuerSpec *cmapi.IssuerSpec) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 
 	requestedKeyUsages, requestedExtendedKeyUsages, err := pki.KeyUsagesForCertificateOrCertificateRequest(requestedUsages, isCA)
+	var expectedKeyUsages x509.KeyUsage
 	if err != nil {
 		return expectedKeyUsages, nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
 	// By default we assume that issuers will satisfy the requested KUs and EKUs.
 	expectedKeyUsages = requestedKeyUsages
-	expectedExtendedKeyUsages = requestedExtendedKeyUsages
+	expectedExtendedKeyUsages := sets.New(requestedExtendedKeyUsages...)
 
 	switch {
 	case issuerSpec.ACME != nil:
@@ -276,21 +277,20 @@ func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAl
 		// auth" and only adds one KU: "Digital Signature".
 		// It ignores any other KUs in the CSR.
 		//    - https://github.com/letsencrypt/pebble/pull/472
-		expectedExtendedKeyUsages = append(expectedExtendedKeyUsages, x509.ExtKeyUsageServerAuth)
 		if issuerSpec.ACME != nil {
 			expectedKeyUsages = x509.KeyUsageDigitalSignature
-			expectedExtendedKeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+			expectedExtendedKeyUsages.Clear().Insert(x509.ExtKeyUsageServerAuth)
 		}
 	case issuerSpec.Vault != nil:
 		// Vault issuers will add "server auth" and "client auth" extended key
 		// usages by default so we need to add them to the list of expected usages
 		// Vault issuers will also add "key agreement" key usage
-		expectedExtendedKeyUsages = append(expectedExtendedKeyUsages, x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
+		expectedExtendedKeyUsages.Insert(x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
 		expectedKeyUsages |= x509.KeyUsageKeyAgreement
 
 	case issuerSpec.Venafi != nil:
 		// Venafi issue adds "server auth" key usage
-		expectedExtendedKeyUsages = append(expectedExtendedKeyUsages, x509.ExtKeyUsageServerAuth)
+		expectedExtendedKeyUsages.Insert(x509.ExtKeyUsageServerAuth)
 	}
 
 	// Most issuers will drop the "key encipherment" KU, if using ECDSA keys.
@@ -303,8 +303,5 @@ func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAl
 		expectedKeyUsages &^= x509.KeyUsageKeyEncipherment
 	}
 
-	// Deduplicate
-	expectedExtendedKeyUsages = sets.New(expectedExtendedKeyUsages...).UnsortedList()
-
-	return expectedKeyUsages, expectedExtendedKeyUsages, nil
+	return expectedKeyUsages, sets.List(expectedExtendedKeyUsages), nil
 }

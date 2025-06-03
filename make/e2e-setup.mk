@@ -409,7 +409,7 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	@$(KUBECTL) create ns cert-manager >/dev/null 2>&1 || true
 	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
 
-# We are using Tim's fork of Pebble, which adds support for signing CSRs with
+# We are using @inteon's fork of Pebble, which adds support for signing CSRs with
 # Ed25519 keys:
 # - https://github.com/letsencrypt/pebble/pull/468
 # - https://github.com/inteon/pebble/tree/add_Ed25519_support
