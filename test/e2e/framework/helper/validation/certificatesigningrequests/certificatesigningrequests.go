@@ -316,6 +316,8 @@ func ExpectValidBasicConstraints(csr *certificatesv1.CertificateSigningRequest, 
 			markedIsCA, cert.IsCA)
 	}
 
+	// TODO: also validate pathLen
+
 	return nil
 }
 

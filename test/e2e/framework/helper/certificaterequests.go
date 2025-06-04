@@ -19,9 +19,6 @@ package helper
 import (
 	"context"
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rsa"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -34,11 +31,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -112,102 +109,90 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 		issuerSpec = &issuerObj.Spec
 	}
 
-	// validate private key is of the correct type (rsa or ecdsa)
-	switch csr.PublicKeyAlgorithm {
-	case x509.RSA:
-		_, ok := key.(*rsa.PrivateKey)
-		if !ok {
-			return nil, fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
-		}
-	case x509.ECDSA:
-		_, ok := key.(*ecdsa.PrivateKey)
-		if !ok {
-			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
-		}
-	case x509.Ed25519:
-		_, ok := key.(ed25519.PrivateKey)
-		if !ok {
-			return nil, fmt.Errorf("Expected private key of type Ed25519, but it was: %T", key)
-		}
-	default:
-		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", csr.PublicKeyAlgorithm)
+	if err := certificaterequests.ExpectValidPrivateKeyData(cr, key); err != nil {
+		return nil, err
 	}
-
-	// TODO: validate private key KeySize
-
-	// check the provided certificate is valid
-	expectedOrganization := csr.Subject.Organization
-	expectedDNSNames := csr.DNSNames
-	expectedIPAddresses := csr.IPAddresses
-	expectedURIs := csr.URIs
 
 	cert, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
 		return nil, err
 	}
 
-	commonNameCorrect := true
-	expectedCN := csr.Subject.CommonName
-	// Do not verify the CN when using an ACME issuer with the ACME test
-	// server "Pebble", because Pebble ignores the requested CN and it does
-	// not currently allow us to simulate the Lets Encrypt behavior of
-	// "promoting" the first DNS name to CN. See:
-	// - https://github.com/letsencrypt/pebble/pull/491
-	if issuerSpec.ACME != nil && strings.Contains(issuerSpec.ACME.Server, "pebble") {
-		expectedCN = ""
-	}
-	// Some issuers such as Let's Encrypt, "promote" one of the DNS names as
-	// the CN if a specific CN has not been requested. See:
-	// - https://community.letsencrypt.org/t/is-common-name-automatically-included-in-san/214002
-	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
-		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) {
+	// Verify CN
+	{
+		commonNameCorrect := true
+		expectedCN := csr.Subject.CommonName
+		// Do not verify the CN when using an ACME issuer with the ACME test
+		// server "Pebble", because Pebble ignores the requested CN and it does
+		// not currently allow us to simulate the Lets Encrypt behavior of
+		// "promoting" the first DNS name to CN. See:
+		// - https://github.com/letsencrypt/pebble/pull/491
+		if issuerSpec.ACME != nil && strings.Contains(issuerSpec.ACME.Server, "pebble") {
+			expectedCN = ""
+		}
+		// Some issuers such as Let's Encrypt, "promote" one of the DNS names as
+		// the CN if a specific CN has not been requested. See:
+		// - https://community.letsencrypt.org/t/is-common-name-automatically-included-in-san/214002
+		if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
+			if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) {
+				commonNameCorrect = false
+			}
+		} else if expectedCN != cert.Subject.CommonName {
 			commonNameCorrect = false
 		}
-	} else if expectedCN != cert.Subject.CommonName {
-		commonNameCorrect = false
+		if !commonNameCorrect {
+			return nil, fmt.Errorf("Expected certificate valid for CN %q but got a certificate valid for CN %q", expectedCN, cert.Subject.CommonName)
+		}
 	}
 
-	if !commonNameCorrect ||
-		!util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
-		!util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) ||
-		!util.EqualIPsUnsorted(cert.IPAddresses, expectedIPAddresses) ||
-		!util.EqualURLsUnsorted(cert.URIs, expectedURIs) {
-		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, IPs %v, URIs %v but got a certificate valid for CN %q, O %v, dnsNames %v, IPs %v URIs %v",
-			expectedCN, expectedOrganization, expectedDNSNames, expectedIPAddresses, expectedURIs,
-			cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.IPAddresses, cert.URIs)
+	if err := certificaterequests.ExpectCertificateDNSNamesToMatch(cr, key); err != nil {
+		return nil, err
+	}
+	if err := certificaterequests.ExpectCertificateOrganizationToMatch(cr, key); err != nil {
+		return nil, err
+	}
+	if err := certificaterequests.ExpectCertificateIPsToMatch(cr, key); err != nil {
+		return nil, err
+	}
+	if err := certificaterequests.ExpectCertificateURIsToMatch(cr, key); err != nil {
+		return nil, err
 	}
 
-	var expectedDNSName string
-	if len(expectedDNSNames) > 0 {
-		expectedDNSName = expectedDNSNames[0]
-	}
+	// Verify KU and EKU
+	{
+		var keyAlg cmapi.PrivateKeyAlgorithm
+		switch csr.PublicKeyAlgorithm {
+		case x509.RSA:
+			keyAlg = cmapi.RSAKeyAlgorithm
+		case x509.ECDSA:
+			keyAlg = cmapi.ECDSAKeyAlgorithm
+		case x509.Ed25519:
+			keyAlg = cmapi.Ed25519KeyAlgorithm
+		default:
+			return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
+		}
 
-	var keyAlg cmapi.PrivateKeyAlgorithm
-	switch csr.PublicKeyAlgorithm {
-	case x509.RSA:
-		keyAlg = cmapi.RSAKeyAlgorithm
-	case x509.ECDSA:
-		keyAlg = cmapi.ECDSAKeyAlgorithm
-	case x509.Ed25519:
-		keyAlg = cmapi.Ed25519KeyAlgorithm
-	default:
-		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
-	}
+		expectedKeyUsages, expectedExtendedKeyUsages, err := computeExpectedKeyUsages(cr.Spec.Usages, cr.Spec.IsCA, keyAlg, issuerSpec)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute expected key usages: %s", err)
+		}
 
-	expectedKeyUsages, expectedExtendedKeyUsages, err := computeExpectedKeyUsages(cr.Spec.Usages, cr.Spec.IsCA, keyAlg, issuerSpec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute expected key usages: %s", err)
-	}
-
-	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
-		expectedKeyUsages, expectedExtendedKeyUsages) {
-		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
-			apiutil.KeyUsageStrings(expectedKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
-			apiutil.ExtKeyUsageStrings(expectedExtendedKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
+		if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
+			expectedKeyUsages, expectedExtendedKeyUsages) {
+			return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
+				apiutil.KeyUsageStrings(expectedKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
+				apiutil.ExtKeyUsageStrings(expectedExtendedKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
+		}
 	}
 
 	// TODO: move this verification step out of this function
 	if rootCAPEM != nil {
+		expectedDNSNames := csr.DNSNames
+		var expectedDNSName string
+		if len(expectedDNSNames) > 0 {
+			expectedDNSName = expectedDNSNames[0]
+		}
+
 		rootCertPool := x509.NewCertPool()
 		rootCertPool.AppendCertsFromPEM(rootCAPEM)
 		intermediateCertPool := x509.NewCertPool()
@@ -223,11 +208,11 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 		}
 	}
 
-	if !apiutil.CertificateRequestIsApproved(cr) {
-		return nil, fmt.Errorf("CertificateRequest does not have an Approved condition set to True: %+v", cr.Status.Conditions)
+	if err := certificaterequests.ExpectConditionApproved(cr, key); err != nil {
+		return nil, err
 	}
-	if apiutil.CertificateRequestIsDenied(cr) {
-		return nil, fmt.Errorf("CertificateRequest has a Denied condition set to True: %+v", cr.Status.Conditions)
+	if err := certificaterequests.ExpectConditionNotDenied(cr, key); err != nil {
+		return nil, err
 	}
 
 	return cert, nil
