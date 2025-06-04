@@ -23,10 +23,10 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"math/big"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -677,6 +677,7 @@ func Test_buildOrder(t *testing.T) {
 		cr                    *cmapiv1.CertificateRequest
 		csr                   *x509.CertificateRequest
 		enableDurationFeature bool
+		profile               string
 	}
 	tests := []struct {
 		name    string
@@ -717,19 +718,34 @@ func Test_buildOrder(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Building with profile",
+			args: args{
+				cr:      cr,
+				csr:     csr,
+				profile: "shortlived",
+			},
+			want: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					Request:    csrPEM,
+					CommonName: "example.com",
+					DNSNames:   []string{"example.com"},
+					Profile:    "shortlived",
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature, "")
+			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature, tt.args.profile)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			// for the current purpose we only test the spec
-			if !reflect.DeepEqual(got.Spec, tt.want.Spec) {
-				t.Errorf("buildOrder() got = %v, want %v", got.Spec, tt.want.Spec)
-			}
+			assert.Equal(t, tt.want.Spec, got.Spec)
 		})
 	}
 
