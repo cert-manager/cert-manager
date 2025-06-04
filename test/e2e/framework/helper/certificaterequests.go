@@ -83,7 +83,7 @@ func (h *Helper) WaitForCertificateRequestReady(ctx context.Context, ns, name st
 // CertificateRequest has a certificate issued for it, and that the details on
 // the x509 certificate are correct as defined by the CertificateRequest's
 // spec.
-func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi.CertificateRequest, key crypto.Signer) (*x509.Certificate, error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.Request: %s", err)
@@ -185,8 +185,61 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 		}
 	}
 
-	// TODO: move this verification step out of this function
-	if rootCAPEM != nil {
+	if err := certificaterequests.ExpectConditionApproved(cr, key); err != nil {
+		return nil, err
+	}
+	if err := certificaterequests.ExpectConditionNotDenied(cr, key); err != nil {
+		return nil, err
+	}
+
+	return cert, nil
+}
+
+func (h *Helper) WaitCertificateRequestIssuedValid(ctx context.Context, ns, name string, timeout time.Duration, key crypto.Signer) error {
+	cr, err := h.WaitForCertificateRequestReady(ctx, ns, name, timeout)
+	if err != nil {
+		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
+		return kerrors.NewAggregate([]error{
+			err,
+			h.Kubectl(ns).DescribeResource("certificaterequest", name),
+			h.Kubectl(ns).Describe("order", "challenge"),
+		})
+	}
+
+	_, err = h.ValidateIssuedCertificateRequest(ctx, cr, key)
+	if err != nil {
+		log.Logf("Error validating issued certificate: %v", err)
+		return kerrors.NewAggregate([]error{
+			err,
+			h.Kubectl(ns).DescribeResource("certificaterequest", name),
+			h.Kubectl(ns).Describe("order", "challenge"),
+		})
+	}
+
+	return nil
+}
+
+func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, name string, timeout time.Duration, key crypto.Signer, rootCAPEM []byte) error {
+	if err := h.WaitCertificateRequestIssuedValid(ctx, ns, name, timeout, key); err != nil {
+		return err
+	}
+
+	{
+		cr, err := h.WaitForCertificateRequestReady(ctx, ns, name, timeout)
+		if err != nil {
+			return err
+		}
+
+		csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
+		if err != nil {
+			return fmt.Errorf("failed to decode CertificateRequest's Spec.Request: %s", err)
+		}
+
+		cert, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
+		if err != nil {
+			return err
+		}
+
 		expectedDNSNames := csr.DNSNames
 		var expectedDNSName string
 		if len(expectedDNSNames) > 0 {
@@ -204,43 +257,8 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 		}
 
 		if _, err := cert.Verify(opts); err != nil {
-			return nil, err
+			return err
 		}
-	}
-
-	if err := certificaterequests.ExpectConditionApproved(cr, key); err != nil {
-		return nil, err
-	}
-	if err := certificaterequests.ExpectConditionNotDenied(cr, key); err != nil {
-		return nil, err
-	}
-
-	return cert, nil
-}
-
-func (h *Helper) WaitCertificateRequestIssuedValid(ctx context.Context, ns, name string, timeout time.Duration, key crypto.Signer) error {
-	return h.WaitCertificateRequestIssuedValidTLS(ctx, ns, name, timeout, key, nil)
-}
-
-func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, name string, timeout time.Duration, key crypto.Signer, rootCAPEM []byte) error {
-	cr, err := h.WaitForCertificateRequestReady(ctx, ns, name, timeout)
-	if err != nil {
-		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
-		return kerrors.NewAggregate([]error{
-			err,
-			h.Kubectl(ns).DescribeResource("certificaterequest", name),
-			h.Kubectl(ns).Describe("order", "challenge"),
-		})
-	}
-
-	_, err = h.ValidateIssuedCertificateRequest(ctx, cr, key, rootCAPEM)
-	if err != nil {
-		log.Logf("Error validating issued certificate: %v", err)
-		return kerrors.NewAggregate([]error{
-			err,
-			h.Kubectl(ns).DescribeResource("certificaterequest", name),
-			h.Kubectl(ns).Describe("order", "challenge"),
-		})
 	}
 
 	return nil
