@@ -536,10 +536,10 @@ func TestAcme_Setup(t *testing.T) {
 				RemoveClientFunc: func(string) {
 					removeClientWasCalled = true
 				},
-				AddClientFunc: func(string, cmacme.ACMEIssuer, *rsa.PrivateKey, string) {
+				AddClientFunc: func(string, cmacme.ACMEIssuer, crypto.Signer, string) {
 					addClientWasCalled = true
 				},
-				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey crypto.Signer) bool {
 					return true
 				},
 			}
@@ -629,7 +629,7 @@ func keyFromSecretMockBuilder(wasCalled *bool, key crypto.Signer, err error) key
 }
 
 func clientBuilderMock(cl acmecl.Interface) accounts.NewClientFunc {
-	return func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface {
+	return func(*http.Client, cmacme.ACMEIssuer, crypto.Signer, string) acmecl.Interface {
 		return cl
 	}
 }
