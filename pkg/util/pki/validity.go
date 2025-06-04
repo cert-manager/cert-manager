@@ -26,7 +26,7 @@ import (
 // should be valid, based on the template and the earliest expiration date of the CA certificates.
 func CertificateNotAfterValidity(template *x509.Certificate, caCerts []*x509.Certificate) (time.Time, error) {
 	if len(caCerts) == 0 {
-		return time.Now(), fmt.Errorf("no CA certificates provided")
+		return time.Time{}, fmt.Errorf("no CA certificates provided")
 	}
 
 	// Find the earliest expiration date of the CA certificates
