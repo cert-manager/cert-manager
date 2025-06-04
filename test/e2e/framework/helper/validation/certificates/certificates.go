@@ -18,9 +18,6 @@ package certificates
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -85,31 +82,11 @@ func ExpectValidPrivateKeyData(certificate *cmapi.Certificate, secret *corev1.Se
 		return err
 	}
 
-	// validate private key is of the correct type (rsa, ed25519 or ecdsa)
-	if certificate.Spec.PrivateKey != nil {
-		switch certificate.Spec.PrivateKey.Algorithm {
-		case cmapi.PrivateKeyAlgorithm(""),
-			cmapi.RSAKeyAlgorithm:
-			_, ok := key.(*rsa.PrivateKey)
-			if !ok {
-				return fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
-			}
-		case cmapi.ECDSAKeyAlgorithm:
-			_, ok := key.(*ecdsa.PrivateKey)
-			if !ok {
-				return fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
-			}
-		case cmapi.Ed25519KeyAlgorithm:
-			_, ok := key.(ed25519.PrivateKey)
-			if !ok {
-				return fmt.Errorf("Expected private key of type Ed25519, but it was: %T", key)
-			}
-		default:
-			return fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)
-		}
+	violations := pki.PrivateKeyMatchesSpec(key, certificate.Spec)
+	if len(violations) > 0 {
+		return fmt.Errorf("Private key does not match Certificate: %s", strings.Join(violations, ", "))
 	}
 
-	// TODO: validate private key KeySize
 	return nil
 }
 
@@ -189,7 +166,23 @@ func ExpectCertificateURIsToMatch(certificate *cmapi.Certificate, secret *corev1
 	actualURIs := pki.URLsToString(cert.URIs)
 	expectedURIs := certificate.Spec.URIs
 	if !util.EqualUnsorted(actualURIs, expectedURIs) {
-		return fmt.Errorf("Expected certificate valid for URIs %v, but got a certificate valid for URIs %v", expectedURIs, pki.URLsToString(cert.URIs))
+		return fmt.Errorf("Expected certificate valid for URIs %v, but got a certificate valid for URIs %v", expectedURIs, actualURIs)
+	}
+
+	return nil
+}
+
+// ExpectCertificateIPsToMatch checks if the issued certificate has all IP SANs names it requested
+func ExpectCertificateIPsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	if err != nil {
+		return err
+	}
+
+	actualIPs := pki.IPAddressesToString(cert.IPAddresses)
+	expectedIPs := certificate.Spec.IPAddresses
+	if !util.EqualUnsorted(actualIPs, expectedIPs) {
+		return fmt.Errorf("Expected certificate valid for IPs %v, but got a certificate valid for IPs %v", expectedIPs, actualIPs)
 	}
 
 	return nil
@@ -216,7 +209,7 @@ func ExpectValidCommonName(certificate *cmapi.Certificate, secret *corev1.Secret
 	return nil
 }
 
-// ExpectValidNotAfterDate checks if the issued certificate matches the requested duration
+// ExpectValidNotAfterDate checks if the certificate's NotAfter status matches the NotAfter time of the encoded certificate.
 func ExpectValidNotAfterDate(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
@@ -424,7 +417,14 @@ func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *
 	return nil
 }
 
-func ExpectDuration(duration, fuzz time.Duration) func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+// ExpectDuration checks if the issued certificate matches the Certificate's duration
+func ExpectDurationToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	certDuration := apiutil.DefaultCertDuration(certificate.Spec.Duration)
+	return ExpectDuration(certDuration, 30*time.Second)(certificate, secret)
+}
+
+// ExpectDuration checks if the issued certificate matches the provided duration
+func ExpectDuration(expectedDuration, fuzz time.Duration) func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	return func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 		certBytes, ok := secret.Data[corev1.TLSCertKey]
 		if !ok {
@@ -435,10 +435,15 @@ func ExpectDuration(duration, fuzz time.Duration) func(certificate *cmapi.Certif
 			return err
 		}
 
-		certDuration := cert.NotAfter.Sub(cert.NotBefore)
-		if certDuration > (duration+fuzz) || certDuration < duration {
-			return fmt.Errorf("expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
-				fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
+		// Here we ensure that the requested duration is what is signed on the
+		// certificate. We tolerate fuzz either way.
+		actualDuration := cert.NotAfter.Sub(cert.NotBefore)
+		if actualDuration > (expectedDuration+fuzz) || actualDuration < (expectedDuration-fuzz) {
+			return fmt.Errorf(
+				"expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]",
+				expectedDuration, actualDuration, fuzz,
+				cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339),
+			)
 		}
 
 		return nil
