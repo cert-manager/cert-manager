@@ -24,13 +24,13 @@ data:
         },
         "domainBlocklist": ["google.com"],
         "profiles": {
-          "default": {
-            "description": "The profile you know and love",
-            "validityPeriod": 7776000
+          "123h": {
+            "description": "Certificates with duration 123h",
+            "validityPeriod": {{ mul 60 60 123 }}
           },
-          "shortlived": {
-            "description": "A short-lived cert profile, without actual enforcement",
-            "validityPeriod": 518400
+          "456h": {
+            "description": "Certificates with duration 456h",
+            "validityPeriod": {{ mul 60 60 456 }}
           }
         }
       }
