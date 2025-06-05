@@ -22,7 +22,17 @@ data:
         "externalAccountMACKeys": {
           "kid-1": "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"
         },
-        "domainBlocklist": ["google.com"]
+        "domainBlocklist": ["google.com"],
+        "profiles": {
+          "123h": {
+            "description": "Certificates with duration 123h",
+            "validityPeriod": {{ mul 60 60 123 }}
+          },
+          "456h": {
+            "description": "Certificates with duration 456h",
+            "validityPeriod": {{ mul 60 60 456 }}
+          }
+        }
       }
     }
   cert.pem: |

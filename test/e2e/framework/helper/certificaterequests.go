@@ -23,6 +23,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -41,6 +42,9 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
+// ErrCertificateRequestFailed is returned when the CertificateRequest has Ready condition False
+var ErrCertificateRequestFailed = errors.New("CertificateRequest failed; it has Ready status False and reason Failed")
+
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
 func (h *Helper) WaitForCertificateRequestReady(ctx context.Context, ns, name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
@@ -54,22 +58,28 @@ func (h *Helper) WaitForCertificateRequestReady(ctx context.Context, ns, name st
 		if err != nil {
 			return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 		}
-		isReady := apiutil.CertificateRequestHasCondition(cr, cmapi.CertificateRequestCondition{
-			Type:   cmapi.CertificateRequestConditionReady,
-			Status: cmmeta.ConditionTrue,
-		})
-		if !isReady {
+
+		readyCondition := apiutil.GetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady)
+		switch {
+		case readyCondition == nil:
+			logf(
+				"Expected CertificateRequest to have Ready condition 'true' but the Ready condition was not present: %v",
+				cr.Status.Conditions,
+			)
+			return false, nil
+		case readyCondition.Status == cmmeta.ConditionUnknown:
+			logf("Expected CertificateRequest to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
+			return false, nil
+		case readyCondition.Status == cmmeta.ConditionFalse:
+			if readyCondition.Reason == cmapi.CertificateRequestReasonFailed {
+				return true, fmt.Errorf("%w: %v", ErrCertificateRequestFailed, readyCondition)
+			}
 			logf("Expected CertificateRequest to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
 			return false, nil
 		}
 		return true, nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return cr, nil
+	return cr, err
 }
 
 // ValidateIssuedCertificateRequest will ensure that the given

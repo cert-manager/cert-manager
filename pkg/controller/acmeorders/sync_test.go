@@ -955,6 +955,56 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			},
 			acmeClient: &acmecl.FakeACME{},
 		},
+		"acme-profiles:profiles-not-implemented": {
+			// Simulate an attempt to create an order with a profile on an ACME
+			// server which does not support profiles.
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderPending.Namespace,
+							gen.OrderFrom(
+								testOrderErrored,
+								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not support profiles"),
+							),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, acmeapi.ErrCADoesNotSupportProfiles
+				},
+			},
+		},
+		"acme-profiles:profile-not-supported": {
+			// Simulate an attempt to create an order with a profile which the
+			// ACME server does not provide.
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderPending.Namespace,
+							gen.OrderFrom(
+								testOrderErrored,
+								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not advertise a profile with name"),
+							),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, acmeapi.ErrProfileNotInSetOfSupportedProfiles
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {

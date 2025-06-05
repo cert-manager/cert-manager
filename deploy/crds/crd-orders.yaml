@@ -122,6 +122,11 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                profile:
+                  description: |-
+                    Profile allows requesting a certificate profile from the ACME server.
+                    Supported profiles are listed by the server's ACME directory URL.
+                  type: string
                 request:
                   description: |-
                     Certificate signing request bytes in DER encoding.

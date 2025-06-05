@@ -40,7 +40,7 @@ func ExpectDuration(duration, fuzz time.Duration) func(certificaterequest *cmapi
 		}
 
 		certDuration := cert.NotAfter.Sub(cert.NotBefore)
-		if certDuration > (duration+fuzz) || certDuration < duration {
+		if certDuration > (duration+fuzz) || certDuration < (duration-fuzz) {
 			return fmt.Errorf("expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
 				fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
 		}

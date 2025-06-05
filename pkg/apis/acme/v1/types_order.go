@@ -82,6 +82,11 @@ type OrderSpec struct {
 	// this is set on order creation as pe the ACME spec.
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
+
+	// Profile allows requesting a certificate profile from the ACME server.
+	// Supported profiles are listed by the server's ACME directory URL.
+	// +optional
+	Profile string `json:"profile,omitempty"`
 }
 
 type OrderStatus struct {
