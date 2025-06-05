@@ -22,16 +22,36 @@ targets:
       repo_ref: main
       repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
       repo_path: modules/go
+    - folder_name: helm
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
+      repo_path: modules/helm
     - folder_name: help
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
       repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
       repo_path: modules/help
+    - folder_name: kind
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
+      repo_path: modules/kind
     - folder_name: klone
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
       repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
       repo_path: modules/klone
+    - folder_name: licenses
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
+      repo_path: modules/licenses
+    - folder_name: oci-build
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: 145928d68d07bfa64aaa63866f49a81ef8f84fff
+      repo_path: modules/oci-build
     - folder_name: repository-base
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
