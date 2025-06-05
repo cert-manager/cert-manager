@@ -84,26 +84,23 @@ func StartInformersAndController(t *testing.T, factory internalinformers.KubeInf
 
 func StartInformersAndControllers(t *testing.T, factory internalinformers.KubeInformerFactory, cmFactory cminformers.SharedInformerFactory, cs ...controllerpkg.Interface) StopFunc {
 	rootCtx, cancel := context.WithCancel(t.Context())
-	errCh := make(chan error)
 
 	factory.Start(rootCtx.Done())
 	cmFactory.Start(rootCtx.Done())
-	group, _ := errgroup.WithContext(t.Context())
+	group, gctx := errgroup.WithContext(rootCtx)
 	go func() {
-		defer close(errCh)
 		for _, c := range cs {
 			func(c controllerpkg.Interface) {
 				group.Go(func() error {
-					return c.Run(1, rootCtx)
+					return c.Run(1, gctx)
 				})
 			}(c)
 		}
-		errCh <- group.Wait()
 	}()
+
 	return func() {
 		cancel()
-		err := <-errCh
-		if err != nil {
+		if err := group.Wait(); err != nil {
 			t.Fatal(err)
 		}
 	}

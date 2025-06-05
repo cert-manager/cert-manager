@@ -17,7 +17,6 @@ limitations under the License.
 package authority
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -60,16 +59,14 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 		},
 	}
 
-	runCtx, cancel := context.WithCancel(t.Context())
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		if err := da.Run(logf.NewContext(runCtx, logger)); err != nil {
+		if err := da.Run(logf.NewContext(t.Context(), logger)); err != nil {
 			t.Error(err)
 		}
 	}()
 	t.Cleanup(func() {
-		cancel()
 		<-done
 	})
 

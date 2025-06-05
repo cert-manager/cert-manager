@@ -127,7 +127,6 @@ func runUpdateObjectTests(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := t.Context()
 			oldChallenge := gen.Challenge("c1")
 			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
 			objects := []runtime.Object{oldChallenge}
@@ -150,7 +149,7 @@ func runUpdateObjectTests(t *testing.T) {
 			}
 			updater := newObjectUpdater(cl, "test-fieldmanager")
 			t.Log("Calling updateObject")
-			updateObjectErr := updater.updateObject(ctx, oldChallenge, newChallenge)
+			updateObjectErr := updater.updateObject(t.Context(), oldChallenge, newChallenge)
 			if tt.errorMessage == "" {
 				assert.NoError(t, updateObjectErr)
 			} else {
@@ -163,7 +162,7 @@ func runUpdateObjectTests(t *testing.T) {
 
 			if !tt.notFound {
 				t.Log("Checking whether the object was updated")
-				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(ctx, oldChallenge.Name, metav1.GetOptions{})
+				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(t.Context(), oldChallenge.Name, metav1.GetOptions{})
 				require.NoError(t, err)
 				if updateObjectErr == nil {
 					assert.Equal(t, newChallenge, actual, "updateObject did not return an error so the object in the API should have been updated")

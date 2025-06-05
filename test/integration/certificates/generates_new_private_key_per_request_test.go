@@ -49,10 +49,8 @@ import (
 
 func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	namespace := "default"
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
-	defer cancel()
 
-	config, stopFn := framework.RunControlPlane(t, ctx)
+	config, stopFn := framework.RunControlPlane(t, t.Context())
 	defer stopFn()
 
 	// Build, instantiate and run all required controllers
@@ -80,7 +78,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	require.NoError(t, err)
 	pkBytes, err := pki.EncodePrivateKey(pk, cmapi.PKCS1)
 	require.NoError(t, err)
-	_, err = kCl.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+	_, err = kCl.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crt.Spec.SecretName,
 		},
@@ -90,11 +88,11 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create certificate")
 
 	var firstReq *cmapi.CertificateRequest
-	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -120,14 +118,14 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 
 	// Mark the CSR as 'InvalidRequest'
 	apiutil.SetCertificateRequestCondition(firstReq, cmapi.CertificateRequestConditionInvalidRequest, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonFailed, "manually failed")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(ctx, firstReq, metav1.UpdateOptions{})
+	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(t.Context(), firstReq, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("failed to mark CertificateRequest as Failed: %v", err)
 	}
 	t.Log("Marked CertificateRequest as InvalidRequest")
 
 	// Wait for Certificate to be marked as Failed
-	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*50, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*50, true, func(ctx context.Context) (bool, error) {
 		crt, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -141,19 +139,19 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	t.Logf("Issuance acknowledged as failed as expected")
 	t.Logf("Triggering new issuance")
 
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("failed to get certificate: %v", err)
 	}
 
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManualTrigger", "triggered by test case manually")
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
 	var secondReq cmapi.CertificateRequest
-	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -197,10 +195,8 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 // to sign the second request.
 func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	namespace := "default"
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
-	defer cancel()
 
-	config, stopFn := framework.RunControlPlane(t, ctx)
+	config, stopFn := framework.RunControlPlane(t, t.Context())
 	defer stopFn()
 
 	// Build, instantiate and run all required controllers
@@ -229,7 +225,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	pkBytes, err := pki.EncodePrivateKey(pk, cmapi.PKCS1)
 	require.NoError(t, err)
 
-	_, err = kCl.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+	_, err = kCl.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crt.Spec.SecretName,
 		},
@@ -239,11 +235,11 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create certificate")
 
 	var firstReq *cmapi.CertificateRequest
-	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -269,14 +265,14 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 
 	// Mark the CSR as 'Failed'
 	apiutil.SetCertificateRequestCondition(firstReq, cmapi.CertificateRequestConditionReady, cmmeta.ConditionFalse, cmapi.CertificateRequestReasonFailed, "manually failed")
-	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(ctx, firstReq, metav1.UpdateOptions{})
+	_, err = cmCl.CertmanagerV1().CertificateRequests(firstReq.Namespace).UpdateStatus(t.Context(), firstReq, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("failed to mark CertificateRequest as Failed: %v", err)
 	}
 	t.Log("Marked CertificateRequest as Failed")
 
 	// Wait for Certificate to be marked as Failed
-	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*50, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*50, true, func(ctx context.Context) (bool, error) {
 		crt, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -290,19 +286,19 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	t.Logf("Issuance acknowledged as failed as expected")
 	t.Logf("Triggering new issuance")
 
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("failed to get certificate: %v", err)
 	}
 
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManualTrigger", "triggered by test case manually")
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("failed to update certificate: %v", err)
 	}
 
 	var secondReq cmapi.CertificateRequest
-	if err := wait.PollUntilContextTimeout(ctx, time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
 		reqs, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err

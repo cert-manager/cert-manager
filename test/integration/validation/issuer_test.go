@@ -17,12 +17,10 @@ limitations under the License.
 package validation
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,13 +48,10 @@ func TestValidationIssuer(t *testing.T) {
 	yamlBytes, err := os.Open(yamlFile)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
-	defer cancel()
-
-	config, stop := framework.RunControlPlane(t, ctx)
+	config, stop := framework.RunControlPlane(t, t.Context())
 	defer stop()
 
-	framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, config, issuerGVK)
+	framework.WaitForOpenAPIResourcesToBeLoaded(t, t.Context(), config, issuerGVK)
 
 	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
 	require.NoError(t, err)
@@ -72,7 +67,7 @@ func TestValidationIssuer(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("%s:%d:%s/%s", yamlFile, documentIndex, obj.GetNamespace(), obj.GetName())
 		t.Run(name, func(t *testing.T) {
-			err = cl.Create(ctx, obj)
+			err = cl.Create(t.Context(), obj)
 			assert.NoError(t, err)
 		})
 		documentIndex++
