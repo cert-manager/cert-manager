@@ -38,7 +38,7 @@ func Test_ConditionsListType_Issuers(t *testing.T) {
 		name      = "test-condition-list-type"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	restConfig, stopFn := framework.RunControlPlane(t, ctx)
@@ -125,7 +125,7 @@ func Test_ConditionsListType_ClusterIssuers(t *testing.T) {
 		name = "test-condition-list-type"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	restConfig, stopFn := framework.RunControlPlane(t, ctx)

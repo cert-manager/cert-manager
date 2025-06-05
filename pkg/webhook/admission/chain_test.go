@@ -88,7 +88,7 @@ func TestChainValidate(t *testing.T) {
 			},
 		},
 	})
-	warnings, err := pc.Validate(context.Background(), admissionv1.AdmissionRequest{}, nil, nil)
+	warnings, err := pc.Validate(t.Context(), admissionv1.AdmissionRequest{}, nil, nil)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestChainValidate_Fails(t *testing.T) {
 			},
 		},
 	})
-	warnings, err := pc.Validate(context.Background(), admissionv1.AdmissionRequest{}, nil, nil)
+	warnings, err := pc.Validate(t.Context(), admissionv1.AdmissionRequest{}, nil, nil)
 	if err == nil {
 		t.Errorf("didn't get an error when one was expected")
 	}
@@ -144,7 +144,7 @@ func TestChainMutate(t *testing.T) {
 		},
 	})
 	tt := &unstructured.Unstructured{Object: map[string]any{}}
-	err := pc.Mutate(context.Background(), admissionv1.AdmissionRequest{}, tt)
+	err := pc.Mutate(t.Context(), admissionv1.AdmissionRequest{}, tt)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -167,7 +167,7 @@ func TestChainMutate_Fails(t *testing.T) {
 			},
 		},
 	})
-	err := pc.Mutate(context.Background(), admissionv1.AdmissionRequest{}, &unstructured.Unstructured{Object: map[string]any{}})
+	err := pc.Mutate(t.Context(), admissionv1.AdmissionRequest{}, &unstructured.Unstructured{Object: map[string]any{}})
 	if err == nil {
 		t.Errorf("expected error but got none")
 	}

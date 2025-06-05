@@ -296,7 +296,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 			}
 
 			// Start the DynamicSource
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			group, gctx := errgroup.WithContext(ctx)
 			group.Go(func() error {
 				return source.Start(gctx)

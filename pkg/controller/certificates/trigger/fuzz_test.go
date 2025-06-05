@@ -147,6 +147,6 @@ func FuzzProcessItem(f *testing.F) {
 		}
 
 		// Call ProcessItem. This is the API that the fuzzer tests.
-		_ = w.controller.ProcessItem(context.Background(), key)
+		_ = w.controller.ProcessItem(t.Context(), key)
 	})
 }

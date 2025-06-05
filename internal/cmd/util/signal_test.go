@@ -52,7 +52,7 @@ func testExitCode(
 
 func TestSetupExitHandlerAlwaysErrCodeSIGTERM(t *testing.T) {
 	exitCode := testExitCode(t, func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		ctx, complete := SetupExitHandler(ctx, AlwaysErrCode)
 		defer complete()
 
@@ -76,7 +76,7 @@ func TestSetupExitHandlerAlwaysErrCodeSIGTERM(t *testing.T) {
 
 func TestSetupExitHandlerAlwaysErrCodeSIGINT(t *testing.T) {
 	exitCode := testExitCode(t, func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		ctx, complete := SetupExitHandler(ctx, AlwaysErrCode)
 		defer complete()
 
@@ -100,7 +100,7 @@ func TestSetupExitHandlerAlwaysErrCodeSIGINT(t *testing.T) {
 
 func TestSetupExitHandlerGracefulShutdownSIGINT(t *testing.T) {
 	exitCode := testExitCode(t, func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		ctx, complete := SetupExitHandler(ctx, GracefulShutdown)
 		defer complete()
 

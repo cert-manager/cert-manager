@@ -45,7 +45,7 @@ import (
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_Bootstrap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(t.Context(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -110,7 +110,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_CARotation(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(t.Context(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -223,7 +223,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 func TestDynamicSource_leaderelection(t *testing.T) {
 	const nrManagers = 2 // number of managers to start for this test
 
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), testr.New(t)), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(t.Context(), testr.New(t)), time.Second*40)
 	defer cancel()
 
 	env, stop := apiserver.RunBareControlPlane(t)

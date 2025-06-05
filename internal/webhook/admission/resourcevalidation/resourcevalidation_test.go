@@ -17,7 +17,6 @@ limitations under the License.
 package resourcevalidation
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -83,7 +82,7 @@ func TestResourceValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			p := NewPlugin().(*resourceValidation)
 			p.validationMappings = test.mapping
-			warnings, err := p.Validate(context.Background(), test.req, test.oldObj, test.obj)
+			warnings, err := p.Validate(t.Context(), test.req, test.oldObj, test.obj)
 			compareErrors(t, test.expectedError, err)
 			if !reflect.DeepEqual(test.expectedWarnings, warnings) {
 				t.Errorf("unexpected warnings. exp=%v, got=%v", test.expectedWarnings, warnings)

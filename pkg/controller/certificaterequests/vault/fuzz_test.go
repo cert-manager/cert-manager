@@ -187,6 +187,6 @@ func FuzzVaultCRController(f *testing.F) {
 			panic(err)
 		}
 		builder.Start()
-		_ = controller.Sync(context.Background(), baseCR)
+		_ = controller.Sync(t.Context(), baseCR)
 	})
 }

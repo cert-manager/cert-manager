@@ -171,7 +171,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 			cert := test.input.(*cmapi.CertificateRequest)
 			cert.SetGroupVersionKind(certGVK)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+			ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 			defer cancel()
 
 			config, stop := framework.RunControlPlane(t, ctx)

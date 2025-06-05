@@ -17,7 +17,6 @@ limitations under the License.
 package acme
 
 import (
-	"context"
 	"crypto"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -649,7 +648,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err = controller.Sync(context.Background(), test.certificateRequest)
+	err = controller.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

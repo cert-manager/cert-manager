@@ -18,7 +18,6 @@ package internal
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/x509"
 	"fmt"
@@ -549,7 +548,7 @@ func TestManyPasswordLengths(t *testing.T) {
 
 	// Run these tests in parallel
 	s := semaphore.NewWeighted(32)
-	g, ctx := errgroup.WithContext(context.Background())
+	g, ctx := errgroup.WithContext(t.Context())
 	for tests := range testN {
 		testi := tests
 		if ctx.Err() != nil {

@@ -57,7 +57,7 @@ certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 // metrics are exposed when a Certificate is created, updated, and removed when
 // it is deleted.
 func TestMetricsController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -82,7 +82,7 @@ func TestMetricsController(t *testing.T) {
 		}
 	}()
 	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Second*5)
 		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {

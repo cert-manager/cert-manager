@@ -17,7 +17,6 @@ limitations under the License.
 package cmapichecker
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -331,7 +330,7 @@ func TestCheck(t *testing.T) {
 			for i := range 10 {
 				t.Logf("# check %d", i)
 
-				err = checker.Check(context.Background())
+				err = checker.Check(t.Context())
 				switch {
 				case err == nil && test.expectedError == "":
 				case err == nil && test.expectedError != "":

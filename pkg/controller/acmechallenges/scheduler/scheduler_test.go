@@ -17,7 +17,6 @@ limitations under the License.
 package scheduler
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -315,7 +314,7 @@ func TestScheduleN(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)
+			s := New(t.Context(), challengesInformer.Lister(), maxConcurrentChallenges)
 
 			if test.expected == nil {
 				test.expected = []*cmacme.Challenge{}

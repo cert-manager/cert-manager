@@ -50,7 +50,7 @@ func TestValidationIssuer(t *testing.T) {
 	yamlBytes, err := os.Open(yamlFile)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)

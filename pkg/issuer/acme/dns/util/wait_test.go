@@ -112,7 +112,7 @@ func TestLookupNameserversOK(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.givenFQDN, func(t *testing.T) {
 			withMockDNSQuery(t, tc.mockDNS)
-			nss, err := lookupNameservers(context.TODO(), tc.givenFQDN, []string{"not-used"})
+			nss, err := lookupNameservers(t.Context(), tc.givenFQDN, []string{"not-used"})
 			require.NoError(t, err)
 			assert.ElementsMatch(t, tc.expectNSs, nss, "Expected nameservers do not match")
 		})
@@ -135,7 +135,7 @@ func TestLookupNameserversErr(t *testing.T) {
 				},
 			}},
 		})
-		_, err := lookupNameservers(context.TODO(), "_null.n0n0.", []string{"not-used"})
+		_, err := lookupNameservers(t.Context(), "_null.n0n0.", []string{"not-used"})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Could not determine the zone")
 	})
@@ -249,7 +249,7 @@ func TestFindZoneByFqdn(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.givenFQDN, func(t *testing.T) {
 			withMockDNSQuery(t, tt.mockDNS)
-			gotZone, err := FindZoneByFqdn(context.TODO(), tt.givenFQDN, []string{"not-used"})
+			gotZone, err := FindZoneByFqdn(t.Context(), tt.givenFQDN, []string{"not-used"})
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectZone, gotZone)
 		})
@@ -266,7 +266,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 				},
 			}},
 		})
-		ok, err := checkAuthoritativeNss(context.TODO(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
@@ -277,7 +277,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
 			}},
 		})
-		ok, err := checkAuthoritativeNss(context.TODO(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		require.NoError(t, err)
 		assert.False(t, ok)
 	})
@@ -285,7 +285,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 	t.Run("errors out when DnsQuery fails", func(t *testing.T) {
 		withMockDNSQueryErr(t, fmt.Errorf("some error coming from DnsQuery"))
 
-		_, err := checkAuthoritativeNss(context.TODO(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		_, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		assert.EqualError(t, err, "some error coming from DnsQuery")
 	})
 }
@@ -390,7 +390,7 @@ func Test_followCNAMEs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			withMockDNSQuery(t, tt.mock)
-			got, err := followCNAMEs(context.TODO(), tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
+			got, err := followCNAMEs(t.Context(), tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("followCNAMEs() error = %v, wantErr %v", err, tt.wantErr)
 				return
