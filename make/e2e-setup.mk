@@ -204,7 +204,7 @@ $(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $
 #
 # This is handled differently from the other image downloads, because:
 # 1. The pinned Kind image references are automatically generated using
-#    `hack/latest-kind-image.sh`.
+#    `hack/latest-kind-images.sh`.
 # 2. It uses digests that point to the multi-arch manifest, rather than the
 #    actual image.
 # 3. The Kind image tags DO change; each new Kind release has a set of Kind node
