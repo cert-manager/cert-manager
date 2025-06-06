@@ -9,7 +9,6 @@ this directory.
 package azuredns
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -65,7 +64,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -76,9 +75,9 @@ func TestLiveAzureDnsPresentMultiple(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
-	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -92,7 +91,7 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -106,9 +105,9 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
-	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
+	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -132,10 +131,10 @@ func TestAuthenticationError(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", "invalid-client-id", "invalid-client-secret", "subid", "tenid", "rg", "example.com", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(context.TODO(), "example.com", "_acme-challenge.example.com.", "123d==")
+	err = provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
 	assert.Error(t, err)
 
-	err = provider.CleanUp(context.TODO(), "example.com", "_acme-challenge.example.com.", "123d==")
+	err = provider.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
 	assert.Error(t, err)
 }
 
@@ -250,7 +249,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 
 		for federatedToken, accessToken := range tokens {
 			populateFederatedToken(t, f.Name(), federatedToken)
-			token, err := spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+			token, err := spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 			assert.NoError(t, err)
 			assert.Equal(t, accessToken, token.Token, "Access token should have been set to a value returned by the webserver")
 
@@ -312,7 +311,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
 		assert.NoError(t, err)
 
-		token, err := spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+		token, err := spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token.Token, "Access token should have been set to a value returned by the webserver")
 	})
@@ -363,7 +362,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
 		assert.NoError(t, err)
 
-		_, err = spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+		_, err = spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 		err = stabilizeError(err)
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, fmt.Sprintf(`authentication failed:
@@ -412,7 +411,7 @@ func TestStabilizeResponseError(t *testing.T) {
 		zoneClient:        zc,
 	}
 
-	err = dnsProvider.Present(context.TODO(), "test.com", "fqdn.test.com.", "test123")
+	err = dnsProvider.Present(t.Context(), "test.com", "fqdn.test.com.", "test123")
 	require.Error(t, err)
 	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: request error:
 GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com

@@ -1173,7 +1173,7 @@ func Test_ensureSecretData(t *testing.T) {
 			}
 
 			// Call ProcessItem
-			err = w.controller.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(t.Context(), key)
 			assert.NoError(t, err)
 
 			if err := builder.AllActionsExecuted(); err != nil {

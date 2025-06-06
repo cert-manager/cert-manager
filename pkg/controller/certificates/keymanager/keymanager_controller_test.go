@@ -17,7 +17,6 @@ limitations under the License.
 package keymanager
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -507,7 +506,7 @@ func TestProcessItem(t *testing.T) {
 			}
 
 			// Call ProcessItem
-			err = w.controller.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(t.Context(), key)
 			switch {
 			case err != nil:
 				if test.err != err.Error() {

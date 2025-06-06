@@ -17,7 +17,6 @@ limitations under the License.
 package shimhelper
 
 import (
-	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -3678,7 +3677,7 @@ func TestSync(t *testing.T) {
 			}, "cert-manager-test")
 			b.Start()
 
-			err := sync(context.Background(), test.IngressLike)
+			err := sync(t.Context(), test.IngressLike)
 
 			// If test.Err == true, err should not be nil and vice versa
 			if test.Err == (err == nil) {

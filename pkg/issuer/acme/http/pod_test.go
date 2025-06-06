@@ -17,7 +17,6 @@ limitations under the License.
 package http
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -267,7 +266,7 @@ func TestEnsurePod(t *testing.T) {
 			}
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
-			err := s.ensurePod(context.Background(), scenario.chal)
+			err := s.ensurePod(t.Context(), scenario.chal)
 			if err != nil != scenario.expectedErr {
 				t.Fatalf("unexpected error: wants err: %t, got err %v", scenario.expectedErr, err)
 

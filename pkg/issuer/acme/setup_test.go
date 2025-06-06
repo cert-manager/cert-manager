@@ -575,7 +575,7 @@ func TestAcme_Setup(t *testing.T) {
 			apiutil.Clock = fakeclock
 
 			// Verify that an error is/is not returned as expected.
-			gotErr := a.Setup(context.Background())
+			gotErr := a.Setup(t.Context())
 			if gotErr == nil && test.wantsErr {
 				t.Errorf("Expected error %v, got %v", test.wantsErr, gotErr)
 			}

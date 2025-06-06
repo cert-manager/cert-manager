@@ -821,7 +821,7 @@ func Test_SecretsManager(t *testing.T) {
 				test.certificateOptions.EnableOwnerRef,
 			)
 
-			err := testManager.UpdateData(context.Background(), test.certificate, test.secretData)
+			err := testManager.UpdateData(t.Context(), test.certificate, test.secretData)
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}

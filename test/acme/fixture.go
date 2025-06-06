@@ -115,7 +115,7 @@ func (f *fixture) setup(t *testing.T) func() {
 		t.Fatalf("error validating test fixture configuration: %v", err)
 	}
 
-	env, stopFunc := apiserver.RunBareControlPlane(t)
+	env, stopControlPlaneFn := apiserver.RunBareControlPlane(t)
 	f.environment = env
 
 	// An admin user instance for running kubectl against this envtest
@@ -145,6 +145,6 @@ func (f *fixture) setup(t *testing.T) func() {
 
 	return func() {
 		close(stopCh)
-		stopFunc()
+		stopControlPlaneFn()
 	}
 }

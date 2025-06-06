@@ -50,11 +50,8 @@ import (
 // issuance is triggered when a new Certificate resource is created and
 // no Secret exists.
 func TestTriggerController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	config, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
@@ -64,7 +61,7 @@ func TestTriggerController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +94,7 @@ func TestTriggerController(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
+	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: namespace},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
@@ -109,15 +106,12 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, cert.Name)
+	ensureCertificateHasIssuingCondition(t, t.Context(), cmCl, namespace, cert.Name)
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	config, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Only use the 'current certificate nearing expiry' policy chain during the
@@ -138,7 +132,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 
 	// Create namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +157,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Create an X.509 cert
 	x509CertBytes := selfSignCertificateWithNotBeforeAfter(t, skBytes, cert, notBefore.Time, notAfter.Time)
 	// Create a Secret with the X.509 cert
-	_, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+	_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
@@ -206,7 +200,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate
-	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), cert, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +210,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Wait for 2s, polling every 200ms to ensure that the controller does not set
 	// the condition.
 	t.Log("Ensuring Certificate does not have Issuing condition for 2s...")
-	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmCl, namespace, certName)
+	ensureCertificateDoesNotHaveIssuingCondition(t, t.Context(), cmCl, namespace, certName)
 
 	// 2. Test that a Certificate does get the Issuing status condition set to
 	// True when the X.509 cert is nearing expiry.
@@ -228,17 +222,15 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	fakeClock.SetTime(renewalTime.Add(time.Millisecond * 2))
 
 	// apply a random condition to cert to ensure the reconciler gets triggered
-	applyTestCondition(t, ctx, cert, cmCl)
-	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
+	applyTestCondition(t, t.Context(), cert, cmCl)
+	ensureCertificateHasIssuingCondition(t, t.Context(), cmCl, namespace, certName)
 }
 
 func TestTriggerController_ExpBackoff(t *testing.T) {
 	t.Log("Testing that trigger controller applies exponential backoff when retrying failed issuances...")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
 
-	config, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	now := time.Now()
 	metaNow := metav1.NewTime(now)
@@ -260,7 +252,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 
 	// Create namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,25 +297,25 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate
-	_, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), cert, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// 1. Test that Issuing condition gets set to True
 	t.Log("Ensuring Certificate does get the Issuing condition set to true initially...")
-	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
+	ensureCertificateHasIssuingCondition(t, t.Context(), cmCl, namespace, certName)
 
 	// Simulate issuance having failed
 	t.Log("Simulate issuance having failed for 7th time in a row")
-	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, certName, metav1.GetOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(t.Context(), certName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "", "")
 	cert.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
 	cert.Status.LastFailureTime = &metaNow
-	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), cert, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,19 +325,19 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	t.Log("Advance clock to slightly before the end of the backoff period")
 	fakeClock.SetTime(now.Add(backoffPeriod - time.Minute))
 	// apply a random condition to cert to ensure the reconciler gets triggered
-	applyTestCondition(t, ctx, cert, cmCl)
+	applyTestCondition(t, t.Context(), cert, cmCl)
 
 	t.Log("Ensuring Certificate does not have Issuing condition set to true for 2s...")
-	ensureCertificateDoesNotHaveIssuingCondition(t, ctx, cmCl, namespace, certName)
+	ensureCertificateDoesNotHaveIssuingCondition(t, t.Context(), cmCl, namespace, certName)
 
 	// 3. Test that issuance gets retried once the backoff period is over
 	t.Log("Advance clock to just after the backoff period")
 	fakeClock.SetTime(now.Add(backoffPeriod + time.Second))
 	// apply a random condition to cert to ensure the reconciler gets triggered
-	applyTestCondition(t, ctx, cert, cmCl)
+	applyTestCondition(t, t.Context(), cert, cmCl)
 
 	t.Log("Ensuring Certificate does get the Issuing condition set to true after the backoff period")
-	ensureCertificateHasIssuingCondition(t, ctx, cmCl, namespace, certName)
+	ensureCertificateHasIssuingCondition(t, t.Context(), cmCl, namespace, certName)
 }
 
 func ensureCertificateDoesNotHaveIssuingCondition(t *testing.T, ctx context.Context, cmCl cmclient.Interface, namespace, name string) {

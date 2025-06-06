@@ -17,10 +17,8 @@ limitations under the License.
 package validation
 
 import (
-	"context"
 	"strings"
 	"testing"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -171,13 +169,10 @@ func TestValidationCertificateRequests(t *testing.T) {
 			cert := test.input.(*cmapi.CertificateRequest)
 			cert.SetGroupVersionKind(certGVK)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-			defer cancel()
+			config, stopFn := framework.RunControlPlane(t)
+			t.Cleanup(stopFn)
 
-			config, stop := framework.RunControlPlane(t, ctx)
-			defer stop()
-
-			framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, config, certGVK)
+			framework.WaitForOpenAPIResourcesToBeLoaded(t, t.Context(), config, certGVK)
 
 			// create the object to get any errors back from the webhook
 			cl, err := client.New(config, client.Options{Scheme: api.Scheme})
@@ -185,7 +180,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = cl.Create(ctx, cert)
+			err = cl.Create(t.Context(), cert)
 			if test.expectError != (err != nil) {
 				t.Errorf("unexpected error, exp=%t got=%v",
 					test.expectError, err)

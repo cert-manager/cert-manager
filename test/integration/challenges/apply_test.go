@@ -17,9 +17,7 @@ limitations under the License.
 package challenges
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -39,17 +37,14 @@ func Test_Apply(t *testing.T) {
 		name      = "test-apply"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	restConfig, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	restConfig, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, cmClient, _, _ := framework.NewClients(t, restConfig)
 
 	t.Log("creating test Namespace")
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	ch := &cmacme.Challenge{
@@ -68,11 +63,11 @@ func Test_Apply(t *testing.T) {
 	}
 
 	t.Log("creating Challenge")
-	_, err = cmClient.AcmeV1().Challenges(namespace).Create(ctx, ch, metav1.CreateOptions{FieldManager: "cert-manager-test"})
+	_, err = cmClient.AcmeV1().Challenges(namespace).Create(t.Context(), ch, metav1.CreateOptions{FieldManager: "cert-manager-test"})
 	assert.NoError(t, err)
 
 	t.Log("ensuring apply will can set annotations and labels")
-	_, err = internalchallenges.Apply(ctx, cmClient, "cert-manager-test", &cmacme.Challenge{
+	_, err = internalchallenges.Apply(t.Context(), cmClient, "cert-manager-test", &cmacme.Challenge{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace, Name: name,
 			Annotations: map[string]string{"test-1": "abc", "test-2": "def"},
@@ -81,13 +76,13 @@ func Test_Apply(t *testing.T) {
 		Spec: ch.Spec,
 	})
 	assert.NoError(t, err)
-	ch, err = cmClient.AcmeV1().Challenges(namespace).Get(ctx, name, metav1.GetOptions{})
+	ch, err = cmClient.AcmeV1().Challenges(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]string{"test-1": "abc", "test-2": "def"}, ch.Annotations, "annotations")
 	assert.Equal(t, map[string]string{"123": "456", "789": "abc"}, ch.Labels, "labels")
 
 	t.Log("ensuring apply can change status")
-	_, err = internalchallenges.ApplyStatus(ctx, cmClient, "cert-manager-test", &cmacme.Challenge{
+	_, err = internalchallenges.ApplyStatus(t.Context(), cmClient, "cert-manager-test", &cmacme.Challenge{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmacme.ChallengeStatus{
 			Processing: true,
@@ -97,7 +92,7 @@ func Test_Apply(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	ch, err = cmClient.AcmeV1().Challenges(namespace).Get(ctx, name, metav1.GetOptions{})
+	ch, err = cmClient.AcmeV1().Challenges(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, cmacme.ChallengeStatus{
 		Processing: true,

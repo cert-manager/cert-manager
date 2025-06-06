@@ -17,10 +17,8 @@ limitations under the License.
 package certificates
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -44,11 +42,8 @@ func Test_ConditionsListType(t *testing.T) {
 		name      = "test-condition-list-type"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	restConfig, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	restConfig, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build clients with different field managers.
 	aliceRestConfig := util.RestConfigWithUserAgent(restConfig, "alice")
@@ -61,7 +56,7 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("creating test Namespace")
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := aliceKubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := aliceKubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Log("creating empty Certificate")
@@ -71,7 +66,7 @@ func Test_ConditionsListType(t *testing.T) {
 			CommonName: "test", SecretName: "test", IssuerRef: cmmeta.ObjectReference{Name: "test"},
 		},
 	}
-	_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Log("ensuring alice can set Ready condition")
@@ -85,7 +80,7 @@ func Test_ConditionsListType(t *testing.T) {
 	crtData, err := json.Marshal(crt)
 	assert.NoError(t, err)
 	_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Patch(
-		ctx, name, apitypes.ApplyPatchType, crtData,
+		t.Context(), name, apitypes.ApplyPatchType, crtData,
 		metav1.PatchOptions{Force: ptr.To(true), FieldManager: aliceFieldManager}, "status",
 	)
 	assert.NoError(t, err)
@@ -101,12 +96,12 @@ func Test_ConditionsListType(t *testing.T) {
 	crtData, err = json.Marshal(crt)
 	assert.NoError(t, err)
 	_, err = bobCMClient.CertmanagerV1().Certificates(namespace).Patch(
-		ctx, name, apitypes.ApplyPatchType, crtData,
+		t.Context(), name, apitypes.ApplyPatchType, crtData,
 		metav1.PatchOptions{Force: ptr.To(true), FieldManager: bobFieldManager}, "status",
 	)
 	assert.NoError(t, err)
 
-	crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+	crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateCondition{
 		{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
@@ -124,12 +119,12 @@ func Test_ConditionsListType(t *testing.T) {
 	crtData, err = json.Marshal(crt)
 	assert.NoError(t, err)
 	_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Patch(
-		ctx, name, apitypes.ApplyPatchType, crtData,
+		t.Context(), name, apitypes.ApplyPatchType, crtData,
 		metav1.PatchOptions{Force: ptr.To(true), FieldManager: aliceFieldManager}, "status",
 	)
 	assert.NoError(t, err)
 
-	crt, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+	crt, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateCondition{
 		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
@@ -146,12 +141,12 @@ func Test_ConditionsListType(t *testing.T) {
 	crtData, err = json.Marshal(crt)
 	assert.NoError(t, err)
 	_, err = bobCMClient.CertmanagerV1().Certificates(namespace).Patch(
-		ctx, name, apitypes.ApplyPatchType, crtData,
+		t.Context(), name, apitypes.ApplyPatchType, crtData,
 		metav1.PatchOptions{Force: ptr.To(true), FieldManager: bobFieldManager}, "status",
 	)
 	assert.NoError(t, err)
 
-	crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+	crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateCondition{
 		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
