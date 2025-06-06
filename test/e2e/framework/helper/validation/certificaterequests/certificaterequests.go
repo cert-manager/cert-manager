@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -28,7 +29,13 @@ import (
 // ValidationFunc describes a CertificateRequest validation helper function
 type ValidationFunc func(certificaterequest *cmapi.CertificateRequest, key crypto.Signer) error
 
-func ExpectDuration(duration, fuzz time.Duration) func(certificaterequest *cmapi.CertificateRequest, key crypto.Signer) error {
+// ExpectDuration checks if the issued certificate matches the CertificateRequest's duration
+func ExpectDurationToMatch(certificaterequest *cmapi.CertificateRequest, key crypto.Signer) error {
+	certDuration := apiutil.DefaultCertDuration(certificaterequest.Spec.Duration)
+	return ExpectDuration(certDuration, 30*time.Second)(certificaterequest, key)
+}
+
+func ExpectDuration(expectedDuration, fuzz time.Duration) func(certificaterequest *cmapi.CertificateRequest, key crypto.Signer) error {
 	return func(certificaterequest *cmapi.CertificateRequest, key crypto.Signer) error {
 		certBytes := certificaterequest.Status.Certificate
 		if len(certBytes) == 0 {
@@ -39,10 +46,15 @@ func ExpectDuration(duration, fuzz time.Duration) func(certificaterequest *cmapi
 			return err
 		}
 
+		// Here we ensure that the requested duration is what is signed on the
+		// certificate. We tolerate fuzz either way.
 		certDuration := cert.NotAfter.Sub(cert.NotBefore)
-		if certDuration > (duration+fuzz) || certDuration < (duration-fuzz) {
-			return fmt.Errorf("expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
-				fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
+		if certDuration > (expectedDuration+fuzz) || certDuration < (expectedDuration-fuzz) {
+			return fmt.Errorf(
+				"expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]",
+				expectedDuration, certDuration, fuzz,
+				cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339),
+			)
 		}
 
 		return nil

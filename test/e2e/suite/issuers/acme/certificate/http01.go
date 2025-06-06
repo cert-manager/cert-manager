@@ -61,9 +61,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
 	fixedIngressName := "testingress"
 
-	// ACME Issuer does not return a ca.crt. See:
-	// https://github.com/cert-manager/cert-manager/issues/1571
-	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	unsupportedFeatures := featureset.NewFeatureSet(
+		// ACME Issuer does not return a ca.crt. See:
+		// https://github.com/cert-manager/cert-manager/issues/1571
+		featureset.SaveCAToSecret,
+		// ACME does not match the duration specified
+		// in the CertificateRequest resource.
+		featureset.DurationFeature,
+	)
 	validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
