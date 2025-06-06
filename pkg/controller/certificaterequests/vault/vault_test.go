@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -41,6 +40,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -70,7 +70,7 @@ func generateSelfSignedCertFromCR(cr *cmapi.CertificateRequest, key crypto.Signe
 		return nil, fmt.Errorf("error generating template: %v", err)
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
+	derBytes, err := x509.CreateCertificate(cmrand.Reader, template, template, key.Public(), key)
 	if err != nil {
 		return nil, fmt.Errorf("error signing cert: %v", err)
 	}

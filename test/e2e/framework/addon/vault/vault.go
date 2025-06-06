@@ -19,7 +19,6 @@ package vault
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -43,6 +42,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -473,7 +473,7 @@ func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName 
 		panic(err)
 	}
 
-	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+	certBytes, err := x509.CreateCertificate(cmrand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
 	if err != nil {
 		panic(err)
 	}
@@ -516,7 +516,7 @@ func generateVaultClientCert(vaultCA []byte, vaultCAPrivateKey []byte) ([]byte, 
 		panic(err)
 	}
 
-	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
+	certBytes, err := x509.CreateCertificate(cmrand.Reader, cert, ca, &privateKey.PublicKey, catls.PrivateKey)
 	if err != nil {
 		panic(err)
 	}
@@ -549,7 +549,7 @@ func GenerateCA() ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &privateKey.PublicKey, privateKey)
+	caBytes, err := x509.CreateCertificate(cmrand.Reader, ca, ca, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		return nil, nil, err
 	}

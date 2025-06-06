@@ -21,13 +21,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 )
 
 const (
@@ -92,7 +92,7 @@ func GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("rsa key size specified too big: %d. maximum key size: %d", keySize, MaxRSAKeySize)
 	}
 
-	return rsa.GenerateKey(rand.Reader, keySize)
+	return rsa.GenerateKey(cmrand.Reader, keySize)
 }
 
 // GenerateECPrivateKey will generate an ECDSA private key of the given size.
@@ -111,12 +111,12 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 		return nil, fmt.Errorf("unsupported ecdsa key size specified: %d", keySize)
 	}
 
-	return ecdsa.GenerateKey(ecCurve, rand.Reader)
+	return ecdsa.GenerateKey(ecCurve, cmrand.Reader)
 }
 
 // GenerateEd25519PrivateKey will generate an Ed25519 private key
 func GenerateEd25519PrivateKey() (ed25519.PrivateKey, error) {
-	_, prvkey, err := ed25519.GenerateKey(rand.Reader)
+	_, prvkey, err := ed25519.GenerateKey(cmrand.Reader)
 
 	return prvkey, err
 }
@@ -157,6 +157,7 @@ func EncodePKCS8PrivateKey(pk interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	block := &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
 
 	return pem.EncodeToMemory(block), nil

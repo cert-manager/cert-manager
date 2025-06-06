@@ -22,7 +22,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -30,13 +29,13 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/big"
 	"net"
 	"net/netip"
 	"net/url"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/cmrand"
 )
 
 // IPAddressesToString converts a slice of IP addresses to strings, which can be useful for
@@ -86,8 +85,6 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 	return *crt.Spec.Subject
 }
-
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
@@ -383,7 +380,7 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 		return nil, nil, err
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
+	derBytes, err := x509.CreateCertificate(cmrand.Reader, template, issuerCert, publicKey, signerKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
 	}
@@ -429,7 +426,7 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caPrivateKey crypto.Signer, te
 // EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.
 // It returns a DER encoded signed CSR.
 func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, error) {
-	derBytes, err := x509.CreateCertificateRequest(rand.Reader, template, key)
+	derBytes, err := x509.CreateCertificateRequest(cmrand.Reader, template, key)
 	if err != nil {
 		return nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
 	}
