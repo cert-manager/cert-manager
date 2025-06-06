@@ -169,8 +169,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 			cert := test.input.(*cmapi.CertificateRequest)
 			cert.SetGroupVersionKind(certGVK)
 
-			config, stop := framework.RunControlPlane(t, t.Context())
-			defer stop()
+			config, stopFn := framework.RunControlPlane(t)
+			t.Cleanup(stopFn)
 
 			framework.WaitForOpenAPIResourcesToBeLoaded(t, t.Context(), config, certGVK)
 

@@ -50,8 +50,8 @@ import (
 func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	namespace := "default"
 
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run all required controllers
 	stopControllers := runAllControllers(t, config)
@@ -196,8 +196,8 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	namespace := "default"
 
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run all required controllers
 	stopControllers := runAllControllers(t, config)

@@ -57,8 +57,8 @@ certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 // metrics are exposed when a Certificate is created, updated, and removed when
 // it is deleted.
 func TestMetricsController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)

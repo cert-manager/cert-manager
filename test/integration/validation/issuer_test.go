@@ -48,8 +48,8 @@ func TestValidationIssuer(t *testing.T) {
 	yamlBytes, err := os.Open(yamlFile)
 	require.NoError(t, err)
 
-	config, stop := framework.RunControlPlane(t, t.Context())
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	framework.WaitForOpenAPIResourcesToBeLoaded(t, t.Context(), config, issuerGVK)
 

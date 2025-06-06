@@ -42,8 +42,8 @@ func Test_ConditionsListType(t *testing.T) {
 		name      = "test-condition-list-type"
 	)
 
-	restConfig, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	restConfig, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build clients with different field managers.
 	aliceRestConfig := util.RestConfigWithUserAgent(restConfig, "alice")

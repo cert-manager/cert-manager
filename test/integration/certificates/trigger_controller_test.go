@@ -50,8 +50,8 @@ import (
 // issuance is triggered when a new Certificate resource is created and
 // no Secret exists.
 func TestTriggerController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
@@ -110,8 +110,8 @@ func TestTriggerController(t *testing.T) {
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Only use the 'current certificate nearing expiry' policy chain during the
@@ -229,8 +229,8 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 func TestTriggerController_ExpBackoff(t *testing.T) {
 	t.Log("Testing that trigger controller applies exponential backoff when retrying failed issuances...")
 
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	now := time.Now()
 	metaNow := metav1.NewTime(now)

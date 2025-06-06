@@ -41,8 +41,8 @@ import (
 )
 
 func TestAcmeOrdersController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Create clients and informer factories for Kubernetes API and
 	// cert-manager.

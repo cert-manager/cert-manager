@@ -45,8 +45,8 @@ import (
 // Ensure that when the controller is running against an empty API server, it
 // creates and stores a new CA keypair.
 func TestDynamicAuthority_Bootstrap(t *testing.T) {
-	config, stop := framework.RunControlPlane(t, t.Context())
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
@@ -89,8 +89,8 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 // Ensures that when the controller is running and the CA Secret is deleted,
 // it is automatically recreated within a bounded amount of time.
 func TestDynamicAuthority_Recreates(t *testing.T) {
-	config, stop := framework.RunControlPlane(t, t.Context())
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 

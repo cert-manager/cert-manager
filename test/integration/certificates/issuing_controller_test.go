@@ -55,8 +55,8 @@ import (
 // certificate, ca, and private key is stored into the target Secret to
 // complete Issuing the Certificate.
 func TestIssuingController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
@@ -257,8 +257,8 @@ func TestIssuingController(t *testing.T) {
 }
 
 func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
@@ -468,8 +468,8 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 // values in a Certificate's SecretTemplate will be copied to the target
 // Secret - when they are both added and deleted.
 func Test_IssuingController_SecretTemplate(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
@@ -700,8 +700,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 // ensure that values in a Certificate's AdditionalOutputFormats will be copied
 // to the target Secret - when they are both added and deleted.
 func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
@@ -927,8 +927,8 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		fieldManager = "cert-manager-issuing-test"
 	)
 
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{

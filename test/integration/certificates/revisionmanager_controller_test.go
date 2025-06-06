@@ -42,8 +42,8 @@ import (
 // controller will delete old CertificateRequests according to the
 // spec.revisionHistoryLimit value
 func TestRevisionManagerController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the revision manager controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)

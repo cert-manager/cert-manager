@@ -45,8 +45,8 @@ import (
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_Bootstrap(t *testing.T) {
-	config, stop := framework.RunControlPlane(t, t.Context())
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
@@ -106,8 +106,8 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_CARotation(t *testing.T) {
-	config, stop := framework.RunControlPlane(t, t.Context())
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
@@ -215,8 +215,8 @@ func TestDynamicSource_CARotation(t *testing.T) {
 func TestDynamicSource_leaderelection(t *testing.T) {
 	const nrManagers = 2 // number of managers to start for this test
 
-	env, stop := apiserver.RunBareControlPlane(t)
-	defer stop()
+	env, stopFn := apiserver.RunBareControlPlane(t)
+	t.Cleanup(stopFn)
 
 	var started int64
 

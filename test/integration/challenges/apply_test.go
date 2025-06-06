@@ -37,8 +37,8 @@ func Test_Apply(t *testing.T) {
 		name      = "test-apply"
 	)
 
-	restConfig, stopFn := framework.RunControlPlane(t, t.Context())
-	defer stopFn()
+	restConfig, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, cmClient, _, _ := framework.NewClients(t, restConfig)
 
