@@ -22,8 +22,8 @@ import (
 	"sync"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/randfill"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
@@ -44,7 +44,7 @@ func Test_serializeApplyStatus(t *testing.T) {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var order cmacme.Order
-					fuzz.New().NilChance(0.5).Fuzz(&order)
+					randfill.New().NilChance(0.5).Fill(&order)
 					order.Name = "foo"
 					order.Namespace = "bar"
 

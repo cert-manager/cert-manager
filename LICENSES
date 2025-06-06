@@ -72,7 +72,6 @@ github.com/google/certificate-transparency-go,https://github.com/google/certific
 github.com/google/gnostic-models,https://github.com/google/gnostic-models/blob/v0.6.9/LICENSE,Apache-2.0
 github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.7.0/LICENSE,BSD-3-Clause
 github.com/google/go-querystring/query,https://github.com/google/go-querystring/blob/v1.1.0/LICENSE,BSD-3-Clause
-github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
 github.com/google/s2a-go,https://github.com/google/s2a-go/blob/v0.1.9/LICENSE.md,Apache-2.0
 github.com/google/uuid,https://github.com/google/uuid/blob/v1.6.0/LICENSE,BSD-3-Clause
 github.com/googleapis/enterprise-certificate-proxy/client,https://github.com/googleapis/enterprise-certificate-proxy/blob/v0.3.6/LICENSE,Apache-2.0

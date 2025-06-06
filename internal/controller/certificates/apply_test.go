@@ -22,8 +22,8 @@ import (
 	"sync"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/randfill"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -43,7 +43,7 @@ func Test_serializeApply(t *testing.T) {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var crt cmapi.Certificate
-					fuzz.New().NilChance(0.5).Fuzz(&crt)
+					randfill.New().NilChance(0.5).Fill(&crt)
 					crt.ManagedFields = nil
 
 					crtData, err := serializeApply(&crt)
@@ -92,7 +92,7 @@ func Test_serializeApplyStatus(t *testing.T) {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var crt cmapi.Certificate
-					fuzz.New().NilChance(0.5).Fuzz(&crt)
+					randfill.New().NilChance(0.5).Fill(&crt)
 					crt.Name = "foo"
 					crt.Namespace = "bar"
 
