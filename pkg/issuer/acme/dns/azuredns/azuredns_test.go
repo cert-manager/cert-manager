@@ -199,8 +199,8 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
 
 				w.Header().Set("Content-Type", "application/json")
 				openidConfiguration := map[string]string{
@@ -222,8 +222,11 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			receivedFederatedToken := r.FormValue("client_assertion")
-			accessToken := map[string]string{
+			accessToken := map[string]any{
 				"access_token": tokens[receivedFederatedToken],
+				// the Azure SDK will not use tokens that are within 5 minutes of their expiration
+				// so "expires_on": time.Now().Add(4 * time.Minute) would work too
+				"expires_on": time.Now().Add(-1 * time.Second),
 			}
 
 			if err := json.NewEncoder(w).Encode(accessToken); err != nil {
@@ -253,12 +256,17 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, accessToken, token.Token, "Access token should have been set to a value returned by the webserver")
 
-			// Overwrite the expires field to force the token to be re-read.
-			newExpires := time.Now().Add(-1 * time.Second)
-			v := reflect.ValueOf(spt.(*azidentity.WorkloadIdentityCredential)).Elem()
-			expiresField := v.FieldByName("expires")
-			reflect.NewAt(expiresField.Type(), expiresField.Addr().UnsafePointer()).
-				Elem().Set(reflect.ValueOf(newExpires))
+			// Overwrite the expires field to force the token to be re-read from disk.
+			// Also, we set expires_on such that the token we got from the API has expired
+			// already too.
+			expiresField := reflect.
+				ValueOf(spt.(*azidentity.WorkloadIdentityCredential)).
+				Elem().
+				FieldByName("expires")
+			reflect.
+				NewAt(expiresField.Type(), expiresField.Addr().UnsafePointer()).
+				Elem().
+				Set(reflect.ValueOf(time.Now().Add(-1 * time.Second)))
 		}
 	})
 
@@ -266,8 +274,8 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
 
 				w.Header().Set("Content-Type", "application/json")
 				openidConfiguration := map[string]string{
@@ -288,8 +296,9 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			accessToken := map[string]string{
+			accessToken := map[string]any{
 				"access_token": "abc",
+				"expires_in":   500,
 			}
 
 			if err := json.NewEncoder(w).Encode(accessToken); err != nil {
@@ -327,8 +336,8 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
 
 				w.Header().Set("Content-Type", "application/json")
 				openidConfiguration := map[string]string{

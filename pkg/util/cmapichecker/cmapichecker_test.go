@@ -243,6 +243,31 @@ func TestCheck(t *testing.T) {
 			// fake https server to simulate the Kubernetes API server responses
 			mockKubernetesAPI := func(t *testing.T, r *http.Request) (int, []byte) {
 				switch r.URL.Path {
+				case "/api":
+					return http.StatusOK, []byte(`{
+						"kind":"APIVersions",
+						"versions":["v1"],
+						"serverAddressByClientCIDRs":[
+							{
+								"clientCIDR":"0.0.0.0/0",
+								"serverAddress":"10.10.1.2:6443"
+							}
+						]
+					}`)
+
+				case "/apis":
+					return http.StatusOK, []byte(`{
+						"kind":"APIGroupList",
+						"apiVersion":"v1",
+						"groups":[
+							{
+								"name":"cert-manager.io",
+								"versions":[{"groupVersion":"cert-manager.io/v1","version":"v1"}],
+								"preferredVersion":{"groupVersion":"cert-manager.io/v1","version":"v1"}
+							}
+						]
+					}`)
+
 				case "/apis/cert-manager.io/v1":
 					if test.discoveryResponse != nil {
 						return test.discoveryResponse(t, r)

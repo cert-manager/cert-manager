@@ -90,7 +90,7 @@ func Main(ctx context.Context) error {
 			continue
 		}
 
-		err := cl.DeleteDNSRecord(ctx, cf.ZoneIdentifier(rr.ZoneID), rr.ID)
+		err := cl.DeleteDNSRecord(ctx, cf.ZoneIdentifier(zone.ID), rr.ID)
 		if err != nil {
 			log.Printf("Error deleting record: %v", err)
 			errs = append(errs, err)

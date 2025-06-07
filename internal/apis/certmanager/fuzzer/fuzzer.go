@@ -17,9 +17,9 @@ limitations under the License.
 package fuzzer
 
 import (
-	fuzz "github.com/google/gofuzz"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"sigs.k8s.io/randfill"
 
 	acmefuzzer "github.com/cert-manager/cert-manager/internal/apis/acme/fuzzer"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
@@ -29,8 +29,8 @@ import (
 // Funcs returns the fuzzer functions for the apps api group.
 var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 	return append(acmefuzzer.Funcs(codecs), []interface{}{
-		func(s *certmanager.Certificate, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *certmanager.Certificate, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
 
 			if len(s.Spec.DNSNames) == 0 {
 				s.Spec.DNSNames = []string{s.Spec.CommonName}
@@ -42,8 +42,8 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
 		},
-		func(s *certmanager.CertificateRequest, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *certmanager.CertificateRequest, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
 
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind

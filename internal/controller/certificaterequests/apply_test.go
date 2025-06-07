@@ -22,8 +22,8 @@ import (
 	"sync"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/randfill"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -50,7 +50,7 @@ func Test_serializeApply(t *testing.T) {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var req cmapi.CertificateRequest
-					fuzz.New().NilChance(0.5).Fuzz(&req)
+					randfill.New().NilChance(0.5).Fill(&req)
 
 					// Test regex with non-empty spec.
 					reqData, err := serializeApply(&req)
@@ -105,7 +105,7 @@ func Test_serializeApplyStatus(t *testing.T) {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var req cmapi.CertificateRequest
-					fuzz.New().NilChance(0.5).Fuzz(&req)
+					randfill.New().NilChance(0.5).Fill(&req)
 					req.Name = "foo"
 					req.Namespace = "bar"
 
