@@ -17,7 +17,7 @@ limitations under the License.
 package test
 
 import (
-	"crypto/rsa"
+	"crypto"
 	"net/http"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
@@ -29,14 +29,14 @@ var _ accounts.Registry = &FakeRegistry{}
 
 // FakeRegistry implements the accounts.Registry interface using stub functions
 type FakeRegistry struct {
-	AddClientFunc           func(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
+	AddClientFunc           func(uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string)
 	RemoveClientFunc        func(uid string)
 	GetClientFunc           func(uid string) (acmecl.Interface, error)
 	ListClientsFunc         func() map[string]acmecl.Interface
-	IsKeyCheckSumCachedFunc func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
+	IsKeyCheckSumCachedFunc func(lastPrivateKeyHash string, privateKey crypto.Signer) bool
 }
 
-func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
+func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey crypto.Signer, userAgent string) {
 	f.AddClientFunc(uid, config, privateKey, userAgent)
 }
 
@@ -52,6 +52,6 @@ func (f *FakeRegistry) ListClients() map[string]acmecl.Interface {
 	return f.ListClientsFunc()
 }
 
-func (f *FakeRegistry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+func (f *FakeRegistry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey crypto.Signer) bool {
 	return f.IsKeyCheckSumCachedFunc(lastPrivateKeyHash, privateKey)
 }
