@@ -165,16 +165,14 @@ func (s *testSetupT) runTest(t *testing.T) {
 	rec := &controllertest.FakeRecorder{}
 
 	v := &Venafi{
-		resourceNamespace: "test-namespace",
 		Context: &controllerpkg.Context{
 			Recorder: rec,
 		},
-		issuer:        s.iss,
 		clientBuilder: s.clientBuilder,
 		log:           logf.Log.WithName("venafi"),
 	}
 
-	err := v.Setup(t.Context())
+	err := v.Setup(t.Context(), s.iss)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
