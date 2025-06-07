@@ -73,7 +73,32 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 
 func CertificateRequestSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certificaterequests.ValidationFunc {
 	// basics
-	out := []certificaterequests.ValidationFunc{}
+	out := []certificaterequests.ValidationFunc{
+		certificaterequests.ExpectCertificateDNSNamesToMatch,
+		certificaterequests.ExpectCertificateOrganizationToMatch,
+		certificaterequests.ExpectValidCertificate,
+		certificaterequests.ExpectValidPrivateKeyData,
+		certificaterequests.ExpectValidBasicConstraints,
+
+		certificaterequests.ExpectConditionApproved,
+		certificaterequests.ExpectConditionNotDenied,
+	}
+
+	if !fs.Has(featureset.CommonNameFeature) {
+		out = append(out, certificaterequests.ExpectValidCommonName)
+	}
+
+	if !fs.Has(featureset.URISANsFeature) {
+		out = append(out, certificaterequests.ExpectCertificateURIsToMatch)
+	}
+
+	if !fs.Has(featureset.EmailSANsFeature) {
+		out = append(out, certificaterequests.ExpectEmailsToMatch)
+	}
+
+	if !fs.Has(featureset.IPAddressFeature) {
+		out = append(out, certificaterequests.ExpectCertificateIPsToMatch)
+	}
 
 	if !fs.Has(featureset.DurationFeature) {
 		out = append(out, certificaterequests.ExpectDurationToMatch)
