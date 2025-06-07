@@ -54,9 +54,11 @@ type ObjectReference struct {
 	Name string `json:"name"`
 	// Kind of the resource being referred to.
 	// +optional
+	// +default="Issuer"
 	Kind string `json:"kind,omitempty"`
 	// Group of the resource being referred to.
 	// +optional
+	// +default="cert-manager.io"
 	Group string `json:"group,omitempty"`
 }
 
