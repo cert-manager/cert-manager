@@ -49,6 +49,12 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 					continue
 				}
 			}
+			if iss.Spec.ACME.CABundleSecretRef != nil {
+				if iss.Spec.ACME.CABundleSecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
 		case iss.Spec.CA != nil:
 			if iss.Spec.CA.SecretName == secret.Name {
 				affected = append(affected, iss)

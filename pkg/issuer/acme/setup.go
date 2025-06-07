@@ -34,6 +34,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -160,7 +161,12 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// this function.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
 
-	httpClient := accounts.BuildHTTPClientWithCABundle(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify, a.issuer.GetSpec().ACME.CABundle)
+	caBundle, err := a.getACMECaBundle(ctx, ns, a.issuer.GetSpec().ACME)
+	if err != nil {
+		return err
+	}
+
+	httpClient := accounts.BuildHTTPClientWithCABundle(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify, caBundle)
 
 	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
 
@@ -326,6 +332,39 @@ func (a *Acme) Setup(ctx context.Context) error {
 	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
 
 	return nil
+}
+
+func (a *Acme) getACMECaBundle(ctx context.Context, namespace string, acmeIssuer *cmacme.ACMEIssuer) (caBundle []byte, err error) {
+	if len(acmeIssuer.CABundle) > 0 {
+		return acmeIssuer.CABundle, nil
+	}
+	secretRef := acmeIssuer.CABundleSecretRef
+	if secretRef == nil {
+		return nil, nil
+	}
+
+	var ok bool
+
+	secret, err := a.secretsClient.Secrets(namespace).Get(ctx, acmeIssuer.CABundleSecretRef.Name, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil, err
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not access secret '%s/%s': %s", namespace, secretRef.Name, err)
+	}
+
+	var key string
+	if secretRef.Key != "" {
+		key = secretRef.Key
+	} else {
+		key = cmmeta.TLSCAKey
+	}
+
+	caBundle, ok = secret.Data[key]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", key, namespace, secretRef.Name)
+	}
+	return
 }
 
 func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {

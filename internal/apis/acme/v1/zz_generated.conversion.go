@@ -962,6 +962,15 @@ func autoConvert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *acmev1.ACMEIssuer, out *ac
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CABundleSecretRef = nil
+	}
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
@@ -997,6 +1006,15 @@ func autoConvert_acme_ACMEIssuer_To_v1_ACMEIssuer(in *acme.ACMEIssuer, out *acme
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(apismetav1.SecretKeySelector)
+		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CABundleSecretRef = nil
+	}
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
