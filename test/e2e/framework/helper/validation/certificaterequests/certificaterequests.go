@@ -157,7 +157,7 @@ func ExpectCertificateIPsToMatch(cr *cmapi.CertificateRequest, _ crypto.Signer) 
 	return nil
 }
 
-// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS SANs
+// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS (or IP Address) SANs
 func ExpectValidCommonName(cr *cmapi.CertificateRequest, _ crypto.Signer) error {
 	cert, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
@@ -207,26 +207,6 @@ func ExpectKeyUsageExtKeyUsageClientAuth(cr *cmapi.CertificateRequest, _ crypto.
 	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageClientAuth, but got %v", cert.ExtKeyUsage)
 	}
-	return nil
-}
-
-// ExpectKeyUsageUsageDataEncipherment checks if a cert has the
-// KeyUsageDataEncipherment key usage set
-func ExpectKeyUsageUsageDataEncipherment(cr *cmapi.CertificateRequest, _ crypto.Signer) error {
-	cert, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
-	if err != nil {
-		return err
-	}
-
-	// taking the key usage here and use a binary OR to flip all non
-	// KeyUsageDataEncipherment bits to 0 so if KeyUsageDataEncipherment the
-	// value will be exactly x509.KeyUsageDataEncipherment
-	usage := cert.KeyUsage
-	usage &= x509.KeyUsageDataEncipherment
-	if usage != x509.KeyUsageDataEncipherment {
-		return fmt.Errorf("Expected certificate to have KeyUsageDataEncipherment %#b, but got %v %#b", x509.KeyUsageDataEncipherment, usage, usage)
-	}
-
 	return nil
 }
 
