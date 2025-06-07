@@ -1301,6 +1301,8 @@ Create network policies for the webhooks.
 > - from:
 >     - ipBlock:
 >         cidr: 0.0.0.0/0
+>     - ipBlock:
+>         cidr: ::/0
 > ```
 
 Ingress rule for the webhook network policy. By default, it allows all inbound traffic.
@@ -1322,6 +1324,8 @@ Ingress rule for the webhook network policy. By default, it allows all inbound t
 >   to:
 >     - ipBlock:
 >         cidr: 0.0.0.0/0
+>     - ipBlock:
+>         cidr: ::/0
 > ```
 
 Egress rule for the webhook network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
