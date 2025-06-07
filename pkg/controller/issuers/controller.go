@@ -33,6 +33,7 @@ import (
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 type controller struct {
@@ -58,6 +59,8 @@ type controller struct {
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
+
+	metrics *metrics.Metrics
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -102,6 +105,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	c.cmClient = ctx.CMClient
 	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
+	c.metrics = ctx.Metrics
 
 	return c.queue, mustSync, nil
 }
@@ -135,6 +139,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	issuer, err := c.issuerLister.Issuers(namespace).Get(name)
 	if err != nil && !k8sErrors.IsNotFound(err) {
+		c.metrics.RemoveIssuer(key)
 		return err
 	}
 	if issuer == nil || issuer.DeletionTimestamp != nil {
@@ -143,6 +148,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, issuer))
+
+	// Update Issuer metrics
+	c.metrics.UpdateIssuer(issuer)
+
 	return c.Sync(ctx, issuer)
 }
 
