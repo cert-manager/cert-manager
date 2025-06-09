@@ -19,7 +19,6 @@ package selfsigned
 import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 )
@@ -28,17 +27,15 @@ import (
 // For more info see: https://cert-manager.io/docs/configuration/selfsigned/
 type SelfSigned struct {
 	*controller.Context
-	issuer v1.GenericIssuer
 
 	secretsLister internalinformers.SecretLister
 }
 
-func NewSelfSigned(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, error) {
+func NewSelfSigned(ctx *controller.Context) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Secrets().Lister()
 
 	return &SelfSigned{
 		Context:       ctx,
-		issuer:        issuer,
 		secretsLister: secretsLister,
 	}, nil
 }

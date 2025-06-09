@@ -28,7 +28,7 @@ const (
 	successReady = "IsReady"
 )
 
-func (c *SelfSigned) Setup(ctx context.Context) error {
-	apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successReady, "")
+func (c *SelfSigned) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
+	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successReady, "")
 	return nil
 }

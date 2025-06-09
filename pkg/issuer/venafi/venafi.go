@@ -21,7 +21,6 @@ import (
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
@@ -30,15 +29,9 @@ import (
 
 // Venafi is an implementation of govcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
-	issuer cmapi.GenericIssuer
 	*controller.Context
 
 	secretsLister internalinformers.SecretLister
-
-	// Namespace in which to read resources related to this Issuer from.
-	// For Issuers, this will be the namespace of the Issuer.
-	// For ClusterIssuers, this will be the cluster resource namespace.
-	resourceNamespace string
 
 	clientBuilder client.VenafiClientBuilder
 
@@ -48,15 +41,13 @@ type Venafi struct {
 	userAgent string
 }
 
-func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Interface, error) {
+func NewVenafi(ctx *controller.Context) (issuer.Interface, error) {
 	return &Venafi{
-		issuer:            issuer,
-		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
-		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
-		clientBuilder:     client.New,
-		Context:           ctx,
-		log:               logf.Log.WithName("venafi"),
-		userAgent:         ctx.RESTConfig.UserAgent,
+		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
+		clientBuilder: client.New,
+		Context:       ctx,
+		log:           logf.Log.WithName("venafi"),
+		userAgent:     ctx.RESTConfig.UserAgent,
 	}, nil
 }
 
