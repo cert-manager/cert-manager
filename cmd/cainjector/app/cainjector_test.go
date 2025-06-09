@@ -54,7 +54,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 		t.Error(err)
 	}
 
-	cmd := newCAInjectorCommand(context.TODO(), func(ctx context.Context, cc *config.CAInjectorConfiguration) error {
+	cmd := newCAInjectorCommand(t.Context(), func(ctx context.Context, cc *config.CAInjectorConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -62,7 +62,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	cmd.SetErr(io.Discard)
 	cmd.SetOut(io.Discard)
 
-	err := cmd.ExecuteContext(context.TODO())
+	err := cmd.ExecuteContext(t.Context())
 	return finalConfig, err
 }
 

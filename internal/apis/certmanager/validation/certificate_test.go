@@ -57,7 +57,6 @@ func TestValidateCertificate(t *testing.T) {
 		cfg                           *internalcmapi.Certificate
 		a                             *admissionv1.AdmissionRequest
 		errs                          []*field.Error
-		warnings                      []string
 		nameConstraintsFeatureEnabled bool
 	}{
 		"valid basic certificate": {
@@ -878,13 +877,29 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"explicit rotation policy": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
-			assert.ElementsMatch(t, warnings, s.warnings)
+			if s.cfg.Spec.PrivateKey == nil || s.cfg.Spec.PrivateKey.RotationPolicy == "" {
+				assert.Contains(t, warnings, newDefaultPrivateKeyRotationPolicy, "a warning is expected when the rotation policy is omitted.")
+			} else {
+				assert.NotContains(t, warnings, newDefaultPrivateKeyRotationPolicy)
+			}
 		})
 	}
 }
@@ -1061,50 +1076,16 @@ func TestValidateDuration(t *testing.T) {
 
 func Test_validateAdditionalOutputFormats(t *testing.T) {
 	tests := map[string]struct {
-		featureEnabled bool
-		spec           *internalcmapi.CertificateSpec
-		expErr         field.ErrorList
+		spec   *internalcmapi.CertificateSpec
+		expErr field.ErrorList
 	}{
-		"if feature disabled and no formats defined, expect no error": {
-			featureEnabled: false,
+		"if no formats defined, expect no error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{},
 			},
 			expErr: nil,
 		},
-		"if feature disabled and 1 format defined, expect error": {
-			featureEnabled: false,
-			spec: &internalcmapi.CertificateSpec{
-				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
-					{Type: internalcmapi.CertificateOutputFormatType("foo")},
-				},
-			},
-			expErr: field.ErrorList{
-				field.Forbidden(field.NewPath("spec", "additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"),
-			},
-		},
-		"if feature disabled and multiple formats defined, expect error": {
-			featureEnabled: false,
-			spec: &internalcmapi.CertificateSpec{
-				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
-					{Type: internalcmapi.CertificateOutputFormatType("foo")},
-					{Type: internalcmapi.CertificateOutputFormatType("bar")},
-					{Type: internalcmapi.CertificateOutputFormatType("random")},
-				},
-			},
-			expErr: field.ErrorList{
-				field.Forbidden(field.NewPath("spec", "additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"),
-			},
-		},
-		"if feature enabled and no formats defined, expect no error": {
-			featureEnabled: true,
-			spec: &internalcmapi.CertificateSpec{
-				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{},
-			},
-			expErr: nil,
-		},
-		"if feature enabled and single format defined, expect no error": {
-			featureEnabled: true,
+		"if single format defined, expect no error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1112,8 +1093,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 			},
 			expErr: nil,
 		},
-		"if feature enabled and multiple unique formats defined, expect no error": {
-			featureEnabled: true,
+		"if multiple unique formats defined, expect no error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1123,8 +1103,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 			},
 			expErr: nil,
 		},
-		"if feature enabled and multiple formats defined but 2 non-unique, expect error": {
-			featureEnabled: true,
+		"if multiple formats defined but 2 non-unique, expect error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1137,8 +1116,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 				field.Duplicate(field.NewPath("spec", "additionalOutputFormats").Key("type"), "foo"),
 			},
 		},
-		"if feature enabled and multiple formats defined but multiple non-unique, expect error": {
-			featureEnabled: true,
+		"if multiple formats defined but multiple non-unique, expect error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1163,7 +1141,6 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, test.featureEnabled)
 			gotErr := validateAdditionalOutputFormats(test.spec, field.NewPath("spec"))
 			assert.Equal(t, test.expErr, gotErr)
 		})
@@ -1302,7 +1279,8 @@ func Test_validateLiteralSubject(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			assert.ElementsMatch(t, warnings, []string{})
+			// None of these test inputs include a privateKey field, so they will all result in this warning.
+			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
 		})
 	}
 }
@@ -1453,7 +1431,8 @@ func Test_validateKeystores(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			assert.ElementsMatch(t, warnings, []string{})
+			// None of these test inputs include a privateKey field, so they will all result in this warning.
+			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
 		})
 	}
 }

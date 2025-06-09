@@ -117,12 +117,6 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	log = logf.WithResource(log, crt)
 
-	// If RevisionHistoryLimit is nil, don't attempt to garbage collect old
-	// CertificateRequests
-	if crt.Spec.RevisionHistoryLimit == nil {
-		return nil
-	}
-
 	// Only garbage collect over Certificates that are in a Ready=True condition.
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionReady,
@@ -139,7 +133,14 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	// Fetch and delete all CertificateRequests that need to be deleted
-	limit := int(*crt.Spec.RevisionHistoryLimit)
+	// If RevisionHistoryLimit is nil, then default to 1
+	var limit int
+	if crt.Spec.RevisionHistoryLimit == nil {
+		limit = 1
+	} else {
+		limit = int(*crt.Spec.RevisionHistoryLimit)
+	}
+
 	toDelete := certificateRequestsToDelete(log, limit, requests)
 
 	for _, req := range toDelete {

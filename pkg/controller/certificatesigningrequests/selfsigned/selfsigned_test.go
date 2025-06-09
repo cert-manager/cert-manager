@@ -17,7 +17,6 @@ limitations under the License.
 package selfsigned
 
 import (
-	"context"
 	"crypto"
 	"crypto/x509"
 	"errors"
@@ -622,7 +621,7 @@ func TestProcessItem(t *testing.T) {
 			}
 			test.builder.Start()
 
-			err := controller.ProcessItem(context.Background(), types.NamespacedName{
+			err := controller.ProcessItem(t.Context(), types.NamespacedName{
 				Name: test.csr.Name,
 			})
 			if err != nil && !test.expectedErr {
@@ -770,11 +769,11 @@ func TestSign(t *testing.T) {
 				signingFn: pki.SignCertificate,
 			}
 
-			gotErr := selfsigned.Sign(context.Background(), test.csr, test.issuer)
+			gotErr := selfsigned.Sign(t.Context(), test.csr, test.issuer)
 			require.NoError(t, gotErr)
 			builder.Sync()
 
-			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), test.csr.Name, metav1.GetOptions{})
+			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(t.Context(), test.csr.Name, metav1.GetOptions{})
 			require.NoError(t, err)
 
 			require.NotEmpty(t, csr.Status.Certificate)

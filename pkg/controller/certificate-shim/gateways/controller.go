@@ -129,7 +129,7 @@ func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.Namespa
 			return
 		}
 
-		// We don't check the apiVersion e.g. "networking.x-k8s.io/v1alpha1"
+		// We don't check the apiVersion, e.g., "networking.x-k8s.io/v1alpha1"
 		// because there is no chance that another object called "Gateway" be
 		// the controller of a Certificate.
 		if ref.Kind != "Gateway" {

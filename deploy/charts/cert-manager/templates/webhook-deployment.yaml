@@ -137,11 +137,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /livez
-              {{- if $config.healthzPort }}
-              port: {{ $config.healthzPort }}
-              {{- else }}
-              port: 6080
-              {{- end }}
+              port: healthcheck
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
@@ -151,11 +147,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
-              {{- if $config.healthzPort }}
-              port: {{ $config.healthzPort }}
-              {{- else }}
-              port: 6080
-              {{- end }}
+              port: healthcheck
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}
@@ -190,7 +182,9 @@ spec:
           {{- end }}
       {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
       {{- end }}
       {{- with .Values.webhook.affinity }}
       affinity:

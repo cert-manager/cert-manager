@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -42,7 +43,7 @@ var (
 
 func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}
-	if _, err := f.clientset.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{}); err != nil {
+	if _, err := f.clientset.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatalf("error creating test namespace %q: %v", name, err)
 	}
 
@@ -82,7 +83,7 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 	}
 
 	return name, func() {
-		if err := f.clientset.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{}); err != nil {
+		if err := f.clientset.CoreV1().Namespaces().Delete(t.Context(), name, metav1.DeleteOptions{}); err != nil {
 			t.Fatalf("error deleting test namespace %q: %v", name, err)
 		}
 	}
@@ -135,10 +136,8 @@ func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func(ctx context
 			if !ok {
 				continue
 			}
-			for _, k := range txt.Txt {
-				if k == value {
-					return false, nil
-				}
+			if slices.Contains(txt.Txt, value) {
+				return false, nil
 			}
 		}
 		return true, nil

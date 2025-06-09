@@ -585,12 +585,17 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			// Verify that the ingres-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
+			// TODO(wallrj): These checks are redundant. The unit
+			// tests for certificate-shim Sync already verify that
+			// the annotations are converted to Certificate fields.
 			By("Validating the created Certificate")
 			err = f.Helper().ValidateCertificate(
 				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
 					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
-					Expect(certificate.Spec.CommonName).To(Equal(domain))
+					if !s.UnsupportedFeatures.Has(featureset.CommonNameFeature) {
+						Expect(certificate.Spec.CommonName).To(Equal(domain))
+					}
 					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
 					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 					Expect(certificate.Spec.RevisionHistoryLimit).To(Equal(revisionHistoryLimit))
@@ -668,6 +673,13 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						// Explicitly set RotationPolicy to Never to test the
+						// behavior of reusing the same private key when a
+						// certificate is reissued.
+						// The default value is Always.
+						RotationPolicy: cmapi.RotationPolicyNever,
+					},
 				},
 			}
 			By("Creating a Certificate")
@@ -705,7 +717,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
 			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
 
-			By("Ensuing both certificates are signed by same private key")
+			By("Ensuring both certificates are signed by same private key")
 			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
 			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
 

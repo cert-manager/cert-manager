@@ -17,7 +17,6 @@ limitations under the License.
 package readiness
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -112,7 +111,7 @@ func FuzzProcessItem(f *testing.F) {
 			Namespace: cert.Namespace,
 		}
 		// Call ProcessItem. This is the API that the fuzzer tests.
-		_ = w.controller.ProcessItem(context.Background(), key)
+		_ = w.controller.ProcessItem(t.Context(), key)
 	})
 }
 

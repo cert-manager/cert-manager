@@ -146,7 +146,7 @@ func TestSessionProviderGetSessionRegion(t *testing.T) {
 		}
 
 		logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.BufferLogs(true)))
-		ctx := klog.NewContext(context.Background(), logger)
+		ctx := klog.NewContext(t.Context(), logger)
 
 		cfg, err := p.GetSession(ctx)
 
@@ -337,7 +337,7 @@ func TestRoute53Cleanup(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			l := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(6)))
-			ctx := logr.NewContext(context.Background(), l)
+			ctx := logr.NewContext(t.Context(), l)
 
 			ts := newMockServer(t, tc.responses)
 			defer ts.Close()

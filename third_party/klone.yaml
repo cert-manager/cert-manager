@@ -1,0 +1,15 @@
+# Clone folders from third_party repos and forks.
+# More info can be found here: https://github.com/cert-manager/klone
+#
+# - acme
+#   We vendor just the acme package, from a cert-manager fork of
+#   golang.org/x/crypto. The acme-profiles branch has a patch by @sigmavirus24,
+#   with support for ACME profiles.
+#   See https://github.com/golang/go/issues/73101#issuecomment-2764923702
+targets:
+  forked:
+    - folder_name: acme
+      repo_url: https://github.com/cert-manager/crypto
+      repo_ref: acme-profiles
+      repo_hash: 20ccc126e2ac0b2d9da2e78f84f5bb7649d8100a
+      repo_path: acme

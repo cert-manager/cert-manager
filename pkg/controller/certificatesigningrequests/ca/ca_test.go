@@ -17,7 +17,6 @@ limitations under the License.
 package ca
 
 import (
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
@@ -579,7 +578,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.ProcessItem(context.Background(), types.NamespacedName{
+	err := controller.ProcessItem(t.Context(), types.NamespacedName{
 		Name: test.csr.Name,
 	})
 	if err != nil && !test.expectedErr {
@@ -766,11 +765,11 @@ func TestCA_Sign(t *testing.T) {
 				signingFn:         pki.SignCSRTemplate,
 			}
 
-			gotErr := c.Sign(context.Background(), test.givenCSR, test.givenCAIssuer)
+			gotErr := c.Sign(t.Context(), test.givenCSR, test.givenCAIssuer)
 			require.NoError(t, gotErr)
 			builder.Sync()
 
-			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), test.givenCSR.Name, metav1.GetOptions{})
+			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(t.Context(), test.givenCSR.Name, metav1.GetOptions{})
 			require.NoError(t, err)
 
 			require.NotEmpty(t, csr.Status.Certificate)

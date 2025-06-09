@@ -17,7 +17,6 @@ limitations under the License.
 package selfsigned
 
 import (
-	"context"
 	"crypto"
 	"crypto/x509"
 	"errors"
@@ -635,7 +634,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

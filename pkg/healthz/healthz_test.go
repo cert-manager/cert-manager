@@ -343,7 +343,7 @@ func (o *fakeResourceLock) Describe() string {
 // This aspect of the LeaderElectionRecord API is documented as follows:
 // > LeaderElectionRecord is the record that is stored in the leader election annotation.
 // > This information should be used for observational purposes only and could be replaced
-// > with a random string (e.g. UUID) with only slight modification of this code.
+// > with a random string (e.g., UUID) with only slight modification of this code.
 // > -- https://github.com/kubernetes/kubernetes/blob/7e25f1232a9f89875641431ae011c916f0376c57/staging/src/k8s.io/client-go/tools/leaderelection/resourcelock/interface.go#L107-L110
 func (o *fakeResourceLock) Get(ctx context.Context) (*resourcelock.LeaderElectionRecord, []byte, error) {
 	o.lock.Lock()

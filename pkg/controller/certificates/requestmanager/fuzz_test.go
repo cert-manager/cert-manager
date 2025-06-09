@@ -17,7 +17,6 @@ limitations under the License.
 package requestmanager
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -161,6 +160,6 @@ func FuzzProcessItem(f *testing.F) {
 		defer builder.Stop()
 
 		// Call ProcessItem. This is the API that the fuzzer tests.
-		_ = w.controller.ProcessItem(context.Background(), key)
+		_ = w.controller.ProcessItem(t.Context(), key)
 	})
 }

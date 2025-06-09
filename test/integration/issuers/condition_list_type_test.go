@@ -17,9 +17,7 @@ limitations under the License.
 package issuers
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -38,11 +36,8 @@ func Test_ConditionsListType_Issuers(t *testing.T) {
 		name      = "test-condition-list-type"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	restConfig, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	restConfig, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build clients with different field managers.
 	aliceRestConfig := util.RestConfigWithUserAgent(restConfig, "alice")
@@ -55,11 +50,11 @@ func Test_ConditionsListType_Issuers(t *testing.T) {
 
 	t.Log("creating test Namespace")
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := aliceKubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := aliceKubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Log("creating Issuer")
-	_, err = aliceCMClient.CertmanagerV1().Issuers(namespace).Create(ctx, &cmapi.Issuer{
+	_, err = aliceCMClient.CertmanagerV1().Issuers(namespace).Create(t.Context(), &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{
 			SelfSigned: new(cmapi.SelfSignedIssuer),
@@ -68,7 +63,7 @@ func Test_ConditionsListType_Issuers(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Log("ensuring alice can set Ready condition")
-	assert.NoError(t, internalissuers.ApplyIssuerStatus(ctx, aliceCMClient, aliceFieldManager, &cmapi.Issuer{
+	assert.NoError(t, internalissuers.ApplyIssuerStatus(t.Context(), aliceCMClient, aliceFieldManager, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
@@ -76,14 +71,14 @@ func Test_ConditionsListType_Issuers(t *testing.T) {
 	}))
 
 	t.Log("ensuring bob can set a district random condition, without changing the ready condition")
-	assert.NoError(t, internalissuers.ApplyIssuerStatus(ctx, bobCMClient, bobFieldManager, &cmapi.Issuer{
+	assert.NoError(t, internalissuers.ApplyIssuerStatus(t.Context(), bobCMClient, bobFieldManager, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 		},
 	}))
 
-	issuer, err := bobCMClient.CertmanagerV1().Issuers(namespace).Get(ctx, name, metav1.GetOptions{})
+	issuer, err := bobCMClient.CertmanagerV1().Issuers(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.IssuerCondition{
 		{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
@@ -91,28 +86,28 @@ func Test_ConditionsListType_Issuers(t *testing.T) {
 	}, issuer.Status.Conditions, "conditions did not match the expected 2 distinct condition types")
 
 	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
-	assert.NoError(t, internalissuers.ApplyIssuerStatus(ctx, aliceCMClient, aliceFieldManager, &cmapi.Issuer{
+	assert.NoError(t, internalissuers.ApplyIssuerStatus(t.Context(), aliceCMClient, aliceFieldManager, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
 		},
 	}))
 
-	issuer, err = aliceCMClient.CertmanagerV1().Issuers(namespace).Get(ctx, name, metav1.GetOptions{})
+	issuer, err = aliceCMClient.CertmanagerV1().Issuers(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.IssuerCondition{
 		{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
 	}, issuer.Status.Conditions, "conditions did not match expected deleted ready condition, and overwritten random condition")
 
 	t.Log("bob can re-add a Ready condition and not change Random condition")
-	assert.NoError(t, internalissuers.ApplyIssuerStatus(ctx, bobCMClient, bobFieldManager, &cmapi.Issuer{
+	assert.NoError(t, internalissuers.ApplyIssuerStatus(t.Context(), bobCMClient, bobFieldManager, &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
 		},
 	}))
 
-	issuer, err = bobCMClient.CertmanagerV1().Issuers(namespace).Get(ctx, name, metav1.GetOptions{})
+	issuer, err = bobCMClient.CertmanagerV1().Issuers(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.IssuerCondition{
 		{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
@@ -125,11 +120,8 @@ func Test_ConditionsListType_ClusterIssuers(t *testing.T) {
 		name = "test-condition-list-type"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	restConfig, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	restConfig, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build clients with different field managers.
 	aliceRestConfig := util.RestConfigWithUserAgent(restConfig, "alice")
@@ -141,7 +133,7 @@ func Test_ConditionsListType_ClusterIssuers(t *testing.T) {
 	_, _, bobCMClient, _, _ := framework.NewClients(t, bobRestConfig)
 
 	t.Log("creating ClusterIssuer")
-	_, err := aliceCMClient.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
+	_, err := aliceCMClient.CertmanagerV1().ClusterIssuers().Create(t.Context(), &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec: cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{
 			SelfSigned: new(cmapi.SelfSignedIssuer),
@@ -150,7 +142,7 @@ func Test_ConditionsListType_ClusterIssuers(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Log("ensuring alice can set Ready condition")
-	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(ctx, aliceCMClient, aliceFieldManager, &cmapi.ClusterIssuer{
+	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(t.Context(), aliceCMClient, aliceFieldManager, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
@@ -158,14 +150,14 @@ func Test_ConditionsListType_ClusterIssuers(t *testing.T) {
 	}))
 
 	t.Log("ensuring bob can set a district random condition, without changing the ready condition")
-	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(ctx, bobCMClient, bobFieldManager, &cmapi.ClusterIssuer{
+	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(t.Context(), bobCMClient, bobFieldManager, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 		},
 	}))
 
-	issuer, err := bobCMClient.CertmanagerV1().ClusterIssuers().Get(ctx, name, metav1.GetOptions{})
+	issuer, err := bobCMClient.CertmanagerV1().ClusterIssuers().Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.IssuerCondition{
 		{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
@@ -173,28 +165,28 @@ func Test_ConditionsListType_ClusterIssuers(t *testing.T) {
 	}, issuer.Status.Conditions, "conditions did not match the expected 2 distinct condition types")
 
 	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
-	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(ctx, aliceCMClient, aliceFieldManager, &cmapi.ClusterIssuer{
+	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(t.Context(), aliceCMClient, aliceFieldManager, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
 		},
 	}))
 
-	issuer, err = aliceCMClient.CertmanagerV1().ClusterIssuers().Get(ctx, name, metav1.GetOptions{})
+	issuer, err = aliceCMClient.CertmanagerV1().ClusterIssuers().Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.IssuerCondition{
 		{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
 	}, issuer.Status.Conditions, "conditions did not match expected deleted ready condition, and overwritten random condition")
 
 	t.Log("bob can re-add a Ready condition and not change Random condition")
-	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(ctx, bobCMClient, bobFieldManager, &cmapi.ClusterIssuer{
+	assert.NoError(t, internalissuers.ApplyClusterIssuerStatus(t.Context(), bobCMClient, bobFieldManager, &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Status: cmapi.IssuerStatus{
 			Conditions: []cmapi.IssuerCondition{{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
 		},
 	}))
 
-	issuer, err = bobCMClient.CertmanagerV1().ClusterIssuers().Get(ctx, name, metav1.GetOptions{})
+	issuer, err = bobCMClient.CertmanagerV1().ClusterIssuers().Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.IssuerCondition{
 		{Type: cmapi.IssuerConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},

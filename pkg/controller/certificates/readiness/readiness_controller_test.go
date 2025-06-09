@@ -17,7 +17,6 @@ limitations under the License.
 package readiness
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -317,7 +316,7 @@ func TestProcessItem(t *testing.T) {
 			}
 
 			// Call ProcessItem
-			err = w.controller.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(t.Context(), key)
 			if test.wantsErr != (err != nil) {
 				t.Errorf("expected error: %v, got : %v", test.wantsErr, err)
 			}

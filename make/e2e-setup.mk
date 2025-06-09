@@ -42,8 +42,11 @@ IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
 IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:dbfec77951e123bf383a09412a51df218b716aaf3fe7b2778bb2f208ac495dc5
 
-# https://github.com/letsencrypt/pebble/releases
-PEBBLE_COMMIT = ba5f81dd80fa870cbc19326f2d5a46f45f0b5ee3
+# We are using @inteon's fork of Pebble, which adds support for signing CSRs with
+# Ed25519 keys:
+# - https://github.com/letsencrypt/pebble/pull/468
+# - https://github.com/inteon/pebble/tree/add_Ed25519_support
+PEBBLE_COMMIT = 8318667fcd32f96579c45ee64c747d52519f0cdc
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
@@ -201,7 +204,7 @@ $(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $
 #
 # This is handled differently from the other image downloads, because:
 # 1. The pinned Kind image references are automatically generated using
-#    `hack/latest-kind-image.sh`.
+#    `hack/latest-kind-images.sh`.
 # 2. It uses digests that point to the multi-arch manifest, rather than the
 #    actual image.
 # 3. The Kind image tags DO change; each new Kind release has a set of Kind node
@@ -222,7 +225,7 @@ $(call local-image-tar,vaultretagged): $(call image-tar,vault)
 	tar cf $@ -C /tmp/vault .
 	@rm -rf /tmp/vault
 
-FEATURE_GATES ?= AdditionalCertificateOutputFormats=true,ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true,NameConstraints=true,OtherNames=true
+FEATURE_GATES ?= ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true,NameConstraints=true,OtherNames=true
 
 ## Set this environment variable to a non empty string to cause cert-manager to
 ## be installed using best-practice configuration settings, and to install
@@ -263,8 +266,8 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
-feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% AdditionalCertificateOutputFormats=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
 # When testing an published chart the repo can be configured using
@@ -406,6 +409,10 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 	@$(KUBECTL) create ns cert-manager >/dev/null 2>&1 || true
 	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
 
+# We are using @inteon's fork of Pebble, which adds support for signing CSRs with
+# Ed25519 keys:
+# - https://github.com/letsencrypt/pebble/pull/468
+# - https://github.com/inteon/pebble/tree/add_Ed25519_support
 $(bin_dir)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(bin_dir)/downloaded
 	$(CURL) https://github.com/inteon/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 

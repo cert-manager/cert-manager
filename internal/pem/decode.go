@@ -46,7 +46,7 @@ const (
 	// The value is based on how large a "realistic" (but still very large) self-signed 16k-bit RSA certificate might be.
 	// 16k-bit RSA keys are impractical on most on modern hardware due to how slow they can be,
 	// so we can reasonably assume that no real-world PEM-encoded X.509 cert will be this large.
-	// Note that X.509 certificates can contain extra arbitrary data (e.g. DNS names, policy names, etc) whose size is hard to predict.
+	// Note that X.509 certificates can contain extra arbitrary data (e.g., DNS names, policy names, etc) whose size is hard to predict.
 	// So we guess at how much of that data we'll allow in very large certs and allow about 1kB of such data.
 	maxCertificatePEMSize = 6500
 

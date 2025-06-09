@@ -224,7 +224,7 @@ type ChallengeSpec struct {
 	// challenge is a part of.
 	AuthzURL string `json:"authzURL"`
 
-	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
+	// Type is the type of ACME challenge this resource represents, e.g., "dns01"
 	// or "http01"
 	Type string `json:"type"`
 
@@ -232,7 +232,7 @@ type ChallengeSpec struct {
 	// This can be used to lookup details about the status of this challenge.
 	URL string `json:"url"`
 
-	// DNSName is the identifier that this challenge is for, e.g. example.com.
+	// DNSName is the identifier that this challenge is for, e.g., example.com.
 	DNSName string `json:"dnsName"`
 
 	// Token is the ACME challenge token for this challenge.
@@ -451,7 +451,7 @@ Order & Challenge.
 * The 'order' controller can aggregate failure reasons from the 'challenge'
 resources it is managing in a similar way.
 * We can also include debugging information on the Certificate resource itself,
-e.g. storing messages such as `You can get more information about why this order
+e.g., storing messages such as `You can get more information about why this order
 failed by running 'kubectl describe order -n <namespace> <order-name>'
 
 ## Alternatives considered

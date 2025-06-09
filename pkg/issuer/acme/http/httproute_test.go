@@ -17,7 +17,6 @@ limitations under the License.
 package http
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -43,7 +42,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				httpRoute, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				httpRoute, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -71,7 +70,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				httpRoute, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				httpRoute, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -101,7 +100,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createGatewayHTTPRoute(context.TODO(), differentChallenge, "fakeservice")
+				_, err := s.Solver.createGatewayHTTPRoute(t.Context(), differentChallenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -128,12 +127,12 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				_, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
 
-				_, err = s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				_, err = s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -156,7 +155,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getGatewayHTTPRoute(context.TODO(), test.Challenge)
+			resp, err := test.Solver.getGatewayHTTPRoute(t.Context(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -182,7 +181,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "fakeservice")
+				_, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -220,7 +219,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createGatewayHTTPRoute(context.TODO(), s.Challenge, "anotherfakeservice")
+				_, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "anotherfakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -250,7 +249,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensureGatewayHTTPRoute(context.TODO(), test.Challenge, "fakeservice")
+			resp, err := test.Solver.ensureGatewayHTTPRoute(t.Context(), test.Challenge, "fakeservice")
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

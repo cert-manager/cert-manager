@@ -17,7 +17,6 @@ limitations under the License.
 package approval
 
 import (
-	"context"
 	"testing"
 
 	gfh "github.com/AdaLogics/go-fuzz-headers"
@@ -86,6 +85,6 @@ func FuzzValidate(f *testing.F) {
 		// Create the approval plugin
 		a := NewPlugin(auth, discoverclient).(*certificateRequestApproval)
 		// Validate
-		_, _ = a.Validate(context.Background(), *req, cr, approvedCR)
+		_, _ = a.Validate(t.Context(), *req, cr, approvedCR)
 	})
 }

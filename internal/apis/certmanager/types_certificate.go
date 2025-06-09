@@ -252,16 +252,11 @@ type CertificateSpec struct {
 	// revisions exceeds this number.
 	//
 	// If set, revisionHistoryLimit must be a value of `1` or greater.
-	// If unset (`nil`), revisions will not be garbage collected.
-	// Default value is `nil`.
+	// Default value is `1`.
 	RevisionHistoryLimit *int32
 
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
-	//
-	// This is a Beta Feature enabled by default. It can be disabled with the
-	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
-	// the controller and webhook components.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
 
 	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
@@ -467,7 +462,7 @@ type PKCS12Keystore struct {
 	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
 	// `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility.
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
-	// (eg. because of company policy). Please note that the security of the algorithm is not that important
+	// (e.g., because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	Profile PKCS12Profile
 

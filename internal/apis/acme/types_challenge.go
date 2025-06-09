@@ -52,9 +52,9 @@ type ChallengeSpec struct {
 	// challenge is a part of.
 	AuthorizationURL string
 
-	// dnsName is the identifier that this challenge is for, e.g. example.com.
+	// dnsName is the identifier that this challenge is for, e.g., example.com.
 	// If the requested DNSName is a 'wildcard', this field MUST be set to the
-	// non-wildcard domain, e.g. for `*.example.com`, it must be `example.com`.
+	// non-wildcard domain, e.g., for `*.example.com`, it must be `example.com`.
 	DNSName string
 
 	// wildcard will be true if this challenge is for a wildcard identifier,

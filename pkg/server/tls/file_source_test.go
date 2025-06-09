@@ -50,7 +50,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		UpdateInterval: interval,
 		log:            testr.New(t),
 	}
-	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), testr.New(t)))
+	ctx, cancel := context.WithCancel(logr.NewContext(t.Context(), testr.New(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Start(ctx)
@@ -91,7 +91,7 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
 	}
-	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), testr.New(t)))
+	ctx, cancel := context.WithCancel(logr.NewContext(t.Context(), testr.New(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Start(ctx)

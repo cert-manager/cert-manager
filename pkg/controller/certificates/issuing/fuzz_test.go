@@ -17,7 +17,6 @@ limitations under the License.
 package issuing
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -142,7 +141,7 @@ func FuzzProcessItem(f *testing.F) {
 		w.controller.localTemporarySigner = testLocalTemporarySignerFn(fuzzBundle.LocalTemporaryCertificateBytes)
 
 		// Invoke ProcessItem(). This is the method that this fuzzers tests.
-		_ = w.controller.ProcessItem(context.Background(), types.NamespacedName{
+		_ = w.controller.ProcessItem(t.Context(), types.NamespacedName{
 			Namespace: certificate.Namespace,
 			Name:      certificate.Name,
 		})

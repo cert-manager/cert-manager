@@ -41,10 +41,10 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 )
 
-// This test ensures that the Certificates AdditionalCertificateOutputFormats
+// This test ensures that the Certificates additionalOutputFormats
 // is reflected on the Certificate's target Secret, and is reconciled on modify
 // events.
-var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFormats", func() {
+var _ = framework.CertManagerDescribe("Certificate additionalOutputFormats", func() {
 	const (
 		issuerName = "certificate-additional-output-formats"
 		secretName = "test-additional-output-formats"
@@ -54,8 +54,6 @@ var _ = framework.CertManagerDescribe("Certificate AdditionalCertificateOutputFo
 	f := framework.NewDefaultFramework("certificates-additional-output-formats")
 
 	createCertificate := func(f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
-		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.AdditionalCertificateOutputFormats)
-
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-additional-output-formats-",

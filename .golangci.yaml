@@ -33,7 +33,7 @@ linters:
       - linters:
           - staticcheck
         text: (NewCertManagerBasicCertificateRequest)
-    paths: [third_party$, builtin$, examples$]
+    paths: [third_party, builtin$, examples$]
     warn-unused: true
   enable:
     - asasalint
@@ -103,4 +103,4 @@ formatters:
         - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
   exclusions:
     generated: lax
-    paths: [third_party$, builtin$, examples$]
+    paths: [third_party, builtin$, examples$]

@@ -23,12 +23,15 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
@@ -38,6 +41,9 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
+
+// ErrCertificateRequestFailed is returned when the CertificateRequest has Ready condition False
+var ErrCertificateRequestFailed = errors.New("CertificateRequest failed; it has Ready status False and reason Failed")
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
@@ -52,22 +58,28 @@ func (h *Helper) WaitForCertificateRequestReady(ctx context.Context, ns, name st
 		if err != nil {
 			return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 		}
-		isReady := apiutil.CertificateRequestHasCondition(cr, cmapi.CertificateRequestCondition{
-			Type:   cmapi.CertificateRequestConditionReady,
-			Status: cmmeta.ConditionTrue,
-		})
-		if !isReady {
+
+		readyCondition := apiutil.GetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady)
+		switch {
+		case readyCondition == nil:
+			logf(
+				"Expected CertificateRequest to have Ready condition 'true' but the Ready condition was not present: %v",
+				cr.Status.Conditions,
+			)
+			return false, nil
+		case readyCondition.Status == cmmeta.ConditionUnknown:
+			logf("Expected CertificateRequest to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
+			return false, nil
+		case readyCondition.Status == cmmeta.ConditionFalse:
+			if readyCondition.Reason == cmapi.CertificateRequestReasonFailed {
+				return true, fmt.Errorf("%w: %v", ErrCertificateRequestFailed, readyCondition)
+			}
 			logf("Expected CertificateRequest to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
 			return false, nil
 		}
 		return true, nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return cr, nil
+	return cr, err
 }
 
 // ValidateIssuedCertificateRequest will ensure that the given
@@ -78,6 +90,26 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.Request: %s", err)
+	}
+
+	var issuerSpec *cmapi.IssuerSpec
+	switch issuerRef := cr.Spec.IssuerRef; issuerRef.Kind {
+	case "ClusterIssuer":
+		issuerObj, err := h.CMClient.CertmanagerV1().ClusterIssuers().Get(ctx, issuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
+				issuerRef, err)
+		}
+
+		issuerSpec = &issuerObj.Spec
+	default:
+		issuerObj, err := h.CMClient.CertmanagerV1().Issuers(cr.Namespace).Get(ctx, issuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
+				issuerRef, err)
+		}
+
+		issuerSpec = &issuerObj.Spec
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
@@ -116,6 +148,17 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 
 	commonNameCorrect := true
 	expectedCN := csr.Subject.CommonName
+	// Do not verify the CN when using an ACME issuer with the ACME test
+	// server "Pebble", because Pebble ignores the requested CN and it does
+	// not currently allow us to simulate the Lets Encrypt behavior of
+	// "promoting" the first DNS name to CN. See:
+	// - https://github.com/letsencrypt/pebble/pull/491
+	if issuerSpec.ACME != nil && strings.Contains(issuerSpec.ACME.Server, "pebble") {
+		expectedCN = ""
+	}
+	// Some issuers such as Let's Encrypt, "promote" one of the DNS names as
+	// the CN if a specific CN has not been requested. See:
+	// - https://community.letsencrypt.org/t/is-common-name-automatically-included-in-san/214002
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
 		if !slices.Contains(cert.DNSNames, cert.Subject.CommonName) {
 			commonNameCorrect = false
@@ -139,11 +182,6 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 		expectedDNSName = expectedDNSNames[0]
 	}
 
-	certificateKeyUsages, certificateExtKeyUsages, err := pki.KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
-	}
-
 	var keyAlg cmapi.PrivateKeyAlgorithm
 	switch csr.PublicKeyAlgorithm {
 	case x509.RSA:
@@ -156,27 +194,16 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
 	}
 
-	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(ctx, cr.Namespace, &cr.Spec.IssuerRef)
+	expectedKeyUsages, expectedExtendedKeyUsages, err := computeExpectedKeyUsages(cr.Spec.Usages, cr.Spec.IsCA, keyAlg, issuerSpec)
 	if err != nil {
-		return nil, err
-	}
-
-	certificateKeyUsages |= defaultCertKeyUsages
-	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
-
-	certificateExtKeyUsages = h.deduplicateExtKeyUsages(certificateExtKeyUsages)
-
-	// If using ECDSA then ignore key encipherment
-	if keyAlg == cmapi.ECDSAKeyAlgorithm {
-		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment
-		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
+		return nil, fmt.Errorf("failed to compute expected key usages: %s", err)
 	}
 
 	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
-		certificateKeyUsages, certificateExtKeyUsages) {
+		expectedKeyUsages, expectedExtendedKeyUsages) {
 		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
-			apiutil.KeyUsageStrings(certificateKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
-			apiutil.ExtKeyUsageStrings(certificateExtKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
+			apiutil.KeyUsageStrings(expectedKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
+			apiutil.ExtKeyUsageStrings(expectedExtendedKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
 	}
 
 	// TODO: move this verification step out of this function
@@ -232,4 +259,59 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, n
 	}
 
 	return nil
+}
+
+// computeExpectedKeyUsages computes the expected KUs and EKUs based on the
+// requested usages (from a Certificate or CertificateRequest) and the Issuer
+// spec.
+// This is to account for the fact that different issuers may add, drop, or
+// override the KUs and EKUs. Some completely ignore the requested usages while
+// others respect some or all of the requested usages.
+// There are also some special cases where the usages are influenced by the key
+// algorithm and the isCA field.
+func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAlg cmapi.PrivateKeyAlgorithm, issuerSpec *cmapi.IssuerSpec) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
+
+	requestedKeyUsages, requestedExtendedKeyUsages, err := pki.KeyUsagesForCertificateOrCertificateRequest(requestedUsages, isCA)
+	var expectedKeyUsages x509.KeyUsage
+	if err != nil {
+		return expectedKeyUsages, nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
+	}
+
+	// By default we assume that issuers will satisfy the requested KUs and EKUs.
+	expectedKeyUsages = requestedKeyUsages
+	expectedExtendedKeyUsages := sets.New(requestedExtendedKeyUsages...)
+
+	switch {
+	case issuerSpec.ACME != nil:
+		// The ACME test server "Pebble" only adds one EKU: "server
+		// auth" and only adds one KU: "Digital Signature".
+		// It ignores any other KUs in the CSR.
+		//    - https://github.com/letsencrypt/pebble/pull/472
+		if issuerSpec.ACME != nil {
+			expectedKeyUsages = x509.KeyUsageDigitalSignature
+			expectedExtendedKeyUsages.Clear().Insert(x509.ExtKeyUsageServerAuth)
+		}
+	case issuerSpec.Vault != nil:
+		// Vault issuers will add "server auth" and "client auth" extended key
+		// usages by default so we need to add them to the list of expected usages
+		// Vault issuers will also add "key agreement" key usage
+		expectedExtendedKeyUsages.Insert(x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
+		expectedKeyUsages |= x509.KeyUsageKeyAgreement
+
+	case issuerSpec.Venafi != nil:
+		// Venafi issue adds "server auth" key usage
+		expectedExtendedKeyUsages.Insert(x509.ExtKeyUsageServerAuth)
+	}
+
+	// Most issuers will drop the "key encipherment" KU, if using ECDSA keys.
+	// The best explanation I can find is: https://security.stackexchange.com/a/224509
+	// The exceptions are the CA and SelfSigned issuers.
+	//
+	// TODO(wallrj): Perhaps CA and SelfSigned issuers should also drop or
+	// reject KeyEncipherment for ECDSA certificates.
+	if issuerSpec.SelfSigned == nil && issuerSpec.CA == nil && keyAlg == cmapi.ECDSAKeyAlgorithm {
+		expectedKeyUsages &^= x509.KeyUsageKeyEncipherment
+	}
+
+	return expectedKeyUsages, sets.List(expectedExtendedKeyUsages), nil
 }

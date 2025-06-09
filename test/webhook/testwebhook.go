@@ -41,6 +41,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
 )
 
+// NOTE: all functions that return a StopFunc should use
+// context.WithCancel(t.Context()) instead of just t.Context()
 type StopFunc func()
 
 type ServerOptions struct {
@@ -55,7 +57,11 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
-func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
+func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
+	// Making sure the rootCtx is canceled when StopFunc is called
+	// even when t.Context() has not been canceled yet.
+	stoppableCtx, stopCtxFn := context.WithCancel(t.Context())
+
 	log := testr.New(t)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
@@ -102,17 +108,16 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 		t.Fatal(err)
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		defer close(errCh)
-		if err := srv.Run(ctx); err != nil {
+		if err := srv.Run(stoppableCtx); err != nil {
 			errCh <- fmt.Errorf("error running webhook server: %v", err)
 		}
 	}()
 
 	// Determine the random port number that was chosen
 	var listenPort int
-	if err := wait.PollUntilContextCancel(ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(stoppableCtx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
 		listenPort, err = srv.Port()
 		if err != nil {
 			if errors.Is(err, server.ErrNotListening) {
@@ -130,7 +135,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 		CAPEM: caPEM,
 	}
 	return serverOpts, func() {
-		cancel()
+		stopCtxFn()
 		err := <-errCh // Wait for shutdown
 		if err != nil {
 			t.Fatal(err)

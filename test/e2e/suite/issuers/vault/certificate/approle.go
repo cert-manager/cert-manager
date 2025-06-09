@@ -263,7 +263,13 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(
+				// X509 certificate duration will not match requested duration in Certificate for
+				// all test cases. Instead, we disable the duration check here and compare the duration
+				// with our expected duration below (by calling ExpectDuration explicitly).
+				unsupportedFeatures.Clone().
+					Insert(featureset.DurationFeature),
+			)...)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Vault subtract 30 seconds to the NotBefore date.

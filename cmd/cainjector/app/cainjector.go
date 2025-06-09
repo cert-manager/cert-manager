@@ -113,7 +113,7 @@ servers and webhook servers.`,
 	options.AddConfigFlags(cmd.Flags(), cainjectorConfig)
 
 	// explicitly set provided args in case it does not equal os.Args[:1],
-	// eg. when running tests
+	// e.g., when running tests
 	cmd.SetArgs(allArgs)
 
 	return cmd

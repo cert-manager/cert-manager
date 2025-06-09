@@ -17,7 +17,6 @@ limitations under the License.
 package keymanager
 
 import (
-	"context"
 	"testing"
 
 	gfh "github.com/AdaLogics/go-fuzz-headers"
@@ -95,6 +94,6 @@ func FuzzProcessItem(f *testing.F) {
 			Namespace: certificate.Namespace,
 		}
 		// Call ProcessItem. This is the API that the fuzzer tests.
-		_ = w.controller.ProcessItem(context.Background(), key)
+		_ = w.controller.ProcessItem(t.Context(), key)
 	})
 }

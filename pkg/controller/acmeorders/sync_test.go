@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,6 +38,7 @@ import (
 	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestSync(t *testing.T) {
@@ -304,7 +304,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			return "key", nil
 		},
 	}
-	testAuthorizationChallenge, err := buildPartialChallenge(context.TODO(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
+	testAuthorizationChallenge, err := buildPartialChallenge(t.Context(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
 
 	if err != nil {
 		t.Fatalf("error building Challenge resource test fixture: %v", err)
@@ -955,6 +955,56 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			},
 			acmeClient: &acmecl.FakeACME{},
 		},
+		"acme-profiles:profiles-not-implemented": {
+			// Simulate an attempt to create an order with a profile on an ACME
+			// server which does not support profiles.
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderPending.Namespace,
+							gen.OrderFrom(
+								testOrderErrored,
+								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not support profiles"),
+							),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, acmeapi.ErrCADoesNotSupportProfiles
+				},
+			},
+		},
+		"acme-profiles:profile-not-supported": {
+			// Simulate an attempt to create an order with a profile which the
+			// ACME server does not provide.
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderPending.Namespace,
+							gen.OrderFrom(
+								testOrderErrored,
+								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not advertise a profile with name"),
+							),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, acmeapi.ErrProfileNotInSetOfSupportedProfiles
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -1005,7 +1055,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Start()
 
-	err = cw.Sync(context.Background(), test.order)
+	err = cw.Sync(t.Context(), test.order)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}

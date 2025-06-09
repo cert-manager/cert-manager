@@ -16,7 +16,7 @@
 ## trivy-scan-all runs a scan using Trivy (https://github.com/aquasecurity/trivy)
 ## against all containers that cert-manager builds. If one of the containers
 ## fails a scan, then all scans will be aborted; if you need to check a specific
-## container, use "trivy-scan-<name>", e.g. "make trivy-scan-controller"
+## container, use "trivy-scan-<name>", e.g., "make trivy-scan-controller"
 ##
 ## @category Development
 trivy-scan-all: trivy-scan-controller trivy-scan-acmesolver trivy-scan-webhook trivy-scan-cainjector trivy-scan-startupapicheck

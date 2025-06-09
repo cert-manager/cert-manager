@@ -7,7 +7,7 @@ about: Report a bug to help us improve cert-manager
 <!--
 Bugs should be filed for issues encountered whilst operating cert-manager.
 You should first attempt to resolve your issues through the community support
-channels, e.g. Slack, in order to rule out individual configuration errors.
+channels, e.g., Slack, in order to rule out individual configuration errors.
 Please provide as much detail as possible. 
 -->
 
@@ -34,6 +34,6 @@ gain an understanding of the problem.-->
 - Kubernetes version:
 - Cloud-provider/provisioner:
 - cert-manager version: 
-- Install method: e.g. helm/static manifests
+- Install method: e.g., helm/static manifests
 
 /kind bug

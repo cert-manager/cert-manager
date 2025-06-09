@@ -24,18 +24,17 @@ import (
 	"net/http"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
-
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	"github.com/cert-manager/cert-manager/pkg/acme/client/middleware"
 	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
 	// defaultACMEHTTPTimeout sets the default maximum time that an individual HTTP request can take when doing ACME operations.
-	// Note that there may be other timeouts - e.g. dial timeouts or TLS handshake timeouts - which will be smaller than this. This
+	// Note that there may be other timeouts - e.g., dial timeouts or TLS handshake timeouts - which will be smaller than this. This
 	// timeout is the overall timeout for the entire request.
 	defaultACMEHTTPTimeout = time.Second * 90
 )

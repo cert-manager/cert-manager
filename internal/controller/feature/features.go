@@ -59,6 +59,7 @@ const (
 	// Owner: @joshvanl
 	// Alpha: v1.7
 	// Beta: v1.15
+	// GA: v1.18
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -136,6 +137,7 @@ const (
 	// Owner: @jsoref
 	// Alpha: v1.16
 	// Beta: v1.17
+	// GA: v1.18
 	//
 	// UseDomainQualifiedFinalizer changes the finalizer added to cert-manager created
 	// resources to acme.cert-manager.io/finalizer instead of finalizer.acme.cert-manager.io.
@@ -154,6 +156,22 @@ const (
 	// hit with "unknown feature gate" errors which crash the controller, but this is a no-op
 	// and only prints a log line if added.
 	ValidateCAA featuregate.Feature = "ValidateCAA"
+
+	// Owner: @wallrj
+	// Alpha: v1.18.0
+	// Beta: v1.18.0
+	//
+	// DefaultPrivateKeyRotationPolicyAlways change the default value of
+	// `Certificate.Spec.PrivateKey.RotationPolicy` to `Always`.
+	// Why? Because the old default (`Never`) was unintuitive and insecure. For
+	// example, if a private key is exposed, users may (reasonably) assume that
+	// re-issuing a certificate (e.g. using cmctl renew) will generate a new
+	// private key, but it won't unless the user has explicitly set
+	// rotationPolicy: Always on the Certificate resource.
+	// This feature skipped the Alpha phase and was instead introduced as a Beta
+	// feature, because it is thought be low-risk feature and because we want to
+	// accelerate the adoption of this important security feature.
+	DefaultPrivateKeyRotationPolicyAlways featuregate.Feature = "DefaultPrivateKeyRotationPolicyAlways"
 )
 
 func init() {
@@ -170,13 +188,14 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
-	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.Beta},
+	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
-	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.Beta},
+	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
+	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
 
 	// NB: Deprecated + removed feature gates are kept here.
 	// `featuregate.Deprecated` exists, but will cause the featuregate library

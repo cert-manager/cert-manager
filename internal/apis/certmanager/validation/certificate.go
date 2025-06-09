@@ -234,10 +234,13 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	return el
 }
 
-func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (allErrs field.ErrorList, warnings []string) {
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs, nil
+	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	if crt.Spec.PrivateKey == nil || crt.Spec.PrivateKey.RotationPolicy == "" {
+		warnings = append(warnings, newDefaultPrivateKeyRotationPolicy)
+	}
+	return allErrs, warnings
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
@@ -272,7 +275,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 			errMsg := "must be one of Issuer or ClusterIssuer"
 
 			if issuerRef.Group == "" {
-				// Sometimes the user sets a kind for an external issuer (e.g. "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
+				// Sometimes the user sets a kind for an external issuer (e.g., "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
 				// to set the group (an easy mistake to make - see https://github.com/cert-manager/csi-driver/issues/197).
 				// If the users forgets the group but otherwise has a correct Kind set for an external issuer, we can give a hint
 				// as to what they need to do to fix.
@@ -390,13 +393,6 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 
 func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
-
-	if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-		if len(crt.AdditionalOutputFormats) > 0 {
-			el = append(el, field.Forbidden(fldPath.Child("additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"))
-		}
-		return el
-	}
 
 	// Ensure the set of output formats is unique, keyed on "Type".
 	aofSet := sets.NewString()

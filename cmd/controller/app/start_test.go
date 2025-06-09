@@ -53,7 +53,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	if err := logsapi.ResetForTest(nil); err != nil {
 		t.Error(err)
 	}
-	cmd := newServerCommand(context.TODO(), func(ctx context.Context, cc *config.ControllerConfiguration) error {
+	cmd := newServerCommand(t.Context(), func(ctx context.Context, cc *config.ControllerConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -61,7 +61,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	cmd.SetErr(io.Discard)
 	cmd.SetOut(io.Discard)
 
-	err := cmd.ExecuteContext(context.TODO())
+	err := cmd.ExecuteContext(t.Context())
 	return finalConfig, err
 }
 

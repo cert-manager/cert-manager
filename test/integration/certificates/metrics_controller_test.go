@@ -57,11 +57,8 @@ certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 // metrics are exposed when a Certificate is created, updated, and removed when
 // it is deleted.
 func TestMetricsController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	config, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
@@ -82,7 +79,7 @@ func TestMetricsController(t *testing.T) {
 		}
 	}()
 	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), time.Second*5)
 		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
@@ -127,13 +124,13 @@ func TestMetricsController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err = kubernetesCl.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err = kubernetesCl.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	testMetrics := func(expectedOutput string) error {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, metricsEndpoint, nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, metricsEndpoint, nil)
 		if err != nil {
 			return err
 		}
@@ -158,7 +155,7 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	waitForMetrics := func(expectedOutput string) {
-		err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
+		err = wait.PollUntilContextCancel(t.Context(), time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 			if err := testMetrics(expectedOutput); err != nil {
 				lastErr = err
 				return false, nil
@@ -183,7 +180,7 @@ func TestMetricsController(t *testing.T) {
 		gen.SetCertificateUID("uid-1"),
 	)
 
-	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +225,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	crt.Status.RenewalTime = &metav1.Time{
 		Time: time.Unix(100, 0),
 	}
-	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +254,7 @@ certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-grou
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
 `)
 
-	err = cmClient.CertmanagerV1().Certificates(namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
+	err = cmClient.CertmanagerV1().Certificates(namespace).Delete(t.Context(), crt.Name, metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

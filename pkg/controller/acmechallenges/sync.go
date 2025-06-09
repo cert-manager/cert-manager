@@ -23,18 +23,16 @@ import (
 	"slices"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
@@ -58,7 +56,7 @@ type solver interface {
 	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) error
 	// CleanUp will remove challenge records for a given solver.
 	// This may involve deleting resources in the Kubernetes API Server, or
-	// communicating with other external components (e.g. DNS providers).
+	// communicating with other external components (e.g., DNS providers).
 	CleanUp(ctx context.Context, ch *cmacme.Challenge) error
 }
 
@@ -89,23 +87,16 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
+	// Remove legacy finalizer
+	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+		return finalizer == cmacme.ACMELegacyFinalizer
+	})
+
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
-	//
-	// API Transition
-	// -- Until UseDomainQualifiedFinalizer is active, we add cmacme.ACMELegacyFinalizer.
-	// -- When it is active we add cmacme.ACMEDomainQualifiedFinalizer instead.
-	//
-	// -- Both finalizers are supported, the flag just controls the one we add.
-	//
-	// -- We only need to add a finalizer label if no supported finalizer label is present.
 	if finalizerRequired(ch) {
-		finalizer := cmacme.ACMELegacyFinalizer
-		if utilfeature.DefaultFeatureGate.Enabled(feature.UseDomainQualifiedFinalizer) {
-			finalizer = cmacme.ACMEDomainQualifiedFinalizer
-		}
-		ch.Finalizers = append(ch.Finalizers, finalizer)
+		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEDomainQualifiedFinalizer)
 		return nil
 	}
 
@@ -254,7 +245,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	defer func() {
 		// call Update to remove the metadata.finalizers entry
 		ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-			return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
+			return finalizer == cmacme.ACMEDomainQualifiedFinalizer || finalizer == cmacme.ACMELegacyFinalizer
 		})
 	}()
 

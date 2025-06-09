@@ -93,7 +93,7 @@ tools += controller-gen=v0.17.3
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 tools += goimports=v0.31.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
-tools += go-licenses=v2.0.0-alpha.1
+tools += go-licenses=9c778fc0cb52740485f53cc439b1f3c9578a1830
 # https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
 tools += gotestsum=v1.12.1
 # https://pkg.go.dev/sigs.k8s.io/kustomize/kustomize/v4?tab=versions
@@ -172,7 +172,7 @@ ADDITIONAL_TOOLS ?=
 tools += $(ADDITIONAL_TOOLS)
 
 # https://go.dev/dl/
-VENDORED_GO_VERSION := 1.24.2
+VENDORED_GO_VERSION := 1.24.4
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -325,7 +325,9 @@ go_dependencies :=
 go_dependencies += ginkgo=github.com/onsi/ginkgo/v2/ginkgo
 go_dependencies += controller-gen=sigs.k8s.io/controller-tools/cmd/controller-gen
 go_dependencies += goimports=golang.org/x/tools/cmd/goimports
-go_dependencies += go-licenses=github.com/google/go-licenses/v2
+# switch back to github.com/google/go-licenses once
+# https://github.com/google/go-licenses/pull/327 is merged.
+go_dependencies += go-licenses=github.com/inteon/go-licenses/v2
 go_dependencies += gotestsum=gotest.tools/gotestsum
 go_dependencies += kustomize=sigs.k8s.io/kustomize/kustomize/v4
 go_dependencies += gojq=github.com/itchyny/gojq/cmd/gojq
@@ -393,10 +395,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=68097bd680839cbc9d464a0edce4f7c333975e27a90246890e9f1078c7e702ad
-go_linux_arm64_SHA256SUM=756274ea4b68fa5535eb9fe2559889287d725a8da63c6aae4d5f23778c229f4b
-go_darwin_amd64_SHA256SUM=238d9c065d09ff6af229d2e3b8b5e85e688318d69f4006fb85a96e41c216ea83
-go_darwin_arm64_SHA256SUM=b70f8b3c5b4ccb0ad4ffa5ee91cd38075df20fdbd953a1daedd47f50fbcff47a
+go_linux_amd64_SHA256SUM=77e5da33bb72aeaef1ba4418b6fe511bc4d041873cbf82e5aa6318740df98717
+go_linux_arm64_SHA256SUM=d5501ee5aca0f258d5fe9bfaed401958445014495dc115f202d43d5210b45241
+go_darwin_amd64_SHA256SUM=69bef555e114b4a2252452b6e7049afc31fbdf2d39790b669165e89525cd3f5c
+go_darwin_arm64_SHA256SUM=27973684b515eaf461065054e6b572d9390c05e69ba4a423076c160165336470
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
