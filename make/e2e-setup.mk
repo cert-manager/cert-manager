@@ -379,7 +379,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 		--set controller.service.clusterIP=${SERVICE_IP_PREFIX}.15 \
 		--set controller.service.type=ClusterIP \
 		--set controller.config.no-tls-redirect-locations= \
-		--set admissionWebhooks.enabled=false \
+		--set admissionWebhooks.enabled=true \
 		--set controller.admissionWebhooks.enabled=true \
 		--set controller.watchIngressWithoutClass=true \
 		ingress-nginx ingress-nginx/ingress-nginx >/dev/null
