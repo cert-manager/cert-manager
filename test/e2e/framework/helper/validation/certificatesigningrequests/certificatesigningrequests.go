@@ -159,7 +159,7 @@ func ExpectCertificateIPsToMatch(csr *certificatesv1.CertificateSigningRequest, 
 	return nil
 }
 
-// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS SANs
+// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS (or IP Address) SANs
 func ExpectValidCommonName(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 	if err != nil {
@@ -315,6 +315,8 @@ func ExpectValidBasicConstraints(csr *certificatesv1.CertificateSigningRequest, 
 		return fmt.Errorf("requested certificate does not match expected IsCA, exp=%t got=%t",
 			markedIsCA, cert.IsCA)
 	}
+
+	// TODO: also validate pathLen
 
 	return nil
 }

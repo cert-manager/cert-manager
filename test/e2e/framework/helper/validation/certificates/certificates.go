@@ -188,7 +188,7 @@ func ExpectCertificateIPsToMatch(certificate *cmapi.Certificate, secret *corev1.
 	return nil
 }
 
-// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS SANs
+// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS (or IP Address) SANs
 func ExpectValidCommonName(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
