@@ -20,11 +20,6 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-export SERVICE_IP_PREFIX="10.0.0"
-export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
-export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
-export GATEWAY_IP="${SERVICE_IP_PREFIX}.14"
-
 red=
 green=
 yel=
