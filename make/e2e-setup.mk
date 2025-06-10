@@ -26,7 +26,7 @@ CRI_ARCH := $(HOST_ARCH)
 # is set in one place only.
 K8S_VERSION := 1.30
 
-IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.10.1@sha256:959e313aceec9f38e18a329ca3756402959e84e63ae8ba7ac1ee48aec28d51b9
+IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:aadad8e26329d345dea3a69b8deb9f3c52899a97cbaf7e702b8dfbeae3082c15
 IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:127def0e41f49fea6e260abf7b1662fe7bdfb9f33e8f9047fb74d0162a5697bb
 IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d388cd67b38fb4f55eb5e38107dbbce9e06208b8e3839f0b63f8631f286181be
 IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
@@ -34,7 +34,7 @@ IMAGE_bind_amd64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
 IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:bb7af851ac5832c315e0863d12ed583cee54c495d58a206f1d0897647505ed70
 
-IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.10.1@sha256:624d1a22b56a52fc4b8e330bef968cd77d49c6eeb36166f20036d50782307341
+IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:800048a4cdf4ad487a17f56d22ec6be7a34248fc18900d945bc869fee4ccb2f7
 IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:c076a1ba9e0fb33d8eca3e7499caddfa3bb4f5e52e9dee589d8476ae1688cd34
 IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d8d750012ed4bb46fd41d8892e92af6fb9fd212317bc23e68a2a47199646b04a
 IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
@@ -369,7 +369,7 @@ e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ing
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 4.10.1 \
+		--version 4.12.3 \
 		--namespace ingress-nginx \
 		--create-namespace \
 		--set controller.image.tag=$(TAG) \
