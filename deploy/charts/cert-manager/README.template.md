@@ -1,10 +1,10 @@
 # cert-manager
 
-cert-manager is a Kubernetes addon to automate the management and issuance of
-TLS certificates from various issuing sources.
+cert-manager creates TLS certificates for workloads in your Kubernetes or OpenShift cluster and renews the certificates before they expire.
 
-It will ensure certificates are valid and up to date periodically, and attempt
-to renew certificates at an appropriate time before expiry.
+cert-manager can obtain certificates from a [variety of certificate authorities](https://cert-manager.io/docs/configuration/issuers/), including:
+[Let's Encrypt](https://cert-manager.io/docs/configuration/acme/), [HashiCorp Vault](https://cert-manager.io/docs/configuration/vault/),
+[Venafi](https://cert-manager.io/docs/configuration/venafi/) and [private PKI](https://cert-manager.io/docs/configuration/ca/).
 
 ## Prerequisites
 
@@ -13,23 +13,21 @@ to renew certificates at an appropriate time before expiry.
 ## Installing the Chart
 
 Full installation instructions, including details on how to configure extra
-functionality in cert-manager can be found in the [installation docs](https://cert-manager.io/docs/installation/kubernetes/).
-
-Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources.
-This is performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed custom resources.
-
-```bash
-$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-```
+functionality in cert-manager can be found in the [installation docs](https://cert-manager.io/docs/installation/helm/).
 
 To install the chart with the release name `cert-manager`:
 
 ```console
-## Add the Jetstack Helm repository
-$ helm repo add jetstack https://charts.jetstack.io --force-update
+# Add the Jetstack Helm repository
+helm repo add jetstack https://charts.jetstack.io --force-update
 
-## Install the cert-manager helm chart
-$ helm install cert-manager --namespace cert-manager --version {{RELEASE_VERSION}} jetstack/cert-manager
+# Install the cert-manager helm chart
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version {{RELEASE_VERSION}} \
+  --set crds.enabled=true
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -56,17 +54,25 @@ are documented in our full [upgrading guide](https://cert-manager.io/docs/instal
 To uninstall/delete the `cert-manager` deployment:
 
 ```console
-$ helm delete cert-manager --namespace cert-manager
+helm delete cert-manager --namespace cert-manager
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 If you want to completely uninstall cert-manager from your cluster, you will also need to
-delete the previously installed CustomResourceDefinition resources:
+delete the previously installed CustomResourceDefinition resources.
 
-```console
-$ kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-```
+> ☢️ This will remove all `Issuer`,`ClusterIssuer`,`Certificate`,`CertificateRequest`,`Order` and `Challenge` resources from the cluster:
+>
+> ```console
+> kubectl delete crd \
+>   issuers.cert-manager.io \
+>   clusterissuers.cert-manager.io \
+>   certificates.cert-manager.io \
+>   certificaterequests.cert-manager.io \
+>   orders.acme.cert-manager.io \
+>   challenges.acme.cert-manager.io
+> ```
 
 ## Configuration
 <!-- AUTO-GENERATED -->
