@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/types"
 
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
@@ -46,15 +47,18 @@ func (m *Metrics) UpdateChallengeStatus(challenge *acmev1.Challenge) {
 			"status":     string(status),
 			"reason":     challenge.Status.Reason,
 			"domain":     challenge.Spec.DNSName,
+			"name":       challenge.Name,
+			"namespace":  challenge.Namespace,
 			"type":       string(challenge.Spec.Type),
-			"id":         string(challenge.GetUID()),
 			"processing": fmt.Sprint(challenge.Status.Processing),
 		}).Set(value)
 	}
 }
 
-func (m *Metrics) RemoveChallengeStatus(challenge *acmev1.Challenge) {
+func (m *Metrics) RemoveChallengeStatus(key types.NamespacedName) {
+	ns, name := key.Namespace, key.Name
 	m.certificateChallengeStatus.DeletePartialMatch(prometheus.Labels{
-		"id": string(challenge.GetUID()),
+		"name":      name,
+		"namespace": ns,
 	})
 }

@@ -216,7 +216,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			Namespace: namespace,
 			Name:      "certificate_challenge_status",
 			Help:      "The status of certificate challenges.",
-		}, []string{"status", "domain", "reason", "processing", "id", "type"})
+		}, []string{"status", "domain", "reason", "processing", "name", "namespace", "type"})
 	)
 
 	// Create Registry and register the recommended collectors

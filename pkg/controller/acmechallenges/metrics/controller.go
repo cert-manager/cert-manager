@@ -87,7 +87,7 @@ func (c *controller) ProcessItem(ctx context.Context, namespace types.Namespaced
 
 	challenge, err := c.certificateChallengeListers.Challenges(ns).Get(name)
 	if apierrors.IsNotFound(err) {
-		c.metrics.RemoveChallengeStatus(challenge)
+		c.metrics.RemoveChallengeStatus(namespace)
 		return nil
 	}
 	if err != nil {
