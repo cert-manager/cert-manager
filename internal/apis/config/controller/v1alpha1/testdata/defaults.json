@@ -66,5 +66,11 @@
 	"acmeDNS01Config": {
 		"recursiveNameserversOnly": false,
 		"checkRetryPeriod": "10s"
+	},
+	"pemSizeLimitsConfig": {
+		"maxCertificateSize": 6500,
+		"maxPrivateKeySize": 13000,
+		"maxChainLength": 10,
+		"maxBundleSize": 330000
 	}
 }

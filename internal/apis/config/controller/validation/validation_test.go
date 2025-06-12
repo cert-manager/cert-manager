@@ -28,6 +28,16 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 )
 
+// validPEMSizeLimitsConfig returns a valid PEMSizeLimitsConfig for testing
+func validPEMSizeLimitsConfig() config.PEMSizeLimitsConfig {
+	return config.PEMSizeLimitsConfig{
+		MaxCertificateSize: 6500,
+		MaxPrivateKeySize:  13000,
+		MaxChainLength:     10,
+		MaxBundleSize:      330000,
+	}
+}
+
 func TestValidateControllerConfiguration(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -43,8 +53,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			nil,
 		},
@@ -57,8 +68,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(wc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -84,8 +96,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -107,8 +120,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -130,6 +144,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				MetricsTLSConfig: shared.TLSConfig{
 					Filesystem: shared.FilesystemServingConfig{
 						CertFile: "/test.crt",
@@ -154,8 +169,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -172,8 +188,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: -1, // Must be positive
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  -1, // Must be positive
+				KubernetesAPIQPS:    1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -191,8 +208,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1, // Must be greater than KubernetesAPIQPS
-				KubernetesAPIQPS:   2,
+				KubernetesAPIBurst:  1, // Must be greater than KubernetesAPIQPS
+				KubernetesAPIQPS:    2,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -209,8 +227,9 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   -1, // Must be positive
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    -1, // Must be positive
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -229,6 +248,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEHTTP01Config: config.ACMEHTTP01Config{
 					SolverNameservers: []string{
 						"1.1.1.1:53",
@@ -249,6 +269,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEHTTP01Config: config.ACMEHTTP01Config{
 					SolverNameservers: []string{
 						"1.1.1.1:53",
@@ -273,6 +294,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEDNS01Config: config.ACMEDNS01Config{
 					RecursiveNameservers: []string{
 						"1.1.1.1:53",
@@ -293,6 +315,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEDNS01Config: config.ACMEDNS01Config{
 					RecursiveNameservers: []string{
 						"1.1.1.1",
@@ -317,6 +340,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEDNS01Config: config.ACMEDNS01Config{
 					RecursiveNameservers: []string{
 						"1.1.1.1:53",
@@ -341,6 +365,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				Controllers:        []string{"issuers", "clusterissuers"},
 			},
 			nil,
@@ -356,6 +381,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				Controllers:        []string{"*"},
 			},
 			nil,
@@ -371,6 +397,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				},
 				KubernetesAPIBurst: 1,
 				KubernetesAPIQPS:   1,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				Controllers:        []string{"foo"},
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
@@ -388,6 +415,122 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				expErrs = tt.errs(tt.config)
 			}
 			assert.ElementsMatch(t, expErrs, errList)
+		})
+	}
+}
+
+func TestValidatePEMSizeLimitsConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.PEMSizeLimitsConfig
+		errs   field.ErrorList
+	}{
+		{
+			"with valid PEM size limits config",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 6500,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     10,
+				MaxBundleSize:      330000,
+			},
+			nil,
+		},
+		{
+			"with zero MaxCertificateSize",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 0,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     10,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 0, "must be greater than 0"),
+			},
+		},
+		{
+			"with zero MaxPrivateKeySize",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 6500,
+				MaxPrivateKeySize:  0,
+				MaxChainLength:     10,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxPrivateKeySize"), 0, "must be greater than 0"),
+			},
+		},
+		{
+			"with zero MaxChainLength",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 6500,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     0,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 0, "must be greater than 0"),
+			},
+		},
+		{
+			"with zero MaxBundleSize",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 6500,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     10,
+				MaxBundleSize:      0,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxBundleSize"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 6500, "must not be larger than maxBundleSize"),
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 10, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"),
+			},
+		},
+		{
+			"with MaxCertificateSize larger than MaxBundleSize",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 400000,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     10,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 400000, "must not be larger than maxBundleSize"),
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 10, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"),
+			},
+		},
+		{
+			"with chain size exceeding bundle size",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 50000,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     10,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 10, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"),
+			},
+		},
+		{
+			"with all zero values",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 0,
+				MaxPrivateKeySize:  0,
+				MaxChainLength:     0,
+				MaxBundleSize:      0,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxPrivateKeySize"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxBundleSize"), 0, "must be greater than 0"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validatePEMSizeLimitsConfig(test.config, field.NewPath(""))
+			assert.ElementsMatch(t, test.errs, errs)
 		})
 	}
 }

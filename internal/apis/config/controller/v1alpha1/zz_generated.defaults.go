@@ -45,4 +45,5 @@ func SetObjectDefaults_ControllerConfiguration(in *controllerv1alpha1.Controller
 	SetDefaults_IngressShimConfig(&in.IngressShimConfig)
 	SetDefaults_ACMEHTTP01Config(&in.ACMEHTTP01Config)
 	SetDefaults_ACMEDNS01Config(&in.ACMEDNS01Config)
+	SetDefaults_PEMSizeLimitsConfig(&in.PEMSizeLimitsConfig)
 }
