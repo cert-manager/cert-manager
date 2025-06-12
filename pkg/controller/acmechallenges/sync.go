@@ -46,7 +46,7 @@ const (
 	reasonFailed         = "Failed"
 
 	// How long to wait for an authorization response from the ACME server in acceptChallenge()
-	// before giving up.
+	// before giving up
 	authorizationTimeout = 2 * time.Minute
 )
 
