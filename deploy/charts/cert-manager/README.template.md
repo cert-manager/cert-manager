@@ -73,6 +73,14 @@ $ kubectl delete -f https://github.com/cert-manager/cert-manager/releases/downlo
 
 ### Global
 
+#### **global.imageRepository** ~ `string`
+> Default value:
+> ```yaml
+> quay.io/jetstack
+> ```
+
+Image repository default for all images
+
 #### **global.imagePullSecrets** ~ `array`
 > Default value:
 > ```yaml
@@ -267,10 +275,18 @@ The container registry to pull the manager image from.
 #### **image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-controller
+> ""
 > ```
 
 The container image for the cert-manager controller.
+
+#### **image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-controller
+> ```
+
+The container image name for the cert-manager controller.
 
 #### **image.tag** ~ `string`
 
@@ -1201,10 +1217,18 @@ The container registry to pull the webhook image from.
 #### **webhook.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-webhook
+> ""
 > ```
 
-The container image for the cert-manager webhook
+The container image for the cert-manager webhook.
+
+#### **webhook.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-webhook
+> ```
+
+The container image name for the cert-manager webhook.
 
 #### **webhook.image.tag** ~ `string`
 
@@ -1607,10 +1631,18 @@ The container registry to pull the cainjector image from.
 #### **cainjector.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-cainjector
+> ""
 > ```
 
-The container image for the cert-manager cainjector
+The container image for the cert-manager cainjector.
+
+#### **cainjector.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-cainjector
+> ```
+
+The container image name for the cert-manager cainjector.
 
 #### **cainjector.image.tag** ~ `string`
 
@@ -1688,10 +1720,18 @@ The container registry to pull the acmesolver image from.
 #### **acmesolver.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-acmesolver
+> ""
 > ```
 
 The container image for the cert-manager acmesolver.
+
+#### **acmesolver.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-acmesolver
+> ```
+
+The container image name for the cert-manager acmesolver.
 
 #### **acmesolver.image.tag** ~ `string`
 
@@ -1871,10 +1911,18 @@ The container registry to pull the startupapicheck image from.
 #### **startupapicheck.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-startupapicheck
+> ""
 > ```
 
 The container image for the cert-manager startupapicheck.
+
+#### **startupapicheck.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-startupapicheck
+> ```
+
+The container image name for the cert-manager startupapicheck.
 
 #### **startupapicheck.image.tag** ~ `string`
 
