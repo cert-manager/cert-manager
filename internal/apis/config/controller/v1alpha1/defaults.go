@@ -27,6 +27,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 	challengescontroller "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
+	acmechallengesmetricscontroller "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges/metrics"
 	orderscontroller "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
 	shimingresscontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/ingresses"
@@ -128,6 +129,7 @@ var (
 		csrselfsignedcontroller.CSRControllerName,
 		csrvenaficontroller.CSRControllerName,
 		csrvaultcontroller.CSRControllerName,
+		acmechallengesmetricscontroller.ControllerName,
 	}
 
 	DefaultEnabledControllers = []string{
@@ -150,6 +152,7 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+		acmechallengesmetricscontroller.ControllerName,
 	}
 
 	ExperimentalCertificateSigningRequestControllers = []string{
