@@ -46,6 +46,8 @@ type Interface interface {
 	// WaitAuthorization will, in success cases, be called once per
 	// Challenge after it has been accepted.
 	WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
+	// CheckAuthorization will check the authorization status
+	CheckAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	Register(ctx context.Context, acct *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
 	GetReg(ctx context.Context, url string) (*acme.Account, error)
 	// HTTP01ChallengeResponse will be called once when a cert-manager.io

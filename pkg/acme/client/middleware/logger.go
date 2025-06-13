@@ -101,6 +101,12 @@ func (l *Logger) WaitAuthorization(ctx context.Context, url string) (*acme.Autho
 	return l.baseCl.WaitAuthorization(ctx, url)
 }
 
+func (l *Logger) CheckAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
+	l.log.V(logf.TraceLevel).Info("Calling CheckAuthorization")
+
+	return l.baseCl.CheckAuthorization(ctx, url)
+}
+
 func (l *Logger) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {
 	l.log.V(logf.TraceLevel).Info("Calling Register")
 

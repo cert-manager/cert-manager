@@ -465,7 +465,7 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 		case raw.Status == StatusValid:
 			return raw.authorization(url), nil
 		case raw.Status == StatusInvalid:
-			return nil, raw.error(url)
+			return nil, raw.error(url, res)
 		}
 
 		// Exponential backoff is implemented in c.get above.
@@ -488,6 +488,39 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 			// Retry.
 		}
 	}
+}
+
+// CheckAuthorization retrieves the current status of an authorization at the given URL,
+// without polling or waiting for it to reach a final state.
+//
+// It returns a non-nil Authorization only if its Status is StatusValid.
+// In all other cases, CheckAuthorization returns an error.
+// If the Status is StatusInvalid, the returned error is of type *AuthorizationError.
+// The error includes the current authorization state. If the state is StatusPending,
+// the error also includes a RetryAfter value to indicate when the client may retry.
+func (c *Client) CheckAuthorization(ctx context.Context, url string) (*Authorization, error) {
+	// Result is cached, so this is a no-op if already called
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
+	res, err := c.postAsGet(ctx, url, wantStatus(http.StatusOK, http.StatusAccepted))
+	if err != nil {
+		return nil, err
+	}
+
+	var raw wireAuthz
+	err = json.NewDecoder(res.Body).Decode(&raw)
+	res.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if raw.Status == StatusValid {
+		return raw.authorization(url), nil
+	}
+
+	return nil, raw.error(url, res)
 }
 
 // GetChallenge retrieves the current status of an challenge.
