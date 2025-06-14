@@ -172,6 +172,22 @@ const (
 	// feature, because it is thought be low-risk feature and because we want to
 	// accelerate the adoption of this important security feature.
 	DefaultPrivateKeyRotationPolicyAlways featuregate.Feature = "DefaultPrivateKeyRotationPolicyAlways"
+
+	// Owner: @sspreitzer, @wallrj
+	// Alpha: v1.18.1
+	// Beta: v1.18.1
+	//
+	// ACMEHTTP01IngressPathTypeExact will use Ingress pathType `Exact`.
+	// `ACMEHTTP01IngressPathTypeExact` changes the default `pathType`` for ACME
+	// HTTP01 Ingress based challenges to `Exact`. This security feature ensures
+	// that the challenge path (which is an exact path) is not misinterpreted as
+	// a regular expression or some other Ingress specific (ImplementationSpecific)
+	// parsing. This allows HTTP01 challenges to be solved when using standards
+	// compliant Ingress controllers such as Cilium. The old default
+	// `ImplementationSpecific`` can be reinstated by disabling this feature gate.
+	// You may need to disable the feature for compatibility with ingress-nginx.
+	// See: https://cert-manager.io/docs/releases/release-notes/release-notes-1.18
+	ACMEHTTP01IngressPathTypeExact featuregate.Feature = "ACMEHTTP01IngressPathTypeExact"
 )
 
 func init() {
@@ -196,6 +212,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
 	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
+	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.GA},
 
 	// NB: Deprecated + removed feature gates are kept here.
 	// `featuregate.Deprecated` exists, but will cause the featuregate library
