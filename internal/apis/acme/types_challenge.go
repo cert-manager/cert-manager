@@ -136,6 +136,19 @@ type ChallengeStatus struct {
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
 	State State
+
+	// Solver contains the observed status of an ACME challenge solver,
+	// including DNS and HTTP-specific readiness data and general state tracking.
+	//
+	// This structure is used to track whether a challenge is ready to be submitted
+	// to the ACME server for validation.
+	Solver ChallengeSolverStatus
+
+	// NextReconcile is the timestamp that the next reconcile should be made.
+	//
+	// This exists as we have various polling going in within the challenge
+	// controller with different backoff.
+	NextReconcile *metav1.Time
 }
 
 // ChallengeConditionType represents a Challenge condition value.
@@ -174,4 +187,43 @@ type ChallengeCondition struct {
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
 	Message string
+}
+
+// ChallengeSolverStatus contains the observed status of an ACME challenge solver,
+// including DNS and HTTP-specific readiness data and general state tracking.
+//
+// This structure is used to track whether a challenge is ready to be submitted
+// to the ACME server for validation.
+type ChallengeSolverStatus struct {
+	// DNS contains status information specific to DNS-01 challenge solving.
+	DNS *ChallengeSolverStatusDNS
+
+	// HTTP contains status information specific to HTTP-01 challenge solving.
+	HTTP *ChallengeSolverStatusHTTP
+}
+
+// ChallengeSolverStatusDNS provides details about DNS-01 challenge readiness checks.
+type ChallengeSolverStatusDNS struct {
+	// TTL is the configured time-to-live of the DNS record used for validation.
+	TTL *metav1.Duration
+
+	// LastSuccess is the time that the DNS check was successful against the
+	// authoritative nameserver.
+	//
+	// The check will not pass until lastSuccess + ttl
+	// has been reached to allow for DNSpropagation.
+	LastSuccess *metav1.Time
+
+	// FQDN is the fully qualified domain name of the challenge
+	FQDN string
+}
+
+// ChallengeSolverStatusHTTP provides details about HTTP-01 challenge readiness checks.
+type ChallengeSolverStatusHTTP struct {
+	// RequiredSuccesses is the number of successful HTTP requests required
+	// to consider the challenge ready.
+	RequiredSuccesses int64
+
+	// Successes is the number of successful HTTP readiness checks observed so far.
+	Successes int64
 }
