@@ -121,6 +121,14 @@ type ChallengeStatus struct {
 	// configured).
 	Presented bool
 
+	// Conditions contains the current observed conditions for the challenge
+	// +listType=map
+	// +listMapKey=type
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	// +optional
+	Conditions []ChallengeCondition
+
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
 	Reason string
@@ -128,4 +136,94 @@ type ChallengeStatus struct {
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
 	State State
+
+	// Solver contains the observed status of an ACME challenge solver,
+	// including DNS and HTTP-specific readiness data and general state tracking.
+	//
+	// This structure is used to track whether a challenge is ready to be submitted
+	// to the ACME server for validation.
+	Solver ChallengeSolverStatus
+
+	// NextReconcile is the timestamp that the next reconcile should be made.
+	//
+	// This exists as we have various polling going in within the challenge
+	// controller with different backoff.
+	NextReconcile *metav1.Time
+}
+
+// ChallengeConditionType represents a Challenge condition value.
+type ChallengeConditionType string
+
+const (
+	// ChallengeConditionTypePresented indicates that the challenge solver
+	// has successfully presented the challenge token (e.g., by provisioning
+	// a DNS record or serving an HTTP response).
+	ChallengeConditionTypePresented = "Presented"
+	// ChallengeConditionTypeSolved indicates that the presented solution
+	// has propagated and is expected to be accessible to the ACME server.
+	// This typically means DNS changes have propagated or HTTP endpoints are reachable.
+	ChallengeConditionTypeSolved = "Solved"
+	// ChallengeConditionTypeAccepted indicates that the ACME server has
+	// validated and accepted the challenge response.
+	ChallengeConditionTypeAccepted = "Accepted"
+)
+
+// ChallengeCondition contains condition information for a Challenge.
+type ChallengeCondition struct {
+	// Type of the condition, known values are (`Presented`, `Solved`, `Accepted`).
+	Type ChallengeConditionType
+
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status cmmeta.ConditionStatus
+
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime *metav1.Time
+
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string
+
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string
+}
+
+// ChallengeSolverStatus contains the observed status of an ACME challenge solver,
+// including DNS and HTTP-specific readiness data and general state tracking.
+//
+// This structure is used to track whether a challenge is ready to be submitted
+// to the ACME server for validation.
+type ChallengeSolverStatus struct {
+	// DNS contains status information specific to DNS-01 challenge solving.
+	DNS *ChallengeSolverStatusDNS
+
+	// HTTP contains status information specific to HTTP-01 challenge solving.
+	HTTP *ChallengeSolverStatusHTTP
+}
+
+// ChallengeSolverStatusDNS provides details about DNS-01 challenge readiness checks.
+type ChallengeSolverStatusDNS struct {
+	// TTL is the configured time-to-live of the DNS record used for validation.
+	TTL *metav1.Duration
+
+	// LastSuccess is the time that the DNS check was successful against the
+	// authoritative nameserver.
+	//
+	// The check will not pass until lastSuccess + ttl
+	// has been reached to allow for DNSpropagation.
+	LastSuccess *metav1.Time
+
+	// FQDN is the fully qualified domain name of the challenge
+	FQDN string
+}
+
+// ChallengeSolverStatusHTTP provides details about HTTP-01 challenge readiness checks.
+type ChallengeSolverStatusHTTP struct {
+	// RequiredSuccesses is the number of successful HTTP requests required
+	// to consider the challenge ready.
+	RequiredSuccesses int64
+
+	// Successes is the number of successful HTTP readiness checks observed so far.
+	Successes int64
 }

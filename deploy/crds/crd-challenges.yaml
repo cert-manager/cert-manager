@@ -3147,6 +3147,54 @@ spec:
             status:
               type: object
               properties:
+                conditions:
+                  description: conditions contains the current observed conditions for the challenge
+                  type: array
+                  items:
+                    description: ChallengeCondition contains condition information for a Challenge.
+                    type: object
+                    required:
+                      - reason
+                      - status
+                      - type
+                    properties:
+                      lastTransitionTime:
+                        description: |-
+                          lastTransitionTime is the timestamp corresponding to the last status
+                          change of this condition.
+                        type: string
+                        format: date-time
+                      message:
+                        description: |-
+                          message is a human readable description of the details of the last
+                          transition, complementing reason.
+                        type: string
+                      reason:
+                        description: |-
+                          reason is a brief machine readable explanation for the condition's last
+                          transition.
+                        type: string
+                      status:
+                        description: status of the condition, one of (`True`, `False`, `Unknown`).
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      type:
+                        description: type of the condition, known values are (`Presented`, `Solved`, `Accepted`).
+                        type: string
+                  x-kubernetes-list-map-keys:
+                    - type
+                  x-kubernetes-list-type: map
+                nextReconcile:
+                  description: |-
+                    nextReconcile is the timestamp that the next reconcile should be made.
+
+                    This exists as we have various polling going in within the challenge
+                    controller with different backoff.
+                  type: string
+                  format: date-time
                 presented:
                   description: |-
                     presented will be set to true if the challenge values for this challenge
@@ -3170,6 +3218,48 @@ spec:
                     Contains human readable information on why the Challenge is in the
                     current state.
                   type: string
+                solver:
+                  description: |-
+                    solver contains the observed status of an ACME challenge solver,
+                    including DNS and HTTP-specific readiness data and general state tracking.
+
+                    This structure is used to track whether a challenge is ready to be submitted
+                    to the ACME server for validation.
+                  type: object
+                  properties:
+                    dns:
+                      description: dns contains status information specific to DNS-01 challenge solving.
+                      type: object
+                      properties:
+                        fqdn:
+                          description: fqdn is the fully qualified domain name of the challenge
+                          type: string
+                        lastSuccess:
+                          description: |-
+                            lastSuccess is the time that the DNS check was successful against the
+                            authoritative nameserver.
+
+                            The check will not pass until lastSuccess + ttl
+                            has been reached to allow for DNSpropagation.
+                          type: string
+                          format: date-time
+                        ttl:
+                          description: ttl is the configured time-to-live of the DNS record used for validation.
+                          type: string
+                    http:
+                      description: http contains status information specific to HTTP-01 challenge solving.
+                      type: object
+                      properties:
+                        requiredSuccesses:
+                          description: |-
+                            requiredSuccesses is the number of successful HTTP requests required
+                            to consider the challenge ready.
+                          type: integer
+                          format: int64
+                        successes:
+                          description: successes is the number of successful HTTP readiness checks observed so far.
+                          type: integer
+                          format: int64
                 state:
                   description: |-
                     Contains the current 'state' of the challenge.
