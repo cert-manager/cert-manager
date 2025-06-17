@@ -234,7 +234,7 @@ enableCertificateOwnerRef: false
 #    kubernetesAPIBurst: 9000
 #    numberOfConcurrentWorkers: 200
 #    enableGatewayAPI: true
-#    # Feature gates as of v1.18.0. Listed with their default values.
+#    # Feature gates as of v1.18.1. Listed with their default values.
 #    # See https://cert-manager.io/docs/cli/controller/
 #    featureGates:
 #      AdditionalCertificateOutputFormats: true # GA - default=true
@@ -251,6 +251,8 @@ enableCertificateOwnerRef: false
 #      UseCertificateRequestBasicConstraints: false # ALPHA - default=false
 #      UseDomainQualifiedFinalizer: true # GA - default=true
 #      ValidateCAA: false # ALPHA - default=false
+#      DefaultPrivateKeyRotationPolicyAlways: true # BETA - default=true
+#      ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
 #    # Configure the metrics server for TLS
 #    # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
 #    metricsTLSConfig:
