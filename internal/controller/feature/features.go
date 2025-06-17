@@ -178,7 +178,7 @@ const (
 	// Beta: v1.18.1
 	//
 	// ACMEHTTP01IngressPathTypeExact will use Ingress pathType `Exact`.
-	// `ACMEHTTP01IngressPathTypeExact` changes the default `pathType`` for ACME
+	// `ACMEHTTP01IngressPathTypeExact` changes the default `pathType` for ACME
 	// HTTP01 Ingress based challenges to `Exact`. This security feature ensures
 	// that the challenge path (which is an exact path) is not misinterpreted as
 	// a regular expression or some other Ingress specific (ImplementationSpecific)
