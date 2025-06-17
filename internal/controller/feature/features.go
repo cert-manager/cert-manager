@@ -212,7 +212,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
 	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
-	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.GA},
+	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
 
 	// NB: Deprecated + removed feature gates are kept here.
 	// `featuregate.Deprecated` exists, but will cause the featuregate library
