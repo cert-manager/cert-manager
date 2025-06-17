@@ -365,6 +365,15 @@ e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml
 # with ingress-shim. For the ingress controller to watch our Ingresses that
 # don't have a class, we pass a --watch-ingress-without-class flag:
 # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
+#
+# Versions of ingress-nginx >=1.8.0 support a strict-validate-path-type
+# configuration option which, when enabled, disallows . (dot) in the path value.
+# This is a bug which makes it impossible to use various legitimate URL paths,
+# including the http://<YOUR_DOMAIN>/.well-known/acme-challenge/<TOKEN> URLs
+# used for ACME HTTP01. To make matters worse, the buggy validation is enabled
+# by default in ingress-nginx >= 1.12.0.
+# We disable it by passing a `--set-string controller.config.strict-validate-path-type=false` flag.
+# https://github.com/kubernetes/ingress-nginx/issues/11176
 .PHONY: e2e-setup-ingressnginx
 e2e-setup-ingressnginx: $(call image-tar,ingressnginx) load-$(call image-tar,ingressnginx) | $(NEEDS_HELM)
 	@$(eval TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
