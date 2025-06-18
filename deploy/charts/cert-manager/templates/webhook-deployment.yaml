@@ -180,11 +180,9 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
-      {{- with .Values.webhook.nodeSelector }}
+      {{- with (coalesce .Values.webhook.nodeSelector .Values.global.nodeSelector) }}
       nodeSelector:
-        {{- range $key, $value := . }}
-        {{ $key }}: {{ $value | quote }}
-        {{- end }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.webhook.affinity }}
       affinity:
