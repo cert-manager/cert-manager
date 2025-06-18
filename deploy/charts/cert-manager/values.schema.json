@@ -698,6 +698,9 @@
         "logLevel": {
           "$ref": "#/$defs/helm-values.global.logLevel"
         },
+        "nodeSelector": {
+          "$ref": "#/$defs/helm-values.global.nodeSelector"
+        },
         "podSecurityPolicy": {
           "$ref": "#/$defs/helm-values.global.podSecurityPolicy"
         },
@@ -762,6 +765,11 @@
       "default": 2,
       "description": "Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.",
       "type": "number"
+    },
+    "helm-values.global.nodeSelector": {
+      "default": {},
+      "description": "Global node selector\n\nThe nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nIf a component-specific nodeSelector is also set, it will take precedence.",
+      "type": "object"
     },
     "helm-values.global.podSecurityPolicy": {
       "properties": {

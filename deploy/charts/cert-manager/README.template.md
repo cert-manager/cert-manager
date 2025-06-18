@@ -93,6 +93,18 @@ For example:
 imagePullSecrets:
   - name: "image-pull-secret"
 ```
+#### **global.nodeSelector** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+Global node selector  
+  
+The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).  
+  
+If a component-specific nodeSelector is also set, it will take precedence.
+
 #### **global.commonLabels** ~ `object`
 > Default value:
 > ```yaml
