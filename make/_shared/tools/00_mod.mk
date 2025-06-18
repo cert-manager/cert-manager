@@ -65,7 +65,7 @@ tools += helm=v3.17.2
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 tools += kubectl=v1.32.3
 # https://github.com/kubernetes-sigs/kind/releases
-tools += kind=v0.27.0
+tools += kind=v0.29.0
 # https://www.vaultproject.io/downloads
 tools += vault=1.19.1
 # https://github.com/Azure/azure-workload-identity/releases
@@ -432,10 +432,10 @@ $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DO
 		$(checkhash_script) $(outfile) $(kubectl_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-kind_linux_amd64_SHA256SUM=a6875aaea358acf0ac07786b1a6755d08fd640f4c79b7a2e46681cc13f49a04b
-kind_linux_arm64_SHA256SUM=5e4507a41c69679562610b1be82ba4f80693a7826f4e9c6e39236169a3e4f9d0
-kind_darwin_amd64_SHA256SUM=3435134325b6b9406ccfec417b13bb46a808fc74e9a2ebb0ca31b379c8293863
-kind_darwin_arm64_SHA256SUM=5240ca1acb587e1d0386532dd8c3373d81f5173b5af322919fc56f0cdd646596
+kind_linux_amd64_SHA256SUM=c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284
+kind_linux_arm64_SHA256SUM=03d45095dbd9cc1689f179a3e5e5da24b77c2d1b257d7645abf1b4174bebcf2a
+kind_darwin_amd64_SHA256SUM=3eb0d4de25b854f34ea8ce8a3cbe15054fc03bc962b03e96fd10664b829fb6ed
+kind_darwin_arm64_SHA256SUM=314d8f1428842fd1ba2110fd0052a0f0b3ab5773ab1bdcdad1ff036e913310c9
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
