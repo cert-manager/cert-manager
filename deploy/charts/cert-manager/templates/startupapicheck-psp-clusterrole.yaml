@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.startupapicheck.enabled }}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 kind: ClusterRole
@@ -20,5 +21,6 @@ rules:
   verbs:     ['use']
   resourceNames:
   - {{ template "startupapicheck.fullname" . }}
+{{- end }}
 {{- end }}
 {{- end }}
