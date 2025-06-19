@@ -302,7 +302,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 				return nil, err
 			}
 			nameConstraints.PermittedEmailAddresses = crt.Spec.NameConstraints.Permitted.EmailAddresses
-			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
+			nameConstraints.PermittedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
 		}
 
 		if crt.Spec.NameConstraints.Excluded != nil {
