@@ -21,10 +21,12 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	clocktesting "k8s.io/utils/clock/testing"
 
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -35,6 +37,11 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
+)
+
+var (
+	fixedClockStart = time.Now()
+	fixedClock      = clocktesting.NewFakeClock(fixedClockStart)
 )
 
 // Present the challenge value with the given solver.
@@ -323,6 +330,22 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
+							gen.SetChallengeConditions([]cmacme.ChallengeCondition{
+								{
+									Type:               cmacme.ChallengeConditionTypePresented,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Presented",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Presented challenge using HTTP-01 challenge mechanism",
+								},
+								{
+									Type:               cmacme.ChallengeConditionTypeSolved,
+									Status:             cmmeta.ConditionFalse,
+									Reason:             "SolveError",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Waiting for HTTP-01 challenge propagation: some error",
+								},
+							}),
 						))),
 				},
 				ExpectedEvents: []string{
@@ -369,6 +392,22 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Successfully authorized domain"),
+							gen.SetChallengeConditions([]cmacme.ChallengeCondition{
+								{
+									Type:               cmacme.ChallengeConditionTypeSolved,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Solved",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Solved challenge using HTTP-01 mechanism",
+								},
+								{
+									Type:               cmacme.ChallengeConditionTypeAccepted,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Accepted",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Accepted challenge with ACME server",
+								},
+							}),
 						))),
 				},
 				ExpectedEvents: []string{
@@ -383,6 +422,9 @@ func TestSyncHappyPath(t *testing.T) {
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
+				},
+				FakeCheckAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
 					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
 				},
 			},
@@ -422,6 +464,22 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: an error happened"),
+							gen.SetChallengeConditions([]cmacme.ChallengeCondition{
+								{
+									Type:               cmacme.ChallengeConditionTypeSolved,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Solved",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Solved challenge using HTTP-01 mechanism",
+								},
+								{
+									Type:               cmacme.ChallengeConditionTypeAccepted,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Accepted",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Accepted challenge with ACME server",
+								},
+							}),
 						))),
 				},
 				ExpectedEvents: []string{
@@ -437,6 +495,18 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
 					return nil, &acmeapi.AuthorizationError{
+						Status:     acmeapi.StatusInvalid,
+						URI:        "http://testerroruri",
+						Identifier: "example.com",
+						Errors: []error{
+							fmt.Errorf("an error happened"),
+						},
+					}
+				},
+
+				FakeCheckAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, &acmeapi.AuthorizationError{
+						Status:     acmeapi.StatusInvalid,
 						URI:        "http://testerroruri",
 						Identifier: "example.com",
 						Errors: []error{
@@ -481,6 +551,22 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error"),
+							gen.SetChallengeConditions([]cmacme.ChallengeCondition{
+								{
+									Type:               cmacme.ChallengeConditionTypeSolved,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Solved",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Solved challenge using HTTP-01 mechanism",
+								},
+								{
+									Type:               cmacme.ChallengeConditionTypeAccepted,
+									Status:             cmmeta.ConditionTrue,
+									Reason:             "Accepted",
+									LastTransitionTime: &metav1.Time{Time: fixedClockStart},
+									Message:            "Accepted challenge with ACME server",
+								},
+							}),
 						))),
 				},
 				ExpectedEvents: []string{
@@ -496,6 +582,21 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
 					return nil, &acmeapi.AuthorizationError{
+						Status:     acmeapi.StatusInvalid,
+						URI:        "http://testerroruri",
+						Identifier: "example.com",
+						Errors: []error{
+							&acmeapi.Error{
+								StatusCode:  400,
+								ProblemType: "fakeerror",
+								Detail:      "this is a very detailed error",
+							},
+						},
+					}
+				},
+				FakeCheckAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, &acmeapi.AuthorizationError{
+						Status:     acmeapi.StatusInvalid,
 						URI:        "http://testerroruri",
 						Identifier: "example.com",
 						Errors: []error{
@@ -589,6 +690,8 @@ func TestSyncHappyPath(t *testing.T) {
 }
 
 func runTest(t *testing.T, test testT) {
+	fixedClock.SetTime(fixedClockStart)
+	test.builder.Clock = fixedClock
 	test.builder.T = t
 	test.builder.Init()
 	defer test.builder.Stop()
