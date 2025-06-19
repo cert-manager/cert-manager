@@ -202,19 +202,19 @@ func TestFindZoneByFqdn(t *testing.T) {
 			// climbing up the tree when a non-existent domain is found. We do
 			// this because the `_acme-challenge` subdomain may not exist yet,
 			// but we still want to find the zone for the domain.
-			givenFQDN:  "foo.google.com.",
-			expectZone: "google.com.",
+			givenFQDN:  "nonexistent.cert-manager.io.",
+			expectZone: "cert-manager.io.",
 			mockDNS: []interaction{
-				{"SOA foo.google.com.", &dns.Msg{
+				{"SOA nonexistent.cert-manager.io.", &dns.Msg{
 					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}, // NXDOMAIN
 					Ns: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 21}, Ns: "ns1.google.com.", Mbox: "dns-admin.google.com.", Serial: 754576681, Refresh: 900, Retry: 900, Expire: 1800, Minttl: 60},
+						&dns.SOA{Hdr: dns.RR_Header{Name: "cert-manager.io.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 21}, Ns: "ns-cloud-a1.googledomains.com.", Mbox: "cloud-dns-hostmaster.google.com.", Serial: 2, Refresh: 21600, Retry: 3600, Expire: 259200, Minttl: 300},
 					},
 				}},
-				{"SOA google.com.", &dns.Msg{
+				{"SOA cert-manager.io.", &dns.Msg{
 					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
 					Answer: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 31}, Ns: "ns1.google.com.", Mbox: "dns-admin.google.com.", Serial: 754576681, Refresh: 900, Retry: 900, Expire: 1800, Minttl: 60},
+						&dns.SOA{Hdr: dns.RR_Header{Name: "cert-manager.io.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 31}, Ns: "ns-cloud-a1.googledomains.com.", Mbox: "cloud-dns-hostmaster.google.com.", Serial: 2, Refresh: 21600, Retry: 3600, Expire: 259200, Minttl: 300},
 					},
 				}},
 			},
