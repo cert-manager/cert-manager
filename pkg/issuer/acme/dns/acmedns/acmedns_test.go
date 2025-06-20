@@ -17,7 +17,6 @@ limitations under the License.
 package acmedns
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -47,7 +46,7 @@ func TestValidJsonAccount(t *testing.T) {
         "domain": {
             "fulldomain": "fooldom",
             "password": "secret",
-            "subdomain": "subdoom",
+            "subdomain": "subdom",
             "username": "usernom"
         }
     }`)
@@ -76,6 +75,6 @@ func TestLiveAcmeDnsPresent(t *testing.T) {
 	assert.NoError(t, err)
 
 	// ACME-DNS requires 43 character keys or it throws a bad TXT error
-	err = provider.Present(context.TODO(), acmednsDomain, "", "LG3tptA6W7T1vw4ujbmDxH2lLu6r8TUIqLZD3pzPmgE")
+	err = provider.Present(t.Context(), acmednsDomain, "", "LG3tptA6W7T1vw4ujbmDxH2lLu6r8TUIqLZD3pzPmgE")
 	assert.NoError(t, err)
 }

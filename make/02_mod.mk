@@ -35,6 +35,7 @@ include make/licenses.mk
 include make/e2e-setup.mk
 include make/scan.mk
 include make/ko.mk
+include make/third_party.mk
 
 .PHONY: tidy
 tidy: generate-go-mod-tidy

@@ -36,10 +36,10 @@ const maxClockSkew = 5 * time.Minute
 //
 // A clock skew can be caused by:
 //  1. The system clock being adjusted
-//     -> this eg. happens when ntp adjusts the system clock
-//  2. Pausing the process (e.g. with SIGSTOP)
+//     -> this, e.g., happens when ntp adjusts the system clock
+//  2. Pausing the process (e.g., with SIGSTOP)
 //     -> the monotonic clock will stop, but the system clock will continue
-//     -> this eg. happens when you pause a VM/ hibernate a laptop
+//     -> this, e.g., happens when you pause a VM/ hibernate a laptop
 //
 // Small clock skews of < 5m are allowed, because they can happen when the system clock is
 // adjusted. However, we do compound the clock skew over time, so that if the clock skew

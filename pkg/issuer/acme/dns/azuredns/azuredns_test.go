@@ -9,7 +9,6 @@ this directory.
 package azuredns
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -65,7 +64,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -76,9 +75,9 @@ func TestLiveAzureDnsPresentMultiple(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
-	err = provider.Present(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -92,7 +91,7 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -106,9 +105,9 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
-	err = provider.CleanUp(context.TODO(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
+	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -132,10 +131,10 @@ func TestAuthenticationError(t *testing.T) {
 	provider, err := NewDNSProviderCredentials("", "invalid-client-id", "invalid-client-secret", "subid", "tenid", "rg", "example.com", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
-	err = provider.Present(context.TODO(), "example.com", "_acme-challenge.example.com.", "123d==")
+	err = provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
 	assert.Error(t, err)
 
-	err = provider.CleanUp(context.TODO(), "example.com", "_acme-challenge.example.com.", "123d==")
+	err = provider.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
 	assert.Error(t, err)
 }
 
@@ -158,11 +157,10 @@ func populateFederatedToken(t *testing.T, filename string, content string) {
 
 func TestGetAuthorizationFederatedSPT(t *testing.T) {
 	// Create a file that will be used to store a federated token
-	f, err := os.CreateTemp("", "")
+	f, err := os.CreateTemp(t.TempDir(), "")
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	defer os.Remove(f.Name())
 
 	// Close the file to simplify logic within populateFederatedToken helper
 	if err := f.Close(); err != nil {
@@ -201,8 +199,8 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
 
 				w.Header().Set("Content-Type", "application/json")
 				openidConfiguration := map[string]string{
@@ -224,8 +222,11 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			receivedFederatedToken := r.FormValue("client_assertion")
-			accessToken := map[string]string{
+			accessToken := map[string]any{
 				"access_token": tokens[receivedFederatedToken],
+				// the Azure SDK will not use tokens that are within 5 minutes of their expiration
+				// so "expires_on": time.Now().Add(4 * time.Minute) would work too
+				"expires_on": time.Now().Add(-1 * time.Second),
 			}
 
 			if err := json.NewEncoder(w).Encode(accessToken); err != nil {
@@ -251,16 +252,21 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 
 		for federatedToken, accessToken := range tokens {
 			populateFederatedToken(t, f.Name(), federatedToken)
-			token, err := spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+			token, err := spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 			assert.NoError(t, err)
 			assert.Equal(t, accessToken, token.Token, "Access token should have been set to a value returned by the webserver")
 
-			// Overwrite the expires field to force the token to be re-read.
-			newExpires := time.Now().Add(-1 * time.Second)
-			v := reflect.ValueOf(spt.(*azidentity.WorkloadIdentityCredential)).Elem()
-			expiresField := v.FieldByName("expires")
-			reflect.NewAt(expiresField.Type(), expiresField.Addr().UnsafePointer()).
-				Elem().Set(reflect.ValueOf(newExpires))
+			// Overwrite the expires field to force the token to be re-read from disk.
+			// Also, we set expires_on such that the token we got from the API has expired
+			// already too.
+			expiresField := reflect.
+				ValueOf(spt.(*azidentity.WorkloadIdentityCredential)).
+				Elem().
+				FieldByName("expires")
+			reflect.
+				NewAt(expiresField.Type(), expiresField.Addr().UnsafePointer()).
+				Elem().
+				Set(reflect.ValueOf(time.Now().Add(-1 * time.Second)))
 		}
 	})
 
@@ -268,8 +274,8 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
 
 				w.Header().Set("Content-Type", "application/json")
 				openidConfiguration := map[string]string{
@@ -290,8 +296,9 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			accessToken := map[string]string{
+			accessToken := map[string]any{
 				"access_token": "abc",
+				"expires_in":   500,
 			}
 
 			if err := json.NewEncoder(w).Encode(accessToken); err != nil {
@@ -313,7 +320,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
 		assert.NoError(t, err)
 
-		token, err := spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+		token, err := spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token.Token, "Access token should have been set to a value returned by the webserver")
 	})
@@ -329,8 +336,8 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.RequestURI, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.RequestURI, "/.well-known/openid-configuration")
+			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
+				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
 
 				w.Header().Set("Content-Type", "application/json")
 				openidConfiguration := map[string]string{
@@ -364,7 +371,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
 		assert.NoError(t, err)
 
-		_, err = spt.GetToken(context.TODO(), policy.TokenRequestOptions{Scopes: []string{"test"}})
+		_, err = spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
 		err = stabilizeError(err)
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, fmt.Sprintf(`authentication failed:
@@ -413,7 +420,7 @@ func TestStabilizeResponseError(t *testing.T) {
 		zoneClient:        zc,
 	}
 
-	err = dnsProvider.Present(context.TODO(), "test.com", "fqdn.test.com.", "test123")
+	err = dnsProvider.Present(t.Context(), "test.com", "fqdn.test.com.", "test123")
 	require.Error(t, err)
 	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: request error:
 GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com

@@ -18,13 +18,15 @@ package issuer
 
 import (
 	"context"
+
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type Interface interface {
-	// Setup initialises the issuer. This may include registering accounts with
+	// Setup initializes the issuer. This may include registering accounts with
 	// a service, creating a CA and storing it somewhere, or verifying
 	// credentials and authorization with a remote server.
-	Setup(ctx context.Context) error
+	Setup(ctx context.Context, issuer v1.GenericIssuer) error
 }
 
 type IssueResponse struct {

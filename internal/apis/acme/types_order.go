@@ -74,6 +74,11 @@ type OrderSpec struct {
 	// Duration is the duration for the not after date for the requested certificate.
 	// this is set on order creation as pe the ACME spec.
 	Duration *metav1.Duration
+
+	// Profile allows requesting a certificate profile from the ACME server.
+	// Supported profiles are listed by the server's ACME directory URL.
+	// +optional
+	Profile string `json:"profile,omitempty"`
 }
 
 type OrderStatus struct {
@@ -158,7 +163,7 @@ type ACMEChallenge struct {
 	// This is used to compute the 'key' that must also be presented.
 	Token string
 
-	// Type is the type of challenge being offered, e.g. 'http-01', 'dns-01',
+	// Type is the type of challenge being offered, e.g., 'http-01', 'dns-01',
 	// 'tls-sni-01', etc.
 	// This is the raw value retrieved from the ACME server.
 	// Only 'http-01' and 'dns-01' are supported by cert-manager, other values

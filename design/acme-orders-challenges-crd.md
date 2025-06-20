@@ -86,7 +86,7 @@ type OrderSpec struct {
 	// CommonName is the common name as specified on the DER encoded CSR.
 	// If CommonName is not specified, the first DNSName specified will be used
 	// as the CommonName.
-	// At least on of CommonName or a DNSName must be set.
+	// At least one of CommonName or a DNSName must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
 	CommonName string `json:"commonName,omitempty"`
 
@@ -94,7 +94,7 @@ type OrderSpec struct {
 	// validation process.
 	// If CommonName is not specified, the first DNSName specified will be used
 	// as the CommonName.
-	// At least on of CommonName or a DNSName must be set.
+	// At least one of CommonName or a DNSName must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
 	DNSNames []string `json:"dnsNames,omitempty"`
 
@@ -224,7 +224,7 @@ type ChallengeSpec struct {
 	// challenge is a part of.
 	AuthzURL string `json:"authzURL"`
 
-	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
+	// Type is the type of ACME challenge this resource represents, e.g., "dns01"
 	// or "http01"
 	Type string `json:"type"`
 
@@ -232,7 +232,7 @@ type ChallengeSpec struct {
 	// This can be used to lookup details about the status of this challenge.
 	URL string `json:"url"`
 
-	// DNSName is the identifier that this challenge is for, e.g. example.com.
+	// DNSName is the identifier that this challenge is for, e.g., example.com.
 	DNSName string `json:"dnsName"`
 
 	// Token is the ACME challenge token for this challenge.
@@ -409,7 +409,7 @@ creating resources in order to solve http01 challenges).
 * keeping the `status` field up to date with details of the challenge so that
 the Order controller can make decisions based on the state of challenges.
 
-One area to highlight, is the behaviour of the Challenge controller wrt. challenges
+One area to highlight, is the behaviour of the Challenge controller w.r.t. challenges
 vs authorizations.
 
 Whilst this controller works with a single ACME *Challenge* only, in order to
@@ -438,7 +438,7 @@ to review.
 
 ## Risks & mitigations
 
-#### Introducing new resource types creates more cognitive overhead for users, and a steeper 'on-boarding' curve wrt debugging issues.
+#### Introducing new resource types creates more cognitive overhead for users, and a steeper 'on-boarding' curve w.r.t. debugging issues.
 
 This is mitigated by:
 
@@ -451,7 +451,7 @@ Order & Challenge.
 * The 'order' controller can aggregate failure reasons from the 'challenge'
 resources it is managing in a similar way.
 * We can also include debugging information on the Certificate resource itself,
-e.g. storing messages such as `You can get more information about why this order
+e.g., storing messages such as `You can get more information about why this order
 failed by running 'kubectl describe order -n <namespace> <order-name>'
 
 ## Alternatives considered

@@ -143,6 +143,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 
 	fs.StringSliceVar(&c.IngressShimConfig.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", c.IngressShimConfig.DefaultAutoCertificateAnnotations, ""+
 		"The annotation consumed by the ingress-shim controller to indicate an ingress is requesting a certificate")
+	fs.StringSliceVar(&c.IngressShimConfig.ExtraCertificateAnnotations, "extra-certificate-annotations", []string{}, ""+
+		"Extra annotation to be added by the ingress-shim controller to certificate object")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerName, "default-issuer-name", c.IngressShimConfig.DefaultIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
 	fs.StringVar(&c.IngressShimConfig.DefaultIssuerKind, "default-issuer-kind", c.IngressShimConfig.DefaultIssuerKind, ""+
@@ -174,7 +176,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"feature gate must also be enabled (default as of 1.15).")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
-		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
@@ -249,8 +251,6 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(defaults.DefaultEnabledControllers...)
 	}
 
-	enabled = enabled.Delete(disabled...)
-
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
 		logf.Log.Info("enabling all experimental certificatesigningrequest controllers")
 		enabled = enabled.Insert(defaults.ExperimentalCertificateSigningRequestControllers...)
@@ -262,8 +262,18 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
-		logf.Log.Info("the ValidateCAA feature flag is scheduled for removal in v1.18 and will become a no-op")
+		logf.Log.Info("the ValidateCAA feature flag has been removed and is now a no-op")
 	}
+
+	// If running namespaced, remove all cluster-scoped controllers.
+	if o.Namespace != "" {
+		logf.Log.Info("disabling all cluster-scoped controllers as cert-manager is scoped to a single namespace",
+			"controllers", strings.Join(defaults.ClusterScopedControllers, ", "))
+		enabled = enabled.Delete(defaults.ClusterScopedControllers...)
+	}
+
+	// Only after all controllers have been added, remove the disabled ones.
+	enabled = enabled.Delete(disabled...)
 
 	return enabled
 }

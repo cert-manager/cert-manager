@@ -166,7 +166,7 @@ func TestPathologicalInput(t *testing.T) {
 }
 
 func BenchmarkPathologicalInput(b *testing.B) {
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		testPathologicalInternal(b)
 	}
 }

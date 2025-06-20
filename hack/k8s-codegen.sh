@@ -197,7 +197,6 @@ gen-conversions() {
   "$conversiongen" \
       --go-header-file hack/boilerplate-go.txt \
       --extra-peer-dirs "$( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" )" \
-      --extra-dirs "$( IFS=$','; echo "${CONVERSION_PKGS[*]}" )" \
       --output-file zz_generated.conversion.go \
       "${CONVERSION_PKGS[@]}"
 }

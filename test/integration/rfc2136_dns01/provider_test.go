@@ -17,10 +17,9 @@ limitations under the License.
 package rfc2136
 
 import (
-	"context"
 	"testing"
 
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -31,7 +30,7 @@ import (
 )
 
 func TestRunSuiteWithTSIG(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:             t,
 		Zones:         []string{rfc2136TestZone},
@@ -75,7 +74,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 }
 
 func TestRunSuiteNoTSIG(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:     t,
 		Zones: []string{rfc2136TestZone},

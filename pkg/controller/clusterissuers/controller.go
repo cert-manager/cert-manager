@@ -57,7 +57,7 @@ type controller struct {
 	issuerFactory issuer.Factory
 
 	// clusterResourceNamespace is the namespace used to store resources
-	// referenced by ClusterIssuer resources, e.g. acme account secrets
+	// referenced by ClusterIssuer resources, e.g., acme account secrets
 	clusterResourceNamespace string
 
 	// fieldManager is the manager name used for the Apply operations.
@@ -141,13 +141,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	name := key.Name
 
 	issuer, err := c.clusterIssuerLister.Get(name)
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "clusterissuer in work queue no longer exists")
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if issuer == nil || issuer.DeletionTimestamp != nil {
+		// If the ClusterIssuer object was/ is being deleted, we don't want to update its status.
+		return nil
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, issuer))

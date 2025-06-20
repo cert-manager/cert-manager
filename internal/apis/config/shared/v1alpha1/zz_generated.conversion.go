@@ -26,7 +26,7 @@ import (
 	unsafe "unsafe"
 
 	shared "github.com/cert-manager/cert-manager/internal/apis/config/shared"
-	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -39,23 +39,23 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.DynamicServingConfig)(nil), (*shared.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(a.(*v1alpha1.DynamicServingConfig), b.(*shared.DynamicServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*sharedv1alpha1.DynamicServingConfig)(nil), (*shared.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(a.(*sharedv1alpha1.DynamicServingConfig), b.(*shared.DynamicServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*shared.DynamicServingConfig)(nil), (*v1alpha1.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(a.(*shared.DynamicServingConfig), b.(*v1alpha1.DynamicServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*shared.DynamicServingConfig)(nil), (*sharedv1alpha1.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(a.(*shared.DynamicServingConfig), b.(*sharedv1alpha1.DynamicServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.FilesystemServingConfig)(nil), (*shared.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(a.(*v1alpha1.FilesystemServingConfig), b.(*shared.FilesystemServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*sharedv1alpha1.FilesystemServingConfig)(nil), (*shared.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(a.(*sharedv1alpha1.FilesystemServingConfig), b.(*shared.FilesystemServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*shared.FilesystemServingConfig)(nil), (*v1alpha1.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(a.(*shared.FilesystemServingConfig), b.(*v1alpha1.FilesystemServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*shared.FilesystemServingConfig)(nil), (*sharedv1alpha1.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(a.(*shared.FilesystemServingConfig), b.(*sharedv1alpha1.FilesystemServingConfig), scope)
 	}); err != nil {
 		return err
 	}
@@ -69,8 +69,8 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((**v1alpha1.Duration)(nil), (*time.Duration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_Pointer_v1alpha1_Duration_To_time_Duration(a.(**v1alpha1.Duration), b.(*time.Duration), scope)
+	if err := s.AddConversionFunc((**sharedv1alpha1.Duration)(nil), (*time.Duration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_Pointer_v1alpha1_Duration_To_time_Duration(a.(**sharedv1alpha1.Duration), b.(*time.Duration), scope)
 	}); err != nil {
 		return err
 	}
@@ -84,35 +84,35 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*shared.LeaderElectionConfig)(nil), (*v1alpha1.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(a.(*shared.LeaderElectionConfig), b.(*v1alpha1.LeaderElectionConfig), scope)
+	if err := s.AddConversionFunc((*shared.LeaderElectionConfig)(nil), (*sharedv1alpha1.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(a.(*shared.LeaderElectionConfig), b.(*sharedv1alpha1.LeaderElectionConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*shared.TLSConfig)(nil), (*v1alpha1.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_shared_TLSConfig_To_v1alpha1_TLSConfig(a.(*shared.TLSConfig), b.(*v1alpha1.TLSConfig), scope)
+	if err := s.AddConversionFunc((*shared.TLSConfig)(nil), (*sharedv1alpha1.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_shared_TLSConfig_To_v1alpha1_TLSConfig(a.(*shared.TLSConfig), b.(*sharedv1alpha1.TLSConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*time.Duration)(nil), (**v1alpha1.Duration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_time_Duration_To_Pointer_v1alpha1_Duration(a.(*time.Duration), b.(**v1alpha1.Duration), scope)
+	if err := s.AddConversionFunc((*time.Duration)(nil), (**sharedv1alpha1.Duration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_time_Duration_To_Pointer_v1alpha1_Duration(a.(*time.Duration), b.(**sharedv1alpha1.Duration), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha1.LeaderElectionConfig)(nil), (*shared.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(a.(*v1alpha1.LeaderElectionConfig), b.(*shared.LeaderElectionConfig), scope)
+	if err := s.AddConversionFunc((*sharedv1alpha1.LeaderElectionConfig)(nil), (*shared.LeaderElectionConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(a.(*sharedv1alpha1.LeaderElectionConfig), b.(*shared.LeaderElectionConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha1.TLSConfig)(nil), (*shared.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_TLSConfig_To_shared_TLSConfig(a.(*v1alpha1.TLSConfig), b.(*shared.TLSConfig), scope)
+	if err := s.AddConversionFunc((*sharedv1alpha1.TLSConfig)(nil), (*shared.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_TLSConfig_To_shared_TLSConfig(a.(*sharedv1alpha1.TLSConfig), b.(*shared.TLSConfig), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in *v1alpha1.DynamicServingConfig, out *shared.DynamicServingConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in *sharedv1alpha1.DynamicServingConfig, out *shared.DynamicServingConfig, s conversion.Scope) error {
 	out.SecretNamespace = in.SecretNamespace
 	out.SecretName = in.SecretName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
@@ -123,11 +123,11 @@ func autoConvert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in
 }
 
 // Convert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig is an autogenerated conversion function.
-func Convert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in *v1alpha1.DynamicServingConfig, out *shared.DynamicServingConfig, s conversion.Scope) error {
+func Convert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in *sharedv1alpha1.DynamicServingConfig, out *shared.DynamicServingConfig, s conversion.Scope) error {
 	return autoConvert_v1alpha1_DynamicServingConfig_To_shared_DynamicServingConfig(in, out, s)
 }
 
-func autoConvert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *shared.DynamicServingConfig, out *v1alpha1.DynamicServingConfig, s conversion.Scope) error {
+func autoConvert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *shared.DynamicServingConfig, out *sharedv1alpha1.DynamicServingConfig, s conversion.Scope) error {
 	out.SecretNamespace = in.SecretNamespace
 	out.SecretName = in.SecretName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
@@ -138,33 +138,33 @@ func autoConvert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in
 }
 
 // Convert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig is an autogenerated conversion function.
-func Convert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *shared.DynamicServingConfig, out *v1alpha1.DynamicServingConfig, s conversion.Scope) error {
+func Convert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *shared.DynamicServingConfig, out *sharedv1alpha1.DynamicServingConfig, s conversion.Scope) error {
 	return autoConvert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in, out, s)
 }
 
-func autoConvert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(in *v1alpha1.FilesystemServingConfig, out *shared.FilesystemServingConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(in *sharedv1alpha1.FilesystemServingConfig, out *shared.FilesystemServingConfig, s conversion.Scope) error {
 	out.CertFile = in.CertFile
 	out.KeyFile = in.KeyFile
 	return nil
 }
 
 // Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig is an autogenerated conversion function.
-func Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(in *v1alpha1.FilesystemServingConfig, out *shared.FilesystemServingConfig, s conversion.Scope) error {
+func Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(in *sharedv1alpha1.FilesystemServingConfig, out *shared.FilesystemServingConfig, s conversion.Scope) error {
 	return autoConvert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(in, out, s)
 }
 
-func autoConvert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *shared.FilesystemServingConfig, out *v1alpha1.FilesystemServingConfig, s conversion.Scope) error {
+func autoConvert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *shared.FilesystemServingConfig, out *sharedv1alpha1.FilesystemServingConfig, s conversion.Scope) error {
 	out.CertFile = in.CertFile
 	out.KeyFile = in.KeyFile
 	return nil
 }
 
 // Convert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig is an autogenerated conversion function.
-func Convert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *shared.FilesystemServingConfig, out *v1alpha1.FilesystemServingConfig, s conversion.Scope) error {
+func Convert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *shared.FilesystemServingConfig, out *sharedv1alpha1.FilesystemServingConfig, s conversion.Scope) error {
 	return autoConvert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in, out, s)
 }
 
-func autoConvert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(in *v1alpha1.LeaderElectionConfig, out *shared.LeaderElectionConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(in *sharedv1alpha1.LeaderElectionConfig, out *shared.LeaderElectionConfig, s conversion.Scope) error {
 	if err := v1.Convert_Pointer_bool_To_bool(&in.Enabled, &out.Enabled, s); err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func autoConvert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(in
 	return nil
 }
 
-func autoConvert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *shared.LeaderElectionConfig, out *v1alpha1.LeaderElectionConfig, s conversion.Scope) error {
+func autoConvert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in *shared.LeaderElectionConfig, out *sharedv1alpha1.LeaderElectionConfig, s conversion.Scope) error {
 	if err := v1.Convert_bool_To_Pointer_bool(&in.Enabled, &out.Enabled, s); err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func autoConvert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(in
 	return nil
 }
 
-func autoConvert_v1alpha1_TLSConfig_To_shared_TLSConfig(in *v1alpha1.TLSConfig, out *shared.TLSConfig, s conversion.Scope) error {
+func autoConvert_v1alpha1_TLSConfig_To_shared_TLSConfig(in *sharedv1alpha1.TLSConfig, out *shared.TLSConfig, s conversion.Scope) error {
 	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
 	out.MinTLSVersion = in.MinTLSVersion
 	if err := Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
@@ -210,7 +210,7 @@ func autoConvert_v1alpha1_TLSConfig_To_shared_TLSConfig(in *v1alpha1.TLSConfig, 
 	return nil
 }
 
-func autoConvert_shared_TLSConfig_To_v1alpha1_TLSConfig(in *shared.TLSConfig, out *v1alpha1.TLSConfig, s conversion.Scope) error {
+func autoConvert_shared_TLSConfig_To_v1alpha1_TLSConfig(in *shared.TLSConfig, out *sharedv1alpha1.TLSConfig, s conversion.Scope) error {
 	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
 	out.MinTLSVersion = in.MinTLSVersion
 	if err := Convert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {

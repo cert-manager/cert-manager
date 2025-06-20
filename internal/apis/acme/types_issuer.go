@@ -45,7 +45,7 @@ type ACMEIssuer struct {
 	// PreferredChain is the chain to use if the ACME server outputs multiple.
 	// PreferredChain is no guarantee that this one gets delivered by the ACME
 	// endpoint.
-	// For example, for Let's Encrypt's DST crosssign you would use:
+	// For example, for Let's Encrypt's DST cross-sign you would use:
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	PreferredChain string
 
@@ -102,6 +102,10 @@ type ACMEIssuer struct {
 	// it, it will create an error on the Order.
 	// Defaults to false.
 	EnableDurationFeature bool
+
+	// Profile allows requesting a certificate profile from the ACME server.
+	// Supported profiles are listed by the server's ACME directory URL.
+	Profile string `json:"profile,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
@@ -148,7 +152,7 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the HTTP01 challenge flow.
 	// It is not possible to obtain certificates for wildcard domain names
-	// (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
+	// (e.g., `*.example.com`) using the HTTP01 challenge mechanism.
 	HTTP01 *ACMEChallengeSolverHTTP01
 
 	// Configures cert-manager to attempt to complete authorizations by
@@ -673,14 +677,14 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 
 	// The name of the solver to use, as defined in the webhook provider
 	// implementation.
-	// This will typically be the name of the provider, e.g. 'cloudflare'.
+	// This will typically be the name of the provider, e.g., 'cloudflare'.
 	SolverName string
 
 	// Additional configuration that should be passed to the webhook apiserver
 	// when challenges are processed.
 	// This can contain arbitrary JSON data.
 	// Secret values should not be specified in this stanza.
-	// If secret values are needed (e.g. credentials for a DNS service), you
+	// If secret values are needed (e.g., credentials for a DNS service), you
 	// should use a SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.

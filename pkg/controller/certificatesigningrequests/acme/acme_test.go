@@ -17,7 +17,6 @@ limitations under the License.
 package acme
 
 import (
-	"context"
 	"crypto/x509"
 	"reflect"
 	"testing"
@@ -93,7 +92,7 @@ func Test_controllerBuilder(t *testing.T) {
 					gen.SetOrderOwnerReference(*metav1.NewControllerRef(baseCSR, certificatesigningrequestGVK)),
 					gen.SetOrderURL("update"),
 				)
-				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(context.TODO(), order, metav1.UpdateOptions{})
+				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(t.Context(), order, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
 			expectRequeueKey: types.NamespacedName{
@@ -109,7 +108,7 @@ func Test_controllerBuilder(t *testing.T) {
 				order := gen.OrderFrom(baseOrder,
 					gen.SetOrderURL("update"),
 				)
-				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(context.TODO(), order, metav1.UpdateOptions{})
+				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(t.Context(), order, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
 			expectRequeueKey: types.NamespacedName{},
@@ -121,7 +120,7 @@ func Test_controllerBuilder(t *testing.T) {
 				csr := gen.CertificateSigningRequestFrom(baseCSR,
 					gen.SetCertificateSigningRequestCertificate([]byte("update")),
 				)
-				_, err := kubeclient.CertificatesV1().CertificateSigningRequests().UpdateStatus(context.TODO(), csr, metav1.UpdateOptions{})
+				_, err := kubeclient.CertificatesV1().CertificateSigningRequests().UpdateStatus(t.Context(), csr, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
 			expectRequeueKey: types.NamespacedName{
@@ -927,7 +926,7 @@ func Test_ProcessItem(t *testing.T) {
 
 			test.builder.Start()
 
-			err := controller.ProcessItem(context.Background(), types.NamespacedName{
+			err := controller.ProcessItem(t.Context(), types.NamespacedName{
 				Name: test.csr.Name,
 			})
 			if (err != nil) != test.expectedErr {

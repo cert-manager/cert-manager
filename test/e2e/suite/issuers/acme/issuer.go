@@ -18,7 +18,6 @@ package acme
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -278,11 +277,13 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 		var (
 			secretName = "test-secret"
-			keyID      = "kid-1"
-			key        = "kid-secret-1"
+			// Must match the keyID and key in the Pebble config. See:
+			// config.json in make/config/pebble/templates/configmaps.yaml
+			keyID = "kid-1"
+			key   = "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"
 		)
 
-		keyBytes := []byte(base64.RawURLEncoding.EncodeToString([]byte(key)))
+		keyBytes := []byte(key)
 		s := gen.Secret(secretName,
 			gen.SetSecretNamespace(f.Namespace.Name),
 			gen.SetSecretData(map[string][]byte{

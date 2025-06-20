@@ -17,7 +17,6 @@ limitations under the License.
 package issuers
 
 import (
-	"context"
 	"reflect"
 	"runtime/debug"
 	"testing"
@@ -64,7 +63,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	originalIssuer := newFakeIssuerWithStatus("test", v1.IssuerStatus{})
 
-	issuer, err := cmClient.CertmanagerV1().Issuers("testns").Create(context.TODO(), originalIssuer, metav1.CreateOptions{})
+	issuer, err := cmClient.CertmanagerV1().Issuers("testns").Create(t.Context(), originalIssuer, metav1.CreateOptions{})
 	assertErrIsNil(t, fatalf, err)
 
 	assertNumberOfActions(t, fatalf, filter(cmClient.Actions()), 1)
@@ -80,7 +79,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	issuerCopy := issuer.DeepCopy()
 	issuerCopy.Status = newStatus
-	err = c.updateIssuerStatus(context.TODO(), issuer, issuerCopy)
+	err = c.updateIssuerStatus(t.Context(), issuer, issuerCopy)
 	assertErrIsNil(t, fatalf, err)
 
 	actions := filter(cmClient.Actions())

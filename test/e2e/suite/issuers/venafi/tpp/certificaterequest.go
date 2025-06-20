@@ -29,6 +29,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -83,8 +84,13 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 
 		dnsNames := []string{rand.String(10) + ".venafi-e2e.example"}
 
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, f.Namespace.Name, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
+		csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName(dnsNames[0]), gen.SetCSRDNSNames(dnsNames...))
 		Expect(err).NotTo(HaveOccurred())
+		cr := gen.CertificateRequest(certificateRequestName,
+			gen.SetCertificateRequestNamespace(f.Namespace.Name),
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: cmapi.IssuerKind, Name: issuer.Name}),
+			gen.SetCertificateRequestCSR(csr),
+		)
 
 		By("Creating a CertificateRequest")
 		_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})

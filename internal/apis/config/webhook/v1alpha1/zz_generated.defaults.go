@@ -23,7 +23,7 @@ package v1alpha1
 
 import (
 	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
-	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	webhookv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -31,11 +31,13 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&v1alpha1.WebhookConfiguration{}, func(obj interface{}) { SetObjectDefaults_WebhookConfiguration(obj.(*v1alpha1.WebhookConfiguration)) })
+	scheme.AddTypeDefaultingFunc(&webhookv1alpha1.WebhookConfiguration{}, func(obj interface{}) {
+		SetObjectDefaults_WebhookConfiguration(obj.(*webhookv1alpha1.WebhookConfiguration))
+	})
 	return nil
 }
 
-func SetObjectDefaults_WebhookConfiguration(in *v1alpha1.WebhookConfiguration) {
+func SetObjectDefaults_WebhookConfiguration(in *webhookv1alpha1.WebhookConfiguration) {
 	SetDefaults_WebhookConfiguration(in)
 	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.TLSConfig.Dynamic)
 	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.MetricsTLSConfig.Dynamic)

@@ -121,6 +121,7 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 		name            string
 		keyAlgo         cmapi.PrivateKeyAlgorithm
 		keySize         int
+		sigAlg          cmapi.SignatureAlgorithm
 		expectErr       bool
 		expectedSigAlgo x509.SignatureAlgorithm
 		expectedKeyType x509.PublicKeyAlgorithm
@@ -206,6 +207,19 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name:            "certificate no key and custom signature",
+			sigAlg:          cmapi.SHA384WithRSA,
+			expectedSigAlgo: x509.SHA384WithRSA,
+			expectedKeyType: x509.RSA,
+		},
+		{
+			name:            "certificate explicit key and custom signature",
+			keyAlgo:         cmapi.RSAKeyAlgorithm,
+			sigAlg:          cmapi.SHA384WithRSA,
+			expectedSigAlgo: x509.SHA384WithRSA,
+			expectedKeyType: x509.RSA,
+		},
+		{
 			name:      "certificate with KeyAlgorithm set to unknown key algo",
 			keyAlgo:   cmapi.PrivateKeyAlgorithm("blah"),
 			expectErr: true,
@@ -214,7 +228,7 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			actualPKAlgo, actualSigAlgo, err := SignatureAlgorithm(buildCertificateWithKeyParams(test.keyAlgo, test.keySize))
+			actualPKAlgo, actualSigAlgo, err := SignatureAlgorithm(buildCertificateWithKeyAndSigParams(test.keyAlgo, test.keySize, test.sigAlg))
 			if test.expectErr && err == nil {
 				t.Error("expected err, but got no error")
 				return
@@ -394,7 +408,7 @@ func TestGenerateCSR(t *testing.T) {
 		}
 	}
 
-	literalSubectGenerator := func(t *testing.T, literal string) []byte {
+	literalSubjectGenerator := func(t *testing.T, literal string) []byte {
 		rawSubject, err := UnmarshalSubjectStringToRDNSequence(literal)
 		if err != nil {
 			t.Fatal(err)
@@ -681,7 +695,7 @@ func TestGenerateCSR(t *testing.T) {
 						Critical: true,
 					},
 				},
-				RawSubject: literalSubectGenerator(t, exampleLiteralSubject),
+				RawSubject: literalSubjectGenerator(t, exampleLiteralSubject),
 			},
 			literalCertificateSubjectFeatureEnabled: true,
 		},
@@ -699,7 +713,7 @@ func TestGenerateCSR(t *testing.T) {
 						Critical: true,
 					},
 				},
-				RawSubject: literalSubectGenerator(t, exampleMultiValueRDNLiteralSubject),
+				RawSubject: literalSubjectGenerator(t, exampleMultiValueRDNLiteralSubject),
 			},
 			literalCertificateSubjectFeatureEnabled: true,
 		},

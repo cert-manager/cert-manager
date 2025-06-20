@@ -219,7 +219,7 @@ func TestIsIA5String(t *testing.T) {
 	}
 
 	nonIA5Strings := []string{
-		"中文",
+		"中文", //nolint: gosmopolitan
 	}
 
 	for _, nonIA5String := range nonIA5Strings {
@@ -251,7 +251,7 @@ func TestIsPrintable(t *testing.T) {
 	}
 
 	nonPrintableStrings := []string{
-		"中文",
+		"中文", //nolint: gosmopolitan
 		"Test!",
 		"Test@",
 		"Test#",

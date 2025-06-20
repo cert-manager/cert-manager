@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -39,6 +40,23 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
+
+// mapping for key algorithm to allowed signature algorithms
+var keyAlgToAllowedSigAlgs = map[internalcmapi.PrivateKeyAlgorithm][]internalcmapi.SignatureAlgorithm{
+	internalcmapi.RSAKeyAlgorithm: {
+		internalcmapi.SHA256WithRSA,
+		internalcmapi.SHA384WithRSA,
+		internalcmapi.SHA512WithRSA,
+	},
+	internalcmapi.ECDSAKeyAlgorithm: {
+		internalcmapi.ECDSAWithSHA256,
+		internalcmapi.ECDSAWithSHA384,
+		internalcmapi.ECDSAWithSHA512,
+	},
+	internalcmapi.Ed25519KeyAlgorithm: {
+		internalcmapi.PureEd25519,
+	},
+}
 
 // Validation functions for cert-manager Certificate types
 
@@ -162,6 +180,18 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 	}
 
+	if crt.SignatureAlgorithm != "" {
+		actualKeyAlg := internalcmapi.RSAKeyAlgorithm
+		if crt.PrivateKey != nil && crt.PrivateKey.Algorithm != "" {
+			actualKeyAlg = crt.PrivateKey.Algorithm
+		}
+		allowed, ok := keyAlgToAllowedSigAlgs[actualKeyAlg]
+		if ok && !slices.Contains(allowed, crt.SignatureAlgorithm) {
+			el = append(el, field.Invalid(fldPath.Child("signatureAlgorithm"), crt.SignatureAlgorithm,
+				fmt.Sprintf("for key algorithm %s the allowed signature algorithms are %v", actualKeyAlg, allowed)))
+		}
+	}
+
 	if crt.Duration != nil || crt.RenewBefore != nil {
 		el = append(el, ValidateDuration(crt, fldPath)...)
 	}
@@ -197,13 +227,20 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
 
+	if crt.Keystores != nil {
+		el = append(el, validateKeystores(crt, fldPath)...)
+	}
+
 	return el
 }
 
-func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (allErrs field.ErrorList, warnings []string) {
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs, nil
+	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	if crt.Spec.PrivateKey == nil || crt.Spec.PrivateKey.RotationPolicy == "" {
+		warnings = append(warnings, newDefaultPrivateKeyRotationPolicy)
+	}
+	return allErrs, warnings
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
@@ -238,7 +275,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 			errMsg := "must be one of Issuer or ClusterIssuer"
 
 			if issuerRef.Group == "" {
-				// Sometimes the user sets a kind for an external issuer (e.g. "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
+				// Sometimes the user sets a kind for an external issuer (e.g., "AWSPCAClusterIssuer" or "VenafiIssuer") but forgets
 				// to set the group (an easy mistake to make - see https://github.com/cert-manager/csi-driver/issues/197).
 				// If the users forgets the group but otherwise has a correct Kind set for an external issuer, we can give a hint
 				// as to what they need to do to fix.
@@ -357,13 +394,6 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
 
-	if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-		if len(crt.AdditionalOutputFormats) > 0 {
-			el = append(el, field.Forbidden(fldPath.Child("additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"))
-		}
-		return el
-	}
-
 	// Ensure the set of output formats is unique, keyed on "Type".
 	aofSet := sets.NewString()
 	for _, val := range crt.AdditionalOutputFormats {
@@ -372,6 +402,48 @@ func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath
 			continue
 		}
 		aofSet.Insert(string(val.Type))
+	}
+
+	return el
+}
+
+const (
+	keystoresMutuallyExclusivePasswordsFmt = "exactly one of passwordSecretRef and password must be provided for %s keystores; cannot set both"
+
+	keystoresPasswordRequiredFmt = "must set exactly one of passwordSecretRef and password must for %s keystores"
+
+	keystoresLiteralPasswordMustNotBeEmptyFmt = "literal password cannot be empty if set on %s keystores"
+)
+
+func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+
+	if crt.Keystores.JKS != nil {
+		if crt.Keystores.JKS.Password != nil && crt.Keystores.JKS.PasswordSecretRef.Name != "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "JKS")))
+		}
+
+		if crt.Keystores.JKS.Password == nil && crt.Keystores.JKS.PasswordSecretRef.Name == "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresPasswordRequiredFmt, "JKS")))
+		}
+
+		if crt.Keystores.JKS.Password != nil && len(*crt.Keystores.JKS.Password) == 0 {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "jks", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "JKS")))
+		}
+	}
+
+	if crt.Keystores.PKCS12 != nil {
+		if crt.Keystores.PKCS12.Password != nil && crt.Keystores.PKCS12.PasswordSecretRef.Name != "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")))
+		}
+
+		if crt.Keystores.PKCS12.Password == nil && crt.Keystores.PKCS12.PasswordSecretRef.Name == "" {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")))
+		}
+
+		if crt.Keystores.PKCS12.Password != nil && len(*crt.Keystores.PKCS12.Password) == 0 {
+			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")))
+		}
 	}
 
 	return el

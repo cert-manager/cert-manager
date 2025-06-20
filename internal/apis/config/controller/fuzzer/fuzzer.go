@@ -19,9 +19,9 @@ package fuzzer
 import (
 	"time"
 
-	fuzz "github.com/google/gofuzz"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	logsapi "k8s.io/component-base/logs/api/v1"
+	"sigs.k8s.io/randfill"
 
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller"
 )
@@ -30,8 +30,8 @@ import (
 var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		// provide non-empty values for fields with defaults, so the defaulter doesn't change values during round-trip
-		func(s *controller.ControllerConfiguration, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *controller.ControllerConfiguration, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
 
 			if s.ClusterResourceNamespace == "" {
 				s.ClusterResourceNamespace = "test-roundtrip"

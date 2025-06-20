@@ -18,8 +18,46 @@ package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+// SetRuntimeDefaults_Certificate mutates the supplied Certificate object,
+// setting defaults for certain missing fields:
+// - Sets the default  private key rotation policy to:
+//   - Always, if the DefaultPrivateKeyRotationPolicyAlways feature is enabled
+//   - Never, if the DefaultPrivateKeyRotationPolicyAlways feature is disabled.
+//
+// NOTE: Do not supply Certificate objects retrieved from a client-go lister
+// because you may corrupt the cache. Do a DeepCopy first. See:
+// https://pkg.go.dev/github.com/cert-manager/cert-manager@v1.17.2/pkg/client/listers/certmanager/v1#CertificateNamespaceLister
+//
+// NOTE: This is deliberately not called `SetObjectDefault_`, because that would
+// cause defaultergen to add this to the scheme default, which would be
+// confusing because we don't (yet) have a defaulting webhook or use API default
+// annotations.
+//
+// TODO(wallrj): When DefaultPrivateKeyRotationPolicyAlways is GA, the default
+// value can probably be added as an API default by adding:
+//
+//	`// +default="Always"`
+//
+// ... to the API struct.
+func SetRuntimeDefaults_Certificate(in *cmapi.Certificate) {
+	if in.Spec.PrivateKey == nil {
+		in.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
+	if in.Spec.PrivateKey.RotationPolicy == "" {
+		defaultRotationPolicy := cmapi.RotationPolicyNever
+		if utilfeature.DefaultFeatureGate.Enabled(feature.DefaultPrivateKeyRotationPolicyAlways) {
+			defaultRotationPolicy = cmapi.RotationPolicyAlways
+		}
+		in.Spec.PrivateKey.RotationPolicy = defaultRotationPolicy
+	}
 }

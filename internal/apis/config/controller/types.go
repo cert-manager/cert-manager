@@ -160,6 +160,10 @@ type IngressShimConfig struct {
 	// The annotation consumed by the ingress-shim controller to indicate an ingress
 	// is requesting a certificate
 	DefaultAutoCertificateAnnotations []string
+
+	// ExtraCertificateAnnotations is a list of annotations which should be copied from
+	// and ingress-like object to a Certificate.
+	ExtraCertificateAnnotations []string
 }
 
 type ACMEHTTP01Config struct {

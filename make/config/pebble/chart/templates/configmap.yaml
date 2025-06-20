@@ -8,6 +8,8 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
+  # NOTE: The externalAccountMACKeys values must match those used in `tests/e2e`.
+  # The key is copied from https://github.com/letsencrypt/pebble/blob/main/test/config/pebble-config-external-account-bindings.json
   config.json: |
     {
       "pebble": {
@@ -18,10 +20,19 @@ data:
         "tlsPort": 443,
         "externalAccountBindingRequired": false,
         "externalAccountMACKeys": {
-          "kid-1": "a2lkLXNlY3JldC0x",
-          "kid-2": "a2lkLXNlY3JldC0y"
+          "kid-1": "zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"
         },
-        "domainBlocklist": ["google.com"]
+        "domainBlocklist": ["google.com"],
+        "profiles": {
+          "123h": {
+            "description": "Certificates with duration 123h",
+            "validityPeriod": {{ mul 60 60 123 }}
+          },
+          "456h": {
+            "description": "Certificates with duration 456h",
+            "validityPeriod": {{ mul 60 60 456 }}
+          }
+        }
       }
     }
   cert.pem: |

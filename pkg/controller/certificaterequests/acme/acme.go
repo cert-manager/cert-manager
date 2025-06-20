@@ -142,7 +142,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 	}
 
 	// If we fail to build the order we have to hard fail.
-	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature)
+	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature, issuer.GetSpec().ACME.Profile)
 	if err != nil {
 		message := "Failed to build order"
 
@@ -154,6 +154,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 
 	order, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
 	if k8sErrors.IsNotFound(err) {
+		log.V(logf.DebugLevel).Info("creating order", "profile", expectedOrder.Spec.Profile)
 		// Failing to create the order here is most likely network related.
 		// We should backoff and keep trying.
 		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{FieldManager: a.fieldManager})
@@ -242,7 +243,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool) (*cmacme.Order, error) {
+func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool, profile string) (*cmacme.Order, error) {
 	var ipAddresses []string
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
@@ -259,6 +260,7 @@ func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enab
 		CommonName:  csr.Subject.CommonName,
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
+		Profile:     profile,
 	}
 
 	if enableDurationFeature {

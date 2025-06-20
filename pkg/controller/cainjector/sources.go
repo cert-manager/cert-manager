@@ -35,7 +35,7 @@ import (
 
 // caDataSource knows how to extract CA data given a provided InjectTarget.
 // This allows adaptable implementations of fetching CA data based on
-// configuration given on the injection target (e.g. annotations).
+// configuration given on the injection target (e.g., annotations).
 
 type caDataSource interface {
 	// Configured returns true if this data source should be used for the given

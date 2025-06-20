@@ -83,7 +83,7 @@ required webhooks are reachable by the K8S API server.`,
 		},
 	}
 	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s = poll once)")
-	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
+	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g., 1m or 10m")
 
 	o.Factory = factory.New(cmd)
 

@@ -122,6 +122,11 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                profile:
+                  description: |-
+                    Profile allows requesting a certificate profile from the ACME server.
+                    Supported profiles are listed by the server's ACME directory URL.
+                  type: string
                 request:
                   description: |-
                     Certificate signing request bytes in DER encoding.
@@ -172,7 +177,7 @@ spec:
                               type: string
                             type:
                               description: |-
-                                Type is the type of challenge being offered, e.g. 'http-01', 'dns-01',
+                                Type is the type of challenge being offered, e.g., 'http-01', 'dns-01',
                                 'tls-sni-01', etc.
                                 This is the raw value retrieved from the ACME server.
                                 Only 'http-01' and 'dns-01' are supported by cert-manager, other values

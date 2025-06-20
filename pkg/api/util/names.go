@@ -75,7 +75,7 @@ func ComputeSecureUniqueDeterministicNameFromData(fullName string, maxNameLength
 	// Although fullName is already a DNS subdomain, we can't just cut it
 	// at N characters and expect another DNS subdomain. That's because
 	// we might cut it right after a ".", which would give an invalid DNS
-	// subdomain (eg. test.-<hash>). So we make sure the last character
+	// subdomain (e.g., test.-<hash>). So we make sure the last character
 	// is an alpha-numeric character.
 	prefix := DNSSafeShortenToNCharacters(fullName, maxNameLength-hashLength-1)
 	hashResult := hash.Sum(nil)

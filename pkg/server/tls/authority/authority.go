@@ -57,8 +57,15 @@ type DynamicAuthority struct {
 	// Namespace and Name of the Secret resource used to store the authority.
 	SecretNamespace, SecretName string
 
+	// Labels added to the Secret resource used to store the authority.
+	SecretLabels map[string]string
+
 	// RESTConfig used to connect to the apiserver.
 	RESTConfig *rest.Config
+
+	// CommonName of the CA subject.
+	// Defaults to 'cert-manager-webhook-ca' for backwards compatibility reasons.
+	CommonName string
 
 	// The amount of time the root CA certificate will be valid for.
 	// This must be greater than LeafDuration.
@@ -101,6 +108,9 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 	}
 	if d.SecretName == "" {
 		return fmt.Errorf("SecretName must be set")
+	}
+	if d.CommonName == "" {
+		d.CommonName = "cert-manager-webhook-ca"
 	}
 	if d.CADuration == 0 {
 		d.CADuration = time.Hour * 24 * 365 // 365d
@@ -364,7 +374,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		Subject: pkix.Name{
-			CommonName: "cert-manager-webhook-ca",
+			CommonName: d.CommonName,
 		},
 		IsCA:      true,
 		NotBefore: time.Now(),
@@ -386,9 +396,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      d.SecretName,
 				Namespace: d.SecretNamespace,
-				Labels: map[string]string{
-					"app.kubernetes.io/managed-by": "cert-manager",
-				},
+				Labels:    d.SecretLabels,
 				Annotations: map[string]string{
 					cmapi.AllowsInjectionFromSecretAnnotation: "true",
 				},

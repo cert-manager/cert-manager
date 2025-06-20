@@ -17,7 +17,6 @@ limitations under the License.
 package authority
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -27,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	testlogr "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +42,7 @@ import (
 // Integration tests for the authority can be found in `test/integration/webhook/dynamic_authority_test.go`.
 
 func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAuthority {
-	logger := testlogr.NewTestLoggerWithOptions(t, testlogr.Options{
+	logger := testr.NewWithOptions(t, testr.Options{
 		Verbosity: 3,
 	})
 	logger = logger.WithName(name)
@@ -51,6 +50,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 	da := &DynamicAuthority{
 		SecretNamespace: "test-namespace",
 		SecretName:      "test-secret",
+		CommonName:      "test-common-name",
 		CADuration:      365 * 24 * time.Hour,
 		LeafDuration:    7 * 24 * time.Hour,
 
@@ -59,16 +59,14 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 		},
 	}
 
-	runCtx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		if err := da.Run(logf.NewContext(runCtx, logger)); err != nil {
+		if err := da.Run(logf.NewContext(t.Context(), logger)); err != nil {
 			t.Error(err)
 		}
 	}()
 	t.Cleanup(func() {
-		cancel()
 		<-done
 	})
 
@@ -118,19 +116,19 @@ func TestDynamicAuthority(t *testing.T) {
 
 	waitForRotationAndSign(true)
 
-	err := fake.CoreV1().Secrets(da.SecretNamespace).Delete(context.TODO(), da.SecretName, metav1.DeleteOptions{})
+	err := fake.CoreV1().Secrets(da.SecretNamespace).Delete(t.Context(), da.SecretName, metav1.DeleteOptions{})
 	assert.NoError(t, err)
 
 	waitForRotationAndSign(false)
 
-	secret, err := fake.CoreV1().Secrets(da.SecretNamespace).Get(context.TODO(), da.SecretName, metav1.GetOptions{})
+	secret, err := fake.CoreV1().Secrets(da.SecretNamespace).Get(t.Context(), da.SecretName, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	secret.Data = map[string][]byte{
 		"tls.crt": []byte("test"),
 		"tls.key": []byte("test"),
 	}
-	_, err = fake.CoreV1().Secrets(da.SecretNamespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
+	_, err = fake.CoreV1().Secrets(da.SecretNamespace).Update(t.Context(), secret, metav1.UpdateOptions{})
 	assert.NoError(t, err)
 
 	waitForRotationAndSign(false)
@@ -140,7 +138,7 @@ func TestDynamicAuthorityMulti(t *testing.T) {
 	fake := kubefake.NewSimpleClientset()
 
 	authorities := make([]*DynamicAuthority, 0)
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		da := testAuthority(t, fmt.Sprintf("authority-%d", i), fake)
 		authorities = append(authorities, da)
 	}

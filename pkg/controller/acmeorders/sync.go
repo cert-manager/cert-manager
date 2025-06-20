@@ -21,11 +21,12 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalorders "github.com/cert-manager/cert-manager/internal/controller/orders"
@@ -44,6 +46,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
@@ -256,6 +259,24 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	return nil
 }
 
+func isRetryableError(err error) bool {
+	for _, targetErr := range []error{
+		acmeapi.ErrCADoesNotSupportProfiles,
+		acmeapi.ErrProfileNotInSetOfSupportedProfiles,
+	} {
+		if errors.Is(err, targetErr) {
+			return false
+		}
+	}
+	var acmeErr *acmeapi.Error
+	if errors.As(err, &acmeErr) {
+		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			return false
+		}
+	}
+	return true
+}
+
 func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
 	log := logf.FromContext(ctx)
 
@@ -265,13 +286,15 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	log.V(logf.DebugLevel).Info("order URL not set, submitting Order to ACME server")
 
 	dnsIdentifierSet := sets.New[string](o.Spec.DNSNames...)
-	if o.Spec.CommonName != "" {
+	ipIdentifierSet := sets.New[string](o.Spec.IPAddresses...)
+	switch {
+	case o.Spec.CommonName == "":
+	case net.ParseIP(o.Spec.CommonName) != nil:
+		ipIdentifierSet.Insert(o.Spec.CommonName)
+	case len(validation.IsFullyQualifiedDomainName(nil, o.Spec.CommonName)) == 0:
 		dnsIdentifierSet.Insert(o.Spec.CommonName)
 	}
-	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", sets.List(dnsIdentifierSet))
-
-	ipIdentifierSet := sets.New[string](o.Spec.IPAddresses...)
-	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", sets.List(dnsIdentifierSet))
+	log.V(logf.DebugLevel).Info("built set of identifiers for Order", "domains", sets.List(dnsIdentifierSet), "ipAddresses", sets.List(ipIdentifierSet))
 
 	authzIDs := acmeapi.DomainIDs(sets.List(dnsIdentifierSet)...)
 	authzIDs = append(authzIDs, acmeapi.IPIDs(sets.List(ipIdentifierSet)...)...)
@@ -281,16 +304,19 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	if o.Spec.Duration != nil {
 		options = append(options, acmeapi.WithOrderNotAfter(c.clock.Now().Add(o.Spec.Duration.Duration)))
 	}
+
+	if o.Spec.Profile != "" {
+		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
+	}
+
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
-	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+	if err != nil {
+		if !isRetryableError(err) {
 			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to create Order: %v", err)
 			return nil
 		}
-	}
-	if err != nil {
 		return fmt.Errorf("error creating new order: %v", err)
 	}
 	log.V(logf.DebugLevel).Info("submitted Order to ACME server")
@@ -316,6 +342,9 @@ func (c *controller) updateOrderStatusFromACMEOrder(o *cmacme.Order, acmeOrder *
 	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
 	// order's URI field will be empty when calling GetOrder due to the
 	// 'Location' header not being set on the response from the ACME server.
+	//
+	// TODO(wallrj): We have vendored golang.org/x/crypto/acme so there's
+	// nothing stopping us fixing this bug.
 	if acmeOrder.URI != "" {
 		o.Status.URL = acmeOrder.URI
 	}

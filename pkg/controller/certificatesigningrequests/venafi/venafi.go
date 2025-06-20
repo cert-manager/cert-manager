@@ -40,7 +40,6 @@ import (
 	venafiapi "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -130,7 +129,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		}
 	}
 
-	duration, err := pki.DurationFromCertificateSigningRequest(csr)
+	duration, err := utilpki.DurationFromCertificateSigningRequest(csr)
 	if err != nil {
 		message := fmt.Sprintf("Failed to parse requested duration: %s", err)
 		log.Error(err, message)

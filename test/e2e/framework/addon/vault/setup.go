@@ -703,8 +703,8 @@ func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kube
 		ctx,
 		v.role,
 		schema.KubernetesWriteAuthRoleRequest{
-			Period:                        "24h",
-			Policies:                      []string{v.role},
+			TokenPeriod:                   "24h",
+			TokenPolicies:                 []string{v.role},
 			BoundServiceAccountNames:      []string{boundSA},
 			BoundServiceAccountNamespaces: []string{boundNS},
 		},

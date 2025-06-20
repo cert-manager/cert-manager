@@ -18,18 +18,17 @@ package internal
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/x509"
 	"fmt"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
+	"sigs.k8s.io/randfill"
 	"software.sslmate.com/src/go-pkcs12"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -71,7 +70,7 @@ func mustSelfSignCertificate(t *testing.T) []byte {
 
 func mustSelfSignCertificates(t *testing.T, count int) []byte {
 	var buf bytes.Buffer
-	for i := 0; i < count; i++ {
+	for range count {
 		buf.Write(mustSelfSignCertificate(t))
 	}
 	return buf.Bytes()
@@ -538,19 +537,19 @@ func TestManyPasswordLengths(t *testing.T) {
 	const testN = 10000
 
 	// We will test random password lengths between 0 and 128 character lengths
-	f := fuzz.New().NilChance(0).NumElements(0, 128)
+	f := randfill.New().NilChance(0).NumElements(0, 128)
 	// Pre-create password test cases. This cannot be done during the test itself
 	// since the fuzzer cannot be used concurrently.
 	var passwords [testN]string
-	for testi := 0; testi < testN; testi++ {
+	for testi := range testN {
 		// fill the password with random characters
-		f.Fuzz(&passwords[testi])
+		f.Fill(&passwords[testi])
 	}
 
 	// Run these tests in parallel
 	s := semaphore.NewWeighted(32)
-	g, ctx := errgroup.WithContext(context.Background())
-	for tests := 0; tests < testN; tests++ {
+	g, ctx := errgroup.WithContext(t.Context())
+	for tests := range testN {
 		testi := tests
 		if ctx.Err() != nil {
 			t.Errorf("internal error while testing JKS Keystore password lengths: %s", ctx.Err())

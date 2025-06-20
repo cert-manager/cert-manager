@@ -37,11 +37,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = framework.CertManagerDescribe("othername san processing", func() {
+var _ = framework.CertManagerDescribe("other name san processing", func() {
 
 	const (
-		testName   = "test-othername-san-processing"
-		issuerName = "certificate-othername-san-processing"
+		testName   = "test-other-name-san-processing"
+		issuerName = "certificate-other-name-san-processing"
 		secretName = testName
 	)
 
@@ -49,7 +49,7 @@ var _ = framework.CertManagerDescribe("othername san processing", func() {
 		emailAddresses = []string{"email@domain.test"}
 	)
 
-	f := framework.NewDefaultFramework("certificate-othername-san-processing")
+	f := framework.NewDefaultFramework("certificate-other-name-san-processing")
 	ctx := context.TODO()
 
 	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
@@ -141,7 +141,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 		Expect(cert.Extensions).To(HaveSameSANsAs(expectedSanExtension))
 	})
 
-	It("Should error if a certificate is supplied with an othername containing an invalid oid value", func() {
+	It("Should error if a certificate is supplied with an `otherName` containing an invalid oid value", func() {
 		_, err := createCertificate(f, []cmapi.OtherName{
 			{
 				OID:       "BAD_OID",
@@ -157,7 +157,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 
 	})
 
-	It("Should error if a certificate is supplied with an othername without a UTF8 value", func() {
+	It("Should error if a certificate is supplied with an `otherName` without a UTF8 value", func() {
 		_, err := createCertificate(f, []cmapi.OtherName{
 			{
 				OID: "1.3.6.1.4.1.311.20.2.3",

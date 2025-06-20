@@ -17,7 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -193,7 +192,7 @@ func TestCertificateOwnsSecret(t *testing.T) {
 			}
 
 			// Call the function under test
-			result, owners, err := CertificateOwnsSecret(context.TODO(), certificateLister, secretLister, selectedCrt)
+			result, owners, err := CertificateOwnsSecret(t.Context(), certificateLister, secretLister, selectedCrt)
 
 			// Verify the result
 			assert.Equal(t, tt.expectedResult, result)

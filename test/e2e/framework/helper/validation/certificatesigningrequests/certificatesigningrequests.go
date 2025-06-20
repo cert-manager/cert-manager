@@ -29,7 +29,6 @@ import (
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	ctrlutil "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -39,7 +38,7 @@ import (
 // ValidationFunc describes a CertificateSigningRequest validation helper function
 type ValidationFunc func(csr *certificatesv1.CertificateSigningRequest, key crypto.Signer) error
 
-// ExpectValidCertificateCertificate checks if the certificate is a valid x509 certificate
+// ExpectValidCertificate checks if the certificate is a valid x509 certificate
 func ExpectValidCertificate(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	_, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 	return err
@@ -160,7 +159,7 @@ func ExpectCertificateIPsToMatch(csr *certificatesv1.CertificateSigningRequest, 
 	return nil
 }
 
-// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS SANs
+// ExpectValidCommonName checks if the issued certificate has the requested CN or one of the DNS (or IP Address) SANs
 func ExpectValidCommonName(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 	if err != nil {
@@ -185,47 +184,36 @@ func ExpectValidCommonName(csr *certificatesv1.CertificateSigningRequest, _ cryp
 	return nil
 }
 
-// ExpectValidDuration checks if the issued certificate matches the requested duration
-func ExpectValidDuration(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
-	cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
+// ExpectDuration checks if the issued certificate matches the CertificateSigningRequest's duration
+func ExpectDurationToMatch(csr *certificatesv1.CertificateSigningRequest, signer crypto.Signer) error {
+	certDuration, err := pki.DurationFromCertificateSigningRequest(csr)
 	if err != nil {
 		return err
 	}
+	return ExpectDuration(certDuration, 30*time.Second)(csr, signer)
+}
 
-	var expectedDuration time.Duration
-	durationString, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
-	if !ok {
-		if csr.Spec.ExpirationSeconds != nil {
-			expectedDuration = time.Duration(*csr.Spec.ExpirationSeconds) * time.Second
-		} else {
-			// If duration wasn't requested, then we match against the default.
-			expectedDuration = cmapi.DefaultCertificateDuration
-		}
-	} else {
-		expectedDuration, err = time.ParseDuration(durationString)
+// ExpectDuration checks if the issued certificate matches the provided duration
+func ExpectDuration(expectedDuration, fuzz time.Duration) func(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
+	return func(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
+		cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 		if err != nil {
 			return err
 		}
-	}
 
-	actualDuration := cert.NotAfter.Sub(cert.NotBefore)
-
-	// Here we ensure that the requested duration is what is signed on the
-	// certificate. We tolerate a 30 second fuzz either way.
-	if actualDuration > expectedDuration+time.Second*30 || actualDuration < expectedDuration-time.Second*30 {
-		return fmt.Errorf("Expected certificate expiry date to be %v, but got %v", expectedDuration, actualDuration)
-	}
-
-	return nil
-}
-
-func containsExtKeyUsage(s []x509.ExtKeyUsage, e x509.ExtKeyUsage) bool {
-	for _, a := range s {
-		if a == e {
-			return true
+		// Here we ensure that the requested duration is what is signed on the
+		// certificate. We tolerate fuzz either way.
+		actualDuration := cert.NotAfter.Sub(cert.NotBefore)
+		if actualDuration > (expectedDuration+fuzz) || actualDuration < (expectedDuration-fuzz) {
+			return fmt.Errorf(
+				"Expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]",
+				expectedDuration, actualDuration, fuzz,
+				cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339),
+			)
 		}
+
+		return nil
 	}
-	return false
 }
 
 // ExpectKeyUsageExtKeyUsageServerAuth checks if the issued certificate has the
@@ -236,7 +224,7 @@ func ExpectKeyUsageExtKeyUsageServerAuth(csr *certificatesv1.CertificateSigningR
 		return err
 	}
 
-	if !containsExtKeyUsage(cert.ExtKeyUsage, x509.ExtKeyUsageServerAuth) {
+	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageServerAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageServerAuth, but got %v", cert.ExtKeyUsage)
 	}
 	return nil
@@ -250,7 +238,7 @@ func ExpectKeyUsageExtKeyUsageClientAuth(csr *certificatesv1.CertificateSigningR
 		return err
 	}
 
-	if !containsExtKeyUsage(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
+	if !slices.Contains(cert.ExtKeyUsage, x509.ExtKeyUsageClientAuth) {
 		return fmt.Errorf("Expected certificate to have ExtKeyUsageClientAuth, but got %v", cert.ExtKeyUsage)
 	}
 	return nil
@@ -314,26 +302,21 @@ func ExpectEmailsToMatch(csr *certificatesv1.CertificateSigningRequest, _ crypto
 	return nil
 }
 
-// ExpectIsCA checks the certificate is a CA if requested
-func ExpectIsCA(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
+// ExpectValidBasicConstraints checks the certificate is a CA if requested
+func ExpectValidBasicConstraints(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 	if err != nil {
 		return err
 	}
 
-	markedIsCA := false
-	if csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true" {
-		markedIsCA = true
-	}
+	markedIsCA := csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
 
 	if cert.IsCA != markedIsCA {
 		return fmt.Errorf("requested certificate does not match expected IsCA, exp=%t got=%t",
 			markedIsCA, cert.IsCA)
 	}
 
-	// NOTE: For CertificateSigningRequests that are marked as CA, we do not automatically
-	// add the KeyUsageCertSign bit to the KeyUsage field. This behaviour is different
-	// to the behaviour of the cert-manager Certificate resource.
+	// TODO: also validate pathLen
 
 	return nil
 }
@@ -350,7 +333,7 @@ func ExpectConditionApproved(csr *certificatesv1.CertificateSigningRequest, _ cr
 
 // ExpectConditionNotDenied checks that the CertificateSigningRequest has not
 // been Denied
-func ExpectConditiotNotDenied(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
+func ExpectConditionNotDenied(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	if ctrlutil.CertificateSigningRequestIsDenied(csr) {
 		return fmt.Errorf("CertificateSigningRequest has a Denied condition: %v", csr.Status.Conditions)
 	}

@@ -19,13 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	apisacmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	versioned "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +36,7 @@ import (
 // Orders.
 type OrderInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.OrderLister
+	Lister() acmev1.OrderLister
 }
 
 type orderInformer struct {
@@ -71,7 +71,7 @@ func NewFilteredOrderInformer(client versioned.Interface, namespace string, resy
 				return client.AcmeV1().Orders(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&acmev1.Order{},
+		&apisacmev1.Order{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +82,9 @@ func (f *orderInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *orderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&acmev1.Order{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisacmev1.Order{}, f.defaultInformer)
 }
 
-func (f *orderInformer) Lister() v1.OrderLister {
-	return v1.NewOrderLister(f.Informer().GetIndexer())
+func (f *orderInformer) Lister() acmev1.OrderLister {
+	return acmev1.NewOrderLister(f.Informer().GetIndexer())
 }

@@ -97,7 +97,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 		name        string
 		signFunc    authority.SignFunc
 		testFn      func(t *testing.T, source *DynamicSource, mockAuth *mockAuthority)
-		cancelAtEnd bool
 		expStartErr string
 	}
 
@@ -159,7 +158,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 			},
-			cancelAtEnd: true,
 		},
 		{
 			name: "don't rotate root",
@@ -192,7 +190,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 
 				assert.Equal(t, cert.Certificate[0], cert2.Certificate[0])
 			},
-			cancelAtEnd: true,
 		},
 		{
 			name: "rotate root",
@@ -214,7 +211,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					// Rotate the root
 					mockAuth.notifyCh <- struct{}{}
 
@@ -229,7 +226,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 					assert.NotEqual(t, cert.Certificate[0], cert2.Certificate[0])
 				}
 			},
-			cancelAtEnd: true,
 		},
 		{
 			name: "expire leaf",
@@ -258,7 +254,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 
-				for i := 0; i < 5; i++ {
+				for range 5 {
 					// Sleep for a short time to allow the DynamicSource to generate a new certificate
 					// The certificate should get renewed after 100ms, we wait for 200ms to allow for
 					// possible delays of max 100ms (based on experiments, we noticed that issuance of
@@ -275,7 +271,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 					cert = newCert
 				}
 			},
-			cancelAtEnd: true,
 		},
 	}
 
@@ -296,17 +291,11 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 			}
 
 			// Start the DynamicSource
-			ctx, cancel := context.WithCancel(context.Background())
-			group, gctx := errgroup.WithContext(ctx)
+			group, gctx := errgroup.WithContext(t.Context())
 			group.Go(func() error {
 				return source.Start(gctx)
 			})
 			t.Cleanup(func() {
-				if tc.cancelAtEnd {
-					cancel()
-				} else {
-					defer cancel()
-				}
 				err := group.Wait()
 				if tc.expStartErr == "" {
 					assert.NoError(t, err)

@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterIssuerLister helps list ClusterIssuers.
@@ -30,19 +30,19 @@ import (
 type ClusterIssuerLister interface {
 	// List lists all ClusterIssuers in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.ClusterIssuer, err error)
+	List(selector labels.Selector) (ret []*certmanagerv1.ClusterIssuer, err error)
 	// Get retrieves the ClusterIssuer from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.ClusterIssuer, error)
+	Get(name string) (*certmanagerv1.ClusterIssuer, error)
 	ClusterIssuerListerExpansion
 }
 
 // clusterIssuerLister implements the ClusterIssuerLister interface.
 type clusterIssuerLister struct {
-	listers.ResourceIndexer[*v1.ClusterIssuer]
+	listers.ResourceIndexer[*certmanagerv1.ClusterIssuer]
 }
 
 // NewClusterIssuerLister returns a new ClusterIssuerLister.
 func NewClusterIssuerLister(indexer cache.Indexer) ClusterIssuerLister {
-	return &clusterIssuerLister{listers.New[*v1.ClusterIssuer](indexer, v1.Resource("clusterissuer"))}
+	return &clusterIssuerLister{listers.New[*certmanagerv1.ClusterIssuer](indexer, certmanagerv1.Resource("clusterissuer"))}
 }

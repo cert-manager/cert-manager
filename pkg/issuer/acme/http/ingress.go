@@ -29,9 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -377,8 +379,16 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 // challenge.
 func ingressPath(token, serviceName string) networkingv1.HTTPIngressPath {
 	return networkingv1.HTTPIngressPath{
-		Path:     solverPathFn(token),
-		PathType: func() *networkingv1.PathType { s := networkingv1.PathTypeImplementationSpecific; return &s }(),
+		Path: solverPathFn(token),
+		PathType: func() *networkingv1.PathType {
+			var s networkingv1.PathType
+			if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEHTTP01IngressPathTypeExact) {
+				s = networkingv1.PathTypeExact
+			} else {
+				s = networkingv1.PathTypeImplementationSpecific
+			}
+			return &s
+		}(),
 		Backend: networkingv1.IngressBackend{
 			Service: &networkingv1.IngressServiceBackend{
 				Name: serviceName,

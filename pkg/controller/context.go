@@ -160,7 +160,7 @@ type ConfigOptions struct {
 
 type IssuerOptions struct {
 	// ClusterResourceNamespace is the namespace to store resources created by
-	// non-namespaced resources (e.g. ClusterIssuer) in.
+	// non-namespaced resources (e.g., ClusterIssuer) in.
 	ClusterResourceNamespace string
 
 	// ClusterIssuerAmbientCredentials controls whether a cluster issuer should
@@ -221,6 +221,7 @@ type IngressShimOptions struct {
 	DefaultIssuerKind                 string
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
+	ExtraCertificateAnnotations       []string
 }
 
 type CertificateOptions struct {

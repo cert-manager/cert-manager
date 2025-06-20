@@ -17,7 +17,6 @@ limitations under the License.
 package venafi
 
 import (
-	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
@@ -839,12 +838,12 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Start()
 
 	// Deep copy the certificate request to prevent pulling condition state across tests
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 
 	if err == nil && test.fakeClient != nil && test.fakeClient.RetrieveCertificateFn != nil && !test.skipSecondSignCall {
 		// request state is ok! simulating a 2nd sync to fetch the cert
 		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, cmapi.VenafiPickupIDAnnotationKey, "test")
-		err = controller.Sync(context.Background(), test.certificateRequest)
+		err = controller.Sync(t.Context(), test.certificateRequest)
 	}
 
 	if err != nil && !test.expectedErr {

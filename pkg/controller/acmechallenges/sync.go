@@ -23,19 +23,16 @@ import (
 	"slices"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
@@ -47,7 +44,7 @@ const (
 
 	// How long to wait for an authorization response from the ACME server in acceptChallenge()
 	// before giving up
-	authorizationTimeout = 20 * time.Second
+	authorizationTimeout = 2 * time.Minute
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -59,7 +56,7 @@ type solver interface {
 	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) error
 	// CleanUp will remove challenge records for a given solver.
 	// This may involve deleting resources in the Kubernetes API Server, or
-	// communicating with other external components (e.g. DNS providers).
+	// communicating with other external components (e.g., DNS providers).
 	CleanUp(ctx context.Context, ch *cmacme.Challenge) error
 }
 
@@ -90,23 +87,16 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
+	// Remove legacy finalizer
+	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+		return finalizer == cmacme.ACMELegacyFinalizer
+	})
+
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
-	//
-	// API Transition
-	// -- Until UseDomainQualifiedFinalizer is active, we add cmacme.ACMELegacyFinalizer.
-	// -- When it is active we add cmacme.ACMEDomainQualifiedFinalizer instead.
-	//
-	// -- Both finalizers are supported, the flag just controls the one we add.
-	//
-	// -- We only need to add a finalizer label if no supported finalizer label is present.
 	if finalizerRequired(ch) {
-		finalizer := cmacme.ACMELegacyFinalizer
-		if utilfeature.DefaultFeatureGate.Enabled(feature.UseDomainQualifiedFinalizer) {
-			finalizer = cmacme.ACMEDomainQualifiedFinalizer
-		}
-		ch.Finalizers = append(ch.Finalizers, finalizer)
+		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEDomainQualifiedFinalizer)
 		return nil
 	}
 
@@ -162,28 +152,6 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		// due to the http01 solver creating resources that this controller
 		// watches/syncs on
 		return nil
-	}
-
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
-		// check for CAA records.
-		// CAA records are static, so we don't have to present anything
-		// before we check for them.
-
-		// Find out which identity the ACME server says it will use.
-		dir, err := cl.Discover(ctx)
-		if err != nil {
-			return handleError(ctx, ch, err)
-		}
-		// TODO(dmo): figure out if missing CAA identity in directory
-		// means no CAA check is performed by ACME server or if any valid
-		// CAA would stop issuance (strongly suspect the former)
-		if len(dir.CAA) != 0 {
-			err := dnsutil.ValidateCAA(ctx, ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.dns01Nameservers)
-			if err != nil {
-				ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
-				return err
-			}
-		}
 	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
@@ -277,7 +245,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	defer func() {
 		// call Update to remove the metadata.finalizers entry
 		ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-			return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
+			return finalizer == cmacme.ACMEDomainQualifiedFinalizer || finalizer == cmacme.ACMELegacyFinalizer
 		})
 	}()
 

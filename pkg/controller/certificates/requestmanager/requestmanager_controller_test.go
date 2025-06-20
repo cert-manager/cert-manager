@@ -17,7 +17,6 @@ limitations under the License.
 package requestmanager
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -765,7 +764,7 @@ func TestProcessItem(t *testing.T) {
 			}
 
 			// Call ProcessItem
-			err = w.controller.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(t.Context(), key)
 			switch {
 			case err != nil:
 				if test.err != err.Error() {

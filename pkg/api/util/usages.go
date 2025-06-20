@@ -68,7 +68,7 @@ func ExtKeyUsageType(usage cmapi.KeyUsage) (x509.ExtKeyUsage, bool) {
 func KeyUsageStrings(usage x509.KeyUsage) []cmapi.KeyUsage {
 	var usageStr []cmapi.KeyUsage
 
-	for i := uint(0); i < bits.UintSize; i++ {
+	for i := range bits.UintSize {
 		if v := usage & (1 << i); v != 0 {
 			usageStr = append(usageStr, keyUsageString(v))
 		}

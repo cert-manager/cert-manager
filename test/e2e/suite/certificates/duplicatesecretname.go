@@ -119,7 +119,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
-	It("if Certificates are created in the same Namsespace with the same spec.secretName, they should block issuance, and never create more than one request.", func() {
+	It("if Certificates are created in the same Namespace with the same spec.secretName, they should block issuance, and never create more than one request.", func() {
 		crt1, crt2, crt3 := createCertificate(f, cmapi.ECDSAKeyAlgorithm), createCertificate(f, cmapi.RSAKeyAlgorithm), createCertificate(f, cmapi.ECDSAKeyAlgorithm)
 
 		for _, crtName := range []string{crt1, crt2, crt3} {

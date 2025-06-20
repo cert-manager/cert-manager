@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CertificateRequestLister helps list CertificateRequests.
@@ -30,7 +30,7 @@ import (
 type CertificateRequestLister interface {
 	// List lists all CertificateRequests in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.CertificateRequest, err error)
+	List(selector labels.Selector) (ret []*certmanagerv1.CertificateRequest, err error)
 	// CertificateRequests returns an object that can list and get CertificateRequests.
 	CertificateRequests(namespace string) CertificateRequestNamespaceLister
 	CertificateRequestListerExpansion
@@ -38,17 +38,17 @@ type CertificateRequestLister interface {
 
 // certificateRequestLister implements the CertificateRequestLister interface.
 type certificateRequestLister struct {
-	listers.ResourceIndexer[*v1.CertificateRequest]
+	listers.ResourceIndexer[*certmanagerv1.CertificateRequest]
 }
 
 // NewCertificateRequestLister returns a new CertificateRequestLister.
 func NewCertificateRequestLister(indexer cache.Indexer) CertificateRequestLister {
-	return &certificateRequestLister{listers.New[*v1.CertificateRequest](indexer, v1.Resource("certificaterequest"))}
+	return &certificateRequestLister{listers.New[*certmanagerv1.CertificateRequest](indexer, certmanagerv1.Resource("certificaterequest"))}
 }
 
 // CertificateRequests returns an object that can list and get CertificateRequests.
 func (s *certificateRequestLister) CertificateRequests(namespace string) CertificateRequestNamespaceLister {
-	return certificateRequestNamespaceLister{listers.NewNamespaced[*v1.CertificateRequest](s.ResourceIndexer, namespace)}
+	return certificateRequestNamespaceLister{listers.NewNamespaced[*certmanagerv1.CertificateRequest](s.ResourceIndexer, namespace)}
 }
 
 // CertificateRequestNamespaceLister helps list and get CertificateRequests.
@@ -56,15 +56,15 @@ func (s *certificateRequestLister) CertificateRequests(namespace string) Certifi
 type CertificateRequestNamespaceLister interface {
 	// List lists all CertificateRequests in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.CertificateRequest, err error)
+	List(selector labels.Selector) (ret []*certmanagerv1.CertificateRequest, err error)
 	// Get retrieves the CertificateRequest from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.CertificateRequest, error)
+	Get(name string) (*certmanagerv1.CertificateRequest, error)
 	CertificateRequestNamespaceListerExpansion
 }
 
 // certificateRequestNamespaceLister implements the CertificateRequestNamespaceLister
 // interface.
 type certificateRequestNamespaceLister struct {
-	listers.ResourceIndexer[*v1.CertificateRequest]
+	listers.ResourceIndexer[*certmanagerv1.CertificateRequest]
 }

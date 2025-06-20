@@ -46,7 +46,7 @@ const (
 	// The value is based on how large a "realistic" (but still very large) self-signed 16k-bit RSA certificate might be.
 	// 16k-bit RSA keys are impractical on most on modern hardware due to how slow they can be,
 	// so we can reasonably assume that no real-world PEM-encoded X.509 cert will be this large.
-	// Note that X.509 certificates can contain extra arbitrary data (e.g. DNS names, policy names, etc) whose size is hard to predict.
+	// Note that X.509 certificates can contain extra arbitrary data (e.g., DNS names, policy names, etc) whose size is hard to predict.
 	// So we guess at how much of that data we'll allow in very large certs and allow about 1kB of such data.
 	maxCertificatePEMSize = 6500
 
@@ -146,7 +146,7 @@ func SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
 
 // SafeDecodeCertificateBundle calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
 // how large we expect a reasonable-length PEM-encoded X.509 certificate bundle (such as a TLS trust store) to be.
-// The baseline is a bundle of 4k-bit RSA certificates, all self signed. This is smaller than the 16k-bit RSA keys
+// The baseline is a bundle of 4k-bit RSA certificates, all self-signed. This is smaller than the 16k-bit RSA keys
 // we use in other functions, because using such large keys would make our estimate several times
 // too large for a realistic bundle which would be used in practice.
 func SafeDecodeCertificateBundle(b []byte) (*stdpem.Block, []byte, error) {

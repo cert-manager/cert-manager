@@ -43,7 +43,6 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
 	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -108,7 +107,6 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		server.WithTLSCipherSuites(opts.MetricsTLSConfig.CipherSuites),
 		server.WithTLSMinVersion(opts.MetricsTLSConfig.MinTLSVersion),
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to listen on prometheus address %s: %v", opts.MetricsListenAddress, err)
 	}
@@ -222,13 +220,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 
 		// only run a controller if it's been enabled
 		if !enabledControllers.Has(n) {
-			log.V(logf.InfoLevel).Info("not starting controller as it's disabled")
-			continue
-		}
-
-		// don't run clusterissuers controller if scoped to a single namespace
-		if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-			log.V(logf.InfoLevel).Info("not starting controller as cert-manager has been scoped to a single namespace")
+			log.V(logf.InfoLevel).Info("skipping disabled controller")
 			continue
 		}
 
@@ -357,6 +349,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
 			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
+			ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
 		},
 
 		CertificateOptions: controller.CertificateOptions{
@@ -435,6 +428,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg
 			Authority: &authority.DynamicAuthority{
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
+				SecretLabels:    map[string]string{"app.kubernetes.io/managed-by": "cert-manager"},
 				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
 				RESTConfig:      restCfg,
 			},

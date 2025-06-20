@@ -264,6 +264,10 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 		cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{*clientCertificate}
 	}
 
+	if serverName := v.issuer.GetSpec().Vault.ServerName; len(serverName) != 0 {
+		cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.ServerName = serverName
+	}
+
 	return cfg, nil
 }
 

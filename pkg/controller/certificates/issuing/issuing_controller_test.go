@@ -1397,7 +1397,7 @@ func TestIssuingController(t *testing.T) {
 
 			test.builder.Start()
 
-			err = w.controller.ProcessItem(context.Background(), types.NamespacedName{
+			err = w.controller.ProcessItem(t.Context(), types.NamespacedName{
 				Namespace: test.certificate.Namespace,
 				Name:      test.certificate.Name,
 			})

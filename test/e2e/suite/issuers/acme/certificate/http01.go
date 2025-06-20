@@ -37,7 +37,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
-	"github.com/cert-manager/cert-manager/e2e-tests/util"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -62,9 +61,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
 	fixedIngressName := "testingress"
 
-	// ACME Issuer does not return a ca.crt. See:
-	// https://github.com/cert-manager/cert-manager/issues/1571
-	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	unsupportedFeatures := featureset.NewFeatureSet(
+		// ACME Issuer does not return a ca.crt. See:
+		// https://github.com/cert-manager/cert-manager/issues/1571
+		featureset.SaveCAToSecret,
+		// ACME does not match the duration specified
+		// in the CertificateRequest resource.
+		featureset.DurationFeature,
+	)
 	validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
@@ -100,7 +104,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -108,7 +112,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			func(i *v1.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
@@ -242,17 +246,17 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
 
 		switch {
-		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+		case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 			By("Creating an Ingress with the issuer name annotation set")
-			_, err := ingClient.Create(ctx, util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
+			_, err := ingClient.Create(ctx, e2eutil.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
 				"cert-manager.io/issuer": issuerName,
 			}, acmeIngressDomain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+		case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 			By("Creating an Ingress with the issuer name annotation set")
-			_, err := ingClient.Create(ctx, util.NewV1Beta1Ingress(certificateSecretName, certificateSecretName, map[string]string{
+			_, err := ingClient.Create(ctx, e2eutil.NewV1Beta1Ingress(certificateSecretName, certificateSecretName, map[string]string{
 				"cert-manager.io/issuer": issuerName,
 			}, acmeIngressDomain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -281,13 +285,13 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// the self-sign issuer to make it have a "proper" TLS cert
 		// TODO: investigate if we still need to use the self-signed issuer here
 
-		issuer := gen.Issuer("selfsign",
+		issuer := gen.Issuer("self-sign",
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for (selfsign) Issuer to become Ready")
-		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		By("Waiting for (self-sign) Issuer to become Ready")
+		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -302,7 +306,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(secretname),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{
-				Name: "selfsign",
+				Name: "self-sign",
 				Kind: v1.IssuerKind,
 			}),
 			gen.SetCertificateCommonName(acmeIngressDomain),
@@ -324,7 +328,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// using the TLS secret that we just got from the self-sign
 
 		switch {
-		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+		case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 			_, err = ingress.Create(ctx, &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -367,7 +371,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				},
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+		case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 			_, err = ingress.Create(ctx, &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -394,7 +398,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 											Path: "/",
 											Backend: networkingv1beta1.IngressBackend{
 												ServiceName: "doesnotexist",
-												ServicePort: intstr.FromInt(443),
+												ServicePort: intstr.FromInt32(443),
 											},
 										},
 									},

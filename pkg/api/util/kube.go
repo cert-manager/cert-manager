@@ -69,7 +69,7 @@ func ExtKeyUsageTypeKube(usage certificatesv1.KeyUsage) (x509.ExtKeyUsage, bool)
 func KubeKeyUsageStrings(usage x509.KeyUsage) []certificatesv1.KeyUsage {
 	var usageStr []certificatesv1.KeyUsage
 
-	for i := uint(0); i < bits.UintSize; i++ {
+	for i := range bits.UintSize {
 		if v := usage & (1 << i); v != 0 {
 			usageStr = append(usageStr, kubeKeyUsageString(v))
 		}

@@ -107,7 +107,7 @@ func asn1BitLength(bitString []byte) int {
 	for i := range bitString {
 		b := bitString[len(bitString)-i-1]
 
-		for bit := uint(0); bit < 8; bit++ {
+		for bit := range uint(8) {
 			if (b>>bit)&1 == 1 {
 				return bitLen
 			}
@@ -156,9 +156,9 @@ func UnmarshalKeyUsage(value []byte) (usage x509.KeyUsage, err error) {
 	}
 
 	var usageInt int
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		if asn1bits.At(i) != 0 {
-			usageInt |= 1 << uint(i)
+			usageInt |= 1 << uint(i) // #nosec G115 -- gosec can somehow not detect that this is safe
 		}
 	}
 

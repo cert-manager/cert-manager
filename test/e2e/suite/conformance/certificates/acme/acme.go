@@ -18,7 +18,6 @@ package acme
 
 import (
 	"context"
-	"encoding/base64"
 	"strings"
 	"time"
 
@@ -496,8 +495,9 @@ func (a *acmeIssuerProvisioner) ensureEABSecret(ctx context.Context, f *framewor
 			Namespace:    ns,
 		},
 		Data: map[string][]byte{
-			// base64 url encode (without padding) the HMAC key
-			"key": []byte(base64.RawURLEncoding.EncodeToString([]byte("kid-secret-1"))),
+			// Must match the key in the Pebble config. See:
+			// config.json in make/config/pebble/templates/configmaps.yaml
+			"key": []byte("zWNDZM6eQGHWpSRTPal5eIUYFTu7EajVIoguysqZ9wG44nMEtx3MUAsUDkMTQ12W"),
 		},
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())

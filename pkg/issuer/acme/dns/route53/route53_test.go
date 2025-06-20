@@ -25,6 +25,7 @@ import (
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
@@ -145,7 +146,7 @@ func TestSessionProviderGetSessionRegion(t *testing.T) {
 		}
 
 		logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.BufferLogs(true)))
-		ctx := klog.NewContext(context.Background(), logger)
+		ctx := klog.NewContext(t.Context(), logger)
 
 		cfg, err := p.GetSession(ctx)
 
@@ -285,7 +286,82 @@ func TestRoute53Present(t *testing.T) {
 	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
 
+func TestRoute53Cleanup(t *testing.T) {
+	type testCase struct {
+		name          string
+		responses     MockResponseMap
+		expectedError string
+	}
+
+	tests := []testCase{
+		{
+			// Cleanup succeeds if the hosted zone is found and the submitted
+			// change action (to delete the challenge record) is eventually
+			// synced by AWS.
+			name: "success",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
+				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
+				"/2013-04-01/change/123456":            MockResponse{StatusCode: 200, Body: GetChangeResponse},
+			},
+		},
+		{
+			// Cleanup fails if the hostedzonesbyname API call returns an error.
+			name: "hosted-zone-lookup-failure",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname": MockResponse{StatusCode: 400, Body: ListHostedZonesByName400ResponseInvalidDomainName},
+			},
+			expectedError: `failed to determine Route 53 hosted zone ID: operation error Route 53: ListHostedZonesByName, https response error StatusCode: 400, RequestID: <REDACTED>, InvalidDomainName: Simulated message`,
+		},
+		{
+			// Cleanup fails if the changeresourcerecordsets API call returns an error.
+			name: "change-resource-records-failure",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
+				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets403Response},
+			},
+			expectedError: `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 400, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`,
+		},
+		{
+			// Cleanup succeeds if the record has already been deleted; the
+			// changeresourcerecordsets API call returns an expected error:
+			// InvalidChangeBatch.
+			name: "change-resource-records-failure-ignore-not-found",
+			responses: MockResponseMap{
+				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
+				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets400Response},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(6)))
+			ctx := logr.NewContext(t.Context(), l)
+
+			ts := newMockServer(t, tc.responses)
+			defer ts.Close()
+
+			provider, err := makeRoute53Provider(ts)
+			require.NoError(t, err, "Expected to make a Route 53 provider without error")
+
+			domain := "example.com"
+			keyAuth := "123456d=="
+
+			err = provider.CleanUp(ctx, domain, "_acme-challenge."+domain+".", keyAuth)
+			if tc.expectedError == "" {
+				assert.NoError(t, err, "Expected Cleanup to return no error")
+			} else {
+				assert.EqualError(t, err, tc.expectedError)
+			}
+		})
+	}
+}
+
 func TestAssumeRole(t *testing.T) {
+	// Set the AWS config file to a non-existent file to ensure that the
+	// SDK does not load any local configuration.
+	t.Setenv("AWS_CONFIG_FILE", "/dev/null")
 	creds := &ststypes.Credentials{
 		AccessKeyId:     aws.String("foo"),
 		SecretAccessKey: aws.String("bar"),

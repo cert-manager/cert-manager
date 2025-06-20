@@ -44,7 +44,7 @@ func TestSetExitCode(t *testing.T) {
 			exitCode := testExitCode(t, func(t *testing.T) {
 				SetExitCode(tt.err)
 
-				_, complete := SetupExitHandler(context.Background(), AlwaysErrCode)
+				_, complete := SetupExitHandler(t.Context(), AlwaysErrCode)
 				complete()
 			})
 

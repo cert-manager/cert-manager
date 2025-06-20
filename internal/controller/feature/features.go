@@ -42,12 +42,6 @@ const (
 	// =========================== END TEMPLATE ===========================
 
 	// Owner: N/A
-	// Alpha: v0.7.2
-	//
-	// ValidateCAA enables CAA checking when issuing certificates
-	ValidateCAA featuregate.Feature = "ValidateCAA"
-
-	// Owner: N/A
 	// Alpha: v1.4
 	//
 	// ExperimentalCertificateSigningRequestControllers enables all CertificateSigningRequest
@@ -65,6 +59,7 @@ const (
 	// Owner: @joshvanl
 	// Alpha: v1.7
 	// Beta: v1.15
+	// GA: v1.18
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -124,6 +119,7 @@ const (
 
 	// Owner: @tanujd11
 	// Alpha: v1.14
+	// Beta: v1.17
 	//
 	// NameConstraints adds support for Name Constraints in Certificate resources
 	// with IsCA=true.
@@ -141,11 +137,57 @@ const (
 	// Owner: @jsoref
 	// Alpha: v1.16
 	// Beta: v1.17
+	// GA: v1.18
 	//
 	// UseDomainQualifiedFinalizer changes the finalizer added to cert-manager created
 	// resources to acme.cert-manager.io/finalizer instead of finalizer.acme.cert-manager.io.
 	// GitHub Issue: https://github.com/cert-manager/cert-manager/issues/7266
 	UseDomainQualifiedFinalizer featuregate.Feature = "UseDomainQualifiedFinalizer"
+
+	// Owner: N/A
+	// Alpha: v0.7.2
+	// Deprecated: v1.17
+	// Removed: v1.18
+	//
+	// ValidateCAA is a now-removed feature gate which enabled CAA checking when issuing certificates
+	// This was never widely adopted, and without an owner to sponsor it we decided to deprecate
+	// this feature gate and then remove it.
+	// The feature gate is still defined here so that users who specify the feature gate aren't
+	// hit with "unknown feature gate" errors which crash the controller, but this is a no-op
+	// and only prints a log line if added.
+	ValidateCAA featuregate.Feature = "ValidateCAA"
+
+	// Owner: @wallrj
+	// Alpha: v1.18.0
+	// Beta: v1.18.0
+	//
+	// DefaultPrivateKeyRotationPolicyAlways change the default value of
+	// `Certificate.Spec.PrivateKey.RotationPolicy` to `Always`.
+	// Why? Because the old default (`Never`) was unintuitive and insecure. For
+	// example, if a private key is exposed, users may (reasonably) assume that
+	// re-issuing a certificate (e.g. using cmctl renew) will generate a new
+	// private key, but it won't unless the user has explicitly set
+	// rotationPolicy: Always on the Certificate resource.
+	// This feature skipped the Alpha phase and was instead introduced as a Beta
+	// feature, because it is thought be low-risk feature and because we want to
+	// accelerate the adoption of this important security feature.
+	DefaultPrivateKeyRotationPolicyAlways featuregate.Feature = "DefaultPrivateKeyRotationPolicyAlways"
+
+	// Owner: @sspreitzer, @wallrj
+	// Alpha: v1.18.1
+	// Beta: v1.18.1
+	//
+	// ACMEHTTP01IngressPathTypeExact will use Ingress pathType `Exact`.
+	// `ACMEHTTP01IngressPathTypeExact` changes the default `pathType` for ACME
+	// HTTP01 Ingress based challenges to `Exact`. This security feature ensures
+	// that the challenge path (which is an exact path) is not misinterpreted as
+	// a regular expression or some other Ingress specific (ImplementationSpecific)
+	// parsing. This allows HTTP01 challenges to be solved when using standards
+	// compliant Ingress controllers such as Cilium. The old default
+	// `ImplementationSpecific`` can be reinstated by disabling this feature gate.
+	// You may need to disable the feature for compatibility with ingress-nginx.
+	// See: https://cert-manager.io/docs/releases/release-notes/release-notes-1.18
+	ACMEHTTP01IngressPathTypeExact featuregate.Feature = "ACMEHTTP01IngressPathTypeExact"
 )
 
 func init() {
@@ -160,14 +202,28 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	StableCertificateRequestName:       {Default: true, PreRelease: featuregate.Beta},
 	SecretsFilteredCaching:             {Default: true, PreRelease: featuregate.Beta},
 
-	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
-	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.Beta},
+	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
-	NameConstraints:                                  {Default: false, PreRelease: featuregate.Alpha},
+	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
-	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.Beta},
+	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
+	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
+	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
+
+	// NB: Deprecated + removed feature gates are kept here.
+	// `featuregate.Deprecated` exists, but will cause the featuregate library
+	// to emit its own warning when the gate is set:
+	// > W...] Setting deprecated feature gate ValidateCAA=true. It will be removed in a future release.
+	// So we have to set to Alpha to avoid that. `PreAlpha` also exists, but
+	// adds versioning logic we don't want to deal with.
+
+	// If we simply remove the gate from here, then anyone still setting it will
+	// see an error and the controller will enter CrashLoopBackOff:
+	// > E...] "error executing command" err="failed to set feature gates from initial flags-based config: unrecognized feature gate: ValidateCAA" logger="cert-manager"
+	// So we leave it here, set to alpha.
+	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 }

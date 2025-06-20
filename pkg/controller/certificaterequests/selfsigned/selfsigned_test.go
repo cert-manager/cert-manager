@@ -17,7 +17,6 @@ limitations under the License.
 package selfsigned
 
 import (
-	"context"
 	"crypto"
 	"crypto/x509"
 	"errors"
@@ -99,7 +98,7 @@ func TestSign(t *testing.T) {
 
 	skEC, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Errorf("failed to generate ECDA private key: %s", err)
+		t.Errorf("failed to generate EC private key: %s", err)
 		t.FailNow()
 	}
 	skECPEM, err := pki.EncodeECPrivateKey(skEC)
@@ -635,7 +634,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
