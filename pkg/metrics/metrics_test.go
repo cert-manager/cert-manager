@@ -22,16 +22,42 @@ import (
 	"testing"
 	"time"
 
+	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/go-logr/logr/testr"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
+
+	"k8s.io/apimachinery/pkg/labels"
+	cache "k8s.io/client-go/tools/cache"
 	fakeclock "k8s.io/utils/clock/testing"
 )
 
 func Test_clockTimeSeconds(t *testing.T) {
 	fixedClock := fakeclock.NewFakeClock(time.Now())
 	m := New(testr.New(t), fixedClock)
+
+	mockInformer := new(mockChallengesInformer)
+	mockInformer.t = t
+	pendingToValidChallenges := make([]*acmemeta.Challenge, 0)
+	pendingToValidChallenges = append(pendingToValidChallenges, gen.Challenge("test-challenge-status",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
+		gen.SetChallengeState(acmemeta.Pending),
+		gen.SetChallengeNamespace("test-challenge"),
+	), gen.Challenge("test-challenge-status-1",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
+		gen.SetChallengeState(acmemeta.Ready),
+		gen.SetChallengeNamespace("test-challenge"),
+	))
+	mockInformer.challenges = pendingToValidChallenges
+
+	m.SetACMECollector(mockInformer)
 
 	tests := map[string]struct {
 		metricName string
@@ -57,6 +83,30 @@ certmanager_clock_time_seconds %f
 certmanager_clock_time_seconds_gauge %f
 	`, float64(fixedClock.Now().Unix())),
 		},
+		"challenge_status": {
+			metricName: "certmanager_certificate_challenge_status",
+			metric:     m.challengeCollector,
+			expected: fmt.Sprintf(`
+# HELP certmanager_certificate_challenge_status The status of certificate challenges
+# TYPE certmanager_certificate_challenge_status gauge
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="errored",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="expired",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="invalid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="pending",type="DNS-01"} 1
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="processing",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="ready",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="valid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="errored",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="expired",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="invalid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="pending",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="processing",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="ready",type="DNS-01"} 1
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="valid",type="DNS-01"} 0
+	`),
+		},
 	}
 
 	for name, test := range tests {
@@ -66,4 +116,50 @@ certmanager_clock_time_seconds_gauge %f
 			)
 		})
 	}
+}
+
+type mockChallengesInformer struct {
+	t          *testing.T
+	challenges []*acmemeta.Challenge
+	labels     labels.Selector
+}
+
+type mockChallengesLister struct {
+	t          *testing.T
+	challenges []*acmemeta.Challenge
+}
+
+func (mci *mockChallengesInformer) Lister() acmev1.ChallengeLister {
+	mc := new(mockChallengesLister)
+	mc.challenges = mci.challenges
+	mc.t = mci.t
+	return mc
+}
+
+func (mci *mockChallengesInformer) Informer() cache.SharedIndexInformer {
+	mci.t.FailNow()
+	return nil
+}
+
+func (mcl *mockChallengesLister) List(listLabels labels.Selector) ([]*acmemeta.Challenge, error) {
+	// Use listLabels to filter out and return challenges
+	// return slices.Collect(func(yield func(*acmemeta.Challenge) bool) {
+	// 	for _, ch := range mcl.challenges {
+	// 		for k, v := range ch.Labels {
+	// 			if val, ok := listLabels.RequiresExactMatch(k); ok && strings.EqualFold(val, v) {
+	// 				if !yield(ch) {
+	// 					return
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }), nil
+	//
+	return mcl.challenges, nil
+}
+
+// Dont need this method.
+func (mcl *mockChallengesLister) Challenges(namespace string) acmev1.ChallengeNamespaceLister {
+	mcl.t.FailNow()
+	return nil
 }

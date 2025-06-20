@@ -37,8 +37,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
 
+	challengeCollectors "github.com/cert-manager/cert-manager/internal/collectors"
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmacmeinformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/acme/v1"
 )
 
 const (
@@ -67,7 +69,7 @@ type Metrics struct {
 	venafiClientRequestDurationSeconds *prometheus.SummaryVec
 	controllerSyncCallCount            *prometheus.CounterVec
 	controllerSyncErrorCount           *prometheus.CounterVec
-	certificateChallengeStatus         *prometheus.GaugeVec
+	challengeCollector                 prometheus.Collector
 }
 
 var (
@@ -211,12 +213,6 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			},
 			[]string{"controller"},
 		)
-
-		certificateChallengeStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "certificate_challenge_status",
-			Help:      "The status of certificate challenges.",
-		}, []string{"status", "domain", "reason", "processing", "name", "namespace", "type"})
 	)
 
 	// Create Registry and register the recommended collectors
@@ -242,10 +238,13 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
 		controllerSyncCallCount:            controllerSyncCallCount,
 		controllerSyncErrorCount:           controllerSyncErrorCount,
-		certificateChallengeStatus:         certificateChallengeStatus,
 	}
 
 	return m
+}
+
+func (m *Metrics) SetACMECollector(acmeInformers cmacmeinformers.ChallengeInformer) {
+	m.challengeCollector = challengeCollectors.NewACMECollector(acmeInformers)
 }
 
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
@@ -262,7 +261,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
-	m.registry.MustRegister(m.certificateChallengeStatus)
+	m.registry.MustRegister(m.challengeCollector)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
