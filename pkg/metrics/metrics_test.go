@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -137,24 +138,10 @@ func (mci *mockChallengesInformer) Lister() acmev1.ChallengeLister {
 }
 
 func (mci *mockChallengesInformer) Informer() cache.SharedIndexInformer {
-	mci.t.FailNow()
-	return nil
+	return new(fakeInformers.MockCacheSharedInformer)
 }
 
 func (mcl *mockChallengesLister) List(listLabels labels.Selector) ([]*acmemeta.Challenge, error) {
-	// Use listLabels to filter out and return challenges
-	// return slices.Collect(func(yield func(*acmemeta.Challenge) bool) {
-	// 	for _, ch := range mcl.challenges {
-	// 		for k, v := range ch.Labels {
-	// 			if val, ok := listLabels.RequiresExactMatch(k); ok && strings.EqualFold(val, v) {
-	// 				if !yield(ch) {
-	// 					return
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }), nil
-	//
 	return mcl.challenges, nil
 }
 

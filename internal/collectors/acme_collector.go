@@ -1,8 +1,23 @@
+/*
+Copyright 2025 The cert-manager Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package collectors
 
 import (
 	"fmt"
-	"log"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -24,7 +39,7 @@ type AcmeCollector struct {
 func NewACMECollector(acmeInformers cmacmeinformers.ChallengeInformer) prometheus.Collector {
 	return &AcmeCollector{
 		challengesInformer:               acmeInformers,
-		certificateChallengeStatusMetric: *&certChallengeMetricDesc,
+		certificateChallengeStatusMetric: certChallengeMetricDesc,
 	}
 }
 
@@ -33,20 +48,14 @@ func (ac *AcmeCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (ac *AcmeCollector) Collect(ch chan<- prometheus.Metric) {
-	// if !ac.challengesInformer.Informer().HasSynced() {
-	// 	return
-	// }
-	//
-	log.Println("Entering here")
-
-	challengesList, err := ac.challengesInformer.Lister().List(labels.Everything())
-	if err != nil {
-		log.Printf("%v\n", err)
-		fmt.Println(err)
+	if !ac.challengesInformer.Informer().HasSynced() {
 		return
 	}
 
-	log.Printf("Listing challenges %v", challengesList)
+	challengesList, err := ac.challengesInformer.Lister().List(labels.Everything())
+	if err != nil {
+		return
+	}
 
 	for _, challenge := range challengesList {
 		for _, status := range challengeValidStatuses {
@@ -66,8 +75,6 @@ func (ac *AcmeCollector) Collect(ch chan<- prometheus.Metric) {
 				challenge.Namespace,
 				string(challenge.Spec.Type),
 			)
-
-			log.Printf("Adding metric: %v\n", metric)
 
 			ch <- metric
 		}
