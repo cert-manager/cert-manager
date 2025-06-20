@@ -19,11 +19,11 @@ package collectors
 import (
 	"fmt"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/labels"
 
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmacmeinformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/acme/v1"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
