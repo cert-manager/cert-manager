@@ -18,6 +18,7 @@ package informers
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +29,10 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/metadata/metadatalister"
+	"k8s.io/client-go/tools/cache"
+
+	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 // FakeSecretLister is a fake of SecretLister
@@ -115,6 +120,7 @@ type FakeSecretInterface struct {
 func (fsi FakeSecretInterface) Get(ctx context.Context, name string, opts metav1.GetOptions) (*corev1.Secret, error) {
 	return fsi.FakeGet(ctx, name, opts)
 }
+
 func (fsi FakeSecretInterface) List(ctx context.Context, opts metav1.ListOptions) (*corev1.SecretList, error) {
 	return fsi.FakeList(ctx, opts)
 }
@@ -126,18 +132,116 @@ func (fsi FakeSecretInterface) Create(ctx context.Context, secret *corev1.Secret
 func (fsi FakeSecretInterface) Update(ctx context.Context, secret *corev1.Secret, opts metav1.UpdateOptions) (*corev1.Secret, error) {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *corev1.Secret, err error) {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Apply(ctx context.Context, secret *applyconfigcorev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *corev1.Secret, err error) {
+	panic("not implemented")
+}
+
+type MockCacheSharedInformer struct{}
+
+func (mcs MockCacheSharedInformer) HasSynced() bool {
+	return true
+}
+
+func (mcs MockCacheSharedInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) AddEventHandlerWithOptions(handler cache.ResourceEventHandler, options cache.HandlerOptions) (cache.ResourceEventHandlerRegistration, error) {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) GetStore() cache.Store {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) GetController() cache.Controller {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) Run(stopCh <-chan struct{}) {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) RunWithContext(ctx context.Context) {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) LastSyncResourceVersion() string {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) SetWatchErrorHandlerWithContext(handler cache.WatchErrorHandlerWithContext) error {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) SetTransform(handler cache.TransformFunc) error {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) IsStopped() bool {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) AddIndexers(indexers cache.Indexers) error {
+	panic("not implemented")
+}
+
+func (mcs MockCacheSharedInformer) GetIndexer() cache.Indexer {
+	panic("not implemented")
+}
+
+type MockChallengesInformer struct {
+	Challenges []*acmemeta.Challenge
+}
+
+type MockChallengesLister struct {
+	ChallengesList []*acmemeta.Challenge
+}
+
+func (mci *MockChallengesInformer) Lister() acmev1.ChallengeLister {
+	mc := new(MockChallengesLister)
+	mc.ChallengesList = mci.Challenges
+	return mc
+}
+
+func (mci *MockChallengesInformer) Informer() cache.SharedIndexInformer {
+	return new(MockCacheSharedInformer)
+}
+
+func (mcl *MockChallengesLister) List(listLabels labels.Selector) ([]*acmemeta.Challenge, error) {
+	return mcl.ChallengesList, nil
+}
+
+// Dont need this method.
+func (mcl *MockChallengesLister) Challenges(namespace string) acmev1.ChallengeNamespaceLister {
 	panic("not implemented")
 }

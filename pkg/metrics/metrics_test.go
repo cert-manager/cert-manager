@@ -27,11 +27,34 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	fakeclock "k8s.io/utils/clock/testing"
+
+	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
+	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func Test_clockTimeSeconds(t *testing.T) {
 	fixedClock := fakeclock.NewFakeClock(time.Now())
 	m := New(testr.New(t), fixedClock)
+
+	mockInformer := new(fakeInformers.MockChallengesInformer)
+	pendingToValidChallenges := make([]*acmemeta.Challenge, 0)
+	pendingToValidChallenges = append(pendingToValidChallenges, gen.Challenge("test-challenge-status",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
+		gen.SetChallengeState(acmemeta.Pending),
+		gen.SetChallengeNamespace("test-challenge"),
+	), gen.Challenge("test-challenge-status-1",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
+		gen.SetChallengeState(acmemeta.Ready),
+		gen.SetChallengeNamespace("test-challenge"),
+	))
+	mockInformer.Challenges = pendingToValidChallenges
+
+	m.SetACMECollector(mockInformer)
 
 	tests := map[string]struct {
 		metricName string
@@ -56,6 +79,30 @@ certmanager_clock_time_seconds %f
 # TYPE certmanager_clock_time_seconds_gauge gauge
 certmanager_clock_time_seconds_gauge %f
 	`, float64(fixedClock.Now().Unix())),
+		},
+		"challenge_status": {
+			metricName: "certmanager_certificate_challenge_status",
+			metric:     m.challengeCollector,
+			expected: `
+# HELP certmanager_certificate_challenge_status The status of certificate challenges
+# TYPE certmanager_certificate_challenge_status gauge
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="errored",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="expired",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="invalid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="pending",type="DNS-01"} 1
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="processing",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="ready",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="valid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="errored",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="expired",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="invalid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="pending",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="processing",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="ready",type="DNS-01"} 1
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="valid",type="DNS-01"} 0
+	`,
 		},
 	}
 
