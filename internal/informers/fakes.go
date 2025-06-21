@@ -30,7 +30,6 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/metadata/metadatalister"
 	"k8s.io/client-go/tools/cache"
-	cachetypes "k8s.io/client-go/tools/cache"
 
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
@@ -160,27 +159,27 @@ func (mcs MockCacheSharedInformer) HasSynced() bool {
 	return true
 }
 
-func (mcs MockCacheSharedInformer) AddEventHandler(handler cachetypes.ResourceEventHandler) (cachetypes.ResourceEventHandlerRegistration, error) {
+func (mcs MockCacheSharedInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) AddEventHandlerWithResyncPeriod(handler cachetypes.ResourceEventHandler, resyncPeriod time.Duration) (cachetypes.ResourceEventHandlerRegistration, error) {
+func (mcs MockCacheSharedInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) AddEventHandlerWithOptions(handler cachetypes.ResourceEventHandler, options cachetypes.HandlerOptions) (cachetypes.ResourceEventHandlerRegistration, error) {
+func (mcs MockCacheSharedInformer) AddEventHandlerWithOptions(handler cache.ResourceEventHandler, options cache.HandlerOptions) (cache.ResourceEventHandlerRegistration, error) {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) RemoveEventHandler(handle cachetypes.ResourceEventHandlerRegistration) error {
+func (mcs MockCacheSharedInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) GetStore() cachetypes.Store {
+func (mcs MockCacheSharedInformer) GetStore() cache.Store {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) GetController() cachetypes.Controller {
+func (mcs MockCacheSharedInformer) GetController() cache.Controller {
 	panic("not implemented")
 }
 
@@ -196,15 +195,15 @@ func (mcs MockCacheSharedInformer) LastSyncResourceVersion() string {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) SetWatchErrorHandler(handler cachetypes.WatchErrorHandler) error {
+func (mcs MockCacheSharedInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) SetWatchErrorHandlerWithContext(handler cachetypes.WatchErrorHandlerWithContext) error {
+func (mcs MockCacheSharedInformer) SetWatchErrorHandlerWithContext(handler cache.WatchErrorHandlerWithContext) error {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) SetTransform(handler cachetypes.TransformFunc) error {
+func (mcs MockCacheSharedInformer) SetTransform(handler cache.TransformFunc) error {
 	panic("not implemented")
 }
 
@@ -212,11 +211,11 @@ func (mcs MockCacheSharedInformer) IsStopped() bool {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) AddIndexers(indexers cachetypes.Indexers) error {
+func (mcs MockCacheSharedInformer) AddIndexers(indexers cache.Indexers) error {
 	panic("not implemented")
 }
 
-func (mcs MockCacheSharedInformer) GetIndexer() cachetypes.Indexer {
+func (mcs MockCacheSharedInformer) GetIndexer() cache.Indexer {
 	panic("not implemented")
 }
 

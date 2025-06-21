@@ -26,13 +26,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/labels"
-	cache "k8s.io/client-go/tools/cache"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -116,35 +113,4 @@ certmanager_certificate_challenge_status{domain="example.com",name="test-challen
 			)
 		})
 	}
-}
-
-type mockChallengesInformer struct {
-	t          *testing.T
-	challenges []*acmemeta.Challenge
-}
-
-type mockChallengesLister struct {
-	t          *testing.T
-	challenges []*acmemeta.Challenge
-}
-
-func (mci *mockChallengesInformer) Lister() acmev1.ChallengeLister {
-	mc := new(mockChallengesLister)
-	mc.challenges = mci.challenges
-	mc.t = mci.t
-	return mc
-}
-
-func (mci *mockChallengesInformer) Informer() cache.SharedIndexInformer {
-	return new(fakeInformers.MockCacheSharedInformer)
-}
-
-func (mcl *mockChallengesLister) List(listLabels labels.Selector) ([]*acmemeta.Challenge, error) {
-	return mcl.challenges, nil
-}
-
-// Dont need this method.
-func (mcl *mockChallengesLister) Challenges(namespace string) acmev1.ChallengeNamespaceLister {
-	mcl.t.FailNow()
-	return nil
 }

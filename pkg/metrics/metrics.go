@@ -38,7 +38,6 @@ import (
 	"k8s.io/utils/clock"
 
 	challengeCollectors "github.com/cert-manager/cert-manager/internal/collectors"
-	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmacmeinformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/acme/v1"
 )
@@ -72,10 +71,7 @@ type Metrics struct {
 	challengeCollector                 prometheus.Collector
 }
 
-var (
-	readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
-	challengeValidStatuses = [...]acmemeta.State{acmemeta.Ready, acmemeta.Valid, acmemeta.Errored, acmemeta.Expired, acmemeta.Invalid, acmemeta.Processing, acmemeta.Unknown, acmemeta.Pending}
-)
+var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 
 // New creates a Metrics struct and populates it with prometheus metric types.
 func New(log logr.Logger, c clock.Clock) *Metrics {
