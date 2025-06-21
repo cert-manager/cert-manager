@@ -29,7 +29,11 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/metadata/metadatalister"
+	"k8s.io/client-go/tools/cache"
 	cachetypes "k8s.io/client-go/tools/cache"
+
+	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 // FakeSecretLister is a fake of SecretLister
@@ -213,5 +217,32 @@ func (mcs MockCacheSharedInformer) AddIndexers(indexers cachetypes.Indexers) err
 }
 
 func (mcs MockCacheSharedInformer) GetIndexer() cachetypes.Indexer {
+	panic("not implemented")
+}
+
+type MockChallengesInformer struct {
+	Challenges []*acmemeta.Challenge
+}
+
+type MockChallengesLister struct {
+	ChallengesList []*acmemeta.Challenge
+}
+
+func (mci *MockChallengesInformer) Lister() acmev1.ChallengeLister {
+	mc := new(MockChallengesLister)
+	mc.ChallengesList = mci.Challenges
+	return mc
+}
+
+func (mci *MockChallengesInformer) Informer() cache.SharedIndexInformer {
+	return new(MockCacheSharedInformer)
+}
+
+func (mcl *MockChallengesLister) List(listLabels labels.Selector) ([]*acmemeta.Challenge, error) {
+	return mcl.ChallengesList, nil
+}
+
+// Dont need this method.
+func (mcl *MockChallengesLister) Challenges(namespace string) acmev1.ChallengeNamespaceLister {
 	panic("not implemented")
 }

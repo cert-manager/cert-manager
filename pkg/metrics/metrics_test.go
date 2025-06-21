@@ -22,26 +22,25 @@ import (
 	"testing"
 	"time"
 
-	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
-	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/go-logr/logr/testr"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
-
 	"k8s.io/apimachinery/pkg/labels"
 	cache "k8s.io/client-go/tools/cache"
 	fakeclock "k8s.io/utils/clock/testing"
+
+	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
+	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func Test_clockTimeSeconds(t *testing.T) {
 	fixedClock := fakeclock.NewFakeClock(time.Now())
 	m := New(testr.New(t), fixedClock)
 
-	mockInformer := new(mockChallengesInformer)
-	mockInformer.t = t
+	mockInformer := new(fakeInformers.MockChallengesInformer)
 	pendingToValidChallenges := make([]*acmemeta.Challenge, 0)
 	pendingToValidChallenges = append(pendingToValidChallenges, gen.Challenge("test-challenge-status",
 		gen.SetChallengeDNSName("example.com"),
@@ -56,7 +55,7 @@ func Test_clockTimeSeconds(t *testing.T) {
 		gen.SetChallengeState(acmemeta.Ready),
 		gen.SetChallengeNamespace("test-challenge"),
 	))
-	mockInformer.challenges = pendingToValidChallenges
+	mockInformer.Challenges = pendingToValidChallenges
 
 	m.SetACMECollector(mockInformer)
 
@@ -87,7 +86,7 @@ certmanager_clock_time_seconds_gauge %f
 		"challenge_status": {
 			metricName: "certmanager_certificate_challenge_status",
 			metric:     m.challengeCollector,
-			expected: fmt.Sprintf(`
+			expected: `
 # HELP certmanager_certificate_challenge_status The status of certificate challenges
 # TYPE certmanager_certificate_challenge_status gauge
 certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="test-challenge",processing="false",reason="",status="",type="DNS-01"} 0
@@ -106,7 +105,7 @@ certmanager_certificate_challenge_status{domain="example.com",name="test-challen
 certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="processing",type="DNS-01"} 0
 certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="ready",type="DNS-01"} 1
 certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status-1",namespace="test-challenge",processing="false",reason="",status="valid",type="DNS-01"} 0
-	`),
+	`,
 		},
 	}
 
@@ -122,7 +121,6 @@ certmanager_certificate_challenge_status{domain="example.com",name="test-challen
 type mockChallengesInformer struct {
 	t          *testing.T
 	challenges []*acmemeta.Challenge
-	labels     labels.Selector
 }
 
 type mockChallengesLister struct {
