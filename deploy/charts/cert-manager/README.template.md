@@ -125,7 +125,7 @@ Aggregate ClusterRoles to Kubernetes default user-facing roles. For more informa
 #### **global.rbac.disableHTTPChallengesRole** ~ `bool`
 > Default value:
 > ```yaml
-> true
+> false
 > ```
 
 To use HTTP-01 ACME challenges, cert-manager needs extra permissions to create pods. If you want to avoid this added permission and disable HTTP-01 set this value.

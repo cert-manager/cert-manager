@@ -35,7 +35,7 @@ global:
     aggregateClusterRoles: true
     # To use HTTP-01 ACME challenges, cert-manager needs extra permissions to create pods.
     # If you want to avoid this added permission and disable HTTP-01 set this value.
-    disableHTTPChallengesRole: true
+    disableHTTPChallengesRole: false
 
   podSecurityPolicy:
     # Create PodSecurityPolicy for cert-manager.
