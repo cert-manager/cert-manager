@@ -32,6 +32,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
+	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -69,6 +70,9 @@ func TestMetricsController(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	mockInformer := new(fakeInformers.MockChallengesInformer)
+	metricsHandler.SetACMECollector(mockInformer)
+
 	server := metricsHandler.NewServer(ln)
 
 	errCh := make(chan error)
