@@ -18,7 +18,6 @@ package gen
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -126,12 +125,6 @@ func SetChallengeFinalizers(finalizers []string) ChallengeModifier {
 func SetChallengeDeletionTimestamp(ts metav1.Time) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.DeletionTimestamp = &ts
-	}
-}
-
-func SetChallengeUID(uid string) ChallengeModifier {
-	return func(ch *cmacme.Challenge) {
-		ch.UID = types.UID(uid)
 	}
 }
 
