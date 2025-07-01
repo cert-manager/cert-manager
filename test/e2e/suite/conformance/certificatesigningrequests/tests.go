@@ -458,7 +458,6 @@ func (s *Suite) Define() {
 				// Create the request, and delete at the end of the test
 				By("Creating a CertificateSigningRequest")
 				Expect(f.CRClient.Create(ctx, kubeCSR)).NotTo(HaveOccurred())
-				// nolint: contextcheck // This is a cleanup context
 				defer func() {
 					cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 					defer cancel()
