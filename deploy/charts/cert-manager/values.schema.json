@@ -796,9 +796,6 @@
         },
         "create": {
           "$ref": "#/$defs/helm-values.global.rbac.create"
-        },
-        "disableHTTPChallengesRole": {
-          "$ref": "#/$defs/helm-values.global.rbac.disableHTTPChallengesRole"
         }
       },
       "type": "object"
@@ -811,11 +808,6 @@
     "helm-values.global.rbac.create": {
       "default": true,
       "description": "Create required ClusterRoles and ClusterRoleBindings for cert-manager.",
-      "type": "boolean"
-    },
-    "helm-values.global.rbac.disableHTTPChallengesRole": {
-      "default": false,
-      "description": "To use HTTP-01 ACME challenges, cert-manager needs extra permissions to create pods. If you want to avoid this added permission and disable HTTP-01 set this value.",
       "type": "boolean"
     },
     "helm-values.global.revisionHistoryLimit": {
