@@ -28,8 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
+	"github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -37,9 +38,8 @@ func Test_clockTimeSeconds(t *testing.T) {
 	fixedClock := fakeclock.NewFakeClock(time.Now())
 	m := New(testr.New(t), fixedClock)
 
-	mockInformer := new(fakeInformers.MockChallengesInformer)
-	pendingToValidChallenges := make([]*acmemeta.Challenge, 0)
-	pendingToValidChallenges = append(pendingToValidChallenges, gen.Challenge("test-challenge-status",
+	challenges := make([]*acmemeta.Challenge, 0)
+	challenges = append(challenges, gen.Challenge("test-challenge-status",
 		gen.SetChallengeDNSName("example.com"),
 		gen.SetChallengeProcessing(false),
 		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
@@ -52,9 +52,16 @@ func Test_clockTimeSeconds(t *testing.T) {
 		gen.SetChallengeState(acmemeta.Ready),
 		gen.SetChallengeNamespace("test-challenge"),
 	))
-	mockInformer.Challenges = pendingToValidChallenges
 
-	m.SetACMECollector(mockInformer)
+	fakeClient := fake.NewSimpleClientset()
+	factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
+	challengesInformer := factory.Acme().V1().Challenges()
+	for _, ch := range challenges {
+		err := challengesInformer.Informer().GetIndexer().Add(ch)
+		assert.NoError(t, err)
+	}
+
+	m.SetACMECollector(challengesInformer.Lister())
 
 	tests := map[string]struct {
 		metricName string

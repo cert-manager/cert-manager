@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	cmacmeinformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/acme/v1"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 var (
@@ -31,28 +31,24 @@ var (
 	certChallengeMetricDesc = prometheus.NewDesc("certmanager_certificate_challenge_status", "The status of certificate challenges", []string{"status", "domain", "reason", "processing", "name", "namespace", "type"}, nil)
 )
 
-type AcmeCollector struct {
-	challengesInformer               cmacmeinformers.ChallengeInformer
+type ACMECollector struct {
+	challengesLister                 cmacmelisters.ChallengeLister
 	certificateChallengeStatusMetric *prometheus.Desc
 }
 
-func NewACMECollector(acmeInformers cmacmeinformers.ChallengeInformer) prometheus.Collector {
-	return &AcmeCollector{
-		challengesInformer:               acmeInformers,
+func NewACMECollector(acmeInformers cmacmelisters.ChallengeLister) prometheus.Collector {
+	return &ACMECollector{
+		challengesLister:                 acmeInformers,
 		certificateChallengeStatusMetric: certChallengeMetricDesc,
 	}
 }
 
-func (ac *AcmeCollector) Describe(ch chan<- *prometheus.Desc) {
+func (ac *ACMECollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- ac.certificateChallengeStatusMetric
 }
 
-func (ac *AcmeCollector) Collect(ch chan<- prometheus.Metric) {
-	if !ac.challengesInformer.Informer().HasSynced() {
-		return
-	}
-
-	challengesList, err := ac.challengesInformer.Lister().List(labels.Everything())
+func (ac *ACMECollector) Collect(ch chan<- prometheus.Metric) {
+	challengesList, err := ac.challengesLister.List(labels.Everything())
 	if err != nil {
 		return
 	}

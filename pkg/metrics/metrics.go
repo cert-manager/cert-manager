@@ -39,7 +39,7 @@ import (
 
 	challengeCollectors "github.com/cert-manager/cert-manager/internal/collectors"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmacmeinformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/acme/v1"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 const (
@@ -239,7 +239,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 	return m
 }
 
-func (m *Metrics) SetACMECollector(acmeInformers cmacmeinformers.ChallengeInformer) {
+func (m *Metrics) SetACMECollector(acmeInformers cmacmelisters.ChallengeLister) {
 	m.challengeCollector = challengeCollectors.NewACMECollector(acmeInformers)
 }
 
@@ -257,7 +257,10 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
-	m.registry.MustRegister(m.challengeCollector)
+
+	if m.challengeCollector != nil {
+		m.registry.MustRegister(m.challengeCollector)
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))

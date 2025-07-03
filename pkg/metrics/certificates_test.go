@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/clock"
 
-	fakeInformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -248,8 +247,6 @@ func TestCertificateMetrics(t *testing.T) {
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
 			m := New(testr.New(t), clock.RealClock{})
-			mockInformer := new(fakeInformers.MockChallengesInformer)
-			m.SetACMECollector(mockInformer)
 			m.UpdateCertificate(test.crt)
 
 			if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
