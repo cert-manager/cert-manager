@@ -94,16 +94,13 @@ update-config-api-defaults: | $(NEEDS_GO)
 	cd internal/apis/config/controller/v1alpha1/ && UPDATE_DEFAULTS=true $(GO) test . && echo "controller config api defaults updated"
 	cd internal/apis/config/webhook/v1alpha1/ && UPDATE_DEFAULTS=true $(GO) test . && echo "webhook config api defaults updated"
 
-.PHONY: setup-integration-tests
-setup-integration-tests: # No dependencies
-
 .PHONY: integration-test
 ## Same as `test` but only run the integration tests. By "integration tests",
 ## we mean the tests that require a live apiserver and etcd to run, but don't
 ## require a full Kubernetes cluster.
 ##
 ## @category Development
-integration-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
+integration-test: | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	cd test/integration && $(GOTESTSUM) ./...
 
 .PHONY: livedns-test
