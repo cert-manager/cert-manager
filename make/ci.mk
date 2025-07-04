@@ -28,13 +28,6 @@ verify-errexit:
 
 shared_verify_targets += verify-errexit
 
-.PHONY: generate-licenses
-generate-licenses:
-	rm -rf LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES cmd/startupapicheck/LICENSES test/integration/LICENSES test/e2e/LICENSES
-	$(MAKE) LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES cmd/startupapicheck/LICENSES test/integration/LICENSES test/e2e/LICENSES
-
-shared_generate_targets += generate-licenses
-
 .PHONY: generate-crds
 generate-crds: | $(NEEDS_CONTROLLER-GEN)
 	$(CONTROLLER-GEN) \

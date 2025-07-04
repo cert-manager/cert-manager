@@ -35,35 +35,3 @@ $(bin_dir)/scratch/cert-manager.license: $(bin_dir)/scratch/license.yaml $(bin_d
 
 $(bin_dir)/scratch/cert-manager.licenses_notice: $(bin_dir)/scratch/license-footnote.yaml | $(bin_dir)/scratch
 	cp $< $@
-
-# Create a go.work file so that go-licenses can discover the LICENCE file of the
-# github/cert-manager/cert-manager module and all the dependencies of the
-# github/cert-manager/cert-manager module.
-#
-# Without this, go-licenses *guesses* the wrong LICENSE for cert-manager and
-# links to the wrong versions of LICENSES for transitive dependencies.
-#
-# The go.work file is in a non-standard location, because we made a decision not
-# to commit a go.work file to the repository root for reasons given in:
-# https://github.com/cert-manager/cert-manager/pull/5935
-LICENSES_GO_WORK := $(bin_dir)/scratch/LICENSES.go.work
-$(LICENSES_GO_WORK): $(bin_dir)/scratch
-	GOWORK=$(abspath $@) \
-		$(MAKE) go-workspace
-
-LICENSES: $(LICENSES_GO_WORK) go.mod go.sum | $(NEEDS_GO-LICENSES)
-	GOWORK=$(abspath $(LICENSES_GO_WORK)) \
-	GOOS=linux GOARCH=amd64 \
-		$(GO-LICENSES) csv ./...  > $@
-
-cmd/%/LICENSES: $(LICENSES_GO_WORK) cmd/%/go.mod cmd/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd cmd/$* && \
-	GOWORK=$(abspath $(LICENSES_GO_WORK)) \
-	GOOS=linux GOARCH=amd64 \
-		$(GO-LICENSES) csv ./...  > ../../$@
-
-test/%/LICENSES: $(LICENSES_GO_WORK) test/%/go.mod test/%/go.sum | $(NEEDS_GO-LICENSES)
-	cd test/$* && \
-	GOWORK=$(abspath $(LICENSES_GO_WORK)) \
-	GOOS=linux GOARCH=amd64 \
-		$(GO-LICENSES) csv ./...  > ../../$@
