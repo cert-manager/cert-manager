@@ -32,6 +32,11 @@ targets:
       repo_ref: main
       repo_hash: ca4085279ab425a3e8503a5e227e94c6869ab31e
       repo_path: modules/klone
+    - folder_name: licenses
+      repo_url: https://github.com/cert-manager/makefile-modules.git
+      repo_ref: main
+      repo_hash: ca4085279ab425a3e8503a5e227e94c6869ab31e
+      repo_path: modules/licenses
     - folder_name: repository-base
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
