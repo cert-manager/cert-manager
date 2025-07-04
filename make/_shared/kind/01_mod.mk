@@ -1,4 +1,4 @@
-# Copyright 2021 The cert-manager Authors.
+# Copyright 2023 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#@ load("@ytt:overlay", "overlay")
-#@ load("@ytt:data", "data")
-
-#@overlay/match by=overlay.subset({"kind":"Deployment","metadata":{"name":"cert-manager"}})
----
-spec:
-  template:
-    spec:
-      containers:
-      #@overlay/match by=overlay.subset({"name": "cert-manager-controller"})
-      - image: #@ "cert-manager.local/cert-manager-controller:{}".format(data.values.app_version)
-
+include $(dir $(lastword $(MAKEFILE_LIST)))/kind.mk
+include $(dir $(lastword $(MAKEFILE_LIST)))/kind-image-preload.mk

@@ -1,0 +1,86 @@
+name: release
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  VERSION: ${{ github.ref_name }}
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # needed for checkout
+      packages: write # needed for push images
+      id-token: write # needed for keyless signing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: go-version
+        run: |
+          make print-go-version >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.go-version.outputs.result }}
+
+      - id: release
+        run: make release
+
+    outputs:
+      RELEASE_OCI_CONTROLLER_IMAGE: ${{ steps.release.outputs.RELEASE_OCI_CONTROLLER_IMAGE }}
+      RELEASE_OCI_CONTROLLER_TAG: ${{ steps.release.outputs.RELEASE_OCI_CONTROLLER_TAG }}
+      RELEASE_OCI_ACMESOLVER_IMAGE: ${{ steps.release.outputs.RELEASE_OCI_ACMESOLVER_IMAGE }}
+      RELEASE_OCI_ACMESOLVER_TAG: ${{ steps.release.outputs.RELEASE_OCI_ACMESOLVER_TAG }}
+      RELEASE_OCI_WEBHOOK_IMAGE: ${{ steps.release.outputs.RELEASE_OCI_WEBHOOK_IMAGE }}
+      RELEASE_OCI_WEBHOOK_TAG: ${{ steps.release.outputs.RELEASE_OCI_WEBHOOK_TAG }}
+      RELEASE_OCI_CAINJECTOR_IMAGE: ${{ steps.release.outputs.RELEASE_OCI_CAINJECTOR_IMAGE }}
+      RELEASE_OCI_CAINJECTOR_TAG: ${{ steps.release.outputs.RELEASE_OCI_CAINJECTOR_TAG }}
+      RELEASE_OCI_STARTUPAPICHECK_IMAGE: ${{ steps.release.outputs.RELEASE_OCI_STARTUPAPICHECK_IMAGE }}
+      RELEASE_OCI_STARTUPAPICHECK_TAG: ${{ steps.release.outputs.RELEASE_OCI_STARTUPAPICHECK_TAG }}
+      RELEASE_HELM_CHART_IMAGE: ${{ steps.release.outputs.RELEASE_HELM_CHART_IMAGE }}
+      RELEASE_HELM_CHART_VERSION: ${{ steps.release.outputs.RELEASE_HELM_CHART_VERSION }}
+
+  github_release:
+    runs-on: ubuntu-latest
+
+    needs: build_and_push
+
+    permissions:
+      contents: write # needed for creating a PR
+      pull-requests: write # needed for creating a PR
+
+    steps:
+      - run: |
+          touch .notes-file
+          echo "OCI_CONTROLLER_IMAGE: ${{ needs.build_and_push.outputs.RELEASE_OCI_CONTROLLER_IMAGE }}" >> .notes-file
+          echo "OCI_CONTROLLER_TAG: ${{ needs.build_and_push.outputs.RELEASE_OCI_CONTROLLER_TAG }}" >> .notes-file
+          echo "OCI_ACMESOLVER_IMAGE: ${{ needs.build_and_push.outputs.RELEASE_OCI_ACMESOLVER_IMAGE }}" >> .notes-file
+          echo "OCI_ACMESOLVER_TAG: ${{ needs.build_and_push.outputs.RELEASE_OCI_ACMESOLVER_TAG }}" >> .notes-file
+          echo "OCI_WEBHOOK_IMAGE: ${{ needs.build_and_push.outputs.RELEASE_OCI_WEBHOOK_IMAGE }}" >> .notes-file
+          echo "OCI_WEBHOOK_TAG: ${{ needs.build_and_push.outputs.RELEASE_OCI_WEBHOOK_TAG }}" >> .notes-file
+          echo "OCI_CAINJECTOR_IMAGE: ${{ needs.build_and_push.outputs.RELEASE_OCI_CAINJECTOR_IMAGE }}" >> .notes-file
+          echo "OCI_CAINJECTOR_TAG: ${{ needs.build_and_push.outputs.RELEASE_OCI_CAINJECTOR_TAG }}" >> .notes-file
+          echo "OCI_STARTUPAPICHECK_IMAGE: ${{ needs.build_and_push.outputs.RELEASE_OCI_STARTUPAPICHECK_IMAGE }}" >> .notes-file
+          echo "OCI_STARTUPAPICHECK_TAG: ${{ needs.build_and_push.outputs.RELEASE_OCI_STARTUPAPICHECK_TAG }}" >> .notes-file
+          echo "HELM_CHART_IMAGE: ${{ needs.build_and_push.outputs.RELEASE_HELM_CHART_IMAGE }}" >> .notes-file
+          echo "HELM_CHART_VERSION: ${{ needs.build_and_push.outputs.RELEASE_HELM_CHART_VERSION }}" >> .notes-file
+
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$VERSION" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="${VERSION}" \
+            --draft \
+            --verify-tag \
+            --notes-file .notes-file

@@ -33,11 +33,11 @@ if [[ -z "${INITIAL_RELEASE:-}" ]]; then
 fi
 
 usage_and_exit() {
-	echo "usage: $0 <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl> <host-architecture>" >&2
+	echo "usage: $0 <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl>" >&2
 	exit 1
 }
 
-if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ||-z "${4:-}" || -z "${5:-}" || -z "${6:-}" ]]; then
+if [[ -z "${1:-}" || -z "${2:-}" || -z "${3:-}" ||-z "${4:-}" || -z "${5:-}" ]]; then
 	usage_and_exit
 fi
 
@@ -47,12 +47,10 @@ ytt=$(realpath "$3")
 kubectl=$(realpath "$4")
 cmctl=$(realpath "$5")
 
-HOST_ARCH=$6
-
 # Set up a fresh kind cluster
 
 $kind delete clusters kind || :
-make e2e-setup-kind
+make kind-cluster
 
 ################################################
 # VERIFY INSTALL, UPGRADE, UNINSTALL WITH HELM #
@@ -104,8 +102,9 @@ $kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 # 2. BUILD AND UPGRADE TO HELM CHART FROM THE CURRENT MASTER
 
-# e2e-setup-certmanager both builds and deploys the latest available chart based on the current checkout
-make e2e-setup-certmanager
+# install both builds and deploys the latest available chart based on the current checkout
+make kind-cluster oci-load-controller oci-load-acmesolver oci-load-webhook oci-load-cainjector oci-load-startupapicheck
+make install
 
 # Wait for the cert-manager api to be available
 $cmctl check api --wait=2m -v=5
@@ -180,7 +179,6 @@ $ytt -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/controller-ops.yaml" \
      -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/values.yaml" \
      -f $MANIFEST_LOCATION \
      --data-value app_version="${RELEASE_VERSION}" \
-     --data-value arch="${HOST_ARCH}" \
      --ignore-unknown-comments | kubectl apply -f -
 
 rollout_cmd="$kubectl rollout status deployment/cert-manager-webhook --namespace ${NAMESPACE}"
