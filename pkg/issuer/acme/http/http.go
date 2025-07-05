@@ -36,8 +36,10 @@ import (
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
+	acmesolver "github.com/cert-manager/cert-manager/pkg/issuer/acme/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -143,7 +145,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	)
 }
 
-func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) (acmesolver.SolverCheckResult, cmacme.ChallengeSolverStatus, error) {
 	log := logf.FromContext(ctx, loggerName, "selfCheck")
 	ctx = logf.NewContext(ctx, log)
 
@@ -157,7 +159,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 		err := s.Present(ctx, issuer, ch)
 		if err != nil {
 			log.V(logf.DebugLevel).Info("failed to call Present function", "error", err)
-			return err
+			return acmesolver.SolverCheckResult{}, cmacme.ChallengeSolverStatus{}, err
 		}
 	}
 
@@ -167,23 +169,50 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 	log = log.WithValues("url", url)
 	ctx = logf.NewContext(ctx, log)
 
-	log.V(logf.DebugLevel).Info("running self check multiple times to ensure challenge has propagated", "required_passes", s.requiredPasses)
-	for i := range s.requiredPasses {
-		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers, s.Context.RESTConfig.UserAgent)
-		if err != nil {
-			return err
-		}
-		log.V(logf.DebugLevel).Info("reachability test passed, re-checking in 2s time")
-
-		if i != s.requiredPasses-1 {
-			// sleep for 2s between checks
-			time.Sleep(time.Second * 2)
+	// Get the status from the challenge
+	status := ch.Status.Solver.DeepCopy()
+	if status.HTTP == nil {
+		status.HTTP = &cmacme.ChallengeSolverStatusHTTP{
+			RequiredSuccesses: int64(s.requiredPasses),
 		}
 	}
 
-	log.V(logf.DebugLevel).Info("self check succeeded")
+	// If we have not reached the desired threshold, perform a reachability test
+	if status.HTTP.Successes < status.HTTP.RequiredSuccesses {
+		log.V(logf.DebugLevel).Info("running self check multiple times to ensure challenge has propagated", "required_passes", status.HTTP.RequiredSuccesses, "current_passes", status.HTTP.Successes)
 
-	return nil
+		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers, s.Context.RESTConfig.UserAgent)
+		if err != nil {
+			status.HTTP.Successes = 0
+			return acmesolver.SolverCheckResult{
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "ChallengeSelfCheckFailed",
+				Message: fmt.Sprintf("Challenge self check failed with error: %s", err),
+			}, *status, nil
+		}
+
+		// Increment success counter
+		status.HTTP.Successes++
+	}
+
+	// If we have reached the desired threshold, the check is passed
+	if status.HTTP.Successes >= status.HTTP.RequiredSuccesses {
+		log.V(logf.DebugLevel).Info("self check succeeded")
+		return acmesolver.SolverCheckResult{
+			Status:  cmmeta.ConditionTrue,
+			Reason:  "ChallengeSelfCheckPassed",
+			Message: fmt.Sprintf("Challenge self check has passed using method HTTP: %d/%d successful checks complete", status.HTTP.Successes, status.HTTP.RequiredSuccesses),
+		}, *status, nil
+	}
+
+	// Check passed, but not yet reached threshold
+	log.V(logf.DebugLevel).Info("reachability test passed, re-checking in 2s time")
+	return acmesolver.SolverCheckResult{
+		Status:     cmmeta.ConditionFalse,
+		Reason:     "ChallengeSelfCheckInProgress",
+		Message:    fmt.Sprintf("Challenge self check in progress: %d/%d successful checks complete", status.HTTP.Successes, status.HTTP.RequiredSuccesses),
+		RetryAfter: time.Second * 2,
+	}, *status, nil
 }
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any

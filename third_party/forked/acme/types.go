@@ -137,6 +137,16 @@ func (e *Error) Error() string {
 // did not succeed.
 // It contains all errors from Challenge items of the failed Authorization.
 type AuthorizationError struct {
+	// Status is the current status of an authorization.
+	// Possible values are StatusPending, StatusInvalid, StatusDeactivated,
+	// StatusExpired and StatusRevoked. StatusValid is not a possible option
+	// as it is not an error state
+	Status string
+
+	// RetryAfter indicates the duration to wait before retrying, this will be
+	// set when the status is StatusPending.
+	RetryAfter time.Duration
+
 	// URI uniquely identifies the failed Authorization.
 	URI string
 
@@ -149,16 +159,27 @@ type AuthorizationError struct {
 }
 
 func (a *AuthorizationError) Error() string {
+	// This keeps the error message the same as in previous versions
+	reason := a.Status
+	if reason == StatusInvalid {
+		reason = "error"
+	}
+
 	e := make([]string, len(a.Errors))
 	for i, err := range a.Errors {
 		e[i] = err.Error()
 	}
 
-	if a.Identifier != "" {
-		return fmt.Sprintf("acme: authorization error for %s: %s", a.Identifier, strings.Join(e, "; "))
+	detail := ""
+	if len(e) != 0 {
+		detail = ": " + strings.Join(e, "; ")
 	}
 
-	return fmt.Sprintf("acme: authorization error: %s", strings.Join(e, "; "))
+	if a.Identifier != "" {
+		return fmt.Sprintf("acme: authorization %s for %s%s", reason, a.Identifier, detail)
+	}
+
+	return fmt.Sprintf("acme: authorization %s%s", reason, detail)
 }
 
 // OrderError is returned from Client's order related methods.
@@ -513,10 +534,22 @@ func (z *wireAuthz) authorization(uri string) *Authorization {
 	return a
 }
 
-func (z *wireAuthz) error(uri string) *AuthorizationError {
+func (z *wireAuthz) error(uri string, res *http.Response) *AuthorizationError {
 	err := &AuthorizationError{
+		Status:     z.Status,
 		URI:        uri,
 		Identifier: z.Identifier.Value,
+	}
+
+	if z.Status == StatusPending {
+		err.RetryAfter = retryAfter(res.Header.Get("Retry-After"))
+		if err.RetryAfter == 0 {
+			// Given that the fastest challenges TLS-SNI and HTTP-01
+			// require a CA to make at least 1 network round trip
+			// and most likely persist a challenge state,
+			// this default delay seems reasonable.
+			err.RetryAfter = time.Second
+		}
 	}
 
 	if z.Error != nil {
