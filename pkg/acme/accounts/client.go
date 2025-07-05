@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -83,6 +84,11 @@ func BuildHTTPClientWithCABundle(metrics *metrics.Metrics, skipTLSVerify bool, c
 		}
 	}
 
+	jar, err := cookiejar.New(nil)
+	if err != nil { 
+  		panic(err)
+	}
+
 	return acmecl.NewInstrumentedClient(
 		metrics,
 		&http.Client{
@@ -99,6 +105,7 @@ func BuildHTTPClientWithCABundle(metrics *metrics.Metrics, skipTLSVerify bool, c
 				ExpectContinueTimeout: 1 * time.Second,
 			},
 			Timeout: defaultACMEHTTPTimeout,
+			Jar: jar,
 		},
 	)
 }
