@@ -188,6 +188,17 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
 {{- end }}
 
 {{/*
+Labels for the CRD resources.
+*/}}
+{{- define "cert-manager.crd-labels" -}}
+app: "{{ template "cert-manager.name" . }}"
+app.kubernetes.io/name: "{{ template "cert-manager.name" . }}"
+app.kubernetes.io/instance: "{{ .Release.Name }}"
+app.kubernetes.io/component: "crds"
+{{ include "labels" . }}
+{{- end -}}
+
+{{/*
 Check that the user has not set both .installCRDs and .crds.enabled or
 set .installCRDs and disabled .crds.keep.
 .installCRDs is deprecated and users should use .crds.enabled and .crds.keep instead.
