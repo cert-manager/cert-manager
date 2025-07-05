@@ -115,6 +115,7 @@ type FakeSecretInterface struct {
 func (fsi FakeSecretInterface) Get(ctx context.Context, name string, opts metav1.GetOptions) (*corev1.Secret, error) {
 	return fsi.FakeGet(ctx, name, opts)
 }
+
 func (fsi FakeSecretInterface) List(ctx context.Context, opts metav1.ListOptions) (*corev1.SecretList, error) {
 	return fsi.FakeList(ctx, opts)
 }
@@ -126,18 +127,23 @@ func (fsi FakeSecretInterface) Create(ctx context.Context, secret *corev1.Secret
 func (fsi FakeSecretInterface) Update(ctx context.Context, secret *corev1.Secret, opts metav1.UpdateOptions) (*corev1.Secret, error) {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *corev1.Secret, err error) {
 	panic("not implemented")
 }
+
 func (fsi FakeSecretInterface) Apply(ctx context.Context, secret *applyconfigcorev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *corev1.Secret, err error) {
 	panic("not implemented")
 }
