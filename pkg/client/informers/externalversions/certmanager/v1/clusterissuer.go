@@ -61,13 +61,25 @@ func NewFilteredClusterIssuerInformer(client versioned.Interface, resyncPeriod t
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertmanagerV1().ClusterIssuers().List(context.TODO(), options)
+				return client.CertmanagerV1().ClusterIssuers().List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertmanagerV1().ClusterIssuers().Watch(context.TODO(), options)
+				return client.CertmanagerV1().ClusterIssuers().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CertmanagerV1().ClusterIssuers().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CertmanagerV1().ClusterIssuers().Watch(ctx, options)
 			},
 		},
 		&apiscertmanagerv1.ClusterIssuer{},
