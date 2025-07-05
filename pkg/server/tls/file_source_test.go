@@ -18,10 +18,8 @@ package tls
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
@@ -141,8 +139,6 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	}
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
 func generatePrivateKeyAndCertificate(t *testing.T, serial string) ([]byte, []byte) {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -153,14 +149,8 @@ func generatePrivateKeyAndCertificate(t *testing.T, serial string) ([]byte, []by
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		t.Fatal(err)
-	}
 	cert := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.RSA,
 		Subject: pkix.Name{
 			SerialNumber: serial,

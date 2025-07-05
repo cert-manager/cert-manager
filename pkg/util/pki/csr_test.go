@@ -908,7 +908,6 @@ func TestSignCSRTemplate(t *testing.T) {
 			permittedIPRanges = nameConstraints.PermittedIPRanges
 		}
 		tmpl := &x509.Certificate{
-			Version:               3,
 			BasicConstraintsValid: true,
 			SerialNumber:          big.NewInt(0),
 			Subject: pkix.Name{
@@ -1189,14 +1188,7 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 			signerKey := spec.SignerKey
 			pub := signerKey.Public()
 
-			serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-			if err != nil {
-				t.Fatalf("failed to generate serial number for certificate: %s", err)
-			}
-
 			tmpl := &x509.Certificate{
-				SerialNumber: serialNumber,
-
 				PublicKey: pub,
 				Subject:   pkix.Name{CommonName: "abc123"},
 

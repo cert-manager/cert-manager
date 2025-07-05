@@ -97,7 +97,6 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 			expCertificate: &x509.Certificate{
 				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  true,
@@ -142,7 +141,6 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 			expCertificate: &x509.Certificate{
 				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  false,
@@ -187,7 +185,6 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 			expCertificate: &x509.Certificate{
 				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  false,
@@ -233,7 +230,6 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 			expCertificate: &x509.Certificate{
 				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  false,
