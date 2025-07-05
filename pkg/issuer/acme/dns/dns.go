@@ -38,6 +38,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/akamai"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azureprivatedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/digitalocean"
@@ -59,12 +60,13 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS     func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
-	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error)
-	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
-	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
-	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	digitalOcean func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
+	cloudDNS        func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
+	cloudFlare      func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error)
+	route53         func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
+	azureDNS        func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
+	azurePrivateDNS func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azureprivatedns.DNSProvider, error)
+	acmeDNS         func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	digitalOcean    func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -191,6 +193,38 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 
 	var impl solver
 	switch {
+	case providerConfig.AzurePrivateDNS != nil:
+		dbg.Info("preparing to create Azure Private DNS provider")
+		secret := ""
+		// if ClientID is empty, then we try to use MSI (azure metadata API for credentials)
+		// if ClientID is empty we don't even try to get the ClientSecret because it would not be used
+		if providerConfig.AzurePrivateDNS.ClientID != "" {
+			clientSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AzurePrivateDNS.ClientSecret.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting azureprivatedns client secret: %s", err)
+			}
+
+			clientSecretBytes, ok := clientSecret.Data[providerConfig.AzurePrivateDNS.ClientSecret.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("error getting azure private dns client secret: key '%s' not found in secret", providerConfig.AzurePrivateDNS.ClientSecret.Key)
+			}
+			secret = string(clientSecretBytes)
+		}
+		impl, err = s.dnsProviderConstructors.azurePrivateDNS(
+			string(providerConfig.AzurePrivateDNS.Environment),
+			providerConfig.AzurePrivateDNS.ClientID,
+			secret,
+			providerConfig.AzurePrivateDNS.SubscriptionID,
+			providerConfig.AzurePrivateDNS.TenantID,
+			providerConfig.AzurePrivateDNS.ResourceGroupName,
+			providerConfig.AzurePrivateDNS.HostedZoneName,
+			s.DNS01Nameservers,
+			canUseAmbientCredentials,
+			providerConfig.AzurePrivateDNS.ManagedIdentity,
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating azureprivatedns challenge solver: %s", err)
+		}
 	case providerConfig.Akamai != nil:
 		dbg.Info("preparing to create Akamai provider")
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
@@ -540,6 +574,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
+			azureprivatedns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
 		},
