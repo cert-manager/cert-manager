@@ -226,7 +226,7 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 		return nil, 0, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, a, bytes.NewReader(p))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a, bytes.NewReader(p))
 	if err != nil {
 		return nil, 0, err
 	}
