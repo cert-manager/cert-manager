@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,8 +28,10 @@ import (
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
@@ -40,11 +41,11 @@ const (
 	reasonCleanUpError   = "CleanUpError"
 	reasonPresentError   = "PresentError"
 	reasonPresented      = "Presented"
+	reasonSolveError     = "SolveError"
+	reasonSolved         = "Solved"
+	reasonAcceptError    = "AcceptError"
+	reasonAccepted       = "Accepted"
 	reasonFailed         = "Failed"
-
-	// How long to wait for an authorization response from the ACME server in acceptChallenge()
-	// before giving up
-	authorizationTimeout = 2 * time.Minute
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -164,24 +165,40 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		if err != nil {
 			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
 			ch.Status.Reason = err.Error()
+			apiutil.SetChallengeCondition(ch, cmacme.ChallengeConditionTypePresented, cmmeta.ConditionFalse,
+				reasonPresentError, "Error presenting challenge: %v", err)
+
 			return err
 		}
+
+		apiutil.SetChallengeCondition(ch, cmacme.ChallengeConditionTypePresented, cmmeta.ConditionTrue,
+			reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 
 		ch.Status.Presented = true
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	err = solver.Check(ctx, genericIssuer, ch)
-	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+	// TODO: Currently the DNS solver uses a sleep to wait for the TTL of the record, this is less than ideal in a
+	// control loop. Instead we should store some state in the status and requeue after a delay.
+	if !apiutil.ChallengeSolved(ch) {
+		err = solver.Check(ctx, genericIssuer, ch)
+		if err != nil {
+			log.Error(err, "propagation check failed")
+			ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
-		c.queue.AddAfter(types.NamespacedName{
-			Namespace: ch.Namespace,
-			Name:      ch.Name,
-		}, c.DNS01CheckRetryPeriod)
+			apiutil.SetChallengeCondition(ch, cmacme.ChallengeConditionTypeSolved, cmmeta.ConditionFalse,
+				reasonSolveError, "Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
-		return nil
+			c.queue.AddAfter(types.NamespacedName{
+				Namespace: ch.Namespace,
+				Name:      ch.Name,
+			}, c.DNS01CheckRetryPeriod)
+
+			return nil
+		}
+
+		apiutil.SetChallengeCondition(ch, cmacme.ChallengeConditionTypeSolved, cmmeta.ConditionTrue,
+			reasonSolved, "Solved challenge using %s mechanism", ch.Spec.Type)
 	}
 
 	err = c.acceptChallenge(ctx, cl, ch)
@@ -339,37 +356,38 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 // if accepting the challenge succeeds.
 func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx, "acceptChallenge")
+	ctx = logf.NewContext(ctx, log)
 
-	log.V(logf.DebugLevel).Info("accepting challenge with ACME server")
-	// We manually construct an ACME challenge here from our own internal type
-	// to save additional round trips to the ACME server.
-	acmeChal := &acmeapi.Challenge{
-		URI:   ch.Spec.URL,
-		Token: ch.Spec.Token,
-	}
-	acmeChal, err := cl.Accept(ctx, acmeChal)
-	if acmeChal != nil {
-		ch.Status.State = cmacme.State(acmeChal.Status)
-	}
-	if err != nil {
-		log.Error(err, "error accepting challenge")
-		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
-		return handleError(ctx, ch, err)
+	if !apiutil.ChallengeAccepted(ch) {
+		log.V(logf.DebugLevel).Info("accepting challenge with ACME server")
+
+		// We manually construct an ACME challenge here from our own internal type
+		// to save additional round trips to the ACME server.
+		acmeChal := &acmeapi.Challenge{
+			URI:   ch.Spec.URL,
+			Token: ch.Spec.Token,
+		}
+		acmeChal, err := cl.Accept(ctx, acmeChal)
+		if acmeChal != nil {
+			ch.Status.State = cmacme.State(acmeChal.Status)
+		}
+		if err != nil {
+			log.Error(err, "error accepting challenge")
+			ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
+
+			apiutil.SetChallengeCondition(ch, cmacme.ChallengeConditionTypeAccepted, cmmeta.ConditionFalse,
+				reasonAcceptError, "Error accepting challenge: %v", err)
+			return handleError(ctx, ch, err)
+		}
+
+		apiutil.SetChallengeCondition(ch, cmacme.ChallengeConditionTypeAccepted, cmmeta.ConditionTrue,
+			reasonAccepted, "Accepted challenge with ACME server")
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	// The underlying ACME implementation from golang.org/x/crypto of WaitAuthorization retries on
-	// response parsing errors.  In the event that an ACME server is not returning expected JSON
-	// responses, the call to WaitAuthorization can and has been seen to not return and loop forever,
-	// blocking the challenge's processing. Here, we defensively add a timeout for this exchange
-	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
-	// in the err variable.
-	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, authorizationTimeout)
-	defer cancelAuthorization()
-	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
+	authorization, err := cl.CheckAuthorization(ctx, ch.Spec.AuthorizationURL)
 	if err != nil {
-		log.Error(err, "error waiting for authorization")
-		return c.handleAuthorizationError(ctxTimeout, ch, err)
+		return c.handleAuthorizationError(ctx, ch, err)
 	}
 
 	ch.Status.State = cmacme.State(authorization.Status)
@@ -380,10 +398,27 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 }
 
 func (c *controller) handleAuthorizationError(ctx context.Context, ch *cmacme.Challenge, err error) error {
+	log := logf.FromContext(ctx)
+
 	authErr, ok := err.(*acmeapi.AuthorizationError)
 	if !ok {
+		log.Error(err, "error waiting for authorization")
 		return handleError(ctx, ch, err)
 	}
+
+	// If the error is that the auth is still pending, use the recommended
+	// RetryAfter to requeue and re-check.
+	if authErr.Status == acmeapi.StatusPending {
+		log.V(logf.DebugLevel).Info("waiting for authorization", "retryAfter", authErr.RetryAfter.String())
+		c.queue.AddAfter(types.NamespacedName{
+			Namespace: ch.Namespace,
+			Name:      ch.Name,
+		}, authErr.RetryAfter)
+
+		return nil
+	}
+
+	log.Error(err, "error waiting for authorization")
 
 	// TODO: the AuthorizationError above could technically contain the final
 	//   state of the authorization in its raw JSON form. This isn't currently
