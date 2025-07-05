@@ -71,7 +71,6 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 
 func generateSelfSignedCACert(t *testing.T, key crypto.Signer, name string) (*x509.Certificate, []byte) {
 	tmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{

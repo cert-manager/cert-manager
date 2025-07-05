@@ -254,15 +254,8 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 func signTestCert(key crypto.Signer) *x509.Certificate {
 	commonName := "testingcert"
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		panic(fmt.Errorf("failed to generate serial number: %s", err.Error()))
-	}
-
 	template := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		Subject: pkix.Name{
 			Organization: []string{"cert-manager"},

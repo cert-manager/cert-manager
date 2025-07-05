@@ -188,12 +188,8 @@ func Test__caRequiresRegeneration(t *testing.T) {
 		assert.NoError(t, err)
 		pkBytes, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
 		assert.NoError(t, err)
-		serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-		assert.NoError(t, err)
 		cert := &x509.Certificate{
-			Version:               3,
 			BasicConstraintsValid: true,
-			SerialNumber:          serialNumber,
 			PublicKeyAlgorithm:    x509.ECDSA,
 			Subject: pkix.Name{
 				CommonName: "cert-manager-webhook-ca",
