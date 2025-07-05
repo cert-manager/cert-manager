@@ -140,7 +140,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 						return nil, fmt.Errorf("mock error")
 					}
 
-					template.Version = 3
 					template.SerialNumber = big.NewInt(10)
 					template.NotBefore = time.Now()
 					template.NotAfter = template.NotBefore.Add(time.Minute)
@@ -162,7 +161,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 		{
 			name: "don't rotate root",
 			signFunc: func(template *x509.Certificate) (*x509.Certificate, error) {
-				template.Version = 3
 				template.SerialNumber = big.NewInt(10)
 				template.NotBefore = time.Now()
 				template.NotAfter = template.NotBefore.Add(time.Minute)
@@ -194,7 +192,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 		{
 			name: "rotate root",
 			signFunc: func(template *x509.Certificate) (*x509.Certificate, error) {
-				template.Version = 3
 				template.SerialNumber = big.NewInt(10)
 				template.NotBefore = time.Now()
 				template.NotAfter = template.NotBefore.Add(time.Minute)
@@ -230,7 +227,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 		{
 			name: "expire leaf",
 			signFunc: func(template *x509.Certificate) (*x509.Certificate, error) {
-				template.Version = 3
 				template.SerialNumber = big.NewInt(10)
 				template.NotBefore = time.Now()
 				template.NotAfter = template.NotBefore.Add(150 * time.Millisecond)

@@ -18,7 +18,6 @@ package pki
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
@@ -40,15 +39,8 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	template := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		PublicKey:             pk.Public(),
 		IsCA:                  true,

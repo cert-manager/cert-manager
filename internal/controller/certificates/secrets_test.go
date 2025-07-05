@@ -40,7 +40,6 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 	}{
 		"if pass non-nil certificate, expect all Annotations to be present": {
 			certificate: &x509.Certificate{
-				Version: 3,
 				Subject: pkix.Name{
 					CommonName:         "cert-manager",
 					Organization:       []string{"Example Organization 1", "Example Organization 2"},
@@ -75,7 +74,6 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 		},
 		"if pass non-nil certificate with only CommonName, expect all Annotations to be present": {
 			certificate: &x509.Certificate{
-				Version: 3,
 				Subject: pkix.Name{
 					CommonName: "cert-manager",
 				},
@@ -89,7 +87,6 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 		},
 		"if pass non-nil certificate with only IP Addresses, expect all Annotations to be present": {
 			certificate: &x509.Certificate{
-				Version:     3,
 				IPAddresses: []net.IP{{1, 1, 1, 1}, {1, 2, 3, 4}},
 			},
 			expAnnotations: map[string]string{
@@ -101,8 +98,7 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 		},
 		"if pass non-nil certificate with only URI SANs, expect all Annotations to be present": {
 			certificate: &x509.Certificate{
-				Version: 3,
-				URIs:    urls,
+				URIs: urls,
 			},
 			expAnnotations: map[string]string{
 				"cert-manager.io/common-name": "",
@@ -113,7 +109,6 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 		},
 		"if pass non-nil certificate with only DNS names, expect all Annotations to be present": {
 			certificate: &x509.Certificate{
-				Version:  3,
 				DNSNames: []string{"example.com", "cert-manager.io"},
 			},
 			expAnnotations: map[string]string{

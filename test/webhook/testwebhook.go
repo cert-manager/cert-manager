@@ -152,7 +152,6 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 		return nil, nil, nil, err
 	}
 	rootCA := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(1658),
 		PublicKeyAlgorithm:    x509.RSA,
@@ -173,7 +172,6 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 		return nil, nil, nil, err
 	}
 	servingCert := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(1659),
 		PublicKeyAlgorithm:    x509.RSA,

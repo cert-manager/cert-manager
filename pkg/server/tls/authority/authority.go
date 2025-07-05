@@ -20,13 +20,11 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
-	"math/big"
 	"sync"
 	"time"
 
@@ -213,12 +211,6 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 		return nil, fmt.Errorf("failed decoding CA private key: %v", err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return nil, err
-	}
-	template.Version = 3
-	template.SerialNumber = serialNumber
 	template.BasicConstraintsValid = true
 	template.NotBefore = time.Now()
 	template.NotAfter = template.NotBefore.Add(d.LeafDuration)
@@ -349,8 +341,6 @@ func caRequiresRegeneration(s *corev1.Secret) (bool, string) {
 	return false, ""
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
 // regenerateCA will regenerate and store a new CA.
 // If the provided Secret is nil, a new secret resource will be Created.
 // Otherwise, the provided resource will be modified and Updated.
@@ -364,14 +354,11 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		return err
 	}
 	cert := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		Subject: pkix.Name{
 			CommonName: d.CommonName,
