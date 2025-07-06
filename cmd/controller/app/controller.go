@@ -110,6 +110,8 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on prometheus address %s: %v", opts.MetricsListenAddress, err)
 	}
+
+	ctx.Metrics.SetupACMECollector(ctx.SharedInformerFactory.Acme().V1().Challenges().Lister())
 	metricsServer := ctx.Metrics.NewServer(metricsLn)
 
 	g.Go(func() error {
