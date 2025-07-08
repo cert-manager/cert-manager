@@ -19,6 +19,7 @@ limitations under the License.
 // certificate_expiration_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
 // certificate_renewal_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
 // certificate_ready_status{name, namespace, condition, issuer_name, issuer_kind, issuer_group}
+// certificate_challenge_status{status, domain, reason, processing, id, type}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -36,7 +37,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
 
+	challengeCollectors "github.com/cert-manager/cert-manager/internal/collectors"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 const (
@@ -65,6 +68,7 @@ type Metrics struct {
 	venafiClientRequestDurationSeconds *prometheus.SummaryVec
 	controllerSyncCallCount            *prometheus.CounterVec
 	controllerSyncErrorCount           *prometheus.CounterVec
+	challengeCollector                 prometheus.Collector
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -235,6 +239,10 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 	return m
 }
 
+func (m *Metrics) SetupACMECollector(acmeInformers cmacmelisters.ChallengeLister) {
+	m.challengeCollector = challengeCollectors.NewACMECollector(acmeInformers)
+}
+
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
@@ -249,6 +257,10 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
+
+	if m.challengeCollector != nil {
+		m.registry.MustRegister(m.challengeCollector)
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))

@@ -32,6 +32,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
+	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -69,6 +70,9 @@ func TestMetricsController(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	challengesInformer := cmFactory.Acme().V1().Challenges()
+	metricsHandler.SetupACMECollector(challengesInformer.Lister())
+
 	server := metricsHandler.NewServer(ln)
 
 	errCh := make(chan error)
@@ -180,13 +184,42 @@ func TestMetricsController(t *testing.T) {
 		gen.SetCertificateUID("uid-1"),
 	)
 
+	challenge := gen.Challenge("test-challenge-status",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
+		gen.SetChallengeNamespace(namespace),
+	)
+
 	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	challenge, err = cmClient.AcmeV1().Challenges(namespace).Create(t.Context(), challenge, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	challenge.Status.State = acmemeta.Pending
+	challenge.Status.Processing = true
+	challenge, err = cmClient.AcmeV1().Challenges(namespace).UpdateStatus(t.Context(), challenge, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Should expose that Certificate as unknown with no expiry
-	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
+	waitForMetrics(`# HELP certmanager_certificate_challenge_status The status of certificate challenges
+# TYPE certmanager_certificate_challenge_status gauge
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="errored",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="expired",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="invalid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="pending",type="DNS-01"} 1
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="processing",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="ready",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="true",reason="",status="valid",type="DNS-01"} 0
+# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 # HELP certmanager_certificate_not_after_timestamp_seconds The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.
@@ -230,8 +263,26 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 		t.Fatal(err)
 	}
 
+	challenge.Status.State = acmemeta.Ready
+	challenge.Status.Processing = false
+	challenge.Status.Presented = true
+	_, err = cmClient.AcmeV1().Challenges(namespace).UpdateStatus(t.Context(), challenge, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Should expose that Certificate as ready with expiry
-	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
+	waitForMetrics(`# HELP certmanager_certificate_challenge_status The status of certificate challenges
+# TYPE certmanager_certificate_challenge_status gauge
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="errored",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="expired",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="invalid",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="pending",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="processing",type="DNS-01"} 0
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="ready",type="DNS-01"} 1
+certmanager_certificate_challenge_status{domain="example.com",name="test-challenge-status",namespace="testns",processing="false",reason="",status="valid",type="DNS-01"} 0
+# HELP certmanager_certificate_expiration_timestamp_seconds The timestamp after which the certificate expires, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
 # HELP certmanager_certificate_not_after_timestamp_seconds The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.
@@ -253,8 +304,12 @@ certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-grou
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
 `)
-
 	err = cmClient.CertmanagerV1().Certificates(namespace).Delete(t.Context(), crt.Name, metav1.DeleteOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = cmClient.AcmeV1().Challenges(namespace).Delete(t.Context(), challenge.Name, metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
