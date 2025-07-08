@@ -68,3 +68,8 @@ go_acmesolver_mod_dir := ./cmd/acmesolver
 go_webhook_mod_dir := ./cmd/webhook
 go_cainjector_mod_dir := ./cmd/cainjector
 go_startupapicheck_mod_dir := ./cmd/startupapicheck
+
+crds_expression := or .Values.crds.enabled .Values.installCRDs
+
+helm_chart_source_dir := deploy/charts/cert-manager
+helm_labels_template_name := cert-manager.crd-labels

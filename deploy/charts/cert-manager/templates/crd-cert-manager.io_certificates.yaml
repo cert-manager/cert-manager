@@ -1,17 +1,14 @@
-# START crd {{- if or .Values.crds.enabled .Values.installCRDs }}
+{{- if or .Values.crds.enabled .Values.installCRDs }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: certificates.cert-manager.io
-  # START annotations {{- if .Values.crds.keep }}
+  name: "certificates.cert-manager.io"
+  {{- if .Values.crds.keep }}
   annotations:
     helm.sh/resource-policy: keep
-  # END annotations {{- end }}
+  {{- end }}
   labels:
-    app: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/instance: '{{ .Release.Name }}'
-    # Generated labels {{- include "labels" . | nindent 4 }}
+    {{- include "cert-manager.crd-labels" . | nindent 4 }}
 spec:
   group: cert-manager.io
   names:
@@ -27,7 +24,7 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - jsonPath: .status.conditions[?(@.type == "Ready")].status
           name: Ready
           type: string
         - jsonPath: .spec.secretName
@@ -37,7 +34,7 @@ spec:
           name: Issuer
           priority: 1
           type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
+        - jsonPath: .status.conditions[?(@.type == "Ready")].message
           name: Status
           priority: 1
           type: string
@@ -790,4 +787,4 @@ spec:
       storage: true
       subresources:
         status: {}
-# END crd {{- end }}
+{{- end }}

@@ -1,17 +1,14 @@
-# START crd {{- if or .Values.crds.enabled .Values.installCRDs }}
+{{- if or .Values.crds.enabled .Values.installCRDs }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: challenges.acme.cert-manager.io
-  # START annotations {{- if .Values.crds.keep }}
+  name: "challenges.acme.cert-manager.io"
+  {{- if .Values.crds.keep }}
   annotations:
     helm.sh/resource-policy: keep
-  # END annotations {{- end }}
+  {{- end }}
   labels:
-    app: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/instance: '{{ .Release.Name }}'
-    # Generated labels {{- include "labels" . | nindent 4 }}
+    {{- include "cert-manager.crd-labels" . | nindent 4 }}
 spec:
   group: acme.cert-manager.io
   names:
@@ -3187,4 +3184,4 @@ spec:
       storage: true
       subresources:
         status: {}
-# END crd {{- end }}
+{{- end }}
