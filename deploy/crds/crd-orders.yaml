@@ -16,19 +16,16 @@ metadata:
 spec:
   group: acme.cert-manager.io
   names:
+    categories:
+      - cert-manager
+      - cert-manager-acme
     kind: Order
     listKind: OrderList
     plural: orders
     singular: order
-    categories:
-      - cert-manager
-      - cert-manager-acme
   scope: Namespaced
   versions:
-    - name: v1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
+    - additionalPrinterColumns:
         - jsonPath: .status.state
           name: State
           type: string
@@ -40,17 +37,14 @@ spec:
           name: Reason
           priority: 1
           type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+        - description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+          jsonPath: .metadata.creationTimestamp
           name: Age
           type: date
+      name: v1
       schema:
         openAPIV3Schema:
           description: Order is a type to represent an Order with an ACME server
-          type: object
-          required:
-            - metadata
-            - spec
           properties:
             apiVersion:
               description: |-
@@ -70,10 +64,6 @@ spec:
             metadata:
               type: object
             spec:
-              type: object
-              required:
-                - issuerRef
-                - request
               properties:
                 commonName:
                   description: |-
@@ -86,9 +76,9 @@ spec:
                     DNSNames is a list of DNS names that should be included as part of the Order
                     validation process.
                     This field must match the corresponding field on the DER encoded CSR.
-                  type: array
                   items:
                     type: string
+                  type: array
                 duration:
                   description: |-
                     Duration is the duration for the not after date for the requested certificate.
@@ -99,9 +89,9 @@ spec:
                     IPAddresses is a list of IP addresses that should be included as part of the Order
                     validation process.
                     This field must match the corresponding field on the DER encoded CSR.
-                  type: array
                   items:
                     type: string
+                  type: array
                 issuerRef:
                   description: |-
                     IssuerRef references a properly configured ACME-type Issuer which should
@@ -109,9 +99,6 @@ spec:
                     If the Issuer does not exist, processing will be retried.
                     If the Issuer is not an 'ACME' Issuer, an error will be returned and the
                     Order will be marked as failed.
-                  type: object
-                  required:
-                    - name
                   properties:
                     group:
                       description: Group of the resource being referred to.
@@ -122,6 +109,9 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                  required:
+                    - name
+                  type: object
                 profile:
                   description: |-
                     Profile allows requesting a certificate profile from the ACME server.
@@ -132,25 +122,24 @@ spec:
                     Certificate signing request bytes in DER encoding.
                     This will be used when finalizing the order.
                     This field must be set on the order.
-                  type: string
                   format: byte
-            status:
+                  type: string
+              required:
+                - issuerRef
+                - request
               type: object
+            status:
               properties:
                 authorizations:
                   description: |-
                     Authorizations contains data returned from the ACME server on what
                     authorizations must be completed in order to validate the DNS names
                     specified on the Order.
-                  type: array
                   items:
                     description: |-
                       ACMEAuthorization contains data returned from the ACME server on an
                       authorization that must be completed in order validate a DNS name on an ACME
                       Order resource.
-                    type: object
-                    required:
-                      - url
                     properties:
                       challenges:
                         description: |-
@@ -158,17 +147,11 @@ spec:
                           One of these challenge types will be selected when validating the DNS
                           name and an appropriate Challenge resource will be created to perform
                           the ACME challenge process.
-                        type: array
                         items:
                           description: |-
                             Challenge specifies a challenge offered by the ACME server for an Order.
                             An appropriate Challenge resource can be created to perform the ACME
                             challenge process.
-                          type: object
-                          required:
-                            - token
-                            - type
-                            - url
                           properties:
                             token:
                               description: |-
@@ -188,6 +171,12 @@ spec:
                                 URL is the URL of this challenge. It can be used to retrieve additional
                                 metadata about the Challenge from the ACME server.
                               type: string
+                          required:
+                            - token
+                            - type
+                            - url
+                          type: object
+                        type: array
                       identifier:
                         description: Identifier is the DNS name to be validated as part of this authorization
                         type: string
@@ -201,7 +190,6 @@ spec:
                           Encrypt's production endpoint).
                           If not set and 'identifier' is set, the state is assumed to be pending
                           and a Challenge will be created.
-                        type: string
                         enum:
                           - valid
                           - ready
@@ -210,6 +198,7 @@ spec:
                           - invalid
                           - expired
                           - errored
+                        type: string
                       url:
                         description: URL is the URL of the Authorization that must be completed
                         type: string
@@ -221,20 +210,24 @@ spec:
                           For example, if '*.example.com' is the DNS name being validated, this
                           field will be 'true' and the 'identifier' field will be 'example.com'.
                         type: boolean
+                    required:
+                      - url
+                    type: object
+                  type: array
                 certificate:
                   description: |-
                     Certificate is a copy of the PEM encoded certificate for this Order.
                     This field will be populated after the order has been successfully
                     finalized with the ACME server, and the order has transitioned to the
                     'valid' state.
-                  type: string
                   format: byte
+                  type: string
                 failureTime:
                   description: |-
                     FailureTime stores the time that this order failed.
                     This is used to influence garbage collection and back-off.
-                  type: string
                   format: date-time
+                  type: string
                 finalizeURL:
                   description: |-
                     FinalizeURL of the Order.
@@ -249,7 +242,6 @@ spec:
                   description: |-
                     State contains the current state of this Order resource.
                     States 'success' and 'expired' are 'final'
-                  type: string
                   enum:
                     - valid
                     - ready
@@ -258,6 +250,7 @@ spec:
                     - invalid
                     - expired
                     - errored
+                  type: string
                 url:
                   description: |-
                     URL of the Order.
@@ -265,7 +258,13 @@ spec:
                     The Order controller will populate this field when the Order is first processed.
                     This field will be immutable after it is initially set.
                   type: string
+              type: object
+          required:
+            - metadata
+            - spec
+          type: object
       served: true
       storage: true
-
+      subresources:
+        status: {}
 # END crd {{- end }}
