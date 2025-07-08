@@ -61,11 +61,10 @@ import (
 // automatically called.
 func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
-		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
 		s.setup(f)
 
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			// Special case Public ACME Servers against being run in the standard
 			// e2e tests.
 			if strings.Contains(s.Name, "Public ACME Server") && strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
@@ -400,7 +399,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		}
 
 		defineTest := func(test testCase) {
-			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
+			s.it(f, test.name, func(ctx context.Context, issuerRef cmmeta.ObjectReference) {
 				requiredFeatures := sets.New(test.requiredFeatures...)
 
 				if requiredFeatures.Has(featureset.OtherNamesFeature) {
@@ -456,7 +455,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		////// Gateway/ Ingress Tests ///////
 		/////////////////////////////////////
 
-		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(ctx context.Context, issuerRef cmmeta.ObjectReference) {
 			if s.HTTP01TestType != "Ingress" {
 				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
@@ -508,7 +507,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(ctx context.Context, issuerRef cmmeta.ObjectReference) {
 			if s.HTTP01TestType != "Ingress" {
 				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
@@ -615,7 +614,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(ctx context.Context, issuerRef cmmeta.ObjectReference) {
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 
 			name := "testcert-gateway"
@@ -663,7 +662,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		/////// Complex behavioral tests ///////
 		////////////////////////////////////////
 
-		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(ctx context.Context, issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -726,7 +725,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			}
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
-		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(ctx context.Context, issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",

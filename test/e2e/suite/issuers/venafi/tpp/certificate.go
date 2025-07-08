@@ -36,7 +36,6 @@ import (
 
 var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-certificate")
-	ctx := context.TODO()
 
 	var (
 		issuer                *cmapi.Issuer
@@ -45,23 +44,23 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		certificateSecretName = "test-venafi-cert-tls"
 	)
 
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		tppAddon.Namespace = f.Namespace.Name
 	})
 
 	f.RequireAddon(tppAddon)
 
 	// Create the Issuer resource
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		var err error
 
 		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
-		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -70,15 +69,15 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	AfterEach(func(testingCtx context.Context) {
 		By("Cleaning up")
 		if issuer != nil {
-			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuer.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
 
-	It("should obtain a signed certificate for a single domain", func() {
+	It("should obtain a signed certificate for a single domain", func(testingCtx context.Context) {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
@@ -92,11 +91,11 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 			gen.SetCertificateCommonName(rand.String(10)+".venafi-e2e.example"),
 			gen.SetCertificateOrganization("test-org"),
 		)
-		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")

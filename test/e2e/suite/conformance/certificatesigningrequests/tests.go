@@ -62,7 +62,7 @@ func (s *Suite) Define() {
 
 		// Wrap this in a BeforeEach else flags will not have been parsed and
 		// f.Config will not be populated at the time that this code is run.
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			s.validate()
 		})
 
@@ -460,7 +460,8 @@ func (s *Suite) Define() {
 				Expect(f.CRClient.Create(ctx, kubeCSR)).NotTo(HaveOccurred())
 				// nolint: contextcheck // This is a cleanup context
 				defer func() {
-					cleanupCtx := context.Background()
+					cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+					defer cancel()
 
 					err := f.CRClient.Delete(cleanupCtx, kubeCSR)
 					Expect(err).NotTo(HaveOccurred())
