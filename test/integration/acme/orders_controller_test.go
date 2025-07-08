@@ -121,12 +121,9 @@ func TestAcmeOrdersController(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
-		ContextOptions: controllerpkg.ContextOptions{
-			Clock: clock.RealClock{},
-			ACMEOptions: controllerpkg.ACMEOptions{
-				AccountRegistry: accountRegistry,
-			},
-		},
+		ACMEAccountRegistry:       accountRegistry,
+		Clock:                     clock.RealClock{},
+		ContextOptions:            controllerpkg.ContextOptions{},
 
 		Recorder:     framework.NewEventRecorder(t, scheme),
 		FieldManager: "cert-manager-orders-test",

@@ -69,8 +69,8 @@ func TestIssuingController(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t, scheme),
@@ -271,8 +271,8 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t, scheme),
@@ -482,8 +482,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t, scheme),
@@ -715,8 +715,8 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t, scheme),
@@ -940,8 +940,8 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t, scheme),
@@ -1038,8 +1038,8 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
 		ContextOptions: controllerpkg.ContextOptions{
-			Clock:              clock.RealClock{},
 			CertificateOptions: controllerOptions,
 		},
 		Recorder:     framework.NewEventRecorder(t, scheme),

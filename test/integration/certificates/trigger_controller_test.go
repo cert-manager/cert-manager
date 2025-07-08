@@ -72,11 +72,10 @@ func TestTriggerController(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
-		ContextOptions: controllerpkg.ContextOptions{
-			Clock: fakeClock,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-trigger-test",
+		Clock:                     fakeClock,
+		ContextOptions:            controllerpkg.ContextOptions{},
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-trigger-test",
 	}
 	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
 	if err != nil {
@@ -177,11 +176,10 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
-		ContextOptions: controllerpkg.ContextOptions{
-			Clock: fakeClock,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-trigger-test",
+		Clock:                     fakeClock,
+		ContextOptions:            controllerpkg.ContextOptions{},
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-trigger-test",
 	}
 	// Start the trigger controller
 	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
@@ -273,11 +271,10 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
-		ContextOptions: controllerpkg.ContextOptions{
-			Clock: fakeClock,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-trigger-test",
+		Clock:                     fakeClock,
+		ContextOptions:            controllerpkg.ContextOptions{},
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-trigger-test",
 	}
 
 	// Start the trigger controller

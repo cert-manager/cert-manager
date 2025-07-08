@@ -29,7 +29,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 )
 
@@ -51,12 +50,6 @@ type Acme struct {
 	resourceNamespace func(iss cmapi.GenericIssuer) string
 	// used as a cache for ACME clients
 	accountRegistry accounts.Registry
-
-	// metrics is used to create instrumented ACME clients
-	metrics *metrics.Metrics
-
-	// userAgent is the string used as the UserAgent when making HTTP calls.
-	userAgent string
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -65,13 +58,11 @@ func New(ctx *controller.Context) (issuer.Interface, error) {
 
 	a := &Acme{
 		keyFromSecret:     newKeyFromSecret(secretsLister),
-		clientBuilder:     accounts.NewClient,
+		clientBuilder:     accounts.NewClient(ctx.Metrics, ctx.RESTConfig.UserAgent),
 		secretsClient:     ctx.Client.CoreV1(),
 		recorder:          ctx.Recorder,
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace,
-		accountRegistry:   ctx.ACMEOptions.AccountRegistry,
-		metrics:           ctx.Metrics,
-		userAgent:         ctx.RESTConfig.UserAgent,
+		accountRegistry:   ctx.ACMEAccountRegistry,
 	}
 
 	return a, nil

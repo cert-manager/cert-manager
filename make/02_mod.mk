@@ -37,6 +37,8 @@ include make/scan.mk
 include make/ko.mk
 include make/third_party.mk
 
+generate-licenses: generate-go-licenses
+
 .PHONY: tidy
 tidy: generate-go-mod-tidy
 

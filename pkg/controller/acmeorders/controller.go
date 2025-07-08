@@ -155,7 +155,7 @@ func NewController(
 		helper:              issuer.NewHelper(issuerLister, clusterIssuerLister),
 		recorder:            ctx.Recorder,
 		cmClient:            ctx.CMClient,
-		accountRegistry:     ctx.AccountRegistry,
+		accountRegistry:     ctx.ACMEAccountRegistry,
 		fieldManager:        ctx.FieldManager,
 	}, queue, mustSync, nil
 
