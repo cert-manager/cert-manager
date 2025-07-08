@@ -16,6 +16,8 @@ metadata:
 spec:
   group: cert-manager.io
   names:
+    categories:
+      - cert-manager
     kind: CertificateRequest
     listKind: CertificateRequestList
     plural: certificaterequests
@@ -23,14 +25,9 @@ spec:
       - cr
       - crs
     singular: certificaterequest
-    categories:
-      - cert-manager
   scope: Namespaced
   versions:
-    - name: v1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
+    - additionalPrinterColumns:
         - jsonPath: .status.conditions[?(@.type=="Approved")].status
           name: Approved
           type: string
@@ -50,10 +47,11 @@ spec:
           name: Status
           priority: 1
           type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+        - description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+          jsonPath: .metadata.creationTimestamp
           name: Age
           type: date
+      name: v1
       schema:
         openAPIV3Schema:
           description: |-
@@ -66,7 +64,6 @@ spec:
 
             A CertificateRequest is a one-shot resource, meaning it represents a single
             point in time request for a certificate and cannot be re-used.
-          type: object
           properties:
             apiVersion:
               description: |-
@@ -89,10 +86,6 @@ spec:
               description: |-
                 Specification of the desired state of the CertificateRequest resource.
                 https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-              type: object
-              required:
-                - issuerRef
-                - request
               properties:
                 duration:
                   description: |-
@@ -101,21 +94,21 @@ spec:
                     requested attribute.
                   type: string
                 extra:
+                  additionalProperties:
+                    items:
+                      type: string
+                    type: array
                   description: |-
                     Extra contains extra attributes of the user that created the CertificateRequest.
                     Populated by the cert-manager webhook on creation and immutable.
                   type: object
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: string
                 groups:
                   description: |-
                     Groups contains group membership of the user that created the CertificateRequest.
                     Populated by the cert-manager webhook on creation and immutable.
-                  type: array
                   items:
                     type: string
+                  type: array
                   x-kubernetes-list-type: atomic
                 isCA:
                   description: |-
@@ -136,9 +129,6 @@ spec:
                     from any namespace.
 
                     The `name` field of the reference must always be specified.
-                  type: object
-                  required:
-                    - name
                   properties:
                     group:
                       description: Group of the resource being referred to.
@@ -149,6 +139,9 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                  required:
+                    - name
+                  type: object
                 request:
                   description: |-
                     The PEM-encoded X.509 certificate signing request to be submitted to the
@@ -161,8 +154,8 @@ spec:
                     If the CSR has a ExtKeyUsage extension, its extended key usages
                     must match the extended key usages in the `usages` field of this
                     CertificateRequest.
-                  type: string
                   format: byte
+                  type: string
                 uid:
                   description: |-
                     UID contains the uid of the user that created the CertificateRequest.
@@ -177,7 +170,6 @@ spec:
                     as specified here without any additional values.
 
                     If unset, defaults to `digital signature` and `key encipherment`.
-                  type: array
                   items:
                     description: |-
                       KeyUsage specifies valid usage contexts for keys.
@@ -209,7 +201,6 @@ spec:
                       "ocsp signing",
                       "microsoft sgc",
                       "netscape sgc"
-                    type: string
                     enum:
                       - signing
                       - digital signature
@@ -234,18 +225,23 @@ spec:
                       - ocsp signing
                       - microsoft sgc
                       - netscape sgc
+                    type: string
+                  type: array
                 username:
                   description: |-
                     Username contains the name of the user that created the CertificateRequest.
                     Populated by the cert-manager webhook on creation and immutable.
                   type: string
+              required:
+                - issuerRef
+                - request
+              type: object
             status:
               description: |-
                 Status of the CertificateRequest.
                 This is set and managed automatically.
                 Read-only.
                 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-              type: object
               properties:
                 ca:
                   description: |-
@@ -253,8 +249,8 @@ spec:
                     (Certificate Authority).
                     This is set on a best-effort basis by different issuers.
                     If not set, the CA is assumed to be unknown/not available.
-                  type: string
                   format: byte
+                  type: string
                 certificate:
                   description: |-
                     The PEM encoded X.509 certificate resulting from the certificate
@@ -262,26 +258,21 @@ spec:
                     If not set, the CertificateRequest has either not been completed or has
                     failed. More information on failure can be found by checking the
                     `conditions` field.
-                  type: string
                   format: byte
+                  type: string
                 conditions:
                   description: |-
                     List of status conditions to indicate the status of a CertificateRequest.
                     Known condition types are `Ready`, `InvalidRequest`, `Approved` and `Denied`.
-                  type: array
                   items:
                     description: CertificateRequestCondition contains condition information for a CertificateRequest.
-                    type: object
-                    required:
-                      - status
-                      - type
                     properties:
                       lastTransitionTime:
                         description: |-
                           LastTransitionTime is the timestamp corresponding to the last status
                           change of this condition.
-                        type: string
                         format: date-time
+                        type: string
                       message:
                         description: |-
                           Message is a human readable description of the details of the last
@@ -294,16 +285,21 @@ spec:
                         type: string
                       status:
                         description: Status of the condition, one of (`True`, `False`, `Unknown`).
-                        type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
+                        type: string
                       type:
                         description: |-
                           Type of the condition, known values are (`Ready`, `InvalidRequest`,
                           `Approved`, `Denied`).
                         type: string
+                    required:
+                      - status
+                      - type
+                    type: object
+                  type: array
                   x-kubernetes-list-map-keys:
                     - type
                   x-kubernetes-list-type: map
@@ -311,9 +307,12 @@ spec:
                   description: |-
                     FailureTime stores the time that this CertificateRequest failed. This is
                     used to influence garbage collection and back-off.
-                  type: string
                   format: date-time
+                  type: string
+              type: object
+          type: object
       served: true
       storage: true
-
+      subresources:
+        status: {}
 # END crd {{- end }}
