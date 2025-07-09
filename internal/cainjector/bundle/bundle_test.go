@@ -19,10 +19,8 @@ package bundle
 import (
 	"bytes"
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"math/big"
 	"testing"
 	"time"
 
@@ -95,23 +93,14 @@ func TestAppendCertificatesToBundle(t *testing.T) {
 	}
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
 func mustCreateCertificate(t *testing.T, name string, notBefore, notAfter time.Time) []byte {
 	pk, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	template := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		PublicKey:             pk.Public(),
 		IsCA:                  true,

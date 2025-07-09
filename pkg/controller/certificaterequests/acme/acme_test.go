@@ -91,7 +91,6 @@ func TestSign(t *testing.T) {
 	}
 
 	rootTmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{

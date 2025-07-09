@@ -18,11 +18,9 @@ package venafi
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
-	"math/big"
 	"testing"
 	"time"
 
@@ -76,15 +74,8 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	rootTmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		PublicKey:             rootPK.Public(),
 		IsCA:                  true,
