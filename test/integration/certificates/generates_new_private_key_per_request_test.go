@@ -348,12 +348,11 @@ func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 		KubeSharedInformerFactory: factory,
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
-		ContextOptions: controllerpkg.ContextOptions{
-			Metrics: metrics,
-			Clock:   clock,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-issuing-test",
+		Metrics:                   metrics,
+		Clock:                     clock,
+		ContextOptions:            controllerpkg.ContextOptions{},
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
 
 	// TODO: set field manager before calling each of those - is that what we do in actual code?

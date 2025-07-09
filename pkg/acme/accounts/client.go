@@ -27,7 +27,6 @@ import (
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	"github.com/cert-manager/cert-manager/pkg/acme/client/middleware"
 	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
@@ -39,35 +38,43 @@ const (
 	defaultACMEHTTPTimeout = time.Second * 90
 )
 
-// NewClientFunc is a function type for building a new ACME client.
-type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface
+type NewClientOptions struct {
+	SkipTLSVerify bool
+	CABundle      []byte
+	Server        string
+	PrivateKey    *rsa.PrivateKey
+}
 
-var _ NewClientFunc = NewClient
+// NewClientFunc is a function type for building a new ACME client.
+type NewClientFunc func(options NewClientOptions) acmecl.Interface
 
 // NewClient is an implementation of NewClientFunc that returns a real ACME client.
-func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) acmecl.Interface {
+func NewClient(
+	metrics *metrics.Metrics,
+	userAgent string,
+) NewClientFunc {
+	return func(options NewClientOptions) acmecl.Interface {
+		httpClient := buildHTTPClientWithCABundle(metrics, options.SkipTLSVerify, options.CABundle)
+		return newClientFromHTTPClient(httpClient, userAgent, options)
+	}
+}
+
+func newClientFromHTTPClient(httpClient *http.Client, userAgent string, options NewClientOptions) acmecl.Interface {
 	return middleware.NewLogger(&acmeapi.Client{
-		Key:          privateKey,
-		HTTPClient:   client,
-		DirectoryURL: config.Server,
+		Key:          options.PrivateKey,
+		HTTPClient:   httpClient,
+		DirectoryURL: options.Server,
 		UserAgent:    userAgent,
 		RetryBackoff: acmeutil.RetryBackoff,
 	})
 }
 
-// BuildHTTPClient returns an instrumented HTTP client to be used by an ACME client.
-// For the time being, we construct a new HTTP client on each invocation, because we need
-// to set the 'skipTLSVerify' flag on the HTTP client itself distinct from the ACME client
-func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client {
-	return BuildHTTPClientWithCABundle(metrics, skipTLSVerify, nil)
-}
-
-// BuildHTTPClientWithCABundle returns an instrumented HTTP client to be used by an ACME
+// buildHTTPClientWithCABundle returns an instrumented HTTP client to be used by an ACME
 // client, with an optional custom CA bundle set.
 // For the time being, we construct a new HTTP client on each invocation, because we need
 // to set the 'skipTLSVerify' flag and the CA bundle on the HTTP client itself, distinct
 // from the ACME client
-func BuildHTTPClientWithCABundle(metrics *metrics.Metrics, skipTLSVerify bool, caBundle []byte) *http.Client {
+func buildHTTPClientWithCABundle(metrics *metrics.Metrics, skipTLSVerify bool, caBundle []byte) *http.Client {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: skipTLSVerify,
 	}

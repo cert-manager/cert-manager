@@ -21,7 +21,6 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"fmt"
-	"net/http"
 	"net/url"
 	"reflect"
 	"slices"
@@ -536,7 +535,7 @@ func TestAcme_Setup(t *testing.T) {
 				RemoveClientFunc: func(string) {
 					removeClientWasCalled = true
 				},
-				AddClientFunc: func(string, cmacme.ACMEIssuer, *rsa.PrivateKey, string) {
+				AddClientFunc: func(string, accounts.NewClientOptions) {
 					addClientWasCalled = true
 				},
 				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
@@ -631,7 +630,7 @@ func keyFromSecretMockBuilder(wasCalled *bool, key crypto.Signer, err error) key
 }
 
 func clientBuilderMock(cl acmecl.Interface) accounts.NewClientFunc {
-	return func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface {
+	return func(_ accounts.NewClientOptions) acmecl.Interface {
 		return cl
 	}
 }

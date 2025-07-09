@@ -142,7 +142,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
-	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
+	c.accountRegistry = ctx.ACMEAccountRegistry
 
 	var err error
 	c.httpSolver, err = http.NewSolver(ctx)

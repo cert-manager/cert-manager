@@ -35,18 +35,15 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/server"
 	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
@@ -306,7 +303,6 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 	}
 
 	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01Config.SolverRunAsNonRoot
-	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
 		Kubeconfig:         opts.KubeConfig,
@@ -315,9 +311,6 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		APIServerHost:      opts.APIServerHost,
 
 		Namespace: opts.Namespace,
-
-		Clock:   clock.RealClock{},
-		Metrics: metrics.New(log, clock.RealClock{}),
 
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverResourceRequestCPU:    http01SolverResourceRequestCPU,
@@ -332,8 +325,6 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
 			DNS01CheckAuthoritative: !opts.ACMEDNS01Config.RecursiveNameserversOnly,
-
-			AccountRegistry: acmeAccountRegistry,
 		},
 
 		SchedulerOptions: controller.SchedulerOptions{

@@ -18,26 +18,24 @@ package test
 
 import (
 	"crypto/rsa"
-	"net/http"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 var _ accounts.Registry = &FakeRegistry{}
 
 // FakeRegistry implements the accounts.Registry interface using stub functions
 type FakeRegistry struct {
-	AddClientFunc           func(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
+	AddClientFunc           func(uid string, options accounts.NewClientOptions)
 	RemoveClientFunc        func(uid string)
 	GetClientFunc           func(uid string) (acmecl.Interface, error)
 	ListClientsFunc         func() map[string]acmecl.Interface
 	IsKeyCheckSumCachedFunc func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
 }
 
-func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
-	f.AddClientFunc(uid, config, privateKey, userAgent)
+func (f *FakeRegistry) AddClient(uid string, options accounts.NewClientOptions) {
+	f.AddClientFunc(uid, options)
 }
 
 func (f *FakeRegistry) RemoveClient(uid string) {

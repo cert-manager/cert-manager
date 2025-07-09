@@ -157,9 +157,12 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	// this function.
 	a.accountRegistry.RemoveClient(string(issuer.GetUID()))
 
-	httpClient := accounts.BuildHTTPClientWithCABundle(a.metrics, issuer.GetSpec().ACME.SkipTLSVerify, issuer.GetSpec().ACME.CABundle)
-
-	cl := a.clientBuilder(httpClient, *issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	cl := a.clientBuilder(accounts.NewClientOptions{
+		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
+		CABundle:      issuer.GetSpec().ACME.CABundle,
+		Server:        issuer.GetSpec().ACME.Server,
+		PrivateKey:    rsaPk,
+	})
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -214,7 +217,12 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		status = cmmeta.ConditionTrue
 
 		// ensure the cached client in the account registry is up to date
-		a.accountRegistry.AddClient(httpClient, string(issuer.GetUID()), *issuer.GetSpec().ACME, rsaPk, a.userAgent)
+		a.accountRegistry.AddClient(string(issuer.GetUID()), accounts.NewClientOptions{
+			SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
+			CABundle:      issuer.GetSpec().ACME.CABundle,
+			Server:        issuer.GetSpec().ACME.Server,
+			PrivateKey:    rsaPk,
+		})
 		return nil
 	}
 
@@ -320,7 +328,12 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 	issuer.GetStatus().ACMEStatus().LastPrivateKeyHash = checksumString
 	// ensure the cached client in the account registry is up to date
-	a.accountRegistry.AddClient(httpClient, string(issuer.GetUID()), *issuer.GetSpec().ACME, rsaPk, a.userAgent)
+	a.accountRegistry.AddClient(string(issuer.GetUID()), accounts.NewClientOptions{
+		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
+		CABundle:      issuer.GetSpec().ACME.CABundle,
+		Server:        issuer.GetSpec().ACME.Server,
+		PrivateKey:    rsaPk,
+	})
 
 	return nil
 }

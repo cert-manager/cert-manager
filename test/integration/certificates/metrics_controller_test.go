@@ -99,9 +99,8 @@ func TestMetricsController(t *testing.T) {
 		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
 		SharedInformerFactory:     cmFactory,
-		ContextOptions: controllerpkg.ContextOptions{
-			Metrics: metricsHandler,
-		},
+		Metrics:                   metricsHandler,
+		ContextOptions:            controllerpkg.ContextOptions{},
 	}
 	ctrl, queue, mustSync, err := controllermetrics.NewController(&controllerContext)
 	if err != nil {
