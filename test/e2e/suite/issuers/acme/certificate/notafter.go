@@ -40,7 +40,6 @@ import (
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-duration")
-	ctx := context.TODO()
 
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
@@ -56,7 +55,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
 	validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		solvers := []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
@@ -88,10 +87,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 			gen.SetIssuerACMEDuration(true),
 			gen.SetIssuerACMESolvers(solvers))
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, acmeIssuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -99,7 +98,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = e2eutil.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerStatusFunc(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			func(i *v1.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
@@ -109,26 +108,26 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingCtx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		if len(secret.Data) != 1 {
 			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
 		}
 	})
 
-	JustBeforeEach(func() {
+	JustBeforeEach(func(testingCtx context.Context) {
 		acmeIngressDomain = e2eutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
 	})
 
-	AfterEach(func() {
+	AfterEach(func(testingCtx context.Context) {
 		By("Cleaning up")
-		err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
+		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should obtain a signed certificate with a single CN from the ACME server with 1 hour validity", func() {
+	It("should obtain a signed certificate with a single CN from the ACME server with 1 hour validity", func(testingCtx context.Context) {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
@@ -141,18 +140,18 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 		)
 		cert.Namespace = f.Namespace.Name
 
-		cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+		cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
 		err = f.Helper().ValidateCertificate(cert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
-		sec, err := f.Helper().WaitForSecretCertificateData(ctx, f.Namespace.Name, certificateSecretName, time.Minute*5)
+		sec, err := f.Helper().WaitForSecretCertificateData(testingCtx, f.Namespace.Name, certificateSecretName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for secret")
 
 		crtPEM := sec.Data[corev1.TLSCertKey]

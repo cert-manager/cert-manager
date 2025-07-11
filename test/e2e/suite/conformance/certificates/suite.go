@@ -126,19 +126,19 @@ func (s *Suite) validate() {
 }
 
 // it is called by the tests to in Define() to setup and run the test
-func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
+func (s *Suite) it(f *framework.Framework, name string, fn func(context.Context, cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
 	if s.UnsupportedFeatures.HasAny(requiredFeatures...) {
 		return
 	}
-	It(name, func(ctx context.Context) {
+	It(name, func(testingCtx context.Context) {
 		By("Creating an issuer resource")
-		issuerRef := s.CreateIssuerFunc(ctx, f)
+		issuerRef := s.CreateIssuerFunc(testingCtx, f)
 		defer func() {
 			if s.DeleteIssuerFunc != nil {
 				By("Cleaning up the issuer resource")
-				s.DeleteIssuerFunc(ctx, f, issuerRef)
+				s.DeleteIssuerFunc(testingCtx, f, issuerRef)
 			}
 		}()
-		fn(issuerRef)
+		fn(testingCtx, issuerRef)
 	})
 }

@@ -34,7 +34,6 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("CA Certificate", func() {
-	ctx := context.TODO()
 	f := framework.NewDefaultFramework("create-ca-certificate")
 
 	issuerName := "test-ca-issuer"
@@ -42,15 +41,15 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	certificateName := "test-ca-certificate"
 	certificateSecretName := "test-ca-certificate"
 
-	JustBeforeEach(func() {
+	JustBeforeEach(func(testingCtx context.Context) {
 		By("Creating an Issuer")
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerCASecretName(issuerSecretName))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -59,22 +58,22 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	AfterEach(func(testingCtx context.Context) {
 		By("Cleaning up")
-		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, issuerSecretName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, issuerSecretName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("when the CA is the root", func() {
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningKeypairSecret(issuerSecretName), metav1.CreateOptions{})
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, newSigningKeypairSecret(issuerSecretName), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should generate a signed keypair", func() {
+		It("should generate a signed keypair", func(testingCtx context.Context) {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
@@ -88,11 +87,11 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				gen.SetCertificateCommonName("test.domain.com"),
 				gen.SetCertificateOrganization("test-org"),
 			)
-			cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -100,7 +99,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to obtain an ECDSA key from a RSA backed issuer", func() {
+		It("should be able to obtain an ECDSA key from a RSA backed issuer", func(testingCtx context.Context) {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
@@ -116,11 +115,11 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				gen.SetCertificateKeyAlgorithm(v1.ECDSAKeyAlgorithm),
 				gen.SetCertificateKeySize(521),
 			)
-			cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -128,7 +127,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func() {
+		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func(testingCtx context.Context) {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
@@ -143,11 +142,11 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				gen.SetCertificateOrganization("test-org"),
 				gen.SetCertificateKeyAlgorithm(v1.Ed25519KeyAlgorithm),
 			)
-			cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -155,7 +154,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to create a certificate with additional output formats", func() {
+		It("should be able to create a certificate with additional output formats", func(testingCtx context.Context) {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
@@ -173,11 +172,11 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 					v1.CertificateAdditionalOutputFormat{Type: "CombinedPEM"},
 				),
 			)
-			cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -205,7 +204,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			},
 		}
 		for _, v := range cases {
-			It("should generate a signed keypair valid for "+v.label, func() {
+			It("should generate a signed keypair valid for "+v.label, func(testingCtx context.Context) {
 				certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 				By("Creating a Certificate")
@@ -221,10 +220,10 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 					gen.SetCertificateCommonName("test.domain.com"),
 					gen.SetCertificateOrganization("test-org"),
 				)
-				cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+				cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting for the Certificate to be issued...")
-				cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+				cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Validating the issued Certificate...")
@@ -238,13 +237,13 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	})
 
 	Context("when the CA is an issuer", func() {
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningIssuer1KeypairSecret(issuerSecretName), metav1.CreateOptions{})
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, newSigningIssuer1KeypairSecret(issuerSecretName), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should generate a signed keypair", func() {
+		It("should generate a signed keypair", func(testingCtx context.Context) {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
@@ -258,10 +257,10 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				gen.SetCertificateCommonName("test.domain.com"),
 				gen.SetCertificateOrganization("test-org"),
 			)
-			cert, err := certClient.Create(ctx, cert, metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -271,20 +270,20 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	})
 
 	Context("when the CA is a second level issuer", func() {
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningIssuer2KeypairSecret(issuerSecretName), metav1.CreateOptions{})
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, newSigningIssuer2KeypairSecret(issuerSecretName), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should generate a signed keypair", func() {
+		It("should generate a signed keypair", func(testingCtx context.Context) {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate with Usages")
-			cert, err := certClient.Create(ctx, gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName, Kind: v1.IssuerKind}), gen.SetCertificateKeyUsages(v1.UsageServerAuth, v1.UsageClientAuth)), metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName, Kind: v1.IssuerKind}), gen.SetCertificateKeyUsages(v1.UsageServerAuth, v1.UsageClientAuth)), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
