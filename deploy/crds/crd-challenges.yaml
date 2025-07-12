@@ -3147,6 +3147,46 @@ spec:
             status:
               type: object
               properties:
+                conditions:
+                  description: conditions contains the current observed conditions for the challenge
+                  type: array
+                  items:
+                    description: ChallengeCondition contains condition information for a Challenge.
+                    type: object
+                    required:
+                      - reason
+                      - status
+                      - type
+                    properties:
+                      lastTransitionTime:
+                        description: |-
+                          lastTransitionTime is the timestamp corresponding to the last status
+                          change of this condition.
+                        type: string
+                        format: date-time
+                      message:
+                        description: |-
+                          message is a human readable description of the details of the last
+                          transition, complementing reason.
+                        type: string
+                      reason:
+                        description: |-
+                          reason is a brief machine readable explanation for the condition's last
+                          transition.
+                        type: string
+                      status:
+                        description: status of the condition, one of (`True`, `False`, `Unknown`).
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      type:
+                        description: type of the condition, known values are (`Presented`, `Solved`, `Accepted`).
+                        type: string
+                  x-kubernetes-list-map-keys:
+                    - type
+                  x-kubernetes-list-type: map
                 presented:
                   description: |-
                     presented will be set to true if the challenge values for this challenge
