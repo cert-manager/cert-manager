@@ -89,6 +89,47 @@ var (
 	ErrNoPEMData = errors.New("no PEM data was found in given input")
 )
 
+// SizeLimits represents configurable size limits for PEM decoding
+type SizeLimits struct {
+	MaxCertificateSize int
+	MaxPrivateKeySize  int
+	MaxChainLength     int
+	MaxBundleSize      int
+}
+
+// DefaultSizeLimits returns the default size limits used by cert-manager
+func DefaultSizeLimits() SizeLimits {
+	return SizeLimits{
+		MaxCertificateSize: maxCertificatePEMSize,
+		MaxPrivateKeySize:  maxPrivateKeyPEMSize,
+		MaxChainLength:     maxChainSize,
+		MaxBundleSize:      maxBundleSize,
+	}
+}
+
+// globalSizeLimits holds the current size limits configuration
+var globalSizeLimits = DefaultSizeLimits()
+
+// SetGlobalSizeLimits configures the size limits used by all PEM decode functions
+func SetGlobalSizeLimits(limits SizeLimits) {
+	globalSizeLimits = limits
+}
+
+// GetGlobalSizeLimits returns the current global size limits
+func GetGlobalSizeLimits() SizeLimits {
+	return globalSizeLimits
+}
+
+// NewSizeLimitsFromConfig creates SizeLimits from controller configuration
+func NewSizeLimitsFromConfig(maxCertSize, maxKeySize, maxChainLength, maxBundleSize int) SizeLimits {
+	return SizeLimits{
+		MaxCertificateSize: maxCertSize,
+		MaxPrivateKeySize:  maxKeySize,
+		MaxChainLength:     maxChainLength,
+		MaxBundleSize:      maxBundleSize,
+	}
+}
+
 // ErrPEMDataTooLarge is returned when the given data is larger than the maximum allowed
 type ErrPEMDataTooLarge int
 
@@ -114,7 +155,7 @@ func safeDecodeInternal(b []byte, maxSize int) (*stdpem.Block, []byte, error) {
 // how large we expect a private key to be. The baseline is a 16k-bit RSA private key, which is larger than the maximum
 // supported by cert-manager for key generation.
 func SafeDecodePrivateKey(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxPrivateKeyPEMSize)
+	return safeDecodeInternal(b, globalSizeLimits.MaxPrivateKeySize)
 }
 
 // SafeDecodeCSR calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
@@ -123,7 +164,7 @@ func SafeDecodePrivateKey(b []byte) (*stdpem.Block, []byte, error) {
 // a certificate has a large public key and a large signature, which is roughly the case for a CSR.
 // We also assume that we'd only ever decode one CSR which is the case in practice.
 func SafeDecodeCSR(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxCertificatePEMSize)
+	return safeDecodeInternal(b, globalSizeLimits.MaxCertificateSize)
 }
 
 // SafeDecodeSingleCertificate calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
@@ -131,7 +172,7 @@ func SafeDecodeCSR(b []byte) (*stdpem.Block, []byte, error) {
 // The baseline is a 16k-bit RSA certificate signed by a different 16k-bit RSA CA, which is larger than the maximum
 // supported by cert-manager for key generation.
 func SafeDecodeSingleCertificate(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxCertificatePEMSize)
+	return safeDecodeInternal(b, globalSizeLimits.MaxCertificateSize)
 }
 
 // SafeDecodeCertificateChain calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
@@ -141,7 +182,7 @@ func SafeDecodeSingleCertificate(b []byte) (*stdpem.Block, []byte, error) {
 // The maximum number of chains supported by this function is not reflective of the maximum chain length supported by
 // cert-manager; a larger chain of smaller certificate should be supported.
 func SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxCertificatePEMSize*maxChainSize)
+	return safeDecodeInternal(b, globalSizeLimits.MaxCertificateSize*globalSizeLimits.MaxChainLength)
 }
 
 // SafeDecodeCertificateBundle calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
@@ -150,5 +191,30 @@ func SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
 // we use in other functions, because using such large keys would make our estimate several times
 // too large for a realistic bundle which would be used in practice.
 func SafeDecodeCertificateBundle(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxBundleSize)
+	return safeDecodeInternal(b, globalSizeLimits.MaxBundleSize)
+}
+
+// SafeDecodePrivateKeyWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.
+func (s SizeLimits) SafeDecodePrivateKey(b []byte) (*stdpem.Block, []byte, error) {
+	return safeDecodeInternal(b, s.MaxPrivateKeySize)
+}
+
+// SafeDecodeCSRWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.
+func (s SizeLimits) SafeDecodeCSR(b []byte) (*stdpem.Block, []byte, error) {
+	return safeDecodeInternal(b, s.MaxCertificateSize)
+}
+
+// SafeDecodeSingleCertificateWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.
+func (s SizeLimits) SafeDecodeSingleCertificate(b []byte) (*stdpem.Block, []byte, error) {
+	return safeDecodeInternal(b, s.MaxCertificateSize)
+}
+
+// SafeDecodeCertificateChainWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.
+func (s SizeLimits) SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
+	return safeDecodeInternal(b, s.MaxCertificateSize*s.MaxChainLength)
+}
+
+// SafeDecodeCertificateBundleWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.
+func (s SizeLimits) SafeDecodeCertificateBundle(b []byte) (*stdpem.Block, []byte, error) {
+	return safeDecodeInternal(b, s.MaxBundleSize)
 }
