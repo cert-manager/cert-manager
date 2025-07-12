@@ -261,7 +261,7 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 	// Load the users Kubernetes config
 	restConfig, err := kube.BuildClientConfig(opts.APIServerHost, opts.Kubeconfig)
 	if err != nil {
-		return nil, fmt.Errorf("error creating rest config: %w", err)
+		return nil, fmt.Errorf("error creating rest config test: %w", err)
 	}
 	restConfig = util.RestConfigWithUserAgent(restConfig)
 	restConfig.QPS = opts.KubernetesAPIQPS
