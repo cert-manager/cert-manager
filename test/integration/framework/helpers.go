@@ -108,6 +108,17 @@ func StartInformersAndControllers(t *testing.T, factory internalinformers.KubeIn
 	}
 }
 
+func StartInformers(t *testing.T, factory internalinformers.KubeInformerFactory, cmFactory cminformers.SharedInformerFactory) StopFunc {
+	stoppableCtx, stopCtxFn := context.WithCancel(t.Context())
+
+	factory.Start(stoppableCtx.Done())
+	cmFactory.Start(stoppableCtx.Done())
+
+	return func() {
+		stopCtxFn()
+	}
+}
+
 func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, ctx context.Context, config *rest.Config, gvk schema.GroupVersionKind) {
 	dc, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
@@ -126,7 +137,6 @@ func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, ctx context.Context, config
 		}
 		return false, nil
 	})
-
 	if err != nil {
 		t.Fatal("Our GVK isn't loaded into the OpenAPI resources API after waiting for 2 minutes", err)
 	}

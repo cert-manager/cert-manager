@@ -38,7 +38,6 @@ import (
 	crvenaficontroller "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/venafi"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/keymanager"
-	certificatesmetricscontroller "github.com/cert-manager/cert-manager/pkg/controller/certificates/metrics"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/readiness"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/revisionmanager"
@@ -104,7 +103,6 @@ var (
 	AllControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
-		certificatesmetricscontroller.ControllerName,
 		shimingresscontroller.ControllerName,
 		shimgatewaycontroller.ControllerName,
 		orderscontroller.ControllerName,
@@ -133,7 +131,6 @@ var (
 	DefaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
-		certificatesmetricscontroller.ControllerName,
 		shimingresscontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
