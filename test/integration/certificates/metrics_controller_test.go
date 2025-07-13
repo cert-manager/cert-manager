@@ -71,7 +71,9 @@ func TestMetricsController(t *testing.T) {
 		t.Fatal(err)
 	}
 	challengesInformer := cmFactory.Acme().V1().Challenges()
+	certsInformer := cmFactory.Certmanager().V1().Certificates()
 	metricsHandler.SetupACMECollector(challengesInformer.Lister())
+	metricsHandler.SetupCertificateCollector(certsInformer.Lister())
 
 	server := metricsHandler.NewServer(ln)
 
@@ -95,6 +97,7 @@ func TestMetricsController(t *testing.T) {
 		}
 	}()
 
+	// This is not required once the certificate controller is removed.
 	controllerContext := controllerpkg.Context{
 		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
@@ -114,6 +117,7 @@ func TestMetricsController(t *testing.T) {
 		nil,
 		queue,
 	)
+
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
 

@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 const (
@@ -42,12 +40,10 @@ type controllerWrapper struct {
 	*controller
 }
 
-// This controller is synced on all Certificate 'create', 'update', and
-// 'delete' events which will update the metrics for that Certificate.
+// This controller is a no-op controller for certificate metrics that is kept for backwards compatibility. Certificate metrics are migrated
+// to the collector approach and this controller will be remove in a future release.
 type controller struct {
 	certificateLister cmlisters.CertificateLister
-
-	metrics *metrics.Metrics
 }
 
 func NewController(ctx *controllerpkg.Context) (*controller, workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
@@ -78,26 +74,10 @@ func NewController(ctx *controllerpkg.Context) (*controller, workqueue.TypedRate
 
 	return &controller{
 		certificateLister: certificateInformer.Lister(),
-		metrics:           ctx.Metrics,
 	}, queue, mustSync, nil
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
-	namespace, name := key.Namespace, key.Name
-
-	crt, err := c.certificateLister.Certificates(namespace).Get(name)
-	if apierrors.IsNotFound(err) {
-		// If the Certificate no longer exists, remove its metrics from being exposed.
-		c.metrics.RemoveCertificate(key)
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	// Update that Certificates metrics
-	c.metrics.UpdateCertificate(crt)
-
 	return nil
 }
 

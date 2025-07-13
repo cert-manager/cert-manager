@@ -23,12 +23,14 @@ import (
 
 	"github.com/go-logr/logr/testr"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
+	"github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -247,42 +249,53 @@ func TestCertificateMetrics(t *testing.T) {
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
 			m := New(testr.New(t), clock.RealClock{})
-			m.UpdateCertificate(test.crt)
 
-			if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
+			fakeClient := fake.NewSimpleClientset()
+			factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
+			certsInformer := factory.Certmanager().V1().Certificates()
+
+			err := certsInformer.Informer().GetIndexer().Add(test.crt)
+			assert.NoError(t, err)
+
+			m.SetupCertificateCollector(certsInformer.Lister())
+
+			if err := testutil.CollectAndCompare(m.certificateCollector,
 				strings.NewReader(notAfterMetadata+test.expectedNotAfter),
 				"certmanager_certificate_not_after_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
 
-			if err := testutil.CollectAndCompare(m.certificateNotBeforeTimeSeconds,
+			if err := testutil.CollectAndCompare(m.certificateCollector,
 				strings.NewReader(notBeforeMetadata+test.expectedNotBefore),
 				"certmanager_certificate_not_before_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
 
-			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
+			if err := testutil.CollectAndCompare(m.certificateCollector,
 				strings.NewReader(expiryMetadata+test.expectedExpiry),
 				"certmanager_certificate_expiration_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
 
-			if err := testutil.CollectAndCompare(m.certificateRenewalTimeSeconds,
+			if err := testutil.CollectAndCompare(m.certificateCollector,
 				strings.NewReader(renewalTimeMetadata+test.expectedRenewalTime),
 				"certmanager_certificate_renewal_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
 
-			if err := testutil.CollectAndCompare(m.certificateReadyStatus,
+			if err := testutil.CollectAndCompare(m.certificateCollector,
 				strings.NewReader(readyMetadata+test.expectedReady),
 				"certmanager_certificate_ready_status",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
+
+			err = certsInformer.Informer().GetIndexer().Delete(test.crt)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -354,13 +367,21 @@ func TestCertificateCache(t *testing.T) {
 		gen.SetCertificateDuration(&metav1.Duration{Duration: time.Second}),
 	)
 
-	// Observe all three Certificate metrics
-	m.UpdateCertificate(crt1)
-	m.UpdateCertificate(crt2)
-	m.UpdateCertificate(crt3)
+	fakeClient := fake.NewSimpleClientset()
+	factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
+	certsInformer := factory.Certmanager().V1().Certificates()
+
+	err := certsInformer.Informer().GetIndexer().Add(crt1)
+	assert.NoError(t, err)
+	err = certsInformer.Informer().GetIndexer().Add(crt2)
+	assert.NoError(t, err)
+	err = certsInformer.Informer().GetIndexer().Add(crt3)
+	assert.NoError(t, err)
+
+	m.SetupCertificateCollector(certsInformer.Lister())
 
 	// Check all three metrics exist
-	if err := testutil.CollectAndCompare(m.certificateReadyStatus,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(readyMetadata+`
         certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 0
         certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 0
@@ -377,7 +398,7 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(notAfterMetadata+`
         certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
         certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 200
@@ -388,7 +409,7 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateNotBeforeTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(notBeforeMetadata+`
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 99
         certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 199
@@ -399,7 +420,7 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(expiryMetadata+`
         certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
         certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 200
@@ -410,7 +431,7 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateRenewalTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(renewalTimeMetadata+`
         certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
         certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt2",namespace="default-unit-test-ns"} 200
@@ -422,77 +443,71 @@ func TestCertificateCache(t *testing.T) {
 	}
 
 	// Remove second certificate and check not exists
-	m.RemoveCertificate(types.NamespacedName{
-		Namespace: "default-unit-test-ns",
-		Name:      "crt2",
-	})
-	if err := testutil.CollectAndCompare(m.certificateReadyStatus,
+	err = certsInformer.Informer().GetIndexer().Delete(crt2)
+	assert.NoError(t, err)
+
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(readyMetadata+`
-        certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 0
-        certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 1
-        certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 0
-        certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 0
-        certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 1
-        certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 0
-`),
+	        certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 0
+	        certmanager_certificate_ready_status{condition="False",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 1
+	        certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 0
+	        certmanager_certificate_ready_status{condition="True",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 0
+	        certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 1
+	        certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 0
+	`),
 		"certmanager_certificate_ready_status",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(expiryMetadata+`
-        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
-        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
-`),
+	        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+	        certmanager_certificate_expiration_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
+	`),
 		"certmanager_certificate_expiration_timestamp_seconds",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateNotAfterTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(notAfterMetadata+`
-        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
-        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
-`),
+	        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 100
+	        certmanager_certificate_not_after_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 300
+	`),
 		"certmanager_certificate_not_after_timestamp_seconds",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateNotBeforeTimeSeconds,
+	if err := testutil.CollectAndCompare(m.certificateCollector,
 		strings.NewReader(notBeforeMetadata+`
-        certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 99
-        certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 299
-`),
+	        certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt1",namespace="default-unit-test-ns"} 99
+	        certmanager_certificate_not_before_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="test-issuer-kind",issuer_name="test-issuer",name="crt3",namespace="default-unit-test-ns"} 299
+	`),
 		"certmanager_certificate_not_before_timestamp_seconds",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
 	// Remove all Certificates (even is already removed) and observe no Certificates
-	m.RemoveCertificate(types.NamespacedName{
-		Namespace: "default-unit-test-ns",
-		Name:      "crt1",
-	})
-	m.RemoveCertificate(types.NamespacedName{
-		Namespace: "default-unit-test-ns",
-		Name:      "crt2",
-	})
-	m.RemoveCertificate(types.NamespacedName{
-		Namespace: "default-unit-test-ns",
-		Name:      "crt3",
-	})
-	if testutil.CollectAndCount(m.certificateReadyStatus, "certmanager_certificate_ready_status") != 0 {
+	err = certsInformer.Informer().GetIndexer().Delete(crt1)
+	assert.NoError(t, err)
+	err = certsInformer.Informer().GetIndexer().Delete(crt2)
+	assert.NoError(t, err)
+	err = certsInformer.Informer().GetIndexer().Delete(crt3)
+	assert.NoError(t, err)
+
+	if testutil.CollectAndCount(m.certificateCollector, "certmanager_certificate_ready_status") != 0 {
 		t.Errorf("unexpected collecting result")
 	}
-	if testutil.CollectAndCount(m.certificateExpiryTimeSeconds, "certmanager_certificate_expiration_timestamp_seconds") != 0 {
+	if testutil.CollectAndCount(m.certificateCollector, "certmanager_certificate_expiration_timestamp_seconds") != 0 {
 		t.Errorf("unexpected collecting result")
 	}
-	if testutil.CollectAndCount(m.certificateNotAfterTimeSeconds, "certmanager_certificate_not_after_timestamp_seconds") != 0 {
+	if testutil.CollectAndCount(m.certificateCollector, "certmanager_certificate_not_after_timestamp_seconds") != 0 {
 		t.Errorf("unexpected collecting result")
 	}
-	if testutil.CollectAndCount(m.certificateNotBeforeTimeSeconds, "certmanager_certificate_not_before_timestamp_seconds") != 0 {
+	if testutil.CollectAndCount(m.certificateCollector, "certmanager_certificate_not_before_timestamp_seconds") != 0 {
 		t.Errorf("unexpected collecting result")
 	}
 }
