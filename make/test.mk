@@ -66,7 +66,7 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook | $(NEEDS_GOTESTSUM)
+unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook unit-test-thirdparty | $(NEEDS_GOTESTSUM)
 
 .PHONY: unit-test-core-module
 unit-test-core-module: | $(NEEDS_GOTESTSUM)
@@ -87,6 +87,10 @@ unit-test-controller: | $(NEEDS_GOTESTSUM)
 .PHONY: unit-test-webhook
 unit-test-webhook: | $(NEEDS_GOTESTSUM)
 	cd cmd/webhook && $(GOTESTSUM) ./...
+
+.PHONY: unit-test-thirdparty
+unit-test-thirdparty: | $(NEEDS_GOTESTSUM)
+	$(GOTESTSUM) ./third_party/...
 
 .PHONY: update-config-api-defaults
 update-config-api-defaults: | $(NEEDS_GO)
