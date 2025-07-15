@@ -95,9 +95,7 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 				gen.SetCertificateSigningRequestRequest(csr),
 			),
 			expCertificate: &x509.Certificate{
-				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  true,
@@ -140,9 +138,7 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 				gen.SetCertificateSigningRequestRequest(csr),
 			),
 			expCertificate: &x509.Certificate{
-				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  false,
@@ -185,9 +181,7 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 				gen.SetCertificateSigningRequestRequest(csr),
 			),
 			expCertificate: &x509.Certificate{
-				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  false,
@@ -231,9 +225,7 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 				gen.SetCertificateSigningRequestRequest(csr),
 			),
 			expCertificate: &x509.Certificate{
-				Version:               3,
 				BasicConstraintsValid: true,
-				SerialNumber:          nil,
 				PublicKeyAlgorithm:    x509.RSA,
 				PublicKey:             pk.Public(),
 				IsCA:                  false,
@@ -282,7 +274,6 @@ func TestCertificateTemplateFromCertificateSigningRequest(t *testing.T) {
 				test.expCertificate.NotBefore = time.Time{}
 				templ.NotAfter = time.Time{}
 				templ.NotBefore = time.Time{}
-				templ.SerialNumber = nil
 				templ.Subject.Names = nil
 				templ.RawSubject = nil
 

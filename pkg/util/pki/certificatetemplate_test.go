@@ -62,7 +62,6 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 				},
 			},
 			expected: &x509.Certificate{
-				Version: 3,
 				Subject: pkix.Name{
 					Country:            []string{"US"},
 					Organization:       []string{"cert-manager"},
@@ -82,7 +81,6 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 				DNSNames: []string{"test.example.com"},
 			},
 			expected: &x509.Certificate{
-				Version: 3,
 				RawSubject: subjectGenerator(t, pkix.Name{
 					Country:            []string{"US"},
 					Organization:       []string{"cert-manager"},
@@ -101,9 +99,7 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 					},
 				},
 			},
-			expected: &x509.Certificate{
-				Version: 3,
-			},
+			expected: &x509.Certificate{},
 		},
 		{
 			name: "should copy SANs and not fix critical flag subject is set",
@@ -119,7 +115,6 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 				},
 			},
 			expected: &x509.Certificate{
-				Version: 3,
 				Subject: pkix.Name{
 					Country:      []string{"US"},
 					Organization: []string{"cert-manager"},
@@ -141,7 +136,6 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 				},
 			},
 			expected: &x509.Certificate{
-				Version: 3,
 				ExtraExtensions: []pkix.Extension{
 					sansGenerator(t, []asn1.RawValue{
 						{Tag: 2, Class: 2, Bytes: []byte("test.example.com")},
@@ -157,13 +151,6 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-
-			if result.SerialNumber == nil {
-				t.Errorf("expected serial number to be set")
-			}
-
-			// Set serial number to nil to avoid comparing it
-			result.SerialNumber = nil
 
 			if !reflect.DeepEqual(result, tc.expected) {
 				t.Errorf("unexpected result: %v", result)

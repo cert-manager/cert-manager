@@ -30,7 +30,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/big"
 	"net"
 	"net/netip"
 	"net/url"
@@ -86,8 +85,6 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 	return *crt.Spec.Subject
 }
-
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
