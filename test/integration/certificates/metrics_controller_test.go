@@ -35,8 +35,6 @@ import (
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	controllermetrics "github.com/cert-manager/cert-manager/pkg/controller/certificates/metrics"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -62,7 +60,7 @@ func TestMetricsController(t *testing.T) {
 	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the issuing controller.
-	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
+	kubernetesCl, factory, cmClient, cmFactory, _ := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log, fixedClock)
 
@@ -71,7 +69,9 @@ func TestMetricsController(t *testing.T) {
 		t.Fatal(err)
 	}
 	challengesInformer := cmFactory.Acme().V1().Challenges()
+	certsInformer := cmFactory.Certmanager().V1().Certificates()
 	metricsHandler.SetupACMECollector(challengesInformer.Lister())
+	metricsHandler.SetupCertificateCollector(certsInformer.Lister())
 
 	server := metricsHandler.NewServer(ln)
 
@@ -95,26 +95,7 @@ func TestMetricsController(t *testing.T) {
 		}
 	}()
 
-	controllerContext := controllerpkg.Context{
-		Scheme:                    scheme,
-		KubeSharedInformerFactory: factory,
-		SharedInformerFactory:     cmFactory,
-		Metrics:                   metricsHandler,
-		ContextOptions:            controllerpkg.ContextOptions{},
-	}
-	ctrl, queue, mustSync, err := controllermetrics.NewController(&controllerContext)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c := controllerpkg.NewController(
-		"metrics_test",
-		metricsHandler,
-		ctrl.ProcessItem,
-		mustSync,
-		nil,
-		queue,
-	)
-	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	stopController := framework.StartInformers(t, factory, cmFactory)
 	defer stopController()
 
 	var (
@@ -235,11 +216,7 @@ certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issu
 # HELP certmanager_certificate_renewal_timestamp_seconds The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
-` + clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
-# TYPE certmanager_controller_sync_call_count counter
-certmanager_controller_sync_call_count{controller="metrics_test"} 1
-`)
+` + clockCounterMetric + clockGaugeMetric)
 
 	// Set Certificate Expiry and Ready status True
 	crt.Status.NotAfter = &metav1.Time{
@@ -298,11 +275,8 @@ certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issu
 # HELP certmanager_certificate_renewal_timestamp_seconds The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
-` + clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
-# TYPE certmanager_controller_sync_call_count counter
-certmanager_controller_sync_call_count{controller="metrics_test"} 2
-`)
+` + clockCounterMetric + clockGaugeMetric)
+
 	err = cmClient.CertmanagerV1().Certificates(namespace).Delete(t.Context(), crt.Name, metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -314,9 +288,5 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 	}
 
 	// Should expose no Certificates and only metrics sync count increase
-	waitForMetrics(clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
-# TYPE certmanager_controller_sync_call_count counter
-certmanager_controller_sync_call_count{controller="metrics_test"} 3
-`)
+	waitForMetrics(clockCounterMetric + clockGaugeMetric)
 }
