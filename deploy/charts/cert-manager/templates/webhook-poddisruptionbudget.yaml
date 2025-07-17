@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 {{- if .Values.webhook.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -26,4 +27,5 @@ spec:
   {{- if hasKey .Values.webhook.podDisruptionBudget "maxUnavailable" }}
   maxUnavailable: {{ .Values.webhook.podDisruptionBudget.maxUnavailable }}
   {{- end }}
+{{- end }}
 {{- end }}
