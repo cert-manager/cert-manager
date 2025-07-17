@@ -29,11 +29,13 @@ verify-errexit:
 shared_verify_targets += verify-errexit
 
 .PHONY: generate-crds
-generate-crds: | $(NEEDS_CONTROLLER-GEN)
+generate-crds: | $(NEEDS_CONTROLLER-GEN) $(NEEDS_YQ)
 	$(CONTROLLER-GEN) \
 		schemapatch:manifests=./deploy/crds \
 		output:dir=./deploy/crds \
 		paths=./pkg/apis/...
+
+	cd ./deploy/crds && find . -name "*.yaml" -type f -exec $(YQ) -i ".spec |= sortKeys(..)" "{}" \;
 
 shared_generate_targets += generate-crds
 
