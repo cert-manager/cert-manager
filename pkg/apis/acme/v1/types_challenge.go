@@ -134,6 +134,14 @@ type ChallengeStatus struct {
 	// +optional
 	Presented bool `json:"presented"`
 
+	// conditions contains the current observed conditions for the challenge
+	// +listType=map
+	// +listMapKey=type
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	// +optional
+	Conditions []ChallengeCondition `json:"conditions,omitempty"`
+
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	// +optional
@@ -143,4 +151,42 @@ type ChallengeStatus struct {
 	// If not set, the state of the challenge is unknown.
 	// +optional
 	State State `json:"state,omitempty"`
+}
+
+// ChallengeConditionType represents a Challenge condition value.
+type ChallengeConditionType string
+
+const (
+	// ChallengeConditionTypePresented indicates that the challenge solver
+	// has successfully presented the challenge token (e.g., by provisioning
+	// a DNS record or serving an HTTP response).
+	ChallengeConditionTypePresented = "Presented"
+	// ChallengeConditionTypeSolved indicates that the presented solution
+	// has propagated and is expected to be accessible to the ACME server.
+	// This typically means DNS changes have propagated or HTTP endpoints are reachable.
+	ChallengeConditionTypeSolved = "Solved"
+	// ChallengeConditionTypeAccepted indicates that the ACME server has
+	// validated and accepted the challenge response.
+	ChallengeConditionTypeAccepted = "Accepted"
+)
+
+// ChallengeCondition contains condition information for a Challenge.
+type ChallengeCondition struct {
+	// type of the condition, known values are (`Presented`, `Solved`, `Accepted`).
+	Type ChallengeConditionType `json:"type"`
+
+	// status of the condition, one of (`True`, `False`, `Unknown`).
+	Status cmmeta.ConditionStatus `json:"status"`
+
+	// lastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+
+	// reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason"`
+
+	// message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message,omitempty"`
 }
