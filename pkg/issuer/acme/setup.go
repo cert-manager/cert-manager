@@ -70,27 +70,41 @@ const (
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
 func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
-	log := logf.FromContext(ctx)
+	result := a.setup(ctx, issuer)
+	apiutil.SetIssuerCondition(
+		issuer,
+		issuer.GetGeneration(),
+		v1.IssuerConditionReady,
+		result.status,
+		result.reason,
+		result.message,
+	)
 
-	// Correct reason and message for issuer's Ready condition must be always set
-	// before returning from this function. Status must be set if not false.
-	status := cmmeta.ConditionFalse
-	var reason, msg string
-	defer func() {
-		apiutil.SetIssuerCondition(issuer,
-			issuer.GetGeneration(),
-			v1.IssuerConditionReady,
-			status,
-			reason,
-			msg)
-	}()
+	return result.err
+}
+
+type setupResult struct {
+	err error
+
+	status  cmmeta.ConditionStatus
+	reason  string
+	message string
+}
+
+func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
+	log := logf.FromContext(ctx)
 
 	// check if user has specified a v1 account URL, and set a status condition if so.
 	if newURL, ok := acmev1ToV2Mappings[issuer.GetSpec().ACME.Server]; ok {
-		reason = errorInvalidConfig
-		msg = fmt.Sprintf(messageTemplateUpdateToV2, issuer.GetSpec().ACME.Server, newURL)
+		msg := fmt.Sprintf(messageTemplateUpdateToV2, issuer.GetSpec().ACME.Server, newURL)
 		// Return nil, because we do not want to re-queue an Issuer with an invalid spec.
-		return nil
+		return setupResult{
+			err: nil,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorInvalidConfig,
+			message: msg,
+		}
 	}
 
 	// if the namespace field is not set, we are working on a ClusterIssuer resource
@@ -110,9 +124,14 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		log.V(logf.InfoLevel).Info("generating acme account private key")
 		pk, err = a.createAccountPrivateKey(ctx, privateKeySelector, ns)
 		if err != nil {
-			msg = messageAccountRegistrationFailed + err.Error()
-			reason = errorAccountRegistrationFailed
-			return fmt.Errorf("%s", msg)
+			msg := messageAccountRegistrationFailed + err.Error()
+			return setupResult{
+				err: fmt.Errorf("%s", msg),
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountRegistrationFailed,
+				message: msg,
+			}
 		}
 		// We clear the ACME account URI as we have generated a new private key
 		issuer.GetStatus().ACMEStatus().URI = ""
@@ -121,29 +140,47 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		wrapErr := fmt.Errorf("%s%s%v", messageAccountVerificationFailed,
 			messageNoSecretKeyGenerationDisabled,
 			err)
-		reason = errorAccountVerificationFailed
-		msg = wrapErr.Error()
 		// TODO: we should not re-queue the Issuer here as a resync will happen
 		// when the user adds the Secret or changes Issuer's spec. Should be
 		// fixed by https://github.com/cert-manager/cert-manager/issues/4004
-		return wrapErr
+		return setupResult{
+			err: wrapErr,
 
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountVerificationFailed,
+			message: wrapErr.Error(),
+		}
 	case errors.IsInvalidData(err):
-		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf("%s%v", messageInvalidPrivateKey, err)
-		return nil
+		msg := fmt.Sprintf("%s%v", messageInvalidPrivateKey, err)
+		return setupResult{
+			err: nil,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountVerificationFailed,
+			message: msg,
+		}
 
 	case err != nil:
-		reason = errorAccountVerificationFailed
-		msg = messageAccountVerificationFailed + err.Error()
-		return fmt.Errorf("%s", msg)
+		msg := messageAccountVerificationFailed + err.Error()
+		return setupResult{
+			err: fmt.Errorf("%s", msg),
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountVerificationFailed,
+			message: msg,
+		}
 	}
 	rsaPk, ok := pk.(*rsa.PrivateKey)
 	if !ok {
-		reason = errorAccountVerificationFailed
-		msg = fmt.Sprintf(messageTemplateNotRSA,
+		msg := fmt.Sprintf(messageTemplateNotRSA,
 			issuer.GetSpec().ACME.PrivateKey.Name)
-		return nil
+		return setupResult{
+			err: nil,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountVerificationFailed,
+			message: msg,
+		}
 	}
 
 	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, rsaPk)
@@ -175,21 +212,31 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	rawServerURL := issuer.GetSpec().ACME.Server
 	parsedServerURL, err := url.Parse(rawServerURL)
 	if err != nil {
-		reason = errorInvalidURL
-		msg = fmt.Sprintf(messageTemplateFailedToParseURL, rawServerURL, err)
+		msg := fmt.Sprintf(messageTemplateFailedToParseURL, rawServerURL, err)
 		a.recorder.Event(issuer, corev1.EventTypeWarning, errorInvalidURL, msg)
 		// absorb errors as retrying will not help resolve this error
-		return nil
+		return setupResult{
+			err: nil,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorInvalidURL,
+			message: msg,
+		}
 	}
 
 	rawAccountURL := issuer.GetStatus().ACMEStatus().URI
 	parsedAccountURL, err := url.Parse(rawAccountURL)
 	if err != nil {
-		reason = errorInvalidURL
-		msg = fmt.Sprintf(messageTemplateFailedToParseAccountURL, rawAccountURL, err)
+		msg := fmt.Sprintf(messageTemplateFailedToParseAccountURL, rawAccountURL, err)
 		a.recorder.Event(issuer, corev1.EventTypeWarning, errorInvalidURL, msg)
 		// absorb errors as retrying will not help resolve this error
-		return nil
+		return setupResult{
+			err: nil,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorInvalidURL,
+			message: msg,
+		}
 	}
 	hasReadyCondition := apiutil.IssuerHasCondition(issuer, v1.IssuerCondition{
 		Type:   v1.IssuerConditionReady,
@@ -208,14 +255,6 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		log.V(logf.InfoLevel).Info("skipping re-verifying ACME account as cached registration " +
 			"details look sufficient")
 
-		// Updating issuer's Ready condition here will ensure that observed
-		// generation gets bumped correctly if this re-sync was triggered by a
-		// spec change. Last transition time on the condition will not be modified.
-		// TODO: perhaps we should retrieve the existing message and reason.
-		reason = successAccountRegistered
-		msg = messageAccountRegistered
-		status = cmmeta.ConditionTrue
-
 		// ensure the cached client in the account registry is up to date
 		a.accountRegistry.AddClient(string(issuer.GetUID()), accounts.NewClientOptions{
 			SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
@@ -223,7 +262,14 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 			Server:        issuer.GetSpec().ACME.Server,
 			PrivateKey:    rsaPk,
 		})
-		return nil
+
+		return setupResult{
+			err: nil,
+
+			status:  cmmeta.ConditionTrue,
+			reason:  successAccountRegistered,
+			message: messageAccountRegistered,
+		}
 	}
 
 	if parsedAccountURL.Host != parsedServerURL.Host {
@@ -239,17 +285,27 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
 		case apierrors.IsNotFound(err), errors.IsInvalidData(err):
 			log.Error(err, "failed to verify ACME account")
-			reason = errorAccountRegistrationFailed
-			msg = messageAccountRegistrationFailed + err.Error()
+			msg := messageAccountRegistrationFailed + err.Error()
 			a.recorder.Event(issuer, corev1.EventTypeWarning,
 				errorAccountRegistrationFailed,
 				msg)
-			return nil
+			return setupResult{
+				err: nil,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountRegistrationFailed,
+				message: msg,
+			}
 
 		case err != nil:
-			reason = errorAccountRegistrationFailed
-			msg = messageAccountRegistrationFailed + err.Error()
-			return fmt.Errorf("%s", msg)
+			msg := messageAccountRegistrationFailed + err.Error()
+			return setupResult{
+				err: fmt.Errorf("%s", msg),
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountRegistrationFailed,
+				message: msg,
+			}
 		}
 
 		// set the external account binding
@@ -265,14 +321,19 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		// TODO: this error could be from an account registration or an attempt
 		// to retrieve an existing account - perhaps we should log different
 		// messages in those two scenarios.
-		reason = errorAccountRegistrationFailed
-		msg = messageAccountRegistrationFailed + err.Error()
+		msg := messageAccountRegistrationFailed + err.Error()
 		log.Error(err, "failed to register an ACME account")
 
 		acmeErr, ok := err.(*acmeapi.Error)
 		// If this is not an ACME error, we will simply return it and retry later
 		if !ok {
-			return err
+			return setupResult{
+				err: err,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountRegistrationFailed,
+				message: msg,
+			}
 		}
 
 		// If the status code is 400 (BadRequest), we will *not* retry this registration
@@ -281,11 +342,23 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(acmeErr, "skipping retrying account registration as a "+
 				"BadRequest response was returned from the ACME server")
-			return nil
+			return setupResult{
+				err: nil,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountRegistrationFailed,
+				message: msg,
+			}
 		}
 
 		// Otherwise if we receive anything other than a 400, we will retry.
-		return err
+		return setupResult{
+			err: err,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountRegistrationFailed,
+			message: msg,
+		}
 	}
 
 	// if we got an account successfully, we must check if the registered
@@ -293,15 +366,20 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	specEmail := issuer.GetSpec().ACME.Email
 	account, registeredEmail, err := ensureEmailUpToDate(ctx, cl, account, specEmail)
 	if err != nil {
-		reason = errorAccountUpdateFailed
-		msg = messageAccountUpdateFailed + err.Error()
+		msg := messageAccountUpdateFailed + err.Error()
 		log.Error(err, "failed to update ACME account")
 		a.recorder.Event(issuer, corev1.EventTypeWarning, errorAccountUpdateFailed, msg)
 
 		acmeErr, ok := err.(*acmeapi.Error)
 		// If this is not an ACME error, we will simply return it and retry later
 		if !ok {
-			return err
+			return setupResult{
+				err: err,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountUpdateFailed,
+				message: msg,
+			}
 		}
 
 		// If the status code is 400 (BadRequest), we will *not* retry this registration
@@ -310,17 +388,26 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(acmeErr, "skipping updating account email as a "+
 				"BadRequest response was returned from the ACME server")
-			return nil
+			return setupResult{
+				err: nil,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountUpdateFailed,
+				message: msg,
+			}
 		}
 
 		// Otherwise if we receive anything other than a 400, we will retry.
-		return err
+		return setupResult{
+			err: err,
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountUpdateFailed,
+			message: msg,
+		}
 	}
 
 	log.V(logf.InfoLevel).Info("verified existing registration with ACME server")
-	status = cmmeta.ConditionTrue
-	reason = successAccountRegistered
-	msg = messageAccountRegistered
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(rsaPk)
 	checksum := sha256.Sum256(privateKeyBytes)
 	checksumString := base64.StdEncoding.EncodeToString(checksum[:])
@@ -335,7 +422,13 @@ func (a *Acme) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		PrivateKey:    rsaPk,
 	})
 
-	return nil
+	return setupResult{
+		err: nil,
+
+		status:  cmmeta.ConditionTrue,
+		reason:  successAccountRegistered,
+		message: messageAccountRegistered,
+	}
 }
 
 func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {
