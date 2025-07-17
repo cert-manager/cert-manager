@@ -66,5 +66,6 @@
 	"acmeDNS01Config": {
 		"recursiveNameserversOnly": false,
 		"checkRetryPeriod": "10s"
-	}
+	},
+	"challengeAuthorizationTimeout": "2m0s"
 }
