@@ -1,35 +1,32 @@
-# START crd {{- if or .Values.crds.enabled .Values.installCRDs }}
+{{- if or .Values.crds.enabled .Values.installCRDs }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: clusterissuers.cert-manager.io
-  # START annotations {{- if .Values.crds.keep }}
+  name: "issuers.cert-manager.io"
+  {{- if .Values.crds.keep }}
   annotations:
     helm.sh/resource-policy: keep
-  # END annotations {{- end }}
+  {{- end }}
   labels:
-    app: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
-    app.kubernetes.io/instance: '{{ .Release.Name }}'
-    # Generated labels {{- include "labels" . | nindent 4 }}
+    {{- include "cert-manager.crd-labels" . | nindent 4 }}
 spec:
   group: cert-manager.io
   names:
     categories:
       - cert-manager
-    kind: ClusterIssuer
-    listKind: ClusterIssuerList
-    plural: clusterissuers
+    kind: Issuer
+    listKind: IssuerList
+    plural: issuers
     shortNames:
-      - ciss
-    singular: clusterissuer
-  scope: Cluster
+      - iss
+    singular: issuer
+  scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - jsonPath: .status.conditions[?(@.type == "Ready")].status
           name: Ready
           type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
+        - jsonPath: .status.conditions[?(@.type == "Ready")].message
           name: Status
           priority: 1
           type: string
@@ -41,11 +38,10 @@ spec:
       schema:
         openAPIV3Schema:
           description: |-
-            A ClusterIssuer represents a certificate issuing authority which can be
+            An Issuer represents a certificate issuing authority which can be
             referenced as part of `issuerRef` fields.
-            It is similar to an Issuer, however it is cluster-scoped and therefore can
-            be referenced by resources that exist in *any* namespace, not just the same
-            namespace as the referent.
+            It is scoped to a single namespace and can therefore only be referenced by
+            resources within the same namespace.
           properties:
             apiVersion:
               description: |-
@@ -65,7 +61,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: Desired state of the ClusterIssuer resource.
+              description: Desired state of the Issuer resource.
               properties:
                 acme:
                   description: |-
@@ -3635,7 +3631,7 @@ spec:
                   type: object
               type: object
             status:
-              description: Status of the ClusterIssuer. This is set and managed automatically.
+              description: Status of the Issuer. This is set and managed automatically.
               properties:
                 acme:
                   description: |-
@@ -3719,4 +3715,4 @@ spec:
       storage: true
       subresources:
         status: {}
-# END crd {{- end }}
+{{- end }}

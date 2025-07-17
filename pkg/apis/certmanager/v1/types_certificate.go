@@ -25,8 +25,16 @@ import (
 // NOTE: Be mindful of adding OpenAPI validation - see https://github.com/cert-manager/cert-manager/issues/3644
 
 // +genclient
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Secret",type="string",JSONPath=`.spec.secretName`
+// +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=`.spec.issuerRef.name`,priority=1
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Namespaced,shortName={cert,certs},categories=cert-manager
+// +kubebuilder:subresource:status
 
 // A Certificate resource should be created to ensure an up to date and signed
 // X.509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.

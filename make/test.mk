@@ -99,7 +99,7 @@ update-config-api-defaults: | $(NEEDS_GO)
 	cd internal/apis/config/webhook/v1alpha1/ && UPDATE_DEFAULTS=true $(GO) test . && echo "webhook config api defaults updated"
 
 .PHONY: setup-integration-tests
-setup-integration-tests: templated-crds
+setup-integration-tests: # No dependencies
 
 .PHONY: integration-test
 ## Same as `test` but only run the integration tests. By "integration tests",
