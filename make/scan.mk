@@ -22,21 +22,21 @@
 trivy-scan-all: trivy-scan-controller trivy-scan-acmesolver trivy-scan-webhook trivy-scan-cainjector trivy-scan-startupapicheck
 
 .PHONY: trivy-scan-controller
-trivy-scan-controller: $(bin_dir)/containers/cert-manager-controller-linux-amd64.tar | $(NEEDS_TRIVY)
-	$(TRIVY) image --input $< --format json --exit-code 1
+trivy-scan-controller: docker-tarball-controller | $(NEEDS_TRIVY)
+	$(TRIVY) image --input $(docker_tarball_path_controller) --format json --exit-code 1
 
 .PHONY: trivy-scan-acmesolver
-trivy-scan-acmesolver: $(bin_dir)/containers/cert-manager-acmesolver-linux-amd64.tar | $(NEEDS_TRIVY)
-	$(TRIVY) image --input $< --format json --exit-code 1
+trivy-scan-acmesolver: docker-tarball-acmesolver | $(NEEDS_TRIVY)
+	$(TRIVY) image --input $(docker_tarball_path_acmesolver) --format json --exit-code 1
 
 .PHONY: trivy-scan-webhook
-trivy-scan-webhook: $(bin_dir)/containers/cert-manager-webhook-linux-amd64.tar | $(NEEDS_TRIVY)
-	$(TRIVY) image --input $< --format json --exit-code 1
+trivy-scan-webhook: docker-tarball-webhook | $(NEEDS_TRIVY)
+	$(TRIVY) image --input $(docker_tarball_path_webhook) --format json --exit-code 1
 
 .PHONY: trivy-scan-cainjector
-trivy-scan-cainjector: $(bin_dir)/containers/cert-manager-cainjector-linux-amd64.tar | $(NEEDS_TRIVY)
-	$(TRIVY) image --input $< --format json --exit-code 1
+trivy-scan-cainjector: docker-tarball-cainjector | $(NEEDS_TRIVY)
+	$(TRIVY) image --input $(docker_tarball_path_cainjector) --format json --exit-code 1
 
 .PHONY: trivy-scan-startupapicheck
-trivy-scan-startupapicheck: $(bin_dir)/containers/cert-manager-startupapicheck-linux-amd64.tar | $(NEEDS_TRIVY)
-	$(TRIVY) image --input $< --format json --exit-code 1
+trivy-scan-startupapicheck: docker-tarball-startupapicheck | $(NEEDS_TRIVY)
+	$(TRIVY) image --input $(docker_tarball_path_startupapicheck) --format json --exit-code 1

@@ -1,4 +1,2 @@
-value missing from templates: crds.enabled
-value missing from templates: crds.keep
 value missing from templates: acmesolver.image.pullPolicy
 value missing from templates: enabled
