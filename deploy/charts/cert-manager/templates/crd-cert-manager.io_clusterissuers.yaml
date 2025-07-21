@@ -400,6 +400,82 @@ spec:
                                   - resourceGroupName
                                   - subscriptionID
                                 type: object
+                              azurePrivateDNS:
+                                description: Use the Microsoft Azure DNS API to manage
+                                  DNS01 challenge records.
+                                properties:
+                                  clientID:
+                                    description: |-
+                                      Auth: Azure Service Principal:
+                                      The ClientID of the Azure Service Principal used to authenticate with Azure Private DNS.
+                                      If set, ClientSecret and TenantID must also be set.
+                                    type: string
+                                  clientSecretSecretRef:
+                                    description: |-
+                                      Auth: Azure Service Principal:
+                                      A reference to a Secret containing the password associated with the Service Principal.
+                                      If set, ClientID and TenantID must also be set.
+                                    properties:
+                                      key:
+                                        description: |-
+                                          The key of the entry in the Secret resource's `data` field to be used.
+                                          Some instances of this field may be defaulted, in others it may be
+                                          required.
+                                        type: string
+                                      name:
+                                        description: |-
+                                          Name of the resource being referred to.
+                                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        type: string
+                                    required:
+                                    - name
+                                    type: object
+                                  environment:
+                                    description: name of the Azure environment (default
+                                      AzurePublicCloud)
+                                    enum:
+                                    - AzurePublicCloud
+                                    - AzureChinaCloud
+                                    - AzureGermanCloud
+                                    - AzureUSGovernmentCloud
+                                    type: string
+                                  hostedZoneName:
+                                    description: name of the DNS zone that should be
+                                      used
+                                    type: string
+                                  managedIdentity:
+                                    description: |-
+                                      Auth: Azure Workload Identity or Azure Managed Service Identity:
+                                      Settings to enable Azure Workload Identity or Azure Managed Service Identity
+                                      If set, ClientID, ClientSecret and TenantID must not be set.
+                                    properties:
+                                      clientID:
+                                        description: client ID of the managed identity,
+                                          can not be used at the same time as resourceID
+                                        type: string
+                                      resourceID:
+                                        description: |-
+                                          resource ID of the managed identity, can not be used at the same time as clientID
+                                          Cannot be used for Azure Managed Service Identity
+                                        type: string
+                                    type: object
+                                  resourceGroupName:
+                                    description: resource group the DNS zone is located
+                                      in
+                                    type: string
+                                  subscriptionID:
+                                    description: ID of the Azure subscription
+                                    type: string
+                                  tenantID:
+                                    description: |-
+                                      Auth: Azure Service Principal:
+                                      The TenantID of the Azure Service Principal used to authenticate with Azure DNS.
+                                      If set, ClientID and ClientSecret must also be set.
+                                    type: string
+                                required:
+                                - resourceGroupName
+                                - subscriptionID
+                                type: object
                               cloudDNS:
                                 description: Use the Google Cloud DNS API to manage DNS01 challenge records.
                                 properties:

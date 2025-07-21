@@ -403,6 +403,8 @@ type ACMEChallengeSolverDNS01 struct {
 	// +optional
 	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azureDNS,omitempty"`
 
+	AzurePrivateDNS *ACMEIssuerDNS01ProviderAzurePrivateDNS `json:"azurePrivateDNS,omitempty"`
+
 	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
 	// +optional
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
@@ -659,6 +661,46 @@ type ServiceAccountRef struct {
 	// If unset the audience defaults to `sts.amazonaws.com`.
 	// +optional
 	TokenAudiences []string `json:"audiences,omitempty"`
+}
+
+type ACMEIssuerDNS01ProviderAzurePrivateDNS struct {
+	// Auth: Azure Service Principal:
+	// The ClientID of the Azure Service Principal used to authenticate with Azure DNS.
+	// If set, ClientSecret and TenantID must also be set.
+	// +optional
+	ClientID string `json:"clientID,omitempty"`
+
+	// Auth: Azure Service Principal:
+	// A reference to a Secret containing the password associated with the Service Principal.
+	// If set, ClientID and TenantID must also be set.
+	// +optional
+	ClientSecret *cmmeta.SecretKeySelector `json:"clientSecretSecretRef,omitempty"`
+
+	// ID of the Azure subscription
+	SubscriptionID string `json:"subscriptionID"`
+
+	// Auth: Azure Service Principal:
+	// The TenantID of the Azure Service Principal used to authenticate with Azure DNS.
+	// If set, ClientID and ClientSecret must also be set.
+	// +optional
+	TenantID string `json:"tenantID,omitempty"`
+
+	// resource group the DNS zone is located in
+	ResourceGroupName string `json:"resourceGroupName"`
+
+	// name of the DNS zone that should be used
+	// +optional
+	HostedZoneName string `json:"hostedZoneName,omitempty"`
+
+	// name of the Azure environment (default AzurePublicCloud)
+	// +optional
+	Environment AzureDNSEnvironment `json:"environment,omitempty"`
+
+	// Auth: Azure Workload Identity or Azure Managed Service Identity:
+	// Settings to enable Azure Workload Identity or Azure Managed Service Identity
+	// If set, ClientID, ClientSecret and TenantID must not be set.
+	// +optional
+	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
