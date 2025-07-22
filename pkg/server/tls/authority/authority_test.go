@@ -74,7 +74,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 }
 
 func TestDynamicAuthority(t *testing.T) {
-	fake := kubefake.NewSimpleClientset()
+	fake := kubefake.NewClientset()
 
 	da := testAuthority(t, "authority", fake)
 
@@ -135,7 +135,7 @@ func TestDynamicAuthority(t *testing.T) {
 }
 
 func TestDynamicAuthorityMulti(t *testing.T) {
-	fake := kubefake.NewSimpleClientset()
+	fake := kubefake.NewClientset()
 
 	authorities := make([]*DynamicAuthority, 0)
 	for i := range 200 {

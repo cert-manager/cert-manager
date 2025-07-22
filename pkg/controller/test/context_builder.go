@@ -126,9 +126,9 @@ func (b *Builder) Init() {
 		b.T.Fatalf("error adding meta to scheme: %v", err)
 	}
 	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
-	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
-	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
-	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
+	b.Client = kubefake.NewClientset(b.KubeObjects...)
+	b.CMClient = cmfake.NewClientset(b.CertManagerObjects...)
+	b.GWClient = gwfake.NewClientset(b.GWObjects...)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
 	b.DiscoveryClient = discoveryfake.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
 		if groupVersion == networkingv1.SchemeGroupVersion.String() {
