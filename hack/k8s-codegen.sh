@@ -25,6 +25,7 @@ listergen=$4
 defaultergen=$5
 conversiongen=$6
 openapigen=$7
+applyconfigurationgen=$8
 
 echo "+++ Generating code..." >&2
 
@@ -119,14 +120,27 @@ gen-deepcopy() {
     "${prefixed_inputs[@]}"
 }
 
+gen-applyconfigurations() {
+  clean "${client_subpackage}"/applyconfigurations '*.go'
+  echo "+++ Generating applyconfigurations..." >&2
+  prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
+  joined=$( IFS=$' '; echo "${prefixed_inputs[*]}" )
+ "$applyconfigurationgen" \
+    --go-header-file hack/boilerplate-go.txt \
+    --output-dir "${client_subpackage}"/applyconfigurations \
+    --output-pkg "${client_package}"/applyconfigurations \
+    $joined
+}
+
 gen-clientsets() {
   clean "${client_subpackage}"/clientset '*.go'
-  echo "+++ Generating clientset..." >&2
+  echo "+++ Generating clientsets..." >&2
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$clientgen" \
     --go-header-file hack/boilerplate-go.txt \
     --clientset-name versioned \
+    --apply-configuration-package "${client_package}"/applyconfigurations \
     --input-base "" \
     --input "$joined" \
     --output-dir "${client_subpackage}"/clientset \
@@ -203,6 +217,7 @@ gen-conversions() {
 
 gen-openapi-acme
 gen-deepcopy
+gen-applyconfigurations
 gen-clientsets
 gen-listers
 gen-informers
