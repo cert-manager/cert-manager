@@ -92,7 +92,7 @@ func Test_ACMEChallenges(t *testing.T) {
 		gen.SetChallengeNamespace("test-challenge"),
 	))
 
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 	factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
 	challengesInformer := factory.Acme().V1().Challenges()
 	for _, ch := range challenges {

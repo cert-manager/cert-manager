@@ -134,7 +134,7 @@ func runUpdateObjectTests(t *testing.T) {
 				t.Log("Simulating a situation where the target object has been deleted")
 				objects = nil
 			}
-			cl := fake.NewSimpleClientset(objects...)
+			cl := fake.NewClientset(objects...)
 			if tt.updateError != nil {
 				cl.PrependReactor("update", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge update error")
@@ -165,7 +165,11 @@ func runUpdateObjectTests(t *testing.T) {
 				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(t.Context(), oldChallenge.Name, metav1.GetOptions{})
 				require.NoError(t, err)
 				if updateObjectErr == nil {
-					assert.Equal(t, newChallenge, actual, "updateObject did not return an error so the object in the API should have been updated")
+					// We ignore differences in .ManagedFields since the expected object does not have them.
+					// FIXME: don't ignore this field
+					expected := newChallenge
+					expected.ManagedFields = actual.ManagedFields
+					assert.Equal(t, expected, actual, "updateObject did not return an error so the object in the API should have been updated")
 				} else {
 					if !errors.Is(updateObjectErr, simulatedUpdateError) {
 						assert.Equal(t, newChallenge.Finalizers, actual.Finalizers, "The Update did not fail so the Finalizers  of the API object should have been updated")
