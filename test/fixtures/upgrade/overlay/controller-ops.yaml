@@ -22,5 +22,5 @@ spec:
     spec:
       containers:
       #@overlay/match by=overlay.subset({"name": "cert-manager-controller"})
-      - image: #@ "docker.io/library/cert-manager-controller-{}:{}".format(data.values.arch, data.values.app_version)
+      - image: #@ "cert-manager.local/cert-manager-controller:{}".format(data.values.app_version)
 

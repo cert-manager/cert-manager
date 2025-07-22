@@ -21,9 +21,10 @@ source "$here/config/lib.sh"
 cd "$here/.." || exit 1
 set -e
 
-_default_bindir=$(make print-bindir)
+_default_bindir=$(make --silent print-bindir)
 
 BINDIR=${BINDIR:-$_default_bindir}
+SERVICE_IP_PREFIX=${SERVICE_IP_PREFIX:-"10.0.0"}
 
 # Why do we only run 20 tests concurrently? Because we have noticed that
 # many tests start timing out when the Prow pod gets overloaded. We are

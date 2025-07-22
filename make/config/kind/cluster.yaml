@@ -38,4 +38,8 @@ kubeadmConfigPatches:
     networking:
       serviceSubnet: 10.0.0.0/16
 nodes:
-  - role: control-plane
+- role: control-plane
+
+  extraMounts:
+  - hostPath: {{KIND_IMAGES}}
+    containerPath: /mounted_images

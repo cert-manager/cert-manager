@@ -34,7 +34,7 @@ WHAT ?= ./pkg/... ./internal/... ./test/... ./hack/prune-junit-xml/...
 ## used to test everything at once.
 ##
 ## @category Development
-test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
+test: | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	$(GOTESTSUM) -- $(WHAT)
 
 .PHONY: test-ci
@@ -45,7 +45,7 @@ test: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL
 ## issues with dashboards and UIs.
 ##
 ## @category CI
-test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
+test-ci: | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBECTL) $(NEEDS_KUBE-APISERVER) $(NEEDS_GO)
 	@mkdir -p $(ARTIFACTS)
 	$(GOTESTSUM) \
 		--junitfile $(ARTIFACTS)/junit_make-test-ci-core.xml \
@@ -66,7 +66,7 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook unit-test-thirdparty | $(NEEDS_GOTESTSUM)
+unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook unit-test-thirdparty
 
 .PHONY: unit-test-core-module
 unit-test-core-module: | $(NEEDS_GOTESTSUM)
@@ -137,13 +137,13 @@ E2E_OPENSHIFT ?= false
 ## For more information about GINKGO_FOCUS, see "make/e2e.sh --help".
 ##
 ## @category Development
-e2e: $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
+e2e: kind-cluster | $(NEEDS_KUBECTL) $(NEEDS_GINKGO)
 	make/e2e.sh
 
 .PHONY: e2e-ci
 e2e-ci: | $(NEEDS_GO)
 	$(shell export HELM_BURST_LIMIT=-1)
-	$(MAKE) e2e-setup-kind e2e-setup
+	$(MAKE) e2e-setup
 	make/e2e-ci.sh
 
 $(bin_dir)/test/e2e.test: FORCE | $(NEEDS_GINKGO) $(bin_dir)/test
@@ -184,10 +184,10 @@ UPGRADE_TEST_INITIAL_RELEASE_PREFIX ?=
 UPGRADE_TEST_INITIAL_RELEASE ?=
 
 .PHONY: test-upgrade
-test-upgrade: | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(NEEDS_CMCTL)
+test-upgrade: kind-cluster | $(NEEDS_HELM) $(NEEDS_KIND) $(NEEDS_YTT) $(NEEDS_KUBECTL) $(NEEDS_CMCTL)
 	INITIAL_RELEASE=$(UPGRADE_TEST_INITIAL_RELEASE) \
 		INITIAL_RELEASE_PREFIX=$(UPGRADE_TEST_INITIAL_RELEASE_PREFIX) \
-		./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(CMCTL) $(HOST_ARCH)
+		./hack/verify-upgrade.sh $(HELM) $(KIND) $(YTT) $(KUBECTL) $(CMCTL)
 
 $(bin_dir)/test:
 	@mkdir -p $@
