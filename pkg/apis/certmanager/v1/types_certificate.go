@@ -25,7 +25,6 @@ import (
 // NOTE: Be mindful of adding OpenAPI validation - see https://github.com/cert-manager/cert-manager/issues/3644
 
 // +genclient
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`

@@ -43,7 +43,6 @@ const (
 )
 
 // +genclient
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="Approved",type="string",JSONPath=`.status.conditions[?(@.type == "Approved")].status`
@@ -65,7 +64,6 @@ const (
 //
 // A CertificateRequest is a one-shot resource, meaning it represents a single
 // point in time request for a certificate and cannot be re-used.
-// +k8s:openapi-gen=true
 type CertificateRequest struct {
 	metav1.TypeMeta `json:",inline"`
 	// Standard object's metadata.

@@ -19,8 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	internal "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/internal"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -42,6 +45,42 @@ func CertificateRequest(name, namespace string) *CertificateRequestApplyConfigur
 	b.WithKind("CertificateRequest")
 	b.WithAPIVersion("cert-manager.io/v1")
 	return b
+}
+
+// ExtractCertificateRequest extracts the applied configuration owned by fieldManager from
+// certificateRequest. If no managedFields are found in certificateRequest for fieldManager, a
+// CertificateRequestApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// certificateRequest must be a unmodified CertificateRequest API object that was retrieved from the Kubernetes API.
+// ExtractCertificateRequest provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+// Experimental!
+func ExtractCertificateRequest(certificateRequest *certmanagerv1.CertificateRequest, fieldManager string) (*CertificateRequestApplyConfiguration, error) {
+	return extractCertificateRequest(certificateRequest, fieldManager, "")
+}
+
+// ExtractCertificateRequestStatus is the same as ExtractCertificateRequest except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractCertificateRequestStatus(certificateRequest *certmanagerv1.CertificateRequest, fieldManager string) (*CertificateRequestApplyConfiguration, error) {
+	return extractCertificateRequest(certificateRequest, fieldManager, "status")
+}
+
+func extractCertificateRequest(certificateRequest *certmanagerv1.CertificateRequest, fieldManager string, subresource string) (*CertificateRequestApplyConfiguration, error) {
+	b := &CertificateRequestApplyConfiguration{}
+	err := managedfields.ExtractInto(certificateRequest, internal.Parser().Type("com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequest"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(certificateRequest.Name)
+	b.WithNamespace(certificateRequest.Namespace)
+
+	b.WithKind("CertificateRequest")
+	b.WithAPIVersion("cert-manager.io/v1")
+	return b, nil
 }
 
 // WithKind sets the Kind field in the declarative configuration to the given value
