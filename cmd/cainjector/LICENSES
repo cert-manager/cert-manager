@@ -78,6 +78,8 @@ go.opentelemetry.io/otel,Apache-2.0
 go.opentelemetry.io/otel/trace,Apache-2.0
 go.uber.org/multierr,MIT
 go.uber.org/zap,MIT
+go.yaml.in/yaml/v2,Apache-2.0
+go.yaml.in/yaml/v3,MIT
 golang.org/x/crypto,BSD-3-Clause
 golang.org/x/net,BSD-3-Clause
 golang.org/x/oauth2,BSD-3-Clause
@@ -113,4 +115,3 @@ sigs.k8s.io/structured-merge-diff/v4,Apache-2.0
 sigs.k8s.io/yaml,MIT
 sigs.k8s.io/yaml,Apache-2.0
 sigs.k8s.io/yaml,BSD-3-Clause
-sigs.k8s.io/yaml/goyaml.v2,Apache-2.0

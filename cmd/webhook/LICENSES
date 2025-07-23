@@ -41,7 +41,7 @@ github.com/Azure/go-ntlmssp,MIT
 github.com/antlr4-go/antlr/v4,BSD-3-Clause
 github.com/beorn7/perks/quantile,MIT
 github.com/blang/semver/v4,MIT
-github.com/cenkalti/backoff/v4,MIT
+github.com/cenkalti/backoff/v5,MIT
 github.com/cert-manager/cert-manager,Apache-2.0
 github.com/cert-manager/cert-manager/webhook-binary,Apache-2.0
 github.com/cespare/xxhash/v2,MIT
@@ -94,6 +94,8 @@ go.opentelemetry.io/otel/trace,Apache-2.0
 go.opentelemetry.io/proto/otlp,Apache-2.0
 go.uber.org/multierr,MIT
 go.uber.org/zap,MIT
+go.yaml.in/yaml/v2,Apache-2.0
+go.yaml.in/yaml/v3,MIT
 golang.org/x/crypto,BSD-3-Clause
 golang.org/x/exp/slices,BSD-3-Clause
 golang.org/x/net,BSD-3-Clause
@@ -137,4 +139,3 @@ sigs.k8s.io/structured-merge-diff/v4,Apache-2.0
 sigs.k8s.io/yaml,MIT
 sigs.k8s.io/yaml,Apache-2.0
 sigs.k8s.io/yaml,BSD-3-Clause
-sigs.k8s.io/yaml/goyaml.v2,Apache-2.0
