@@ -19,16 +19,16 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // VenafiTPPApplyConfiguration represents a declarative configuration of the VenafiTPP type for use
 // with apply.
 type VenafiTPPApplyConfiguration struct {
-	URL               *string                      `json:"url,omitempty"`
-	CredentialsRef    *metav1.LocalObjectReference `json:"credentialsRef,omitempty"`
-	CABundle          []byte                       `json:"caBundle,omitempty"`
-	CABundleSecretRef *metav1.SecretKeySelector    `json:"caBundleSecretRef,omitempty"`
+	URL               *string                                        `json:"url,omitempty"`
+	CredentialsRef    *metav1.LocalObjectReferenceApplyConfiguration `json:"credentialsRef,omitempty"`
+	CABundle          []byte                                         `json:"caBundle,omitempty"`
+	CABundleSecretRef *metav1.SecretKeySelectorApplyConfiguration    `json:"caBundleSecretRef,omitempty"`
 }
 
 // VenafiTPPApplyConfiguration constructs a declarative configuration of the VenafiTPP type for use with
@@ -48,8 +48,8 @@ func (b *VenafiTPPApplyConfiguration) WithURL(value string) *VenafiTPPApplyConfi
 // WithCredentialsRef sets the CredentialsRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CredentialsRef field is set to the value of the last call.
-func (b *VenafiTPPApplyConfiguration) WithCredentialsRef(value metav1.LocalObjectReference) *VenafiTPPApplyConfiguration {
-	b.CredentialsRef = &value
+func (b *VenafiTPPApplyConfiguration) WithCredentialsRef(value *metav1.LocalObjectReferenceApplyConfiguration) *VenafiTPPApplyConfiguration {
+	b.CredentialsRef = value
 	return b
 }
 
@@ -66,7 +66,7 @@ func (b *VenafiTPPApplyConfiguration) WithCABundle(values ...byte) *VenafiTPPApp
 // WithCABundleSecretRef sets the CABundleSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
-func (b *VenafiTPPApplyConfiguration) WithCABundleSecretRef(value metav1.SecretKeySelector) *VenafiTPPApplyConfiguration {
-	b.CABundleSecretRef = &value
+func (b *VenafiTPPApplyConfiguration) WithCABundleSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VenafiTPPApplyConfiguration {
+	b.CABundleSecretRef = value
 	return b
 }

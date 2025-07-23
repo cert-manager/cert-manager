@@ -19,16 +19,16 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderRFC2136 type for use
 // with apply.
 type ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration struct {
-	Nameserver    *string                   `json:"nameserver,omitempty"`
-	TSIGSecret    *metav1.SecretKeySelector `json:"tsigSecretSecretRef,omitempty"`
-	TSIGKeyName   *string                   `json:"tsigKeyName,omitempty"`
-	TSIGAlgorithm *string                   `json:"tsigAlgorithm,omitempty"`
+	Nameserver    *string                                     `json:"nameserver,omitempty"`
+	TSIGSecret    *metav1.SecretKeySelectorApplyConfiguration `json:"tsigSecretSecretRef,omitempty"`
+	TSIGKeyName   *string                                     `json:"tsigKeyName,omitempty"`
+	TSIGAlgorithm *string                                     `json:"tsigAlgorithm,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderRFC2136 type for use with
@@ -48,8 +48,8 @@ func (b *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration) WithNameserver(value 
 // WithTSIGSecret sets the TSIGSecret field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TSIGSecret field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration) WithTSIGSecret(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration {
-	b.TSIGSecret = &value
+func (b *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration) WithTSIGSecret(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration {
+	b.TSIGSecret = value
 	return b
 }
 

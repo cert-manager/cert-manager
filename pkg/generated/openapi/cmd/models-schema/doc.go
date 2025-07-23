@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2025 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1 is the v1 version of the API.
-// +k8s:deepcopy-gen=package,register
-// +k8s:openapi-gen=true
-// +groupName=cert-manager.io
-// +groupGoName=Certmanager
-package v1
+package main

@@ -23,7 +23,6 @@ import (
 )
 
 // +genclient
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.state"

@@ -19,8 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	internal "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/internal"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -42,6 +45,42 @@ func Issuer(name, namespace string) *IssuerApplyConfiguration {
 	b.WithKind("Issuer")
 	b.WithAPIVersion("cert-manager.io/v1")
 	return b
+}
+
+// ExtractIssuer extracts the applied configuration owned by fieldManager from
+// issuer. If no managedFields are found in issuer for fieldManager, a
+// IssuerApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// issuer must be a unmodified Issuer API object that was retrieved from the Kubernetes API.
+// ExtractIssuer provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+// Experimental!
+func ExtractIssuer(issuer *certmanagerv1.Issuer, fieldManager string) (*IssuerApplyConfiguration, error) {
+	return extractIssuer(issuer, fieldManager, "")
+}
+
+// ExtractIssuerStatus is the same as ExtractIssuer except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractIssuerStatus(issuer *certmanagerv1.Issuer, fieldManager string) (*IssuerApplyConfiguration, error) {
+	return extractIssuer(issuer, fieldManager, "status")
+}
+
+func extractIssuer(issuer *certmanagerv1.Issuer, fieldManager string, subresource string) (*IssuerApplyConfiguration, error) {
+	b := &IssuerApplyConfiguration{}
+	err := managedfields.ExtractInto(issuer, internal.Parser().Type("com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.Issuer"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(issuer.Name)
+	b.WithNamespace(issuer.Namespace)
+
+	b.WithKind("Issuer")
+	b.WithAPIVersion("cert-manager.io/v1")
+	return b, nil
 }
 
 // WithKind sets the Kind field in the declarative configuration to the given value
