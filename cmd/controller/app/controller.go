@@ -109,6 +109,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 
 	ctx.Metrics.SetupACMECollector(ctx.SharedInformerFactory.Acme().V1().Challenges().Lister())
+	ctx.Metrics.SetupCertificateCollector(ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister())
 	metricsServer := ctx.Metrics.NewServer(metricsLn)
 
 	g.Go(func() error {

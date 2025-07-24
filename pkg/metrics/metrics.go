@@ -37,9 +37,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
 
-	challengeCollectors "github.com/cert-manager/cert-manager/internal/collectors"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmcollectors "github.com/cert-manager/cert-manager/internal/collectors"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 )
 
 const (
@@ -58,20 +58,14 @@ type Metrics struct {
 
 	clockTimeSeconds                   prometheus.CounterFunc
 	clockTimeSecondsGauge              prometheus.GaugeFunc
-	certificateNotAfterTimeSeconds     *prometheus.GaugeVec
-	certificateNotBeforeTimeSeconds    *prometheus.GaugeVec
-	certificateExpiryTimeSeconds       *prometheus.GaugeVec
-	certificateRenewalTimeSeconds      *prometheus.GaugeVec
-	certificateReadyStatus             *prometheus.GaugeVec
 	acmeClientRequestDurationSeconds   *prometheus.SummaryVec
 	acmeClientRequestCount             *prometheus.CounterVec
 	venafiClientRequestDurationSeconds *prometheus.SummaryVec
 	controllerSyncCallCount            *prometheus.CounterVec
 	controllerSyncErrorCount           *prometheus.CounterVec
 	challengeCollector                 prometheus.Collector
+	certificateCollector               prometheus.Collector
 }
-
-var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 
 // New creates a Metrics struct and populates it with prometheus metric types.
 func New(log logr.Logger, c clock.Clock) *Metrics {
@@ -105,51 +99,6 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			func() float64 {
 				return float64(c.Now().Unix())
 			},
-		)
-
-		certificateNotBeforeTimeSeconds = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "certificate_not_before_timestamp_seconds",
-				Help:      "The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.",
-			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
-		)
-
-		certificateNotAfterTimeSeconds = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "certificate_not_after_timestamp_seconds",
-				Help:      "The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.",
-			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
-		)
-
-		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "certificate_expiration_timestamp_seconds",
-				Help:      "The timestamp after which the certificate expires, expressed in Unix Epoch Time.",
-			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
-		)
-
-		certificateRenewalTimeSeconds = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "certificate_renewal_timestamp_seconds",
-				Help:      "The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.",
-			},
-			[]string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"},
-		)
-
-		certificateReadyStatus = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "certificate_ready_status",
-				Help:      "The ready status of the certificate.",
-			},
-			[]string{"name", "namespace", "condition", "issuer_name", "issuer_kind", "issuer_group"},
 		)
 
 		// acmeClientRequestCount is a Prometheus summary to collect the number of
@@ -224,11 +173,6 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 
 		clockTimeSeconds:                   clockTimeSeconds,
 		clockTimeSecondsGauge:              clockTimeSecondsGauge,
-		certificateNotAfterTimeSeconds:     certificateNotAfterTimeSeconds,
-		certificateNotBeforeTimeSeconds:    certificateNotBeforeTimeSeconds,
-		certificateExpiryTimeSeconds:       certificateExpiryTimeSeconds,
-		certificateRenewalTimeSeconds:      certificateRenewalTimeSeconds,
-		certificateReadyStatus:             certificateReadyStatus,
 		acmeClientRequestCount:             acmeClientRequestCount,
 		acmeClientRequestDurationSeconds:   acmeClientRequestDurationSeconds,
 		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
@@ -240,18 +184,17 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 }
 
 func (m *Metrics) SetupACMECollector(acmeInformers cmacmelisters.ChallengeLister) {
-	m.challengeCollector = challengeCollectors.NewACMECollector(acmeInformers)
+	m.challengeCollector = cmcollectors.NewACMECollector(acmeInformers)
+}
+
+func (m *Metrics) SetupCertificateCollector(certLister cmlisters.CertificateLister) {
+	m.certificateCollector = cmcollectors.NewCertificateCollector(certLister)
 }
 
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
-	m.registry.MustRegister(m.certificateNotAfterTimeSeconds)
-	m.registry.MustRegister(m.certificateNotBeforeTimeSeconds)
-	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
-	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
-	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
@@ -260,6 +203,10 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 
 	if m.challengeCollector != nil {
 		m.registry.MustRegister(m.challengeCollector)
+	}
+
+	if m.certificateCollector != nil {
+		m.registry.MustRegister(m.certificateCollector)
 	}
 
 	mux := http.NewServeMux()
