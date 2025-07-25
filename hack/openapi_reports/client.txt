@@ -123,6 +123,12 @@ API rule violation: names_match,k8s.io/apiextensions-apiserver/pkg/apis/apiexten
 API rule violation: names_match,k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1,JSONSchemaPropsOrBool,Schema
 API rule violation: names_match,k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1,JSONSchemaPropsOrStringArray,Property
 API rule violation: names_match,k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1,JSONSchemaPropsOrStringArray,Schema
+API rule violation: names_match,k8s.io/apimachinery/pkg/api/resource,Quantity,Format
+API rule violation: names_match,k8s.io/apimachinery/pkg/api/resource,Quantity,d
+API rule violation: names_match,k8s.io/apimachinery/pkg/api/resource,Quantity,i
+API rule violation: names_match,k8s.io/apimachinery/pkg/api/resource,Quantity,s
+API rule violation: names_match,k8s.io/apimachinery/pkg/api/resource,int64Amount,scale
+API rule violation: names_match,k8s.io/apimachinery/pkg/api/resource,int64Amount,value
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,APIResourceList,APIResources
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Duration,Duration
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,InternalEvent,Object
@@ -132,6 +138,9 @@ API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,StatusCause
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Time,Time
 API rule violation: names_match,k8s.io/apimachinery/pkg/runtime,Unknown,ContentEncoding
 API rule violation: names_match,k8s.io/apimachinery/pkg/runtime,Unknown,ContentType
+API rule violation: names_match,k8s.io/apimachinery/pkg/util/intstr,IntOrString,IntVal
+API rule violation: names_match,k8s.io/apimachinery/pkg/util/intstr,IntOrString,StrVal
+API rule violation: names_match,k8s.io/apimachinery/pkg/util/intstr,IntOrString,Type
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ChallengeList,ListMeta
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,OrderList,ListMeta
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,ClusterIssuerList,ListMeta
