@@ -20,16 +20,16 @@ package v1
 
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // PKCS12KeystoreApplyConfiguration represents a declarative configuration of the PKCS12Keystore type for use
 // with apply.
 type PKCS12KeystoreApplyConfiguration struct {
-	Create            *bool                        `json:"create,omitempty"`
-	Profile           *certmanagerv1.PKCS12Profile `json:"profile,omitempty"`
-	PasswordSecretRef *metav1.SecretKeySelector    `json:"passwordSecretRef,omitempty"`
-	Password          *string                      `json:"password,omitempty"`
+	Create            *bool                                       `json:"create,omitempty"`
+	Profile           *certmanagerv1.PKCS12Profile                `json:"profile,omitempty"`
+	PasswordSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"passwordSecretRef,omitempty"`
+	Password          *string                                     `json:"password,omitempty"`
 }
 
 // PKCS12KeystoreApplyConfiguration constructs a declarative configuration of the PKCS12Keystore type for use with
@@ -57,8 +57,8 @@ func (b *PKCS12KeystoreApplyConfiguration) WithProfile(value certmanagerv1.PKCS1
 // WithPasswordSecretRef sets the PasswordSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PasswordSecretRef field is set to the value of the last call.
-func (b *PKCS12KeystoreApplyConfiguration) WithPasswordSecretRef(value metav1.SecretKeySelector) *PKCS12KeystoreApplyConfiguration {
-	b.PasswordSecretRef = &value
+func (b *PKCS12KeystoreApplyConfiguration) WithPasswordSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *PKCS12KeystoreApplyConfiguration {
+	b.PasswordSecretRef = value
 	return b
 }
 

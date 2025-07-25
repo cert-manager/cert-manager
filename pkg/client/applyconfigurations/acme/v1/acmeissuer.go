@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerApplyConfiguration represents a declarative configuration of the ACMEIssuer type for use
@@ -31,7 +31,7 @@ type ACMEIssuerApplyConfiguration struct {
 	CABundle                    []byte                                        `json:"caBundle,omitempty"`
 	SkipTLSVerify               *bool                                         `json:"skipTLSVerify,omitempty"`
 	ExternalAccountBinding      *ACMEExternalAccountBindingApplyConfiguration `json:"externalAccountBinding,omitempty"`
-	PrivateKey                  *metav1.SecretKeySelector                     `json:"privateKeySecretRef,omitempty"`
+	PrivateKey                  *metav1.SecretKeySelectorApplyConfiguration   `json:"privateKeySecretRef,omitempty"`
 	Solvers                     []ACMEChallengeSolverApplyConfiguration       `json:"solvers,omitempty"`
 	DisableAccountKeyGeneration *bool                                         `json:"disableAccountKeyGeneration,omitempty"`
 	EnableDurationFeature       *bool                                         `json:"enableDurationFeature,omitempty"`
@@ -97,8 +97,8 @@ func (b *ACMEIssuerApplyConfiguration) WithExternalAccountBinding(value *ACMEExt
 // WithPrivateKey sets the PrivateKey field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PrivateKey field is set to the value of the last call.
-func (b *ACMEIssuerApplyConfiguration) WithPrivateKey(value metav1.SecretKeySelector) *ACMEIssuerApplyConfiguration {
-	b.PrivateKey = &value
+func (b *ACMEIssuerApplyConfiguration) WithPrivateKey(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerApplyConfiguration {
+	b.PrivateKey = value
 	return b
 }
 

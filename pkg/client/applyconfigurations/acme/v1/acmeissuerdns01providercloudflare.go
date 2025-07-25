@@ -19,15 +19,15 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderCloudflareApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderCloudflare type for use
 // with apply.
 type ACMEIssuerDNS01ProviderCloudflareApplyConfiguration struct {
-	Email    *string                   `json:"email,omitempty"`
-	APIKey   *metav1.SecretKeySelector `json:"apiKeySecretRef,omitempty"`
-	APIToken *metav1.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
+	Email    *string                                     `json:"email,omitempty"`
+	APIKey   *metav1.SecretKeySelectorApplyConfiguration `json:"apiKeySecretRef,omitempty"`
+	APIToken *metav1.SecretKeySelectorApplyConfiguration `json:"apiTokenSecretRef,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflareApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderCloudflare type for use with
@@ -47,15 +47,15 @@ func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithEmail(value st
 // WithAPIKey sets the APIKey field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIKey field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithAPIKey(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration {
-	b.APIKey = &value
+func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithAPIKey(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration {
+	b.APIKey = value
 	return b
 }
 
 // WithAPIToken sets the APIToken field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIToken field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithAPIToken(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration {
-	b.APIToken = &value
+func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithAPIToken(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration {
+	b.APIToken = value
 	return b
 }

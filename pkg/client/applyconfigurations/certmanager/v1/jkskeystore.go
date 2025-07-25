@@ -19,16 +19,16 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // JKSKeystoreApplyConfiguration represents a declarative configuration of the JKSKeystore type for use
 // with apply.
 type JKSKeystoreApplyConfiguration struct {
-	Create            *bool                     `json:"create,omitempty"`
-	Alias             *string                   `json:"alias,omitempty"`
-	PasswordSecretRef *metav1.SecretKeySelector `json:"passwordSecretRef,omitempty"`
-	Password          *string                   `json:"password,omitempty"`
+	Create            *bool                                       `json:"create,omitempty"`
+	Alias             *string                                     `json:"alias,omitempty"`
+	PasswordSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"passwordSecretRef,omitempty"`
+	Password          *string                                     `json:"password,omitempty"`
 }
 
 // JKSKeystoreApplyConfiguration constructs a declarative configuration of the JKSKeystore type for use with
@@ -56,8 +56,8 @@ func (b *JKSKeystoreApplyConfiguration) WithAlias(value string) *JKSKeystoreAppl
 // WithPasswordSecretRef sets the PasswordSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PasswordSecretRef field is set to the value of the last call.
-func (b *JKSKeystoreApplyConfiguration) WithPasswordSecretRef(value metav1.SecretKeySelector) *JKSKeystoreApplyConfiguration {
-	b.PasswordSecretRef = &value
+func (b *JKSKeystoreApplyConfiguration) WithPasswordSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *JKSKeystoreApplyConfiguration {
+	b.PasswordSecretRef = value
 	return b
 }
 

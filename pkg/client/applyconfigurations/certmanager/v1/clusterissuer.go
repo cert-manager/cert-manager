@@ -19,8 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	internal "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/internal"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -41,6 +44,41 @@ func ClusterIssuer(name string) *ClusterIssuerApplyConfiguration {
 	b.WithKind("ClusterIssuer")
 	b.WithAPIVersion("cert-manager.io/v1")
 	return b
+}
+
+// ExtractClusterIssuer extracts the applied configuration owned by fieldManager from
+// clusterIssuer. If no managedFields are found in clusterIssuer for fieldManager, a
+// ClusterIssuerApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// clusterIssuer must be a unmodified ClusterIssuer API object that was retrieved from the Kubernetes API.
+// ExtractClusterIssuer provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+// Experimental!
+func ExtractClusterIssuer(clusterIssuer *certmanagerv1.ClusterIssuer, fieldManager string) (*ClusterIssuerApplyConfiguration, error) {
+	return extractClusterIssuer(clusterIssuer, fieldManager, "")
+}
+
+// ExtractClusterIssuerStatus is the same as ExtractClusterIssuer except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractClusterIssuerStatus(clusterIssuer *certmanagerv1.ClusterIssuer, fieldManager string) (*ClusterIssuerApplyConfiguration, error) {
+	return extractClusterIssuer(clusterIssuer, fieldManager, "status")
+}
+
+func extractClusterIssuer(clusterIssuer *certmanagerv1.ClusterIssuer, fieldManager string, subresource string) (*ClusterIssuerApplyConfiguration, error) {
+	b := &ClusterIssuerApplyConfiguration{}
+	err := managedfields.ExtractInto(clusterIssuer, internal.Parser().Type("com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.ClusterIssuer"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(clusterIssuer.Name)
+
+	b.WithKind("ClusterIssuer")
+	b.WithAPIVersion("cert-manager.io/v1")
+	return b, nil
 }
 
 // WithKind sets the Kind field in the declarative configuration to the given value

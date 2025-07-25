@@ -19,8 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	internal "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/internal"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -42,6 +45,42 @@ func Challenge(name, namespace string) *ChallengeApplyConfiguration {
 	b.WithKind("Challenge")
 	b.WithAPIVersion("acme.cert-manager.io/v1")
 	return b
+}
+
+// ExtractChallenge extracts the applied configuration owned by fieldManager from
+// challenge. If no managedFields are found in challenge for fieldManager, a
+// ChallengeApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// challenge must be a unmodified Challenge API object that was retrieved from the Kubernetes API.
+// ExtractChallenge provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+// Experimental!
+func ExtractChallenge(challenge *acmev1.Challenge, fieldManager string) (*ChallengeApplyConfiguration, error) {
+	return extractChallenge(challenge, fieldManager, "")
+}
+
+// ExtractChallengeStatus is the same as ExtractChallenge except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractChallengeStatus(challenge *acmev1.Challenge, fieldManager string) (*ChallengeApplyConfiguration, error) {
+	return extractChallenge(challenge, fieldManager, "status")
+}
+
+func extractChallenge(challenge *acmev1.Challenge, fieldManager string, subresource string) (*ChallengeApplyConfiguration, error) {
+	b := &ChallengeApplyConfiguration{}
+	err := managedfields.ExtractInto(challenge, internal.Parser().Type("com.github.cert-manager.cert-manager.pkg.apis.acme.v1.Challenge"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(challenge.Name)
+	b.WithNamespace(challenge.Namespace)
+
+	b.WithKind("Challenge")
+	b.WithAPIVersion("acme.cert-manager.io/v1")
+	return b, nil
 }
 
 // WithKind sets the Kind field in the declarative configuration to the given value
