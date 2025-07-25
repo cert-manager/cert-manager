@@ -19,20 +19,20 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // OrderSpecApplyConfiguration represents a declarative configuration of the OrderSpec type for use
 // with apply.
 type OrderSpecApplyConfiguration struct {
-	Request     []byte                  `json:"request,omitempty"`
-	IssuerRef   *metav1.ObjectReference `json:"issuerRef,omitempty"`
-	CommonName  *string                 `json:"commonName,omitempty"`
-	DNSNames    []string                `json:"dnsNames,omitempty"`
-	IPAddresses []string                `json:"ipAddresses,omitempty"`
-	Duration    *apismetav1.Duration    `json:"duration,omitempty"`
-	Profile     *string                 `json:"profile,omitempty"`
+	Request     []byte                                    `json:"request,omitempty"`
+	IssuerRef   *metav1.ObjectReferenceApplyConfiguration `json:"issuerRef,omitempty"`
+	CommonName  *string                                   `json:"commonName,omitempty"`
+	DNSNames    []string                                  `json:"dnsNames,omitempty"`
+	IPAddresses []string                                  `json:"ipAddresses,omitempty"`
+	Duration    *apismetav1.Duration                      `json:"duration,omitempty"`
+	Profile     *string                                   `json:"profile,omitempty"`
 }
 
 // OrderSpecApplyConfiguration constructs a declarative configuration of the OrderSpec type for use with
@@ -54,8 +54,8 @@ func (b *OrderSpecApplyConfiguration) WithRequest(values ...byte) *OrderSpecAppl
 // WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the IssuerRef field is set to the value of the last call.
-func (b *OrderSpecApplyConfiguration) WithIssuerRef(value metav1.ObjectReference) *OrderSpecApplyConfiguration {
-	b.IssuerRef = &value
+func (b *OrderSpecApplyConfiguration) WithIssuerRef(value *metav1.ObjectReferenceApplyConfiguration) *OrderSpecApplyConfiguration {
+	b.IssuerRef = value
 	return b
 }
 

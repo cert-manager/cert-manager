@@ -19,16 +19,16 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderAkamaiApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderAkamai type for use
 // with apply.
 type ACMEIssuerDNS01ProviderAkamaiApplyConfiguration struct {
-	ServiceConsumerDomain *string                   `json:"serviceConsumerDomain,omitempty"`
-	ClientToken           *metav1.SecretKeySelector `json:"clientTokenSecretRef,omitempty"`
-	ClientSecret          *metav1.SecretKeySelector `json:"clientSecretSecretRef,omitempty"`
-	AccessToken           *metav1.SecretKeySelector `json:"accessTokenSecretRef,omitempty"`
+	ServiceConsumerDomain *string                                     `json:"serviceConsumerDomain,omitempty"`
+	ClientToken           *metav1.SecretKeySelectorApplyConfiguration `json:"clientTokenSecretRef,omitempty"`
+	ClientSecret          *metav1.SecretKeySelectorApplyConfiguration `json:"clientSecretSecretRef,omitempty"`
+	AccessToken           *metav1.SecretKeySelectorApplyConfiguration `json:"accessTokenSecretRef,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamaiApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAkamai type for use with
@@ -48,23 +48,23 @@ func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithServiceConsumerDom
 // WithClientToken sets the ClientToken field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClientToken field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithClientToken(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration {
-	b.ClientToken = &value
+func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithClientToken(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration {
+	b.ClientToken = value
 	return b
 }
 
 // WithClientSecret sets the ClientSecret field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClientSecret field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithClientSecret(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration {
-	b.ClientSecret = &value
+func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithClientSecret(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration {
+	b.ClientSecret = value
 	return b
 }
 
 // WithAccessToken sets the AccessToken field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AccessToken field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithAccessToken(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration {
-	b.AccessToken = &value
+func (b *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration) WithAccessToken(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration {
+	b.AccessToken = value
 	return b
 }
