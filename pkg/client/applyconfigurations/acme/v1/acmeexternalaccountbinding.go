@@ -20,15 +20,15 @@ package v1
 
 import (
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEExternalAccountBindingApplyConfiguration represents a declarative configuration of the ACMEExternalAccountBinding type for use
 // with apply.
 type ACMEExternalAccountBindingApplyConfiguration struct {
-	KeyID        *string                   `json:"keyID,omitempty"`
-	Key          *metav1.SecretKeySelector `json:"keySecretRef,omitempty"`
-	KeyAlgorithm *acmev1.HMACKeyAlgorithm  `json:"keyAlgorithm,omitempty"`
+	KeyID        *string                                     `json:"keyID,omitempty"`
+	Key          *metav1.SecretKeySelectorApplyConfiguration `json:"keySecretRef,omitempty"`
+	KeyAlgorithm *acmev1.HMACKeyAlgorithm                    `json:"keyAlgorithm,omitempty"`
 }
 
 // ACMEExternalAccountBindingApplyConfiguration constructs a declarative configuration of the ACMEExternalAccountBinding type for use with
@@ -48,8 +48,8 @@ func (b *ACMEExternalAccountBindingApplyConfiguration) WithKeyID(value string) *
 // WithKey sets the Key field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Key field is set to the value of the last call.
-func (b *ACMEExternalAccountBindingApplyConfiguration) WithKey(value metav1.SecretKeySelector) *ACMEExternalAccountBindingApplyConfiguration {
-	b.Key = &value
+func (b *ACMEExternalAccountBindingApplyConfiguration) WithKey(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEExternalAccountBindingApplyConfiguration {
+	b.Key = value
 	return b
 }
 

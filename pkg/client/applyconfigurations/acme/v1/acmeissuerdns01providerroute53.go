@@ -19,19 +19,19 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderRoute53ApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderRoute53 type for use
 // with apply.
 type ACMEIssuerDNS01ProviderRoute53ApplyConfiguration struct {
-	Auth              *Route53AuthApplyConfiguration `json:"auth,omitempty"`
-	AccessKeyID       *string                        `json:"accessKeyID,omitempty"`
-	SecretAccessKeyID *metav1.SecretKeySelector      `json:"accessKeyIDSecretRef,omitempty"`
-	SecretAccessKey   *metav1.SecretKeySelector      `json:"secretAccessKeySecretRef,omitempty"`
-	Role              *string                        `json:"role,omitempty"`
-	HostedZoneID      *string                        `json:"hostedZoneID,omitempty"`
-	Region            *string                        `json:"region,omitempty"`
+	Auth              *Route53AuthApplyConfiguration              `json:"auth,omitempty"`
+	AccessKeyID       *string                                     `json:"accessKeyID,omitempty"`
+	SecretAccessKeyID *metav1.SecretKeySelectorApplyConfiguration `json:"accessKeyIDSecretRef,omitempty"`
+	SecretAccessKey   *metav1.SecretKeySelectorApplyConfiguration `json:"secretAccessKeySecretRef,omitempty"`
+	Role              *string                                     `json:"role,omitempty"`
+	HostedZoneID      *string                                     `json:"hostedZoneID,omitempty"`
+	Region            *string                                     `json:"region,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53ApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderRoute53 type for use with
@@ -59,16 +59,16 @@ func (b *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration) WithAccessKeyID(value
 // WithSecretAccessKeyID sets the SecretAccessKeyID field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretAccessKeyID field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration) WithSecretAccessKeyID(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration {
-	b.SecretAccessKeyID = &value
+func (b *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration) WithSecretAccessKeyID(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration {
+	b.SecretAccessKeyID = value
 	return b
 }
 
 // WithSecretAccessKey sets the SecretAccessKey field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretAccessKey field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration) WithSecretAccessKey(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration {
-	b.SecretAccessKey = &value
+func (b *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration) WithSecretAccessKey(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderRoute53ApplyConfiguration {
+	b.SecretAccessKey = value
 	return b
 }
 

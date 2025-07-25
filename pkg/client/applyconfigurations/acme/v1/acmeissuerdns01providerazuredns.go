@@ -20,20 +20,20 @@ package v1
 
 import (
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderAzureDNS type for use
 // with apply.
 type ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration struct {
-	ClientID          *string                                 `json:"clientID,omitempty"`
-	ClientSecret      *metav1.SecretKeySelector               `json:"clientSecretSecretRef,omitempty"`
-	SubscriptionID    *string                                 `json:"subscriptionID,omitempty"`
-	TenantID          *string                                 `json:"tenantID,omitempty"`
-	ResourceGroupName *string                                 `json:"resourceGroupName,omitempty"`
-	HostedZoneName    *string                                 `json:"hostedZoneName,omitempty"`
-	Environment       *acmev1.AzureDNSEnvironment             `json:"environment,omitempty"`
-	ManagedIdentity   *AzureManagedIdentityApplyConfiguration `json:"managedIdentity,omitempty"`
+	ClientID          *string                                     `json:"clientID,omitempty"`
+	ClientSecret      *metav1.SecretKeySelectorApplyConfiguration `json:"clientSecretSecretRef,omitempty"`
+	SubscriptionID    *string                                     `json:"subscriptionID,omitempty"`
+	TenantID          *string                                     `json:"tenantID,omitempty"`
+	ResourceGroupName *string                                     `json:"resourceGroupName,omitempty"`
+	HostedZoneName    *string                                     `json:"hostedZoneName,omitempty"`
+	Environment       *acmev1.AzureDNSEnvironment                 `json:"environment,omitempty"`
+	ManagedIdentity   *AzureManagedIdentityApplyConfiguration     `json:"managedIdentity,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAzureDNS type for use with
@@ -53,8 +53,8 @@ func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithClientID(value s
 // WithClientSecret sets the ClientSecret field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClientSecret field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithClientSecret(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration {
-	b.ClientSecret = &value
+func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithClientSecret(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration {
+	b.ClientSecret = value
 	return b
 }
 

@@ -19,13 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderDigitalOcean type for use
 // with apply.
 type ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration struct {
-	Token *metav1.SecretKeySelector `json:"tokenSecretRef,omitempty"`
+	Token *metav1.SecretKeySelectorApplyConfiguration `json:"tokenSecretRef,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderDigitalOcean type for use with
@@ -37,7 +37,7 @@ func ACMEIssuerDNS01ProviderDigitalOcean() *ACMEIssuerDNS01ProviderDigitalOceanA
 // WithToken sets the Token field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Token field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration) WithToken(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration {
-	b.Token = &value
+func (b *ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration) WithToken(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderDigitalOceanApplyConfiguration {
+	b.Token = value
 	return b
 }

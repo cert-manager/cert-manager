@@ -20,22 +20,22 @@ package v1
 
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apismetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	applyconfigurationsmetav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CertificateRequestSpecApplyConfiguration represents a declarative configuration of the CertificateRequestSpec type for use
 // with apply.
 type CertificateRequestSpecApplyConfiguration struct {
-	Duration  *metav1.Duration            `json:"duration,omitempty"`
-	IssuerRef *apismetav1.ObjectReference `json:"issuerRef,omitempty"`
-	Request   []byte                      `json:"request,omitempty"`
-	IsCA      *bool                       `json:"isCA,omitempty"`
-	Usages    []certmanagerv1.KeyUsage    `json:"usages,omitempty"`
-	Username  *string                     `json:"username,omitempty"`
-	UID       *string                     `json:"uid,omitempty"`
-	Groups    []string                    `json:"groups,omitempty"`
-	Extra     map[string][]string         `json:"extra,omitempty"`
+	Duration  *metav1.Duration                                             `json:"duration,omitempty"`
+	IssuerRef *applyconfigurationsmetav1.ObjectReferenceApplyConfiguration `json:"issuerRef,omitempty"`
+	Request   []byte                                                       `json:"request,omitempty"`
+	IsCA      *bool                                                        `json:"isCA,omitempty"`
+	Usages    []certmanagerv1.KeyUsage                                     `json:"usages,omitempty"`
+	Username  *string                                                      `json:"username,omitempty"`
+	UID       *string                                                      `json:"uid,omitempty"`
+	Groups    []string                                                     `json:"groups,omitempty"`
+	Extra     map[string][]string                                          `json:"extra,omitempty"`
 }
 
 // CertificateRequestSpecApplyConfiguration constructs a declarative configuration of the CertificateRequestSpec type for use with
@@ -55,8 +55,8 @@ func (b *CertificateRequestSpecApplyConfiguration) WithDuration(value metav1.Dur
 // WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the IssuerRef field is set to the value of the last call.
-func (b *CertificateRequestSpecApplyConfiguration) WithIssuerRef(value apismetav1.ObjectReference) *CertificateRequestSpecApplyConfiguration {
-	b.IssuerRef = &value
+func (b *CertificateRequestSpecApplyConfiguration) WithIssuerRef(value *applyconfigurationsmetav1.ObjectReferenceApplyConfiguration) *CertificateRequestSpecApplyConfiguration {
+	b.IssuerRef = value
 	return b
 }
 

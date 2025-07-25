@@ -19,13 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // VaultAuthApplyConfiguration represents a declarative configuration of the VaultAuth type for use
 // with apply.
 type VaultAuthApplyConfiguration struct {
-	TokenSecretRef    *metav1.SecretKeySelector                     `json:"tokenSecretRef,omitempty"`
+	TokenSecretRef    *metav1.SecretKeySelectorApplyConfiguration   `json:"tokenSecretRef,omitempty"`
 	AppRole           *VaultAppRoleApplyConfiguration               `json:"appRole,omitempty"`
 	ClientCertificate *VaultClientCertificateAuthApplyConfiguration `json:"clientCertificate,omitempty"`
 	Kubernetes        *VaultKubernetesAuthApplyConfiguration        `json:"kubernetes,omitempty"`
@@ -40,8 +40,8 @@ func VaultAuth() *VaultAuthApplyConfiguration {
 // WithTokenSecretRef sets the TokenSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TokenSecretRef field is set to the value of the last call.
-func (b *VaultAuthApplyConfiguration) WithTokenSecretRef(value metav1.SecretKeySelector) *VaultAuthApplyConfiguration {
-	b.TokenSecretRef = &value
+func (b *VaultAuthApplyConfiguration) WithTokenSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VaultAuthApplyConfiguration {
+	b.TokenSecretRef = value
 	return b
 }
 
