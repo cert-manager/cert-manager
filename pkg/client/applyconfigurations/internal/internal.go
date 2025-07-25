@@ -565,7 +565,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: ""
     - name: issuerRef
       type:
-        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.ObjectReference
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.IssuerReference
       default: {}
     - name: key
       type:
@@ -652,7 +652,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: atomic
     - name: issuerRef
       type:
-        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.ObjectReference
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.IssuerReference
       default: {}
     - name: profile
       type:
@@ -878,7 +878,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: boolean
     - name: issuerRef
       type:
-        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.ObjectReference
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.IssuerReference
       default: {}
     - name: request
       type:
@@ -969,7 +969,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: boolean
     - name: issuerRef
       type:
-        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.ObjectReference
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.IssuerReference
       default: {}
     - name: keystores
       type:
@@ -1436,22 +1436,24 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
-- name: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.LocalObjectReference
-  map:
-    fields:
-    - name: name
-      type:
-        scalar: string
-      default: ""
-- name: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.ObjectReference
+- name: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.IssuerReference
   map:
     fields:
     - name: group
       type:
         scalar: string
+      default: cert-manager.io
     - name: kind
       type:
         scalar: string
+      default: Issuer
+    - name: name
+      type:
+        scalar: string
+      default: ""
+- name: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.LocalObjectReference
+  map:
+    fields:
     - name: name
       type:
         scalar: string

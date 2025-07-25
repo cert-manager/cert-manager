@@ -118,7 +118,7 @@ type CertificateRequestSpec struct {
 	// from any namespace.
 	//
 	// The `name` field of the reference must always be specified.
-	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.IssuerReference `json:"issuerRef"`
 
 	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.

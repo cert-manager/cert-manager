@@ -18,24 +18,24 @@ limitations under the License.
 
 package v1
 
-// ObjectReferenceApplyConfiguration represents a declarative configuration of the ObjectReference type for use
+// IssuerReferenceApplyConfiguration represents a declarative configuration of the IssuerReference type for use
 // with apply.
-type ObjectReferenceApplyConfiguration struct {
+type IssuerReferenceApplyConfiguration struct {
 	Name  *string `json:"name,omitempty"`
 	Kind  *string `json:"kind,omitempty"`
 	Group *string `json:"group,omitempty"`
 }
 
-// ObjectReferenceApplyConfiguration constructs a declarative configuration of the ObjectReference type for use with
+// IssuerReferenceApplyConfiguration constructs a declarative configuration of the IssuerReference type for use with
 // apply.
-func ObjectReference() *ObjectReferenceApplyConfiguration {
-	return &ObjectReferenceApplyConfiguration{}
+func IssuerReference() *IssuerReferenceApplyConfiguration {
+	return &IssuerReferenceApplyConfiguration{}
 }
 
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *ObjectReferenceApplyConfiguration) WithName(value string) *ObjectReferenceApplyConfiguration {
+func (b *IssuerReferenceApplyConfiguration) WithName(value string) *IssuerReferenceApplyConfiguration {
 	b.Name = &value
 	return b
 }
@@ -43,7 +43,7 @@ func (b *ObjectReferenceApplyConfiguration) WithName(value string) *ObjectRefere
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *ObjectReferenceApplyConfiguration) WithKind(value string) *ObjectReferenceApplyConfiguration {
+func (b *IssuerReferenceApplyConfiguration) WithKind(value string) *IssuerReferenceApplyConfiguration {
 	b.Kind = &value
 	return b
 }
@@ -51,7 +51,7 @@ func (b *ObjectReferenceApplyConfiguration) WithKind(value string) *ObjectRefere
 // WithGroup sets the Group field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Group field is set to the value of the last call.
-func (b *ObjectReferenceApplyConfiguration) WithGroup(value string) *ObjectReferenceApplyConfiguration {
+func (b *IssuerReferenceApplyConfiguration) WithGroup(value string) *IssuerReferenceApplyConfiguration {
 	b.Group = &value
 	return b
 }

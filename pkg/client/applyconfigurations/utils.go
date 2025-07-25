@@ -182,10 +182,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.X509SubjectApplyConfiguration{}
 
 		// Group=meta, Version=v1
+	case metav1.SchemeGroupVersion.WithKind("IssuerReference"):
+		return &applyconfigurationsmetav1.IssuerReferenceApplyConfiguration{}
 	case metav1.SchemeGroupVersion.WithKind("LocalObjectReference"):
 		return &applyconfigurationsmetav1.LocalObjectReferenceApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("ObjectReference"):
-		return &applyconfigurationsmetav1.ObjectReferenceApplyConfiguration{}
 	case metav1.SchemeGroupVersion.WithKind("SecretKeySelector"):
 		return &applyconfigurationsmetav1.SecretKeySelectorApplyConfiguration{}
 

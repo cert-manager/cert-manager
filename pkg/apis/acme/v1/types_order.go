@@ -63,7 +63,7 @@ type OrderSpec struct {
 	// If the Issuer does not exist, processing will be retried.
 	// If the Issuer is not an 'ACME' Issuer, an error will be returned and the
 	// Order will be marked as failed.
-	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.IssuerReference `json:"issuerRef"`
 
 	// CommonName is the common name as specified on the DER encoded CSR.
 	// If specified, this value must also be present in `dnsNames` or `ipAddresses`.

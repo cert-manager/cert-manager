@@ -34,7 +34,7 @@ type ChallengeSpecApplyConfiguration struct {
 	Token            *string                                   `json:"token,omitempty"`
 	Key              *string                                   `json:"key,omitempty"`
 	Solver           *ACMEChallengeSolverApplyConfiguration    `json:"solver,omitempty"`
-	IssuerRef        *metav1.ObjectReferenceApplyConfiguration `json:"issuerRef,omitempty"`
+	IssuerRef        *metav1.IssuerReferenceApplyConfiguration `json:"issuerRef,omitempty"`
 }
 
 // ChallengeSpecApplyConfiguration constructs a declarative configuration of the ChallengeSpec type for use with
@@ -110,7 +110,7 @@ func (b *ChallengeSpecApplyConfiguration) WithSolver(value *ACMEChallengeSolverA
 // WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the IssuerRef field is set to the value of the last call.
-func (b *ChallengeSpecApplyConfiguration) WithIssuerRef(value *metav1.ObjectReferenceApplyConfiguration) *ChallengeSpecApplyConfiguration {
+func (b *ChallengeSpecApplyConfiguration) WithIssuerRef(value *metav1.IssuerReferenceApplyConfiguration) *ChallengeSpecApplyConfiguration {
 	b.IssuerRef = value
 	return b
 }
