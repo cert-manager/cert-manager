@@ -30,6 +30,9 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	restclient "k8s.io/client-go/rest"
 	basecompatibility "k8s.io/component-base/compatibility"
+	"k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/common/restfuladapter"
+	"k8s.io/kube-openapi/pkg/util"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
@@ -41,6 +44,8 @@ var (
 	Scheme = runtime.NewScheme()
 	Codecs = serializer.NewCodecFactory(Scheme)
 )
+
+var verbs = util.NewTrie([]string{"get", "log", "read", "replace", "patch", "delete", "deletecollection", "watch", "connect", "proxy", "list", "create", "patch"})
 
 func init() {
 	utilruntime.Must(whapi.AddToScheme(Scheme))
@@ -96,6 +101,8 @@ func (c *Config) Complete() CompletedConfig {
 	c.GenericConfig.EffectiveVersion = basecompatibility.NewEffectiveVersionFromString("1.1", "", "")
 	c.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
 	c.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+	c.GenericConfig.OpenAPIConfig.GetOperationIDAndTagsFromRoute = getOperationIDAndTags
+	c.GenericConfig.OpenAPIV3Config.GetOperationIDAndTagsFromRoute = getOperationIDAndTags
 
 	return CompletedConfig{&completedConfig{
 		c.GenericConfig.Complete(),
@@ -202,4 +209,42 @@ func solversByName(solvers ...webhook.Solver) map[string]webhook.Solver {
 	}
 
 	return ret
+}
+
+func getOperationIDAndTags(route common.Route) (string, []string, error) {
+	reset, ok := route.(*restfuladapter.RouteAdapter)
+	if !ok {
+		return "", nil, fmt.Errorf("config.GetOperationIDAndTags specified but route is not a restful v1 Route")
+	}
+
+	op := reset.Route.Operation
+	path := reset.Route.Path
+	var tags []string
+	prefix, exists := verbs.GetPrefix(op)
+	if !exists {
+		return op, tags, fmt.Errorf("operation names should start with a verb. Cannot determine operation verb from %v", op)
+	}
+	op = op[len(prefix):]
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	// Assume /api is /apis/core, remove this when we actually server /api/... on /apis/core/...
+	if len(parts) >= 1 && parts[0] == "api" {
+		parts = append([]string{"apis", "core"}, parts[1:]...)
+	}
+	if len(parts) >= 2 && parts[0] == "apis" {
+		trimmed := strings.TrimSuffix(parts[1], ".k8s.io")
+		prefix = prefix + openapi.ToValidOperationID(trimmed, prefix != "")
+		tag := openapi.ToValidOperationID(trimmed, false)
+		if len(parts) > 2 {
+			prefix = prefix + openapi.ToValidOperationID(parts[2], prefix != "")
+			tag = tag + "_" + openapi.ToValidOperationID(parts[2], false)
+		}
+		if len(parts) > 3 {
+			prefix = prefix + openapi.ToValidOperationID(parts[3], prefix != "")
+			tag = tag + "_" + openapi.ToValidOperationID(parts[3], false)
+		}
+		tags = append(tags, tag)
+	} else if len(parts) >= 1 {
+		tags = append(tags, openapi.ToValidOperationID(parts[0], false))
+	}
+	return prefix + openapi.ToValidOperationID(op, prefix != ""), tags, nil
 }
