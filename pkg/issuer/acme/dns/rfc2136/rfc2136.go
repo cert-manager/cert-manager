@@ -45,6 +45,7 @@ var supportedAlgorithms = map[string]string{
 type DNSProvider struct {
 	nameserver    string
 	tsigAlgorithm string
+	protocol      string
 	tsigKeyName   string
 	tsigSecret    string
 }
@@ -53,7 +54,7 @@ type DNSProvider struct {
 // DNSProvider instance configured for rfc2136 dynamic update. To disable TSIG
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
-func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret, protocol string) (*DNSProvider, error) {
 	logf.Log.V(logf.DebugLevel).Info("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
@@ -76,7 +77,6 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 			tsigAlgorithm = value
 		} else {
 			return nil, fmt.Errorf("algorithm '%v' is not supported", tsigAlgorithm)
-
 		}
 	}
 	d.tsigAlgorithm = tsigAlgorithm
@@ -128,6 +128,9 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl uint32)
 
 	// Setup client
 	c := new(dns.Client)
+	if r.protocol == "tcp" {
+		c.Net = "tcp"
+	}
 	c.TsigProvider = tsigHMACProvider(r.tsigSecret)
 	// TSIG authentication / msg signing
 	if len(r.tsigKeyName) > 0 && len(r.tsigSecret) > 0 {
