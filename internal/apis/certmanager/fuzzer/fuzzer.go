@@ -35,6 +35,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if len(s.Spec.DNSNames) == 0 {
 				s.Spec.DNSNames = []string{s.Spec.CommonName}
 			}
+			if s.Spec.IssuerRef.Group == "" {
+				s.Spec.IssuerRef.Group = "cert-manager.io"
+			}
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
@@ -45,6 +48,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 		func(s *certmanager.CertificateRequest, c randfill.Continue) {
 			c.FillNoCustom(s) // fuzz self without calling this function again
 
+			if s.Spec.IssuerRef.Group == "" {
+				s.Spec.IssuerRef.Group = "cert-manager.io"
+			}
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}

@@ -41,7 +41,7 @@ type CertificateSpecApplyConfiguration struct {
 	SecretName              *string                                               `json:"secretName,omitempty"`
 	SecretTemplate          *CertificateSecretTemplateApplyConfiguration          `json:"secretTemplate,omitempty"`
 	Keystores               *CertificateKeystoresApplyConfiguration               `json:"keystores,omitempty"`
-	IssuerRef               *apismetav1.ObjectReference                           `json:"issuerRef,omitempty"`
+	IssuerRef               *apismetav1.IssuerReference                           `json:"issuerRef,omitempty"`
 	IsCA                    *bool                                                 `json:"isCA,omitempty"`
 	Usages                  []certmanagerv1.KeyUsage                              `json:"usages,omitempty"`
 	PrivateKey              *CertificatePrivateKeyApplyConfiguration              `json:"privateKey,omitempty"`
@@ -186,7 +186,7 @@ func (b *CertificateSpecApplyConfiguration) WithKeystores(value *CertificateKeys
 // WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the IssuerRef field is set to the value of the last call.
-func (b *CertificateSpecApplyConfiguration) WithIssuerRef(value apismetav1.ObjectReference) *CertificateSpecApplyConfiguration {
+func (b *CertificateSpecApplyConfiguration) WithIssuerRef(value apismetav1.IssuerReference) *CertificateSpecApplyConfiguration {
 	b.IssuerRef = &value
 	return b
 }
