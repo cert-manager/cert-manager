@@ -766,7 +766,21 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+
+	// Protocol to use for dynamic DNS update queries. Valid values are (case-sensitive) ``TCP`` and ``UDP``; ``UDP`` (default).
+	// +optional
+	Protocol RFC2136UpdateProtocol `json:"protocol,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=TCP;UDP
+type RFC2136UpdateProtocol string
+
+const (
+	// RFC2136UpdateProtocolTCP utilizes TCP to update queries.
+	RFC2136UpdateProtocolTCP RFC2136UpdateProtocol = "TCP"
+	// RFC2136UpdateProtocolUDP utilizes UDP to update queries.
+	RFC2136UpdateProtocolUDP RFC2136UpdateProtocol = "UDP"
+)
 
 // ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01
 // provider, including where to POST ChallengePayload resources.

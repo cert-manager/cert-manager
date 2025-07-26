@@ -522,6 +522,12 @@ spec:
                                       enclosed in square brackets (e.g [2001:db8::1]) ; port is optional.
                                       This field is required.
                                     type: string
+                                  protocol:
+                                    description: Protocol to use for dynamic DNS update queries. Valid values are (case-sensitive) ``TCP`` and ``UDP``; ``UDP`` (default).
+                                    enum:
+                                      - TCP
+                                      - UDP
+                                    type: string
                                   tsigAlgorithm:
                                     description: |-
                                       The TSIG Algorithm configured in the DNS supporting RFC2136. Used only

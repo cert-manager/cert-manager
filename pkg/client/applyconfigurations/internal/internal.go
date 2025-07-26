@@ -438,6 +438,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+    - name: protocol
+      type:
+        scalar: string
     - name: tsigAlgorithm
       type:
         scalar: string

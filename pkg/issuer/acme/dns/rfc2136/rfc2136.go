@@ -45,18 +45,37 @@ var supportedAlgorithms = map[string]string{
 type DNSProvider struct {
 	nameserver    string
 	tsigAlgorithm string
+	network       string
 	tsigKeyName   string
 	tsigSecret    string
+}
+
+// ProviderOption is some configuration that modifies rfc2136 DNS provider.
+// It is meant to replace optional parameters and move towards function parameters and higher order functions.
+// Currently only protocol is migrated and future work is to be done on this.
+type ProviderOption func(*DNSProvider)
+
+func WithNetwork(network string) ProviderOption {
+	return func(d *DNSProvider) {
+		if network == "" {
+			network = "udp"
+		}
+		d.network = strings.ToLower(network)
+	}
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for rfc2136 dynamic update. To disable TSIG
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
-func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, opts ...ProviderOption) (*DNSProvider, error) {
 	logf.Log.V(logf.DebugLevel).Info("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
+
+	for _, opt := range opts {
+		opt(d)
+	}
 
 	if validNameserver, err := util.ValidNameserver(nameserver); err != nil {
 		return nil, err
@@ -76,7 +95,6 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 			tsigAlgorithm = value
 		} else {
 			return nil, fmt.Errorf("algorithm '%v' is not supported", tsigAlgorithm)
-
 		}
 	}
 	d.tsigAlgorithm = tsigAlgorithm
@@ -127,7 +145,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl uint32)
 	}
 
 	// Setup client
-	c := new(dns.Client)
+	c := &dns.Client{Net: r.network}
 	c.TsigProvider = tsigHMACProvider(r.tsigSecret)
 	// TSIG authentication / msg signing
 	if len(r.tsigKeyName) > 0 && len(r.tsigSecret) > 0 {

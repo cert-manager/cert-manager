@@ -39,7 +39,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 		TSIGKeyName:   rfc2136TestTsigKeyName,
 		TSIGKeySecret: rfc2136TestTsigSecret,
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {
@@ -79,7 +79,7 @@ func TestRunSuiteNoTSIG(t *testing.T) {
 		T:     t,
 		Zones: []string{rfc2136TestZone},
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {

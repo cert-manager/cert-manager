@@ -1268,6 +1268,7 @@ func autoConvert_v1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01Provid
 	}
 	out.TSIGKeyName = in.TSIGKeyName
 	out.TSIGAlgorithm = in.TSIGAlgorithm
+	out.Protocol = acme.RFC2136UpdateProtocol(in.Protocol)
 	return nil
 }
 
@@ -1283,6 +1284,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1_ACMEIssuerDNS01Provid
 	}
 	out.TSIGKeyName = in.TSIGKeyName
 	out.TSIGAlgorithm = in.TSIGAlgorithm
+	out.Protocol = acmev1.RFC2136UpdateProtocol(in.Protocol)
 	return nil
 }
 
