@@ -222,3 +222,19 @@ func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
 		return false, fmt.Errorf("unrecognised public key type: %T", a)
 	}
 }
+
+func MarshalPrivateKey(privateKey crypto.Signer) []byte {
+	if privateKey == nil {
+		return nil
+	}
+	var privateKeyBytes []byte
+	switch key := privateKey.(type) {
+	case *rsa.PrivateKey:
+		privateKeyBytes = x509.MarshalPKCS1PrivateKey(key)
+	case *ecdsa.PrivateKey:
+		privateKeyBytes, _ = x509.MarshalECPrivateKey(key)
+	default:
+		return nil
+	}
+	return privateKeyBytes
+}
