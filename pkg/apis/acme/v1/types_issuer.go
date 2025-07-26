@@ -766,6 +766,10 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+
+	// Protocol to use for DNS queries. Valid values are (case-sensitive) ``tcp`` and ``udp``; ``udp`` (default).
+	// +optional
+	Protocol string `json:"protocol,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01
