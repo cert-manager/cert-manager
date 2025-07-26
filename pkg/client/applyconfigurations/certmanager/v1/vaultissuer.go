@@ -19,21 +19,21 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // VaultIssuerApplyConfiguration represents a declarative configuration of the VaultIssuer type for use
 // with apply.
 type VaultIssuerApplyConfiguration struct {
-	Auth                *VaultAuthApplyConfiguration `json:"auth,omitempty"`
-	Server              *string                      `json:"server,omitempty"`
-	ServerName          *string                      `json:"serverName,omitempty"`
-	Path                *string                      `json:"path,omitempty"`
-	Namespace           *string                      `json:"namespace,omitempty"`
-	CABundle            []byte                       `json:"caBundle,omitempty"`
-	CABundleSecretRef   *metav1.SecretKeySelector    `json:"caBundleSecretRef,omitempty"`
-	ClientCertSecretRef *metav1.SecretKeySelector    `json:"clientCertSecretRef,omitempty"`
-	ClientKeySecretRef  *metav1.SecretKeySelector    `json:"clientKeySecretRef,omitempty"`
+	Auth                *VaultAuthApplyConfiguration                `json:"auth,omitempty"`
+	Server              *string                                     `json:"server,omitempty"`
+	ServerName          *string                                     `json:"serverName,omitempty"`
+	Path                *string                                     `json:"path,omitempty"`
+	Namespace           *string                                     `json:"namespace,omitempty"`
+	CABundle            []byte                                      `json:"caBundle,omitempty"`
+	CABundleSecretRef   *metav1.SecretKeySelectorApplyConfiguration `json:"caBundleSecretRef,omitempty"`
+	ClientCertSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"clientCertSecretRef,omitempty"`
+	ClientKeySecretRef  *metav1.SecretKeySelectorApplyConfiguration `json:"clientKeySecretRef,omitempty"`
 }
 
 // VaultIssuerApplyConfiguration constructs a declarative configuration of the VaultIssuer type for use with
@@ -95,23 +95,23 @@ func (b *VaultIssuerApplyConfiguration) WithCABundle(values ...byte) *VaultIssue
 // WithCABundleSecretRef sets the CABundleSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
-func (b *VaultIssuerApplyConfiguration) WithCABundleSecretRef(value metav1.SecretKeySelector) *VaultIssuerApplyConfiguration {
-	b.CABundleSecretRef = &value
+func (b *VaultIssuerApplyConfiguration) WithCABundleSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VaultIssuerApplyConfiguration {
+	b.CABundleSecretRef = value
 	return b
 }
 
 // WithClientCertSecretRef sets the ClientCertSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClientCertSecretRef field is set to the value of the last call.
-func (b *VaultIssuerApplyConfiguration) WithClientCertSecretRef(value metav1.SecretKeySelector) *VaultIssuerApplyConfiguration {
-	b.ClientCertSecretRef = &value
+func (b *VaultIssuerApplyConfiguration) WithClientCertSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VaultIssuerApplyConfiguration {
+	b.ClientCertSecretRef = value
 	return b
 }
 
 // WithClientKeySecretRef sets the ClientKeySecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClientKeySecretRef field is set to the value of the last call.
-func (b *VaultIssuerApplyConfiguration) WithClientKeySecretRef(value metav1.SecretKeySelector) *VaultIssuerApplyConfiguration {
-	b.ClientKeySecretRef = &value
+func (b *VaultIssuerApplyConfiguration) WithClientKeySecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VaultIssuerApplyConfiguration {
+	b.ClientKeySecretRef = value
 	return b
 }

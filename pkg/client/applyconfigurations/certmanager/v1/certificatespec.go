@@ -20,36 +20,36 @@ package v1
 
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apismetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	applyconfigurationsmetav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CertificateSpecApplyConfiguration represents a declarative configuration of the CertificateSpec type for use
 // with apply.
 type CertificateSpecApplyConfiguration struct {
-	Subject                 *X509SubjectApplyConfiguration                        `json:"subject,omitempty"`
-	LiteralSubject          *string                                               `json:"literalSubject,omitempty"`
-	CommonName              *string                                               `json:"commonName,omitempty"`
-	Duration                *metav1.Duration                                      `json:"duration,omitempty"`
-	RenewBefore             *metav1.Duration                                      `json:"renewBefore,omitempty"`
-	RenewBeforePercentage   *int32                                                `json:"renewBeforePercentage,omitempty"`
-	DNSNames                []string                                              `json:"dnsNames,omitempty"`
-	IPAddresses             []string                                              `json:"ipAddresses,omitempty"`
-	URIs                    []string                                              `json:"uris,omitempty"`
-	OtherNames              []OtherNameApplyConfiguration                         `json:"otherNames,omitempty"`
-	EmailAddresses          []string                                              `json:"emailAddresses,omitempty"`
-	SecretName              *string                                               `json:"secretName,omitempty"`
-	SecretTemplate          *CertificateSecretTemplateApplyConfiguration          `json:"secretTemplate,omitempty"`
-	Keystores               *CertificateKeystoresApplyConfiguration               `json:"keystores,omitempty"`
-	IssuerRef               *apismetav1.ObjectReference                           `json:"issuerRef,omitempty"`
-	IsCA                    *bool                                                 `json:"isCA,omitempty"`
-	Usages                  []certmanagerv1.KeyUsage                              `json:"usages,omitempty"`
-	PrivateKey              *CertificatePrivateKeyApplyConfiguration              `json:"privateKey,omitempty"`
-	SignatureAlgorithm      *certmanagerv1.SignatureAlgorithm                     `json:"signatureAlgorithm,omitempty"`
-	EncodeUsagesInRequest   *bool                                                 `json:"encodeUsagesInRequest,omitempty"`
-	RevisionHistoryLimit    *int32                                                `json:"revisionHistoryLimit,omitempty"`
-	AdditionalOutputFormats []CertificateAdditionalOutputFormatApplyConfiguration `json:"additionalOutputFormats,omitempty"`
-	NameConstraints         *NameConstraintsApplyConfiguration                    `json:"nameConstraints,omitempty"`
+	Subject                 *X509SubjectApplyConfiguration                               `json:"subject,omitempty"`
+	LiteralSubject          *string                                                      `json:"literalSubject,omitempty"`
+	CommonName              *string                                                      `json:"commonName,omitempty"`
+	Duration                *metav1.Duration                                             `json:"duration,omitempty"`
+	RenewBefore             *metav1.Duration                                             `json:"renewBefore,omitempty"`
+	RenewBeforePercentage   *int32                                                       `json:"renewBeforePercentage,omitempty"`
+	DNSNames                []string                                                     `json:"dnsNames,omitempty"`
+	IPAddresses             []string                                                     `json:"ipAddresses,omitempty"`
+	URIs                    []string                                                     `json:"uris,omitempty"`
+	OtherNames              []OtherNameApplyConfiguration                                `json:"otherNames,omitempty"`
+	EmailAddresses          []string                                                     `json:"emailAddresses,omitempty"`
+	SecretName              *string                                                      `json:"secretName,omitempty"`
+	SecretTemplate          *CertificateSecretTemplateApplyConfiguration                 `json:"secretTemplate,omitempty"`
+	Keystores               *CertificateKeystoresApplyConfiguration                      `json:"keystores,omitempty"`
+	IssuerRef               *applyconfigurationsmetav1.ObjectReferenceApplyConfiguration `json:"issuerRef,omitempty"`
+	IsCA                    *bool                                                        `json:"isCA,omitempty"`
+	Usages                  []certmanagerv1.KeyUsage                                     `json:"usages,omitempty"`
+	PrivateKey              *CertificatePrivateKeyApplyConfiguration                     `json:"privateKey,omitempty"`
+	SignatureAlgorithm      *certmanagerv1.SignatureAlgorithm                            `json:"signatureAlgorithm,omitempty"`
+	EncodeUsagesInRequest   *bool                                                        `json:"encodeUsagesInRequest,omitempty"`
+	RevisionHistoryLimit    *int32                                                       `json:"revisionHistoryLimit,omitempty"`
+	AdditionalOutputFormats []CertificateAdditionalOutputFormatApplyConfiguration        `json:"additionalOutputFormats,omitempty"`
+	NameConstraints         *NameConstraintsApplyConfiguration                           `json:"nameConstraints,omitempty"`
 }
 
 // CertificateSpecApplyConfiguration constructs a declarative configuration of the CertificateSpec type for use with
@@ -186,8 +186,8 @@ func (b *CertificateSpecApplyConfiguration) WithKeystores(value *CertificateKeys
 // WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the IssuerRef field is set to the value of the last call.
-func (b *CertificateSpecApplyConfiguration) WithIssuerRef(value apismetav1.ObjectReference) *CertificateSpecApplyConfiguration {
-	b.IssuerRef = &value
+func (b *CertificateSpecApplyConfiguration) WithIssuerRef(value *applyconfigurationsmetav1.ObjectReferenceApplyConfiguration) *CertificateSpecApplyConfiguration {
+	b.IssuerRef = value
 	return b
 }
 

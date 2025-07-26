@@ -50,6 +50,12 @@ deepcopy_inputs=(
   pkg/acme/webhook/apis/acme/v1alpha1 \
 )
 
+api_inputs=(
+  pkg/apis/certmanager/v1 \
+  pkg/apis/acme/v1 \
+  pkg/apis/meta/v1 \
+)
+
 client_subpackage="pkg/client"
 client_package="${module_name}/${client_subpackage}"
 # Generate clientsets, listers and informers for user-facing API types
@@ -123,13 +129,12 @@ gen-deepcopy() {
 gen-applyconfigurations() {
   clean "${client_subpackage}"/applyconfigurations '*.go'
   echo "+++ Generating applyconfigurations..." >&2
-  prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
-  joined=$( IFS=$' '; echo "${prefixed_inputs[*]}" )
+  prefixed_inputs=( "${api_inputs[@]/#/$module_name/}" )
  "$applyconfigurationgen" \
     --go-header-file hack/boilerplate-go.txt \
     --output-dir "${client_subpackage}"/applyconfigurations \
     --output-pkg "${client_package}"/applyconfigurations \
-    $joined
+    "${prefixed_inputs[@]}"
 }
 
 gen-clientsets() {

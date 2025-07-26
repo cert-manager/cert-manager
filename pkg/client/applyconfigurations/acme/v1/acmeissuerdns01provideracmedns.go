@@ -19,14 +19,14 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderAcmeDNS type for use
 // with apply.
 type ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration struct {
-	Host          *string                   `json:"host,omitempty"`
-	AccountSecret *metav1.SecretKeySelector `json:"accountSecretRef,omitempty"`
+	Host          *string                                     `json:"host,omitempty"`
+	AccountSecret *metav1.SecretKeySelectorApplyConfiguration `json:"accountSecretRef,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAcmeDNS type for use with
@@ -46,7 +46,7 @@ func (b *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration) WithHost(value string
 // WithAccountSecret sets the AccountSecret field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AccountSecret field is set to the value of the last call.
-func (b *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration) WithAccountSecret(value metav1.SecretKeySelector) *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration {
-	b.AccountSecret = &value
+func (b *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration) WithAccountSecret(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration {
+	b.AccountSecret = value
 	return b
 }

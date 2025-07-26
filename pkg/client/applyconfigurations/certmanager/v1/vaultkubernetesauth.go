@@ -19,16 +19,16 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // VaultKubernetesAuthApplyConfiguration represents a declarative configuration of the VaultKubernetesAuth type for use
 // with apply.
 type VaultKubernetesAuthApplyConfiguration struct {
-	Path              *string                              `json:"mountPath,omitempty"`
-	SecretRef         *metav1.SecretKeySelector            `json:"secretRef,omitempty"`
-	ServiceAccountRef *ServiceAccountRefApplyConfiguration `json:"serviceAccountRef,omitempty"`
-	Role              *string                              `json:"role,omitempty"`
+	Path              *string                                     `json:"mountPath,omitempty"`
+	SecretRef         *metav1.SecretKeySelectorApplyConfiguration `json:"secretRef,omitempty"`
+	ServiceAccountRef *ServiceAccountRefApplyConfiguration        `json:"serviceAccountRef,omitempty"`
+	Role              *string                                     `json:"role,omitempty"`
 }
 
 // VaultKubernetesAuthApplyConfiguration constructs a declarative configuration of the VaultKubernetesAuth type for use with
@@ -48,8 +48,8 @@ func (b *VaultKubernetesAuthApplyConfiguration) WithPath(value string) *VaultKub
 // WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretRef field is set to the value of the last call.
-func (b *VaultKubernetesAuthApplyConfiguration) WithSecretRef(value metav1.SecretKeySelector) *VaultKubernetesAuthApplyConfiguration {
-	b.SecretRef = &value
+func (b *VaultKubernetesAuthApplyConfiguration) WithSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VaultKubernetesAuthApplyConfiguration {
+	b.SecretRef = value
 	return b
 }
 
