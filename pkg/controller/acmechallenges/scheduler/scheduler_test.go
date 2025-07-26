@@ -306,7 +306,7 @@ func TestScheduleN(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cl := fake.NewSimpleClientset()
+			cl := fake.NewClientset()
 			factory := cminformers.NewSharedInformerFactory(cl, 0)
 			challengesInformer := factory.Acme().V1().Challenges()
 			for _, ch := range test.challenges {

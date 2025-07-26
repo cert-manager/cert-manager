@@ -134,7 +134,7 @@ func runUpdateObjectTests(t *testing.T) {
 				t.Log("Simulating a situation where the target object has been deleted")
 				objects = nil
 			}
-			cl := fake.NewSimpleClientset(objects...)
+			cl := fake.NewClientset(objects...)
 			if tt.updateError != nil {
 				cl.PrependReactor("update", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge update error")
