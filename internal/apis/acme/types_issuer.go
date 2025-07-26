@@ -357,6 +357,8 @@ type ACMEChallengeSolverDNS01 struct {
 	// Use the Microsoft Azure DNS API to manage DNS01 challenge records.
 	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS
 
+	AzurePrivateDNS *ACMEIssuerDNS01ProviderAzurePrivateDNS
+
 	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean
 
@@ -569,6 +571,27 @@ type ServiceAccountRef struct {
 	// and name is always included.
 	// If unset the audience defaults to `sts.amazonaws.com`.
 	TokenAudiences []string
+}
+
+type ACMEIssuerDNS01ProviderAzurePrivateDNS struct {
+	// if both this and ClientSecret are left unset MSI will be used
+	ClientID string
+
+	// if both this and ClientID are left unset MSI will be used
+	ClientSecret *cmmeta.SecretKeySelector
+
+	SubscriptionID string
+
+	// when specifying ClientID and ClientSecret then this field is also needed
+	TenantID string
+
+	ResourceGroupName string
+
+	HostedZoneName string
+
+	Environment AzureDNSEnvironment
+
+	ManagedIdentity *AzureManagedIdentity
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
