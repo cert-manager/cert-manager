@@ -49,7 +49,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ template "cert-manager.serviceAccountName" . }}-tokenrequest
+  name: {{ template "cert-manager.fullname" . }}-tokenrequest
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
     app: {{ include "cert-manager.name" . }}
@@ -69,7 +69,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "cert-manager.fullname" . }}-{{ template "cert-manager.serviceAccountName" .  }}-tokenrequest
+  name: {{ include "cert-manager.fullname" . }}-tokenrequest
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
     app: {{ include "cert-manager.name" . }}
@@ -80,7 +80,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ template "cert-manager.serviceAccountName" . }}-tokenrequest
+  name: {{ template "cert-manager.fullname" . }}-tokenrequest
 subjects:
   - kind: ServiceAccount
     name: {{ template "cert-manager.serviceAccountName" . }}
