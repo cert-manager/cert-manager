@@ -18,6 +18,7 @@ package gen
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -71,6 +72,18 @@ func SetChallengeKey(k string) ChallengeModifier {
 func SetChallengeIssuer(o cmmeta.ObjectReference) ChallengeModifier {
 	return func(c *cmacme.Challenge) {
 		c.Spec.IssuerRef = o
+	}
+}
+
+func SetChallengeOwner(o *cmacme.Order, gvk schema.GroupVersionKind) ChallengeModifier {
+	return func(c *cmacme.Challenge) {
+		c.ObjectMeta.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(o, gvk)}
+	}
+}
+
+func SetChallengeSolver(s cmacme.ACMEChallengeSolver) ChallengeModifier {
+	return func(c *cmacme.Challenge) {
+		c.Spec.Solver = s
 	}
 }
 
