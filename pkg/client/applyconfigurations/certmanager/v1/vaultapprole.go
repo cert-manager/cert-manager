@@ -19,15 +19,15 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // VaultAppRoleApplyConfiguration represents a declarative configuration of the VaultAppRole type for use
 // with apply.
 type VaultAppRoleApplyConfiguration struct {
-	Path      *string                   `json:"path,omitempty"`
-	RoleId    *string                   `json:"roleId,omitempty"`
-	SecretRef *metav1.SecretKeySelector `json:"secretRef,omitempty"`
+	Path      *string                                     `json:"path,omitempty"`
+	RoleId    *string                                     `json:"roleId,omitempty"`
+	SecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"secretRef,omitempty"`
 }
 
 // VaultAppRoleApplyConfiguration constructs a declarative configuration of the VaultAppRole type for use with
@@ -55,7 +55,7 @@ func (b *VaultAppRoleApplyConfiguration) WithRoleId(value string) *VaultAppRoleA
 // WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretRef field is set to the value of the last call.
-func (b *VaultAppRoleApplyConfiguration) WithSecretRef(value metav1.SecretKeySelector) *VaultAppRoleApplyConfiguration {
-	b.SecretRef = &value
+func (b *VaultAppRoleApplyConfiguration) WithSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VaultAppRoleApplyConfiguration {
+	b.SecretRef = value
 	return b
 }

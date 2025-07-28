@@ -21,9 +21,11 @@ package applyconfigurations
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 	applyconfigurationscertmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	internal "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/internal"
+	applyconfigurationsmetav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	testing "k8s.io/client-go/testing"
@@ -178,6 +180,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.VenafiTPPApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("X509Subject"):
 		return &applyconfigurationscertmanagerv1.X509SubjectApplyConfiguration{}
+
+		// Group=meta, Version=v1
+	case metav1.SchemeGroupVersion.WithKind("LocalObjectReference"):
+		return &applyconfigurationsmetav1.LocalObjectReferenceApplyConfiguration{}
+	case metav1.SchemeGroupVersion.WithKind("ObjectReference"):
+		return &applyconfigurationsmetav1.ObjectReferenceApplyConfiguration{}
+	case metav1.SchemeGroupVersion.WithKind("SecretKeySelector"):
+		return &applyconfigurationsmetav1.SecretKeySelectorApplyConfiguration{}
 
 	}
 	return nil

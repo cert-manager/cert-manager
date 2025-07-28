@@ -19,14 +19,14 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
 // VenafiCloudApplyConfiguration represents a declarative configuration of the VenafiCloud type for use
 // with apply.
 type VenafiCloudApplyConfiguration struct {
-	URL               *string                   `json:"url,omitempty"`
-	APITokenSecretRef *metav1.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
+	URL               *string                                     `json:"url,omitempty"`
+	APITokenSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"apiTokenSecretRef,omitempty"`
 }
 
 // VenafiCloudApplyConfiguration constructs a declarative configuration of the VenafiCloud type for use with
@@ -46,7 +46,7 @@ func (b *VenafiCloudApplyConfiguration) WithURL(value string) *VenafiCloudApplyC
 // WithAPITokenSecretRef sets the APITokenSecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APITokenSecretRef field is set to the value of the last call.
-func (b *VenafiCloudApplyConfiguration) WithAPITokenSecretRef(value metav1.SecretKeySelector) *VenafiCloudApplyConfiguration {
-	b.APITokenSecretRef = &value
+func (b *VenafiCloudApplyConfiguration) WithAPITokenSecretRef(value *metav1.SecretKeySelectorApplyConfiguration) *VenafiCloudApplyConfiguration {
+	b.APITokenSecretRef = value
 	return b
 }
