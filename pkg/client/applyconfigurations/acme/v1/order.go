@@ -19,8 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	internal "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/internal"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -42,6 +45,42 @@ func Order(name, namespace string) *OrderApplyConfiguration {
 	b.WithKind("Order")
 	b.WithAPIVersion("acme.cert-manager.io/v1")
 	return b
+}
+
+// ExtractOrder extracts the applied configuration owned by fieldManager from
+// order. If no managedFields are found in order for fieldManager, a
+// OrderApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// order must be a unmodified Order API object that was retrieved from the Kubernetes API.
+// ExtractOrder provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+// Experimental!
+func ExtractOrder(order *acmev1.Order, fieldManager string) (*OrderApplyConfiguration, error) {
+	return extractOrder(order, fieldManager, "")
+}
+
+// ExtractOrderStatus is the same as ExtractOrder except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractOrderStatus(order *acmev1.Order, fieldManager string) (*OrderApplyConfiguration, error) {
+	return extractOrder(order, fieldManager, "status")
+}
+
+func extractOrder(order *acmev1.Order, fieldManager string, subresource string) (*OrderApplyConfiguration, error) {
+	b := &OrderApplyConfiguration{}
+	err := managedfields.ExtractInto(order, internal.Parser().Type("com.github.cert-manager.cert-manager.pkg.apis.acme.v1.Order"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(order.Name)
+	b.WithNamespace(order.Namespace)
+
+	b.WithKind("Order")
+	b.WithAPIVersion("acme.cert-manager.io/v1")
+	return b, nil
 }
 
 // WithKind sets the Kind field in the declarative configuration to the given value

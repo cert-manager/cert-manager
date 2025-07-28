@@ -50,7 +50,7 @@ deepcopy_inputs=(
   pkg/acme/webhook/apis/acme/v1alpha1 \
 )
 
-# Used for generating apply configurations.
+# Used for generating apply configurations and client openapi specs.
 # Separate to client_inputs because we need apply configurations for metav1,
 # and client-gen has no way to exclude a input package just using markers in code.
 api_inputs=(
@@ -116,6 +116,28 @@ gen-openapi-acme() {
     "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 }
 
+gen-openapi-client() {
+  clean internal/generated/openapi 'zz_generated.openapi.go'
+  echo "+++ Generating client openapi..." >&2
+  prefixed_inputs=( "${api_inputs[@]/#/$module_name/}" )
+  "$openapigen" \
+    --go-header-file "hack/boilerplate-go.txt" \
+    --report-filename "hack/openapi_reports/client.txt" \
+    --output-dir ./internal/generated/openapi/ \
+    --output-pkg "github.com/cert-manager/cert-manager/internal/generated/openapi" \
+		--output-file zz_generated.openapi.go \
+		"k8s.io/api/core/v1" \
+    "k8s.io/apimachinery/pkg/version" \
+    "k8s.io/apimachinery/pkg/runtime" \
+    "k8s.io/apimachinery/pkg/apis/meta/v1" \
+    "k8s.io/apimachinery/pkg/api/resource" \
+    "k8s.io/apimachinery/pkg/util/intstr" \
+    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1" \
+    "k8s.io/component-base/logs/api/v1" \
+    "sigs.k8s.io/gateway-api/apis/v1" \
+    "${prefixed_inputs[@]}"
+}
+
 gen-deepcopy() {
   clean pkg/apis 'zz_generated.deepcopy.go'
   clean pkg/acme/webhook/apis 'zz_generated.deepcopy.go'
@@ -130,11 +152,18 @@ gen-deepcopy() {
 }
 
 gen-applyconfigurations() {
+  # This is a temporary hack to generate the schema YAMLs
+  # required to generate fake clientsets that actually works.
+  # Upstream issue: https://github.com/kubernetes/kubernetes/issues/126850
+  GOPROXY=off go install \
+    "${module_name}/internal/generated/openapi/cmd/models-schema"
+
   clean "${client_subpackage}"/applyconfigurations '*.go'
   echo "+++ Generating applyconfigurations..." >&2
   prefixed_inputs=( "${api_inputs[@]/#/$module_name/}" )
  "$applyconfigurationgen" \
     --go-header-file hack/boilerplate-go.txt \
+    --openapi-schema <($(go env GOPATH)/bin/models-schema) \
     --output-dir "${client_subpackage}"/applyconfigurations \
     --output-pkg "${client_package}"/applyconfigurations \
     "${prefixed_inputs[@]}"
@@ -224,6 +253,7 @@ gen-conversions() {
 }
 
 gen-openapi-acme
+gen-openapi-client
 gen-deepcopy
 gen-applyconfigurations
 gen-clientsets
