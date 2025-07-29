@@ -94,6 +94,7 @@ spec:
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               commonName:
                 description: |-
                   Requested common name X509 certificate subject attribute.
@@ -109,6 +110,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: set
               duration:
                 description: |-
                   Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
@@ -124,6 +126,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: set
               encodeUsagesInRequest:
                 description: |-
                   Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
@@ -136,6 +139,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: set
               isCA:
                 description: |-
                   Requested basic constraints isCA value.
@@ -324,12 +328,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       emailAddresses:
                         description: EmailAddresses is a list of Email Addresses that
                           are permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       ipRanges:
                         description: |-
                           IPRanges is a list of IP Ranges that are permitted or excluded.
@@ -337,12 +343,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       uriDomains:
                         description: URIDomains is a list of URI domains that are
                           permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                     type: object
                   permitted:
                     description: Permitted contains the constraints in which the names
@@ -354,12 +362,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       emailAddresses:
                         description: EmailAddresses is a list of Email Addresses that
                           are permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       ipRanges:
                         description: |-
                           IPRanges is a list of IP Ranges that are permitted or excluded.
@@ -367,12 +377,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       uriDomains:
                         description: URIDomains is a list of URI domains that are
                           permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                     type: object
                 type: object
               otherNames:
@@ -396,6 +408,7 @@ spec:
                       type: string
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               privateKey:
                 description: |-
                   Private key options. These include the key algorithm and size, the used
@@ -563,31 +576,37 @@ spec:
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                   localities:
                     description: Cities to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                   organizationalUnits:
                     description: Organizational Units to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                   organizations:
                     description: Organizations to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                   postalCodes:
                     description: Postal codes to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                   provinces:
                     description: State/Provinces to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                   serialNumber:
                     description: Serial number to be used on the Certificate.
                     type: string
@@ -596,12 +615,14 @@ spec:
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: set
                 type: object
               uris:
                 description: Requested URI subject alternative names.
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: set
               usages:
                 description: |-
                   Requested key usages and extended key usages.
@@ -667,6 +688,7 @@ spec:
                   - netscape sgc
                   type: string
                 type: array
+                x-kubernetes-list-type: set
             required:
             - issuerRef
             - secretName
