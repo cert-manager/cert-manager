@@ -78,6 +78,8 @@ type controller struct {
 
 	DNS01CheckRetryPeriod time.Duration
 
+	ChallengeAuthorizationTimeout time.Duration
+
 	// objectUpdater implements the updateObject function which is used to save
 	// changes to the Challenge.Status and Challenge.Finalizers
 	objectUpdater
@@ -157,6 +159,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	// read options from context
 	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
 	c.DNS01CheckRetryPeriod = ctx.ACMEOptions.DNS01CheckRetryPeriod
+	c.ChallengeAuthorizationTimeout = ctx.ACMEOptions.ChallengeAuthorizationTimeout
 
 	// Construct an objectUpdater which is used to save changes to the Challenge
 	// object, either using Update or using Patch + Server Side Apply.

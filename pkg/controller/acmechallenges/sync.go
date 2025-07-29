@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,10 +40,6 @@ const (
 	reasonPresentError   = "PresentError"
 	reasonPresented      = "Presented"
 	reasonFailed         = "Failed"
-
-	// How long to wait for an authorization response from the ACME server in acceptChallenge()
-	// before giving up
-	authorizationTimeout = 2 * time.Minute
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -364,7 +359,8 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	// blocking the challenge's processing. Here, we defensively add a timeout for this exchange
 	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
 	// in the err variable.
-	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, authorizationTimeout)
+
+	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, c.ChallengeAuthorizationTimeout)
 	defer cancelAuthorization()
 	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
 	if err != nil {

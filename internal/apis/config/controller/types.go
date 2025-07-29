@@ -133,6 +133,10 @@ type ControllerConfiguration struct {
 
 	// ACMEDNS01Config configures the behaviour of the ACME DNS01 challenge solver
 	ACMEDNS01Config ACMEDNS01Config
+
+	// Defines the timeout a challenge authorization can take before the request will be
+	// canceled.
+	ChallengeAuthorizationTimeout time.Duration
 }
 
 type LeaderElectionConfig struct {
