@@ -1,0 +1,155 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  enabled: true,
+  extends: ["config:base", ":dependencyDashboard", ":gitSignOff"],
+  timezone: "Europe/London",
+  labels: ["dependencies", "renovate"],
+  prConcurrentLimit: 5,
+  prHourlyLimit: 0,
+  semanticCommits: "enabled",
+  semanticCommitScope: "deps",
+  onboarding: false,
+  platform: "github",
+  repositories: ["cert-manager/cert-manager"],
+  automerge: false,
+  useBaseBranchConfig: "merge",
+  postUpgradeTasks: {
+    commands: ["make generate"],
+    executionMode: "update",
+  },
+  postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
+  vulnerabilityAlerts: {
+    enabled: true,
+    labels: ["security"],
+    schedule: ["at any time"],
+  },
+  packageRules: [
+    {
+      description: "Group Kubernetes dependencies",
+      groupName: "kubernetes packages",
+      matchDatasources: ["go"],
+      matchPackageNames: ["k8s.io/**", "sigs.k8s.io/**"],
+      groupSlug: "kubernetes",
+      enabled: true,
+      automerge: true,
+    },
+    {
+      description: "Group Azure SDK dependencies",
+      groupName: "Azure SDK",
+      matchDatasources: ["go"],
+      groupSlug: "azure-sdk-go",
+      enabled: true,
+      automerge: true,
+      matchPackagePrefixes: ["github.com/Azure{/,}**"],
+    },
+    {
+      description: "Group Golang.org/x packages",
+      groupSlug: "go-x",
+      matchPackageNames: ["golang.org/x/**"],
+      enabled: true,
+      groupName: "Go extended libs",
+    },
+    {
+      description: "Group AWS SDK dependencies",
+      groupName: "AWS SDK",
+      matchDatasources: ["go"],
+      enabled: true,
+      groupSlug: "aws-sdk-go",
+      matchPackagePrefixes: ["github.com/aws/aws-sdk-go-v2{/,}**"],
+    },
+    {
+      description: "Group GitHub Actions",
+      groupName: "GitHub Actions",
+      matchManagers: ["github-actions"]
+    },
+    {
+      description: "Pin Go version more conservatively",
+      matchDatasources: ["golang-version"],
+      rangeStrategy: "pin"
+    },
+    {
+      description: "Group testing tools",
+      groupName: "testing tools",
+      matchPackageNames: [
+        "github.com/onsi/ginkgo",
+        "github.com/onsi/gomega",
+        "github.com/stretchr/testify"
+      ],
+      groupSlug: "testing",
+    },
+    {
+      description: "Security updates should be raised immediately",
+      matchDatasources: ["go"],
+      matchUpdateTypes: ["patch"],
+      prPriority: 10,
+      labels: ["security", "priority/important"],
+      minimumReleaseAge: "0 days",
+      matchPackageNames: [
+        "golang.org/x/crypto",
+        "golang.org/x/net",
+        "github.com/golang-jwt/jwt",
+        "google.golang.org/protobuf"
+      ],
+    },
+    {
+      description: "Be careful with Helm dependencies",
+      matchDatasources: ["helm"],
+      rangeStrategy: "bump",
+      enabled: false,
+      commitMessagePrefix: "chore(helm):",
+    },
+    {
+      description: "Group linting tools",
+      groupName: "linters",
+      groupSlug: "linters",
+      matchPackageNames: [
+        "golangci/golangci-lint",
+        "mvdan.cc/gofumpt",
+        "github.com/daixiang0/gci"
+      ],
+    },
+    {
+      description: "Update cert-manager images",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/^quay.io/jetstack/cert-manager/"],
+      groupName: "cert-manager images",
+    },
+    {
+      description: "Limit major updates",
+      matchUpdateTypes: ["major"],
+      dependencyDashboardApproval: true,
+      labels: ["breaking-change", "approval-needed"],
+    }
+  ],
+  ignorePaths: [
+    "**/vendor/**",
+    "**/node_modules/**",
+    "**/__tests__/**",
+    "**/test/**"
+  ],
+  prBodyDefinitions: {
+    Package: "{{depName}}",
+    Type: "{{depType}}",
+    Update: "{{updateType}}",
+    "Current value": "{{currentValue}}",
+    "New value": "{{newValue}}",
+    Change: "`{{displayFrom}}` -> `{{displayTo}}`",
+    References: "{{references}}",
+    "Package file": "{{packageFile}}"
+  },
+  prBodyColumns: ["Package", "Type", "Update", "Change", "References"],
+  prBodyNotes: [
+    "**Note**: This PR was automatically created by Renovate Bot.",
+    "",
+    "Before merging:",
+    "- [ ] Ensure all tests pass",
+    "- [ ] Review the changelog/release notes of updated dependencies",
+    "- [ ] Check for any breaking changes",
+    "- [ ] Verify cert-manager still builds correctly"
+  ],
+  ignoreDeps: ["launchpad.net/gocheck"],
+  constraints: {
+    go: ">=1.21"
+  }
+
+}
