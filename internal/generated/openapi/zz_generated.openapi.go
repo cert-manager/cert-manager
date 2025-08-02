@@ -110,8 +110,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer":                                schema_pkg_apis_certmanager_v1_VenafiIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiTPP":                                   schema_pkg_apis_certmanager_v1_VenafiTPP(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject":                                 schema_pkg_apis_certmanager_v1_X509Subject(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference":                                    schema_pkg_apis_meta_v1_IssuerReference(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.LocalObjectReference":                               schema_pkg_apis_meta_v1_LocalObjectReference(ref),
-		"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference":                                    schema_pkg_apis_meta_v1_ObjectReference(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector":                                  schema_pkg_apis_meta_v1_SecretKeySelector(ref),
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource":                                                      schema_k8sio_api_core_v1_AWSElasticBlockStoreVolumeSource(ref),
 		"k8s.io/api/core/v1.Affinity":                                                                schema_k8sio_api_core_v1_Affinity(ref),
@@ -1973,7 +1973,7 @@ func schema_pkg_apis_acme_v1_ChallengeSpec(ref common.ReferenceCallback) common.
 						SchemaProps: spec.SchemaProps{
 							Description: "References a properly configured ACME-type Issuer which should be used to create this Challenge. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Challenge will be marked as failed.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference"),
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference"),
 						},
 					},
 				},
@@ -1981,7 +1981,7 @@ func schema_pkg_apis_acme_v1_ChallengeSpec(ref common.ReferenceCallback) common.
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolver", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolver", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference"},
 	}
 }
 
@@ -2141,7 +2141,7 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 						SchemaProps: spec.SchemaProps{
 							Description: "IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Order will be marked as failed.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference"),
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference"),
 						},
 					},
 					"commonName": {
@@ -2199,7 +2199,7 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -2839,7 +2839,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 						SchemaProps: spec.SchemaProps{
 							Description: "Reference to the issuer responsible for issuing the certificate. If the issuer is namespace-scoped, it must be in the same namespace as the Certificate. If the issuer is cluster-scoped, it can be used from any namespace.\n\nThe `name` field of the reference must always be specified.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference"),
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference"),
 						},
 					},
 					"request": {
@@ -2933,7 +2933,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -3183,7 +3183,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "Reference to the issuer responsible for issuing the certificate. If the issuer is namespace-scoped, it must be in the same namespace as the Certificate. If the issuer is cluster-scoped, it can be used from any namespace.\n\nThe `name` field of the reference must always be specified.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference"),
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference"),
 						},
 					},
 					"isCA": {
@@ -3260,7 +3260,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSecretTemplate", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.NameConstraints", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.OtherName", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSecretTemplate", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.NameConstraints", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.OtherName", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 
@@ -4492,17 +4492,33 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_pkg_apis_meta_v1_LocalObjectReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_meta_v1_IssuerReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "A reference to an object in the same namespace as the referent. If the referent is a cluster-scoped resource (e.g., a ClusterIssuer), the reference instead refers to the resource with the given name in the configured 'cluster resource namespace', which is set as a flag on the controller component (and defaults to the namespace that cert-manager runs in).",
+				Description: "ObjectReference is a reference to an object with a given name, kind and group. Deprecated: Use IssuerReference instead.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+							Description: "Name of the issuer being referred to.",
 							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind of the issuer being referred to.",
+							Default:     "Issuer",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"group": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Group of the issuer being referred to.",
+							Default:     "cert-manager.io",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4514,31 +4530,17 @@ func schema_pkg_apis_meta_v1_LocalObjectReference(ref common.ReferenceCallback) 
 	}
 }
 
-func schema_pkg_apis_meta_v1_ObjectReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_meta_v1_LocalObjectReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ObjectReference is a reference to an object with a given name, kind and group.",
+				Description: "A reference to an object in the same namespace as the referent. If the referent is a cluster-scoped resource (e.g., a ClusterIssuer), the reference instead refers to the resource with the given name in the configured 'cluster resource namespace', which is set as a flag on the controller component (and defaults to the namespace that cert-manager runs in).",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name of the resource being referred to.",
+							Description: "Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
 							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind of the resource being referred to.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"group": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Group of the resource being referred to.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

@@ -27,7 +27,7 @@ import (
 // with apply.
 type OrderSpecApplyConfiguration struct {
 	Request     []byte                                    `json:"request,omitempty"`
-	IssuerRef   *metav1.ObjectReferenceApplyConfiguration `json:"issuerRef,omitempty"`
+	IssuerRef   *metav1.IssuerReferenceApplyConfiguration `json:"issuerRef,omitempty"`
 	CommonName  *string                                   `json:"commonName,omitempty"`
 	DNSNames    []string                                  `json:"dnsNames,omitempty"`
 	IPAddresses []string                                  `json:"ipAddresses,omitempty"`
@@ -54,7 +54,7 @@ func (b *OrderSpecApplyConfiguration) WithRequest(values ...byte) *OrderSpecAppl
 // WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the IssuerRef field is set to the value of the last call.
-func (b *OrderSpecApplyConfiguration) WithIssuerRef(value *metav1.ObjectReferenceApplyConfiguration) *OrderSpecApplyConfiguration {
+func (b *OrderSpecApplyConfiguration) WithIssuerRef(value *metav1.IssuerReferenceApplyConfiguration) *OrderSpecApplyConfiguration {
 	b.IssuerRef = value
 	return b
 }

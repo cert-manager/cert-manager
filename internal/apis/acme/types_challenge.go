@@ -87,7 +87,7 @@ type ChallengeSpec struct {
 	// If the Issuer does not exist, processing will be retried.
 	// If the Issuer is not an 'ACME' Issuer, an error will be returned and the
 	// Challenge will be marked as failed.
-	IssuerRef cmmeta.ObjectReference
+	IssuerRef cmmeta.IssuerReference
 }
 
 // The type of ACME challenge. Only HTTP-01 and DNS-01 are supported.
