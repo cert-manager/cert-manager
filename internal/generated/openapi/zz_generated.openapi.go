@@ -1568,6 +1568,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderRFC2136(ref common.Reference
 							Format:      "",
 						},
 					},
+					"protocol": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Protocol to use for DNS queries. Valid values are (case-sensitive) ``tcp`` and ``udp``; ``udp`` (default).",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"nameserver"},
 			},
