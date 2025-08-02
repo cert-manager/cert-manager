@@ -470,6 +470,8 @@ func TestCleanupIngresses(t *testing.T) {
 					t.Errorf("error getting ingress resource: %v", err)
 				}
 
+				expectedIng.ManagedFields = actualIng.ManagedFields
+
 				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
 					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
 				}
@@ -657,11 +659,14 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					return
 				}
 
+				expectedIngress.APIVersion = resp.APIVersion
+				expectedIngress.Kind = resp.Kind
 				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
 
-				if !reflect.DeepEqual(resp, expectedIngress) {
-					t.Errorf("unexpected ingress generated from merge\nexp=%+v\ngot=%+v", expectedIngress, resp)
+				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
+					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -735,11 +740,14 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 					return
 				}
 
+				expectedIngress.APIVersion = resp.APIVersion
+				expectedIngress.Kind = resp.Kind
 				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
 
-				if !reflect.DeepEqual(resp, expectedIngress) {
-					t.Errorf("unexpected ingress generated from merge\nexp=%+v\ngot=%+v", expectedIngress, resp)
+				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
+					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
 				}
 			},
 		},

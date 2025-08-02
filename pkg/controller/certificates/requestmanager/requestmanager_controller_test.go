@@ -485,7 +485,7 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-1")),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestName("test-1"),
