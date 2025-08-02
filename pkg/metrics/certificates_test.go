@@ -250,7 +250,7 @@ func TestCertificateMetrics(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			m := New(testr.New(t), clock.RealClock{})
 
-			fakeClient := fake.NewSimpleClientset()
+			fakeClient := fake.NewClientset()
 			factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
 			certsInformer := factory.Certmanager().V1().Certificates()
 
@@ -367,7 +367,7 @@ func TestCertificateCache(t *testing.T) {
 		gen.SetCertificateDuration(&metav1.Duration{Duration: time.Second}),
 	)
 
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 	factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
 	certsInformer := factory.Certmanager().V1().Certificates()
 

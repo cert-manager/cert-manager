@@ -35,20 +35,15 @@ import (
 )
 
 func TestUpdateObjectStandard(t *testing.T) {
-	runUpdateObjectTests(t)
+	runUpdateObjectTests(t, "update")
 }
 
 func TestUpdateObjectSSA(t *testing.T) {
-	t.Skip(
-		"Server Side Apply cannot be tested because PatchType is not supported by the fake versioned client. See:",
-		"https://github.com/kubernetes/client-go/issues/970",
-		"https://github.com/kubernetes/client-go/issues/992",
-	)
 	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
-	runUpdateObjectTests(t)
+	runUpdateObjectTests(t, "patch")
 }
 
-func runUpdateObjectTests(t *testing.T) {
+func runUpdateObjectTests(t *testing.T, verb string) {
 	simulatedUpdateError := errors.New("simulated-update-error")
 	simulatedUpdateStatusError := errors.New("simulated-update-status-error")
 
@@ -136,13 +131,13 @@ func runUpdateObjectTests(t *testing.T) {
 			}
 			cl := fake.NewClientset(objects...)
 			if tt.updateError != nil {
-				cl.PrependReactor("update", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+				cl.PrependReactor(verb, "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge update error")
 					return true, nil, tt.updateError
 				})
 			}
 			if tt.updateStatusError != nil {
-				cl.PrependReactor("update", "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+				cl.PrependReactor(verb, "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge/status update error")
 					return true, nil, tt.updateStatusError
 				})
@@ -165,9 +160,11 @@ func runUpdateObjectTests(t *testing.T) {
 				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(t.Context(), oldChallenge.Name, metav1.GetOptions{})
 				require.NoError(t, err)
 				if updateObjectErr == nil {
+					expected := newChallenge
+					expected.APIVersion = actual.APIVersion
+					expected.Kind = actual.Kind
 					// We ignore differences in .ManagedFields since the expected object does not have them.
 					// FIXME: don't ignore this field
-					expected := newChallenge
 					expected.ManagedFields = actual.ManagedFields
 					assert.Equal(t, expected, actual, "updateObject did not return an error so the object in the API should have been updated")
 				} else {
