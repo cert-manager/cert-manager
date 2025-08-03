@@ -1,18 +1,16 @@
 name: Renovate
 on:
   workflow_dispatch:
-  push:
   schedule:
-    # The "*" (#42, asterisk) character has special semantics in YAML, so this
-    # string has to be quoted.
     - cron: "* * * * 0,6"
     - cron: "* 22-23,0-4 * * 1-5"
 jobs:
   renovate:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
       id-token: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -27,6 +25,8 @@ jobs:
           configurationFile: renovate.json
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_PLATFORM_COMMIT: "true"
-          RENOVATE_AUTODISCOVER: "true"
+          LOG_LEVEL: "debug"
+          RENOVATE_ALLOWED_COMMANDS: '["^make"]'
           RENOVATE_FORK_PROCESSING: "enabled"

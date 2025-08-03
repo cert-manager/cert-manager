@@ -1,16 +1,23 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":gitSignOff"],
+  "enabled": true,
+  "extends": ["config:base", ":dependencyDashboard", ":gitSignOff"],
   "timezone": "Europe/London",
-  "schedule": ["* 22-23,0-4 * * *", "* * * * 0,6"],
   "labels": ["dependencies", "renovate"],
   "prConcurrentLimit": 5,
-  "prHourlyLimit": 2,
+  "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "semanticCommitScope": "deps",
   "onboarding": false,
   "platform": "github",
-  "automerge": true,
+  "repositories": ["cert-manager/cert-manager"],
+  "automerge": false,
+  "useBaseBranchConfig": "merge",
+  "postUpgradeTasks": {
+    "commands": ["make generate"],
+    "fileFilter": ["**/*.go", "**/*.yaml"],
+    "executionMode": "update"
+  },
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -22,32 +29,34 @@
       "description": "Group Kubernetes dependencies",
       "groupName": "kubernetes packages",
       "matchDatasources": ["go"],
-      "matchPackageNames": ["k8s.io/", "sigs.k8s.io/"],
-      "groupSlug": "kubernetes"
+      "matchPackageNames": ["k8s.io/**", "sigs.k8s.io/**"],
+      "groupSlug": "kubernetes",
+      "enabled": true,
+      "automerge": true
     },
     {
       "description": "Group Azure SDK dependencies",
       "groupName": "Azure SDK",
       "matchDatasources": ["go"],
-      "matchPackagePrefixes": ["github.com/Azure/azure-sdk-for-go/"]
+      "groupSlug": "azure-sdk-go",
+      "enabled": true,
+      "automerge": true,
+      "matchPackagePrefixes": ["github.com/Azure{/,}**"]
+    },
+    {
+      "description": "Group Golang.rog/x packages",
+      "groupSlug": "go-x",
+      "matchPackageNames": ["golang.org/x/**"],
+      "enabled": true,
+      "groupName": "Go extended libs"
     },
     {
       "description": "Group AWS SDK dependencies",
       "groupName": "AWS SDK",
       "matchDatasources": ["go"],
-      "matchPackagePrefixes": ["github.com/aws/aws-sdk-go-v2"]
-    },
-    {
-      "description": "Automerge patch updates for test dependencies",
-      "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["patch"],
-      "automerge": true
-    },
-    {
-      "description": "Automerge digest updates",
-      "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["digest"],
-      "automerge": true
+      "enabled": true,
+      "groupSlug": "aws-sdk-go",
+      "matchPackagePrefixes": ["github.com/aws/aws-sdk-go-v2{/,}**"]
     },
     {
       "description": "Group GitHub Actions",
@@ -72,14 +81,14 @@
         "github.com/onsi/ginkgo",
         "github.com/onsi/gomega",
         "github.com/stretchr/testify"
-      ]
+      ],
+      "groupSlug": "testing"
     },
     {
       "description": "Security updates should be raised immediately",
       "matchDatasources": ["go"],
       "matchUpdateTypes": ["patch"],
       "prPriority": 10,
-      "schedule": ["at any time"],
       "labels": ["security", "priority/important"],
       "minimumReleaseAge": "0 days",
       "matchPackageNames": [
@@ -93,6 +102,7 @@
       "description": "Be careful with Helm dependencies",
       "matchDatasources": ["helm"],
       "rangeStrategy": "bump",
+      "enabled": false,
       "commitMessagePrefix": "chore(helm):"
     },
     {
@@ -105,46 +115,16 @@
       ]
     },
     {
+      "description": "Update cert-manager images",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["/^quay.io/jetstack/cert-manager/"],
+      "groupName": "cert-manager images"
+    },
+    {
       "description": "Limit major updates",
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true,
-      "labels": ["breaking-change"]
-    },
-    {
-      "description": "Replace directives should be updated carefully",
-      "matchManagers": ["gomod"],
-      "matchDepTypes": ["replace"],
-      "enabled": false
-    },
-    {
-      "description": "Update cert-manager images",
-      "matchDatasources": ["docker"],
-      "matchPackagePatterns": ["^quay.io/jetstack/cert-manager"],
-      "groupName": "cert-manager images"
-    }
-  ],
-  "regexManagers": [
-    {
-      "description": "Update Go version in Dockerfiles",
-      "fileMatch": ["(^|/)Dockerfile[^/]*$"],
-      "matchStrings": [
-        "FROM (?<depName>golang):(?<currentValue>[\\d.]+)(?:-(?<currentDigest>sha256:[a-f0-9]+))?(?:-(?<compatibility>alpine|bullseye))?\\s"
-      ],
-      "datasourceTemplate": "docker"
-    },
-    {
-      "description": "Update Go version in GitHub workflows",
-      "fileMatch": ["\\.github/workflows/[^/]+\\.ya?ml$"],
-      "matchStrings": ["go-version: ['\"]?(?<currentValue>[\\d.]+)['\"]?"],
-      "depNameTemplate": "golang",
-      "datasourceTemplate": "golang-version"
-    },
-    {
-      "description": "Update tool versions in Makefile",
-      "fileMatch": ["^Makefile$"],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>[a-z-]+?) depName=(?<depName>[^\\s]+?)(?: versioning=(?<versioning>[a-z-]+?))?\\s+[A-Z_]+_VERSION\\s*:?=\\s*v?(?<currentValue>[\\d.]+)"
-      ]
+      "labels": ["breaking-change", "approval-needed"]
     }
   ],
   "ignorePaths": [
