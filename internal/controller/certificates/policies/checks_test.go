@@ -139,7 +139,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance as Secret has old or incorrect 'issuer name' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "testissuer",
 				},
 			}},
@@ -163,7 +163,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance as Secret has old or incorrect 'issuer kind' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "testissuer",
 					Kind: "NewIssuerKind",
 				},
@@ -189,7 +189,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance as Secret has old or incorrect 'issuer group' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "old.example.com",
@@ -255,7 +255,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -273,7 +273,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance when CertificateRequest does not match certificate spec": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "new.example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -298,7 +298,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -314,7 +314,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"do nothing if CertificateRequest matches spec": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -339,7 +339,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -352,7 +352,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"compare signed x509 certificate in Secret with spec if CertificateRequest does not exist": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "new.example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -380,7 +380,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"do nothing if signed x509 certificate in Secret matches spec (when request does not exist)": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -406,7 +406,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -443,7 +443,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -480,7 +480,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -514,7 +514,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",

@@ -36,7 +36,7 @@ func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
 // This function is identical to CanUseAmbientCredentials, but takes a reference to
 // the issuer instead of the issuer itself (which means we don't need to fetch the
 // issuer from the API server).
-func (o IssuerOptions) ResourceNamespaceRef(ref cmmeta.ObjectReference, challengeNamespace string) string {
+func (o IssuerOptions) ResourceNamespaceRef(ref cmmeta.IssuerReference, challengeNamespace string) string {
 	switch ref.Kind {
 	case cmapi.ClusterIssuerKind:
 		return o.ClusterResourceNamespace
@@ -63,7 +63,7 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 // This function is identical to CanUseAmbientCredentials, but takes a reference to
 // the issuer instead of the issuer itself (which means we don't need to fetch the
 // issuer from the API server).
-func (o IssuerOptions) CanUseAmbientCredentialsFromRef(ref cmmeta.ObjectReference) bool {
+func (o IssuerOptions) CanUseAmbientCredentialsFromRef(ref cmmeta.IssuerReference) bool {
 	switch ref.Kind {
 	case cmapi.ClusterIssuerKind:
 		return o.ClusterIssuerAmbientCredentials

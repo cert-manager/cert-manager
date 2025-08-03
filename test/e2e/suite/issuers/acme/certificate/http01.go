@@ -149,7 +149,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
 		cert, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})
@@ -228,7 +228,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
 		cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(testingCtx, cert, metav1.CreateOptions{})
@@ -304,7 +304,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		selfcert := gen.Certificate(dummycert,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(secretname),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{
 				Name: "self-sign",
 				Kind: v1.IssuerKind,
 			}),
@@ -421,7 +421,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				"testing.cert-manager.io/fixed-ingress": "true",
 			}),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		cert, err = certClient.Create(testingCtx, cert, metav1.CreateOptions{})
@@ -443,7 +443,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		_, err := certClient.Create(testingCtx, cert, metav1.CreateOptions{})

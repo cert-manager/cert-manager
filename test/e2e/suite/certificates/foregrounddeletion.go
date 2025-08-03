@@ -64,7 +64,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 		By("creating a CA Certificate")
 		ca := gen.Certificate(issuerName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName + "-self-signed"}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName + "-self-signed"}),
 			gen.SetCertificateDNSNames("example.com"),
 			gen.SetCertificateIsCA(true),
 			gen.SetCertificateSecretName("ca-issuer"),
@@ -94,7 +94,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 				CommonName: "test",
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
 			},

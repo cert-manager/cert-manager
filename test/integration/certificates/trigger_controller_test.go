@@ -98,7 +98,7 @@ func TestTriggerController(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
-			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+			IssuerRef:  cmmeta.IssuerReference{Name: "testissuer"}, // doesn't need to exist
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -143,7 +143,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 			SecretName:  secretName,
 			CommonName:  "example.com",
 			RenewBefore: renewBefore,
-			IssuerRef:   cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+			IssuerRef:   cmmeta.IssuerReference{Name: "testissuer"}, // doesn't need to exist
 		},
 	}
 
@@ -261,7 +261,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: secretName,
 			CommonName: "example.com",
-			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+			IssuerRef:  cmmeta.IssuerReference{Name: "testissuer"}, // doesn't need to exist
 		},
 	}
 

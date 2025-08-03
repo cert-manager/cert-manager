@@ -249,7 +249,7 @@ func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runt
 	return allErrs, nil
 }
 
-func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {
+func validateIssuerRef(issuerRef cmmeta.IssuerReference, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	issuerRefPath := fldPath.Child("issuerRef")

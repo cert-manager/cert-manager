@@ -116,7 +116,7 @@ func (o *issuerBuilder) secretAndIssuerForTest(f *framework.Framework) (*corev1.
 	return secret, issuer, err
 }
 
-func (o *issuerBuilder) create(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (o *issuerBuilder) create(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating an Issuer")
 	secret, issuer, err := o.secretAndIssuerForTest(f)
 	Expect(err).NotTo(HaveOccurred(), "failed to initialise test objects")
@@ -130,14 +130,14 @@ func (o *issuerBuilder) create(ctx context.Context, f *framework.Framework) cmme
 	err = crt.Create(ctx, issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer")
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: issuer.GroupVersionKind().Group,
 		Kind:  issuer.GroupVersionKind().Kind,
 		Name:  issuer.GetName(),
 	}
 }
 
-func (o *issuerBuilder) delete(ctx context.Context, f *framework.Framework, _ cmmeta.ObjectReference) {
+func (o *issuerBuilder) delete(ctx context.Context, f *framework.Framework, _ cmmeta.IssuerReference) {
 	By("Deleting the issuer")
 	crt, err := crtclient.New(f.KubeClientConfig, crtclient.Options{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create controller-runtime client")

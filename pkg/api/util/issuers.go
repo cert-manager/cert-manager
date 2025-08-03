@@ -55,7 +55,7 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 }
 
 // IssuerKind returns the kind of issuer for a certificate.
-func IssuerKind(ref cmmeta.ObjectReference) string {
+func IssuerKind(ref cmmeta.IssuerReference) string {
 	if ref.Kind == "" {
 		return cmapi.IssuerKind
 	}

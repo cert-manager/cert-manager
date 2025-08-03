@@ -88,7 +88,7 @@ func TestClusterIssuerNamespace(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 					Kind: "ClusterIssuer", // ClusterIssuer reference, so should use the clusterResourceNamespace
 				},
@@ -142,7 +142,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -178,7 +178,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -208,7 +208,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -244,7 +244,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -280,7 +280,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -316,7 +316,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -352,7 +352,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -410,7 +410,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 				},
 			},
@@ -468,7 +468,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 				},
 			},
@@ -531,7 +531,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 				},
 			},
@@ -595,7 +595,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -633,7 +633,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -702,7 +702,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -741,7 +741,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},

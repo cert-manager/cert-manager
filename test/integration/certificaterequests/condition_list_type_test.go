@@ -63,7 +63,7 @@ func Test_ConditionsListType(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test-bundle-1",
-			IssuerRef:  cmmeta.ObjectReference{Name: "test-bundle-1"},
+			IssuerRef:  cmmeta.IssuerReference{Name: "test-bundle-1"},
 		}},
 		&fakeclock.FakeClock{},
 	)

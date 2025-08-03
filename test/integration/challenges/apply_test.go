@@ -54,7 +54,7 @@ func Test_Apply(t *testing.T) {
 			DNSName: "example.com", Wildcard: true,
 			Type: cmacme.ACMEChallengeTypeDNS01, Token: "1234", Key: "5678",
 			Solver: cmacme.ACMEChallengeSolver{},
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name:  "issuer",
 				Kind:  "Issuer",
 				Group: "cert-manager.io",

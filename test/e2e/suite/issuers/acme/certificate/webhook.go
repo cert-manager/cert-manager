@@ -118,7 +118,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName}),
 				gen.SetCertificateDNSNames(dnsDomain),
 			)
 			cert.Namespace = f.Namespace.Name

@@ -85,14 +85,14 @@ func TestSync(t *testing.T) {
 
 	testOrder := gen.Order("testorder",
 		gen.SetOrderCommonName("test.com"),
-		gen.SetOrderIssuer(cmmeta.ObjectReference{
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
 			Name: testIssuerHTTP01TestCom.Name,
 		}),
 	)
 
 	testOrderIP := gen.Order("testorder",
 		gen.SetOrderCommonName("10.0.0.2"),
-		gen.SetOrderIssuer(cmmeta.ObjectReference{
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
 			Name: testIssuerHTTP01.Name,
 		}),
 		gen.SetOrderIPAddresses("10.0.0.1"))
@@ -102,7 +102,7 @@ func TestSync(t *testing.T) {
 
 	testOrderIPV6 := gen.Order("testorder",
 		gen.SetOrderCommonName(ipv6AddressOne),
-		gen.SetOrderIssuer(cmmeta.ObjectReference{
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
 			Name: testIssuerHTTP01.Name,
 		}),
 		gen.SetOrderIPAddresses(ipv6AddressTwo))

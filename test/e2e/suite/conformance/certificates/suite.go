@@ -39,14 +39,14 @@ type Suite struct {
 	// returns an ObjectReference to that Issuer that will be used as the
 	// IssuerRef on Certificate resources that this suite creates.
 	// This field must be provided.
-	CreateIssuerFunc func(context.Context, *framework.Framework) cmmeta.ObjectReference
+	CreateIssuerFunc func(context.Context, *framework.Framework) cmmeta.IssuerReference
 
 	// DeleteIssuerFunc is a function that is run after the test has completed
 	// in order to clean up resources created for a test (e.g., the resources
 	// created in CreateIssuerFunc).
 	// This function will be run regardless whether the test passes or fails.
 	// If not specified, this function will be skipped.
-	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.ObjectReference)
+	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.IssuerReference)
 
 	// SharedIPAddress is the IP address that will be used in all certificates
 	// that require an IP address to be set. For HTTP-01 tests, this IP address
@@ -126,7 +126,7 @@ func (s *Suite) validate() {
 }
 
 // it is called by the tests to in Define() to setup and run the test
-func (s *Suite) it(f *framework.Framework, name string, fn func(context.Context, cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
+func (s *Suite) it(f *framework.Framework, name string, fn func(context.Context, cmmeta.IssuerReference), requiredFeatures ...featureset.Feature) {
 	if s.UnsupportedFeatures.HasAny(requiredFeatures...) {
 		return
 	}

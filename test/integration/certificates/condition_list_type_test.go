@@ -63,7 +63,7 @@ func Test_ConditionsListType(t *testing.T) {
 	crt := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Spec: cmapi.CertificateSpec{
-			CommonName: "test", SecretName: "test", IssuerRef: cmmeta.ObjectReference{Name: "test"},
+			CommonName: "test", SecretName: "test", IssuerRef: cmmeta.IssuerReference{Name: "test"},
 		},
 	}
 	_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})

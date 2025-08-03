@@ -56,7 +56,7 @@ var (
 // See: https://github.com/kubernetes/client-go/issues/970
 func Test_SecretsManager(t *testing.T) {
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(&metav1.Duration{Duration: time.Hour * 36}),
 		gen.SetCertificateDNSNames("example.com"),

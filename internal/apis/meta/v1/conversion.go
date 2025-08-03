@@ -37,13 +37,13 @@ func Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *cmmeta.Loc
 
 // Convert_meta_IssuerReference_To_v1_IssuerReference is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_meta_IssuerReference_To_v1_IssuerReference(in *meta.IssuerReference, out *cmmeta.ObjectReference, s conversion.Scope) error {
+func Convert_meta_IssuerReference_To_v1_IssuerReference(in *meta.IssuerReference, out *cmmeta.IssuerReference, s conversion.Scope) error {
 	return autoConvert_meta_IssuerReference_To_v1_IssuerReference(in, out, s)
 }
 
 // Convert_v1_IssuerReference_To_meta_IssuerReference is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_v1_IssuerReference_To_meta_IssuerReference(in *cmmeta.ObjectReference, out *meta.IssuerReference, s conversion.Scope) error {
+func Convert_v1_IssuerReference_To_meta_IssuerReference(in *cmmeta.IssuerReference, out *meta.IssuerReference, s conversion.Scope) error {
 	return autoConvert_v1_IssuerReference_To_meta_IssuerReference(in, out, s)
 }
 

@@ -63,7 +63,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 
 	// isNotFoundError returns true if an error from the cert-manager admission
 	// webhook contains an is not found error.
-	isNotFoundError := func(issuerRef cmmeta.ObjectReference, err error) bool {
+	isNotFoundError := func(issuerRef cmmeta.IssuerReference, err error) bool {
 		if err == nil {
 			return false
 		}
@@ -85,7 +85,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	// isNotFoundError returns true if an error from the cert-manager admission
 	// webhook contains a permissions error when the client attempts to approve
 	// or deny a CertificateRequest.
-	isPermissionError := func(sa *corev1.ServiceAccount, issuerRef cmmeta.ObjectReference, err error) bool {
+	isPermissionError := func(sa *corev1.ServiceAccount, issuerRef cmmeta.IssuerReference, err error) bool {
 		if err == nil {
 			return false
 		}
@@ -99,7 +99,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	// retryNotFound returns true when either the resource is not found for the
 	// issuer, or the webhook returns a context deadline error. Useful for
 	// retrying a request when the expected response is a different or no error.
-	retryOnNotFound := func(issuerRef cmmeta.ObjectReference) func(error) bool {
+	retryOnNotFound := func(issuerRef cmmeta.IssuerReference) func(error) bool {
 		return func(err error) bool {
 			return isNotFoundError(issuerRef, err) || isTimeoutError(err)
 		}
@@ -216,7 +216,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		request = gen.CertificateRequest("",
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestCSR(csr),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name:  "test-issuer",
 				Kind:  issuerKind,
 				Group: group,

@@ -408,7 +408,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),
 				gen.SetCertificateIssuer(
-					cmmeta.ObjectReference{Name: "testissuer", Kind: "IssuerKind", Group: "group.example.com"})),
+					cmmeta.IssuerReference{Name: "testissuer", Kind: "IssuerKind", Group: "group.example.com"})),
 			secret: gen.Secret("something",
 				gen.SetSecretAnnotations(
 					map[string]string{
@@ -427,7 +427,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			),
 			cr: gen.CertificateRequest("something",
 				gen.SetCertificateRequestIssuer(
-					cmmeta.ObjectReference{
+					cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -444,7 +444,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 		"Certificate is not Ready when it has expired": {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -465,7 +465,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					},
 				)),
 			cr: gen.CertificateRequest("something",
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -481,7 +481,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 		"Certificate is Ready, no policy violations found": {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -504,7 +504,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				)),
 			cr: gen.CertificateRequest("something",
 				gen.SetCertificateRequestIssuer(
-					cmmeta.ObjectReference{
+					cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",

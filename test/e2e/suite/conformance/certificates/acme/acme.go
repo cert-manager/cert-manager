@@ -171,7 +171,7 @@ type acmeIssuerProvisioner struct {
 	secretNamespace string
 }
 
-func (a *acmeIssuerProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.ObjectReference) {
+func (a *acmeIssuerProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.IssuerReference) {
 	if a.eab != nil {
 		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(ctx, a.eab.Key.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -189,7 +189,7 @@ func (a *acmeIssuerProvisioner) delete(ctx context.Context, f *framework.Framewo
 // - pebble
 // - a properly configured Issuer resource
 
-func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	a.ensureEABSecret(ctx, f, "")
 
 	By("Creating an ACME HTTP01 Ingress Issuer")
@@ -208,14 +208,14 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(ctx context.Context, f
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating an ACME HTTP01 Ingress ClusterIssuer")
@@ -234,14 +234,14 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(ctx context.Con
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	a.ensureEABSecret(ctx, f, "")
 
 	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
@@ -270,14 +270,14 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(ctx context.Context, f
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating a Public ACME Server Staging HTTP01 Issuer")
 
 	var PublicACMEServerStagingURL string
@@ -302,14 +302,14 @@ func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(ctx co
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
@@ -338,7 +338,7 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(ctx context.Con
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
@@ -405,7 +405,7 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01Issuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createDNS01Issuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	a.ensureEABSecret(ctx, f, f.Namespace.Name)
 
 	By("Creating an ACME DNS01 Issuer")
@@ -423,14 +423,14 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(ctx context.Context, f *framew
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	a.ensureEABSecret(ctx, f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating an ACME DNS01 ClusterIssuer")
@@ -448,7 +448,7 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(ctx context.Context, f 
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,

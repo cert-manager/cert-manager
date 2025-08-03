@@ -92,7 +92,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert := gen.Certificate("serving-certs",
 					gen.SetCertificateNamespace(f.Namespace.Name),
 					gen.SetCertificateSecretName(secretName.Name),
-					gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					gen.SetCertificateIssuer(cmmeta.IssuerReference{
 						Name: issuerName,
 						Kind: cmapiv1.IssuerKind,
 					}),
@@ -319,7 +319,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert := gen.Certificate("serving-certs",
 					gen.SetCertificateNamespace(f.Namespace.Name),
 					gen.SetCertificateSecretName(secretName.Name),
-					gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					gen.SetCertificateIssuer(cmmeta.IssuerReference{
 						Name: issuerName,
 						Kind: cmapiv1.IssuerKind,
 					}),

@@ -971,7 +971,7 @@ func Test_buildOrder(t *testing.T) {
 					Request:    csrPEM,
 					CommonName: "example.com",
 					DNSNames:   []string{"example.com"},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "test-name",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",
@@ -988,7 +988,7 @@ func Test_buildOrder(t *testing.T) {
 					CommonName: "example.com",
 					DNSNames:   []string{"example.com"},
 					Duration:   &metav1.Duration{Duration: time.Hour},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "test-name",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",

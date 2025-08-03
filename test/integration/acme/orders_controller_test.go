@@ -192,7 +192,7 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	// Create an Order CR.
 	order := gen.Order(testName,
-		gen.SetOrderIssuer(cmmeta.ObjectReference{
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
 			Name: testName,
 		}),
 		gen.SetOrderNamespace(testName),
