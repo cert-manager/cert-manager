@@ -507,6 +507,7 @@ spec:
                                         items:
                                           type: string
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                       name:
                                         description: Name of the ServiceAccount used
                                           to request a token.
@@ -786,6 +787,7 @@ spec:
                               - name
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           podTemplate:
                             description: |-
                               Optional pod template used to configure the ACME challenge solver pods
@@ -1790,6 +1792,9 @@ spec:
                                       type: object
                                       x-kubernetes-map-type: atomic
                                     type: array
+                                    x-kubernetes-list-map-keys:
+                                    - name
+                                    x-kubernetes-list-type: map
                                   nodeSelector:
                                     additionalProperties:
                                       type: string
@@ -1921,6 +1926,7 @@ spec:
                                           format: int64
                                           type: integer
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                       sysctls:
                                         description: |-
                                           Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
@@ -1942,6 +1948,7 @@ spec:
                                           - value
                                           type: object
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                     type: object
                                   serviceAccountName:
                                     description: If specified, the pod's service account
@@ -1985,6 +1992,7 @@ spec:
                                           type: string
                                       type: object
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                 type: object
                             type: object
                           serviceType:
@@ -3053,6 +3061,9 @@ spec:
                                       type: object
                                       x-kubernetes-map-type: atomic
                                     type: array
+                                    x-kubernetes-list-map-keys:
+                                    - name
+                                    x-kubernetes-list-type: map
                                   nodeSelector:
                                     additionalProperties:
                                       type: string
@@ -3184,6 +3195,7 @@ spec:
                                           format: int64
                                           type: integer
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                       sysctls:
                                         description: |-
                                           Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
@@ -3205,6 +3217,7 @@ spec:
                                           - value
                                           type: object
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                     type: object
                                   serviceAccountName:
                                     description: If specified, the pod's service account
@@ -3248,6 +3261,7 @@ spec:
                                           type: string
                                       type: object
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                 type: object
                             type: object
                           serviceType:
@@ -3277,6 +3291,7 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       dnsZones:
                         description: |-
                           List of DNSZones that this solver will be used to solve.
@@ -3291,6 +3306,7 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       matchLabels:
                         additionalProperties:
                           type: string
