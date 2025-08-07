@@ -409,7 +409,7 @@ func buildCertificates(
 				DNSNames:    dnsNames,
 				IPAddresses: ipAddress,
 				SecretName:  secretRef.Name,
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  issuerName,
 					Kind:  issuerKind,
 					Group: issuerGroup,

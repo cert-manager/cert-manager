@@ -53,7 +53,7 @@ func TestValidationCertificate(t *testing.T) {
 					SecretName: "testing-tls",
 					DNSNames:   []string{"myhostname.com"},
 					Usages:     []cmapi.KeyUsage{},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "letsencrypt-staging",
 					},
 					PrivateKey: &cmapi.CertificatePrivateKey{
@@ -73,7 +73,7 @@ func TestValidationCertificate(t *testing.T) {
 					SecretName: "testing-tls",
 					DNSNames:   []string{"myhostname.com"},
 					Usages:     []cmapi.KeyUsage{},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "letsencrypt-staging",
 					},
 					PrivateKey: &cmapi.CertificatePrivateKey{

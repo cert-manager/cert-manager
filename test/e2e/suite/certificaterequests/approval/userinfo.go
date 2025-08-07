@@ -62,7 +62,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		cr := gen.CertificateRequest("test-v1",
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestCSR(csr),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name: "issuer",
 			}),
 		)
@@ -188,7 +188,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		cr := gen.CertificateRequest("test-v1",
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestCSR(csr),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name: "issuer",
 			}),
 		)

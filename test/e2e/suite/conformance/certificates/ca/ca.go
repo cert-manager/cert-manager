@@ -51,7 +51,7 @@ type ca struct {
 	secretName string
 }
 
-func (c *ca) createCAIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (c *ca) createCAIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating a CA Issuer")
 
 	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
@@ -73,14 +73,14 @@ func (c *ca) createCAIssuer(ctx context.Context, f *framework.Framework) cmmeta.
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (c *ca) createCAClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (c *ca) createCAClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating a CA ClusterIssuer")
 
 	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(ctx, newSigningKeypairSecret("root-ca-cert-"), metav1.CreateOptions{})
@@ -102,14 +102,14 @@ func (c *ca) createCAClusterIssuer(ctx context.Context, f *framework.Framework) 
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (c *ca) deleteCAClusterIssuer(ctx context.Context, f *framework.Framework, issuer cmmeta.ObjectReference) {
+func (c *ca) deleteCAClusterIssuer(ctx context.Context, f *framework.Framework, issuer cmmeta.IssuerReference) {
 	By("Deleting CA ClusterIssuer")
 
 	err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(ctx, c.secretName, metav1.DeleteOptions{})

@@ -80,7 +80,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name: issuerName,
 					Kind: v1.IssuerKind,
 				}),
@@ -106,7 +106,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name: issuerName,
 					Kind: v1.IssuerKind,
 				}),
@@ -134,7 +134,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name: issuerName,
 					Kind: v1.IssuerKind,
 				}),
@@ -161,7 +161,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name: issuerName,
 					Kind: v1.IssuerKind,
 				}),
@@ -211,7 +211,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				cert := gen.Certificate(certificateName,
 					gen.SetCertificateNamespace(f.Namespace.Name),
 					gen.SetCertificateSecretName(certificateSecretName),
-					gen.SetCertificateIssuer(cmmeta.ObjectReference{
+					gen.SetCertificateIssuer(cmmeta.IssuerReference{
 						Name: issuerName,
 						Kind: v1.IssuerKind,
 					}),
@@ -250,7 +250,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name: issuerName,
 					Kind: v1.IssuerKind,
 				}),
@@ -280,7 +280,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate with Usages")
-			cert, err := certClient.Create(testingCtx, gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName, Kind: v1.IssuerKind}), gen.SetCertificateKeyUsages(v1.UsageServerAuth, v1.UsageClientAuth)), metav1.CreateOptions{})
+			cert, err := certClient.Create(testingCtx, gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName, Kind: v1.IssuerKind}), gen.SetCertificateKeyUsages(v1.UsageServerAuth, v1.UsageClientAuth)), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
 			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, cert, time.Minute*5)

@@ -75,7 +75,7 @@ type vaultSecrets struct {
 	secretNamespace string
 }
 
-func (v *vaultAppRoleProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.ObjectReference) {
+func (v *vaultAppRoleProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.IssuerReference) {
 	Expect(v.setup.Clean(ctx)).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 
 	err := f.KubeClientSet.CoreV1().Secrets(v.secretNamespace).Delete(ctx, v.secretName, metav1.DeleteOptions{})
@@ -87,7 +87,7 @@ func (v *vaultAppRoleProvisioner) delete(ctx context.Context, f *framework.Frame
 	}
 }
 
-func (v *vaultAppRoleProvisioner) createIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (v *vaultAppRoleProvisioner) createIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole Issuer")
 
@@ -112,14 +112,14 @@ func (v *vaultAppRoleProvisioner) createIssuer(ctx context.Context, f *framework
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (v *vaultAppRoleProvisioner) createClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (v *vaultAppRoleProvisioner) createClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	appRoleSecretGeneratorName := "vault-approle-secret-"
 	By("Creating a VaultAppRole ClusterIssuer")
 
@@ -144,7 +144,7 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(ctx context.Context, f *fr
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,

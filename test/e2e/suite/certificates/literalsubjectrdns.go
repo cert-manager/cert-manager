@@ -57,7 +57,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 			Spec: cmapi.CertificateSpec{
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
 				LiteralSubject: literalSubject,

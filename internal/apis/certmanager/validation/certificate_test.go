@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	validIssuerRef = cmmeta.ObjectReference{
+	validIssuerRef = cmmeta.IssuerReference{
 		Name: "name",
 		Kind: "ClusterIssuer",
 	}
@@ -74,7 +74,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "valid",
 					},
 				},
@@ -86,7 +86,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "valid",
 						Kind: "Issuer",
 					},
@@ -112,7 +112,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "valid",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",
@@ -126,7 +126,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "abc",
 						Kind: "AWSPCAClusterIssuer",
 					},
@@ -142,7 +142,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "abc",
 						Kind:  "AWSPCAClusterIssuer",
 						Group: "awspca.cert-manager.io",

@@ -101,7 +101,7 @@ func certificateSigningRequestsForSecret(log logr.Logger,
 			continue
 		}
 
-		issuerObj, err := helper.GetGenericIssuer(cmmeta.ObjectReference{
+		issuerObj, err := helper.GetGenericIssuer(cmmeta.IssuerReference{
 			Name:  ref.Name,
 			Kind:  kind,
 			Group: ref.Group,

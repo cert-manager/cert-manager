@@ -161,7 +161,7 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: issuerKind, Name: vaultIssuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: issuerKind, Name: vaultIssuerName}),
 			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 			gen.SetCertificateRequestCSR(csr),
 		)
@@ -254,7 +254,7 @@ func runVaultAppRoleTests(issuerKind string) {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: issuerKind, Name: vaultIssuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: issuerKind, Name: vaultIssuerName}),
 				gen.SetCertificateRequestDuration(v.inputDuration),
 				gen.SetCertificateRequestCSR(csr),
 			)

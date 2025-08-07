@@ -126,7 +126,7 @@ func TestSign(t *testing.T) {
 			},
 		),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",

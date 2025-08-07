@@ -134,7 +134,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -185,7 +185,7 @@ func TestSync(t *testing.T) {
 						IPAddresses: []string{"10.112.234.34", "1.1.1.1"},
 						CommonName:  "my-cn",
 						SecretName:  "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -236,7 +236,7 @@ func TestSync(t *testing.T) {
 						IPAddresses: []string{"2a00:1450:4009:819::aaaa", "2a00:1450:4009:819::eeee"},
 						CommonName:  "my-cn",
 						SecretName:  "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -287,7 +287,7 @@ func TestSync(t *testing.T) {
 						IPAddresses: []string{"1.1.1.1", "2a00:1450:4009:819::eeee"},
 						CommonName:  "my-cn",
 						SecretName:  "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -340,7 +340,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -393,7 +393,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -435,7 +435,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -478,7 +478,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -525,7 +525,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -576,7 +576,7 @@ func TestSync(t *testing.T) {
 								"example-label": "dummy-value",
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -668,7 +668,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -710,7 +710,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -755,7 +755,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "ClusterIssuer",
 							Group: "cert-manager.io",
@@ -805,7 +805,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						Usages:     cmapi.DefaultKeyUsages(),
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -854,7 +854,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						Usages:     cmapi.DefaultKeyUsages(),
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -909,7 +909,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -959,7 +959,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1007,7 +1007,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1029,7 +1029,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1072,7 +1072,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1092,7 +1092,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1137,7 +1137,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1160,7 +1160,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1208,7 +1208,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1231,7 +1231,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1280,7 +1280,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1303,7 +1303,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1354,7 +1354,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1377,7 +1377,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1425,7 +1425,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1467,7 +1467,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1500,7 +1500,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1519,7 +1519,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -1562,7 +1562,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
 						CommonName: "example-common-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -1582,7 +1582,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -1697,7 +1697,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -1752,7 +1752,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -1817,7 +1817,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -1868,7 +1868,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com", "www.example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -1913,7 +1913,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
 						CommonName: "example-common-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -1936,7 +1936,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -1985,7 +1985,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
 						CommonName: "example-common-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -2008,7 +2008,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -2074,7 +2074,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2136,7 +2136,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2199,7 +2199,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2262,7 +2262,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2314,7 +2314,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2367,7 +2367,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2424,7 +2424,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2478,7 +2478,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2530,7 +2530,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -2636,7 +2636,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
 						Usages:     cmapi.DefaultKeyUsages(),
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -2699,7 +2699,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"www.example.com"},
 						SecretName: "example-com-tls",
 						Usages:     cmapi.DefaultKeyUsages(),
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -2761,7 +2761,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
 						Usages:     cmapi.DefaultKeyUsages(),
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -2826,7 +2826,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -2886,7 +2886,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -2944,7 +2944,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -2966,7 +2966,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -3018,7 +3018,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -3070,7 +3070,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -3103,7 +3103,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -3122,7 +3122,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -3175,7 +3175,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
 						CommonName: "example-common-name",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -3195,7 +3195,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -3280,7 +3280,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com", "foo.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -3352,7 +3352,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"foo.example.com"},
 						SecretName: "foo-example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -3369,7 +3369,7 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"bar.example.com"},
 						SecretName: "bar-example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name:  "issuer-name",
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
@@ -3467,7 +3467,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -3544,7 +3544,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -3607,7 +3607,7 @@ func TestSync(t *testing.T) {
 						DNSNames:   []string{"example.com"},
 						CommonName: "my-cn",
 						SecretName: "example-com-tls",
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},

@@ -88,7 +88,7 @@ func TestRevisionManagerController(t *testing.T) {
 		gen.SetCertificateCommonName("my-common-name"),
 		gen.SetCertificateSecretName(secretName),
 		gen.SetCertificateRevisionHistoryLimit(3),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
@@ -124,7 +124,7 @@ func TestRevisionManagerController(t *testing.T) {
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   csrPEM,
-				IssuerRef: cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"},
+				IssuerRef: cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"},
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {

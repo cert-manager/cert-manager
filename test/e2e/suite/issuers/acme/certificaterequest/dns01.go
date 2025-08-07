@@ -121,7 +121,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
 			)
 
@@ -138,7 +138,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
 			)
 
@@ -155,7 +155,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
 			)
 

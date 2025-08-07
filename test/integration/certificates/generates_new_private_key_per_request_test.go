@@ -63,7 +63,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
 			DNSNames:   []string{"something"},
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: "issuer",
 			},
 			PrivateKey: &cmapi.CertificatePrivateKey{
@@ -209,7 +209,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
 			DNSNames:   []string{"something"},
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: "issuer",
 			},
 			PrivateKey: &cmapi.CertificatePrivateKey{

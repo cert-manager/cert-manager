@@ -60,7 +60,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 					Algorithm:      pk,
 					RotationPolicy: cmapi.RotationPolicyAlways,
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -96,7 +96,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		By("creating a CA Issuer")
 		crt := gen.Certificate(issuerName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "self-signed"}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "self-signed"}),
 			gen.SetCertificateDNSNames("example.com"),
 			gen.SetCertificateIsCA(true),
 			gen.SetCertificateSecretName("ca-issuer"),

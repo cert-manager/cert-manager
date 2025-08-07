@@ -58,7 +58,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			Spec: cmapi.CertificateSpec{
 				CommonName: "test",
 				SecretName: secretName,
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

@@ -87,7 +87,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: cmapi.IssuerKind, Name: issuer.Name}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: cmapi.IssuerKind, Name: issuer.Name}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 

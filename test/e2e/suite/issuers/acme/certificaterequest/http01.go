@@ -129,7 +129,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 
@@ -149,7 +149,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 
@@ -170,7 +170,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 
@@ -189,7 +189,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 
@@ -207,7 +207,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 
@@ -230,7 +230,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		Expect(err).NotTo(HaveOccurred())
 		cr := gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 			gen.SetCertificateRequestCSR(csr),
 		)
 

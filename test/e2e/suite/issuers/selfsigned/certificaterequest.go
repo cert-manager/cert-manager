@@ -64,7 +64,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 		basicCR = gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIsCA(true),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name:  issuerName,
 				Group: certmanager.GroupName,
 				Kind:  "Issuer",

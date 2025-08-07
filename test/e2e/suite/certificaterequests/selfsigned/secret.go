@@ -77,7 +77,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   bundle.CSRBytes,
-				IssuerRef: cmmeta.ObjectReference{Name: issuer.GetName(), Kind: "Issuer", Group: "cert-manager.io"},
+				IssuerRef: cmmeta.IssuerReference{Name: issuer.GetName(), Kind: "Issuer", Group: "cert-manager.io"},
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -134,7 +134,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   bundle.CSRBytes,
-				IssuerRef: cmmeta.ObjectReference{Name: issuer.GetName(), Kind: "Issuer", Group: "cert-manager.io"},
+				IssuerRef: cmmeta.IssuerReference{Name: issuer.GetName(), Kind: "Issuer", Group: "cert-manager.io"},
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -180,7 +180,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   bundle.CSRBytes,
-				IssuerRef: cmmeta.ObjectReference{Name: issuer.GetName(), Kind: "ClusterIssuer", Group: "cert-manager.io"},
+				IssuerRef: cmmeta.IssuerReference{Name: issuer.GetName(), Kind: "ClusterIssuer", Group: "cert-manager.io"},
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -237,7 +237,7 @@ var _ = framework.CertManagerDescribe("CertificateRequests SelfSigned Secret", f
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   bundle.CSRBytes,
-				IssuerRef: cmmeta.ObjectReference{Name: issuer.GetName(), Kind: "ClusterIssuer", Group: "cert-manager.io"},
+				IssuerRef: cmmeta.IssuerReference{Name: issuer.GetName(), Kind: "ClusterIssuer", Group: "cert-manager.io"},
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())

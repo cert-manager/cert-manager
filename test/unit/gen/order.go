@@ -46,7 +46,7 @@ func OrderFrom(order *cmacme.Order, mods ...OrderModifier) *cmacme.Order {
 }
 
 // SetOrderIssuer sets the Order.spec.issuerRef field
-func SetOrderIssuer(o cmmeta.ObjectReference) OrderModifier {
+func SetOrderIssuer(o cmmeta.IssuerReference) OrderModifier {
 	return func(order *cmacme.Order) {
 		order.Spec.IssuerRef = o
 	}

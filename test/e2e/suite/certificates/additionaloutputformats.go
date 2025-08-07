@@ -62,7 +62,7 @@ var _ = framework.CertManagerDescribe("Certificate additionalOutputFormats", fun
 				CommonName: "test",
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
 				AdditionalOutputFormats: aof,

@@ -118,7 +118,7 @@ func TestSync(t *testing.T) {
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Kind: baseIssuer.Kind,
 			Name: baseIssuer.Name,
 		}),
@@ -136,7 +136,7 @@ func TestSync(t *testing.T) {
 	baseCRNotApprovedEC := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestCSR(csrECPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Kind: baseIssuer.Kind,
 			Name: baseIssuer.Name,
 		}),
@@ -161,7 +161,7 @@ func TestSync(t *testing.T) {
 	tests := map[string]testT{
 		"should return nil (no action) if group name if not 'cert-manager.io' or ''": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Group: "not-cert-manager.io",
 				}),
 			),
@@ -448,7 +448,7 @@ func TestSync(t *testing.T) {
 		"should return error to try again if there was an error getting issuer wasn't a not found error": {
 			certificateRequest: baseCR.DeepCopy(),
 			helper: &issuerfake.Helper{
-				GetGenericIssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
+				GetGenericIssuerFunc: func(cmmeta.IssuerReference, string) (cmapi.GenericIssuer, error) {
 					return nil, errors.New("this is a network error")
 				},
 			},

@@ -82,7 +82,7 @@ func TestSyncHappyPath(t *testing.T) {
 		},
 	}))
 	baseChallenge := gen.Challenge("testchal",
-		gen.SetChallengeIssuer(cmmeta.ObjectReference{
+		gen.SetChallengeIssuer(cmmeta.IssuerReference{
 			Name: "testissuer",
 		}),
 		gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer}),

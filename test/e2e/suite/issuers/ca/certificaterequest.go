@@ -98,7 +98,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 				gen.SetCertificateRequestCSR(csr),
 			)
@@ -117,7 +117,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 				gen.SetCertificateRequestCSR(csr),
 			)
@@ -136,7 +136,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 				gen.SetCertificateRequestCSR(csr),
 			)
@@ -170,7 +170,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 				By("Creating a CertificateRequest with Usages")
 				csr, key, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames(exampleDNSNames...), gen.SetCSRIPAddresses(exampleIPAddresses...), gen.SetCSRURIs(exampleURLs()...))
 				Expect(err).NotTo(HaveOccurred())
-				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
+				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
 				_, err = crClient.Create(testingCtx, cr, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 

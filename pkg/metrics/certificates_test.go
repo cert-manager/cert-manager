@@ -68,7 +68,7 @@ func TestCertificateMetrics(t *testing.T) {
 		"certificate with issuance and expiry time, and ready status": {
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "test-issuer",
 					Kind:  "test-issuer-kind",
 					Group: "test-issuer-group",
@@ -106,7 +106,7 @@ func TestCertificateMetrics(t *testing.T) {
 		"certificate with no expiry and no status should give an issuance and expiry of 0 and Unknown status": {
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "test-issuer",
 					Kind:  "test-issuer-kind",
 					Group: "test-issuer-group",
@@ -134,7 +134,7 @@ func TestCertificateMetrics(t *testing.T) {
 		"certificate with issuance, expiry, and status False should give an expiry and False status": {
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "test-issuer",
 					Kind:  "test-issuer-kind",
 					Group: "test-issuer-group",
@@ -171,7 +171,7 @@ func TestCertificateMetrics(t *testing.T) {
 		"certificate with issuance, expiry, and status Unknown should give an expiry and Unknown status": {
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "test-issuer",
 					Kind:  "test-issuer-kind",
 					Group: "test-issuer-group",
@@ -208,7 +208,7 @@ func TestCertificateMetrics(t *testing.T) {
 		"certificate with expiry and ready status and renew before": {
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "test-issuer",
 					Kind:  "test-issuer-kind",
 					Group: "test-issuer-group",
@@ -305,7 +305,7 @@ func TestCertificateCache(t *testing.T) {
 
 	crt1 := gen.Certificate("crt1",
 		gen.SetCertificateUID("uid-1"),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{
 			Name:  "test-issuer",
 			Kind:  "test-issuer-kind",
 			Group: "test-issuer-group",
@@ -325,7 +325,7 @@ func TestCertificateCache(t *testing.T) {
 		}))
 	crt2 := gen.Certificate("crt2",
 		gen.SetCertificateUID("uid-2"),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{
 			Name:  "test-issuer",
 			Kind:  "test-issuer-kind",
 			Group: "test-issuer-group",
@@ -346,7 +346,7 @@ func TestCertificateCache(t *testing.T) {
 	)
 	crt3 := gen.Certificate("crt3",
 		gen.SetCertificateUID("uid-3"),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{
 			Name:  "test-issuer",
 			Kind:  "test-issuer-kind",
 			Group: "test-issuer-group",

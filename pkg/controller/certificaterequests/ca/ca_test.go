@@ -117,7 +117,7 @@ func TestSign(t *testing.T) {
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(testCSR),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.DeepCopy().Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -482,7 +482,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -523,7 +523,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -542,7 +542,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -560,7 +560,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -579,7 +579,7 @@ func TestCA_Sign(t *testing.T) {
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",

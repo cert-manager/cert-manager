@@ -63,7 +63,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{
 				Name: issuerName,
 				Kind: v1.IssuerKind,
 			}),
@@ -124,7 +124,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateNamespace(f.Namespace.Name),
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name: issuerDurationName,
 					Kind: v1.IssuerKind,
 				}),
@@ -163,7 +163,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{
 				Name: issuerName,
 				Kind: v1.IssuerKind,
 			}),

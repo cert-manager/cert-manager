@@ -135,7 +135,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 			gen.SetCertificateDuration(&metav1.Duration{Duration: time.Hour}),
 			gen.SetCertificateRenewBefore(&metav1.Duration{Duration: 45 * time.Minute}),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		cert.Namespace = f.Namespace.Name

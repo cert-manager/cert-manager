@@ -44,7 +44,7 @@ func CertificateRequestFrom(cr *v1.CertificateRequest, mods ...CertificateReques
 }
 
 // SetCertificateRequestIssuer sets the CertificateRequest.spec.issuerRef field
-func SetCertificateRequestIssuer(o cmmeta.ObjectReference) CertificateRequestModifier {
+func SetCertificateRequestIssuer(o cmmeta.IssuerReference) CertificateRequestModifier {
 	return func(c *v1.CertificateRequest) {
 		c.Spec.IssuerRef = o
 	}

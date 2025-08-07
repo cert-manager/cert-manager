@@ -84,7 +84,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{
 				Name: issuer.Name,
 				Kind: cmapi.IssuerKind,
 			}),

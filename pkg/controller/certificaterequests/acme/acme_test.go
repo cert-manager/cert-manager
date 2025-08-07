@@ -120,7 +120,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
