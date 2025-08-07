@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
@@ -29,6 +30,7 @@ type ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration struct {
 	TSIGSecret    *metav1.SecretKeySelectorApplyConfiguration `json:"tsigSecretSecretRef,omitempty"`
 	TSIGKeyName   *string                                     `json:"tsigKeyName,omitempty"`
 	TSIGAlgorithm *string                                     `json:"tsigAlgorithm,omitempty"`
+	Protocol      *acmev1.RFC2136UpdateProtocol               `json:"protocol,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderRFC2136 type for use with
@@ -66,5 +68,13 @@ func (b *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration) WithTSIGKeyName(value
 // If called multiple times, the TSIGAlgorithm field is set to the value of the last call.
 func (b *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration) WithTSIGAlgorithm(value string) *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration {
 	b.TSIGAlgorithm = &value
+	return b
+}
+
+// WithProtocol sets the Protocol field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Protocol field is set to the value of the last call.
+func (b *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration) WithProtocol(value acmev1.RFC2136UpdateProtocol) *ACMEIssuerDNS01ProviderRFC2136ApplyConfiguration {
+	b.Protocol = &value
 	return b
 }
