@@ -196,6 +196,7 @@ type SelfSignedIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set certificate will be issued without CDP. Values are strings.
 	// +optional
+	// +listType=atomic
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 }
 
@@ -356,6 +357,7 @@ type ServiceAccountRef struct {
 	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
 	// consisting of the issuer's namespace and name is always included.
 	// +optional
+	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
@@ -368,6 +370,7 @@ type CAIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set, certificates will be issued without distribution points set.
 	// +optional
+	// +listType=atomic
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 
 	// The OCSP server list is an X.509 v3 extension that defines a list of
@@ -376,12 +379,14 @@ type CAIssuer struct {
 	// certificate will be issued with no OCSP servers set. For example, an
 	// OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
 	// +optional
+	// +listType=atomic
 	OCSPServers []string `json:"ocspServers,omitempty"`
 
 	// IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates
 	// it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details.
 	// As an example, such a URL might be "http://ca.domain.com/ca.crt".
 	// +optional
+	// +listType=atomic
 	IssuingCertificateURLs []string `json:"issuingCertificateURLs,omitempty"`
 }
 
@@ -389,9 +394,9 @@ type CAIssuer struct {
 type IssuerStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready`.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
-	// +optional
 	Conditions []IssuerCondition `json:"conditions,omitempty"`
 
 	// ACME specific status options.

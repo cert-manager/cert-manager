@@ -94,6 +94,7 @@ spec:
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               commonName:
                 description: |-
                   Requested common name X509 certificate subject attribute.
@@ -109,6 +110,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               duration:
                 description: |-
                   Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
@@ -124,6 +126,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               encodeUsagesInRequest:
                 description: |-
                   Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
@@ -136,6 +139,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               isCA:
                 description: |-
                   Requested basic constraints isCA value.
@@ -326,12 +330,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       emailAddresses:
                         description: EmailAddresses is a list of Email Addresses that
                           are permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       ipRanges:
                         description: |-
                           IPRanges is a list of IP Ranges that are permitted or excluded.
@@ -339,12 +345,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       uriDomains:
                         description: URIDomains is a list of URI domains that are
                           permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                     type: object
                   permitted:
                     description: Permitted contains the constraints in which the names
@@ -356,12 +364,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       emailAddresses:
                         description: EmailAddresses is a list of Email Addresses that
                           are permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       ipRanges:
                         description: |-
                           IPRanges is a list of IP Ranges that are permitted or excluded.
@@ -369,12 +379,14 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       uriDomains:
                         description: URIDomains is a list of URI domains that are
                           permitted or excluded.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                     type: object
                 type: object
               otherNames:
@@ -398,6 +410,7 @@ spec:
                       type: string
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               privateKey:
                 description: |-
                   Private key options. These include the key algorithm and size, the used
@@ -565,31 +578,37 @@ spec:
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   localities:
                     description: Cities to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   organizationalUnits:
                     description: Organizational Units to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   organizations:
                     description: Organizations to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   postalCodes:
                     description: Postal codes to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   provinces:
                     description: State/Provinces to be used on the Certificate.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   serialNumber:
                     description: Serial number to be used on the Certificate.
                     type: string
@@ -598,12 +617,14 @@ spec:
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                 type: object
               uris:
                 description: Requested URI subject alternative names.
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               usages:
                 description: |-
                   Requested key usages and extended key usages.
@@ -669,6 +690,7 @@ spec:
                   - netscape sgc
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
             required:
             - issuerRef
             - secretName

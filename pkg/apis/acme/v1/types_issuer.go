@@ -96,6 +96,7 @@ type ACMEIssuer struct {
 	// from an ACME server.
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	// +optional
+	// +listType=atomic
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
 
 	// Enables or disables generating a new ACME account key.
@@ -196,6 +197,7 @@ type CertificateDNSNameSelector struct {
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
 	// +optional
+	// +listType=atomic
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// List of DNSZones that this solver will be used to solve.
@@ -208,6 +210,7 @@ type CertificateDNSNameSelector struct {
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
 	// +optional
+	// +listType=atomic
 	DNSZones []string `json:"dnsZones,omitempty"`
 }
 
@@ -290,6 +293,8 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// cert-manager needs to know which parentRefs should be used when creating
 	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
 	// https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
+	// +optional
+	// +listType=atomic
 	ParentRefs []gwapi.ParentReference `json:"parentRefs,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
@@ -336,6 +341,7 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 
 	// If specified, the pod's tolerations.
 	// +optional
+	// +listType=atomic
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// If specified, the pod's priorityClassName.
@@ -347,9 +353,11 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// If specified, the pod's imagePullSecrets
+	// +optional
 	// +patchMergeKey=name
 	// +patchStrategy=merge
-	// +optional
+	// +listType=map
+	// +listMapKey=name
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchMergeKey:"name" patchStrategy:"merge"`
 
 	// If specified, the pod's security context
@@ -466,6 +474,7 @@ type ACMEChallengeSolverHTTP01IngressPodSecurityContext struct {
 	// even if they are not included in this list.
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
+	// +listType=atomic
 	SupplementalGroups []int64 `json:"supplementalGroups,omitempty"`
 	// A special supplemental group that applies to all containers in a pod.
 	// Some volume types allow the Kubelet to change the ownership of that volume
@@ -483,6 +492,7 @@ type ACMEChallengeSolverHTTP01IngressPodSecurityContext struct {
 	// sysctls (by the container runtime) might fail to launch.
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
+	// +listType=atomic
 	Sysctls []corev1.Sysctl `json:"sysctls,omitempty"`
 	// fsGroupChangePolicy defines behavior of changing ownership and permission of the volume
 	// before being exposed inside Pod. This field will only apply to
@@ -660,6 +670,7 @@ type ServiceAccountRef struct {
 	// and name is always included.
 	// If unset the audience defaults to `sts.amazonaws.com`.
 	// +optional
+	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
 }
 

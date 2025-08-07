@@ -224,6 +224,7 @@ spec:
                   - netscape sgc
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               username:
                 description: |-
                   Username contains the name of the user that created the CertificateRequest.

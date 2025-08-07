@@ -533,6 +533,11 @@ func schema_pkg_apis_acme_v1_ACMEAuthorization(ref common.ReferenceCallback) com
 						},
 					},
 					"challenges": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Challenges specifies the challenge types offered by the ACME server. One of these challenge types will be selected when validating the DNS name and an appropriate Challenge resource will be created to perform the ACME challenge process.",
 							Type:        []string{"array"},
@@ -761,6 +766,11 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(ref commo
 						},
 					},
 					"parentRefs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute. cert-manager needs to know which parentRefs should be used when creating the HTTPRoute. Usually, the parentRef references a Gateway. See: https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways",
 							Type:        []string{"array"},
@@ -965,6 +975,11 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSecurityContext(
 						},
 					},
 					"supplementalGroups": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "A list of groups applied to the first process run in each container, in addition to the container's primary GID, the fsGroup (if specified), and group memberships defined in the container image for the uid of the container process. If unspecified, no additional groups are added to any container. Note that group memberships defined in the container image for the uid of the container process are still effective, even if they are not included in this list. Note that this field cannot be set when spec.os.name is windows.",
 							Type:        []string{"array"},
@@ -987,6 +1002,11 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSecurityContext(
 						},
 					},
 					"sysctls": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.",
 							Type:        []string{"array"},
@@ -1051,6 +1071,11 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSpec(ref common.
 						},
 					},
 					"tolerations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "If specified, the pod's tolerations.",
 							Type:        []string{"array"},
@@ -1081,6 +1106,10 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSpec(ref common.
 					"imagePullSecrets": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type":       "map",
 								"x-kubernetes-patch-merge-key": "name",
 								"x-kubernetes-patch-strategy":  "merge",
 							},
@@ -1256,6 +1285,11 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 						},
 					},
 					"solvers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Solvers is a list of challenge solvers that will be used to solve ACME challenges for the matching domains. Solver configurations must be provided in order to obtain certificates from an ACME server. For more information, see: https://cert-manager.io/docs/configuration/acme/",
 							Type:        []string{"array"},
@@ -1775,6 +1809,11 @@ func schema_pkg_apis_acme_v1_CertificateDNSNameSelector(ref common.ReferenceCall
 						},
 					},
 					"dnsNames": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of DNSNames that this solver will be used to solve. If specified and a match is found, a dnsNames selector will take precedence over a dnsZones selector. If multiple solvers match with the same dnsNames value, the solver with the most matching labels in matchLabels will be selected. If neither has more matches, the solver defined earlier in the list will be selected.",
 							Type:        []string{"array"},
@@ -1790,6 +1829,11 @@ func schema_pkg_apis_acme_v1_CertificateDNSNameSelector(ref common.ReferenceCall
 						},
 					},
 					"dnsZones": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of DNSZones that this solver will be used to solve. The most specific DNS zone match specified here will take precedence over other DNS zone matches, so a solver specifying sys.example.com will be selected over one specifying example.com for the domain www.sys.example.com. If multiple solvers match with the same dnsZones value, the solver with the most matching labels in matchLabels will be selected. If neither has more matches, the solver defined earlier in the list will be selected.",
 							Type:        []string{"array"},
@@ -2159,6 +2203,11 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 						},
 					},
 					"dnsNames": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "DNSNames is a list of DNS names that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.",
 							Type:        []string{"array"},
@@ -2174,6 +2223,11 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 						},
 					},
 					"ipAddresses": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.",
 							Type:        []string{"array"},
@@ -2231,6 +2285,11 @@ func schema_pkg_apis_acme_v1_OrderStatus(ref common.ReferenceCallback) common.Op
 						},
 					},
 					"authorizations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Authorizations contains data returned from the ACME server on what authorizations must be completed in order to validate the DNS names specified on the Order.",
 							Type:        []string{"array"},
@@ -2339,6 +2398,11 @@ func schema_pkg_apis_acme_v1_ServiceAccountRef(ref common.ReferenceCallback) com
 						},
 					},
 					"audiences": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "TokenAudiences is an optional list of audiences to include in the token passed to AWS. The default token consisting of the issuer's namespace and name is always included. If unset the audience defaults to `sts.amazonaws.com`.",
 							Type:        []string{"array"},
@@ -2375,6 +2439,11 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 						},
 					},
 					"crlDistributionPoints": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "The CRL distribution points is an X.509 v3 certificate extension which identifies the location of the CRL from which the revocation of this certificate can be checked. If not set, certificates will be issued without distribution points set.",
 							Type:        []string{"array"},
@@ -2390,6 +2459,11 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 						},
 					},
 					"ocspServers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "The OCSP server list is an X.509 v3 extension that defines a list of URLs of OCSP responders. The OCSP responders can be queried for the revocation status of an issued certificate. If not set, the certificate will be issued with no OCSP servers set. For example, an OCSP server URL could be \"http://ocsp.int-x3.letsencrypt.org\".",
 							Type:        []string{"array"},
@@ -2405,6 +2479,11 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 						},
 					},
 					"issuingCertificateURLs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details. As an example, such a URL might be \"http://ca.domain.com/ca.crt\".",
 							Type:        []string{"array"},
@@ -2864,6 +2943,11 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 						},
 					},
 					"usages": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Requested key usages and extended key usages.\n\nNOTE: If the CSR in the `Request` field has uses the KeyUsage or ExtKeyUsage extension, these extensions must have the same values as specified here without any additional values.\n\nIf unset, defaults to `digital signature` and `key encipherment`.",
 							Type:        []string{"array"},
@@ -3093,6 +3177,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"dnsNames": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Requested DNS subject alternative names.",
 							Type:        []string{"array"},
@@ -3108,6 +3197,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"ipAddresses": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Requested IP address subject alternative names.",
 							Type:        []string{"array"},
@@ -3123,6 +3217,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"uris": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Requested URI subject alternative names.",
 							Type:        []string{"array"},
@@ -3138,6 +3237,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"otherNames": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "`otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37 Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`. Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3 You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.",
 							Type:        []string{"array"},
@@ -3152,6 +3256,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"emailAddresses": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Requested email subject alternative names.",
 							Type:        []string{"array"},
@@ -3201,6 +3310,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"usages": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Requested key usages and extended key usages. These usages are used to set the `usages` field on the created CertificateRequest resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages will additionally be encoded in the `request` field which contains the CSR blob.\n\nIf unset, defaults to `digital signature` and `key encipherment`.",
 							Type:        []string{"array"},
@@ -3243,6 +3357,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 						},
 					},
 					"additionalOutputFormats": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Defines extra output formats of the private key and signed certificate chain to be written to this Certificate's target Secret.",
 							Type:        []string{"array"},
@@ -3795,6 +3914,11 @@ func schema_pkg_apis_certmanager_v1_NameConstraintItem(ref common.ReferenceCallb
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"dnsDomains": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "DNSDomains is a list of DNS domains that are permitted or excluded.",
 							Type:        []string{"array"},
@@ -3810,6 +3934,11 @@ func schema_pkg_apis_certmanager_v1_NameConstraintItem(ref common.ReferenceCallb
 						},
 					},
 					"ipRanges": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "IPRanges is a list of IP Ranges that are permitted or excluded. This should be a valid CIDR notation.",
 							Type:        []string{"array"},
@@ -3825,6 +3954,11 @@ func schema_pkg_apis_certmanager_v1_NameConstraintItem(ref common.ReferenceCallb
 						},
 					},
 					"emailAddresses": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "EmailAddresses is a list of Email Addresses that are permitted or excluded.",
 							Type:        []string{"array"},
@@ -3840,6 +3974,11 @@ func schema_pkg_apis_certmanager_v1_NameConstraintItem(ref common.ReferenceCallb
 						},
 					},
 					"uriDomains": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "URIDomains is a list of URI domains that are permitted or excluded.",
 							Type:        []string{"array"},
@@ -3973,6 +4112,11 @@ func schema_pkg_apis_certmanager_v1_SelfSignedIssuer(ref common.ReferenceCallbac
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"crlDistributionPoints": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "The CRL distribution points is an X.509 v3 certificate extension which identifies the location of the CRL from which the revocation of this certificate can be checked. If not set certificate will be issued without CDP. Values are strings.",
 							Type:        []string{"array"},
@@ -4009,6 +4153,11 @@ func schema_pkg_apis_certmanager_v1_ServiceAccountRef(ref common.ReferenceCallba
 						},
 					},
 					"audiences": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token consisting of the issuer's namespace and name is always included.",
 							Type:        []string{"array"},
@@ -4382,6 +4531,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"organizations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Organizations to be used on the Certificate.",
 							Type:        []string{"array"},
@@ -4397,6 +4551,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 						},
 					},
 					"countries": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Countries to be used on the Certificate.",
 							Type:        []string{"array"},
@@ -4412,6 +4571,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 						},
 					},
 					"organizationalUnits": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Organizational Units to be used on the Certificate.",
 							Type:        []string{"array"},
@@ -4427,6 +4591,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 						},
 					},
 					"localities": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Cities to be used on the Certificate.",
 							Type:        []string{"array"},
@@ -4442,6 +4611,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 						},
 					},
 					"provinces": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "State/Provinces to be used on the Certificate.",
 							Type:        []string{"array"},
@@ -4457,6 +4631,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 						},
 					},
 					"streetAddresses": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Street addresses to be used on the Certificate.",
 							Type:        []string{"array"},
@@ -4472,6 +4651,11 @@ func schema_pkg_apis_certmanager_v1_X509Subject(ref common.ReferenceCallback) co
 						},
 					},
 					"postalCodes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Postal codes to be used on the Certificate.",
 							Type:        []string{"array"},

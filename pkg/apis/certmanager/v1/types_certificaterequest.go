@@ -151,6 +151,7 @@ type CertificateRequestSpec struct {
 	//
 	// If unset, defaults to `digital signature` and `key encipherment`.
 	// +optional
+	// +listType=atomic
 	Usages []KeyUsage `json:"usages,omitempty"`
 
 	// Username contains the name of the user that created the CertificateRequest.
@@ -163,8 +164,8 @@ type CertificateRequestSpec struct {
 	UID string `json:"uid,omitempty"`
 	// Groups contains group membership of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
-	// +listType=atomic
 	// +optional
+	// +listType=atomic
 	Groups []string `json:"groups,omitempty"`
 	// Extra contains extra attributes of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
@@ -177,9 +178,9 @@ type CertificateRequestSpec struct {
 type CertificateRequestStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready`, `InvalidRequest`, `Approved` and `Denied`.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
-	// +optional
 	Conditions []CertificateRequestCondition `json:"conditions,omitempty"`
 
 	// The PEM encoded X.509 certificate resulting from the certificate

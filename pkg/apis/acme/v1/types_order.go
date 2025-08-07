@@ -74,13 +74,15 @@ type OrderSpec struct {
 	// DNSNames is a list of DNS names that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
-	//+optional
+	// +optional
+	// +listType=atomic
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// IPAddresses is a list of IP addresses that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	// +optional
+	// +listType=atomic
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
 	// Duration is the duration for the not after date for the requested certificate.
@@ -111,6 +113,7 @@ type OrderStatus struct {
 	// authorizations must be completed in order to validate the DNS names
 	// specified on the Order.
 	// +optional
+	// +listType=atomic
 	Authorizations []ACMEAuthorization `json:"authorizations,omitempty"`
 
 	// Certificate is a copy of the PEM encoded certificate for this Order.
@@ -171,6 +174,7 @@ type ACMEAuthorization struct {
 	// name and an appropriate Challenge resource will be created to perform
 	// the ACME challenge process.
 	// +optional
+	// +listType=atomic
 	Challenges []ACMEChallenge `json:"challenges,omitempty"`
 }
 

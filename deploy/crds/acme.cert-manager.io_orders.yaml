@@ -74,6 +74,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               duration:
                 description: |-
                   Duration is the duration for the not after date for the requested certificate.
@@ -87,6 +88,7 @@ spec:
                 items:
                   type: string
                 type: array
+                x-kubernetes-list-type: atomic
               issuerRef:
                 description: |-
                   IssuerRef references a properly configured ACME-type Issuer which should
@@ -174,6 +176,7 @@ spec:
                         - url
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     identifier:
                       description: Identifier is the DNS name to be validated as part
                         of this authorization
@@ -213,6 +216,7 @@ spec:
                   - url
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               certificate:
                 description: |-
                   Certificate is a copy of the PEM encoded certificate for this Order.
