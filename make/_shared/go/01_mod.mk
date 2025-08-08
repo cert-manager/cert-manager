@@ -57,8 +57,9 @@ generate-go-mod-tidy: | $(NEEDS_GO)
 
 shared_generate_targets += generate-go-mod-tidy
 
-default_govulncheck_generate_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+ifndef govulncheck_skip
 
+default_govulncheck_generate_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
 # The base directory used to copy the govulncheck GH action from. This can be
 # overwritten with an action with extra authentication or with a totally different
 # pipeline (eg. a GitLab pipeline).
@@ -67,10 +68,6 @@ govulncheck_generate_base_dir ?= $(default_govulncheck_generate_base_dir)
 # The org name used in the govulncheck GH action. This is used to prevent the govulncheck job
 # being run on every fork of the repo.
 govulncheck_generate_org ?= cert-manager
-
-# Any closed-source or inaccessible Go modules that should be ignored by govulncheck; not needed
-# for most open-source projects.
-govulncheck_goprivate ?=
 
 .PHONY: generate-govulncheck
 ## Generate base files in the repository
@@ -101,10 +98,12 @@ verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 				target=$$(dirname $${d}); \
 				echo "Running 'GOTOOLCHAIN=go$(VENDORED_GO_VERSION) $(bin_dir)/tools/govulncheck ./...' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
-				GOPRIVATE=$(govulncheck_goprivate) GOTOOLCHAIN=go$(VENDORED_GO_VERSION) $(GOVULNCHECK) ./... || exit; \
+				GOTOOLCHAIN=go$(VENDORED_GO_VERSION) $(GOVULNCHECK) ./... || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done
+
+endif # govulncheck_skip
 
 ifdef golangci_lint_config
 
