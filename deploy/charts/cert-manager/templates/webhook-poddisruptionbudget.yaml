@@ -26,4 +26,11 @@ spec:
   {{- if hasKey .Values.webhook.podDisruptionBudget "maxUnavailable" }}
   maxUnavailable: {{ .Values.webhook.podDisruptionBudget.maxUnavailable }}
   {{- end }}
+  {{- if (semverCompare ">= 1.27-0" .Capabilities.KubeVersion.Version) }}
+  {{- if hasKey .Values.webhook.podDisruptionBudget "unhealthyPodEvictionPolicy" }}
+  {{- with .Values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
 {{- end }}
