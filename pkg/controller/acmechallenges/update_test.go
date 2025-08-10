@@ -36,6 +36,7 @@ import (
 )
 
 func TestUpdateStatusStandard(t *testing.T) {
+	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, false)
 	runUpdateStatusTests(t, "update")
 }
 
