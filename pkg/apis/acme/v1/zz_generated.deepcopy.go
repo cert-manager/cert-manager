@@ -22,10 +22,10 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	apismetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	apisv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -500,6 +500,11 @@ func (in *ACMEIssuer) DeepCopyInto(out *ACMEIssuer) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.AuthorizationTimeout != nil {
+		in, out := &in.AuthorizationTimeout, &out.AuthorizationTimeout
+		*out = new(metav1.Duration)
+		**out = **in
+	}
 	return
 }
 
@@ -554,7 +559,7 @@ func (in *ACMEIssuerDNS01ProviderAzureDNS) DeepCopyInto(out *ACMEIssuerDNS01Prov
 	*out = *in
 	if in.ClientSecret != nil {
 		in, out := &in.ClientSecret, &out.ClientSecret
-		*out = new(metav1.SecretKeySelector)
+		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
 	if in.ManagedIdentity != nil {
@@ -580,7 +585,7 @@ func (in *ACMEIssuerDNS01ProviderCloudDNS) DeepCopyInto(out *ACMEIssuerDNS01Prov
 	*out = *in
 	if in.ServiceAccount != nil {
 		in, out := &in.ServiceAccount, &out.ServiceAccount
-		*out = new(metav1.SecretKeySelector)
+		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
 	return
@@ -601,12 +606,12 @@ func (in *ACMEIssuerDNS01ProviderCloudflare) DeepCopyInto(out *ACMEIssuerDNS01Pr
 	*out = *in
 	if in.APIKey != nil {
 		in, out := &in.APIKey, &out.APIKey
-		*out = new(metav1.SecretKeySelector)
+		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
 	if in.APIToken != nil {
 		in, out := &in.APIToken, &out.APIToken
-		*out = new(metav1.SecretKeySelector)
+		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
 	return
@@ -666,7 +671,7 @@ func (in *ACMEIssuerDNS01ProviderRoute53) DeepCopyInto(out *ACMEIssuerDNS01Provi
 	}
 	if in.SecretAccessKeyID != nil {
 		in, out := &in.SecretAccessKeyID, &out.SecretAccessKeyID
-		*out = new(metav1.SecretKeySelector)
+		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
 	out.SecretAccessKey = in.SecretAccessKey
@@ -946,7 +951,7 @@ func (in *OrderSpec) DeepCopyInto(out *OrderSpec) {
 	}
 	if in.Duration != nil {
 		in, out := &in.Duration, &out.Duration
-		*out = new(apismetav1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	return
