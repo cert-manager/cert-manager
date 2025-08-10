@@ -43,7 +43,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
-	if !(cr.Spec.IssuerRef.Group == "" || cr.Spec.IssuerRef.Group == certmanager.GroupName) {
+	if cr.Spec.IssuerRef.Group != certmanager.GroupName {
 		dbg.Info("certificate request issuerRef group does not match certmanager group so skipping processing")
 		return nil
 	}
@@ -91,7 +91,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.reporter.Pending(crCopy, err, "IssuerNotFound",
-			fmt.Sprintf("Referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
+			fmt.Sprintf("Referenced %q not found", crCopy.Spec.IssuerRef.Kind))
 		return nil
 	}
 

@@ -491,7 +491,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 				ExpectedEvents: []string{
 					//nolint: dupword
-					`Normal Created Created Challenge resource "testorder-756011405" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-2580184217" for domain "test.com"`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
