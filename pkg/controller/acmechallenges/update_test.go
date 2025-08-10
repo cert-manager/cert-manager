@@ -37,6 +37,7 @@ import (
 )
 
 func TestUpdateObjectStandard(t *testing.T) {
+	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, false)
 	runUpdateObjectTests(t, "update")
 }
 
