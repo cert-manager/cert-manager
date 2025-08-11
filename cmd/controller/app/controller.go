@@ -99,7 +99,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 
 	// Start metrics server
-	metricsLn, err := server.Listen("tcp", opts.MetricsListenAddress,
+	metricsLn, err := server.Listen(rootCtx, "tcp", opts.MetricsListenAddress,
 		server.WithCertificateSource(certificateSource),
 		server.WithTLSCipherSuites(opts.MetricsTLSConfig.CipherSuites),
 		server.WithTLSMinVersion(opts.MetricsTLSConfig.MinTLSVersion),
@@ -131,7 +131,8 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 
 	// Start profiler if it is enabled
 	if opts.EnablePprof {
-		profilerLn, err := net.Listen("tcp", opts.PprofAddress)
+		lc := net.ListenConfig{}
+		profilerLn, err := lc.Listen(rootCtx, "tcp", opts.PprofAddress)
 		if err != nil {
 			return fmt.Errorf("failed to listen on profiler address %s: %v", opts.PprofAddress, err)
 		}
@@ -160,7 +161,8 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 			return nil
 		})
 	}
-	healthzListener, err := net.Listen("tcp", opts.HealthzListenAddress)
+	lc := net.ListenConfig{}
+	healthzListener, err := lc.Listen(rootCtx, "tcp", opts.HealthzListenAddress)
 	if err != nil {
 		return fmt.Errorf("failed to listen on healthz address %s: %v", opts.HealthzListenAddress, err)
 	}

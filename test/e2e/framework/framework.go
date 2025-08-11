@@ -200,9 +200,9 @@ func (f *Framework) printAddonLogs(ctx context.Context) {
 // are present in the 'globals' variable, as they will not be Provisioned properly
 // otherwise.
 func (f *Framework) RequireGlobalAddon(a addon.Addon) {
-	BeforeEach(func() {
+	BeforeEach(func(ctx context.Context) {
 		By("Setting up access for global shared addon")
-		_, err := a.Setup(f.Config)
+		_, err := a.Setup(ctx, f.Config)
 		Expect(err).NotTo(HaveOccurred())
 	})
 }
@@ -218,7 +218,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 
 	BeforeEach(func(ctx context.Context) {
 		By("Provisioning test-scoped addon")
-		_, err := a.Setup(f.Config)
+		_, err := a.Setup(ctx, f.Config)
 		if errors.IsSkip(err) {
 			Skipf("Skipping test as addon could not be setup: %v", err)
 		}

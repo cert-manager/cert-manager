@@ -37,7 +37,7 @@ func testExitCode(
 		os.Exit(0)
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run="+t.Name())
 	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

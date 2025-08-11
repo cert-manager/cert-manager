@@ -181,7 +181,8 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// if a HealthzAddr is provided, start the healthz listener
 	if s.HealthzAddr != nil {
-		healthzListener, err := net.Listen("tcp", fmt.Sprintf(":%d", *s.HealthzAddr))
+		lc := net.ListenConfig{}
+		healthzListener, err := lc.Listen(ctx, "tcp", fmt.Sprintf(":%d", *s.HealthzAddr))
 		if err != nil {
 			return err
 		}
@@ -223,7 +224,8 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// if a PprofAddr is provided, start the pprof listener
 	if s.EnablePprof {
-		pprofListener, err := net.Listen("tcp", s.PprofAddress)
+		lc := net.ListenConfig{}
+		pprofListener, err := lc.Listen(ctx, "tcp", s.PprofAddress)
 		if err != nil {
 			return err
 		}

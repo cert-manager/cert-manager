@@ -80,14 +80,14 @@ func (h *Helper) waitForCertificateCondition(ctx context.Context, client clients
 		errs = append(errs, h.describeCMObject(certificate))
 
 		log.Logf("Order and challenge descriptions:\n")
-		errs = append(errs, h.Kubectl(certificate.Namespace).Describe("order", "challenge"))
+		errs = append(errs, h.Kubectl(certificate.Namespace).Describe(ctx, "order", "challenge"))
 
 		log.Logf("CertificateRequest description:\n")
 		crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to compute CertificateRequest name from certificate: %w", err))
 		} else {
-			errs = append(errs, h.Kubectl(certificate.Namespace).DescribeResource("certificaterequest", crName))
+			errs = append(errs, h.Kubectl(certificate.Namespace).DescribeResource(ctx, "certificaterequest", crName))
 		}
 
 		pollErr = kerrors.NewAggregate(errs)

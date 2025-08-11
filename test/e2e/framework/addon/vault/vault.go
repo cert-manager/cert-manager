@@ -116,7 +116,7 @@ func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
 	return details, nil
 }
 
-func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
+func (v *Vault) Setup(ctx context.Context, cfg *config.Config, leaderData ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	if v.Name == "" {
 		return nil, fmt.Errorf("'Name' field must be set on Vault addon")
 	}
@@ -266,7 +266,7 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 		)
 	}
 
-	_, err := v.chart.Setup(cfg)
+	_, err := v.chart.Setup(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +298,7 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			return nil, fmt.Errorf("path to kubectl must be specified")
 		}
 		v.proxy = newProxy(
+			ctx,
 			v.Base.Details().KubeClient,
 			v.Base.Details().KubeConfig,
 			v.Namespace,

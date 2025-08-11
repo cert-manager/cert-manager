@@ -94,7 +94,7 @@ func (c *cloud) createIssuer(ctx context.Context, f *framework.Framework) string
 		Namespace: f.Namespace.Name,
 	}
 
-	_, err := c.Setup(f.Config)
+	_, err := c.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
@@ -124,7 +124,7 @@ func (c *cloud) createClusterIssuer(ctx context.Context, f *framework.Framework)
 		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
 	}
 
-	_, err := c.Setup(f.Config)
+	_, err := c.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}

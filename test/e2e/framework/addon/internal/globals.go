@@ -28,7 +28,7 @@ type Addon interface {
 	// any arguments. For global addons, this function is called on ginkgo process #1
 	// without any arguments, but the returned data is passed to the Setup function
 	// on all other ginkgo processes.
-	Setup(*config.Config, ...AddonTransferableData) (AddonTransferableData, error)
+	Setup(ctx context.Context, cfg *config.Config, leaderData ...AddonTransferableData) (AddonTransferableData, error)
 
 	// For non-global addons, this function is called on all ginkgo processes. For global
 	// addons, this function is called only on ginkgo process #1.

@@ -87,10 +87,10 @@ func InitGlobals(cfg *config.Config) {
 // block to ensure it is run only on ginkgo process #1. It has to be run before
 // any other ginkgo processes are started, because the return value of this function
 // has to be transferred to the other ginkgo processes.
-func SetupGlobalsPrimary(cfg *config.Config) ([]AddonTransferableData, error) {
+func SetupGlobalsPrimary(ctx context.Context, cfg *config.Config) ([]AddonTransferableData, error) {
 	toBeTransferred := make([]AddonTransferableData, len(allAddons))
 	for addonIdx, g := range allAddons {
-		data, err := g.Setup(cfg)
+		data, err := g.Setup(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -110,9 +110,9 @@ func SetupGlobalsPrimary(cfg *config.Config) ([]AddonTransferableData, error) {
 // can be passed into this function. This function calls Setup on all of the non-primary
 // processes (processes #2 and above) and passes in the AddonTransferableData data returned
 // by the primary process.
-func SetupGlobalsNonPrimary(cfg *config.Config, transferred []AddonTransferableData) error {
+func SetupGlobalsNonPrimary(ctx context.Context, cfg *config.Config, transferred []AddonTransferableData) error {
 	for addonIdx, g := range allAddons {
-		_, err := g.Setup(cfg, transferred[addonIdx])
+		_, err := g.Setup(ctx, cfg, transferred[addonIdx])
 		if err != nil {
 			return err
 		}

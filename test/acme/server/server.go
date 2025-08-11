@@ -71,8 +71,9 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr, network st
 		return fmt.Errorf("listen address must be provided")
 	}
 
+	lc := net.ListenConfig{}
 	if network == "tcp" {
-		listener, err := net.Listen("tcp", listenAddr)
+		listener, err := lc.Listen(ctx, "tcp", listenAddr)
 		if err != nil {
 			return err
 		}
@@ -80,7 +81,7 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr, network st
 		b.server = &dns.Server{Listener: listener, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
 		b.listenAddr = listener.Addr().String()
 	} else {
-		pc, err := net.ListenPacket("udp", listenAddr)
+		pc, err := lc.ListenPacket(ctx, "udp", listenAddr)
 		if err != nil {
 			return err
 		}
