@@ -32,6 +32,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const (
@@ -583,23 +584,14 @@ func TestRoute53AmbientCreds(t *testing.T) {
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
-					Spec: cmacme.ChallengeSpec{
-						Solver: cmacme.ACMEChallengeSolver{
-							DNS01: &cmacme.ACMEChallengeSolverDNS01{
-								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-									Region: "us-west-2",
-								},
-							},
-						},
-						IssuerRef: cmmeta.IssuerReference{
-							Name: "test-issuer",
-						},
-					},
-				},
+				Challenge: gen.Challenge("",
+					gen.SetChallengeNamespace(fakeIssuerNamespace),
+					gen.SetChallengeIssuer(cmmeta.IssuerReference{Name: "test-issuer"}),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						}}),
+				),
 			},
 			result{
 				expectedCall: &fakeDNSProviderCall{
@@ -689,24 +681,15 @@ func TestRoute53AssumeRole(t *testing.T) {
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
-					Spec: cmacme.ChallengeSpec{
-						Solver: cmacme.ACMEChallengeSolver{
-							DNS01: &cmacme.ACMEChallengeSolverDNS01{
-								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-									Region: "us-west-2",
-									Role:   "my-role",
-								},
-							},
-						},
-						IssuerRef: cmmeta.IssuerReference{
-							Name: "test-issuer",
-						},
-					},
-				},
+				Challenge: gen.Challenge("",
+					gen.SetChallengeNamespace(fakeIssuerNamespace),
+					gen.SetChallengeIssuer(cmmeta.IssuerReference{Name: "test-issuer"}),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+							Role:   "my-role",
+						}}),
+				),
 			},
 			result{
 				expectedCall: &fakeDNSProviderCall{
