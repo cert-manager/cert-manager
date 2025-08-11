@@ -93,7 +93,7 @@ func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Frame
 		Namespace: f.Namespace.Name,
 	}
 
-	_, err := v.cloud.Setup(f.Config)
+	_, err := v.cloud.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
@@ -124,7 +124,7 @@ func (v *venafiProvisioner) createClusterIssuer(ctx context.Context, f *framewor
 		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
 	}
 
-	_, err := v.cloud.Setup(f.Config)
+	_, err := v.cloud.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}

@@ -46,7 +46,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func(ctx context.Context) []byte {
 	// We first setup the global addons, but do not provision them yet.
 	// This is because we need to transfer the data from ginkgo process #1
 	// to the other ginkgo processes.
-	toBeTransferred, err := addon.SetupGlobalsPrimary(cfg)
+	toBeTransferred, err := addon.SetupGlobalsPrimary(ctx, cfg)
 	if err != nil {
 		framework.Failf("Error provisioning global addons: %v", err)
 	}
@@ -76,7 +76,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func(ctx context.Context) []byte {
 		// the Setup data returned by ginkgo process #1.
 		addon.InitGlobals(cfg)
 
-		err := addon.SetupGlobalsNonPrimary(cfg, transferredData)
+		err := addon.SetupGlobalsNonPrimary(ctx, cfg, transferredData)
 		if err != nil {
 			framework.Failf("Error provisioning global addons: %v", err)
 		}

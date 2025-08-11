@@ -45,22 +45,22 @@ type Cloudflare struct {
 	createdSecret *corev1.Secret
 }
 
-func (b *Cloudflare) Setup(c *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
-	if c.Suite.ACME.Cloudflare.APIKey == "" ||
-		c.Suite.ACME.Cloudflare.Domain == "" ||
-		c.Suite.ACME.Cloudflare.Email == "" {
+func (b *Cloudflare) Setup(ctx context.Context, cfg *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
+	if cfg.Suite.ACME.Cloudflare.APIKey == "" ||
+		cfg.Suite.ACME.Cloudflare.Domain == "" ||
+		cfg.Suite.ACME.Cloudflare.Email == "" {
 		return nil, errors.NewSkip(ErrNoCredentials)
 	}
 
 	if b.Base == nil {
 		b.Base = &base.Base{}
-		_, err := b.Base.Setup(c)
+		_, err := b.Base.Setup(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	b.cf = c.Suite.ACME.Cloudflare
+	b.cf = cfg.Suite.ACME.Cloudflare
 
 	return nil, nil
 }

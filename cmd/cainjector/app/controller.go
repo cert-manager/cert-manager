@@ -159,7 +159,8 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 	// if a PprofAddr is provided, start the pprof listener
 	if opts.EnablePprof {
-		pprofListener, err := net.Listen("tcp", opts.PprofAddress)
+		lc := net.ListenConfig{}
+		pprofListener, err := lc.Listen(ctx, "tcp", opts.PprofAddress)
 		if err != nil {
 			return err
 		}
