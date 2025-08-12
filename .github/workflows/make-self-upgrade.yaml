@@ -32,7 +32,7 @@ jobs:
           echo "This workflow should not be run on a non-branch-head."
           exit 1
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
         # the tags so `git describe` returns a valid version.
         # see https://github.com/actions/checkout/issues/701 for extra info about this option
