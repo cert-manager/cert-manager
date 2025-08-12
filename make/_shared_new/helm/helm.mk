@@ -32,7 +32,7 @@ ifndef helm_chart_version
 $(error helm_chart_version is not set)
 endif
 ifneq ($(helm_chart_version:v%=v),v)
-$(error helm_chart_version "$(helm_chart_version)" should start with a "v")
+$(error helm_chart_version "$(helm_chart_version)" should start with a "v" - did you forget to pull tags from the remote repository?)
 endif
 
 ifndef helm_values_mutation_function
