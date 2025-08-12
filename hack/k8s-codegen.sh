@@ -155,15 +155,14 @@ gen-applyconfigurations() {
   # This is a temporary hack to generate the schema YAMLs
   # required to generate fake clientsets that actually works.
   # Upstream issue: https://github.com/kubernetes/kubernetes/issues/126850
-  GOPROXY=off go install \
-    "${module_name}/internal/generated/openapi/cmd/models-schema"
+  models_schema=( "${module_name}/internal/generated/openapi/cmd/models-schema" )
 
   clean "${client_subpackage}"/applyconfigurations '*.go'
   echo "+++ Generating applyconfigurations..." >&2
   prefixed_inputs=( "${api_inputs[@]/#/$module_name/}" )
  "$applyconfigurationgen" \
     --go-header-file hack/boilerplate-go.txt \
-    --openapi-schema <($(go env GOPATH)/bin/models-schema) \
+    --openapi-schema <(go run "$models_schema") \
     --output-dir "${client_subpackage}"/applyconfigurations \
     --output-pkg "${client_package}"/applyconfigurations \
     "${prefixed_inputs[@]}"
