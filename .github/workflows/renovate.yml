@@ -22,9 +22,11 @@ jobs:
         uses: renovatebot/github-action@85b17ebd5abf43d1c34c01bd4c8dbb8d45bbc2c7 # v43.0.7
         with:
           configurationFile: .github/renovate.json5
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RENOVATE_TOKEN }}
         env:
-          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_REPOSITORIES: '["${{ github.repository }}", "hjoshi123/cert-manager"]'
           RENOVATE_PLATFORM_COMMIT: "true"
+          RENOVATE_ONBOARDING: "false"
           LOG_LEVEL: "debug"
+          RENOVATE_FORK_PROCESSING: "enabled"
           RENOVATE_ALLOWED_COMMANDS: '["^make"]'

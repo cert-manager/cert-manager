@@ -28,6 +28,8 @@ openapigen=$7
 applyconfigurationgen=$8
 
 echo "+++ Generating code..." >&2
+TMPBIN=$(mktemp -d)
+GOBIN=$TMPBIN
 
 module_name="github.com/cert-manager/cert-manager"
 
@@ -261,3 +263,5 @@ gen-listers
 gen-informers
 gen-defaulters
 gen-conversions
+
+rm -rf $TMPBIN
