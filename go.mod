@@ -28,7 +28,7 @@ require (
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/hashicorp/vault/sdk v0.18.0
 	github.com/kr/pretty v0.3.1
-	github.com/miekg/dns v1.1.67
+	github.com/miekg/dns v1.1.68
 	github.com/nrdcg/goacmedns v0.2.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.22.0
