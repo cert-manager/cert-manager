@@ -35,25 +35,30 @@ import (
 )
 
 func TestUpdateObjectStandard(t *testing.T) {
-	runUpdateObjectTests(t)
+	runUpdateObjectTests(t, "update")
 }
 
 func TestUpdateObjectSSA(t *testing.T) {
-	t.Skip(
-		"Server Side Apply cannot be tested because PatchType is not supported by the fake versioned client. See:",
-		"https://github.com/kubernetes/client-go/issues/970",
-		"https://github.com/kubernetes/client-go/issues/992",
-	)
 	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
-	runUpdateObjectTests(t)
+	runUpdateObjectTests(t, "patch")
 }
 
-func runUpdateObjectTests(t *testing.T) {
+func runUpdateObjectTests(t *testing.T, verb string) {
 	simulatedUpdateError := errors.New("simulated-update-error")
 	simulatedUpdateStatusError := errors.New("simulated-update-status-error")
 
+	// NOTE: We cannot test updates to both the main resource and status
+	// subresource in the same test using APPLY as the fake.NewClientset used
+	// in these tests uses a very simple object tracker that does not track main and
+	// subresource fields separately, which is required for SSA to function.
+	// For reference see these comments in upstream K8s code:
+	// - https://github.com/kubernetes/kubernetes/blob/790393ae92e97262827d4f1fba24e8ae65bbada0/staging/src/k8s.io/client-go/testing/fixture.go#L97-L99
+	// - https://github.com/kubernetes/kubernetes/blob/790393ae92e97262827d4f1fba24e8ae65bbada0/staging/src/k8s.io/client-go/testing/fixture.go#L167-L169
+	// The fake client works for UPDATE, but since the K8s ecosystem is moving towards SSA,
+	// we should try to improve our code (and/or test strategy) long-term.
 	tests := []struct {
 		name              string
+		skip              bool
 		mods              []gen.ChallengeModifier
 		notFound          bool
 		updateError       error
@@ -64,6 +69,8 @@ func runUpdateObjectTests(t *testing.T) {
 		// finalizers and status being updated.
 		{
 			name: "success",
+			// FIXME: Skip test case when using SSA. See description above.
+			skip: verb == "patch",
 			mods: []gen.ChallengeModifier{
 				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
 				gen.SetChallengePresented(true),
@@ -127,6 +134,10 @@ func runUpdateObjectTests(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.skip {
+				t.Skip("The fake client doesn't support K8s subresources like status when using SSA.")
+			}
+
 			oldChallenge := gen.Challenge("c1")
 			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
 			objects := []runtime.Object{oldChallenge}
@@ -136,13 +147,13 @@ func runUpdateObjectTests(t *testing.T) {
 			}
 			cl := fake.NewClientset(objects...)
 			if tt.updateError != nil {
-				cl.PrependReactor("update", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+				cl.PrependReactor(verb, "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge update error")
 					return true, nil, tt.updateError
 				})
 			}
 			if tt.updateStatusError != nil {
-				cl.PrependReactor("update", "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+				cl.PrependReactor(verb, "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge/status update error")
 					return true, nil, tt.updateStatusError
 				})
@@ -165,9 +176,11 @@ func runUpdateObjectTests(t *testing.T) {
 				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(t.Context(), oldChallenge.Name, metav1.GetOptions{})
 				require.NoError(t, err)
 				if updateObjectErr == nil {
+					expected := newChallenge
+					expected.APIVersion = actual.APIVersion
+					expected.Kind = actual.Kind
 					// We ignore differences in .ManagedFields since the expected object does not have them.
 					// FIXME: don't ignore this field
-					expected := newChallenge
 					expected.ManagedFields = actual.ManagedFields
 					assert.Equal(t, expected, actual, "updateObject did not return an error so the object in the API should have been updated")
 				} else {
