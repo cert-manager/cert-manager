@@ -30,7 +30,7 @@
       matchPackageNames: ["k8s.io/**", "sigs.k8s.io/**"],
       groupSlug: "kubernetes",
       enabled: true,
-      automerge: true,
+      automerge: false,
     },
     {
       description: "Group Azure SDK dependencies",
@@ -38,7 +38,7 @@
       matchDatasources: ["go"],
       groupSlug: "azure-sdk-go",
       enabled: true,
-      automerge: true,
+      automerge: false,
       matchPackageNames: ["github.com/Azure{/,}**"],
     },
     {
@@ -154,16 +154,9 @@
   prBodyColumns: ["Package", "Type", "Update", "Change", "References"],
   prBodyNotes: [
     "/kind cleanup",
-    "```release-note\n
-    NONE\n
-    ```",
+    "### Release Note\n```release-note\nNONE\n```",
     "**Note**: This PR was automatically created by Renovate Bot.",
     "",
-    "Before merging:",
-    "- [ ] Ensure all tests pass",
-    "- [ ] Review the changelog/release notes of updated dependencies",
-    "- [ ] Check for any breaking changes",
-    "- [ ] Verify cert-manager still builds correctly"
   ],
   ignoreDeps: ["launchpad.net/gocheck"],
   constraints: {
