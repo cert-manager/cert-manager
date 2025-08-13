@@ -1,168 +1,249 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   enabled: true,
-  extends: ["config:base", ":dependencyDashboard", ":gitSignOff"],
-  timezone: "Europe/London",
-  labels: ["dependencies", "renovate"],
+  extends: [
+    'config:recommended',
+    ':dependencyDashboard',
+    ':gitSignOff',
+  ],
+  timezone: 'Europe/London',
+  labels: [
+    'dependencies',
+    'renovate',
+  ],
   prConcurrentLimit: 0,
   prHourlyLimit: 0,
-  semanticCommits: "enabled",
-  semanticCommitScope: "deps",
-  repositories: ["cert-manager/cert-manager"],
+  semanticCommits: 'enabled',
+  semanticCommitScope: 'deps',
+  repositories: [
+    'cert-manager/cert-manager',
+  ],
   automerge: false,
-  useBaseBranchConfig: "merge",
+  useBaseBranchConfig: 'merge',
   pruneStaleBranches: true,
   postUpgradeTasks: {
-    // This is a temporary fix to disable errors on a non interactive shell. Longer term, fix this in the makefiles-module.
-    commands: ["export PS1='> ' && make generate"],
-    executionMode: "branch",
+    commands: [
+      "export PS1='> ' && make generate",
+    ],
+    executionMode: 'branch',
   },
-  postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
+  postUpdateOptions: [
+    'gomodTidy',
+    'gomodUpdateImportPaths',
+  ],
   vulnerabilityAlerts: {
     enabled: false,
   },
   packageRules: [
     {
-      description: "Kubernetes dependencies",
-      matchDatasources: ["go"],
-      matchPackageNames: ["k8s.io/**", "sigs.k8s.io/**"],
-      groupSlug: "kubernetes",
-      enabled: true,
-    },
-    {
-      description: "Azure dependencies",
-      matchDatasources: ["go"],
-      groupSlug: "azure-sdk-go",
-      enabled: true,
-      matchPackageNames: ["github.com/Azure{/,}**", "github.com/AzureAD{/,}**"],
-    },
-    {
-      description: "Golang dependencies",
-      groupSlug: "go-deps",
-      matchPackageNames: ["golang.org/x/**", "github.com/golang{/,}**", "github.com/golang-jwt{/,}**"],
-      enabled: true,
-    },
-    {
-      description: "AWS dependencies",
-      matchDatasources: ["go"],
-      enabled: true,
-      groupSlug: "aws-sdk-go",
-      matchPackageNames: ["github.com/aws{/,}**"],
-    },
-    {
-      description: "Google dependencies",
-      groupSlug: "googledeps",
-      enabled: true,
-      matchDatasources: ["go"],
-      matchPackageNames: ["github.com/google{/,}**", "github.com/googleapis{/,}**", "/^google.golang.org/"]
-    },
-    {
-      description: "Hashicorp dependencies",
-      enabled: true,
-      matchDatasources: ["go"],
-      groupSlug: "hashicorp",
-      matchPackageNames: ["github.com/hashicorp{/,}**"],
-    },
-    {
-      description: "Monitoring/metrics dependencies",
-      matchDatasources: ["go"],
-      groupSlug: "monitoring",
-      enabled: true,
-      matchPackageNames: ["/github.com/prometheus.*/", "/^go.opentelemetry.io/"]
-    },
-    {
-      description: "Group GitHub Actions",
-      matchManagers: ["github-actions"]
-    },
-    {
-      description: "Pin Go version more conservatively",
-      matchDatasources: ["golang-version"],
-      rangeStrategy: "pin"
-    },
-    {
-      description: "Group testing tools",
-      matchPackageNames: [
-        "github.com/onsi/ginkgo",
-        "github.com/onsi/gomega",
-        "github.com/stretchr/testify"
+      description: 'Kubernetes dependencies',
+      matchDatasources: [
+        'go',
       ],
-      groupSlug: "testing",
-      matchDatasources: ["go"]
+      matchPackageNames: [
+        'k8s.io/**',
+        'sigs.k8s.io/**',
+      ],
+      groupSlug: 'kubernetes',
+      enabled: true,
     },
     {
-      description: "Security updates should be raised immediately",
-      matchDatasources: ["go"],
-      matchUpdateTypes: ["patch"],
+      description: 'Azure dependencies',
+      matchDatasources: [
+        'go',
+      ],
+      groupSlug: 'azure-sdk-go',
+      enabled: true,
+      matchPackageNames: [
+        'github.com/Azure{/,}**',
+        'github.com/AzureAD{/,}**',
+      ],
+    },
+    {
+      description: 'Golang dependencies',
+      groupSlug: 'go-deps',
+      matchPackageNames: [
+        'golang.org/x/**',
+        'github.com/golang{/,}**',
+        'github.com/golang-jwt{/,}**',
+      ],
+      enabled: true,
+    },
+    {
+      description: 'AWS dependencies',
+      matchDatasources: [
+        'go',
+      ],
+      enabled: true,
+      groupSlug: 'aws-sdk-go',
+      matchPackageNames: [
+        'github.com/aws{/,}**',
+      ],
+    },
+    {
+      description: 'Google dependencies',
+      groupSlug: 'googledeps',
+      enabled: true,
+      matchDatasources: [
+        'go',
+      ],
+      matchPackageNames: [
+        'github.com/google{/,}**',
+        'github.com/googleapis{/,}**',
+        '/^google.golang.org/',
+      ],
+    },
+    {
+      description: 'Hashicorp dependencies',
+      enabled: true,
+      matchDatasources: [
+        'go',
+      ],
+      groupSlug: 'hashicorp',
+      matchPackageNames: [
+        'github.com/hashicorp{/,}**',
+      ],
+    },
+    {
+      description: 'Monitoring/metrics dependencies',
+      matchDatasources: [
+        'go',
+      ],
+      groupSlug: 'monitoring',
+      enabled: true,
+      matchPackageNames: [
+        '/github.com/prometheus.*/',
+        '/^go.opentelemetry.io/',
+      ],
+    },
+    {
+      description: 'Group GitHub Actions',
+      matchManagers: [
+        'github-actions',
+      ],
+    },
+    {
+      description: 'Pin Go version more conservatively',
+      matchDatasources: [
+        'golang-version',
+      ],
+      rangeStrategy: 'pin',
+    },
+    {
+      description: 'Group testing tools',
+      matchPackageNames: [
+        'github.com/onsi/ginkgo',
+        'github.com/onsi/gomega',
+        'github.com/stretchr/testify',
+      ],
+      groupSlug: 'testing',
+      matchDatasources: [
+        'go',
+      ],
+    },
+    {
+      description: 'Security updates should be raised immediately',
+      matchDatasources: [
+        'go',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
       prPriority: 10,
-      labels: ["security", "priority/important"],
-      minimumReleaseAge: "0 days",
+      labels: [
+        'security',
+        'priority/important',
+      ],
+      minimumReleaseAge: '0 days',
       matchPackageNames: [
-        "golang.org/x/crypto",
-        "golang.org/x/net",
-        "github.com/golang-jwt/jwt",
-        "google.golang.org/protobuf"
+        'golang.org/x/crypto',
+        'golang.org/x/net',
+        'github.com/golang-jwt/jwt',
+        'google.golang.org/protobuf',
       ],
     },
     {
-      description: "Be careful with Helm dependencies",
-      matchDatasources: ["helm"],
-      rangeStrategy: "bump",
+      description: 'Be careful with Helm dependencies',
+      matchDatasources: [
+        'helm',
+      ],
+      rangeStrategy: 'bump',
       enabled: false,
-      commitMessagePrefix: "chore(helm):",
+      commitMessagePrefix: 'chore(helm):',
     },
     {
-      description: "Group linting tools",
-      groupSlug: "linters",
+      description: 'Group linting tools',
+      groupSlug: 'linters',
       matchPackageNames: [
-        "golangci/golangci-lint",
-        "mvdan.cc/gofumpt",
-        "github.com/daixiang0/gci"
+        'golangci/golangci-lint',
+        'mvdan.cc/gofumpt',
+        'github.com/daixiang0/gci',
       ],
     },
     {
-      description: "Update cert-manager images",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/^quay.io/jetstack/cert-manager/"],
+      description: 'Update cert-manager images',
+      matchDatasources: [
+        'docker',
+      ],
+      matchPackageNames: [
+        '/^quay.io/jetstack/cert-manager/',
+      ],
     },
     {
-      description: "Disable cert manager updates",
-      matchDatasources: ["go"],
-      matchPackageNames: ["/^github.com/cert-manager/cert-manager$/"],
+      description: 'Disable cert manager updates',
+      matchDatasources: [
+        'go',
+      ],
+      matchPackageNames: [
+        '/^github.com/cert-manager/cert-manager$/',
+      ],
       enabled: false,
     },
     {
-      description: "Limit major updates",
-      matchUpdateTypes: ["major"],
+      description: 'Limit major updates',
+      matchUpdateTypes: [
+        'major',
+      ],
       dependencyDashboardApproval: true,
-      labels: ["breaking-change", "approval-needed"],
-    }
+      labels: [
+        'breaking-change',
+        'approval-needed',
+      ],
+    },
   ],
   ignorePaths: [
-    "**/vendor/**",
-    "**/node_modules/**",
-    "**/__tests__/**",
-    "**/test/**"
+    '**/vendor/**',
+    '**/node_modules/**',
+    '**/__tests__/**',
+    '**/test/**',
   ],
   prBodyDefinitions: {
-    Package: "{{depName}}",
-    Type: "{{depType}}",
-    Update: "{{updateType}}",
-    "Current value": "{{currentValue}}",
-    "New value": "{{newValue}}",
-    Change: "`{{displayFrom}}` -> `{{displayTo}}`",
-    References: "{{references}}",
-    "Package file": "{{packageFile}}"
+    Package: '{{depName}}',
+    Type: '{{depType}}',
+    Update: '{{updateType}}',
+    'Current value': '{{currentValue}}',
+    'New value': '{{newValue}}',
+    Change: '`{{displayFrom}}` -> `{{displayTo}}`',
+    References: '{{references}}',
+    'Package file': '{{packageFile}}',
   },
-  prBodyColumns: ["Package", "Type", "Update", "Change", "References"],
-  prBodyNotes: [
-    "/kind cleanup",
-    "### Release Note\n```release-note\nNONE\n```",
-    "**Note**: This PR was automatically created by Renovate Bot.",
-    "",
+  prBodyColumns: [
+    'Package',
+    'Type',
+    'Update',
+    'Change',
+    'References',
   ],
-  ignoreDeps: ["launchpad.net/gocheck"],
+  prBodyNotes: [
+    '/kind cleanup',
+    '### Release Note\n```release-note\nNONE\n```',
+    '**Note**: This PR was automatically created by Renovate Bot.',
+    '',
+  ],
+  ignoreDeps: [
+    'launchpad.net/gocheck',
+  ],
   constraints: {
-    go: ">=1.21"
-  }
-
+    go: '>=1.21',
+  },
 }
