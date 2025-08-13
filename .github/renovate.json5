@@ -8,12 +8,12 @@
   prHourlyLimit: 0,
   semanticCommits: "enabled",
   semanticCommitScope: "deps",
-  platform: "github",
-  repositories: ["cert-manager/cert-manager", "hjoshi123/cert-manager"],
+  repositories: ["cert-manager/cert-manager"],
   automerge: false,
   useBaseBranchConfig: "merge",
   postUpgradeTasks: {
-    commands: ["make generate"],
+    // This is a temporary fix to disable errors on a non interactive shell. Longer term, fix this in the makefiles-module.
+    commands: ["export PS1='> ' && make generate"],
     executionMode: "branch",
   },
   postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
@@ -39,7 +39,7 @@
       groupSlug: "azure-sdk-go",
       enabled: true,
       automerge: true,
-      matchPackagePrefixes: ["github.com/Azure{/,}**"],
+      matchPackageNames: ["github.com/Azure{/,}**"],
     },
     {
       description: "Group Golang.org/x packages",
@@ -54,7 +54,15 @@
       matchDatasources: ["go"],
       enabled: true,
       groupSlug: "aws-sdk-go",
-      matchPackagePrefixes: ["github.com/aws/aws-sdk-go-v2{/,}**"],
+      matchPackageNames: ["github.com/aws{/,}**"],
+    },
+    {
+      description: "Group monitoring packages",
+      groupName: "monitoring",
+      matchDatasources: ["go"],
+      groupSlug: "monitoring",
+      enabled: true,
+      matchPackageNames: ["/github.com/prometheus.*/"]
     },
     {
       description: "Group GitHub Actions",
@@ -75,6 +83,7 @@
         "github.com/stretchr/testify"
       ],
       groupSlug: "testing",
+      matchDatasources: ["go"]
     },
     {
       description: "Security updates should be raised immediately",
@@ -114,6 +123,12 @@
       groupName: "cert-manager images",
     },
     {
+      description: "Disable cert manager updates",
+      matchDatasources: ["go"],
+      matchPackageNames: ["/^github.com/cert-manager/cert-manager$/"],
+      enabled: false,
+    },
+    {
       description: "Limit major updates",
       matchUpdateTypes: ["major"],
       dependencyDashboardApproval: true,
@@ -138,6 +153,10 @@
   },
   prBodyColumns: ["Package", "Type", "Update", "Change", "References"],
   prBodyNotes: [
+    "/kind cleanup",
+    "```release-note\n
+    NONE\n
+    ```",
     "**Note**: This PR was automatically created by Renovate Bot.",
     "",
     "Before merging:",
