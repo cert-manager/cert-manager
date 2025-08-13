@@ -755,7 +755,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning ErrorParse Failed to parse returned certificate bundle: error decoding certificate PEM block",
+					"Warning ErrorParse Failed to parse returned certificate bundle: error decoding certificate PEM block: no valid certificates found",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -798,7 +798,7 @@ func TestProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "ErrorParse",
-								Message:            "Failed to parse returned certificate bundle: error decoding certificate PEM block",
+								Message:            "Failed to parse returned certificate bundle: error decoding certificate PEM block: no valid certificates found",
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),

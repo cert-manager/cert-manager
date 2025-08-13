@@ -585,7 +585,7 @@ func TestSync(t *testing.T) {
 						gen.SetCertificateRequestCertificate([]byte("a bad certificate")),
 					)},
 				ExpectedEvents: []string{
-					"Warning DecodeError Failed to decode returned certificate: error decoding certificate PEM block",
+					"Warning DecodeError Failed to decode returned certificate: error decoding certificate PEM block: no valid certificates found",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -598,7 +598,7 @@ func TestSync(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             "Failed",
-								Message:            "Failed to decode returned certificate: error decoding certificate PEM block",
+								Message:            "Failed to decode returned certificate: error decoding certificate PEM block: no valid certificates found",
 								LastTransitionTime: &nowMetaTime,
 							}),
 							gen.SetCertificateRequestFailureTime(nowMetaTime),
