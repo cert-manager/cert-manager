@@ -24,7 +24,9 @@ jobs:
           configurationFile: .github/renovate.json5
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
-          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_REPOSITORIES: '["${{ github.repository }}"]'
           RENOVATE_PLATFORM_COMMIT: "true"
+          RENOVATE_ONBOARDING: "false"
+          RENOVATE_PLATFORM: "github"
           LOG_LEVEL: "debug"
           RENOVATE_ALLOWED_COMMANDS: '["^make"]'
