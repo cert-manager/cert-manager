@@ -13,7 +13,7 @@ replace github.com/cert-manager/cert-manager/webhook-binary => ../../cmd/webhook
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.4.3
-	github.com/miekg/dns v1.1.67
+	github.com/miekg/dns v1.1.68
 	github.com/munnerz/crd-schema-fuzz v1.1.0
 	github.com/segmentio/encoding v0.4.1
 	github.com/stretchr/testify v1.10.0
