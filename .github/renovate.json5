@@ -11,6 +11,7 @@
   repositories: ["cert-manager/cert-manager"],
   automerge: false,
   useBaseBranchConfig: "merge",
+  pruneStaleBranches: true,
   postUpgradeTasks: {
     // This is a temporary fix to disable errors on a non interactive shell. Longer term, fix this in the makefiles-module.
     commands: ["export PS1='> ' && make generate"],
@@ -18,55 +19,59 @@
   },
   postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
   vulnerabilityAlerts: {
-    enabled: true,
-    labels: ["security"],
-    schedule: ["at any time"],
+    enabled: false,
   },
   packageRules: [
     {
-      description: "Group Kubernetes dependencies",
-      groupName: "kubernetes packages",
+      description: "Kubernetes dependencies",
       matchDatasources: ["go"],
       matchPackageNames: ["k8s.io/**", "sigs.k8s.io/**"],
       groupSlug: "kubernetes",
       enabled: true,
-      automerge: false,
     },
     {
-      description: "Group Azure SDK dependencies",
-      groupName: "Azure SDK",
+      description: "Azure dependencies",
       matchDatasources: ["go"],
       groupSlug: "azure-sdk-go",
       enabled: true,
-      automerge: false,
-      matchPackageNames: ["github.com/Azure{/,}**"],
+      matchPackageNames: ["github.com/Azure{/,}**", "github.com/AzureAD{/,}**"],
     },
     {
-      description: "Group Golang.org/x packages",
-      groupSlug: "go-x",
-      matchPackageNames: ["golang.org/x/**"],
+      description: "Golang dependencies",
+      groupSlug: "go-deps",
+      matchPackageNames: ["golang.org/x/**", "github.com/golang{/,}**", "github.com/golang-jwt{/,}**"],
       enabled: true,
-      groupName: "Go extended libs",
     },
     {
-      description: "Group AWS SDK dependencies",
-      groupName: "AWS SDK",
+      description: "AWS dependencies",
       matchDatasources: ["go"],
       enabled: true,
       groupSlug: "aws-sdk-go",
       matchPackageNames: ["github.com/aws{/,}**"],
     },
     {
-      description: "Group monitoring packages",
-      groupName: "monitoring",
+      description: "Google dependencies",
+      groupSlug: "googledeps",
+      enabled: true,
+      matchDatasources: ["go"],
+      matchPackageNames: ["github.com/google{/,}**", "github.com/googleapis{/,}**", "/^google.golang.org/"]
+    },
+    {
+      description: "Hashicorp dependencies",
+      enabled: true,
+      matchDatasources: ["go"],
+      groupSlug: "hashicorp",
+      matchPackageNames: ["github.com/hashicorp{/,}**"],
+    },
+    {
+      description: "Monitoring/metrics dependencies",
       matchDatasources: ["go"],
       groupSlug: "monitoring",
       enabled: true,
-      matchPackageNames: ["/github.com/prometheus.*/"]
+      matchPackageNames: ["/github.com/prometheus.*/", "/^go.opentelemetry.io/"]
     },
     {
       description: "Group GitHub Actions",
-      groupName: "GitHub Actions",
       matchManagers: ["github-actions"]
     },
     {
@@ -76,7 +81,6 @@
     },
     {
       description: "Group testing tools",
-      groupName: "testing tools",
       matchPackageNames: [
         "github.com/onsi/ginkgo",
         "github.com/onsi/gomega",
@@ -108,7 +112,6 @@
     },
     {
       description: "Group linting tools",
-      groupName: "linters",
       groupSlug: "linters",
       matchPackageNames: [
         "golangci/golangci-lint",
@@ -120,7 +123,6 @@
       description: "Update cert-manager images",
       matchDatasources: ["docker"],
       matchPackageNames: ["/^quay.io/jetstack/cert-manager/"],
-      groupName: "cert-manager images",
     },
     {
       description: "Disable cert manager updates",
