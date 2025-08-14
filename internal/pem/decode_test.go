@@ -33,6 +33,10 @@ var fuzzFile []byte
 // pathologicalFuzzFile is a copy of fuzzFile trimmed to fit inside our max allowable size
 var pathologicalFuzzFile []byte
 
+// largestLimit is set to maxBundleSize as the maximum size that any of our SafeDecode* functions accepts; we use this
+// as an upper bound for the size of pathologicalFuzzFile.
+const largestLimit = maxBundleSize
+
 func init() {
 	fuzzFilename := "./testdata/issue-ghsa-r4pg-vg54-wxx4.bin"
 
@@ -42,20 +46,21 @@ func init() {
 		panic(fmt.Errorf("failed to read fuzz file %q: %s", fuzzFilename, err))
 	}
 
-	// Assert that SafeDecodeCertificateBundle has the largest max size so we're definitely
-	// testing the worst case with pathologicalFuzzFile
-	if maxBundleSize < maxPrivateKeyPEMSize || maxBundleSize < maxChainSize {
-		panic(fmt.Errorf("invalid test: expected max cert bundle size %d to be larger than maxPrivateKeyPEMSize %d", maxChainSize, maxPrivateKeyPEMSize))
+	// Assert that largestLimit is actually the largest limit so we're definitely
+	// testing the worst case with pathologicalFuzzFile. This guards against future changes making these tests invalid;
+	// e.g. if, maxCertificateChainSize actually became the largest we accept, we'd want to test against that instead.
+	if largestLimit < maxPrivateKeyPEMSize || largestLimit < maxCertificateChainSize {
+		panic(fmt.Errorf("invalid test: expected max cert bundle size %d to be larger than maxPrivateKeyPEMSize %d and maxCertificateChainSize %d", maxBundleSize, maxPrivateKeyPEMSize, maxCertificateChainSize))
 	}
 
-	pathologicalFuzzFile = fuzzFile[:maxBundleSize-1]
+	pathologicalFuzzFile = fuzzFile[:largestLimit-1]
 }
 
 func TestFuzzData(t *testing.T) {
 	// The fuzz test data should be rejected by all Safe* functions
 
 	// Ensure fuzz test data is larger than the max we allow
-	if len(fuzzFile) < maxCertificatePEMSize*maxChainSize {
+	if len(fuzzFile) < maxCertificateChainSize {
 		t.Fatalf("invalid test; fuzz file data is smaller than the maximum allowed input")
 	}
 
@@ -64,9 +69,9 @@ func TestFuzzData(t *testing.T) {
 	var err error
 
 	expPrivateKeyError := ErrPEMDataTooLarge(maxPrivateKeyPEMSize)
-	expCSRError := ErrPEMDataTooLarge(maxCertificatePEMSize)
-	expSingleCertError := ErrPEMDataTooLarge(maxCertificatePEMSize)
-	expCertChainError := ErrPEMDataTooLarge(maxCertificatePEMSize * maxChainSize)
+	expCSRError := ErrPEMDataTooLarge(maxLeafCertificatePEMSize)
+	expSingleCertError := ErrPEMDataTooLarge(maxLeafCertificatePEMSize)
+	expCertChainError := ErrPEMDataTooLarge(maxCertificateChainSize)
 	expCertBundleError := ErrPEMDataTooLarge(maxBundleSize)
 
 	block, rest, err = SafeDecodePrivateKey(fuzzFile)
