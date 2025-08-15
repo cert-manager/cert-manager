@@ -239,7 +239,7 @@ func TestSign(t *testing.T) {
 				),
 				},
 				ExpectedEvents: []string{
-					"Warning SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
+					"Warning SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block: no PEM data was found in given input",
 				},
 
 				ExpectedActions: []testpkg.Action{
