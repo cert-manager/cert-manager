@@ -19,6 +19,7 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
+	"log"
 	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -424,6 +425,7 @@ var supportedTSIGAlgorithms = []string{
 func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	log.Printf("ACMEChallengeSolverDNS01: %+v", p)
 	// allow empty values for now, until we have a MutatingWebhook to apply
 	// default values to fields.
 	if len(p.CNAMEStrategy) > 0 {
@@ -442,6 +444,55 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientToken, fldPath.Child("akamai", "clientToken"))...)
 		if len(p.Akamai.ServiceConsumerDomain) == 0 {
 			el = append(el, field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""))
+		}
+	}
+	if p.AzurePrivateDNS != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("azurePrivateDNS"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			// if ClientID or ClientSecret or TenantID are defined then all of ClientID, ClientSecret and tenantID must be defined
+			if len(p.AzurePrivateDNS.ClientID) > 0 || len(p.AzurePrivateDNS.TenantID) > 0 || p.AzurePrivateDNS.ClientSecret != nil {
+				if len(p.AzurePrivateDNS.ClientID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azurePrivateDNS", "clientID"), ""))
+				}
+				if p.AzurePrivateDNS.ClientSecret == nil {
+					el = append(el, field.Required(fldPath.Child("azurePrivateDNS", "clientSecretSecretRef"), ""))
+				} else {
+					el = append(el, ValidateSecretKeySelector(p.AzurePrivateDNS.ClientSecret, fldPath.Child("azurePrivateDNS", "clientSecretSecretRef"))...)
+				}
+				if len(p.AzurePrivateDNS.TenantID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azurePrivateDNS", "tenantID"), ""))
+				}
+				if p.AzurePrivateDNS.ManagedIdentity != nil {
+					el = append(el, field.Forbidden(fldPath.Child("azurePrivateDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"))
+				}
+			} else if p.AzurePrivateDNS.ManagedIdentity != nil {
+				if len(p.AzurePrivateDNS.ManagedIdentity.ClientID) > 0 && len(p.AzurePrivateDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azurePrivateDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
+				}
+				if len(p.AzurePrivateDNS.ManagedIdentity.TenantID) > 0 && len(p.AzurePrivateDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azurePrivateDNS", "managedIdentity"), "managedIdentityTenantID and managedIdentityResourceID cannot both be specified"))
+				}
+				if len(p.AzurePrivateDNS.ManagedIdentity.TenantID) > 0 && len(p.AzurePrivateDNS.ManagedIdentity.ClientID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azurePrivateDNS", "managedIdentity"), "managedIdentityClientID is required when using managedIdentityTenantID"))
+				}
+			}
+
+			// SubscriptionID must always be defined
+			if len(p.AzurePrivateDNS.SubscriptionID) == 0 {
+				el = append(el, field.Required(fldPath.Child("azurePrivateDNS", "subscriptionID"), ""))
+			}
+			// ResourceGroupName must always be defined
+			if len(p.AzurePrivateDNS.ResourceGroupName) == 0 {
+				el = append(el, field.Required(fldPath.Child("azurePrivateDNS", "resourceGroupName"), ""))
+			}
+			switch p.AzurePrivateDNS.Environment {
+			case "", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud:
+			default:
+				el = append(el, field.Invalid(fldPath.Child("azurePrivateDNS", "environment"), p.AzurePrivateDNS.Environment,
+					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud)))
+			}
 		}
 	}
 	if p.AzureDNS != nil {
