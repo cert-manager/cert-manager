@@ -41,14 +41,30 @@ import (
 
 // See https://fm4dd.com/openssl/certexamples.shtm for examples of large RSA certs / keys
 
+// A further factor more usually for leaf certificates is the number of identities contained within the certificate - usually, DNS names.
+// Adding one DNS name to a certificate experimentally adds the length of the DNS name itself, plus about 20 bytes of overhead.
+// We've seen[0] some certificates with 250+ DNS names, which could add up to about 30kB of extra size to a certificate given very long DNS names.
+
+// Generally, issuer certificates will not contain vast amounts of identities, so we can assume a difference in the size of leaf and issuer certificates,
+// with issuer certificates being dominated by the size of the public key and signature, while leaf certificates can vary greatly but may be significantly larger
+// than issuer certificates due to the number of identities they contain.
+
+// [0]: https://github.com/cert-manager/cert-manager/pull/7642#issuecomment-3129868718
+
 const (
-	// maxCertificatePEMSize is the maximum size, in bytes, of a single PEM-encoded X.509 certificate which SafeDecodeSingleCertificate will accept.
-	// The value is based on how large a "realistic" (but still very large) self-signed 16k-bit RSA certificate might be.
+	// maxCACertificatePEMSize is the maximum size in bytes expected for a single PEM-encoded X.509 CA certificate. In practice, this is smaller than the
+	// maximum size which will be accepted by SafeDecodeSingleCertificate, because CA certificates generally won't contain large numbers of identities.
+	// The value is based on how large a "realistic" (but still very large) 16k-bit RSA CA certificate might be, plus about a kilobyte of extra data.
 	// 16k-bit RSA keys are impractical on most on modern hardware due to how slow they can be,
-	// so we can reasonably assume that no real-world PEM-encoded X.509 cert will be this large.
-	// Note that X.509 certificates can contain extra arbitrary data (e.g., DNS names, policy names, etc) whose size is hard to predict.
-	// So we guess at how much of that data we'll allow in very large certs and allow about 1kB of such data.
-	maxCertificatePEMSize = 6500
+	// so we can reasonably assume that no real-world PEM-encoded X.509 cert will be larger than this because of the key size.
+	maxCACertificatePEMSize = 6500
+
+	// maxLeafCertificatePEMSize is the maximum size in bytes expected for a single PEM-encoded X.509 certificate which SafeDecodeSingleCertificate will accept.
+	// The value is based on how large a "realistic" (but still very large) self-signed 16k-bit RSA certificate might be, plus
+	// a significant amount of extra data for potentially hundreds of DNS names, policy names, etc.
+	// See the comment for maxCACertificatePEMSize for more details on why we use a 16k-bit RSA key.
+	// 30000 is a rounded-up estimate for about 250 large DNS names.
+	maxLeafCertificatePEMSize = 30000 + maxCACertificatePEMSize
 
 	// maxPrivateKeyPEMSize is the maximum size, in bytes, of PEM-encoded private keys which SafeDecodePrivateKey will accept.
 	// cert-manager supports RSA, ECDSA and Ed25519 keys, of which RSA is by far the largest.
@@ -57,10 +73,15 @@ const (
 	// we can reasonably assume that no real-world PEM-encoded key will be this large.
 	maxPrivateKeyPEMSize = 13000
 
-	// maxChainSize is the maximum number of 16k-bit RSA certificates signed by 16k-bit RSA CAs we'll allow in a given call to SafeDecodeCertificateChain.
+	// maxCertsInChain is the maximum number of 16k-bit RSA certificates signed by 16k-bit RSA CAs we'll allow in a given call to SafeDecodeCertificateChain.
 	// This is _not_ the maximum number of certificates cert-manager will process in a given chain, which could be much larger.
-	// This is simply the maximum number of worst-case certificates we'll accept in a chain.
-	maxChainSize = 10
+	// This is simply the maximum number of worst-case certificates we'll accept in a chain when parsing PEM data.
+	maxCertsInChain = 10
+
+	// maxCertificateChainSize assumes a chain of CA certificates - which we expect to be smaller, generally -
+	// plus one leaf certificate which can be much larger due to the number of identities it contains.
+	// See comments for individual constants for more details on the sizes of the certificates.
+	maxCertificateChainSize = (maxCertsInChain-1)*maxCACertificatePEMSize + maxLeafCertificatePEMSize
 
 	// maxCertsInTrustBundle is an estimated upper-bound for how many large certs might appear in a PEM-encoded trust bundle,
 	// based on the cert-manager `cert-manager-package-debian` bundle [1] which contains 129 certificates.
@@ -71,10 +92,10 @@ const (
 	// [1] quay.io/jetstack/cert-manager-package-debian:20210119.0@sha256:116133f68938ef568aca17a0c691d5b1ef73a9a207029c9a068cf4230053fed5
 	maxCertsInTrustBundle = 150
 
-	// estimatedCACertSize is a guess of how many bytes a large realistic trust bundle cert might be. This is slightly larger
+	// estimatedCACertSize is a guess of how many bytes a large realistic CA cert in a trust bundle cert might be. This is slightly larger
 	// than a typical self-signed 4096-bit RSA cert (which is just under 2kB).
-	// For other estimates (such as maxCertificatePEMSize) we use a much larger RSA key, but using such a large RSA key would make
-	// maxBundleSize's estimate unrealistically large.
+	// For other estimates (i.e. maxCACertificatePEMSize and maxLeafCertificatePEMSize) we use a much larger RSA key, but using such a large RSA key would make
+	// maxBundleSize's estimate unrealistically large when compared to real-world trust bundles (such as the widely used Mozilla CA trust store)
 	estimatedCACertSize = 2200
 
 	// maxBundleSize is an estimate for the max reasonable size for a PEM-encoded TLS trust bundle.
@@ -119,29 +140,26 @@ func SafeDecodePrivateKey(b []byte) (*stdpem.Block, []byte, error) {
 
 // SafeDecodeCSR calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
 // how large we expect a single PEM-encoded PKCS#10 CSR to be.
-// We assume that a PKCS#12 CSR is smaller than a single certificate because our assumptions are that
-// a certificate has a large public key and a large signature, which is roughly the case for a CSR.
-// We also assume that we'd only ever decode one CSR which is the case in practice.
+// We assume that a PKCS#12 CSR can be about as large as a leaf certificate, which grows with the size of its public key, signature
+// and the number of identities it contains.
 func SafeDecodeCSR(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxCertificatePEMSize)
+	return safeDecodeInternal(b, maxLeafCertificatePEMSize)
 }
 
 // SafeDecodeSingleCertificate calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
-// how large we expect a single PEM-encoded X.509 certificate to be.
-// The baseline is a 16k-bit RSA certificate signed by a different 16k-bit RSA CA, which is larger than the maximum
-// supported by cert-manager for key generation.
+// how large we expect a single PEM-encoded X.509 _leaf_ certificate to be.
+// The baseline is a 16k-bit RSA certificate signed by a different 16k-bit RSA CA, with a very large number of long DNS names.
+// The maximum size allowed by this function is significantly larger than the size of most CA certificates, which will usually
+// not have a large amount of DNS names or other identities in them.
 func SafeDecodeSingleCertificate(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxCertificatePEMSize)
+	return safeDecodeInternal(b, maxLeafCertificatePEMSize)
 }
 
 // SafeDecodeCertificateChain calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
 // how large we expect a reasonable-length PEM-encoded X.509 certificate chain to be.
-// The baseline is several 16k-bit RSA certificates, all signed by 16k-bit RSA keys, which is larger than the maximum
-// supported by cert-manager for key generation.
-// The maximum number of chains supported by this function is not reflective of the maximum chain length supported by
-// cert-manager; a larger chain of smaller certificate should be supported.
+// The baseline is many average sized CA certificates, plus one potentially much larger leaf certificate.
 func SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, maxCertificatePEMSize*maxChainSize)
+	return safeDecodeInternal(b, maxCertificateChainSize)
 }
 
 // SafeDecodeCertificateBundle calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
