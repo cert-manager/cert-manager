@@ -9,12 +9,12 @@ updates:
   schedule:
     interval: daily
   groups:
-    all:
+    all-go-deps:
       patterns: ["*"]
 - package-ecosystem: github-actions
   directory: /
   schedule:
     interval: daily
   groups:
-    all:
+    all-gh-actions:
       patterns: ["*"]
