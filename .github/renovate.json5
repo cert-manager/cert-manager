@@ -1,6 +1,7 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   enabled: true,
+  separateMajorMinor: false,
   extends: [
     'config:best-practices',
     ':gitSignOff',
