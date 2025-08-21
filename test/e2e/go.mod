@@ -11,6 +11,7 @@ replace github.com/cert-manager/cert-manager => ../../
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go v0.115.0
+	github.com/cloudflare/cloudflare-go/v5 v5.1.0
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/kr/pretty v0.3.1
 	github.com/onsi/ginkgo/v2 v2.23.4
