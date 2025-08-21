@@ -1,6 +1,8 @@
 name: Renovate
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 jobs:
   renovate:
     runs-on: ubuntu-latest
@@ -10,21 +12,20 @@ jobs:
       statuses: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
         # the tags so `git describe` returns a valid version.
         # see https://github.com/actions/checkout/issues/701 for extra info about this option
         with: { fetch-depth: 0 }
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@85b17ebd5abf43d1c34c01bd4c8dbb8d45bbc2c7 # v43.0.7
+        uses: renovatebot/github-action@b11417b9eaac3145fe9a8544cee66503724e32b6 # v43.0.8
         with:
           configurationFile: .github/renovate.json5
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
           RENOVATE_REPOSITORIES: '["${{ github.repository }}"]'
-          RENOVATE_PLATFORM_COMMIT: "true"
           RENOVATE_ONBOARDING: "false"
           RENOVATE_PLATFORM: "github"
           LOG_LEVEL: "debug"
-          RENOVATE_ALLOWED_COMMANDS: '["^make"]'
+          RENOVATE_ALLOWED_COMMANDS: '[".*make.*"]'
