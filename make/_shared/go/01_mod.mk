@@ -20,6 +20,10 @@ ifndef repo_name
 $(error repo_name is not set)
 endif
 
+ifndef golangci_lint_config
+$(error golangci_lint_config is not set)
+endif
+
 golangci_lint_override := $(dir $(lastword $(MAKEFILE_LIST)))/.golangci.override.yaml
 
 .PHONY: go-workspace
@@ -105,7 +109,6 @@ verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 
 endif # govulncheck_skip
 
-ifdef golangci_lint_config
 
 .PHONY: generate-golangci-lint-config
 ## Generate a golangci-lint configuration file
@@ -155,5 +158,3 @@ fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/
 				popd >/dev/null; \
 				echo ""; \
 			done
-
-endif
