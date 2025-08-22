@@ -12,22 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
-base_dependabot_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base-dependabot/
+ifndef repo_name
+$(error repo_name is not set)
+endif
+
+repository_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+repository_base_dependabot_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base-dependabot/
 
 ifdef repository_base_no_dependabot
 .PHONY: generate-base
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-base:
-	cp -r $(base_dir)/. ./
+	cp -r $(repository_base_dir)/. ./
+	cd $(repository_base_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
 else
 .PHONY: generate-base
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-base:
-	cp -r $(base_dir)/. ./
-	cp -r $(base_dependabot_dir)/. ./
+	cp -r $(repository_base_dir)/. ./
+	cd $(repository_base_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
+	cp -r $(repository_base_dependabot_dir)/. ./
 endif
 
 shared_generate_targets += generate-base

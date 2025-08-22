@@ -93,7 +93,7 @@ tools += controller-gen=v0.18.0
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 tools += goimports=v0.35.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
-tools += go-licenses=8c3708dd545a9faed3777bf50a3530ff8082180a
+tools += go-licenses=e4be799587800ffd119a1b419f13daf4989da546
 # https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
 tools += gotestsum=v1.12.3
 # https://pkg.go.dev/sigs.k8s.io/kustomize/kustomize/v5?tab=versions
