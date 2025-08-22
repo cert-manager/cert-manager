@@ -67,6 +67,16 @@
       ],
     },
     {
+      groupName: 'golang.org/x deps',
+      matchManagers: [
+        'gomod',
+      ],
+      matchPackageNames: [
+        '/^golang.org/x/',
+      ],
+      addLabels: ['skip-review'], // Adding label to allow PRs to automerge
+    },
+    {
       description: 'Disable all cert-manager related dependencies',
       matchManagers: [
         'gomod',
