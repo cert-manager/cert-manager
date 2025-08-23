@@ -28,7 +28,7 @@
         'github-actions',
       ],
       matchPackageNames: [
-        '/.*/',
+        '*',
       ],
     },
     {
@@ -37,7 +37,7 @@
         'gomod',
       ],
       matchPackageNames: [
-        '/.*/',
+        '*',
       ],
     },
     {
@@ -46,8 +46,8 @@
         'gomod',
       ],
       matchPackageNames: [
-        '/^sigs.k8s.io/',
-        '/^k8s.io/',
+        'sigs.k8s.io**/**',
+        'k8s.io**/**',
       ],
     },
     {
@@ -56,14 +56,14 @@
         'gomod',
       ],
       matchPackageNames: [
-        '/^github.com/akamai/',
-        '/^github.com/aws/',
-        '/^github.com/Azure/',
-        '/^github.com/AzureAD/',
-        '/^github.com/cloudflare/',
-        '/^github.com/digitalocean/',
-        '/^github.com/Venafi',
-        '/^google.golang.org/api'
+        'github.com/akamai**/**',
+        'github.com/aws**/**',
+        'github.com/Azure**/**',
+        'github.com/AzureAD**/**',
+        'github.com/cloudflare**/**',
+        'github.com/digitalocean**/**',
+        'github.com/Venafi**/**',
+        'google.golang.org/api',
       ],
     },
     {
@@ -72,19 +72,19 @@
         'gomod',
       ],
       matchPackageNames: [
-        '/^golang.org/x/',
+        'golang.org/x**/*',
       ],
       addLabels: ['skip-review'], // Adding label to allow PRs to automerge
     },
     {
-      description: 'Disable all cert-manager related dependencies',
+      description: 'Disable Go pseudo-version updates',
       matchManagers: [
         'gomod',
       ],
       matchPackageNames: [
-        '/^github.com/cert-manager/',
+        '*',
       ],
-      allowedVersions: '!/0.0.0/',
+      "matchCurrentValue": "v0.0.0*",
       enabled: false,
     },
   ],
