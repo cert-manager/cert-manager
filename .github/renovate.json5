@@ -2,7 +2,7 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   enabled: true,
   enabledManagers: [
-    'gomod'
+    'gomod',
   ],
   separateMajorMinor: false,
   extends: [
@@ -68,7 +68,9 @@
       matchPackageNames: [
         'golang.org/x**/*',
       ],
-      addLabels: ['skip-review'], // Adding label to allow PRs to automerge
+      addLabels: [
+        'skip-review', // Adding label to allow PRs to automerge
+      ],
     },
     {
       description: 'Disable Go pseudo-version updates',
@@ -78,18 +80,8 @@
       matchPackageNames: [
         '*',
       ],
-      "matchCurrentValue": "v0.0.0*",
+      matchCurrentValue: 'v0.0.0*',
       enabled: false,
     },
-  ],
-  prBodyDefinitions: {
-    Package: '{{depName}}',
-  },
-  prBodyColumns: [
-    'Package',
-    'Type',
-    'Update',
-    'Change',
-    'References',
   ],
 }
