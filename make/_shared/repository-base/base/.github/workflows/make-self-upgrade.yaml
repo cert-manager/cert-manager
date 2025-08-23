@@ -15,7 +15,7 @@ jobs:
   self_upgrade:
     runs-on: ubuntu-latest
 
-    if: github.repository_owner == 'cert-manager'
+    if: github.repository == '{{REPLACE:GH-REPOSITORY}}'
 
     permissions:
       contents: write

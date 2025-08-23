@@ -16,10 +16,6 @@ ifndef bin_dir
 $(error bin_dir is not set)
 endif
 
-ifndef repo_name
-$(error repo_name is not set)
-endif
-
 ifndef helm_chart_source_dir
 $(error helm_chart_source_dir is not set)
 endif

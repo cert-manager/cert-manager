@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+license_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+
 .PHONY: verify-boilerplate
 ## Verify that all files have the correct boilerplate.
 ## @category [shared] Generate/ Verify
@@ -19,3 +21,11 @@ verify-boilerplate: | $(NEEDS_BOILERSUITE)
 	$(BOILERSUITE) .
 
 shared_verify_targets += verify-boilerplate
+
+.PHONY: generate-license
+## Generate LICENSE file in the repository
+## @category [shared] Generate/ Verify
+generate-license:
+	cp -r $(license_base_dir)/. ./
+
+shared_generate_targets += generate-base

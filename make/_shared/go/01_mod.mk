@@ -20,6 +20,10 @@ ifndef repo_name
 $(error repo_name is not set)
 endif
 
+ifndef golangci_lint_config
+$(error golangci_lint_config is not set)
+endif
+
 golangci_lint_override := $(dir $(lastword $(MAKEFILE_LIST)))/.golangci.override.yaml
 
 .PHONY: go-workspace
@@ -57,26 +61,23 @@ generate-go-mod-tidy: | $(NEEDS_GO)
 
 shared_generate_targets += generate-go-mod-tidy
 
-ifndef govulncheck_skip
+ifndef dont_generate_govulncheck
 
-default_govulncheck_generate_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
-# The base directory used to copy the govulncheck GH action from. This can be
-# overwritten with an action with extra authentication or with a totally different
-# pipeline (eg. a GitLab pipeline).
-govulncheck_generate_base_dir ?= $(default_govulncheck_generate_base_dir)
-
-# The org name used in the govulncheck GH action. This is used to prevent the govulncheck job
-# being run on every fork of the repo.
-govulncheck_generate_org ?= cert-manager
+govulncheck_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
 
 .PHONY: generate-govulncheck
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-govulncheck:
-	@mkdir -p ./.github/workflows
-	sed 's/ORGNAMEHERE/$(govulncheck_generate_org)/g' $(govulncheck_generate_base_dir)/.github/workflows/govulncheck.yaml > .github/workflows/govulncheck.yaml
+	cp -r $(govulncheck_base_dir)/. ./
+	cd $(govulncheck_base_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
 
 shared_generate_targets += generate-govulncheck
+
+endif # dont_generate_govulncheck
 
 .PHONY: verify-govulncheck
 ## Verify all Go modules for vulnerabilities using govulncheck
@@ -102,10 +103,6 @@ verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 				popd >/dev/null; \
 				echo ""; \
 			done
-
-endif # govulncheck_skip
-
-ifdef golangci_lint_config
 
 .PHONY: generate-golangci-lint-config
 ## Generate a golangci-lint configuration file
@@ -155,5 +152,3 @@ fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/
 				popd >/dev/null; \
 				echo ""; \
 			done
-
-endif
