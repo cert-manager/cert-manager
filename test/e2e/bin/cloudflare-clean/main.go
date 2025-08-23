@@ -23,7 +23,11 @@ import (
 	"log"
 	"time"
 
-	cf "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v5"
+	cf "github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v5/option"
+	"github.com/cloudflare/cloudflare-go/v5/zones"
 
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 )
@@ -50,15 +54,23 @@ func main() {
 }
 
 func Main(ctx context.Context) error {
-	cl, err := cf.New(*apiKey, *email)
-	if err != nil {
-		return fmt.Errorf("error creating cloudflare client: %v", err)
+	cl := cf.NewClient(option.WithAPIKey(*apiKey), option.WithAPIEmail(*email))
+	if cl == nil || cl.Zones == nil || cl.DNS == nil {
+		return fmt.Errorf("error creating cloudflare client. check permissions related to the client.")
 	}
 
-	zones, err := cl.ListZones(ctx, *zoneName)
-	if err != nil {
-		return fmt.Errorf("error listing zones: %v", err)
+	zs := cl.Zones.ListAutoPaging(ctx, zones.ZoneListParams{
+		Name: cloudflare.F(*zoneName),
+	})
+
+	zones := make([]zones.Zone, 0)
+  for zs.Next() {
+		if zs.Err() != nil {
+			return fmt.Errorf("error listing zones %v", zs.Err())
+		}
+    zones = append(zones, zs.Current())
 	}
+
 	if len(zones) == 0 {
 		return fmt.Errorf("could not find zone with name %q", *zoneName)
 	}
@@ -66,11 +78,18 @@ func Main(ctx context.Context) error {
 		return fmt.Errorf("found multiple zones for name %q", *zoneName)
 	}
 	zone := zones[0]
-	rrs, _, err := cl.ListDNSRecords(ctx, cf.ZoneIdentifier(zone.ID), cf.ListDNSRecordsParams{
-		Type: "TXT",
+	rrsp := cl.DNS.Records.ListAutoPaging(ctx, dns.RecordListParams{
+		ZoneID: cloudflare.F(zone.ID),
+		Type: cloudflare.F(dns.RecordListParamsTypeTXT),
 	})
-	if err != nil {
-		return fmt.Errorf("error listing TXT records in zone: %v", err)
+
+	rrs := make([]dns.RecordResponse, 0)
+	for rrsp.Next() {
+		if rrsp.Err() != nil {
+			return fmt.Errorf("unable to fetch records %v", rrsp.Err())
+		}
+
+		rrs = append(rrs, rrsp.Current())
 	}
 
 	log.Printf("Evaluating %d records", len(rrs))
@@ -90,7 +109,9 @@ func Main(ctx context.Context) error {
 			continue
 		}
 
-		err := cl.DeleteDNSRecord(ctx, cf.ZoneIdentifier(zone.ID), rr.ID)
+		_, err := cl.DNS.Records.Delete(ctx, rr.ID, dns.RecordDeleteParams{
+			ZoneID: cloudflare.F(zone.ID),
+		})
 		if err != nil {
 			log.Printf("Error deleting record: %v", err)
 			errs = append(errs, err)
@@ -112,7 +133,7 @@ func Main(ctx context.Context) error {
 	return nil
 }
 
-func shouldDelete(rr cf.DNSRecord) bool {
+func shouldDelete(rr dns.RecordResponse) bool {
 	// be extra safe about only deleting TXT records
 	if rr.Type != "TXT" {
 		return false
