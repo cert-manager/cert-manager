@@ -1,6 +1,9 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   enabled: true,
+  enabledManagers: [
+    'gomod'
+  ],
   separateMajorMinor: false,
   extends: [
     'config:best-practices',
@@ -13,6 +16,8 @@
   timezone: 'Europe/London',
   labels: [
     'dependencies',
+    'kind/cleanup',
+    'release-note-none',
   ],
   postUpgradeTasks: {
     commands: [
@@ -21,16 +26,6 @@
     executionMode: 'branch',
   },
   packageRules: [
-    // Currently, there seems to be issues with permissions which doesn't allow Renovate to update actions.
-    {
-      groupName: 'GitHub Actions',
-      matchManagers: [
-        'github-actions',
-      ],
-      matchPackageNames: [
-        '*',
-      ],
-    },
     {
       groupName: 'Misc Go deps',
       matchManagers: [
@@ -62,7 +57,6 @@
         'github.com/AzureAD**/**',
         'github.com/cloudflare**/**',
         'github.com/digitalocean**/**',
-        'github.com/Venafi**/**',
         'google.golang.org/api',
       ],
     },
@@ -88,15 +82,6 @@
       enabled: false,
     },
   ],
-  ignorePaths: [
-    '**/vendor/**',
-    '**/node_modules/**',
-    '**/__tests__/**',
-    // The following files are managed from makefile-modules, and should be ignored by Renovate in other projects.
-    '.github/workflows/govulncheck.yaml',
-    '.github/workflows/make-self-upgrade.yaml',
-    '.github/dependabot.yaml',
-  ],
   prBodyDefinitions: {
     Package: '{{depName}}',
   },
@@ -106,11 +91,5 @@
     'Update',
     'Change',
     'References',
-  ],
-  prBodyNotes: [
-    '/kind cleanup',
-    '### Release Note\n```release-note\nNONE\n```',
-    '**Note**: This PR was automatically created by Renovate Bot.',
-    '',
   ],
 }
