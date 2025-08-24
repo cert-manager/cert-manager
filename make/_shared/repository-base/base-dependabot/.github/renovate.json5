@@ -87,4 +87,7 @@
       enabled: false,
     },
   ],
+  ignorePaths: [
+    '**/vendor/**',
+  ],
 }
