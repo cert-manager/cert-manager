@@ -15,6 +15,9 @@ updates:
   directory: /
   schedule:
     interval: daily
+  exclude-paths: # Exclude files that are mastered from makefile-modules and shouldn't be upgraded in projects using makefile-modules.
+    - .github/workflows/govulncheck.yaml
+    - .github/workflows/make-self-upgrade.yaml
   groups:
     all-gh-actions:
       patterns: ["*"]
