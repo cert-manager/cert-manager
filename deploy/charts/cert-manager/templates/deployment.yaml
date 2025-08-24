@@ -66,6 +66,13 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if hasKey .Values "hostUsers" }}
+      hostUsers: {{ .Values.hostUsers }}
+      {{- else }}
+      {{- if .Values.global.hostUsers }}
+      hostUsers: {{ .Values.global.hostUsers }}
+      {{- end }}
+      {{- end }}
       {{- with .Values.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

@@ -67,6 +67,13 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if hasKey .Values.cainjector "hostUsers" }}
+      hostUsers: {{ .Values.cainjector.hostUsers }}
+      {{- else }}
+      {{- if .Values.global.hostUsers }}
+      hostUsers: {{ .Values.global.hostUsers }}
+      {{- end }}
+      {{- end }}
       {{- with .Values.cainjector.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
