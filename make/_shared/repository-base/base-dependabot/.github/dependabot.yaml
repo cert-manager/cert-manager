@@ -4,13 +4,6 @@
 # Update Go dependencies and GitHub Actions dependencies daily.
 version: 2
 updates:
-- package-ecosystem: gomod
-  directory: /
-  schedule:
-    interval: daily
-  groups:
-    all-go-deps:
-      patterns: ["*"]
 - package-ecosystem: github-actions
   directory: /
   schedule:
@@ -18,6 +11,7 @@ updates:
   exclude-paths: # Exclude files that are mastered from makefile-modules and shouldn't be upgraded in projects using makefile-modules.
     - .github/workflows/govulncheck.yaml
     - .github/workflows/make-self-upgrade.yaml
+    - .github/workflows/renovate.yaml
   groups:
     all-gh-actions:
       patterns: ["*"]
