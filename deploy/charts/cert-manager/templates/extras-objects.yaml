@@ -1,4 +1,6 @@
+{{- if ne .Values.crds.only false -}}
 {{ range .Values.extraObjects }}
 ---
 {{ tpl . $ }}
+{{ end }}
 {{ end }}
