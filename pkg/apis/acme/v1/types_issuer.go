@@ -363,6 +363,11 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's security context
 	// +optional
 	SecurityContext *ACMEChallengeSolverHTTP01IngressPodSecurityContext `json:"securityContext,omitempty"`
+
+	// If specified, the pod's resource requirements
+	// These values override the global resource configuration flags
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
