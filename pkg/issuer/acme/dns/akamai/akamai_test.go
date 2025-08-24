@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
+	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v11/pkg/dns"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -76,7 +76,7 @@ func TestNewDNSProvider(t *testing.T) {
 	assert.NoError(t, err)
 	// sample couple important fields
 	assert.Equal(t, akamai.serviceConsumerDomain, "akamai.example.com")
-	assert.Equal(t, fmt.Sprintf("%T", akamai.dnsclient), "*akamai.OpenDNSConfig")
+	assert.Equal(t, fmt.Sprintf("%T", akamai.dnsclient), "*akamai.OpenDNSClient")
 
 }
 
@@ -301,7 +301,7 @@ func TestCleanUpFailDeleteRecord(t *testing.T) {
 }
 
 // Stub Get Record
-func (o StubOpenDNSConfig) GetRecord(zone string, name string, recordType string) (*dns.RecordBody, error) {
+func (o StubOpenDNSConfig) GetRecord(ctx context.Context, zone string, name string, recordType string) (*dns.RecordBody, error) {
 
 	var rec *dns.RecordBody
 
@@ -329,7 +329,7 @@ func (o StubOpenDNSConfig) GetRecord(zone string, name string, recordType string
 
 }
 
-func (o StubOpenDNSConfig) RecordSave(rec *dns.RecordBody, zone string) error {
+func (o StubOpenDNSConfig) RecordSave(ctx context.Context, rec *dns.RecordBody, zone string) error {
 
 	exp, ok := o.FuncOutput["RecordSave"]
 	if ok {
@@ -356,7 +356,7 @@ func (o StubOpenDNSConfig) RecordSave(rec *dns.RecordBody, zone string) error {
 
 }
 
-func (o StubOpenDNSConfig) RecordUpdate(rec *dns.RecordBody, zone string) error {
+func (o StubOpenDNSConfig) RecordUpdate(ctx context.Context, rec *dns.RecordBody, zone string) error {
 
 	exp, ok := o.FuncOutput["RecordUpdate"]
 	if ok {
@@ -382,7 +382,7 @@ func (o StubOpenDNSConfig) RecordUpdate(rec *dns.RecordBody, zone string) error 
 	return nil
 }
 
-func (o StubOpenDNSConfig) RecordDelete(rec *dns.RecordBody, zone string) error {
+func (o StubOpenDNSConfig) RecordDelete(ctx context.Context, rec *dns.RecordBody, zone string) error {
 
 	exp, ok := o.FuncOutput["RecordDelete"]
 	if ok {
