@@ -16,7 +16,7 @@ require (
 	github.com/miekg/dns v1.1.68
 	github.com/munnerz/crd-schema-fuzz v1.1.0
 	github.com/segmentio/encoding v0.5.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	golang.org/x/sync v0.16.0
 	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.4
