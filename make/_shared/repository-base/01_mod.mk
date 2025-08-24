@@ -40,6 +40,10 @@ generate-base:
 			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
 		done
 	cp -r $(repository_base_dependabot_dir)/. ./
+	cd $(repository_base_dependabot_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
 endif
 
 shared_generate_targets += generate-base
