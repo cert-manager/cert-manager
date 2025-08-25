@@ -88,7 +88,7 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 		session.WithSigner(edgCfg),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("edgedns: Error creating session %v", err)
+		return nil, fmt.Errorf("edgedns: Error creating session: %w", err)
 	}
 
 	dnsClient := dns.Client(s)
