@@ -267,8 +267,8 @@ func (o OpenDNSConfig) GetRecord(ctx context.Context, zone string, name string, 
 
 	recordResponse, err := o.client.GetRecord(ctx, dns.GetRecordRequest{
 		Zone:       zone,
-		RecordType: recordType,
 		Name:       name,
+		RecordType: recordType,
 	})
 
 	if err != nil {
