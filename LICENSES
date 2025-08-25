@@ -49,7 +49,7 @@ github.com/AzureAD/microsoft-authentication-library-for-go/apps,MIT
 github.com/Khan/genqlient/graphql,MIT
 github.com/NYTimes/gziphandler,Apache-2.0
 github.com/Venafi/vcert/v5,Apache-2.0
-github.com/akamai/AkamaiOPEN-edgegrid-golang,Apache-2.0
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v11/pkg,Apache-2.0
 github.com/antlr4-go/antlr/v4,BSD-3-Clause
 github.com/aws/aws-sdk-go-v2,Apache-2.0
 github.com/aws/aws-sdk-go-v2/config,Apache-2.0
@@ -67,6 +67,7 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc,Apache-2.0
 github.com/aws/aws-sdk-go-v2/service/sts,Apache-2.0
 github.com/aws/smithy-go,Apache-2.0
 github.com/aws/smithy-go/internal/sync/singleflight,BSD-3-Clause
+github.com/benbjohnson/clock,MIT
 github.com/beorn7/perks/quantile,MIT
 github.com/blang/semver/v4,MIT
 github.com/cenkalti/backoff/v4,MIT
@@ -100,6 +101,7 @@ github.com/go-logr/zapr,Apache-2.0
 github.com/go-openapi/jsonpointer,Apache-2.0
 github.com/go-openapi/jsonreference,Apache-2.0
 github.com/go-openapi/swag,Apache-2.0
+github.com/go-ozzo/ozzo-validation/v4,MIT
 github.com/gogo/protobuf,BSD-3-Clause
 github.com/golang-jwt/jwt/v5,MIT
 github.com/golang/protobuf/proto,BSD-3-Clause
@@ -144,11 +146,11 @@ github.com/modern-go/concurrent,Apache-2.0
 github.com/modern-go/reflect2,Apache-2.0
 github.com/munnerz/goautoneg,BSD-3-Clause
 github.com/nrdcg/goacmedns,MIT
-github.com/patrickmn/go-cache,MIT
 github.com/pavlo-v-chernykh/keystore-go/v4,MIT
 github.com/pierrec/lz4,BSD-3-Clause
 github.com/pkg/browser,BSD-2-Clause
 github.com/pkg/errors,BSD-2-Clause
+github.com/pmezard/go-difflib/difflib,BSD-3-Clause
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil,BSD-3-Clause
 github.com/prometheus/client_golang/prometheus,Apache-2.0
 github.com/prometheus/client_model/go,Apache-2.0
@@ -156,11 +158,12 @@ github.com/prometheus/common,Apache-2.0
 github.com/prometheus/procfs,Apache-2.0
 github.com/rogpeppe/go-internal/fmtsort,BSD-3-Clause
 github.com/ryanuber/go-glob,MIT
-github.com/sirupsen/logrus,MIT
 github.com/sosodev/duration,MIT
 github.com/spf13/cobra,Apache-2.0
 github.com/spf13/pflag,BSD-3-Clause
 github.com/stoewer/go-strcase,MIT
+github.com/stretchr/objx,MIT
+github.com/stretchr/testify,MIT
 github.com/vektah/gqlparser/v2,MIT
 github.com/x448/float16,MIT
 github.com/youmark/pkcs8,MIT
@@ -178,6 +181,7 @@ go.opentelemetry.io/otel/sdk,Apache-2.0
 go.opentelemetry.io/otel/trace,Apache-2.0
 go.opentelemetry.io/proto/otlp,Apache-2.0
 go.uber.org/multierr,MIT
+go.uber.org/ratelimit,MIT
 go.uber.org/zap,MIT
 go.yaml.in/yaml/v2,Apache-2.0
 go.yaml.in/yaml/v3,MIT
