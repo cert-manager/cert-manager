@@ -74,7 +74,7 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 		log:                    logf.Log.WithName("akamai-dns"),
 		TTL:                    300,
 	}
-	edgCfg, err := edgegrid.New()
+	cfg, err := edgegrid.New()
 	if err != nil {
 		return nil, fmt.Errorf("edgedns: Provider config creation failed: %w", err)
 	}
