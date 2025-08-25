@@ -205,6 +205,12 @@ type CertificateSpec struct {
 	// +optional
 	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
 
+	// The window in which certificate renewals are done.
+	// If set to a valid cron expression the RenewalTime will be set to the next date matching the expression,
+	// following RenewBefore, respective RenewBeforePercentage.
+	// +optional
+	RenewTimeWindow string `json:"renewTimeWindow,omitempty"`
+
 	// Requested DNS subject alternative names.
 	// +optional
 	// +listType=atomic

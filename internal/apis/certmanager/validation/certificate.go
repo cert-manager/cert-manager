@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metavalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -39,6 +41,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/hashicorp/cronexpr"
 )
 
 // mapping for key algorithm to allowed signature algorithms
@@ -60,7 +63,7 @@ var keyAlgToAllowedSigAlgs = map[internalcmapi.PrivateKeyAlgorithm][]internalcma
 
 // Validation functions for cert-manager Certificate types
 
-func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.Path, notBefore, notAfter time.Time) field.ErrorList {
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
@@ -72,7 +75,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
-	var commonName = crt.CommonName
+	commonName := crt.CommonName
 	if crt.LiteralSubject != "" {
 		if !utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject) {
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
@@ -192,8 +195,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 	}
 
-	if crt.Duration != nil || crt.RenewBefore != nil {
-		el = append(el, ValidateDuration(crt, fldPath)...)
+	if crt.Duration != nil || crt.RenewBefore != nil || crt.RenewTimeWindow != "" {
+		el = append(el, ValidateDuration(crt, fldPath, notBefore, notAfter)...)
 	}
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
@@ -236,16 +239,58 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (allErrs field.ErrorList, warnings []string) {
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	notAfter := time.Time{}
+	notBefore := time.Now()
+	if crt.Spec.Duration == nil {
+		notAfter = notBefore.Add(cmapi.DefaultCertificateDuration)
+	} else {
+		notAfter = notBefore.Add(crt.Spec.Duration.Duration)
+	}
+	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), notBefore, notAfter)
 	if crt.Spec.PrivateKey == nil || crt.Spec.PrivateKey.RotationPolicy == "" {
 		warnings = append(warnings, newDefaultPrivateKeyRotationPolicy)
 	}
 	return allErrs, warnings
 }
 
+func specChangeRequiresReIssue(oldSpec, newSpec *internalcmapi.CertificateSpec) bool {
+	if oldSpec.CommonName != newSpec.CommonName ||
+		oldSpec.LiteralSubject != newSpec.LiteralSubject ||
+		oldSpec.IsCA != newSpec.IsCA ||
+		oldSpec.IssuerRef != newSpec.IssuerRef ||
+		!reflect.DeepEqual(oldSpec.DNSNames, newSpec.DNSNames) ||
+		!reflect.DeepEqual(oldSpec.EmailAddresses, newSpec.EmailAddresses) ||
+		!reflect.DeepEqual(oldSpec.IPAddresses, newSpec.IPAddresses) ||
+		!reflect.DeepEqual(oldSpec.OtherNames, newSpec.OtherNames) ||
+		!reflect.DeepEqual(oldSpec.URIs, newSpec.URIs) ||
+		!reflect.DeepEqual(oldSpec.NameConstraints, newSpec.NameConstraints) ||
+		!reflect.DeepEqual(oldSpec.Subject, newSpec.Subject) ||
+		!reflect.DeepEqual(oldSpec.Usages, newSpec.Usages) ||
+		!reflect.DeepEqual(oldSpec.Duration, newSpec.Duration) {
+		return true
+	}
+
+	return false
+}
+
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	oldCrt := oldObj.(*internalcmapi.Certificate)
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	notBefore := time.Now()
+	notAfter := time.Time{}
+	if specChangeRequiresReIssue(&oldCrt.Spec, &crt.Spec) {
+		if crt.Spec.Duration == nil {
+			notAfter = notBefore.Add(cmapi.DefaultCertificateDuration)
+		} else {
+			notAfter = notBefore.Add(crt.Spec.Duration.Duration)
+		}
+	} else {
+		if crt.Status.NotAfter != nil {
+			notAfter = crt.Status.NotAfter.Time
+			notBefore = crt.Status.NotBefore.Time
+		}
+	}
+	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"), notBefore, notAfter)
 	return allErrs, nil
 }
 
@@ -353,7 +398,7 @@ func validateSecretTemplateAnnotations(crt *internalcmapi.CertificateSpec, fldPa
 	return el
 }
 
-func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path, notBefore, notAfter time.Time) field.ErrorList {
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
@@ -375,11 +420,16 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	if crt.RenewBefore != nil && crt.RenewBefore.Duration >= duration {
 		el = append(el, field.Invalid(fldPath.Child("renewBefore"), crt.RenewBefore.Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, crt.RenewBefore.Duration)))
 	}
+	var renewBefore time.Duration
+	if crt.RenewBefore != nil {
+		renewBefore = crt.RenewBefore.Duration
+	}
 
 	// If spec.renewBeforePercentage is set, check that it's within the allowed
 	// range.
+
 	if crt.RenewBeforePercentage != nil {
-		renewBefore := duration * time.Duration(100-*crt.RenewBeforePercentage) / 100
+		renewBefore = duration * time.Duration(100-*crt.RenewBeforePercentage) / 100
 		if renewBefore < cmapi.MinimumRenewBefore {
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore)))
 		}
@@ -387,7 +437,40 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "certificate renewBeforePercentage must result in a renewBefore less than duration"))
 		}
 	}
+	el = append(el, validateRenewTimeWindow(fldPath, crt.RenewTimeWindow, duration, notBefore, notAfter, crt.RenewBefore, crt.RenewBeforePercentage)...)
 
+	return el
+}
+
+func validateRenewTimeWindow(fldPath *field.Path, renewTimeWindow string, duration time.Duration, notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32) field.ErrorList {
+	el := field.ErrorList{}
+	if renewTimeWindow != "" {
+		_, err := cronexpr.Parse(renewTimeWindow)
+		if err != nil {
+			return append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("renewTimeWindow is not a valid cron expression: %v", err)))
+		}
+		renewTime := pki.RenewalTime(notBefore, notAfter, renewBefore, renewBeforePercentage, renewTimeWindow)
+		// TODO: this seems to appear when restoring certificate resources via velero
+		zeroTime := &metav1.Time{}
+		if renewTime.DeepCopy().Equal(zeroTime) {
+			return el
+		}
+		if renewTime.After(notAfter) {
+			el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow, calculated renewTime is %s", renewTime)))
+		} else {
+			// calculate if there are conflicts with the renewalWindow and the other parameters for the next year
+			oneYearLater := notAfter.Add(time.Hour * 24 * 365)
+			for renewTime.Time.Before(oneYearLater) {
+				notBefore := renewTime.Time
+				notAfter = notBefore.Add(duration)
+				renewTime = pki.RenewalTime(notBefore, notAfter, renewBefore, renewBeforePercentage, renewTimeWindow)
+				if renewTime.After(notAfter) {
+					el = append(el, field.Invalid(fldPath.Child("renewTimeWindow"), renewTimeWindow, fmt.Sprintf("certificate would expire before next renewTimeWindow in subsequent renewal, calculated renewTime is %s, notBefore %s, notAfter %s", renewTime, notBefore, notAfter)))
+					break // one fail is enough
+				}
+			}
+		}
+	}
 	return el
 }
 
