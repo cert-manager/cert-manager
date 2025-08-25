@@ -76,7 +76,7 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 	}
 	edgCfg, err := edgegrid.New()
 	if err != nil {
-		return nil, fmt.Errorf("edgedns: Provider config creation failed %v", err)
+		return nil, fmt.Errorf("edgedns: Provider config creation failed: %w", err)
 	}
 	edgCfg.Host = serviceConsumerDomain
 	edgCfg.ClientToken = clientToken
